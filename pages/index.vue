@@ -19,7 +19,7 @@ const apps = [
       <!-- todo: logo will be here later -->
     </div>
     <span class="text-3xl font-bold">Все, что надо.</span>
-    <span class="text-xl text-gray-600 dark:text-gray-400">Сервисы для успешной работы в команде!</span>
+    <span class="text-xl text-gray-600 dark:text-gray-400">Сервисы для успешной работы в команде</span>
 
     <UButton icon="i-lucide-rocket" color="primary" variant="solid" :ui="{
       leadingIcon: 'text-(--ui-primary)'
