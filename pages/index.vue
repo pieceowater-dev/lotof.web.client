@@ -15,8 +15,9 @@ const apps = [
 
 <template>
   <div class="flex flex-col items-center justify-center min-h-[80vh] text-center">
-    <div>
-      <!-- todo: logo will be here later -->
+    <div class="flex flex-col items-center justify-center my-10">
+      <img src="/assets/logo.png" alt="Logo" class="h-20 w-20" />
+      <span class="text-5xl font-thin text-primary">lota</span>
     </div>
     <span class="text-3xl font-bold">Все, что надо.</span>
     <span class="text-xl text-gray-600 dark:text-gray-400">Сервисы для успешной работы в команде</span>

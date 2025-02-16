@@ -9,7 +9,10 @@ const toggleTheme = () => {
 
 <template>
   <header class="fixed top-0 left-0 w-full flex items-center justify-between p-2 px-4 bg-white dark:bg-gray-800 shadow-md z-50">
-    <h1 class="text-lg font-bold">lota</h1>
+    <div class="flex items-center space-x-2">
+      <img src="/assets/logo.png" alt="Logo" class="h-5 w-5" />
+      <span class="text-lg">lota</span>
+    </div>
     <UButton @click="toggleTheme" variant="ghost" size="xl">
       <UIcon name="i-heroicons-moon" v-if="colorMode.preference === 'light'" />
       <UIcon name="i-heroicons-sun" v-else />
