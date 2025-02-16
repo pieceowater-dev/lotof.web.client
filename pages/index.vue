@@ -19,7 +19,7 @@ const apps = [
       <!-- todo: logo will be here later -->
     </div>
     <span class="text-3xl font-bold">Все, что надо.</span>
-    <span class="text-xl text-gray-600">Сервисы для успешной работы в команде!</span>
+    <span class="text-xl text-gray-600 dark:text-gray-400">Сервисы для успешной работы в команде!</span>
 
     <UButton icon="i-lucide-rocket" color="primary" variant="solid" :ui="{
       leadingIcon: 'text-(--ui-primary)'
@@ -40,7 +40,7 @@ const apps = [
   <div class="max-w-6xl mx-auto my-20">
     <div class="flex flex-col items-center justify-center my-10">
       <span class="text-3xl font-bold">Какой-то текст?</span>
-      <span class="text-xl text-gray-600">Вашему вниманию отвратительный аккордион!</span>
+      <span class="text-xl text-gray-600 dark:text-gray-400">Вашему вниманию отвратительный аккордион!</span>
     </div>
 
     <Accordion />
