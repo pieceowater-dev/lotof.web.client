@@ -16,7 +16,7 @@ const apps = [
 <template>
   <div class="flex flex-col items-center justify-center min-h-[80vh] text-center">
     <div>
-      <!-- logo will be here later -->
+      <!-- todo: logo will be here later -->
     </div>
     <span class="text-3xl font-bold">Все, что надо.</span>
     <span class="text-xl text-gray-600">Сервисы для успешной работы в команде!</span>
@@ -26,6 +26,8 @@ const apps = [
     }" class="mt-8" @click="myCallback">
       Войти
     </UButton>
+
+
   </div>
 
   <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto">
