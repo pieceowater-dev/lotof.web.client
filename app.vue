@@ -18,7 +18,7 @@ import { onMounted, onBeforeUnmount } from 'vue';
 const onPageLoad = () => {
   setTimeout(() => {
     document.getElementById('preloader')?.remove();
-  }, 100);
+  }, 1000);
 };
 
 onMounted(() => {
