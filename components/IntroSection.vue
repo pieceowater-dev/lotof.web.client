@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-[70vh] text-center">
+  <div class="flex flex-col items-center justify-center min-h-[65vh] text-center">
     <div class="flex flex-col items-center justify-center my-10">
       <img src="/assets/logo.png" alt="Logo" class="h-20 w-20" />
       <span class="text-5xl font-thin text-primary">{{ title }}</span>

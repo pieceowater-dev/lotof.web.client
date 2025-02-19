@@ -5,19 +5,28 @@
                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ title }}</h3>
                 <p class="text-gray-600 dark:text-gray-400 text-sm">{{ description }}</p>
             </div>
-            <UButton @click="onClick" color="primary" variant="outline" class="mt-4 w-fit">
-                Открыть
+            <UButton 
+                @click="onClick" 
+                :disabled="!onClick" 
+                :color="onClick ? 'primary' : 'neutral'" 
+                variant="outline" 
+                class="mt-4 w-fit"
+            >
+                {{ onClick ? 'Открыть' : 'Скоро...' }}
             </UButton>
         </div>
         <UIcon :name="icon" class="text-5xl text-primary dark:text-primary-light" />
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 defineProps({
     icon: String,
     title: String,
     description: String,
-    onClick: Function
+    onClick: {
+        type: Function,
+        default: null
+    }
 });
 </script>

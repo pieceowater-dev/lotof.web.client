@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-col items-center justify-center text-center min-h-[70vh]">
+    <div class="flex flex-col items-center justify-center text-center min-h-[65vh]">
         <span class="text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ userName
                 }}</span>!</span>
         <span class="text-lg text-gray-700 dark:text-gray-400 mb-4">Ваше пространство '{{ namespaceName }}'</span>
@@ -7,7 +7,7 @@
             <UButton icon="i-lucide-user-round-check" color="primary" variant="solid" :ui="{
                 leadingIcon: 'text-(--ui-primary)'
             }" @click="onAction">
-                Мои контакты
+                Мои коллеги
             </UButton>
             <UButton variant="soft" @click="onAction">Редактировать профиль</UButton>
         </div>
