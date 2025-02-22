@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center p-6 bg-gray-100 dark:bg-gray-800 shadow-lg rounded-2xl w-96 h-60 text-left space-x-6">
+    <div class="flex items-center p-8 bg-gray-50 dark:bg-gray-800 shadow-lg rounded-2xl w-96 h-60 text-left space-x-6">
         <div class="flex-1 flex flex-col justify-between items-start">
             <div>
                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ title }}</h3>

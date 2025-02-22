@@ -35,4 +35,7 @@ export default defineNuxtConfig({
     preference: "light",
     fallback: "light",
   },
+  ui: {
+    global: true
+  }
 });
