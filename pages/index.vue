@@ -14,7 +14,7 @@ const handleEditClick = () => {
 };
 
 const apps = [
-  { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => router.push('/atrace') }, // A-Trace
+  { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => router.push('/pieceowater/atrace') }, // A-Trace
   { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: null }, // issues
   { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: null }, // People & Tickets
   { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: null }, // Streets
