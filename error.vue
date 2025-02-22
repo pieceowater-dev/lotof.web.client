@@ -68,7 +68,7 @@ const randomSubtitle = getRandom(subtitles)
       <p class="text-xl font-semibold mt-3">{{ randomMessage }}</p>
       <p class="text-lg mt-2 opacity-80">{{ randomSubtitle }}</p>
 
-      <UButton @click="handleError" class="mt-5" label="Вернуться на главную" color="primary">
+      <UButton @click="handleError" class="mt-5" label="Вернуться на главную" color="primary" variant="outline">
         <template #leading>
           <UIcon name="i-heroicons-arrow-left-20-solid" class="w-5 h-5" />
         </template>
