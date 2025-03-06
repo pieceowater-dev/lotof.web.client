@@ -1,12 +1,24 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
+import { hubLogin } from '@/api/hub/auth';
 
 const router = useRouter();
 
-const handleLogin = () => {
-  console.log('Вход');
-  // alert('Google auth will be here later');
-  tempLoggedIn.value = !tempLoggedIn.value;
+// const handleLogin = () => {
+//   console.log('Вход');
+//   // alert('Google auth will be here later');
+//   tempLoggedIn.value = !tempLoggedIn.value;
+// };
+
+const handleLogin = async () => {
+  try {
+    const data = await hubLogin("pieceowater@gmail.com", "dima3raza");
+    console.log("Успешный вход:", data);
+    localStorage.setItem("token", data.login.token);
+    tempLoggedIn.value = !tempLoggedIn.value;
+  } catch (err) {
+    console.error("Ошибка авторизации:", err);
+  }
 };
 
 const handleEditClick = () => {
