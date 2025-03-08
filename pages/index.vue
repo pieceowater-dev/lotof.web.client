@@ -4,11 +4,6 @@ import { hubLogin } from '@/api/hub/auth';
 
 const router = useRouter();
 
-// const handleLogin = () => {
-//   console.log('Вход');
-//   // alert('Google auth will be here later');
-//   tempLoggedIn.value = !tempLoggedIn.value;
-// };
 
 const handleLogin = async () => {
   try {
@@ -31,7 +26,7 @@ const apps = [
   { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: null }, // People & Tickets
   { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: null }, // Streets
   { icon: 'i-lucide-file-text', title: 'Отчеты', description: 'Собирайте важные отчеты в одном месте.', onClick: null },
-  { icon: 'i-lucide-bar-chart', title: 'Аналитика', description: 'Отслеживайте ключевые показатели и улучшайте продуктивность.', onClick: null },
+  { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: null },
 ];
 
 const tempLoggedIn = ref(false);
