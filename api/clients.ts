@@ -7,6 +7,12 @@ export class ApiClient {
     this.client = new GraphQLClient(baseURL + "/query");
   }
 
+  setAuthToken(token: string) {
+    this.client.setHeaders({
+      Authorization: `Bearer ${token}`,
+    });
+  }
+
   async request<T>(query: string, variables?: Record<string, any>): Promise<T> {
     try {
       return await this.client.request<T>(query, variables);
