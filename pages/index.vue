@@ -11,6 +11,8 @@ import Modal from '@/components/Modal.vue';
 const router = useRouter();
 const cookies = useCookies(['token', 'userId']);
 
+const handleEditPeople = () => router.push('/people');
+
 const isLoggedIn = ref(false);
 const isModalOpen = ref(false);
 const username = ref('');
@@ -28,8 +30,8 @@ const checkAuth = async () => {
 
 const handleLogin = async () => {
   try {
-    const data = await hubLogin("pieceowater@gmail.com", "dima3raza"); // todo: temporary
-    cookies.set('token', data.login.token, { path: '/', maxAge: 360000 }); 
+    const data = await hubLogin("pieceowater@gmail.com", "dima3raza") as { login: { token: string, user: { id: string } } }; // todo: temporary
+    cookies.set('token', data.login.token, { path: '/', maxAge: 360000 });
     cookies.set('userId', data.login.user.id, { path: '/', maxAge: 360000 });
     isLoggedIn.value = true;
     await fetchUserData(data.login.token);
@@ -75,11 +77,11 @@ onMounted(checkAuth);
 
 const apps = [
   { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => router.push('/pieceowater/atrace') },
-  { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: null },
-  { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: null },
-  { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: null },
-  { icon: 'i-lucide-file-text', title: 'Отчеты', description: 'Собирайте важные отчеты в одном месте.', onClick: null },
-  { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: null },
+  { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: undefined },
+  { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: undefined },
+  { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: undefined },
+  { icon: 'i-lucide-file-text', title: 'Отчеты', description: 'Собирайте важные отчеты в одном месте.', onClick: undefined },
+  { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: undefined },
 ];
 </script>
 
@@ -89,22 +91,44 @@ const apps = [
     <USkeleton class="h-4 w-[250px]" />
     <USkeleton class="h-4 w-[200px]" />
   </div>
-  
-    <template v-else>
-      <IntroSection v-if="!isLoggedIn" :onAction="handleLogin" />
-      <WelcomeSection v-else 
-        :greeting="greeting" 
-        :username="username" 
-        @edit-profile="isModalOpen = true" 
-      />
-    </template>
-    
-    <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto mb-20">
-      <div v-for="(app, index) in apps" :key="index">
-        <AppCard :icon="app.icon" :title="app.title" :description="app.description" :onClick="app.onClick" />
-      </div>
+
+  <template v-else>
+    <IntroSection v-if="!isLoggedIn" :onAction="handleLogin" />
+    <WelcomeSection v-else :greeting="greeting" :username="username" namespace="pieceowater" @edit-profile="isModalOpen = true"
+      @edit-people="handleEditPeople" />
+  </template>
+
+  <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto mb-20">
+    <div v-for="(app, index) in apps" :key="index">
+      <AppCard :icon="app.icon" :title="app.title" :description="app.description" :onClick="app.onClick" />
     </div>
-  
+  </div>
+
+  <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
+    <h2 class="text-2xl font-bold flex items-center mb-4">
+        <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
+        Умная автоматизация бизнеса
+    </h2>
+    <p class="mb-4">Наше приложение создано для того, чтобы избавить вас от рутины. Контролируйте посещаемость сотрудников, управляйте задачами и клиентами в одном удобном интерфейсе. Система интегрируется с передовыми сервисами, позволяя вести учет без лишних усилий.</p>
+    
+    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+        <UIcon name="i-lucide-clock-fading" class="w-5 h-5 mr-2" />
+        Оптимизация рабочих процессов
+    </h2>
+    <p class="mb-4">Благодаря автоматизированному подходу вы сможете минимизировать затраты времени на рутинные задачи. Приложение помогает отслеживать эффективность сотрудников, анализировать данные и оперативно принимать решения.</p>
+    
+    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+        <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
+        Гибкость и удобство
+    </h2>
+    <p class="mb-4">Мы предлагаем интуитивно понятный интерфейс, который легко адаптируется под потребности вашего бизнеса. Независимо от масштаба компании, система поможет вам организовать работу наиболее эффективным способом.</p>
+    
+    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+      <UIcon name="i-lucide-chart-no-axes-combined" class="w-5 h-5 mr-2" />
+      Аналитика и контроль
+    </h2>
+    <p class="mb-4">Отчеты и визуализация данных помогают вам всегда быть в курсе текущих процессов. Получайте ключевую информацию в удобном формате и повышайте продуктивность команды.</p>
+</div>
 
   <Modal v-model="isModalOpen" header="Редактирование профиля" :footerButtons="[
     { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); isModalOpen = false; } },
@@ -118,4 +142,6 @@ const apps = [
       <UInput v-model="email" type="email" />
     </UFormGroup>
   </Modal>
+
+  <AppFooter />
 </template>

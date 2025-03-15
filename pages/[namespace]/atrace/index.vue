@@ -26,7 +26,7 @@ const isFilterOpen = ref(false)
             <template #header>
                 <div class="flex items-center justify-between">
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        Сотрудники
+                        Люди
                     </h3>
                     <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
                         @click="isOpen = false" />
@@ -72,7 +72,7 @@ const isFilterOpen = ref(false)
                 <h1 class="text-3xl font-bold">A-Trace</h1>
                 <span>Следите за посещаемостью своих сотрудников.</span>
             </div>
-            <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">Мои Сотрудники
+            <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">Мои люди
             </UButton>
         </div>
 

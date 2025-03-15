@@ -21,7 +21,7 @@ const showMenuButton = computed(() => route.path !== '/');
   <header
     class="fixed top-0 left-0 w-full flex items-center justify-between p-2 px-4 bg-white dark:bg-gray-800 shadow-md z-50">
     
-    <div class="flex items-center space-x-2 cursor-pointer" @click="goHome">
+    <div class="flex items-center space-x-1 cursor-pointer" @click="goHome">
       <img src="/assets/logo.png" alt="Logo" class="h-5 w-5" />
       <span class="text-lg">lota</span>
     </div>

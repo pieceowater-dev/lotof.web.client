@@ -4,10 +4,10 @@ export default defineNuxtConfig({
     head: {
       title: "lota",
       meta: [
-        { name: "description", content: "Описание приложения" },
-        { name: "keywords", content: "ключевые, слова" },
-        { property: "og:title", content: "Название приложения" },
-        { property: "og:description", content: "Описание для соцсетей" },
+        { name: "description", content: "services" },
+        { name: "keywords", content: "automations" },
+        { property: "og:title", content: "lota" },
+        { property: "og:description", content: "lota" },
       ],
       style: [
         {
@@ -27,7 +27,7 @@ export default defineNuxtConfig({
       ],
     },
   },
-  compatibilityDate: "2024-11-01",
+  compatibilityDate: "2025-03-01",
   devtools: { enabled: true },
   ssr: true,
   modules: ["@nuxt/ui"],
