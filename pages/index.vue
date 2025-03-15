@@ -29,15 +29,7 @@ const checkAuth = async () => {
 };
 
 const handleLogin = async () => {
-  try {
-    const data = await hubLogin("pieceowater@gmail.com", "dima3raza") as { login: { token: string, user: { id: string } } }; // todo: temporary
-    cookies.set('token', data.login.token, { path: '/', maxAge: 360000 });
-    cookies.set('userId', data.login.user.id, { path: '/', maxAge: 360000 });
-    isLoggedIn.value = true;
-    await fetchUserData(data.login.token);
-  } catch (err) {
-    console.error("Ошибка авторизации:", err);
-  }
+  window.location.href = `${import.meta.env.VITE_API_HUB}/google/auth?redirect_uri=${encodeURIComponent(window.location.origin)}`;
 };
 
 const fetchUserData = async (token: string) => {
