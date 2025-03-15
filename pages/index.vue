@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCookies } from '@vueuse/integrations/useCookies';
-import { hubLogin } from '@/api/hub/auth';
 import { hubMe } from '@/api/hub/me';
 import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
