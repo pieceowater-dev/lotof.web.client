@@ -33,7 +33,7 @@ const handleLogin = async () => {
 
 const handleAppClick = (app: string) => {
   const namespace = 'pieceowater'; // temporary hardcoded namespace
-  
+
   if (isLoggedIn.value === true) {
     router.push(`/${namespace}/${app}`);
   } else {
@@ -95,8 +95,8 @@ const apps = [
 
   <template v-else>
     <IntroSection v-if="!isLoggedIn" :onAction="handleLogin" />
-    <WelcomeSection v-else :greeting="greeting" :username="username" namespace="pieceowater" @edit-profile="isModalOpen = true"
-      @edit-people="handleEditPeople" />
+    <WelcomeSection v-else :greeting="greeting" :username="username" namespace="pieceowater"
+      @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" />
   </template>
 
   <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto mb-20">
@@ -107,29 +107,36 @@ const apps = [
 
   <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
     <h2 class="text-2xl font-bold flex items-center mb-4">
-        <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
-        Умная автоматизация бизнеса
+      <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
+      Умная автоматизация бизнеса
     </h2>
-    <p class="mb-4">Наше приложение создано для того, чтобы избавить вас от рутины. Контролируйте посещаемость сотрудников, управляйте задачами и клиентами в одном удобном интерфейсе. Система интегрируется с передовыми сервисами, позволяя вести учет без лишних усилий.</p>
-    
+    <p class="mb-4">Наше приложение создано для того, чтобы избавить вас от рутины. Контролируйте посещаемость
+      сотрудников, управляйте задачами и клиентами в одном удобном интерфейсе. Система интегрируется с передовыми
+      сервисами, позволяя вести учет без лишних усилий.</p>
+
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-        <UIcon name="i-lucide-circle-fading-plus" class="w-5 h-5 mr-2" />
-        Оптимизация рабочих процессов
+      <UIcon name="i-lucide-circle-fading-plus" class="w-5 h-5 mr-2" />
+      Оптимизация рабочих процессов
     </h2>
-    <p class="mb-4">Благодаря автоматизированному подходу вы сможете минимизировать затраты времени на рутинные задачи. Приложение помогает отслеживать эффективность сотрудников, анализировать данные и оперативно принимать решения.</p>
-    
+    <p class="mb-4">Благодаря автоматизированному подходу вы сможете минимизировать затраты времени на рутинные задачи.
+      Приложение помогает отслеживать эффективность сотрудников, анализировать данные и оперативно принимать решения.
+    </p>
+
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-        <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
-        Гибкость и удобство
+      <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
+      Гибкость и удобство
     </h2>
-    <p class="mb-4">Мы предлагаем интуитивно понятный интерфейс, который легко адаптируется под потребности вашего бизнеса. Независимо от масштаба компании, система поможет вам организовать работу наиболее эффективным способом.</p>
-    
+    <p class="mb-4">Мы предлагаем интуитивно понятный интерфейс, который легко адаптируется под потребности вашего
+      бизнеса. Независимо от масштаба компании, система поможет вам организовать работу наиболее эффективным способом.
+    </p>
+
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
       <UIcon name="i-lucide-chart-no-axes-combined" class="w-5 h-5 mr-2" />
       Аналитика и контроль
     </h2>
-    <p class="mb-4">Отчеты и визуализация данных помогают вам всегда быть в курсе текущих процессов. Получайте ключевую информацию в удобном формате и повышайте продуктивность команды.</p>
-</div>
+    <p class="mb-4">Отчеты и визуализация данных помогают вам всегда быть в курсе текущих процессов. Получайте ключевую
+      информацию в удобном формате и повышайте продуктивность команды.</p>
+  </div>
 
   <Modal v-model="isModalOpen" header="Редактирование профиля" :footerButtons="[
     { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); isModalOpen = false; } },
@@ -144,5 +151,7 @@ const apps = [
     </UFormGroup>
   </Modal>
 
-  <AppFooter />
+  <div class="m-2">
+    <AppFooter />
+  </div>
 </template>
