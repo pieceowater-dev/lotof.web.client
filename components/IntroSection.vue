@@ -4,8 +4,8 @@
       <img src="/assets/logo.png" alt="Logo" class="h-20 w-20" />
       <span class="text-5xl font-thin text-primary">{{ title }}</span>
     </div>
-    <span class="text-3xl font-bold">{{ subtitle }}</span>
-    <span class="text-xl text-gray-600 dark:text-gray-400">{{ description }}</span>
+    <span class="text-3xl font-bold mr-2 ml-2">{{ subtitle }}</span>
+    <span class="text-xl text-gray-600 dark:text-gray-400 mr-2 ml-2">{{ description }}</span>
 
     <UButton icon="i-lucide-rocket" color="primary" variant="solid" :ui="{
       leadingIcon: 'text-(--ui-primary)'
@@ -13,8 +13,6 @@
       {{ buttonText }}
     </UButton>
   </div>
-
-
 </template>
 
 <script setup lang="ts">

@@ -31,6 +31,16 @@ const handleLogin = async () => {
   window.location.href = `${import.meta.env.VITE_API_HUB}/google/auth?redirect_uri=${encodeURIComponent(window.location.origin)}`;
 };
 
+const handleAppClick = (app: string) => {
+  const namespace = 'pieceowater'; // temporary hardcoded namespace
+  
+  if (isLoggedIn.value === true) {
+    router.push(`/${namespace}/${app}`);
+  } else {
+    handleLogin();
+  }
+};
+
 const fetchUserData = async (token: string) => {
   try {
     const userData = await hubMe(token);
@@ -67,7 +77,7 @@ watch(() => cookies.get('token'), (newToken) => {
 onMounted(checkAuth);
 
 const apps = [
-  { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => router.push('/pieceowater/atrace') },
+  { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => handleAppClick('atrace') },
   { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: undefined },
   { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: undefined },
   { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: undefined },

@@ -1,6 +1,6 @@
 <template>
       <AppHeader />
-      <div class="mt-10 pt-3 p-5">
+      <div class="mt-10 pt-3">
             <slot />
       </div>
       <!-- <AppFooter /> -->
