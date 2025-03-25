@@ -1,5 +1,10 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  ssr: false, // Disable server-side rendering
+  target: 'static', // Enable static site generation
+  generate: {
+    fallback: '404.html', // Fallback for SPA routing
+  },
   app: {
     head: {
       title: "lota",
@@ -30,7 +35,6 @@ export default defineNuxtConfig({
   components: true,
   compatibilityDate: "2025-03-01",
   devtools: { enabled: true },
-  ssr: true,
   modules: ["@nuxt/ui"],
   colorMode: {
     preference: "light",
