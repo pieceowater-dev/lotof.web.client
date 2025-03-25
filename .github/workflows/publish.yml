@@ -56,3 +56,5 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILD_MODE=${{ github.ref_name }}
+            VITE_API_HUB=${{ vars.VITE_API_HUB }}
+            VITE_API_ATRACE=${{ vars.VITE_API_ATRACE }}
