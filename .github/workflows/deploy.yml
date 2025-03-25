@@ -19,5 +19,3 @@ jobs:
           commit-sha: ${{ github.sha }}
           branch: ${{ github.ref_name }}
           ssh-key: ${{ secrets.STATE_REPO_SSH_KEY }}
-
-          
