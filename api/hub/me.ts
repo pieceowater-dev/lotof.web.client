@@ -2,6 +2,7 @@ import { gql } from "graphql-request";
 import { hubClient } from "../clients";
 
 type MeResponse = {
+  id: string;
   username: string;
   email: string;
 };
@@ -15,6 +16,7 @@ export async function hubMe(token: string): Promise<MeResponse> {
   const query = gql`
     query Me {
       me {
+        id
         username
         email
       }

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCookies } from '@vueuse/integrations/useCookies';
 import { hubMe } from '@/api/hub/me';
+import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
@@ -57,6 +58,19 @@ const handleLogout = () => {
   isLoggedIn.value = false;
   username.value = '';
   email.value = '';
+};
+
+const handleSaveProfile = async () => {
+  const token = cookies.get('token');
+  if (!token) return;
+
+  try {
+    const updatedUser = await hubUpdateMe(token, username.value);
+    username.value = updatedUser.username;
+    isModalOpen.value = false;
+  } catch (error) {
+    console.error('Ошибка при обновлении профиля:', error);
+  }
 };
 
 const greeting = computed(() => {
@@ -141,13 +155,13 @@ const apps = [
   <Modal v-model="isModalOpen" header="Редактирование профиля" :footerButtons="[
     { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); isModalOpen = false; } },
     { label: 'Отмена', variant: 'ghost', onClick: () => (isModalOpen = false) },
-    { label: 'Сохранить', variant: 'solid', onClick: () => (isModalOpen = false) }
+    { label: 'Сохранить', variant: 'solid', onClick: handleSaveProfile }
   ]">
     <UFormGroup class="mb-5" label="Имя пользователя">
       <UInput v-model="username" />
     </UFormGroup>
     <UFormGroup label="Email">
-      <UInput v-model="email" type="email" />
+      <UInput disabled v-model="email" type="email" />
     </UFormGroup>
   </Modal>
 
