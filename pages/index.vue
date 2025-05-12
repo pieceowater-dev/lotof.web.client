@@ -98,6 +98,23 @@ const apps = [
   { icon: 'i-lucide-file-text', title: 'Отчеты', description: 'Собирайте важные отчеты в одном месте.', onClick: undefined },
   { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: undefined },
 ];
+
+
+let allNamespaces = ref(['pieceowater', 'pieceowater2', 'pieceowater3', 'pieceowater4', 'pieceowater5_long_ns_name_aaa']);
+let selectedNS = ref(allNamespaces.value[0]); // Default to the first namespace, otherwise get from localStorage and save if changed
+
+const handleSwitchNamespace = (namespace: string) => {
+  selectedNS.value = namespace; // Update the ref value
+  localStorage.setItem('selectedNamespace', namespace);
+};
+
+
+onMounted(() => {
+  const storedNamespace = localStorage.getItem('selectedNamespace');
+  if (storedNamespace && allNamespaces.value.includes(storedNamespace)) {
+    selectedNS.value = storedNamespace;
+  }
+});
 </script>
 
 <template>
@@ -109,8 +126,8 @@ const apps = [
 
   <template v-else>
     <IntroSection v-if="!isLoggedIn" :onAction="handleLogin" />
-    <WelcomeSection v-else :greeting="greeting" :username="username" namespace="pieceowater"
-      @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" />
+    <WelcomeSection v-else :greeting="greeting" :username="username" :current-namespace="selectedNS" :all-namespaces="allNamespaces"
+      @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
   </template>
 
   <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto mb-20">
