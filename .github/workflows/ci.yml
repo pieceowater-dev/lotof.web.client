@@ -62,6 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     needs: build-and-push
+    environment: ${{ github.ref_name }}
     steps:
       - name: Update state repo
         uses: pieceowater-dev/lotof.cloud.ci/.github/actions/update-state@main
