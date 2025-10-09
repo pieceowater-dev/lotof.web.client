@@ -1,0 +1,12 @@
+query MyFriends {
+  myFriends {
+    rows {
+      friend {
+        id
+        username
+        email
+      }
+    }
+    info { count }
+  }
+}

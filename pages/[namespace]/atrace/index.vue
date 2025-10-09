@@ -2,11 +2,11 @@
 import Card from "@/components/Card.vue";
 
 const posts = [
-    { id: 1, title: "Офис А", address: "ул. Пушкина, 10" },
-    { id: 2, title: "Офис Б", address: "ул. Лермонтова, 5" },
-    { id: 3, title: "Склад", address: "ул. Чехова, 12" },
-    { id: 4, title: "Филиал С", address: "ул. Гоголя, 8" },
-    { id: 4, title: "Филиал С", address: "ул. Гоголя, 8" }
+    { id: 1, title: "Office A", address: "Pushkina st, 10" },
+    { id: 2, title: "Office B", address: "Lermontova st, 5" },
+    { id: 3, title: "Warehouse", address: "Chekhova st, 12" },
+    { id: 4, title: "Branch C", address: "Gogolya st, 8" },
+    { id: 4, title: "Branch C", address: "Gogolya st, 8" }
 ];
 
 const isOpen = ref(false)
@@ -26,14 +26,14 @@ const isFilterOpen = ref(false)
             <template #header>
                 <div class="flex items-center justify-between">
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        Люди
+                        People
                     </h3>
                     <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
                         @click="isOpen = false" />
                 </div>
             </template>
 
-            <span>Позже добавить сюда что-то</span>
+            <span>Placeholder area (to be extended later)</span>
 
             <Table />
 
@@ -46,7 +46,7 @@ const isFilterOpen = ref(false)
             <template #header>
                 <div class="flex items-center justify-between">
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        Фильтр
+                        Filter
                     </h3>
                     <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
                         @click="isFilterOpen = false" />
@@ -58,9 +58,9 @@ const isFilterOpen = ref(false)
             <template #footer>
                 <div class="flex justify-between gap-2">
                     <UButton icon="i-heroicons-check" size="sm" color="primary" variant="solid"
-                        label="Применить" :trailing="false" />
+                        label="Apply" :trailing="false" />
                     <UButton icon="i-heroicons-x-mark-20-solid" size="sm" color="primary" variant="outline"
-                        label="Отменить" :trailing="false" />
+                        label="Cancel" :trailing="false" />
                 </div>
             </template>
         </UCard>
@@ -70,9 +70,9 @@ const isFilterOpen = ref(false)
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
                 <h1 class="text-3xl font-bold">A-Trace</h1>
-                <span>Следите за посещаемостью своих сотрудников.</span>
+                <span>Track your staff attendance.</span>
             </div>
-            <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">Мои люди
+            <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">My People
             </UButton>
         </div>
 
@@ -83,19 +83,19 @@ const isFilterOpen = ref(false)
                 </div>
                 <button
                     class="bg-blue-400 dark:bg-blue-900 text-white shadow-md p-4 rounded-xl w-60 flex items-center justify-center cursor-pointer hover:bg-blue-500 dark:hover:bg-blue-800 flex-shrink-0">
-                    + Добавить локацию
+                    + Add location
                 </button>
             </div>
         </div>
 
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
-                <h2 class="text-2xl font-bold">Посещаемость — Офис А</h2>
-                <span>ул. Пушкина, 10. 01.02.25 - 28.02.25</span>
+                <h2 class="text-2xl font-bold">Attendance — Office A</h2>
+                <span>Pushkina st, 10. 01.02.25 - 28.02.25</span>
             </div>
 
             <div class="flex space-x-4">
-                <UButton @click="isFilterOpen = true" icon="i-lucide-filter" color="primary" variant="outline">Фильтр
+                <UButton @click="isFilterOpen = true" icon="i-lucide-filter" color="primary" variant="outline">Filter
                 </UButton>
                 <UInput icon="i-lucide-search" size="md" variant="outline" placeholder="Search..." />
             </div>

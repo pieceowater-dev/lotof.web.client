@@ -1,76 +1,54 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useCookies } from '@vueuse/integrations/useCookies';
-import { hubMe } from '@/api/hub/me';
 import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
 
+// Composables
+const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
+const { selected: selectedNS, all: allNamespaces, setNamespace } = useNamespace();
+
 const router = useRouter();
-const cookies = useCookies(['token', 'userId']);
 
-const handleEditPeople = () => router.push('/people');
-
-const isLoggedIn = ref(false);
 const isModalOpen = ref(false);
 const username = ref('');
 const email = ref('');
 const isLoading = ref(true);
 
-const checkAuth = async () => {
-  const token = cookies.get('token');
-  if (token) {
-    isLoggedIn.value = true;
-    await fetchUserData(token);
+onMounted(async () => {
+  await fetchUser();
+  if (user.value) {
+    username.value = user.value.username;
+    email.value = user.value.email;
   }
   isLoading.value = false;
-};
+});
 
-const handleLogin = async () => {
-  window.location.href = `${import.meta.env.VITE_API_HUB}/google/auth?redirect_uri=${encodeURIComponent(window.location.origin)}`;
-};
+watch(user, (u) => {
+  if (u) {
+    username.value = u.username;
+    email.value = u.email;
+  }
+});
+
+const handleEditPeople = () => router.push('/people');
 
 const handleAppClick = (app: string) => {
-  const namespace = 'pieceowater'; // temporary hardcoded namespace
-
-  if (isLoggedIn.value === true) {
-    router.push(`/${namespace}/${app}`);
+  if (isLoggedIn.value) {
+    router.push(`/${selectedNS.value}/${app}`);
   } else {
-    handleLogin();
+    login();
   }
-};
-
-const fetchUserData = async (token: string) => {
-  try {
-    const userData = await hubMe(token);
-    username.value = userData.username;
-    email.value = userData.email;
-  } catch (error) {
-    console.error('Ошибка при получении данных пользователя:', error);
-  }
-};
-
-const handleLogout = () => {
-  cookies.remove('token');
-  cookies.remove('userId');
-  isLoggedIn.value = false;
-  username.value = '';
-  email.value = '';
 };
 
 const handleSaveProfile = async () => {
-  const token = cookies.get('token');
+  const token = useCookie<string | null>('token').value;
   if (!token) return;
-
-  try {
-    const updatedUser = await hubUpdateMe(token, username.value);
-    username.value = updatedUser.username;
-    isModalOpen.value = false;
-  } catch (error) {
-    console.error('Ошибка при обновлении профиля:', error);
-  }
+  const updatedUser = await hubUpdateMe(token, username.value);
+  username.value = updatedUser.username;
+  isModalOpen.value = false;
 };
 
 const greeting = computed(() => {
@@ -81,15 +59,6 @@ const greeting = computed(() => {
   return 'Добрый вечер';
 });
 
-watch(() => cookies.get('token'), (newToken) => {
-  isLoggedIn.value = !!newToken;
-  if (newToken) {
-    fetchUserData(newToken);
-  }
-});
-
-onMounted(checkAuth);
-
 const apps = [
   { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => handleAppClick('atrace') },
   { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: undefined },
@@ -99,22 +68,14 @@ const apps = [
   { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: undefined },
 ];
 
+function handleSwitchNamespace(ns: string) {
+  setNamespace(ns);
+}
 
-let allNamespaces = ref(['pieceowater', 'pieceowater2', 'pieceowater3', 'pieceowater4', 'pieceowater5_long_ns_name_aaa']);
-let selectedNS = ref(allNamespaces.value[0]); // Default to the first namespace, otherwise get from localStorage and save if changed
-
-const handleSwitchNamespace = (namespace: string) => {
-  selectedNS.value = namespace; // Update the ref value
-  localStorage.setItem('selectedNamespace', namespace);
-};
-
-
-onMounted(() => {
-  const storedNamespace = localStorage.getItem('selectedNamespace');
-  if (storedNamespace && allNamespaces.value.includes(storedNamespace)) {
-    selectedNS.value = storedNamespace;
-  }
-});
+function handleLogout() {
+  logout();
+  isModalOpen.value = false;
+}
 </script>
 
 <template>
@@ -125,7 +86,7 @@ onMounted(() => {
   </div>
 
   <template v-else>
-    <IntroSection v-if="!isLoggedIn" :onAction="handleLogin" />
+    <IntroSection v-if="!isLoggedIn" :onAction="login" />
     <WelcomeSection v-else :greeting="greeting" :username="username" :current-namespace="selectedNS" :all-namespaces="allNamespaces"
       @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
   </template>
@@ -170,7 +131,7 @@ onMounted(() => {
   </div>
 
   <Modal v-model="isModalOpen" header="Редактирование профиля" :footerButtons="[
-    { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); isModalOpen = false; } },
+  { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); } },
     { label: 'Отмена', variant: 'ghost', onClick: () => (isModalOpen = false) },
     { label: 'Сохранить', variant: 'solid', onClick: handleSaveProfile }
   ]">

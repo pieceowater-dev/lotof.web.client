@@ -1,4 +1,13 @@
 {
   // https://nuxt.com/docs/guide/concepts/typescript
-  "extends": "./.nuxt/tsconfig.json"
+  "extends": "./.nuxt/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["*"],
+      "@gql-hub": ["api/__generated__/hub-types.ts"],
+      "@gql-atrace": ["api/__generated__/atrace-types.ts"],
+      "@generated/*": ["api/__generated__/*"]
+    }
+  }
 }

@@ -1,15 +1,12 @@
-<script setup>
+<script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { hubFriendshipsList } from '@/api/hub/friendships/list';
-import { useCookies } from '@vueuse/integrations/useCookies';
 
-const cookies = useCookies(['token']);
+const { token } = useAuth();
+const { rows: friends, load, loading } = useFriendships();
 
 const search = ref('');
-const userFound = ref(null);
+const userFound = ref<boolean | null>(null);
 const toast = useToast();
-const friends = ref([]);
-const loading = ref(true);
 const selectedTab = ref(0);
 
 const isValidEmail = computed(() => {
@@ -46,30 +43,13 @@ const sendAction = () => {
   userFound.value = null;
 };
 
-const loadFriends = async (status) => {
-  loading.value = true;
-  try {
-    const token = cookies.get('token'); // Retrieve token from cookies
-    if (!token) throw new Error('No auth token found');
-    
-    const response = await hubFriendshipsList(token, status);
-    friends.value = response.rows;
-  } catch (error) {
-    console.error('Failed to fetch friends:', error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-// Watch for tab changes and load the corresponding data
 watch(selectedTab, (newTab) => {
-  const statusMap = ['ACCEPTED', 'PENDING', 'REJECTED'];
-  loadFriends(statusMap[newTab]);
+  const statusMap = ['ACCEPTED', 'PENDING', 'REJECTED'] as const;
+  load(statusMap[newTab]);
 });
 
-// Initial load
 onMounted(() => {
-  loadFriends('ACCEPTED');
+  if (token.value) load('ACCEPTED');
 });
 
 const columns = [{
@@ -83,7 +63,8 @@ const columns = [{
   label: 'Действия'
 }];
 
-const items = row => [
+interface FriendRow { id?: string; friend: { id: string; username: string; email: string } }
+const items = (row: FriendRow) => [
   [{
     label: 'В отклоненные',
     icon: 'i-lucide-user-round-minus',

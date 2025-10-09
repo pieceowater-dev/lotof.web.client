@@ -2,7 +2,7 @@
 import { defineProps, defineEmits } from 'vue';
 
 const props = defineProps<{
-  modelValue: boolean,  // Используем v-model
+  modelValue: boolean,  // v-model binding state
   header?: string | object,
   content?: string | object,
   footerButtons?: { label: string, variant?: 'link' | 'solid' | 'outline' | 'soft' | 'ghost', onClick?: () => void }[]

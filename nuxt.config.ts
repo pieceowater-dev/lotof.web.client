@@ -1,10 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+
 export default defineNuxtConfig({
-  ssr: false, // Disable server-side rendering
-  target: 'static', // Enable static site generation
-  generate: {
-    fallback: '404.html', // Fallback for SPA routing
-  },
+  ssr: false, // Disable server-side rendering (pure SPA)
+  // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
   app: {
     head: {
       title: "lota",
@@ -42,5 +40,10 @@ export default defineNuxtConfig({
   },
   ui: {
     global: true
+  },
+  alias: {
+    // Simple relative aliases (Nuxt resolves from project root)
+    '@gql-hub': './api/__generated__/hub-types.ts',
+    '@gql-atrace': './api/__generated__/atrace-types.ts'
   }
 });

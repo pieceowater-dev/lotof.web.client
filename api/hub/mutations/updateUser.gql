@@ -1,0 +1,10 @@
+mutation MutateMe($id: ID!, $username: String!) {
+  updateUser(
+    id: $id,
+    input: { username: $username }
+  ) {
+    id
+    email
+    username
+  }
+}

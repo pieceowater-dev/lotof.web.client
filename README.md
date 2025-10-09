@@ -73,3 +73,31 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## GraphQL Code Generation
+
+Type-safe GraphQL queries and mutations are generated using GraphQL Code Generator.
+
+1. Configure environment variables (e.g. in `.env`):
+
+```bash
+VITE_API_HUB=http://localhost:8080
+```
+
+2. Add / update `.gql` files in `api/hub/queries` or `api/hub/mutations`.
+
+3. Run generation:
+
+```bash
+npm run codegen
+```
+
+4. Use the typed documents from `api/__generated__/hub-types.ts` (or service‑specific file):
+
+```ts
+import { MeDocument } from '@gql-hub';
+const data = await hubClient.request(MeDocument);
+```
+
+Regenerate after changing the schema or adding new queries.
+

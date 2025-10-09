@@ -1,33 +1,9 @@
-import { gql } from "graphql-request";
-import { hubClient } from "../clients";
+import { hubClient, setGlobalAuthToken } from '../clients';
+import { MeDocument, type MeQuery } from '@gql-hub';
 
-type MeResponse = {
-  id: string;
-  username: string;
-  email: string;
-};
-
-export async function hubMe(token: string): Promise<MeResponse> {
-  console.log("hubMe called");
-  console.log("token", token);
-
-  hubClient.setAuthToken(token); // Устанавливаем токен
-
-  const query = gql`
-    query Me {
-      me {
-        id
-        username
-        email
-      }
-    }
-  `;
-
-  try {
-    const data = await hubClient.request<{ me: MeResponse }>(query);
-    return data.me;
-  } catch (error) {
-    console.error("GraphQL request failed:", error);
-    throw error;
-  }
+export async function hubMe(token: string): Promise<NonNullable<MeQuery['me']>> {
+  setGlobalAuthToken(token);
+  const data = await hubClient.request<MeQuery>(MeDocument);
+  if (!data.me) throw new Error('User not found in me query response');
+  return data.me;
 }
