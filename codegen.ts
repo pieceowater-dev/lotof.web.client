@@ -16,7 +16,7 @@ const generates: Record<string, any> = {
     schema: hubBase + '/query',
     documents: ['api/hub/**/*.gql'],
     plugins,
-    config: { avoidOptionals: false }
+    config: { avoidOptionals: false, useTypeImports: true }
   }
 };
 

@@ -1,0 +1,14 @@
+query Namespaces($filter: DefaultFilterInput) {
+  namespaces(filter: $filter) {
+    rows {
+      id
+      title
+      slug
+      description
+      owner
+    }
+    info {
+      count
+    }
+  }
+}

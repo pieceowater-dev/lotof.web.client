@@ -15,8 +15,9 @@ const {
 
 const emit = defineEmits(['edit-profile', 'edit-people', 'switch-namespace']);
 
-const items: { label: string; click: () => void }[][] = [allNamespaces
-  .map((ns: string) => ({ label: ns, click: () => emit('switch-namespace', ns) }))];
+const items: { label: string; click: () => void }[][] = [
+    allNamespaces.map((ns: string) => ({ label: ns, click: () => emit('switch-namespace', ns) }))
+];
 
 </script>
 

@@ -1,15 +1,11 @@
 // Manages current namespace selection (multi-tenant context)
 export function useNamespace() {
-  // NOTE: Replace this stub with an API-backed list of namespaces the user belongs to
-  const all = useState<string[]>('namespaces_all', () => [
-    'pieceowater',
-    'pieceowater2',
-    'pieceowater3',
-    'pieceowater4',
-    'pieceowater5_long_ns_name_aaa'
-  ]);
+  // Backed by API: namespaces the current user belongs to
+  const all = useState<string[]>('namespaces_all', () => []);
 
-  const { user } = useAuth();
+  const { user, token } = useAuth();
+  const loading = useState<boolean>('namespaces_loading', () => false);
+  const error = useState<string | null>('namespaces_error', () => null);
 
   function readPerUserSelection(): string | null {
     if (!process.client) return null;
@@ -68,18 +64,49 @@ export function useNamespace() {
     if (selected.value !== ns) setNamespace(ns);
   }
 
+  async function load(search?: string) {
+    if (!token.value) {
+      all.value = [];
+      return;
+    }
+    loading.value = true;
+    error.value = null;
+    try {
+      const { hubNamespacesList } = await import('@/api/hub/namespaces/list');
+      const data = await hubNamespacesList(token.value, search, 1);
+      const slugs = data.rows.map(r => r.slug);
+      all.value = slugs;
+      // Reconcile current selection
+      if (!slugs.includes(selected.value)) {
+        const stored = readPerUserSelection();
+        if (stored && slugs.includes(stored)) {
+          selected.value = stored;
+        } else if (slugs[0]) {
+          selected.value = slugs[0];
+          writePerUserSelection(slugs[0]);
+        }
+      }
+    } catch (e: any) {
+      error.value = e?.message || 'Failed to load namespaces';
+    } finally {
+      loading.value = false;
+    }
+  }
+
   // When user changes (login/logout), re-validate persisted selection
   if (process.client) {
     watch(
-      () => user.value?.id,
-      () => {
+      () => [user.value?.id, token.value] as const,
+      async () => {
         const stored = readPerUserSelection();
         if (stored && stored !== selected.value) setNamespace(stored);
         // If selection is not in list, ensure it is present
         ensureInAll(selected.value);
+        // Load namespaces for the current user
+        await load();
       }
     );
   }
 
-  return { all, selected, setNamespace, syncFromRoute };
+  return { all, selected, setNamespace, syncFromRoute, load, loading, error };
 }

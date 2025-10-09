@@ -273,6 +273,26 @@ export type MutateMeMutation = {
   };
 };
 
+export type NamespacesQueryVariables = Exact<{
+  filter?: InputMaybe<DefaultFilterInput>;
+}>;
+
+export type NamespacesQuery = {
+  __typename?: "Query";
+  namespaces: {
+    __typename?: "PaginatedNamespaceList";
+    rows: Array<{
+      __typename?: "Namespace";
+      id: string;
+      title: string;
+      slug: string;
+      description?: string | null;
+      owner: string;
+    }>;
+    info: { __typename?: "PaginationInfo"; count: number };
+  };
+};
+
 export type MeQueryVariables = Exact<{ [key: string]: never }>;
 
 export type MeQuery = {
@@ -382,6 +402,80 @@ export const MutateMeDocument = {
     },
   ],
 } as unknown as DocumentNode<MutateMeMutation, MutateMeMutationVariables>;
+export const NamespacesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "Namespaces" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "filter" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "DefaultFilterInput" },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "namespaces" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "filter" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "rows" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      { kind: "Field", name: { kind: "Name", value: "title" } },
+                      { kind: "Field", name: { kind: "Name", value: "slug" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "description" },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "owner" } },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "info" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "count" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<NamespacesQuery, NamespacesQueryVariables>;
 export const MeDocument = {
   kind: "Document",
   definitions: [

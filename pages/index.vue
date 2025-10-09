@@ -9,7 +9,7 @@ import Modal from '@/components/Modal.vue';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace } = useNamespace();
+const { selected: selectedNS, all: allNamespaces, setNamespace, load: loadNamespaces } = useNamespace();
 
 const router = useRouter();
 
@@ -20,6 +20,7 @@ const isLoading = ref(true);
 
 onMounted(async () => {
   await fetchUser();
+  await loadNamespaces();
   if (user.value) {
     username.value = user.value.username;
     email.value = user.value.email;
