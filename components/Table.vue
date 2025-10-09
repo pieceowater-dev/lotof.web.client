@@ -1,4 +1,9 @@
 <script lang="ts" setup>
+// Types
+interface TodoRow { id: number; title: string; completed: boolean }
+interface StatusFilter { key: 'completed' | 'uncompleted'; label: string; value: boolean }
+interface ActionItem { key: string; label: string; icon: string }
+
 // Columns
 const columns = [{
   key: 'select',
@@ -26,43 +31,28 @@ const columnsTable = computed(() => columns.filter(column => selectedColumns.val
 const excludeSelectColumn = computed(() => columns.filter(v => v.key !== 'select'))
 
 // Selected Rows
-const selectedRows = ref([])
+const selectedRows = ref<TodoRow[]>([])
 
-function select(row) {
+function select(row: TodoRow) {
   const index = selectedRows.value.findIndex(item => item.id === row.id)
-  if (index === -1) {
-    selectedRows.value.push(row)
-  } else {
-    selectedRows.value.splice(index, 1)
-  }
+  if (index === -1) selectedRows.value.push(row)
+  else selectedRows.value.splice(index, 1)
 }
 
 // Actions
-const actions = [
-  [{
-    key: 'completed',
-    label: 'Completed',
-    icon: 'i-heroicons-check'
-  }], [{
-    key: 'uncompleted',
-    label: 'In Progress',
-    icon: 'i-heroicons-arrow-path'
-  }]
+const actions: ActionItem[][] = [
+  [{ key: 'completed', label: 'Completed', icon: 'i-lucide-check' }],
+  [{ key: 'uncompleted', label: 'In Progress', icon: 'i-lucide-refresh-ccw' }]
 ]
 
 // Filters
-const todoStatus = [{
-  key: 'uncompleted',
-  label: 'In Progress',
-  value: false
-}, {
-  key: 'completed',
-  label: 'Completed',
-  value: true
-}]
+const todoStatus: StatusFilter[] = [
+  { key: 'uncompleted', label: 'In Progress', value: false },
+  { key: 'completed', label: 'Completed', value: true }
+]
 
 const search = ref('')
-const selectedStatus = ref([])
+const selectedStatus = ref<StatusFilter[]>([])
 const searchStatus = computed(() => {
   if (selectedStatus.value?.length === 0) {
     return ''
@@ -89,11 +79,7 @@ const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1)
 const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value))
 
 // Data
-const { data: todos, status } = await useLazyAsyncData<{
-  id: number
-  title: string
-  completed: string
-}[]>('todos', () => ($fetch as any)(`https://jsonplaceholder.typicode.com/todos${searchStatus.value}`, {
+const { data: todos, status } = await useLazyAsyncData<TodoRow[]>('todos', () => ($fetch as any)(`https://jsonplaceholder.typicode.com/todos${searchStatus.value}`, {
   query: {
     q: search.value,
     _page: page.value,
@@ -125,7 +111,7 @@ const { data: todos, status } = await useLazyAsyncData<{
       <div class="flex gap-1.5 items-center">
         <UDropdown v-if="selectedRows.length > 1" :items="actions" :ui="{ width: 'w-36' }">
           <UButton
-            icon="i-heroicons-chevron-down"
+            icon="i-lucide-chevron-down"
             trailing
             color="gray"
             size="xs"
@@ -136,7 +122,7 @@ const { data: todos, status } = await useLazyAsyncData<{
 
         <USelectMenu v-model="selectedColumns" :options="excludeSelectColumn" multiple>
           <UButton
-            icon="i-heroicons-view-columns"
+            icon="i-lucide-columns-2"
             color="gray"
             size="xs"
           >
@@ -145,7 +131,7 @@ const { data: todos, status } = await useLazyAsyncData<{
         </USelectMenu>
 
         <UButton
-          icon="i-heroicons-funnel"
+          icon="i-lucide-filter"
           color="gray"
           size="xs"
           :disabled="search === '' && selectedStatus.length === 0"
@@ -163,8 +149,8 @@ const { data: todos, status } = await useLazyAsyncData<{
       :rows="todos"
       :columns="columnsTable"
       :loading="status === 'pending'"
-      sort-asc-icon="i-heroicons-arrow-up"
-      sort-desc-icon="i-heroicons-arrow-down"
+  sort-asc-icon="i-lucide-arrow-up"
+  sort-desc-icon="i-lucide-arrow-down"
       sort-mode="manual"
       class="w-full"
       :ui="{ td: { base: 'max-w-[0] truncate' }, default: { checkbox: { color: 'gray' as any } } }"
@@ -177,7 +163,7 @@ const { data: todos, status } = await useLazyAsyncData<{
       <template #actions-data="{ row }">
         <UButton
           v-if="!row.completed"
-          icon="i-heroicons-check"
+          icon="i-lucide-check"
           size="2xs"
           color="emerald"
           variant="outline"
@@ -187,7 +173,7 @@ const { data: todos, status } = await useLazyAsyncData<{
 
         <UButton
           v-else
-          icon="i-heroicons-arrow-path"
+          icon="i-lucide-refresh-ccw"
           size="2xs"
           color="orange"
           variant="outline"

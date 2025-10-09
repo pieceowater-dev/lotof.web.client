@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router';
-import { useColorMode } from '#imports';
+// useColorMode is auto-imported by Nuxt; explicit '#imports' import caused TS resolution issue in editor
 
 const router = useRouter();
 const route = useRoute();
@@ -30,11 +30,11 @@ const showMenuButton = computed(() => route.path !== '/');
 
     <div class="flex items-center">
       <UButton v-if="showMenuButton" @click="goHome" variant="ghost" size="xl">
-        <UIcon name="i-lucide-house" />
+  <UIcon name="i-lucide-home" />
       </UButton>
       <UButton @click="toggleTheme" variant="ghost" size="xl">
-        <UIcon name="i-heroicons-moon" v-if="colorMode.preference === 'light'" />
-        <UIcon name="i-heroicons-sun" v-else />
+  <UIcon name="i-lucide-moon" v-if="colorMode.preference === 'light'" />
+  <UIcon name="i-lucide-sun" v-else />
       </UButton>
     </div>
   </header>

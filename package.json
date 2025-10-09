@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@nuxt/ui": "^2.21.0",
+    "@nuxtjs/color-mode": "^3.5.1",
     "@tanstack/vue-table": "^8.21.2",
     "graphql-request": "^7.1.2",
     "nuxt": "^3.15.4",
@@ -24,11 +25,10 @@
     "@graphql-codegen/typed-document-node": "^5.0.9",
     "@graphql-codegen/typescript": "^4.0.9",
     "@graphql-codegen/typescript-operations": "^4.2.3",
-    "@iconify-json/lucide": "^1.2.28",
-    "graphql": "^16.9.0",
+    "@iconify-json/lucide": "^1.2.69",
     "eslint": "^8.57.0",
-    "@nuxt/eslint-config-typescript": "^0.5.8",
     "eslint-plugin-vue": "^9.21.1",
+    "graphql": "^16.9.0",
     "prettier": "^3.6.2"
   }
 }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from '@/composables/useI18n';
+const { t } = useI18n();
 const { 
     greeting, 
     username, 
@@ -22,7 +24,7 @@ const items: { label: string; click: () => void }[][] = [allNamespaces
     <div class="flex flex-col items-center justify-center text-center min-h-[65vh]">
         <span class="text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ username }}</span>!</span>
         <span class="text-l mb-2">
-            Текущее пространство —
+                    {{ t('app.currentNamespace') }} —
             <UDropdown 
                 :items="items" 
                 mode="hover" 
@@ -41,9 +43,9 @@ const items: { label: string; click: () => void }[][] = [allNamespaces
         </span>
         <div class="flex gap-4 mt-2">
             <UButton @click="emit('edit-people')" icon="i-lucide-user-round-check" color="primary" variant="solid">
-                Мои люди
+                {{ t('app.myPeople') }}
             </UButton>
-            <UButton variant="soft" @click="emit('edit-profile')">Настроить профиль</UButton>
+            <UButton variant="soft" @click="emit('edit-profile')">{{ t('app.configureProfile') }}</UButton>
         </div>
     </div>
 </template>

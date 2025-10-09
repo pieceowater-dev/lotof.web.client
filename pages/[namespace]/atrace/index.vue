@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import Card from "@/components/Card.vue";
+import { useI18n } from '@/composables/useI18n';
+const { t } = useI18n();
 
 const posts = [
     { id: 1, title: "Office A", address: "Pushkina st, 10" },
@@ -28,7 +30,7 @@ const isFilterOpen = ref(false)
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                         People
                     </h3>
-                    <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
+                    <UButton color="gray" variant="ghost" icon="i-lucide-x" class="-my-1"
                         @click="isOpen = false" />
                 </div>
             </template>
@@ -48,7 +50,7 @@ const isFilterOpen = ref(false)
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                         Filter
                     </h3>
-                    <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark-20-solid" class="-my-1"
+                    <UButton color="gray" variant="ghost" icon="i-lucide-x" class="-my-1"
                         @click="isFilterOpen = false" />
                 </div>
             </template>
@@ -57,9 +59,9 @@ const isFilterOpen = ref(false)
 
             <template #footer>
                 <div class="flex justify-between gap-2">
-                    <UButton icon="i-heroicons-check" size="sm" color="primary" variant="solid"
+                    <UButton icon="i-lucide-check" size="sm" color="primary" variant="solid"
                         label="Apply" :trailing="false" />
-                    <UButton icon="i-heroicons-x-mark-20-solid" size="sm" color="primary" variant="outline"
+                    <UButton icon="i-lucide-x" size="sm" color="primary" variant="outline"
                         label="Cancel" :trailing="false" />
                 </div>
             </template>
@@ -69,8 +71,8 @@ const isFilterOpen = ref(false)
     <div class="h-screen flex flex-col">
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
-                <h1 class="text-3xl font-bold">A-Trace</h1>
-                <span>Track your staff attendance.</span>
+                <h1 class="text-3xl font-bold">{{ t('app.atraceTitle') }}</h1>
+                <span>{{ t('app.atraceSubtitle') }}</span>
             </div>
             <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">My People
             </UButton>
@@ -83,21 +85,21 @@ const isFilterOpen = ref(false)
                 </div>
                 <button
                     class="bg-blue-400 dark:bg-blue-900 text-white shadow-md p-4 rounded-xl w-60 flex items-center justify-center cursor-pointer hover:bg-blue-500 dark:hover:bg-blue-800 flex-shrink-0">
-                    + Add location
+                    {{ t('app.atraceAddLocation') }}
                 </button>
             </div>
         </div>
 
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
-                <h2 class="text-2xl font-bold">Attendance — Office A</h2>
-                <span>Pushkina st, 10. 01.02.25 - 28.02.25</span>
+                <h2 class="text-2xl font-bold">{{ t('app.atraceAttendanceTitle') }}</h2>
+                <span>{{ t('app.atraceAttendanceRange') }}</span>
             </div>
 
             <div class="flex space-x-4">
-                <UButton @click="isFilterOpen = true" icon="i-lucide-filter" color="primary" variant="outline">Filter
+                <UButton @click="isFilterOpen = true" icon="i-lucide-filter" color="primary" variant="outline">{{ t('app.atraceFilter') }}
                 </UButton>
-                <UInput icon="i-lucide-search" size="md" variant="outline" placeholder="Search..." />
+                <UInput icon="i-lucide-search" size="md" variant="outline" :placeholder="t('app.atraceSearch')" />
             </div>
         </div>
 

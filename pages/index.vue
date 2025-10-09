@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useI18n } from '@/composables/useI18n';
 import { useRouter } from 'vue-router';
 import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
@@ -51,22 +52,24 @@ const handleSaveProfile = async () => {
   isModalOpen.value = false;
 };
 
+const { t, locale, setLocale } = useI18n();
+watch(locale, (val) => setLocale(val));
 const greeting = computed(() => {
   const hours = new Date().getHours();
-  if (hours >= 0 && hours < 4) return 'Доброй ночи';
-  if (hours < 12) return 'Доброе утро';
-  if (hours < 18) return 'Добрый день';
-  return 'Добрый вечер';
+  if (hours >= 0 && hours < 4) return t('app.greetingNight');
+  if (hours < 12) return t('app.greetingMorning');
+  if (hours < 18) return t('app.greetingDay');
+  return t('app.greetingEvening');
 });
 
-const apps = [
-  { icon: 'i-lucide-qr-code', title: 'Посещаемость', description: 'Следите за посещаемостью своих сотрудников.', onClick: () => handleAppClick('atrace') },
-  { icon: 'i-lucide-clipboard-check', title: 'Менеджер задач', description: 'Управляйте своими проектами и задачами легко и эффективно.', onClick: undefined },
-  { icon: 'i-lucide-briefcase-business', title: 'Клиенты & Услуги', description: 'Ведите учет своих клиентов и оказанных услугах.', onClick: undefined },
-  { icon: 'i-lucide-route', title: 'Маршруты', description: 'Планируйте и следите за своими сотрудниками в реальном времени.', onClick: undefined },
-  { icon: 'i-lucide-file-text', title: 'Отчеты', description: 'Собирайте важные отчеты в одном месте.', onClick: undefined },
-  { icon: 'i-lucide-headset', title: 'Звонки', description: 'Отслеживайте входящие звонки и их уникальность.', onClick: undefined },
-];
+const apps = computed(() => ([
+  { icon: 'i-lucide-qr-code', title: t('app.attendance'), description: t('app.attendanceDesc'), onClick: () => handleAppClick('atrace') },
+  { icon: 'i-lucide-clipboard-check', title: t('app.tasks'), description: t('app.tasksDesc'), onClick: undefined },
+  { icon: 'i-lucide-briefcase', title: t('app.clients'), description: t('app.clientsDesc'), onClick: undefined },
+  { icon: 'i-lucide-route', title: t('app.routes'), description: t('app.routesDesc'), onClick: undefined },
+  { icon: 'i-lucide-file-text', title: t('app.reports'), description: t('app.reportsDesc'), onClick: undefined },
+  { icon: 'i-lucide-headset', title: t('app.calls'), description: t('app.callsDesc'), onClick: undefined },
+]));
 
 function handleSwitchNamespace(ns: string) {
   setNamespace(ns);
@@ -99,47 +102,43 @@ function handleLogout() {
 
   <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
     <h2 class="text-2xl font-bold flex items-center mb-4">
-      <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
-      Умная автоматизация бизнеса
+  <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
+      {{ t('app.businessAutomation') }}
     </h2>
-    <p class="mb-4">Наше приложение создано для того, чтобы избавить вас от рутины. Контролируйте посещаемость
-      сотрудников, управляйте задачами и клиентами в одном удобном интерфейсе. Система интегрируется с передовыми
-      сервисами, позволяя вести учет без лишних усилий.</p>
+    <p class="mb-4">{{ t('app.businessAutomationLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-      <UIcon name="i-lucide-circle-fading-plus" class="w-5 h-5 mr-2" />
-      Оптимизация рабочих процессов
+  <UIcon name="i-lucide-plus-circle" class="w-5 h-5 mr-2" />
+      {{ t('app.processOptimization') }}
     </h2>
-    <p class="mb-4">Благодаря автоматизированному подходу вы сможете минимизировать затраты времени на рутинные задачи.
-      Приложение помогает отслеживать эффективность сотрудников, анализировать данные и оперативно принимать решения.
-    </p>
+    <p class="mb-4">{{ t('app.processOptimizationLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-      <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
-      Гибкость и удобство
+  <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
+      {{ t('app.flexibility') }}
     </h2>
-    <p class="mb-4">Мы предлагаем интуитивно понятный интерфейс, который легко адаптируется под потребности вашего
-      бизнеса. Независимо от масштаба компании, система поможет вам организовать работу наиболее эффективным способом.
-    </p>
+    <p class="mb-4">{{ t('app.flexibilityLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-      <UIcon name="i-lucide-chart-no-axes-combined" class="w-5 h-5 mr-2" />
-      Аналитика и контроль
+  <UIcon name="i-lucide-line-chart" class="w-5 h-5 mr-2" />
+      {{ t('app.analytics') }}
     </h2>
-    <p class="mb-4">Отчеты и визуализация данных помогают вам всегда быть в курсе текущих процессов. Получайте ключевую
-      информацию в удобном формате и повышайте продуктивность команды.</p>
+    <p class="mb-4">{{ t('app.analyticsLongDesc') }}</p>
   </div>
 
-  <Modal v-model="isModalOpen" header="Редактирование профиля" :footerButtons="[
-  { label: 'Выйти из аккаунта', variant: 'link', onClick: () => { handleLogout(); } },
-    { label: 'Отмена', variant: 'ghost', onClick: () => (isModalOpen = false) },
-    { label: 'Сохранить', variant: 'solid', onClick: handleSaveProfile }
+  <Modal v-model="isModalOpen" :header="t('app.profileEditing')" :footerButtons="[
+  { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
+    { label: t('app.cancel'), variant: 'ghost', onClick: () => (isModalOpen = false) },
+    { label: t('app.save'), variant: 'solid', onClick: handleSaveProfile }
   ]">
     <UFormGroup class="mb-5" label="Имя пользователя">
       <UInput v-model="username" />
     </UFormGroup>
     <UFormGroup label="Email">
       <UInput disabled v-model="email" type="email" />
+    </UFormGroup>
+    <UFormGroup :label="t('app.language')">
+      <USelect :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]" v-model="locale" />
     </UFormGroup>
   </Modal>
 

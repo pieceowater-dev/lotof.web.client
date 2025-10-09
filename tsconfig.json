@@ -4,6 +4,10 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
+      // Re-add Nuxt internal aliases lost when overriding paths (TS does not merge 'paths' from extended configs)
+      "#app": ["./node_modules/nuxt/dist/app"],
+      "#app/*": ["./node_modules/nuxt/dist/app/*"],
+      "#imports": ["./.nuxt/imports"],
       "@/*": ["*"],
       "@gql-hub": ["api/__generated__/hub-types.ts"],
       "@gql-atrace": ["api/__generated__/atrace-types.ts"],

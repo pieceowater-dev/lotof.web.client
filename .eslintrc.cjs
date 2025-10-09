@@ -3,10 +3,15 @@ module.exports = {
   env: { browser: true, es2023: true, node: true },
   extends: [
     'eslint:recommended',
-    'plugin:vue/vue3-recommended',
-    '@nuxt/eslint-config-typescript'
+    'plugin:vue/vue3-recommended'
   ],
-  parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+  parser: 'vue-eslint-parser',
+  parserOptions: {
+    parser: '@typescript-eslint/parser',
+    ecmaVersion: 'latest',
+    sourceType: 'module'
+  },
+  plugins: ['@typescript-eslint'],
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],
     'vue/multi-word-component-names': 'off',
