@@ -52,8 +52,7 @@ const handleSaveProfile = async () => {
   isModalOpen.value = false;
 };
 
-const { t, locale, setLocale } = useI18n();
-watch(locale, (val) => setLocale(val));
+const { t, locale } = useI18n();
 const greeting = computed(() => {
   const hours = new Date().getHours();
   if (hours >= 0 && hours < 4) return t('app.greetingNight');

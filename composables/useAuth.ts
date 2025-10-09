@@ -42,6 +42,18 @@ export function useAuth() {
     token.value = null;
     user.value = null;
     setGlobalAuthToken(null);
+    // Clean up per-user persisted state that should reset on logout
+    if (process.client) {
+      try {
+        // Optional: clear anon selection to avoid bleeding across sessions
+        const mapRaw = localStorage.getItem('selectedNamespaceByUser');
+        if (mapRaw) {
+          const map = JSON.parse(mapRaw || '{}');
+          delete map['anon'];
+          localStorage.setItem('selectedNamespaceByUser', JSON.stringify(map));
+        }
+      } catch {}
+    }
   }
 
   const isLoggedIn = computed(() => !!user.value && !!token.value);
