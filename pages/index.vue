@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, reactive, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useRouter } from 'vue-router';
+import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
@@ -17,10 +18,13 @@ const isModalOpen = ref(false);
 const username = ref('');
 const email = ref('');
 const isLoading = ref(true);
+const appInstalled: Record<string, boolean> = reactive({}); // key by bundle
+let appsCheckSeq = 0; // sequence guard to avoid race conditions
 
 onMounted(async () => {
   await fetchUser();
   await loadNamespaces();
+  await checkInstalledForVisibleApps();
   if (user.value) {
     username.value = user.value.username;
     email.value = user.value.email;
@@ -45,6 +49,17 @@ const handleAppClick = (app: string) => {
   }
 };
 
+function handleGetApp(app: AppConfig) {
+  if (!isLoggedIn.value) {
+    return login();
+  }
+  // TODO: replace with real install flow/marketplace
+  console.info('[apps] Get App clicked', { app: app.bundle, ns: selectedNS.value });
+  if (typeof window !== 'undefined') {
+    window.alert('Install flow coming soon');
+  }
+}
+
 const handleSaveProfile = async () => {
   const token = useCookie<string | null>('token').value;
   if (!token) return;
@@ -62,18 +77,51 @@ const greeting = computed(() => {
   return t('app.greetingEvening');
 });
 
-const apps = computed(() => ([
-  { icon: 'i-lucide-qr-code', title: t('app.attendance'), description: t('app.attendanceDesc'), onClick: () => handleAppClick('atrace') },
-  { icon: 'i-lucide-clipboard-check', title: t('app.tasks'), description: t('app.tasksDesc'), onClick: undefined },
-  { icon: 'i-lucide-briefcase', title: t('app.clients'), description: t('app.clientsDesc'), onClick: undefined },
-  { icon: 'i-lucide-route', title: t('app.routes'), description: t('app.routesDesc'), onClick: undefined },
-  { icon: 'i-lucide-file-text', title: t('app.reports'), description: t('app.reportsDesc'), onClick: undefined },
-  { icon: 'i-lucide-headset', title: t('app.calls'), description: t('app.callsDesc'), onClick: undefined },
-]));
+const activeApps = computed(() => ALL_APPS.filter(a => appInstalled[a.bundle]));
+const possibleApps = computed(() => ALL_APPS.filter(a => !appInstalled[a.bundle] && a.canAdd));
+const comingSoonApps = computed(() => ALL_APPS.filter(a => !a.canAdd));
+
+function toCard(app: AppConfig) {
+  return {
+    key: app.bundle,
+    icon: app.icon,
+    title: t(app.titleKey),
+    name: app.name,
+    description: t(app.descriptionKey),
+    action: appInstalled[app.bundle]
+      ? () => handleAppClick(app.address)
+      : (app.canAdd ? () => handleGetApp(app) : undefined),
+    installed: appInstalled[app.bundle] ?? false,
+    canAdd: app.canAdd,
+  };
+}
+
+async function checkInstalledForVisibleApps() {
+  const seq = ++appsCheckSeq;
+  const token = useCookie<string | null>('token').value;
+  if (!token || !selectedNS.value) return;
+  const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
+  const bundles = ALL_APPS.map(a => a.bundle);
+  const installedMap = await hubAreAppsInNamespace(token, selectedNS.value, bundles);
+  console.debug('[apps] installedMap', installedMap);
+  // Only apply the latest result
+  if (seq === appsCheckSeq) {
+    for (const b of bundles) appInstalled[b] = !!installedMap[b];
+    console.debug('[apps] appInstalled reactive', JSON.parse(JSON.stringify(appInstalled)));
+  } else {
+    console.debug('[apps] skipped outdated result', { seq, appsCheckSeq });
+  }
+}
 
 function handleSwitchNamespace(ns: string) {
   setNamespace(ns);
+  checkInstalledForVisibleApps();
 }
+
+// Re-check when selected namespace changes outside of dropdown (e.g., deep link)
+watch(() => selectedNS.value, () => {
+  checkInstalledForVisibleApps();
+});
 
 function handleLogout() {
   logout();
@@ -94,9 +142,32 @@ function handleLogout() {
       @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
   </template>
 
-  <div class="flex flex-wrap justify-center gap-10 max-w-7xl mx-auto mb-20">
-    <div v-for="(app, index) in apps" :key="index">
-      <AppCard :icon="app.icon" :title="app.title" :description="app.description" :onClick="app.onClick" />
+  <div class="max-w-7xl mx-auto mb-20 px-4 space-y-10">
+    <div v-if="activeApps.length">
+      <h3 class="text-xl font-semibold mb-4">{{ t('app.installedHead') }}</h3>
+      <div class="flex flex-wrap gap-10 justify-start"> 
+        <div v-for="(app, index) in activeApps" :key="app.bundle">
+          <AppCard v-bind="toCard(app)" />
+        </div>
+      </div>
+    </div>
+
+    <div v-if="possibleApps.length">
+      <h3 class="text-xl font-semibold mb-4">{{ t('app.availableHead') }}</h3>
+      <div class="flex flex-wrap gap-10 justify-start">
+        <div v-for="(app, index) in possibleApps" :key="app.bundle">
+          <AppCard v-bind="toCard(app)" />
+        </div>
+      </div>
+    </div>
+
+    <div v-if="comingSoonApps.length">
+      <h3 class="text-xl font-semibold mb-4">{{ t('app.comingSoonHead') }}</h3>
+      <div class="flex flex-wrap gap-10 justify-start">
+        <div v-for="(app, index) in comingSoonApps" :key="app.bundle">
+          <AppCard v-bind="toCard(app)" />
+        </div>
+      </div>
     </div>
   </div>
 

@@ -12,7 +12,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!all.value.includes(nsParam)) {
     // Unknown namespace for this user → go home
-    return navigateTo('/');
+    return navigateTo('/', { replace: true });
   }
 
   // Valid → sync selection

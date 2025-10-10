@@ -87,6 +87,10 @@
     "calls":"Calls",
     "callsDesc":"Track inbound calls and their uniqueness.",
     "open":"Open",
-    "comingSoon":"Coming soon..."
+    "comingSoon":"Coming soon...",
+    "getApp":"Get App",
+    "installedHead":"Installed",
+    "availableHead":"Available",
+    "comingSoonHead":"Coming soon"
   }
 }

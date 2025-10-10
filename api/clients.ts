@@ -54,7 +54,8 @@ export class ApiClient {
       } else {
         logError('GraphQL Error:', rawErrors || msg);
       }
-      throw new Error(msg);
+      // Re-throw the original error so callers can inspect error.response.data for partial data
+      throw error;
     }
   }
 }

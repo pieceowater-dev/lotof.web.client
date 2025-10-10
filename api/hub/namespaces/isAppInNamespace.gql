@@ -1,0 +1,7 @@
+query IsAppInNamespace($namespaceSlug: String!, $appBundle: String!) {
+  isAppInNamespace(namespaceSlug: $namespaceSlug, appBundle: $appBundle) {
+    id
+    namespaceID
+    appBundle
+  }
+}
