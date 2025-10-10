@@ -69,15 +69,15 @@ interface FriendRow { id?: string; friend: { id: string; username: string; email
 const items = (row: FriendRow) => ([
   [{
     label: t('app.toRejected'),
-  icon: 'i-lucide-user-minus',
+  icon: 'lucide:user-minus',
     click: () => console.log('reject', row.id)
   }]
 ]);
 
 const tabs = computed(() => ([
-  { label: t('app.contacts'), icon: 'i-lucide-book-user' },
-  { label: t('app.requests'), icon: 'i-lucide-user-plus' },
-  { label: t('app.rejected'), icon: 'i-lucide-user-x' }
+  { label: t('app.contacts'), icon: 'lucide:book-user' },
+  { label: t('app.requests'), icon: 'lucide:user-plus' },
+  { label: t('app.rejected'), icon: 'lucide:user-x' }
 ]));
 
 const selected = ref([]);
@@ -89,7 +89,7 @@ const selected = ref([]);
   <h1 class="text-2xl font-bold">{{ t('app.myPeopleHeading') }}</h1>
   <p class="text-gray-600 dark:text-gray-400">{{ t('app.myPeopleSub') }}</p>
       <div class="mt-4 flex gap-2">
-  <UInput class="w-80" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="i-lucide-search" @update:modelValue="searchUser" />
+  <UInput class="w-80" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" @update:modelValue="searchUser" />
         <UButton v-if="buttonText" @click="sendAction">{{ buttonText }}</UButton>
       </div>
   <p v-if="!isValidEmail && search" class="mt-2 text-sm text-red-500">{{ t('app.invalidEmail') }}</p>
@@ -106,8 +106,8 @@ const selected = ref([]);
             :rows="friends"
             :columns="columns"
             :loading="loading"
-            :loading-state="{ icon: 'i-lucide-loader', label: '' }"
-            :empty-state="{ icon: 'i-lucide-bird', label: t('app.emptyTable') }"
+            :loading-state="{ icon: 'lucide:loader', label: '' }"
+            :empty-state="{ icon: 'lucide:bird', label: t('app.emptyTable') }"
             :progress="{ color: 'primary', animation: 'carousel' }"
             class="w-full"
             hover
@@ -122,7 +122,7 @@ const selected = ref([]);
 
             <template #actions-data="{ row }">
               <UDropdown :items="items(row)">
-                <UButton color="gray" variant="ghost" icon="i-lucide-ellipsis" />
+                <UButton color="gray" variant="ghost" icon="lucide:ellipsis" />
               </UDropdown>
             </template>
           </UTable>

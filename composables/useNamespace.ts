@@ -2,6 +2,9 @@
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
   const all = useState<string[]>('namespaces_all', () => []);
+  // Keep a cache of records to resolve id by slug when needed
+  type NsRecord = { id: string; slug: string; title?: string };
+  const records = useState<NsRecord[]>('namespaces_records', () => []);
 
   const { user, token } = useAuth();
   const loading = useState<boolean>('namespaces_loading', () => false);
@@ -67,14 +70,16 @@ export function useNamespace() {
   async function load(search?: string) {
     if (!token.value) {
       all.value = [];
+      records.value = [];
       return;
     }
     loading.value = true;
     error.value = null;
     try {
       const { hubNamespacesList } = await import('@/api/hub/namespaces/list');
-      const data = await hubNamespacesList(token.value, search, 1);
-      const slugs = data.rows.map(r => r.slug);
+  const data = await hubNamespacesList(token.value, search, 1);
+  records.value = data.rows.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
+  const slugs = records.value.map(r => r.slug);
       all.value = slugs;
       // Reconcile current selection
       if (!slugs.includes(selected.value)) {
@@ -108,5 +113,10 @@ export function useNamespace() {
     );
   }
 
-  return { all, selected, setNamespace, syncFromRoute, load, loading, error };
+  function idBySlug(slug?: string): string | undefined {
+    if (!slug) return undefined;
+    return records.value.find(r => r.slug === slug)?.id;
+  }
+
+  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug };
 }

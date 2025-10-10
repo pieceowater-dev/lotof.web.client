@@ -20,6 +20,7 @@ const email = ref('');
 const isLoading = ref(true);
 const appInstalled: Record<string, boolean> = reactive({}); // key by bundle
 let appsCheckSeq = 0; // sequence guard to avoid race conditions
+const installingBundles = new Set<string>(); // prevent double-installs per app
 
 onMounted(async () => {
   await fetchUser();
@@ -49,14 +50,28 @@ const handleAppClick = (app: string) => {
   }
 };
 
-function handleGetApp(app: AppConfig) {
-  if (!isLoggedIn.value) {
-    return login();
-  }
-  // TODO: replace with real install flow/marketplace
-  console.info('[apps] Get App clicked', { app: app.bundle, ns: selectedNS.value });
-  if (typeof window !== 'undefined') {
-    window.alert('Install flow coming soon');
+async function handleGetApp(app: AppConfig) {
+  if (!isLoggedIn.value) return login();
+  const token = useCookie<string | null>('token').value;
+  if (!token || !selectedNS.value) return;
+  if (installingBundles.has(app.bundle)) return; // guard
+  installingBundles.add(app.bundle);
+  try {
+    const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+    const res = await hubAddAppToNamespace(token, selectedNS.value, app.bundle);
+    console.info('[apps] Installed app into namespace', res);
+    // Mark installed and navigate
+    appInstalled[app.bundle] = true;
+    // Optionally re-check entire list for consistency
+    // await checkInstalledForVisibleApps();
+    await router.push(`/${selectedNS.value}/${app.address}`);
+  } catch (e: any) {
+    console.error('[apps] Install failed', e);
+    if (typeof window !== 'undefined') {
+      window.alert(e?.message || 'Failed to install app');
+    }
+  } finally {
+    installingBundles.delete(app.bundle);
   }
 }
 
@@ -173,25 +188,25 @@ function handleLogout() {
 
   <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
     <h2 class="text-2xl font-bold flex items-center mb-4">
-  <UIcon name="i-lucide-briefcase" class="w-5 h-5 mr-2" />
+  <UIcon name="lucide:briefcase" class="w-5 h-5 mr-2" />
       {{ t('app.businessAutomation') }}
     </h2>
     <p class="mb-4">{{ t('app.businessAutomationLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-  <UIcon name="i-lucide-plus-circle" class="w-5 h-5 mr-2" />
+  <UIcon name="lucide:plus-circle" class="w-5 h-5 mr-2" />
       {{ t('app.processOptimization') }}
     </h2>
     <p class="mb-4">{{ t('app.processOptimizationLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-  <UIcon name="i-lucide-folder-cog" class="w-5 h-5 mr-2" />
+  <UIcon name="lucide:folder-cog" class="w-5 h-5 mr-2" />
       {{ t('app.flexibility') }}
     </h2>
     <p class="mb-4">{{ t('app.flexibilityLongDesc') }}</p>
 
     <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
-  <UIcon name="i-lucide-line-chart" class="w-5 h-5 mr-2" />
+  <UIcon name="lucide:line-chart" class="w-5 h-5 mr-2" />
       {{ t('app.analytics') }}
     </h2>
     <p class="mb-4">{{ t('app.analyticsLongDesc') }}</p>

@@ -30,7 +30,7 @@ const isFilterOpen = ref(false)
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                         People
                     </h3>
-                    <UButton color="gray" variant="ghost" icon="i-lucide-x" class="-my-1"
+                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1"
                         @click="isOpen = false" />
                 </div>
             </template>
@@ -50,7 +50,7 @@ const isFilterOpen = ref(false)
                     <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                         Filter
                     </h3>
-                    <UButton color="gray" variant="ghost" icon="i-lucide-x" class="-my-1"
+                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1"
                         @click="isFilterOpen = false" />
                 </div>
             </template>
@@ -59,9 +59,9 @@ const isFilterOpen = ref(false)
 
             <template #footer>
                 <div class="flex justify-between gap-2">
-                    <UButton icon="i-lucide-check" size="sm" color="primary" variant="solid"
+                    <UButton icon="lucide:check" size="sm" color="primary" variant="solid"
                         label="Apply" :trailing="false" />
-                    <UButton icon="i-lucide-x" size="sm" color="primary" variant="outline"
+                    <UButton icon="lucide:x" size="sm" color="primary" variant="outline"
                         label="Cancel" :trailing="false" />
                 </div>
             </template>
@@ -74,7 +74,7 @@ const isFilterOpen = ref(false)
                 <h1 class="text-3xl font-bold">{{ t('app.atraceTitle') }}</h1>
                 <span>{{ t('app.atraceSubtitle') }}</span>
             </div>
-            <UButton @click="isOpen = true" icon="i-lucide-users" color="primary" variant="outline">My People
+            <UButton @click="isOpen = true" icon="lucide:users" color="primary" variant="outline">My People
             </UButton>
         </div>
 
@@ -97,9 +97,9 @@ const isFilterOpen = ref(false)
             </div>
 
             <div class="flex space-x-4">
-                <UButton @click="isFilterOpen = true" icon="i-lucide-filter" color="primary" variant="outline">{{ t('app.atraceFilter') }}
+                <UButton @click="isFilterOpen = true" icon="lucide:filter" color="primary" variant="outline">{{ t('app.atraceFilter') }}
                 </UButton>
-                <UInput icon="i-lucide-search" size="md" variant="outline" :placeholder="t('app.atraceSearch')" />
+                <UInput icon="lucide:search" size="md" variant="outline" :placeholder="t('app.atraceSearch')" />
             </div>
         </div>
 
