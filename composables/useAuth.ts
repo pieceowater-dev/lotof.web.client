@@ -45,6 +45,42 @@ export function useAuth() {
     // Clean up per-user persisted state that should reset on logout
     if (process.client) {
       try {
+        // Best-effort: clear ALL accessible cookies, including 'atrace-token'
+        const expire = 'Thu, 01 Jan 1970 00:00:00 GMT';
+        const cookies = (document.cookie || '').split(';');
+        // Domains to try: exact host and its parent domains
+        const host = window.location.hostname;
+        const domainParts = host.split('.');
+        const domains: (string | undefined)[] = [undefined]; // undefined => no domain attr
+        for (let i = 0; i < domainParts.length; i++) {
+          const d = domainParts.slice(i).join('.');
+          if (d) {
+            domains.push(d);
+            domains.push('.' + d);
+          }
+        }
+        // Paths to try: root and current path (defensive)
+        const paths = ['/', window.location.pathname.split('/').slice(0, 2).join('/') || '/'];
+        const tried = new Set<string>();
+        for (const raw of cookies) {
+          const name = decodeURIComponent(raw.split('=')[0].trim());
+          if (!name) continue;
+          for (const domain of domains) {
+            for (const path of paths) {
+              const key = `${name}|${domain || ''}|${path}`;
+              if (tried.has(key)) continue;
+              tried.add(key);
+              document.cookie = `${name}=; expires=${expire}; path=${path};${domain ? ` domain=${domain};` : ''}`;
+            }
+          }
+          // Final simple attempt (some browsers ignore domain variations)
+          document.cookie = `${name}=; expires=${expire}; path=/;`;
+        }
+
+        // Explicitly clear known app cookies via Nuxt helper as well
+        try { useCookie('atrace-token').value = null as any; } catch {}
+        try { useCookie('token').value = null as any; } catch {}
+
         // Optional: clear anon selection to avoid bleeding across sessions
         const mapRaw = localStorage.getItem('selectedNamespaceByUser');
         if (mapRaw) {

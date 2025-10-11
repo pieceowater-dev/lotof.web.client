@@ -60,6 +60,15 @@ export function useNamespace() {
     ensureInAll(ns);
     selected.value = ns;
     writePerUserSelection(ns);
+    // On namespace switch, clear app-scoped tokens (e.g., A-Trace token)
+    if (process.client) {
+      try {
+        // Prefer Nuxt helper
+        try { useCookie('atrace-token').value = null as any; } catch {}
+        // Fallback: manual expire in case path/domain differs
+        document.cookie = `atrace-token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      } catch {}
+    }
   }
 
   function syncFromRoute(ns: string | undefined) {
@@ -85,10 +94,9 @@ export function useNamespace() {
       if (!slugs.includes(selected.value)) {
         const stored = readPerUserSelection();
         if (stored && slugs.includes(stored)) {
-          selected.value = stored;
+          setNamespace(stored);
         } else if (slugs[0]) {
-          selected.value = slugs[0];
-          writePerUserSelection(slugs[0]);
+          setNamespace(slugs[0]);
         }
       }
     } catch (e: any) {
