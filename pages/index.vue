@@ -68,7 +68,7 @@ async function handleGetApp(app: AppConfig) {
   } catch (e: any) {
     console.error('[apps] Install failed', e);
     if (typeof window !== 'undefined') {
-      window.alert(e?.message || 'Failed to install app');
+      console.error(e?.message || 'Failed to install app');
     }
   } finally {
     installingBundles.delete(app.bundle);

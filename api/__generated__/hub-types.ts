@@ -209,6 +209,7 @@ export type PaginationInfo = {
 export type Query = {
   __typename?: "Query";
   _placeholder?: Maybe<Scalars["String"]["output"]>;
+  isAppInNamespace?: Maybe<NamespaceApp>;
   me?: Maybe<User>;
   member?: Maybe<Member>;
   members: Array<Member>;
@@ -217,6 +218,11 @@ export type Query = {
   namespaces: PaginatedNamespaceList;
   user?: Maybe<User>;
   users: PaginatedUserList;
+};
+
+export type QueryIsAppInNamespaceArgs = {
+  appBundle: Scalars["String"]["input"];
+  namespaceSlug: Scalars["String"]["input"];
 };
 
 export type QueryMemberArgs = {
@@ -271,6 +277,21 @@ export type MutateMeMutation = {
     email: string;
     username: string;
   };
+};
+
+export type IsAppInNamespaceQueryVariables = Exact<{
+  namespaceSlug: Scalars["String"]["input"];
+  appBundle: Scalars["String"]["input"];
+}>;
+
+export type IsAppInNamespaceQuery = {
+  __typename?: "Query";
+  isAppInNamespace?: {
+    __typename?: "NamespaceApp";
+    id: string;
+    namespaceID: string;
+    appBundle: string;
+  } | null;
 };
 
 export type NamespacesQueryVariables = Exact<{
@@ -402,6 +423,84 @@ export const MutateMeDocument = {
     },
   ],
 } as unknown as DocumentNode<MutateMeMutation, MutateMeMutationVariables>;
+export const IsAppInNamespaceDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "IsAppInNamespace" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "namespaceSlug" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "appBundle" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "isAppInNamespace" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "namespaceSlug" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "namespaceSlug" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "appBundle" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "appBundle" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "namespaceID" } },
+                { kind: "Field", name: { kind: "Name", value: "appBundle" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  IsAppInNamespaceQuery,
+  IsAppInNamespaceQueryVariables
+>;
 export const NamespacesDocument = {
   kind: "Document",
   definitions: [
