@@ -42,13 +42,35 @@ watch(user, (u) => {
 
 const handleEditPeople = () => router.push('/people');
 
-const handleAppClick = (app: string) => {
-  if (isLoggedIn.value) {
-    router.push(`/${selectedNS.value}/${app}`);
-  } else {
-    login();
+async function handleAppClick(appAddress: string) {
+  if (!isLoggedIn.value) return login();
+  const ns = selectedNS.value;
+  if (!ns) return;
+  // If opening A-Trace, first exchange for an app token with required headers
+  if (appAddress === 'atrace') {
+    try {
+      const hubToken = useCookie<string | null>('token').value;
+      if (!hubToken) return login();
+      const existing = useCookie<string | null>('atrace-token');
+      if (!existing.value) {
+        const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken');
+        const atraceToken = await atraceGetAppToken(hubToken, ns);
+        // Persist token on the client so the A-Trace page guard won’t redirect
+        useCookie('atrace-token', {
+          sameSite: 'lax',
+          expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
+        }).value = atraceToken;
+      } else {
+        // Token already present — skip extra auth request
+        // Optionally: decode and refresh if near expiry
+      }
+    } catch (e) {
+      console.error('[atrace] getAppToken failed', e);
+      // Optional: surface a toast here
+    }
   }
-};
+  router.push(`/${ns}/${appAddress}`);
+}
 
 async function handleGetApp(app: AppConfig) {
   if (!isLoggedIn.value) return login();

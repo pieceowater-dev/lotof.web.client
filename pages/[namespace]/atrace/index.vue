@@ -13,6 +13,30 @@ const posts = [
 
 const isOpen = ref(false)
 const isFilterOpen = ref(false)
+
+// Redirect to home if atrace token missing or expired
+const router = useRouter();
+onMounted(() => {
+    const cookie = useCookie<string | null>('atrace-token');
+    const tok = cookie.value;
+    if (!tok) {
+        router.push('/');
+        return;
+    }
+    try {
+        // Basic JWT exp check: header.payload.signature
+        const parts = tok.split('.');
+        if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]));
+            const expSec = payload.exp as number | undefined;
+            if (expSec && Date.now() / 1000 >= expSec) {
+                // expired
+                cookie.value = null;
+                router.push('/');
+            }
+        }
+    } catch {}
+})
 </script>
 
 <template>

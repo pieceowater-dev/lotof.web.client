@@ -27,7 +27,7 @@ export class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.client = new GraphQLClient(baseURL + '/query', {});
+    this.client = new GraphQLClient(baseURL + '/query', { credentials: 'include' });
   }
 
   setAuthToken(token: string) {
@@ -35,11 +35,18 @@ export class ApiClient {
     this.client.setHeaders({ Authorization: `Bearer ${token}` });
   }
 
-  async request<T>(query: any, variables?: Record<string, any>): Promise<T> {
-    // Merge headers each call to always use latest token
+  async request<T>(
+    query: any,
+    variables?: Record<string, any>,
+    options?: { headers?: Record<string, string> }
+  ): Promise<T> {
+    // Merge headers each call to always use latest token + any provided headers
     const t = getTokenRef().value;
-    if (t) {
-      this.client.setHeaders({ Authorization: `Bearer ${t}` });
+    const headers: Record<string, string> = {};
+    if (t) headers.Authorization = `Bearer ${t}`;
+    if (options?.headers) Object.assign(headers, options.headers);
+    if (Object.keys(headers).length) {
+      this.client.setHeaders(headers);
     }
     try {
       return await this.client.request<T>(query, variables);
