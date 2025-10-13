@@ -93,6 +93,11 @@
     "open":"Open",
     "comingSoon":"Coming soon...",
     "getApp":"Get App",
+  "namespaceMembers":"Namespace members",
+  "userId":"User ID",
+  "added":"Added",
+  "search":"Search...",
+  "selectFriend":"Select friend to add",
     "installedHead":"Installed",
     "availableHead":"Available",
     "comingSoonHead":"Coming soon"

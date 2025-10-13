@@ -82,5 +82,9 @@
   "installedHead":"Ваши приложения",
   "availableHead":"Доступно к установке",
   "comingSoonHead":"Скоро доделаем!"
+  ,
+    "namespaceMembers":"Участники пространства",
+    "userId":"ID пользователя",
+    "added":"Добавлено"
   }
 }

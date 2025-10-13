@@ -1,0 +1,6 @@
+query Members($namespaceId: ID) {
+  members(filter: { namespaceId: $namespaceId }) {
+    id
+    userId
+  }
+}

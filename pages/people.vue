@@ -124,6 +124,83 @@ const tabs = computed(() => ([
 ]));
 
 const selected = ref([]);
+
+// Namespace switcher + Members table
+const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespaces } = useNamespace();
+const nsMembers = ref<Array<{ id: string; userId: string }>>([]);
+const membersLoading = ref(false);
+const loadMembers = async () => {
+  const tok = useCookie<string | null>('token').value;
+  if (!tok || !selectedNS.value) { nsMembers.value = []; return; }
+  membersLoading.value = true;
+  try {
+    const { hubMembersList } = await import('@/api/hub/members/list');
+    // We need namespaceId (UUID); resolve from slug via composable idBySlug
+    const { idBySlug } = useNamespace();
+    const nsId = idBySlug(selectedNS.value);
+    nsMembers.value = await hubMembersList(tok, nsId);
+  } catch (e) {
+    nsMembers.value = [];
+  } finally {
+    membersLoading.value = false;
+  }
+};
+
+watch(() => selectedNS.value, () => { loadMembers(); });
+onMounted(() => { loadNamespaces(); loadMembers(); });
+
+// Searchable + infinite-scroll accepted friends dropdown
+const friendSearch = ref('');
+const friendOptions = ref<Array<{ label: string; value: string }>>([]);
+const friendPage = ref(1);
+const friendHasMore = ref(true);
+const friendLoading = ref(false);
+const friendToAdd = ref<string>('');
+
+async function loadMoreFriends(reset = false) {
+  const tok = useCookie<string | null>('token').value;
+  if (!tok) return;
+  if (reset) {
+    friendPage.value = 1;
+    friendOptions.value = [];
+    friendHasMore.value = true;
+  }
+  if (!friendHasMore.value || friendLoading.value) return;
+  friendLoading.value = true;
+  try {
+    const { hubSearchAcceptedFriends } = await import('@/api/hub/friendships/searchAccepted');
+    const page = friendPage.value;
+    const { rows, count } = await hubSearchAcceptedFriends(tok, friendSearch.value, page, 25);
+    const mapped = rows.map(r => ({ label: `${r.friend.username} (${r.friend.email})`, value: r.friend.id }));
+    friendOptions.value = reset ? mapped : friendOptions.value.concat(mapped);
+    const loaded = friendOptions.value.length;
+    friendHasMore.value = loaded < count;
+    if (friendHasMore.value) friendPage.value += 1;
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('[friends dropdown] load error', e);
+    friendHasMore.value = false;
+  } finally {
+    friendLoading.value = false;
+  }
+}
+
+watch(friendSearch, () => loadMoreFriends(true));
+onMounted(() => loadMoreFriends(true));
+async function addMemberFromFriend(friendUserId: string) {
+  const tok = useCookie<string | null>('token').value;
+  const { idBySlug } = useNamespace();
+  const nsId = idBySlug(selectedNS.value);
+  if (!tok || !nsId) return;
+  try {
+    const { hubAddMember } = await import('@/api/hub/members/mutations');
+    await hubAddMember(tok, nsId, friendUserId);
+    toast.add({ title: t('app.notification'), description: t('app.added'), color: 'primary' });
+    await loadMembers();
+  } catch (e: any) {
+    toast.add({ title: t('app.notification'), description: e?.message || 'Error', color: 'red' });
+  }
+}
 </script>
 
 <template>
@@ -172,5 +249,50 @@ const selected = ref([]);
         </div>
       </UCard>
     </div>
+  </div>
+
+  <!-- Namespace members section -->
+  <div class="mt-10">
+    <UCard class="dark:bg-gray-800 shadow-md hover:shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <UIcon name="lucide:users" class="w-5 h-5" />
+          <h2 class="text-xl font-semibold">{{ t('app.namespaceMembers') }}</h2>
+        </div>
+        <USelect
+          :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
+          v-model="selectedNS"
+        />
+      </div>
+
+      <div class="flex items-center gap-3 mb-3">
+        <USelectMenu
+          searchable
+          v-model="friendToAdd"
+          :options="friendOptions"
+          :searchable-placeholder="t('app.search')"
+          :search-value="friendSearch"
+          @update:search-value="(val: string) => friendSearch = val as any"
+          @scroll-bottom="() => loadMoreFriends(false)"
+          :loading="friendLoading"
+          :placeholder="t('app.selectFriend')"
+          @update:modelValue="val => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
+        />
+      </div>
+
+      <UTable
+        :rows="nsMembers"
+        :columns="[{ key: 'userId', label: t('app.userId') }]"
+        :loading="membersLoading"
+        :loading-state="{ icon: 'lucide:loader', label: '' }"
+        :empty-state="{ icon: 'lucide:users', label: t('app.emptyTable') }"
+        class="w-full"
+        hover
+      >
+        <template #userId-data="{ row }">
+          <span class="font-mono text-sm">{{ row.userId }}</span>
+        </template>
+      </UTable>
+    </UCard>
   </div>
 </template>
