@@ -27,7 +27,9 @@ export class ApiClient {
 
   constructor(baseURL: string) {
     this.baseURL = baseURL;
-    this.client = new GraphQLClient(baseURL + '/query', { credentials: 'include' });
+    // Do not send cookies with GraphQL requests to avoid session/header identity mismatches
+    // Auth is carried via Authorization: Bearer <token>
+    this.client = new GraphQLClient(baseURL + '/query', { credentials: 'omit' as any });
   }
 
   setAuthToken(token: string) {
@@ -53,13 +55,12 @@ export class ApiClient {
     } catch (error: any) {
       const rawErrors = error.response?.errors;
       const status = error.response?.status;
-      const firstMsg = rawErrors?.[0]?.message;
-      const msg = firstMsg || error.message || 'GraphQL request failed';
-      if (status === 401 || /unauth/i.test(msg)) {
+      if (status === 401) {
         logWarn('Unauthorized detected, invoking handler');
         unauthorizedHandler?.();
       } else {
-        logError('GraphQL Error:', rawErrors || msg);
+        const firstMsg = rawErrors?.[0]?.message || error.message || 'GraphQL request failed';
+        logError('GraphQL Error:', rawErrors || firstMsg);
       }
       // Re-throw the original error so callers can inspect error.response.data for partial data
       throw error;

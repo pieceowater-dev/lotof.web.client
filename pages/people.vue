@@ -3,13 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { FriendshipStatus } from '@gql-hub';
 
-const { token } = useAuth();
+const { token, user } = useAuth();
 const { rows: friends, load, loading } = useFriendships();
 
 const search = ref('');
 const userFound = ref<boolean | null>(null);
+const foundUser = ref<{ id: string; email: string; username: string } | null>(null);
 const toast = useToast();
-const selectedTab = ref(0);
+const selectedTab = ref(1); // default to Requests (Pending)
 
 const isValidEmail = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,25 +25,53 @@ const buttonText = computed(() => {
   return '';
 });
 
-const searchUser = () => {
-  if (!isValidEmail.value) {
+const searchUser = async () => {
+  foundUser.value = null;
+  if (!isValidEmail.value || !token.value) {
     userFound.value = null;
     return;
   }
-  setTimeout(() => {
-    userFound.value = Math.random() > 0.5;
-  }, 500);
+  try {
+    const { hubFindUserByEmail } = await import('@/api/hub/users/search');
+    const u = await hubFindUserByEmail(token.value, search.value.trim());
+    // Prevent sending request to self
+    if (u && (u.id === (user.value?.id) || u.email.toLowerCase() === (user.value?.email || '').toLowerCase())) {
+      foundUser.value = null;
+      userFound.value = null;
+  toast.add({ title: t('app.notification'), description: t('app.cannotAddSelf'), color: 'orange' });
+    } else {
+      foundUser.value = u;
+      userFound.value = !!u;
+    }
+  } catch (e) {
+    userFound.value = null;
+  }
 };
 
-const sendAction = () => {
-  if (!isValidEmail.value) return;
-  
-  const message = userFound.value 
-    ? t('app.sendRequest') + ' ' + search.value
-    : t('app.sendInvite') + ' ' + search.value;
-  toast.add({ title: t('app.notification'), description: message, color: 'primary' });
-  search.value = '';
-  userFound.value = null;
+const sendAction = async () => {
+  if (!isValidEmail.value || !token.value) return;
+  if (!foundUser.value) {
+    toast.add({ title: t('app.notification'), description: t('app.userNotFound'), color: 'orange' });
+    return;
+  }
+  try {
+    const { hubCreateFriendship } = await import('@/api/hub/friendships/mutations');
+    const created = await hubCreateFriendship(token.value, foundUser.value.id);
+    toast.add({ title: t('app.notification'), description: t('app.sendRequest') + ' ' + foundUser.value.email, color: 'primary' });
+    search.value = '';
+    userFound.value = null;
+    foundUser.value = null;
+    // reload pending tab
+    selectedTab.value = 1; // Pending
+  } catch (e: any) {
+    const msg: string = e?.response?.errors?.[0]?.message || e?.message || 'Error';
+    // Show clearer message, do not logout on backend business error
+    if (/user id mismatch/i.test(msg)) {
+      toast.add({ title: t('app.notification'), description: t('app.identityMismatch'), color: 'red' });
+    } else {
+      toast.add({ title: t('app.notification'), description: msg, color: 'red' });
+    }
+  }
 };
 
 watch(selectedTab, (newTab) => {
@@ -56,7 +85,7 @@ watch(selectedTab, (newTab) => {
 });
 
 onMounted(() => {
-  if (token.value) load(FriendshipStatus.Accepted);
+  if (token.value) load(FriendshipStatus.Pending);
 });
 
 const columns = computed(() => ([
@@ -65,13 +94,27 @@ const columns = computed(() => ([
   { key: 'actions', label: t('app.actions') }
 ]));
 
-interface FriendRow { id?: string; friend: { id: string; username: string; email: string } }
+interface FriendRow { id: string; status: FriendshipStatus; friend: { id: string; username: string; email: string } }
 const items = (row: FriendRow) => ([
-  [{
-    label: t('app.toRejected'),
-  icon: 'lucide:user-minus',
-    click: () => console.log('reject', row.id)
-  }]
+  [
+    ...(row.status === FriendshipStatus.Pending ? [{
+      label: t('app.accept'), icon: 'lucide:check',
+      click: async () => {
+        if (!token.value) return;
+        const { hubAcceptFriendship } = await import('@/api/hub/friendships/mutations');
+        await hubAcceptFriendship(token.value, row.id);
+        toast.add({ title: t('app.notification'), description: t('app.accepted'), color: 'primary' });
+        load(FriendshipStatus.Accepted);
+      }
+    }] : []),
+    { label: t('app.toRejected'), icon: 'lucide:user-minus', click: async () => {
+      if (!token.value) return;
+      const { hubRemoveFriendship } = await import('@/api/hub/friendships/mutations');
+      await hubRemoveFriendship(token.value, row.id);
+      toast.add({ title: t('app.notification'), description: t('app.toRejected'), color: 'orange' });
+      load(FriendshipStatus.Rejected);
+    }}
+  ]
 ]);
 
 const tabs = computed(() => ([

@@ -1,6 +1,8 @@
-query MyFriends {
-  myFriends {
+query MyFriends($status: FriendshipStatus) {
+  myFriends(filter: { status: $status }) {
     rows {
+      id
+      status
       friend {
         id
         username
