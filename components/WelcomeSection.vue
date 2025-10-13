@@ -13,10 +13,14 @@ const {
     currentNamespace: string 
 }>();
 
+// Map slug -> title using composable cache
+const { titleBySlug } = useNamespace();
+const currentNsLabel = computed(() => titleBySlug(currentNamespace) || currentNamespace);
+
 const emit = defineEmits(['edit-profile', 'edit-people', 'switch-namespace']);
 
 const items: { label: string; click: () => void }[][] = [
-    allNamespaces.map((ns: string) => ({ label: ns, click: () => emit('switch-namespace', ns) }))
+    allNamespaces.map((ns: string) => ({ label: titleBySlug(ns) || ns, click: () => emit('switch-namespace', ns) }))
 ];
 
 </script>
@@ -37,7 +41,7 @@ const items: { label: string; click: () => void }[][] = [
                     size="xl"
                     color="primary"
                     variant="link"
-                    :label="currentNamespace"
+                    :label="currentNsLabel"
                     :trailing="true"
                 />
             </UDropdown>

@@ -125,6 +125,10 @@ export function useNamespace() {
     if (!slug) return undefined;
     return records.value.find(r => r.slug === slug)?.id;
   }
+  function titleBySlug(slug?: string): string | undefined {
+    if (!slug) return undefined;
+    return records.value.find(r => r.slug === slug)?.title;
+  }
 
-  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug };
+  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug, titleBySlug };
 }
