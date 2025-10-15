@@ -201,6 +201,21 @@ async function addMemberFromFriend(friendUserId: string) {
     toast.add({ title: t('app.notification'), description: e?.message || 'Error', color: 'red' });
   }
 }
+
+async function removeMember(userId: string) {
+  const tok = useCookie<string | null>('token').value;
+  const { idBySlug } = useNamespace();
+  const nsId = idBySlug(selectedNS.value);
+  if (!tok || !nsId) return;
+  try {
+    const { hubRemoveMember } = await import('@/api/hub/members/mutations');
+    await hubRemoveMember(tok, nsId, userId);
+    toast.add({ title: t('app.notification'), description: 'Removed', color: 'orange' });
+    await loadMembers();
+  } catch (e: any) {
+    toast.add({ title: t('app.notification'), description: e?.message || 'Error', color: 'red' });
+  }
+}
 </script>
 
 <template>
@@ -282,7 +297,7 @@ async function addMemberFromFriend(friendUserId: string) {
 
       <UTable
         :rows="nsMembers"
-        :columns="[{ key: 'userId', label: t('app.userId') }]"
+        :columns="[{ key: 'userId', label: t('app.userId') }, { key: 'actions', label: '' }]"
         :loading="membersLoading"
         :loading-state="{ icon: 'lucide:loader', label: '' }"
         :empty-state="{ icon: 'lucide:users', label: t('app.emptyTable') }"
@@ -291,6 +306,9 @@ async function addMemberFromFriend(friendUserId: string) {
       >
         <template #userId-data="{ row }">
           <span class="font-mono text-sm">{{ row.userId }}</span>
+        </template>
+        <template #actions-data="{ row }">
+          <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
         </template>
       </UTable>
     </UCard>
