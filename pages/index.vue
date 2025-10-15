@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useRouter } from 'vue-router';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
@@ -13,6 +13,7 @@ const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, load: loadNamespaces } = useNamespace();
 
 const router = useRouter();
+const toast = useToast();
 
 const isModalOpen = ref(false);
 const username = ref('');
@@ -58,17 +59,28 @@ async function handleAppClick(appAddress: string) {
         // Persist token on the client so the A-Trace page guard won’t redirect
         useCookie('atrace-token', {
           sameSite: 'lax',
+          path: '/',
           expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
         }).value = atraceToken;
+        // Give the cookie a tick to flush before navigating
+        await nextTick();
       } else {
         // Token already present — skip extra auth request
         // Optionally: decode and refresh if near expiry
       }
+      // Ensure cookie is present before navigating; otherwise, stop and notify
+      if (!useCookie<string | null>('atrace-token', { path: '/' }).value) {
+        toast.add({ title: 'A-Trace', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
+        return;
+      }
     } catch (e) {
       console.error('[atrace] getAppToken failed', e);
-      // Optional: surface a toast here
+      toast.add({ title: 'A-Trace', description: 'Ошибка при получении токена приложения.', color: 'red' });
+      return;
     }
   }
+  // Navigate only after cookie is available (guards may read it immediately)
+  await nextTick();
   router.push(`/${ns}/${appAddress}`);
 }
 

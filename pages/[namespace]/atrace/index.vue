@@ -17,10 +17,11 @@ const isFilterOpen = ref(false)
 // Redirect to home if atrace token missing or expired
 const router = useRouter();
 onMounted(() => {
-    const cookie = useCookie<string | null>('atrace-token');
+    const cookie = useCookie<string | null>('atrace-token', { path: '/' });
     const tok = cookie.value;
     if (!tok) {
-        router.push('/');
+        // Give one microtask in case the cookie was just set
+        setTimeout(() => { if (!cookie.value) router.push('/'); }, 0);
         return;
     }
     try {
@@ -32,7 +33,7 @@ onMounted(() => {
             if (expSec && Date.now() / 1000 >= expSec) {
                 // expired
                 cookie.value = null;
-                router.push('/');
+                setTimeout(() => router.push('/'), 0);
             }
         }
     } catch {}

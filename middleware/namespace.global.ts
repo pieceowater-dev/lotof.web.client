@@ -3,6 +3,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const nsParam = (to.params as any)?.namespace as string | undefined;
   if (!nsParam) return;
 
+  // Avoid SSR redirect loops: validate only on client where cookies/state exist
+  if (process.server) return;
+
   const { all, load, syncFromRoute } = useNamespace();
 
   // Ensure namespaces are loaded before validation
