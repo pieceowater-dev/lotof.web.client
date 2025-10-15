@@ -264,6 +264,15 @@ export type UserInput = {
   username: Scalars["String"]["input"];
 };
 
+export type MembersQueryVariables = Exact<{
+  namespaceId?: InputMaybe<Scalars["ID"]["input"]>;
+}>;
+
+export type MembersQuery = {
+  __typename?: "Query";
+  members: Array<{ __typename?: "Member"; id: string; userId: string }>;
+};
+
 export type MutateMeMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
   username: Scalars["String"]["input"];
@@ -326,7 +335,9 @@ export type MeQuery = {
   } | null;
 };
 
-export type MyFriendsQueryVariables = Exact<{ [key: string]: never }>;
+export type MyFriendsQueryVariables = Exact<{
+  status?: InputMaybe<FriendshipStatus>;
+}>;
 
 export type MyFriendsQuery = {
   __typename?: "Query";
@@ -334,6 +345,8 @@ export type MyFriendsQuery = {
     __typename?: "PaginatedFriendshipList";
     rows: Array<{
       __typename?: "Friendship";
+      id: string;
+      status: FriendshipStatus;
       friend: {
         __typename?: "User";
         id: string;
@@ -345,6 +358,61 @@ export type MyFriendsQuery = {
   };
 };
 
+export const MembersDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "Members" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "namespaceId" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "members" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "namespaceId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "namespaceId" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "userId" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<MembersQuery, MembersQueryVariables>;
 export const MutateMeDocument = {
   kind: "Document",
   definitions: [
@@ -609,12 +677,44 @@ export const MyFriendsDocument = {
       kind: "OperationDefinition",
       operation: "query",
       name: { kind: "Name", value: "MyFriends" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "status" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "FriendshipStatus" },
+          },
+        },
+      ],
       selectionSet: {
         kind: "SelectionSet",
         selections: [
           {
             kind: "Field",
             name: { kind: "Name", value: "myFriends" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "status" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "status" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
             selectionSet: {
               kind: "SelectionSet",
               selections: [
@@ -624,6 +724,11 @@ export const MyFriendsDocument = {
                   selectionSet: {
                     kind: "SelectionSet",
                     selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "status" },
+                      },
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "friend" },

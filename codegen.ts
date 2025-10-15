@@ -29,8 +29,9 @@ if (atraceBase) {
   };
 }
 
+// Note: Do NOT set a global `documents` here. Each service has its own `documents`
+// pattern above so that validation is performed against the correct schema only.
 const config: CodegenConfig = {
-  documents: ['api/**/*.gql'],
   generates,
   hooks: { afterAllFileWrite: ['prettier --write'] }
 };

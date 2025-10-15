@@ -11,10 +11,11 @@
                 <p class="text-gray-600 dark:text-gray-400 text-sm">{{ props.description }}</p>
             </div>
             <UButton
-                @click="props.action || (() => {})"
+                @click="props.action?.()"
+                :disabled="!props.action"
                 :color="props.action ? 'primary' : 'gray'"
                 variant="outline"
-                :class="['mt-4 w-fit', !props.action ? 'cursor-wait' : '']"
+                :class="['mt-4 w-fit']"
                 :label="props.installed ? t('app.open') : (props.canAdd ? t('app.getApp') : t('app.comingSoon'))"
             />
         </div>
