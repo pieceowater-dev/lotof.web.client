@@ -1,0 +1,6 @@
+query AtracePosts($filter: DefaultFilterInput!) {
+  getPosts(filter: $filter) {
+    posts { id title description location { comment country city address latitude longitude } }
+    paginationInfo { count }
+  }
+}

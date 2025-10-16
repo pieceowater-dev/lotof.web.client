@@ -93,6 +93,12 @@
     "open":"Open",
     "comingSoon":"Coming soon...",
     "getApp":"Get App",
+  "address": "Address",
+  "city": "City",
+  "country": "Country",
+  "comment": "Comment",
+  "latitude": "Latitude",
+  "longitude": "Longitude",
   "namespaceMembers":"Namespace members",
   "userId":"User ID",
   "added":"Added",
@@ -101,5 +107,22 @@
     "installedHead":"Installed",
     "availableHead":"Available",
     "comingSoonHead":"Coming soon"
+  }
+  ,
+  "common": {
+    "title": "Title",
+    "description": "Description",
+    "edit": "Edit",
+    "save": "Save",
+    "address": "Address",
+    "city": "City",
+    "country": "Country",
+    "comment": "Comment",
+    "latitude": "Latitude",
+    "longitude": "Longitude",
+    "cancel": "Cancel",
+    "create": "Create",
+    "apply": "Apply",
+    "confirmDelete": "Delete?"
   }
 }

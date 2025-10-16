@@ -1,0 +1,1 @@
+mutation AtraceDeletePost($id: ID!) { deletePost(id: $id) { id } }

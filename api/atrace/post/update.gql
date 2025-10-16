@@ -1,0 +1,3 @@
+mutation AtraceUpdatePost($input: UpdatePostInput!) {
+  updatePost(input: $input) { id title description location { comment country city address latitude longitude } }
+}

@@ -87,4 +87,21 @@
     "userId":"ID пользователя",
     "added":"Добавлено"
   }
+  ,
+  "common": {
+    "title": "Заголовок",
+    "description": "Описание",
+    "edit": "Редактировать",
+    "save": "Сохранить",
+    "address": "Адрес",
+    "city": "Город",
+    "country": "Страна",
+    "comment": "Комментарий",
+    "latitude": "Широта",
+    "longitude": "Долгота",
+    "cancel": "Отмена",
+    "create": "Создать",
+    "apply": "Применить",
+    "confirmDelete": "Удалить?"
+  }
 }
