@@ -32,7 +32,7 @@ const hasDescription = computed(() => !!(props.post.description && props.post.de
 <template>
     <div @click="selected = !selected"
         :class="selected ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px]">
+        class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col">
         <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold truncate min-w-0 flex-1" :title="post.title">{{ post.title }}</h3>
             <div class="flex-none flex gap-1">
@@ -44,6 +44,8 @@ const hasDescription = computed(() => !!(props.post.description && props.post.de
            :title="locationText">
             {{ locationText }}
         </p>
+        <!-- Flexible spacer to push bottom section down when there is little content -->
+        <div class="flex-1"></div>
         <!-- Reserve space for one description line to keep cards equal height -->
         <div class="mt-1 h-5">
             <p v-if="hasDescription" class="text-xs truncate"
