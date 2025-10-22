@@ -114,6 +114,7 @@
     "description": "Description",
     "edit": "Edit",
     "save": "Save",
+    "delete": "Delete",
     "address": "Address",
     "city": "City",
     "country": "Country",

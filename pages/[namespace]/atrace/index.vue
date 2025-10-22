@@ -14,12 +14,42 @@ type Post = {
 const posts = ref<Post[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+// Pagination state for infinite scroll
+const page = ref(1);
+const pageLength = ref<'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'>('TEN');
+const totalCount = ref(0);
+const loadingMore = ref(false);
+const hasMore = computed(() => posts.value.length < totalCount.value);
+// Horizontal scroll container and sentinel for IntersectionObserver
+const cardsScrollRef = ref<HTMLElement | null>(null);
+const cardsSentinelRef = ref<HTMLElement | null>(null);
+let cardsObserver: IntersectionObserver | null = null;
+const selectedPostId = ref<string | null>(null);
+
+// Persistence helpers (prefix everything related to atrace with 'atrace-')
+const selectedStorageKey = computed(() => `atrace-selected-post-id:${nsSlug.value}`);
+function loadStoredSelection() {
+    if (process.client) {
+        try {
+            const v = localStorage.getItem(selectedStorageKey.value);
+            selectedPostId.value = v || null;
+        } catch {}
+    }
+}
+watch(selectedPostId, (val) => {
+    if (!process.client) return;
+    try {
+        if (val) localStorage.setItem(selectedStorageKey.value, val);
+        else localStorage.removeItem(selectedStorageKey.value);
+    } catch {}
+});
 
 const isOpen = ref(false)
 const isFilterOpen = ref(false)
 const isCreateOpen = ref(false)
 const isEditOpen = ref(false)
 const editingPost = ref<Post | null>(null)
+const isDeleteConfirmOpen = ref(false)
 
 // Create form state
 const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' } }>(
@@ -54,6 +84,7 @@ async function ensureAtraceToken(): Promise<string | null> {
 }
 
 async function loadPosts() {
+    // Initial load (page 1)
     loading.value = true;
     error.value = null;
     try {
@@ -63,13 +94,67 @@ async function loadPosts() {
             return;
         }
         const { atracePostsList } = await import('@/api/atrace/post/list');
-        const res = await atracePostsList(atraceToken, nsSlug.value, { page: 1 });
-        posts.value = res.posts;
+        page.value = 1;
+        const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: pageLength.value });
+        // Always keep client-side ASC title order as a safety net (should already be sorted from server)
+        posts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        totalCount.value = res.count || 0;
+        // Ensure a single selection (radio-like)
+        if (!selectedPostId.value || !posts.value.some(p => p.id === selectedPostId.value)) {
+            selectedPostId.value = posts.value[0]?.id ?? null;
+        }
     } catch (e: any) {
         error.value = e?.message || 'Failed to load posts';
     } finally {
         loading.value = false;
     }
+}
+
+async function loadMorePosts() {
+    if (loading.value || loadingMore.value) return;
+    if (!hasMore.value) return;
+    loadingMore.value = true;
+    try {
+        const atraceToken = await ensureAtraceToken();
+        if (!atraceToken) return;
+        const { atracePostsList } = await import('@/api/atrace/post/list');
+        const nextPage = page.value + 1;
+        const res = await atracePostsList(atraceToken, nsSlug.value, { page: nextPage, length: pageLength.value });
+        // Append next page (server already sorted by title ASC)
+        posts.value = [...posts.value, ...res.posts];
+        page.value = nextPage;
+        totalCount.value = res.count || totalCount.value;
+    } catch (e) {
+        // swallow, visible state stays as-is
+    } finally {
+        loadingMore.value = false;
+    }
+}
+
+function setupCardsObserver() {
+    if (!process.client) return;
+    // Cleanup previous observer
+    if (cardsObserver) {
+        try { cardsObserver.disconnect(); } catch {}
+        cardsObserver = null;
+    }
+    const root = cardsScrollRef.value || undefined;
+    const target = cardsSentinelRef.value || undefined;
+    if (!root || !target) return;
+    cardsObserver = new IntersectionObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.isIntersecting) {
+                // Trigger next page load when sentinel is visible
+                loadMorePosts();
+            }
+        }
+    }, {
+        root,
+        threshold: 0.1,
+        // Preload a bit earlier on the right edge
+        rootMargin: '0px 256px 0px 0px'
+    });
+    cardsObserver.observe(target);
 }
 
 async function handleCreate() {
@@ -86,8 +171,9 @@ async function handleCreate() {
             if (v !== undefined && v !== null && v !== '') loc[k] = v;
         }
         if (Object.keys(loc).length) payload.location = loc;
-        const created = await atraceCreatePost(atraceToken, nsSlug.value, payload);
-        posts.value = [created, ...posts.value];
+    const created = await atraceCreatePost(atraceToken, nsSlug.value, payload);
+    posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+    totalCount.value = totalCount.value + 1;
         isCreateOpen.value = false;
         // reset form
         form.title = '';
@@ -98,15 +184,26 @@ async function handleCreate() {
     }
 }
 
-async function handleDelete(p: Post) {
-    const ok = confirm(t('common.confirmDelete') || 'Delete?');
-    if (!ok) return;
+async function handleDelete(p: Post, opts?: { skipConfirm?: boolean }) {
+    if (!opts?.skipConfirm) {
+        const ok = confirm(t('common.confirmDelete') || 'Delete?');
+        if (!ok) return;
+    }
     const atraceToken = await ensureAtraceToken();
     if (!atraceToken) return router.push('/');
     try {
         const { atraceDeletePost } = await import('@/api/atrace/post/delete');
         const id = await atraceDeletePost(atraceToken, nsSlug.value, p.id);
         posts.value = posts.value.filter(x => x.id !== id);
+        totalCount.value = Math.max(0, totalCount.value - 1);
+        if (selectedPostId.value === id) {
+            selectedPostId.value = posts.value[0]?.id ?? null;
+        }
+        // If we're deleting from Edit modal, close it
+        if (editingPost.value?.id === id) {
+            isEditOpen.value = false;
+            editingPost.value = null;
+        }
     } catch (e) {
         // noop
     }
@@ -225,10 +322,28 @@ onMounted(async () => {
         setTimeout(() => router.push('/'), 0);
         return;
     }
+    // Load previously selected post for this namespace (if any)
+    loadStoredSelection();
     await loadPosts();
+    setupCardsObserver();
 });
 
-watch(() => nsSlug.value, async (n, o) => { if (n && n !== o) await loadPosts(); });
+watch(() => nsSlug.value, async (n, o) => {
+    if (n && n !== o) {
+        // Load selection tied to the new namespace before fetching posts
+        loadStoredSelection();
+        await loadPosts();
+        // Recreate observer on namespace change (DOM refs may stay but data changed)
+        setupCardsObserver();
+    }
+});
+
+onBeforeUnmount(() => {
+    if (cardsObserver) {
+        try { cardsObserver.disconnect(); } catch {}
+        cardsObserver = null;
+    }
+});
 </script>
 
 <template>
@@ -253,7 +368,7 @@ watch(() => nsSlug.value, async (n, o) => { if (n && n !== o) await loadPosts();
 
             <span>Placeholder area (to be extended later)</span>
 
-            <Table />
+            <Table :post-id="selectedPostId" />
 
             <Placeholder class="h-full" />
         </UCard>
@@ -294,18 +409,24 @@ watch(() => nsSlug.value, async (n, o) => { if (n && n !== o) await loadPosts();
             </UButton>
         </div>
 
-        <div class="overflow-x-auto whitespace-nowrap py-4 px-4">
+        <div class="overflow-x-auto whitespace-nowrap py-4 px-4" ref="cardsScrollRef">
             <div class="flex space-x-4 items-stretch">
                 <div v-if="loading" class="text-gray-500">Loading…</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
                 <div v-else class="flex space-x-4">
                     <div v-for="post in posts" :key="post.id">
-                        <Card :post="post" :can-delete="false" @edit="() => openEdit(post)" />
+                        <Card :post="post" :selected="post.id === selectedPostId" :can-delete="false"
+                              @select="() => (selectedPostId = post.id)"
+                              @edit="() => openEdit(post)" />
                     </div>
                     <button @click="isCreateOpen = true"
                         class="bg-blue-400 dark:bg-blue-900 text-white shadow-md p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:bg-blue-500 dark:hover:bg-blue-800 flex-shrink-0">
                         {{ t('app.atraceAddLocation') }}
                     </button>
+                    <!-- Loading more indicator -->
+                    <div v-if="loadingMore" class="flex items-center justify-center w-20 text-gray-500">…</div>
+                    <!-- Sentinel element to trigger infinite scroll -->
+                    <div ref="cardsSentinelRef" class="w-1 h-1"></div>
                 </div>
             </div>
         </div>
@@ -326,7 +447,7 @@ watch(() => nsSlug.value, async (n, o) => { if (n && n !== o) await loadPosts();
 
 
         <div class="flex-1 h-full px-4 pb-4 flex flex-col overflow-y-auto">
-            <Table />
+            <Table :post-id="selectedPostId" />
         </div>
     </div>
 
@@ -422,9 +543,29 @@ watch(() => nsSlug.value, async (n, o) => { if (n && n !== o) await loadPosts();
             </div>
 
             <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton icon="lucide:x" color="gray" variant="ghost" @click="isEditOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                    <UButton icon="lucide:check" color="primary" :disabled="!editForm.title" @click="handleEditSave">{{ t('common.save') || 'Save' }}</UButton>
+                <div class="flex items-center justify-between gap-2">
+                    <!-- Delete with confirmation popover -->
+                    <UPopover v-model="isDeleteConfirmOpen" :popper="{ placement: 'top-start' }">
+                        <UButton color="red" variant="outline" icon="lucide:trash-2"
+                                 :disabled="!editingPost"
+                        >{{ t('common.delete') || 'Delete' }}</UButton>
+                        <template #panel>
+                            <div class="p-3 max-w-xs">
+                                <p class="text-sm mb-3">{{ t('common.confirmDelete') || 'Delete?' }}</p>
+                                <div class="flex gap-2 justify-end">
+                                    <UButton color="gray" variant="ghost" @click="isDeleteConfirmOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
+                                    <UButton color="red" variant="solid" icon="lucide:trash-2"
+                                             @click="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: true }); isDeleteConfirmOpen = false; }"
+                                    >{{ t('common.delete') || 'Delete' }}</UButton>
+                                </div>
+                            </div>
+                        </template>
+                    </UPopover>
+
+                    <div class="flex justify-end gap-2">
+                        <UButton icon="lucide:x" color="gray" variant="ghost" @click="isEditOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
+                        <UButton icon="lucide:check" color="primary" :disabled="!editForm.title" @click="handleEditSave">{{ t('common.save') || 'Save' }}</UButton>
+                    </div>
                 </div>
             </template>
         </UCard>

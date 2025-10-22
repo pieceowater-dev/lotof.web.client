@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+const props = defineProps<{ postId?: string | null }>();
 // Types
 interface TodoRow { id: number; title: string; completed: boolean }
 interface StatusFilter { key: 'completed' | 'uncompleted'; label: string; value: boolean }
@@ -79,17 +80,23 @@ const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1)
 const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value))
 
 // Data
-const { data: todos, status } = await useLazyAsyncData<TodoRow[]>('todos', () => ($fetch as any)(`https://jsonplaceholder.typicode.com/todos${searchStatus.value}`, {
+const { data: todos, status } = await useLazyAsyncData<TodoRow[]>(
+  'todos',
+  () => ($fetch as any)(`https://jsonplaceholder.typicode.com/todos${searchStatus.value}`,
+  {
   query: {
     q: search.value,
     _page: page.value,
     _limit: pageCount.value,
     _sort: sort.value.column,
-    _order: sort.value.direction
+    _order: sort.value.direction,
+    // include the selected post id to force refetching on changes (replace with real API usage later)
+    postId: props.postId ?? undefined
   }
-}), {
+}),
+{
   default: () => [],
-  watch: [page, search, searchStatus, pageCount, sort]
+  watch: [page, search, searchStatus, pageCount, sort, () => props.postId]
 })
 </script>
 

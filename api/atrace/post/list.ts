@@ -30,7 +30,10 @@ export async function atracePostsList(
   params: { search?: string; page?: number; length?: 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED' } = {}
 ): Promise<{ posts: AtracePost[]; count: number }>
 {
-  const filter: any = { pagination: { page: params.page ?? 1, length: params.length ?? 'TWENTY_FIVE' } };
+  const filter: any = {
+    pagination: { page: params.page ?? 1, length: params.length ?? 'TWENTY_FIVE' },
+    sort: { by: 'ASC', field: 'title' }
+  };
   if (params.search) filter.search = params.search;
 
   const res = await atraceClient.request<{

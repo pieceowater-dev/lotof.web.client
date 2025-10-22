@@ -8,10 +8,8 @@ type Post = {
     location?: { address?: string | null; city?: string | null; country?: string | null } | null;
 };
 
-const props = withDefaults(defineProps<{ post: Post; canDelete?: boolean }>(), { canDelete: false });
-const emit = defineEmits<{ (e: 'edit', post: Post): void; (e: 'delete', post: Post): void }>();
-
-const selected = ref(false);
+const props = withDefaults(defineProps<{ post: Post; canDelete?: boolean; selected?: boolean }>(), { canDelete: false, selected: false });
+const emit = defineEmits<{ (e: 'edit', post: Post): void; (e: 'delete', post: Post): void; (e: 'select', post: Post): void }>();
 
 function onEdit(e: MouseEvent) {
     e.stopPropagation();
@@ -30,7 +28,7 @@ const hasDescription = computed(() => !!(props.post.description && props.post.de
 </script>
 
 <template>
-    <div @click="selected = !selected"
+    <div @click="emit('select', post)"
         :class="selected ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'"
         class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col">
         <div class="flex items-center gap-2 mb-2">
