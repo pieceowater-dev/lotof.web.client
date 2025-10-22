@@ -13,11 +13,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     await load();
   }
 
-  if (!all.value.includes(nsParam)) {
-    // Unknown namespace for this user → go home
-    return navigateTo('/', { replace: true });
-  }
-
-  // Valid → sync selection
+  // Always sync selection from the route. If the namespace isn't yet in the loaded list,
+  // we still allow navigation and optimistically switch the context; downstream data
+  // fetches will enforce permissions. This enables deep-linking directly to another
+  // namespace without an unnecessary redirect to home.
   syncFromRoute(nsParam);
 });
