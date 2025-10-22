@@ -1,103 +1,78 @@
 <script lang="ts" setup>
+import { atraceRecordsByPost, type AtraceRecord } from '@/api/atrace/record/listByPost';
+import { CookieKeys } from '@/utils/storageKeys';
+
 const props = defineProps<{ postId?: string | null }>();
-// Types
-interface TodoRow { id: number; title: string; completed: boolean }
-interface StatusFilter { key: 'completed' | 'uncompleted'; label: string; value: boolean }
-interface ActionItem { key: string; label: string; icon: string }
 
-// Columns
-const columns = [{
-  key: 'select',
-  class: 'w-2'
-}, {
-  key: 'id',
-  label: '#',
-  sortable: true
-}, {
-  key: 'title',
-  label: 'Title',
-  sortable: true
-}, {
-  key: 'completed',
-  label: 'Status',
-  sortable: true
-}, {
-  key: 'actions',
-  label: 'Actions',
-  sortable: false
-}]
+// Columns for Nuxt UI table
+const columns = [
+  { key: 'id', label: '#', sortable: true },
+  { key: 'userId', label: 'User', sortable: false },
+  { key: 'method', label: 'Method', sortable: false },
+  { key: 'timestamp', label: 'Timestamp', sortable: true },
+  { key: 'suspicious', label: 'Suspicious', sortable: false },
+];
 
-const selectedColumns = ref(columns)
-const columnsTable = computed(() => columns.filter(column => selectedColumns.value.includes(column)))
-const excludeSelectColumn = computed(() => columns.filter(v => v.key !== 'select'))
-
-// Selected Rows
-const selectedRows = ref<TodoRow[]>([])
-
-function select(row: TodoRow) {
-  const index = selectedRows.value.findIndex(item => item.id === row.id)
-  if (index === -1) selectedRows.value.push(row)
-  else selectedRows.value.splice(index, 1)
+// Selected Rows (not used for actions right now, but keep parity with UTable)
+const selectedRows = ref<AtraceRecord[]>([]);
+function select(row: AtraceRecord) {
+  const idx = selectedRows.value.findIndex(r => r.id === row.id);
+  if (idx === -1) selectedRows.value.push(row);
+  else selectedRows.value.splice(idx, 1);
 }
 
-// Actions
-const actions: ActionItem[][] = [
-  [{ key: 'completed', label: 'Completed', icon: 'i-lucide-check' }],
-  [{ key: 'uncompleted', label: 'In Progress', icon: 'i-lucide-refresh-ccw' }]
-]
+// Route/context
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
 
-// Filters
-const todoStatus: StatusFilter[] = [
-  { key: 'uncompleted', label: 'In Progress', value: false },
-  { key: 'completed', label: 'Completed', value: true }
-]
+// Pagination and sorting
+const page = ref(1);
+const pageCount = ref(10); // rows per page (maps to GraphQL enum)
+const pageTotal = ref(0);
+const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1);
+const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value));
+const sort = ref<{ column: string; direction: 'asc' | 'desc' }>({ column: 'timestamp', direction: 'desc' });
 
-const search = ref('')
-const selectedStatus = ref<StatusFilter[]>([])
-const searchStatus = computed(() => {
-  if (selectedStatus.value?.length === 0) {
-    return ''
+// Map numeric to GraphQL enum length
+const pageCountToEnum = (n: number): any => {
+  switch (n) {
+    case 10: return 'TEN';
+    case 25: return 'TWENTY_FIVE';
+    case 50: return 'FIFTY';
+    case 100: return 'ONE_HUNDRED';
+    default: return 'TEN';
   }
+};
 
-  if (selectedStatus?.value?.length > 1) {
-    return `?completed=${selectedStatus.value[0].value}&completed=${selectedStatus.value[1].value}`
-  }
-
-  return `?completed=${selectedStatus.value[0].value}`
-})
-
-const resetFilters = () => {
-  search.value = ''
-  selectedStatus.value = []
+// Token from cookie (local to this component)
+function getAtraceToken(): string | null {
+  const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
+  return cookie.value || null;
 }
 
-// Pagination
-const sort = ref({ column: 'id', direction: 'asc' as const })
-const page = ref(1)
-const pageCount = ref(10)
-const pageTotal = ref(200) // This value should be dynamic coming from the API
-const pageFrom = computed(() => (page.value - 1) * pageCount.value + 1)
-const pageTo = computed(() => Math.min(page.value * pageCount.value, pageTotal.value))
+// Data loader
+const { data: records, status, refresh } = await useLazyAsyncData<AtraceRecord[]>(
+  'atrace:records',
+  async () => {
+    if (!props.postId) return [];
+    const token = getAtraceToken();
+    if (!token) return [];
+    const res = await atraceRecordsByPost(token, nsSlug.value, {
+      postId: props.postId,
+      page: page.value,
+      length: pageCountToEnum(pageCount.value),
+      sort: { field: sort.value.column, by: sort.value.direction.toUpperCase() as 'ASC' | 'DESC' },
+    });
+    pageTotal.value = res.count;
+    return res.records;
+  },
+  { default: () => [], watch: [() => props.postId, page, pageCount, sort, nsSlug] }
+);
 
-// Data
-const { data: todos, status } = await useLazyAsyncData<TodoRow[]>(
-  'todos',
-  () => ($fetch as any)(`https://jsonplaceholder.typicode.com/todos${searchStatus.value}`,
-  {
-  query: {
-    q: search.value,
-    _page: page.value,
-    _limit: pageCount.value,
-    _sort: sort.value.column,
-    _order: sort.value.direction,
-    // include the selected post id to force refetching on changes (replace with real API usage later)
-    postId: props.postId ?? undefined
-  }
-}),
-{
-  default: () => [],
-  watch: [page, search, searchStatus, pageCount, sort, () => props.postId]
-})
+// Helper to format timestamp
+function fmtTs(ts: number): string {
+  try { return new Date(ts * 1000).toLocaleString(); } catch { return String(ts); }
+}
 </script>
 
 <template>
@@ -153,40 +128,22 @@ const { data: todos, status } = await useLazyAsyncData<TodoRow[]>(
     <UTable
       v-model="selectedRows"
       v-model:sort="sort"
-      :rows="todos"
-      :columns="columnsTable"
+  :rows="records || []"
+      :columns="columns"
       :loading="status === 'pending'"
-  sort-asc-icon="i-lucide-arrow-up"
-  sort-desc-icon="i-lucide-arrow-down"
+      sort-asc-icon="i-lucide-arrow-up"
+      sort-desc-icon="i-lucide-arrow-down"
       sort-mode="manual"
       class="w-full"
       :ui="{ td: { base: 'max-w-[0] truncate' }, default: { checkbox: { color: 'gray' as any } } }"
       @select="select"
     >
-      <template #completed-data="{ row }">
-        <UBadge size="xs" :label="row.completed ? 'Completed' : 'In Progress'" :color="row.completed ? 'emerald' : 'orange'" variant="subtle" />
+      <template #timestamp-data="{ row }">
+        <span class="font-mono">{{ fmtTs(row.timestamp) }}</span>
       </template>
 
-      <template #actions-data="{ row }">
-        <UButton
-          v-if="!row.completed"
-          icon="i-lucide-check"
-          size="2xs"
-          color="emerald"
-          variant="outline"
-          :ui="{ rounded: 'rounded-full' }"
-          square
-        />
-
-        <UButton
-          v-else
-          icon="i-lucide-refresh-ccw"
-          size="2xs"
-          color="orange"
-          variant="outline"
-          :ui="{ rounded: 'rounded-full' }"
-          square
-        />
+      <template #suspicious-data="{ row }">
+        <UBadge size="xs" :label="row.suspicious ? 'Suspicious' : 'OK'" :color="row.suspicious ? 'red' : 'gray'" variant="subtle" />
       </template>
     </UTable>
 
@@ -211,7 +168,7 @@ const { data: todos, status } = await useLazyAsyncData<TodoRow[]>(
 
         <USelect
           v-model="pageCount"
-          :options="[3, 5, 10, 20, 30, 40]"
+          :options="[10, 25, 50, 100]"
           class="me-2 w-20"
           size="xs"
         />

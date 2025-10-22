@@ -27,6 +27,18 @@ const cardsSentinelRef = ref<HTMLElement | null>(null);
 let cardsObserver: IntersectionObserver | null = null;
 const selectedPostId = ref<string | null>(null);
 
+// Currently selected post and its display helpers
+const selectedPost = computed(() => posts.value.find(p => p.id === selectedPostId.value) || null);
+const selectedPostTitle = computed(() => selectedPost.value?.title || '');
+const selectedPostLocationLine = computed(() => {
+    const city = selectedPost.value?.location?.city || '';
+    const address = selectedPost.value?.location?.address || '';
+    const parts = [] as string[];
+    if (city) parts.push(city);
+    if (address) parts.push(address);
+    return parts.join(', ');
+});
+
 // Persistence helpers (prefix everything related to atrace with 'atrace-')
 const selectedStorageKey = computed(() => dynamicLS.atraceSelectedPostId(nsSlug.value));
 function loadStoredSelection() {
@@ -434,8 +446,8 @@ onBeforeUnmount(() => {
 
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
-                <h2 class="text-2xl font-bold">{{ t('app.atraceAttendanceTitle') }}</h2>
-                <span>{{ t('app.atraceAttendanceRange') }}</span>
+                <h2 class="text-2xl font-bold">Attendance — {{ selectedPostTitle }}</h2>
+                <span>{{ selectedPostLocationLine }}</span>
             </div>
 
             <div class="flex space-x-4">
