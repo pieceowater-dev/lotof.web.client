@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-4">
-              <UButton color="primary" variant="outline" @click="goTargetOrHome">
+              <UButton color="primary" variant="outline" @click="router.push('/')">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
                 {{ t('app.home') }}
               </UButton>

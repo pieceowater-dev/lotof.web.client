@@ -1,4 +1,5 @@
 import { atraceClient } from '@/api/clients';
+import { getDeviceHeaders } from '@/utils/device';
 
 // Keep it schema-agnostic without relying on generated types (atrace optional)
 const AtracePostsDocument = /* GraphQL */ `
@@ -36,12 +37,14 @@ export async function atracePostsList(
   };
   if (params.search) filter.search = params.search;
 
+  const devHeaders = await getDeviceHeaders();
   const res = await atraceClient.request<{
     getPosts: { posts: AtracePost[]; paginationInfo: { count: number } }
   }>(AtracePostsDocument, { filter }, {
     headers: {
       AtraceAuthorization: `Bearer ${atraceToken}`,
       Namespace: namespaceSlug,
+      ...devHeaders,
     }
   });
   return { posts: res.getPosts.posts, count: res.getPosts.paginationInfo.count };

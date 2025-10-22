@@ -1,4 +1,5 @@
 import { atraceClient } from '@/api/clients';
+import { getDeviceHeaders } from '@/utils/device';
 
 // Keep schema-agnostic (no codegen types required)
 const AtraceCheckDocument = /* GraphQL */ `
@@ -32,6 +33,7 @@ export async function atraceCheck(
   namespaceSlug: string,
   input: AtraceCheckInput
 ): Promise<AtraceCheckResult> {
+  const devHeaders = await getDeviceHeaders();
   const res = await atraceClient.request<{ check: AtraceCheckResult }>(
     AtraceCheckDocument,
     { input },
@@ -39,6 +41,7 @@ export async function atraceCheck(
       headers: {
         AtraceAuthorization: `Bearer ${atraceToken}`,
         Namespace: namespaceSlug,
+        ...devHeaders,
       },
     },
   );

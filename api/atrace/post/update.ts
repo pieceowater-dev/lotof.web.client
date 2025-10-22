@@ -1,4 +1,5 @@
 import { atraceClient } from '@/api/clients';
+import { getDeviceHeaders } from '@/utils/device';
 
 export type UpdatePostInput = {
   id: string;
@@ -25,6 +26,7 @@ export async function atraceUpdatePost(
   namespaceSlug: string,
   input: UpdatePostInput
 ) {
+  const devHeaders = await getDeviceHeaders();
   const res = await atraceClient.request<{ updatePost: any }>(
     AtraceUpdatePostDocument,
     { input },
@@ -32,6 +34,7 @@ export async function atraceUpdatePost(
       headers: {
         AtraceAuthorization: `Bearer ${atraceToken}`,
         Namespace: namespaceSlug,
+        ...devHeaders,
       }
     }
   );

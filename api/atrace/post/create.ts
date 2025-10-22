@@ -1,4 +1,5 @@
 import { atraceClient } from '@/api/clients';
+import { getDeviceHeaders } from '@/utils/device';
 
 const AtraceCreatePostDocument = /* GraphQL */ `
   mutation AtraceCreatePost($input: CreatePostInput!) {
@@ -24,6 +25,7 @@ export async function atraceCreatePost(
   namespaceSlug: string,
   input: CreatePostInput
 ) {
+  const devHeaders = await getDeviceHeaders();
   const res = await atraceClient.request<{ createPost: any }>(
     AtraceCreatePostDocument,
     { input },
@@ -31,6 +33,7 @@ export async function atraceCreatePost(
       headers: {
         AtraceAuthorization: `Bearer ${atraceToken}`,
         Namespace: namespaceSlug,
+        ...devHeaders,
       }
     }
   );

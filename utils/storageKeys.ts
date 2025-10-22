@@ -11,6 +11,8 @@ export const LSKeys = {
   LANGUAGE: 'lang',
   SELECTED_NAMESPACE: 'selectedNamespace', // legacy fallback
   SELECTED_NAMESPACE_BY_USER: 'selectedNamespaceByUser',
+  DEVICE_ID: 'device-id',
+  DEVICE_FINGERPRINT: 'device-fp',
 } as const;
 export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 
