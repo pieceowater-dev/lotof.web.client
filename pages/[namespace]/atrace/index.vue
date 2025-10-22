@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import Card from "@/components/Card.vue";
 import { useI18n } from '@/composables/useI18n';
+import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
 const { t } = useI18n();
 
 // data
@@ -27,7 +28,7 @@ let cardsObserver: IntersectionObserver | null = null;
 const selectedPostId = ref<string | null>(null);
 
 // Persistence helpers (prefix everything related to atrace with 'atrace-')
-const selectedStorageKey = computed(() => `atrace-selected-post-id:${nsSlug.value}`);
+const selectedStorageKey = computed(() => dynamicLS.atraceSelectedPostId(nsSlug.value));
 function loadStoredSelection() {
     if (process.client) {
         try {
@@ -66,7 +67,7 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
 async function ensureAtraceToken(): Promise<string | null> {
-    const cookie = useCookie<string | null>('atrace-token', { path: '/' });
+    const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
     const tok = cookie.value;
     if (!tok) return null;
     try {

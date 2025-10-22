@@ -1,4 +1,5 @@
 import { ref, computed, watch } from 'vue';
+import { LSKeys } from '@/utils/storageKeys';
 import en from '@/locales/en.json';
 import ru from '@/locales/ru.json';
 
@@ -7,7 +8,7 @@ const detected = (typeof navigator !== 'undefined' && navigator.language.startsW
 const currentLocale = ref<'en' | 'ru'>(detected);
 // Load persisted locale
 if (typeof window !== 'undefined') {
-  const stored = localStorage.getItem('lang');
+  const stored = localStorage.getItem(LSKeys.LANGUAGE);
   if (stored === 'en' || stored === 'ru') currentLocale.value = stored;
 }
 
@@ -31,7 +32,7 @@ export function useI18n() {
   function setLocale(l: 'en' | 'ru') { currentLocale.value = l; }
   // Persist
   if (typeof window !== 'undefined') {
-    watch(currentLocale, v => localStorage.setItem('lang', v));
+    watch(currentLocale, v => localStorage.setItem(LSKeys.LANGUAGE, v));
   }
   return { locale, t, tm, setLocale, available: computed(() => ['en','ru']) };
 }

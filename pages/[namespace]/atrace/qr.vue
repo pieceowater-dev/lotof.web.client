@@ -3,6 +3,7 @@ import { useAuth } from '@/composables/useAuth';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { atraceCheck } from '@/api/atrace/record/check';
 import { useI18n } from '@/composables/useI18n';
+import { CookieKeys } from '@/utils/storageKeys';
 
 const { t } = useI18n();
 
@@ -30,7 +31,7 @@ function decodeMethod(numStr: string): string | null {
 
 async function ensureAtraceToken(): Promise<string | null> {
   // Use previously obtained app token if present and valid
-  const cookie = useCookie<string | null>('atrace-token', { path: '/' });
+  const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
   const tok = cookie.value;
   if (tok) {
     try {
@@ -52,7 +53,7 @@ async function ensureAtraceToken(): Promise<string | null> {
   if (!hub) return null;
   try {
     const at = await atraceGetAppToken(hub, nsSlug.value);
-    useCookie('atrace-token', {
+    useCookie(CookieKeys.ATRACE_TOKEN, {
       sameSite: 'lax',
       path: '/',
       // 6 days validity window, server token may expire earlier; we still validate on each use
@@ -118,7 +119,6 @@ onMounted(() => { runCheck(); });
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
             {{ t('app.atraceCheckingHeader') }}
           </h3>
-          <UButton size="xs" color="gray" variant="ghost" @click="router.push('/')">{{ t('app.home') }}</UButton>
         </div>
       </template>
 

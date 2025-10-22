@@ -1,4 +1,6 @@
 // Manages current namespace selection (multi-tenant context)
+import { CookieKeys, LSKeys } from '@/utils/storageKeys';
+
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
   const all = useState<string[]>('namespaces_all', () => []);
@@ -13,8 +15,8 @@ export function useNamespace() {
   function readPerUserSelection(): string | null {
     if (!process.client) return null;
     try {
-      const mapRaw = localStorage.getItem('selectedNamespaceByUser');
-      const single = localStorage.getItem('selectedNamespace'); // legacy key
+  const mapRaw = localStorage.getItem(LSKeys.SELECTED_NAMESPACE_BY_USER);
+  const single = localStorage.getItem(LSKeys.SELECTED_NAMESPACE); // legacy key
       const uid = user.value?.id || 'anon';
       if (mapRaw) {
         const map = JSON.parse(mapRaw || '{}') as Record<string, string>;
@@ -29,13 +31,13 @@ export function useNamespace() {
   function writePerUserSelection(ns: string) {
     if (!process.client) return;
     try {
-      const uid = user.value?.id || 'anon';
-      const mapRaw = localStorage.getItem('selectedNamespaceByUser');
+  const uid = user.value?.id || 'anon';
+  const mapRaw = localStorage.getItem(LSKeys.SELECTED_NAMESPACE_BY_USER);
       const map = mapRaw ? (JSON.parse(mapRaw) as Record<string, string>) : {};
       map[uid] = ns;
-      localStorage.setItem('selectedNamespaceByUser', JSON.stringify(map));
+  localStorage.setItem(LSKeys.SELECTED_NAMESPACE_BY_USER, JSON.stringify(map));
       // keep legacy key in sync for backward compatibility
-      localStorage.setItem('selectedNamespace', ns);
+  localStorage.setItem(LSKeys.SELECTED_NAMESPACE, ns);
     } catch {
       // noop
     }
@@ -64,9 +66,9 @@ export function useNamespace() {
     if (process.client) {
       try {
         // Prefer Nuxt helper
-        try { useCookie('atrace-token').value = null as any; } catch {}
+  try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
         // Fallback: manual expire in case path/domain differs
-        document.cookie = `atrace-token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+  document.cookie = `${CookieKeys.ATRACE_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
     }
   }

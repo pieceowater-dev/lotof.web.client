@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { CookieKeys } from '@/utils/storageKeys';
 const { t } = useI18n();
 
 const router = useRouter();
@@ -11,8 +12,8 @@ const ok = computed(() => {
 });
 
 function goHomeAndBurn() {
-  try { useCookie('atrace-token', { path: '/' }).value = null as any; } catch {}
-  try { useCookie('token', { path: '/' }).value = null as any; } catch {}
+  try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any; } catch {}
+  try { useCookie(CookieKeys.TOKEN, { path: '/' }).value = null as any; } catch {}
   router.push('/');
 }
 

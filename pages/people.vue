@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { FriendshipStatus } from '@gql-hub';
+import { CookieKeys } from '@/utils/storageKeys';
 
 const { token, user } = useAuth();
 const { rows: friends, load, loading } = useFriendships();
@@ -130,7 +131,7 @@ const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespa
 const nsMembers = ref<Array<{ id: string; userId: string }>>([]);
 const membersLoading = ref(false);
 const loadMembers = async () => {
-  const tok = useCookie<string | null>('token').value;
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!tok || !selectedNS.value) { nsMembers.value = []; return; }
   membersLoading.value = true;
   try {
@@ -158,7 +159,7 @@ const friendLoading = ref(false);
 const friendToAdd = ref<string>('');
 
 async function loadMoreFriends(reset = false) {
-  const tok = useCookie<string | null>('token').value;
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!tok) return;
   if (reset) {
     friendPage.value = 1;
@@ -188,7 +189,7 @@ async function loadMoreFriends(reset = false) {
 watch(friendSearch, () => loadMoreFriends(true));
 onMounted(() => loadMoreFriends(true));
 async function addMemberFromFriend(friendUserId: string) {
-  const tok = useCookie<string | null>('token').value;
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   const { idBySlug } = useNamespace();
   const nsId = idBySlug(selectedNS.value);
   if (!tok || !nsId) return;
@@ -203,7 +204,7 @@ async function addMemberFromFriend(friendUserId: string) {
 }
 
 async function removeMember(userId: string) {
-  const tok = useCookie<string | null>('token').value;
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   const { idBySlug } = useNamespace();
   const nsId = idBySlug(selectedNS.value);
   if (!tok || !nsId) return;

@@ -7,6 +7,7 @@ import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
+import { CookieKeys } from '@/utils/storageKeys';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
@@ -50,14 +51,14 @@ async function handleAppClick(appAddress: string) {
   // If opening A-Trace, first exchange for an app token with required headers
   if (appAddress === 'atrace') {
     try {
-      const hubToken = useCookie<string | null>('token').value;
+  const hubToken = useCookie<string | null>(CookieKeys.TOKEN).value;
       if (!hubToken) return login();
-      const existing = useCookie<string | null>('atrace-token');
+  const existing = useCookie<string | null>(CookieKeys.ATRACE_TOKEN);
       if (!existing.value) {
         const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken');
         const atraceToken = await atraceGetAppToken(hubToken, ns);
         // Persist token on the client so the A-Trace page guard won’t redirect
-        useCookie('atrace-token', {
+        useCookie(CookieKeys.ATRACE_TOKEN, {
           sameSite: 'lax',
           path: '/',
           expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
@@ -69,7 +70,7 @@ async function handleAppClick(appAddress: string) {
         // Optionally: decode and refresh if near expiry
       }
       // Ensure cookie is present before navigating; otherwise, stop and notify
-      if (!useCookie<string | null>('atrace-token', { path: '/' }).value) {
+      if (!useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value) {
         toast.add({ title: 'A-Trace', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
         return;
       }
@@ -86,7 +87,7 @@ async function handleAppClick(appAddress: string) {
 
 async function handleGetApp(app: AppConfig) {
   if (!isLoggedIn.value) return login();
-  const token = useCookie<string | null>('token').value;
+  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!token || !selectedNS.value) return;
   if (installingBundles.has(app.bundle)) return; // guard
   installingBundles.add(app.bundle);
@@ -110,7 +111,7 @@ async function handleGetApp(app: AppConfig) {
 }
 
 const handleSaveProfile = async () => {
-  const token = useCookie<string | null>('token').value;
+  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!token) return;
   const updatedUser = await hubUpdateMe(token, username.value);
   username.value = updatedUser.username;
@@ -147,7 +148,7 @@ function toCard(app: AppConfig) {
 
 async function checkInstalledForVisibleApps() {
   const seq = ++appsCheckSeq;
-  const token = useCookie<string | null>('token').value;
+  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!token || !selectedNS.value) return;
   const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
   const bundles = ALL_APPS.map(a => a.bundle);

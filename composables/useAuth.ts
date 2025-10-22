@@ -1,11 +1,12 @@
 import { hubMe } from '@/api/hub/me';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
+import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 
 // Centralized auth composable: manages token (via cookie), current user, and auth flows
 export function useAuth() {
   // token cookie (Nuxt auto-imports useCookie in composables scope)
-  const token = useCookie<string | null>('token');
+  const token = useCookie<string | null>(CookieKeys.TOKEN);
   const user = useState<{ id: string; username: string; email: string } | null>('auth_user', () => null);
   const loading = useState<boolean>('auth_loading', () => false);
   const initialized = useState<boolean>('auth_initialized', () => false);
@@ -78,15 +79,15 @@ export function useAuth() {
         }
 
         // Explicitly clear known app cookies via Nuxt helper as well
-        try { useCookie('atrace-token').value = null as any; } catch {}
-        try { useCookie('token').value = null as any; } catch {}
+  try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+  try { useCookie(CookieKeys.TOKEN).value = null as any; } catch {}
 
         // Optional: clear anon selection to avoid bleeding across sessions
-        const mapRaw = localStorage.getItem('selectedNamespaceByUser');
+        const mapRaw = localStorage.getItem(LSKeys.SELECTED_NAMESPACE_BY_USER);
         if (mapRaw) {
           const map = JSON.parse(mapRaw || '{}');
           delete map['anon'];
-          localStorage.setItem('selectedNamespaceByUser', JSON.stringify(map));
+          localStorage.setItem(LSKeys.SELECTED_NAMESPACE_BY_USER, JSON.stringify(map));
         }
       } catch {}
     }
