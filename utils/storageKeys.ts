@@ -13,6 +13,7 @@ export const LSKeys = {
   SELECTED_NAMESPACE_BY_USER: 'selectedNamespaceByUser',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
+  DEVICE_FINGERPRINT_META: 'device-fp-meta',
 } as const;
 export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 

@@ -1,5 +1,91 @@
 import { LSKeys } from '@/utils/storageKeys';
 
+type FeatureSummary = {
+  uaMajor: number | null;
+  platform: string;
+  webglRenderer: string;
+  screen: string; // WxH
+  dpr: string;
+  tz: string;
+  touch: string;
+};
+
+type FPMeta = {
+  v: string; // fingerprint value
+  ts: number; // timestamp (ms)
+  summary: FeatureSummary;
+};
+
+const FP_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function parseUAMajorFromUA(ua: string): number | null {
+  try {
+    // Try Chromium pattern first (Chrome/xx, Edg/xx)
+    const mChrom = ua.match(/(?:Chrome|Chromium|Edg|Brave|OPR|Vivaldi)\/(\d+)/);
+    if (mChrom) return parseInt(mChrom[1], 10);
+    // Firefox
+    const mFx = ua.match(/Firefox\/(\d+)/);
+    if (mFx) return parseInt(mFx[1], 10);
+    // Safari (Version/xx Safari)
+    const mSaf = ua.match(/Version\/(\d+)/);
+    if (mSaf) return parseInt(mSaf[1], 10);
+    return null;
+  } catch { return null; }
+}
+
+async function computeUAMajor(): Promise<number | null> {
+  try {
+    const nav: any = typeof navigator !== 'undefined' ? navigator : {};
+    const uad = nav.userAgentData;
+    if (uad && typeof uad.getHighEntropyValues === 'function') {
+      try {
+        const he = await uad.getHighEntropyValues(['uaFullVersion']);
+        if (he?.uaFullVersion) return parseInt(String(he.uaFullVersion).split('.')[0] || '', 10) || null;
+      } catch {}
+    }
+    const ua = nav.userAgent || '';
+    return parseUAMajorFromUA(ua);
+  } catch { return null; }
+}
+
+async function computeFeatureSummary(): Promise<FeatureSummary> {
+  const nav: any = typeof navigator !== 'undefined' ? navigator : {};
+  const scr: any = typeof screen !== 'undefined' ? screen : {};
+  let renderer = '';
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    if (gl) {
+      const dbgInfo = gl.getExtension('WEBGL_debug_renderer_info');
+      if (dbgInfo) renderer = String(gl.getParameter((dbgInfo as any).UNMASKED_RENDERER_WEBGL) || '');
+    }
+  } catch {}
+  let tz = '';
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  const s: FeatureSummary = {
+    uaMajor: await computeUAMajor(),
+    platform: String(nav.platform || ''),
+    webglRenderer: renderer,
+    screen: `${scr.width || ''}x${scr.height || ''}`,
+    dpr: String(typeof window !== 'undefined' ? window.devicePixelRatio || '' : ''),
+    tz,
+    touch: String(nav.maxTouchPoints || 0),
+  };
+  return s;
+}
+
+function countSummaryDiffs(a: FeatureSummary, b: FeatureSummary): number {
+  let d = 0;
+  if (a.uaMajor !== b.uaMajor) d++;
+  if (a.platform !== b.platform) d++;
+  if (a.webglRenderer !== b.webglRenderer) d++;
+  if (a.screen !== b.screen) d++;
+  if (a.dpr !== b.dpr) d++;
+  if (a.tz !== b.tz) d++;
+  if (a.touch !== b.touch) d++;
+  return d;
+}
+
 // Compute a reasonably stable browser fingerprint and return a 32-char hex string.
 // Collects multiple low-risk, privacy-conscious signals: UA-CH, screen, canvas length,
 // WebGL vendor/renderer, media devices count, timezone, battery, network, storage, audio fp.
@@ -169,9 +255,52 @@ export async function getFingerprintCached(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
   try {
     const cached = localStorage.getItem(LSKeys.DEVICE_FINGERPRINT);
-    if (cached) return cached;
+    const metaRaw = localStorage.getItem(LSKeys.DEVICE_FINGERPRINT_META);
+    let meta: FPMeta | null = null;
+    if (metaRaw) {
+      try { meta = JSON.parse(metaRaw) as FPMeta; } catch { meta = null; }
+    }
+
+    // If we have meta, evaluate TTL and drift
+    if (meta && meta.v) {
+      const now = Date.now();
+      let shouldRefresh = false;
+      if (now - (meta.ts || 0) > FP_TTL_MS) shouldRefresh = true;
+      else {
+        // Drift check: compare lightweight feature summary
+        const currentSummary = await computeFeatureSummary();
+        const diffs = countSummaryDiffs(currentSummary, meta.summary || ({} as any));
+        if (diffs >= 2) shouldRefresh = true;
+      }
+
+      if (!shouldRefresh && cached) {
+        // Use existing cached value
+        return cached;
+      }
+
+      // Refresh
+      const fp = await computeFingerprint();
+      const summary = await computeFeatureSummary();
+      const newMeta: FPMeta = { v: fp, ts: Date.now(), summary };
+      localStorage.setItem(LSKeys.DEVICE_FINGERPRINT, fp);
+      localStorage.setItem(LSKeys.DEVICE_FINGERPRINT_META, JSON.stringify(newMeta));
+      return fp;
+    }
+
+    // Back-compat: if we only have bare fp, adopt it and create meta lazily
+    if (cached) {
+      const summary = await computeFeatureSummary();
+      const adopted: FPMeta = { v: cached, ts: Date.now(), summary };
+      localStorage.setItem(LSKeys.DEVICE_FINGERPRINT_META, JSON.stringify(adopted));
+      return cached;
+    }
+
+    // First-time compute
     const fp = await computeFingerprint();
+    const summary = await computeFeatureSummary();
+    const newMeta: FPMeta = { v: fp, ts: Date.now(), summary };
     localStorage.setItem(LSKeys.DEVICE_FINGERPRINT, fp);
+    localStorage.setItem(LSKeys.DEVICE_FINGERPRINT_META, JSON.stringify(newMeta));
     return fp;
   } catch {
     return null;

@@ -11,10 +11,11 @@ export default defineNuxtRouteMiddleware(async () => {
     if (!hubToken) return; // Wait until hub auth exists
 
     // If already present, noop; else generate and persist
-  const id = localStorage.getItem(LSKeys.DEVICE_ID);
-  const fp = localStorage.getItem(LSKeys.DEVICE_FINGERPRINT);
+    const id = localStorage.getItem(LSKeys.DEVICE_ID);
     if (!id) getOrCreateDeviceId();
-    if (!fp) await getFingerprintCached();
+
+    // Always call to ensure meta (device-fp-meta) is created/refreshed even when device-fp exists.
+    await getFingerprintCached();
   } catch {
     // ignore
   }
