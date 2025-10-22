@@ -62,6 +62,13 @@
     "atraceSearch": "Search...",
     "atraceAttendanceTitle": "Attendance — Office A",
     "atraceAttendanceRange": "Pushkina st, 10. 01.02.25 - 28.02.25",
+  "atraceRecordedHeader": "A-Trace",
+  "atraceRecordedSuccess": "Congrats! Your attendance is recorded.",
+  "atraceRecordedFail": "Something went wrong",
+  "home": "Home",
+  "atraceCheckingHeader": "Checking...",
+  "atraceCheckingText": "We're validating your QR. This will only take a moment.",
+  "atraceRecordedRedirecting": "Redirecting home in",
     "errorMessages": [
       "You shouldn't be here... 🚷",
       "Something went wrong! 🤦‍♂️",
