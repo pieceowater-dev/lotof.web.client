@@ -1,0 +1,11 @@
+/* Nunito Sans font faces (loaded via @fontsource) */
+/* Import Latin subset only to ensure only Latin script uses Nunito Sans */
+@import '@fontsource/nunito-sans/latin-400.css';
+@import '@fontsource/nunito-sans/latin-600.css';
+@import '@fontsource/nunito-sans/latin-700.css';
+
+/* Optional italic styles (uncomment if needed)
+@import '@fontsource/nunito-sans/latin-400-italic.css';
+@import '@fontsource/nunito-sans/latin-600-italic.css';
+@import '@fontsource/nunito-sans/latin-700-italic.css';
+*/

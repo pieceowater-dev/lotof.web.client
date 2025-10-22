@@ -34,6 +34,10 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-03-01",
   devtools: { enabled: true },
   modules: ["@nuxt/ui", "@nuxtjs/color-mode"],
+  css: [
+    '@/assets/css/fonts.css',
+    '@/assets/css/global.css'
+  ],
   colorMode: {
     preference: "light",
     fallback: "light",
