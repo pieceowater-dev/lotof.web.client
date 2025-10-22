@@ -69,6 +69,8 @@
   "atraceCheckingHeader": "Checking...",
   "atraceCheckingText": "We're validating your QR. This will only take a moment.",
   "atraceRecordedRedirecting": "Redirecting home in",
+  "atraceRecordedWaiting": "Please wait",
+  "atraceRecordedRetryIn": "Retrying in",
     "errorMessages": [
       "You shouldn't be here... 🚷",
       "Something went wrong! 🤦‍♂️",

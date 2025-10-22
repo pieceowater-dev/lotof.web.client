@@ -11,19 +11,39 @@ const ok = computed(() => {
   return v === '1' || v.toLowerCase?.() === 'true';
 });
 
+const isWaiting = computed(() => {
+  const v = (route.query.ok as string) || '';
+  return v.toLowerCase?.() === 'wait' && parseInt(route.query.wait as string) > 0;
+});
+const waitSecondsInitial = computed(() => Math.max(1, parseInt((route.query.wait as string) || '0') || 0));
+const targetUrl = computed(() => {
+  const u = route.query.u as string | undefined;
+  if (!u) return null;
+  try { return atob(u); } catch { return null; }
+});
+
+function goTargetOrHome() {
+  if (targetUrl.value) {
+    window.location.href = targetUrl.value as string;
+  } else {
+    router.push('/');
+  }
+}
+
 function goHomeAndBurn() {
   try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any; } catch {}
   try { useCookie(CookieKeys.TOKEN, { path: '/' }).value = null as any; } catch {}
   router.push('/');
 }
 
-// Success countdown: 10s progress and auto-redirect home
-const totalMs = 10000;
-const leftMs = ref(totalMs);
+// Countdown: success -> 10s to home; waiting -> provided seconds to original QR link
+const successTotalMs = 10000;
+const totalMs = ref(successTotalMs);
+const leftMs = ref(successTotalMs);
 const running = ref(false);
 let timer: ReturnType<typeof setInterval> | null = null;
 
-const progress = computed(() => Math.min(100, Math.max(0, ((totalMs - leftMs.value) / totalMs) * 100)));
+const progress = computed(() => Math.min(100, Math.max(0, ((totalMs.value - leftMs.value) / totalMs.value) * 100)));
 const secondsLeft = computed(() => Math.ceil(leftMs.value / 1000));
 
 function startCountdown() {
@@ -34,7 +54,12 @@ function startCountdown() {
     leftMs.value = Math.max(0, leftMs.value - step);
     if (leftMs.value <= 0) {
       stopCountdown();
-      router.push('/');
+      if (isWaiting.value && targetUrl.value) {
+        // Redirect back to original QR link to retry
+        window.location.href = targetUrl.value;
+      } else {
+        router.push('/');
+      }
     }
   }, step);
 }
@@ -48,7 +73,15 @@ function stopCountdown() {
 }
 
 onMounted(() => {
-  if (ok.value) startCountdown();
+  if (isWaiting.value) {
+    totalMs.value = waitSecondsInitial.value * 1000;
+    leftMs.value = totalMs.value;
+    startCountdown();
+  } else if (ok.value) {
+    totalMs.value = successTotalMs;
+    leftMs.value = totalMs.value;
+    startCountdown();
+  }
 });
 
 onBeforeUnmount(() => {
@@ -71,7 +104,36 @@ onBeforeUnmount(() => {
       </template>
 
       <div class="py-8 text-center">
-        <template v-if="ok">
+        <template v-if="isWaiting">
+          <div class="flex flex-col items-center gap-4">
+            <!-- Waiting icon -->
+            <div class="h-16 w-16 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
+              <svg class="h-10 w-10 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+            </div>
+            <p class="text-xl font-semibold text-amber-600">{{ t('app.atraceRecordedWaiting') }}</p>
+
+            <!-- Countdown progress -->
+            <div class="w-full max-w-md mt-2">
+              <div class="flex items-center justify-between mb-1 text-sm text-gray-500 dark:text-gray-400">
+                <span>{{ t('app.atraceRecordedRetryIn') }} {{ secondsLeft }}s</span>
+              </div>
+              <div class="h-2 w-full bg-gray-200/70 dark:bg-gray-800 rounded-full overflow-hidden">
+                <div class="h-full bg-amber-500 transition-[width] duration-100 ease-linear" :style="{ width: progress + '%' }" />
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <UButton color="primary" variant="outline" @click="goTargetOrHome">
+                <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
+                {{ t('app.home') }}
+              </UButton>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="ok">
           <div class="flex flex-col items-center gap-4">
             <!-- Success icon -->
             <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">

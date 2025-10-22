@@ -29,6 +29,29 @@ function decodeMethod(numStr: string): string | null {
   return METHOD_MAP[numStr] || null;
 }
 
+// Cooldown only for static QR method (m=3)
+const COOLDOWN_MS = 60_000; // 1 minute
+function cooldownKey() {
+  const raw = `${nsSlug.value}|${qPid.value}|${qMethodNum.value}|${qSecret.value}`;
+  return `atrace-qr-cooldown:${btoa(raw)}`;
+}
+function getCooldownRemainingMs(): number {
+  if (!process.client) return 0;
+  try {
+    const v = localStorage.getItem(cooldownKey());
+    if (!v) return 0;
+    const exp = parseInt(v, 10) || 0;
+    const rem = exp - Date.now();
+    return rem > 0 ? rem : 0;
+  } catch { return 0; }
+}
+function setCooldown() {
+  if (!process.client) return;
+  try {
+    localStorage.setItem(cooldownKey(), String(Date.now() + COOLDOWN_MS));
+  } catch {}
+}
+
 async function ensureAtraceToken(): Promise<string | null> {
   // Use previously obtained app token if present and valid
   const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
@@ -96,6 +119,8 @@ async function runCheck() {
     });
 
     const ok = !!(res && res.id);
+    // Set cooldown for static QR regardless of result to avoid spam
+    if (qMethodNum.value === '3') setCooldown();
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: ok ? '1' : '0' } });
   } catch (e: any) {
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
@@ -104,7 +129,37 @@ async function runCheck() {
   }
 }
 
-onMounted(() => { runCheck(); });
+function paranoidAntiSpamAndScrubUrl() {
+  if (!process.client) return;
+  try {
+    // 1) Scrub sensitive query params from the visible URL without changing the current route state
+    const pathOnly = window.location.pathname + window.location.hash;
+    window.history.replaceState(window.history.state, document.title, pathOnly);
+
+    // 2) Client-side cooldown for static QR (method=3)
+    if (qMethodNum.value === '3') {
+      const rem = getCooldownRemainingMs();
+      if (rem > 0) {
+        const waitSec = Math.ceil(rem / 1000);
+        const target = `/${nsSlug.value}/atrace/qr?pid=${encodeURIComponent(qPid.value)}&m=${encodeURIComponent(qMethodNum.value)}&c=${encodeURIComponent(qSecret.value)}`;
+        router.replace({
+          name: 'namespace-atrace-recorded',
+          params: { namespace: nsSlug.value },
+          query: { ok: 'wait', wait: String(waitSec), u: btoa(target) }
+        });
+        return false;
+      }
+    }
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+onMounted(() => {
+  const allowed = paranoidAntiSpamAndScrubUrl();
+  if (allowed) runCheck();
+});
 </script>
 
 <template>
