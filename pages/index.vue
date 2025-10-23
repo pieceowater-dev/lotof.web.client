@@ -25,6 +25,15 @@ let appsCheckSeq = 0; // sequence guard to avoid race conditions
 const installingBundles = new Set<string>(); // prevent double-installs per app
 
 onMounted(async () => {
+  // 1) Immediate auto-login if redirected with auth-needed flag
+  const q0 = useRoute().query;
+  if (!isLoggedIn.value && (q0['auth-needed'] === 'true' || q0['authNeeded'] === 'true')) {
+    // Trigger login right away to avoid waiting on other async inits
+    login();
+    return;
+  }
+
+  // 2) Normal init flow
   await fetchUser();
   await loadNamespaces();
   await checkInstalledForVisibleApps();
@@ -33,6 +42,29 @@ onMounted(async () => {
     email.value = user.value.email;
   }
   isLoading.value = false;
+
+  // 2.5) If authenticated and we have a back-to target, redirect back once
+  if (isLoggedIn.value && process.client) {
+    try {
+      const bt = localStorage.getItem('back-to');
+      if (bt) {
+        localStorage.removeItem('back-to');
+        const target = bt.startsWith('/') ? bt : `/${bt}`;
+        return router.replace(target);
+      }
+    } catch {}
+  }
+
+  // 3) If user is already logged in but URL still has the hint, scrub it
+  const r = useRouter();
+  const rInfo = useRoute();
+  const needsScrub = rInfo.query['auth-needed'] === 'true' || rInfo.query['authNeeded'] === 'true';
+  if (isLoggedIn.value && needsScrub) {
+    const cleaned = { ...rInfo.query } as any;
+    delete cleaned['auth-needed'];
+    delete cleaned['authNeeded'];
+    r.replace({ path: rInfo.path, query: cleaned });
+  }
 });
 
 watch(user, (u) => {

@@ -93,7 +93,9 @@ async function runCheck() {
     // Auth guard: require hub login
     await fetchUser();
     if (!isLoggedIn.value) {
-      return login();
+      // Redirect to home with a hint to trigger login automatically
+      router.replace({ path: '/', query: { 'auth-needed': 'true' } });
+      return;
     }
 
     // Validate required params
