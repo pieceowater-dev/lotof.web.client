@@ -95,23 +95,34 @@
     "namespaceMembers":"Участники пространства",
     "userId":"ID пользователя",
     "added":"Добавлено"
-  }
   ,
-  "common": {
-    "title": "Заголовок",
-    "description": "Описание",
-    "edit": "Редактировать",
-    "save": "Сохранить",
-    "delete": "Удалить",
-    "address": "Адрес",
-    "city": "Город",
-    "country": "Страна",
-    "comment": "Комментарий",
-    "latitude": "Широта",
-    "longitude": "Долгота",
-    "cancel": "Отмена",
-    "create": "Создать",
-    "apply": "Применить",
-    "confirmDelete": "Удалить?"
-  }
+  "publicPostPage": "Публичная страница поста",
+  "enterPin": "Введите PIN-код",
+  "pinMustBe6Digits": "PIN-код должен содержать 6 цифр",
+  "forgetPin": "Забыть PIN-код",
+  "loading": "Загрузка...",
+  "qrRefreshNote": "QR обновляется каждые 15 секунд",
+  "pinPromptDesc": "Введите 6-значный PIN-код, который был показан при создании поста. Без него страница недоступна.",
+  "copyLink": "Скопировать ссылку",
+  "openInNewTab": "Открыть в новой вкладке",
+  "printQr": "Распечатать QR"
+},
+"common": {
+  "ok": "ОК",
+  "title": "Заголовок",
+  "description": "Описание",
+  "edit": "Редактировать",
+  "save": "Сохранить",
+  "delete": "Удалить",
+  "address": "Адрес",
+  "city": "Город",
+  "country": "Страна",
+  "comment": "Комментарий",
+  "latitude": "Широта",
+  "longitude": "Долгота",
+  "cancel": "Отмена",
+  "create": "Создать",
+  "apply": "Применить",
+  "confirmDelete": "Удалить?"
+}
 }

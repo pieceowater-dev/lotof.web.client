@@ -20,4 +20,5 @@ export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 // Functions to build dynamic keys
 export const dynamicLS = {
   atraceSelectedPostId: (namespaceSlug: string) => `atrace-selected-post-id:${namespaceSlug}`,
+  atracePostPin: (namespaceSlug: string, postId: string) => `atrace-post-pin:${namespaceSlug}:${postId}`,
 } as const;

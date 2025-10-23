@@ -65,9 +65,22 @@ const editingPost = ref<Post | null>(null)
 const isDeleteConfirmOpen = ref(false)
 
 // Create form state
-const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' } }>(
-    { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' } }
+const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
+        { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
 );
+
+function generatePin() {
+    // 6-digit random PIN, leading zeros allowed
+    form.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
+}
+function copyPin() {
+    if (process.client && form.pin) {
+        navigator.clipboard.writeText(form.pin);
+        pinCopied.value = true;
+        setTimeout(() => { pinCopied.value = false; }, 1500);
+    }
+}
+const pinCopied = ref(false);
 
 // Edit form state
 const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' } }>(
@@ -184,14 +197,17 @@ async function handleCreate() {
             if (v !== undefined && v !== null && v !== '') loc[k] = v;
         }
         if (Object.keys(loc).length) payload.location = loc;
-    const created = await atraceCreatePost(atraceToken, nsSlug.value, payload);
-    posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
-    totalCount.value = totalCount.value + 1;
+        // Add pin as phrase
+        if (form.pin && form.pin.length === 6) payload.phrase = form.pin;
+        const created = await atraceCreatePost(atraceToken, nsSlug.value, payload);
+        posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        totalCount.value = totalCount.value + 1;
         isCreateOpen.value = false;
         // reset form
         form.title = '';
         form.description = '';
         form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' };
+        form.pin = '';
     } catch (e) {
         // noop; errors are logged in client
     }
@@ -491,28 +507,25 @@ onBeforeUnmount(() => {
                     <UFormGroup :label="t('common.city')">
                         <UInput v-model="form.location.city" :placeholder="t('common.city')" />
                     </UFormGroup>
-                    <!-- Hidden for now: Country, Comment, Latitude, Longitude -->
-                    <!--
-                    <UFormGroup :label="t('common.country')">
-                        <UInput v-model="form.location.country" :placeholder="t('common.country')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.comment')">
-                        <UInput v-model="form.location.comment" :placeholder="t('common.comment')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.latitude')">
-                        <UInput v-model.number="form.location.latitude" type="number" step="0.000001" :placeholder="t('common.latitude')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.longitude')">
-                        <UInput v-model.number="form.location.longitude" type="number" step="0.000001" :placeholder="t('common.longitude')" />
-                    </UFormGroup>
-                    -->
                 </div>
+                <USeparator />
+                <UFormGroup label="PIN (6 digits)">
+                  <div class="flex gap-2 items-center">
+                    <UInput v-model="form.pin" maxlength="6" placeholder="******" class="w-32" />
+                    <UButton size="xs" color="primary" @click="generatePin">Generate</UButton>
+                    <UButton size="xs" color="gray" variant="outline" @click="copyPin" :disabled="!form.pin">
+                      <span v-if="!pinCopied">Copy</span>
+                      <span v-else>Copied!</span>
+                    </UButton>
+                  </div>
+                  <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
+                </UFormGroup>
             </div>
 
             <template #footer>
                 <div class="flex justify-end gap-2">
                     <UButton icon="lucide:x" color="gray" variant="ghost" @click="isCreateOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                    <UButton icon="lucide:check" color="primary" :disabled="!form.title" @click="handleCreate">{{ t('common.create') || 'Create' }}</UButton>
+                    <UButton icon="lucide:check" color="primary" :disabled="!form.title || form.pin.length !== 6" @click="handleCreate">{{ t('common.create') || 'Create' }}</UButton>
                 </div>
             </template>
         </UCard>

@@ -10,6 +10,7 @@ const AtraceCreatePostDocument = /* GraphQL */ `
 export type CreatePostInput = {
   title: string;
   description?: string | null;
+  phrase?: string;
   location?: {
     comment?: string | null;
     country?: string | null;
