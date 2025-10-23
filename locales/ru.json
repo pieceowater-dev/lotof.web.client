@@ -97,6 +97,7 @@
     "added":"Добавлено"
   ,
   "publicPostPage": "Публичная страница поста",
+  "publicPostInstruction": "Сканируй QR ниже, чтобы отметить свое посещение!",
   "enterPin": "Введите PIN-код",
   "pinMustBe6Digits": "PIN-код должен содержать 6 цифр",
   "forgetPin": "Забыть PIN-код",

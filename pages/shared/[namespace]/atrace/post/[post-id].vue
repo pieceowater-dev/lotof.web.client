@@ -126,28 +126,40 @@ onBeforeUnmount(() => stopPolling());
 </script>
 
 <template>
-  <div class="max-w-lg mx-auto py-10">
-    <h1 class="text-2xl font-bold mb-4">{{ t('app.publicPostPage') }}</h1>
-    <div v-if="!pin">
-      <UButton color="primary" @click="askPin">{{ t('app.enterPin') || 'Enter PIN' }}</UButton>
-    </div>
-    <PinPrompt
-      v-model="showPinPrompt"
-      :title="t('app.enterPin') || 'Enter PIN'"
-      :description="t('app.pinPromptDesc') || 'Enter the 6-digit PIN for this post. The PIN was shown to the post creator and is required to view this page.'"
-      :error-text="t('app.pinMustBe6Digits') || 'PIN must be 6 digits'"
-      @submit="handlePinSubmit"
-    />
-    <div v-if="pin">
-      <div class="mt-8 flex flex-col items-center">
-        <div v-if="qrBase64">
-          <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="w-64 h-64 border shadow" />
-        </div>
-        <div v-else-if="polling">{{ t('app.loading') || 'Loading...' }}</div>
-        <div v-else-if="qrError" class="text-red-500">{{ qrError }}</div>
-        <div class="text-xs text-gray-500 mt-2">QR обновляется каждые 15 секунд</div>
+  <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div class="w-full max-w-md bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 flex flex-col items-center">
+      <h1 class="text-2xl font-bold text-center mb-2 text-blue-900 dark:text-white flex items-center gap-2">
+        <i class="i-lucide-qr-code w-7 h-7 text-blue-500 dark:text-blue-300"></i>
+        {{ t('app.atraceTitle') }}
+      </h1>
+      <p class="text-base text-gray-700 dark:text-gray-200 text-center mb-4">
+        {{ t('app.publicPostInstruction') || 'Сканируй QR ниже, чтобы отметить свое посещение!' }}
+      </p>
+      <div v-if="!pin" class="w-full flex flex-col items-center">
+        <UButton color="primary" icon="i-lucide-key" class="w-full" @click="askPin">{{ t('app.enterPin') || 'Enter PIN' }}</UButton>
       </div>
-      <UButton class="mt-4" color="gray" variant="ghost" @click="clearPin">{{ t('app.forgetPin') || 'Forget PIN' }}</UButton>
+      <PinPrompt
+        v-model="showPinPrompt"
+        :title="t('app.enterPin') || 'Enter PIN'"
+        :description="t('app.pinPromptDesc') || 'Enter the 6-digit PIN for this post. The PIN was shown to the post creator and is required to view this page.'"
+        :error-text="t('app.pinMustBe6Digits') || 'PIN must be 6 digits'"
+        @submit="handlePinSubmit"
+      />
+      <div v-if="pin" class="w-full flex flex-col items-center">
+        <div class="flex flex-col items-center justify-center w-full my-6">
+          <div v-if="qrBase64" class="flex items-center justify-center w-full">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center" style="min-width:180px; min-height:180px;">
+              <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="w-full max-w-xs h-auto aspect-square object-contain" style="max-width:320px; min-width:120px;" />
+            </div>
+          </div>
+          <div v-else-if="polling" class="text-blue-500 dark:text-blue-300 mt-4 flex items-center gap-2">
+            <i class="i-lucide-loader animate-spin"></i>
+            {{ t('app.loading') || 'Loading...' }}
+          </div>
+          <div v-else-if="qrError" class="text-red-500 mt-4">{{ qrError }}</div>
+          <div class="text-xs text-gray-500 mt-2 text-center">{{ t('app.qrRefreshNote') }}</div>
+        </div>
+      </div>
     </div>
   </div>
 </template>

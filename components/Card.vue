@@ -57,19 +57,10 @@ async function handlePrint() {
     // skip props.post.namespace (not in type)
     if (!ns) ns = 'ns'; // fallback, but should be dynamic
 
-    // Get PIN from localStorage
-    const pinKey = dynamicLS.atracePostPin(ns, props.post.id);
-        let pin = '';
-        if (typeof window !== 'undefined') {
-            pin = localStorage.getItem(pinKey) || '';
-        }
-        if (!pin) {
-            showPrintPinPrompt.value = true;
-            pendingPrint.value = { ns, postId: props.post.id };
-            return;
-        }
-        await doPrintWithPin(pin, ns);
-    }
+    // Всегда открываем модалку для ввода PIN
+    showPrintPinPrompt.value = true;
+    pendingPrint.value = { ns, postId: props.post.id };
+}
 
     const showPrintPinPrompt = ref(false);
     const pendingPrint = ref<{ ns: string; postId: string } | null>(null);
@@ -84,15 +75,21 @@ async function handlePrint() {
         const CryptoJS = (await import('crypto-js')).default;
         const secret = CryptoJS.MD5(pin).toString();
         const res = await qrGenPublic(props.post.id, 'METHOD_QR_STATIC', secret, ns);
-        qrImage.value = res;
+        // Если res — base64 строка PNG, явно добавляем data:image/png;base64,
+        const imgSrc = res && !res.startsWith('data:') ? `data:image/png;base64,${res}` : res;
+        qrImage.value = imgSrc;
         qrPrintDialog.value = true;
         setTimeout(() => {
             const printWindow = window.open('', '_blank');
-            if (printWindow && qrImage.value) {
-                printWindow.document.write(`<img src='${qrImage.value}' style='width:300px;height:300px;display:block;margin:40px auto;' />`);
+            if (printWindow && imgSrc) {
+                printWindow.document.write(`<img src='${imgSrc}' style='width:300px;height:300px;display:block;margin:40px auto;' />`);
                 printWindow.document.close();
                 printWindow.focus();
                 printWindow.print();
+                // Попытка закрыть вкладку после печати (работает не во всех браузерах)
+                setTimeout(() => {
+                  printWindow.close();
+                }, 500);
             }
         }, 200);
     }

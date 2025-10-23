@@ -117,6 +117,7 @@
     "availableHead":"Available",
     "comingSoonHead":"Coming soon",
   "publicPostPage": "Public Post Page",
+  "publicPostInstruction": "Scan the QR below to mark your attendance!",
   "enterPin": "Enter PIN",
   "pinMustBe6Digits": "PIN must be 6 digits",
   "forgetPin": "Forget PIN",
