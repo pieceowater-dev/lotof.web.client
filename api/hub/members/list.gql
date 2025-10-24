@@ -1,6 +1,12 @@
-query Members($namespaceId: ID) {
-  members(filter: { namespaceId: $namespaceId }) {
+
+query Members($namespaceId: ID, $page: Int, $length: PaginationLength) {
+  members(filter: { 
+    namespaceId: $namespaceId, 
+    pagination: { page: $page, length: $length }
+  }) {
     id
     userId
+    username
+    email
   }
 }

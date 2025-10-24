@@ -128,7 +128,7 @@ const selected = ref([]);
 
 // Namespace switcher + Members table
 const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespaces } = useNamespace();
-const nsMembers = ref<Array<{ id: string; userId: string }>>([]);
+const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string }>>([]);
 const membersLoading = ref(false);
 const loadMembers = async () => {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
@@ -139,7 +139,7 @@ const loadMembers = async () => {
     // We need namespaceId (UUID); resolve from slug via composable idBySlug
     const { idBySlug } = useNamespace();
     const nsId = idBySlug(selectedNS.value);
-    nsMembers.value = await hubMembersList(tok, nsId);
+  nsMembers.value = await hubMembersList(tok, nsId, 1, 'TEN');
   } catch (e) {
     nsMembers.value = [];
   } finally {
@@ -298,15 +298,22 @@ async function removeMember(userId: string) {
 
       <UTable
         :rows="nsMembers"
-        :columns="[{ key: 'userId', label: t('app.userId') }, { key: 'actions', label: '' }]"
+        :columns="[
+          { key: 'username', label: t('app.username') },
+          { key: 'email', label: t('app.email') },
+          { key: 'actions', label: '' }
+        ]"
         :loading="membersLoading"
         :loading-state="{ icon: 'lucide:loader', label: '' }"
         :empty-state="{ icon: 'lucide:users', label: t('app.emptyTable') }"
         class="w-full"
         hover
       >
-        <template #userId-data="{ row }">
-          <span class="font-mono text-sm">{{ row.userId }}</span>
+        <template #username-data="{ row }">
+          <span>{{ row.username }}</span>
+        </template>
+        <template #email-data="{ row }">
+          <span>{{ row.email }}</span>
         </template>
         <template #actions-data="{ row }">
           <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
