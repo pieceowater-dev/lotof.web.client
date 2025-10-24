@@ -6,10 +6,10 @@ const props = defineProps<{ postId?: string | null }>();
 
 // Columns for Nuxt UI table
 const columns = [
-  { key: 'id', label: '#', sortable: true },
-  { key: 'userId', label: 'User', sortable: false },
+  { key: 'timestamp', label: 'Datetime', sortable: true },
+  { key: 'username', label: 'Username', sortable: false },
+  { key: 'email', label: 'Email', sortable: false },
   { key: 'method', label: 'Method', sortable: false },
-  { key: 'timestamp', label: 'Timestamp', sortable: true },
   { key: 'suspicious', label: 'Suspicious', sortable: false },
 ];
 
@@ -69,9 +69,26 @@ const { data: records, status, refresh } = await useLazyAsyncData<AtraceRecord[]
   { default: () => [], watch: [() => props.postId, page, pageCount, sort, nsSlug] }
 );
 
+// Ensure initial load if postId is set on mount
+watchEffect(() => {
+  if (props.postId) refresh();
+});
+
 // Helper to format timestamp
 function fmtTs(ts: number): string {
   try { return new Date(ts * 1000).toLocaleString(); } catch { return String(ts); }
+}
+
+// Helper to format method enum to human readable
+function fmtMethod(method: string): string {
+  switch (method) {
+    case 'METHOD_QR_STATIC': return 'QR Static';
+    case 'METHOD_QR_DYNAMIC': return 'QR Dynamic';
+    case 'METHOD_PIN': return 'PIN';
+    case 'METHOD_MANUAL': return 'Manual';
+    // Add more cases as needed
+    default: return method.replace(/_/g, ' ').replace(/\bMETHOD\b/, '').trim();
+  }
 }
 </script>
 
@@ -126,18 +143,20 @@ function fmtTs(ts: number): string {
 
     <!-- Table -->
     <UTable
-      v-model="selectedRows"
       v-model:sort="sort"
-  :rows="records || []"
+      :rows="records || []"
       :columns="columns"
       :loading="status === 'pending'"
       sort-asc-icon="i-lucide-arrow-up"
       sort-desc-icon="i-lucide-arrow-down"
       sort-mode="manual"
       class="w-full"
-      :ui="{ td: { base: 'max-w-[0] truncate' }, default: { checkbox: { color: 'gray' as any } } }"
-      @select="select"
+      :ui="{ td: { base: 'max-w-[0] truncate' } }"
     >
+      <template #method-data="{ row }">
+        <span>{{ fmtMethod(row.method) }}</span>
+      </template>
+
       <template #timestamp-data="{ row }">
         <span class="font-mono">{{ fmtTs(row.timestamp) }}</span>
       </template>
