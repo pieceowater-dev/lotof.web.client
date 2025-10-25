@@ -37,7 +37,15 @@ const qrPrintDialog = ref(false);
 const qrImage = ref<string | null>(null);
 
 const publicUrl = computed(() => {
-    return `${window.location.origin}/shared/ns/atrace/post/${props.post.id}`;
+    // Попытка получить namespace из текущего роутера
+    let ns = '';
+    try {
+        const route = useRoute();
+        ns = route.params.namespace as string || '';
+    } catch {}
+    // fallback если не найден
+    if (!ns) ns = 'ns';
+    return `${window.location.origin}/shared/${ns}/atrace/post/${props.post.id}`;
 });
 
 async function handleCopy() {
