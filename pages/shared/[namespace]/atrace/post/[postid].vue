@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import PinPrompt from '@/components/PinPrompt.vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
@@ -12,7 +12,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const postId = computed(() => {
   return (
     (route.params.postid as string) ||
-    (route.params['post-id'] as string) ||
+    (route.params['postid'] as string) ||
     (route.params.postId as string)
   );
 });
@@ -20,9 +20,6 @@ const postId = computed(() => {
 const pinKey = computed(() => {
   if (nsSlug.value && postId.value) {
     return dynamicLS.atracePostPin(nsSlug.value, postId.value);
-  definePageMeta({
-    middleware: [] // Отключаем все middleware, включая auth
-  });
   }
   return '';
 });
@@ -133,14 +130,39 @@ onMounted(() => {
 });
 onBeforeUnmount(() => stopPolling());
 
+const REFRESH_INTERVAL = 15;
+const qrRefreshCountdown = ref(REFRESH_INTERVAL);
+let qrCountdownTimer: any = null;
+
+function startCountdown() {
+  qrRefreshCountdown.value = REFRESH_INTERVAL;
+  if (qrCountdownTimer) clearInterval(qrCountdownTimer);
+  qrCountdownTimer = setInterval(() => {
+    if (qrRefreshCountdown.value > 1) {
+      qrRefreshCountdown.value--;
+    } else {
+      qrRefreshCountdown.value = REFRESH_INTERVAL;
+    }
+  }, 1000);
+}
+
+onMounted(() => {
+  startCountdown();
+});
+onBeforeUnmount(() => {
+  if (qrCountdownTimer) clearInterval(qrCountdownTimer);
+});
+
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
     <div class="w-full max-w-md bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 flex flex-col items-center">
-      <h1 class="text-2xl font-bold text-center mb-2 text-blue-900 dark:text-white flex items-center gap-2">
-        <i class="i-lucide-qr-code w-7 h-7 text-blue-500 dark:text-blue-300"></i>
-        {{ t('app.atraceTitle') }}
+      <h1 class="text-2xl font-bold mb-2 text-blue-900 dark:text-white flex flex-col items-center justify-center w-full">
+        <span class="flex items-center justify-center w-full gap-2">
+          <UIcon name="i-lucide-qr-code" class="w-7 h-7 text-blue-500 dark:text-blue-300" />
+          <span>{{ t('app.atraceTitle') }}</span>
+        </span>
       </h1>
       <p class="text-base text-gray-700 dark:text-gray-200 text-center mb-4">
         {{ t('app.publicPostInstruction') || 'Сканируй QR ниже, чтобы отметить свое посещение!' }}
@@ -171,7 +193,7 @@ onBeforeUnmount(() => stopPolling());
             {{ t('app.loading') || 'Loading...' }}
           </div>
           <div v-else-if="qrError" class="text-red-500 mt-4">{{ qrError }}</div>
-          <div class="text-xs text-gray-500 mt-2 text-center">{{ t('app.qrRefreshNote') }}</div>
+          <div class="text-xs text-gray-500 mt-2 text-center">QR обновится через {{ qrRefreshCountdown }}с.</div>
         </div>
       </div>
     </div>
