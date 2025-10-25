@@ -28,6 +28,7 @@
     "@graphql-codegen/typescript": "^4.0.9",
     "@graphql-codegen/typescript-operations": "^4.2.3",
     "@iconify-json/lucide": "^1.2.69",
+    "@types/crypto-js": "^4.2.2",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.21.1",
     "graphql": "^16.9.0",
