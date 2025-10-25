@@ -437,8 +437,6 @@ onBeforeUnmount(() => {
                 <h1 class="text-3xl font-bold">{{ t('app.atraceTitle') }}</h1>
                 <span>{{ t('app.atraceSubtitle') }}</span>
             </div>
-            <UButton @click="isOpen = true" icon="lucide:users" color="primary" variant="outline">My People
-            </UButton>
         </div>
 
         <div class="overflow-x-auto whitespace-nowrap py-4 px-4" ref="cardsScrollRef">
@@ -465,15 +463,11 @@ onBeforeUnmount(() => {
 
         <div class="flex justify-between items-center mb-5 mt-5 px-4">
             <div class="text-left">
-                <h2 class="text-2xl font-bold">Attendance — {{ selectedPostTitle }}</h2>
+                <h2 class="text-2xl font-bold">{{ t('app.attendance') }} — {{ selectedPostTitle }}</h2>
                 <span>{{ selectedPostLocationLine }}</span>
             </div>
 
-            <div class="flex space-x-4">
-                <UButton @click="isFilterOpen = true" icon="lucide:filter" color="primary" variant="outline">{{ t('app.atraceFilter') }}
-                </UButton>
-                <UInput icon="lucide:search" size="md" variant="outline" :placeholder="t('app.atraceSearch')" />
-            </div>
+            <!-- Search and filter buttons removed -->
         </div>
 
 
