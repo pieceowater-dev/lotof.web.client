@@ -200,14 +200,15 @@ async function handleCreate() {
         // Add pin as phrase
         if (form.pin && form.pin.length === 6) payload.phrase = form.pin;
         const created = await atraceCreatePost(atraceToken, nsSlug.value, payload);
-        posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
-        totalCount.value = totalCount.value + 1;
-        isCreateOpen.value = false;
-        // reset form
-        form.title = '';
-        form.description = '';
-        form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' };
-        form.pin = '';
+    posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+    totalCount.value = totalCount.value + 1;
+    selectedPostId.value = created.id;
+    isCreateOpen.value = false;
+    // reset form
+    form.title = '';
+    form.description = '';
+    form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' };
+    form.pin = '';
     } catch (e) {
         // noop; errors are logged in client
     }
@@ -395,11 +396,13 @@ onBeforeUnmount(() => {
                 </div>
             </template>
 
-            <span>Placeholder area (to be extended later)</span>
+                        <span>Placeholder area (to be extended later)</span>
 
-            <Table :post-id="selectedPostId" />
+                        <div v-if="posts.length > 0 && selectedPostId">
+                            <Table :post-id="selectedPostId" />
+                        </div>
 
-            <Placeholder class="h-full" />
+                        <Placeholder class="h-full" />
         </UCard>
     </UModal>
 
@@ -475,8 +478,24 @@ onBeforeUnmount(() => {
 
 
 
-        <div class="flex-1 h-full px-4 pb-4 flex flex-col overflow-y-auto">
+        <div v-if="posts.length > 0 && selectedPostId" class="flex-1 h-full px-4 pb-4 flex flex-col overflow-y-auto">
             <Table :post-id="selectedPostId" />
+        </div>
+        <div v-else class="flex-1 h-full px-4 pb-4 flex flex-col items-center justify-center">
+            <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">
+                <div class="mb-4 flex flex-col items-center">
+                    <UIcon name="i-heroicons-map-pin" class="w-16 h-16 text-blue-400 dark:text-blue-300 mb-2" />
+                    <h2 class="text-2xl font-extrabold text-center mb-1 text-blue-900 dark:text-white">
+                        {{ t('app.noPostsTitle') || 'No locations yet' }}
+                    </h2>
+                    <p class="text-base text-gray-700 dark:text-gray-200 text-center mb-4">
+                        {{ t('app.noPostsDesc') || 'Add your first location to start tracking attendance.' }}
+                    </p>
+                </div>
+                <UButton color="primary" size="lg" class="w-full py-3 text-lg font-semibold" @click="isCreateOpen = true">
+                    {{ t('app.atraceAddLocation') || 'Add Location' }}
+                </UButton>
+            </div>
         </div>
     </div>
 
