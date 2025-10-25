@@ -522,9 +522,8 @@ onBeforeUnmount(() => {
                 <USeparator />
                             <UFormGroup label="PIN (6 digits)">
                                 <div class="flex gap-2 items-center">
-                                    <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" />
-                                    <UButton size="xs" color="primary" @click="() => { editForm.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6); }">Generate</UButton>
-                                                        <!-- удалена старая кнопка копирования, используется новая copyEditPin -->
+                                    <UInput v-model="form.pin" maxlength="6" placeholder="******" class="w-32" data-testid="create-pin-input" />
+                                    <UButton size="xs" color="primary" @click="() => { form.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6); }">Generate</UButton>
                                 </div>
                                 <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
                             </UFormGroup>
@@ -533,7 +532,7 @@ onBeforeUnmount(() => {
             <template #footer>
                 <div class="flex justify-end gap-2">
                     <UButton icon="lucide:x" color="gray" variant="ghost" @click="isCreateOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                    <UButton icon="lucide:check" color="primary" :disabled="!form.title || form.pin.length !== 6" @click="handleCreate">{{ t('common.create') || 'Create' }}</UButton>
+                    <UButton icon="lucide:check" color="primary" :disabled="!form.title || String(form.pin).length !== 6" @click="handleCreate">{{ t('common.create') || 'Create' }}</UButton>
                 </div>
             </template>
         </UCard>
@@ -572,7 +571,7 @@ onBeforeUnmount(() => {
 
                                 <UFormGroup label="PIN (6 digits)">
                                     <div class="flex gap-2 items-center">
-                                        <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" />
+                                        <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" data-testid="edit-pin-input" />
                                         <UButton size="xs" color="primary" @click="generateEditPin">Generate</UButton>
                                         <UButton size="xs" color="gray" variant="outline" @click="copyEditPin" :disabled="!editForm.pin">
                                             <span v-if="!editPinCopied">Copy</span>
