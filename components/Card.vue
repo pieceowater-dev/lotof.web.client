@@ -32,6 +32,7 @@ const locationText = computed(() => {
 const hasDescription = computed(() => !!(props.post.description && props.post.description.trim().length > 0));
 
 const { copy } = useClipboard();
+const toast = useToast();
 const qrPrintDialog = ref(false);
 const qrImage = ref<string | null>(null);
 
@@ -41,6 +42,12 @@ const publicUrl = computed(() => {
 
 async function handleCopy() {
     await copy(publicUrl.value);
+    toast.add({
+        title: t('app.notification'),
+        description: t('app.linkCopied'),
+        color: 'primary',
+        timeout: 1500
+    });
 }
 function handleOpen() {
     window.open(publicUrl.value, '_blank');
@@ -74,10 +81,10 @@ async function handlePrint() {
         const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
         const CryptoJS = (await import('crypto-js')).default;
         const secret = CryptoJS.MD5(pin).toString();
-        const res = await qrGenPublic(props.post.id, 'METHOD_QR_STATIC', secret, ns);
-        // Если res — base64 строка PNG, явно добавляем data:image/png;base64,
-        const imgSrc = res && !res.startsWith('data:') ? `data:image/png;base64,${res}` : res;
-        qrImage.value = imgSrc;
+    const res = await qrGenPublic(props.post.id, 'METHOD_QR_STATIC', secret, ns);
+    // Если res.qr — base64 строка PNG, явно добавляем data:image/png;base64,
+    const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
+    qrImage.value = imgSrc;
         qrPrintDialog.value = true;
         setTimeout(() => {
             const printWindow = window.open('', '_blank');
@@ -118,7 +125,7 @@ const dropdownItems = [
 <template>
     <div @click="emit('select', post)"
         :class="selected ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col">
+        class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col relative">
         <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold truncate min-w-0 flex-1" :title="post.title">{{ post.title }}</h3>
                                 <div class="flex-none flex gap-1 items-center">

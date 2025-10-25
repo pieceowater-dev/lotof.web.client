@@ -571,13 +571,6 @@ onBeforeUnmount(() => {
                     <UFormGroup :label="t('common.city')">
                         <UInput v-model="editForm.location.city" :placeholder="t('common.city')" />
                     </UFormGroup>
-                    <!-- Latitude / Longitude are shown in Edit to satisfy backend validation when updating location -->
-                    <UFormGroup :label="t('common.latitude')">
-                        <UInput v-model.number="editForm.location.latitude" type="number" step="0.000001" :placeholder="t('common.latitude')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.longitude')">
-                        <UInput v-model.number="editForm.location.longitude" type="number" step="0.000001" :placeholder="t('common.longitude')" />
-                    </UFormGroup>
                 </div>
             </div>
 

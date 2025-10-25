@@ -128,7 +128,8 @@
   "pinPromptDesc": "Enter the 6-digit PIN shown to the post creator. This PIN is required to access the page.",
   "copyLink": "Copy link",
   "openInNewTab": "Open in new tab",
-  "printQr": "Print QR code"
+  "printQr": "Print QR code",
+  "linkCopied": "Copied!"
 },
 "common": {
   "ok": "OK",
