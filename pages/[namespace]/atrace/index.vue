@@ -10,6 +10,7 @@ type Post = {
     title: string;
     description?: string | null;
     location?: { comment?: string | null; country?: string | null; city?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null } | null;
+    phrase?: string;
 };
 
 const posts = ref<Post[]>([]);
@@ -83,9 +84,20 @@ function copyPin() {
 const pinCopied = ref(false);
 
 // Edit form state
-const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' } }>(
-    { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' } }
+const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
+    { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
 );
+const editPinCopied = ref(false);
+function generateEditPin() {
+    editForm.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
+}
+function copyEditPin() {
+    if (typeof window !== 'undefined' && editForm.pin) {
+        window.navigator.clipboard.writeText(editForm.pin);
+        editPinCopied.value = true;
+        setTimeout(() => { editPinCopied.value = false; }, 1500);
+    }
+}
 
 const router = useRouter();
 const route = useRoute();
@@ -251,6 +263,7 @@ function openEdit(p: Post) {
         latitude: (p.location?.latitude ?? ''),
         longitude: (p.location?.longitude ?? ''),
     };
+    editForm.pin = p.phrase || '';
     isEditOpen.value = true;
 }
 
@@ -268,8 +281,11 @@ async function handleEditSave() {
         title: editForm.title,
         description: norm(editForm.description),
     };
-    // Normalize location fields and only include if any is non-null
-    // Prefer edited coords, fallback to existing coords on the post
+    // Добавляем phrase если PIN заполнен
+    if (editForm.pin && editForm.pin.length === 6) {
+        payload.phrase = editForm.pin;
+    }
+    // Normalize location fields: empty string -> null, 0 -> null
     const origLat = editingPost.value.location?.latitude;
     const origLon = editingPost.value.location?.longitude;
     let lat: number | null = null;
@@ -277,13 +293,13 @@ async function handleEditSave() {
     if (editForm.location.latitude !== '' && editForm.location.latitude != null) {
         const n = Number(editForm.location.latitude);
         lat = Number.isFinite(n) && n !== 0 ? n : null;
-    } else if (typeof origLat === 'number' && Number.isFinite(origLat)) {
+    } else if (typeof origLat === 'number' && Number.isFinite(origLat) && origLat !== 0) {
         lat = origLat;
     }
     if (editForm.location.longitude !== '' && editForm.location.longitude != null) {
         const n = Number(editForm.location.longitude);
         lon = Number.isFinite(n) && n !== 0 ? n : null;
-    } else if (typeof origLon === 'number' && Number.isFinite(origLon)) {
+    } else if (typeof origLon === 'number' && Number.isFinite(origLon) && origLon !== 0) {
         lon = origLon;
     }
     const loc: Record<string, any> = {};
@@ -292,19 +308,28 @@ async function handleEditSave() {
     const cn = norm(editForm.location.country);
     const ct = norm(editForm.location.city);
     const ad = norm(editForm.location.address);
-    if (c !== undefined) loc.comment = c;
-    if (cn !== undefined) loc.country = cn;
-    if (ct !== undefined) loc.city = ct;
-    if (ad !== undefined) loc.address = ad;
+    if (c && c !== '') loc.comment = c;
+    if (cn && cn !== '') loc.country = cn;
+    if (ct && ct !== '') loc.city = ct;
+    if (ad && ad !== '') loc.address = ad;
     // Include lat/lon only when we have both valid numbers; omit otherwise to avoid 422
-    const hasBothCoords = lat !== null && lon !== null;
-    if (hasBothCoords) {
+    if (lat !== null && lat !== 0 && lon !== null && lon !== 0) {
         loc.latitude = lat as number;
         loc.longitude = lon as number;
     }
-    // Only set location if both coords are present (backend likely requires paired coords)
-    // We still include string fields along with coords if provided
-    if (hasBothCoords) payload.location = loc;
+    // Заглушки для необходимых полей location
+    if (Object.keys(loc).length === 0) {
+        payload.location = {
+            comment: 'placeholder',
+            country: 'placeholder',
+            city: 'placeholder',
+            address: 'placeholder',
+            latitude: 1,
+            longitude: 1
+        };
+    } else {
+        payload.location = loc;
+    }
 
     try {
         const { atraceUpdatePost } = await import('@/api/atrace/post/update');
@@ -377,34 +402,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <UModal v-model="isOpen" fullscreen>
-        <UCard :ui="{
-            base: 'h-full flex flex-col',
-            rounded: '',
-            divide: 'divide-y divide-gray-100 dark:divide-gray-800',
-            body: {
-                base: 'grow'
-            }
-        }">
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        People
-                    </h3>
-                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1"
-                        @click="isOpen = false" />
-                </div>
-            </template>
-
-                        <span>Placeholder area (to be extended later)</span>
-
-                        <div v-if="posts.length > 0 && selectedPostId">
-                            <Table :post-id="selectedPostId" />
-                        </div>
-
-                        <Placeholder class="h-full" />
-        </UCard>
-    </UModal>
+    
 
     <UModal v-model="isFilterOpen">
         <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
@@ -522,17 +520,14 @@ onBeforeUnmount(() => {
                     </UFormGroup>
                 </div>
                 <USeparator />
-                <UFormGroup label="PIN (6 digits)">
-                  <div class="flex gap-2 items-center">
-                    <UInput v-model="form.pin" maxlength="6" placeholder="******" class="w-32" />
-                    <UButton size="xs" color="primary" @click="generatePin">Generate</UButton>
-                    <UButton size="xs" color="gray" variant="outline" @click="copyPin" :disabled="!form.pin">
-                      <span v-if="!pinCopied">Copy</span>
-                      <span v-else>Copied!</span>
-                    </UButton>
-                  </div>
-                  <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
-                </UFormGroup>
+                            <UFormGroup label="PIN (6 digits)">
+                                <div class="flex gap-2 items-center">
+                                    <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" />
+                                    <UButton size="xs" color="primary" @click="() => { editForm.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6); }">Generate</UButton>
+                                                        <!-- удалена старая кнопка копирования, используется новая copyEditPin -->
+                                </div>
+                                <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
+                            </UFormGroup>
             </div>
 
             <template #footer>
@@ -572,6 +567,20 @@ onBeforeUnmount(() => {
                         <UInput v-model="editForm.location.city" :placeholder="t('common.city')" />
                     </UFormGroup>
                 </div>
+
+                <USeparator />
+
+                                <UFormGroup label="PIN (6 digits)">
+                                    <div class="flex gap-2 items-center">
+                                        <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" />
+                                        <UButton size="xs" color="primary" @click="generateEditPin">Generate</UButton>
+                                        <UButton size="xs" color="gray" variant="outline" @click="copyEditPin" :disabled="!editForm.pin">
+                                            <span v-if="!editPinCopied">Copy</span>
+                                            <span v-else>Copied!</span>
+                                        </UButton>
+                                    </div>
+                                    <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
+                                </UFormGroup>
             </div>
 
             <template #footer>

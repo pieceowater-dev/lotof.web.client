@@ -5,6 +5,7 @@ export type UpdatePostInput = {
   id: string;
   title?: string;
   description?: string | null;
+  phrase?: string;
   location?: {
     comment?: string | null;
     country?: string | null;
