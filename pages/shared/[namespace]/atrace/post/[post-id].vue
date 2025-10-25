@@ -73,11 +73,13 @@ watch([nsSlug, postId], () => {
 });
 
 
-import { qrGenPublic } from '@/api/atrace/record/qrgen';
+import { qrGenPublic, type QrGenResult } from '@/api/atrace/record/qrgen';
 import CryptoJS from 'crypto-js';
 
 const qrBase64 = ref('');
 const qrError = ref('');
+const qrPostTitle = ref('');
+const qrPostAddress = ref('');
 const polling = ref(false);
 let pollTimer: any = null;
 
@@ -92,9 +94,17 @@ async function fetchQr() {
     // Use md5(pin) as secret
     const secret = CryptoJS.MD5(pin.value).toString();
     console.log('fetchQr', 'postId:', postId.value, 'nsSlug:', nsSlug.value, 'secret:', secret);
-    const qr = await qrGenPublic(postId.value, 'METHOD_QR', secret, nsSlug.value);
-    qrBase64.value = qr || '';
-    if (!qr) qrError.value = 'No QR returned';
+    const qrRes = await qrGenPublic(postId.value, 'METHOD_QR', secret, nsSlug.value);
+    if (qrRes && qrRes.qr) {
+      qrBase64.value = qrRes.qr;
+      qrPostTitle.value = qrRes.postTitle || '';
+      qrPostAddress.value = qrRes.postFullAddress || '';
+    } else {
+      qrBase64.value = '';
+      qrPostTitle.value = '';
+      qrPostAddress.value = '';
+      qrError.value = 'No QR returned';
+    }
   } catch (e: any) {
     qrError.value = e?.message || 'Failed to fetch QR';
   } finally {
@@ -147,7 +157,11 @@ onBeforeUnmount(() => stopPolling());
       />
       <div v-if="pin" class="w-full flex flex-col items-center">
         <div class="flex flex-col items-center justify-center w-full my-6">
-          <div v-if="qrBase64" class="flex items-center justify-center w-full">
+          <div v-if="qrBase64" class="flex flex-col items-center justify-center w-full">
+            <div class="mb-2 text-center">
+              <div v-if="qrPostTitle" class="font-semibold text-lg">{{ qrPostTitle }}</div>
+              <div v-if="qrPostAddress" class="text-sm text-gray-500">{{ qrPostAddress }}</div>
+            </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center" style="min-width:180px; min-height:180px;">
               <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="w-full max-w-xs h-auto aspect-square object-contain" style="max-width:320px; min-width:120px;" />
             </div>
