@@ -109,7 +109,19 @@
   "copyLink": "Скопировать ссылку",
   "openInNewTab": "Открыть в новой вкладке",
   "printQr": "Распечатать QR",
-  "linkCopied": "Скопировано!"
+  "linkCopied": "Скопировано!",
+  "atraceSettings": "Настройки Atrace",
+  "atraceSettingsSubtitle": "Управление участниками, ролями и рабочими днями",
+  "members": "Участники",
+  "noMembers": "Участники не найдены",
+  "requiredWorkingDays": "Требуемые рабочие дни",
+  "requiredWorkingDaysHint": "Количество дней, которое сотрудник должен отметиться в месяц",
+  "requiredWorkingHours": "Часов/День",
+  "requiredWorkingHoursHint": "Количество часов, которое сотрудник должен работать в день",
+  "editMember": "Редактировать участника",
+  "noRole": "Нет роли",
+  "back": "Назад",
+  "workingRequirements": "Требования к работе"
 },
 "common": {
   "ok": "ОК",
@@ -127,6 +139,11 @@
   "cancel": "Отмена",
   "create": "Создать",
   "apply": "Применить",
-  "confirmDelete": "Удалить?"
+  "confirmDelete": "Удалить?",
+  "username": "Имя пользователя",
+  "email": "Email",
+  "role": "Роль",
+  "actions": "Действия",
+  "settings": "Настройки"
 }
 }

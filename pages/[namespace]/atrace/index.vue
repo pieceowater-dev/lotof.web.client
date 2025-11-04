@@ -435,6 +435,17 @@ onBeforeUnmount(() => {
                 <h1 class="text-3xl font-bold">{{ t('app.atraceTitle') }}</h1>
                 <span>{{ t('app.atraceSubtitle') }}</span>
             </div>
+            <div>
+                <UButton 
+                    icon="lucide:settings" 
+                    size="xs" 
+                    color="primary" 
+                    variant="soft"
+                    :to="`/${nsSlug}/atrace/settings`"
+                >
+                    {{ t('common.settings') }}
+                </UButton>
+            </div>
         </div>
 
         <div class="overflow-x-auto whitespace-nowrap py-4 px-4" ref="cardsScrollRef">

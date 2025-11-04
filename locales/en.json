@@ -129,7 +129,19 @@
   "copyLink": "Copy link",
   "openInNewTab": "Open in new tab",
   "printQr": "Print QR code",
-  "linkCopied": "Copied!"
+  "linkCopied": "Copied!",
+  "atraceSettings": "Atrace Settings",
+  "atraceSettingsSubtitle": "Manage members, roles, and working days",
+  "members": "Members",
+  "noMembers": "No members found",
+  "requiredWorkingDays": "Required Working Days",
+  "requiredWorkingDaysHint": "Number of days this member should attend per month",
+  "requiredWorkingHours": "Hours/Day",
+  "requiredWorkingHoursHint": "Number of hours this member should work per day",
+  "editMember": "Edit Member",
+  "noRole": "No role",
+  "back": "Back",
+  "workingRequirements": "Working Requirements"
 },
 "common": {
   "ok": "OK",
@@ -147,6 +159,11 @@
   "cancel": "Cancel",
   "create": "Create",
   "apply": "Apply",
-  "confirmDelete": "Delete?"
+  "confirmDelete": "Delete?",
+  "username": "Username",
+  "email": "Email",
+  "role": "Role",
+  "actions": "Actions",
+  "settings": "Settings"
 }
 }
