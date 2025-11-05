@@ -212,6 +212,7 @@ function handleLogout() {
 </script>
 
 <template>
+  <div class="h-full overflow-y-auto">
   <div v-if="isLoading" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
     <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
     <USkeleton class="h-4 w-[250px]" />
@@ -226,7 +227,7 @@ function handleLogout() {
 
   <div class="max-w-7xl mx-auto mb-20 px-4 space-y-10">
     <div v-if="activeApps.length">
-      <h3 class="text-xl font-semibold mb-4">{{ t('app.installedHead') }}</h3>
+      <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
       <div class="flex flex-wrap gap-10 justify-start"> 
         <div v-for="(app, index) in activeApps" :key="app.bundle">
           <AppCard v-bind="toCard(app)" />
@@ -254,25 +255,25 @@ function handleLogout() {
   </div>
 
   <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
-    <h2 class="text-2xl font-bold flex items-center mb-4">
+    <h2 class="text-xl font-semibold flex items-center mb-4">
   <UIcon name="lucide:briefcase" class="w-5 h-5 mr-2" />
       {{ t('app.businessAutomation') }}
     </h2>
     <p class="mb-4">{{ t('app.businessAutomationLongDesc') }}</p>
 
-    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
   <UIcon name="lucide:plus-circle" class="w-5 h-5 mr-2" />
       {{ t('app.processOptimization') }}
     </h2>
     <p class="mb-4">{{ t('app.processOptimizationLongDesc') }}</p>
 
-    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
   <UIcon name="lucide:folder-cog" class="w-5 h-5 mr-2" />
       {{ t('app.flexibility') }}
     </h2>
     <p class="mb-4">{{ t('app.flexibilityLongDesc') }}</p>
 
-    <h2 class="text-2xl font-bold flex items-center mt-8 mb-4">
+    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
   <UIcon name="lucide:line-chart" class="w-5 h-5 mr-2" />
       {{ t('app.analytics') }}
     </h2>
@@ -297,5 +298,6 @@ function handleLogout() {
 
   <div class="m-2">
     <AppFooter />
+  </div>
   </div>
 </template>

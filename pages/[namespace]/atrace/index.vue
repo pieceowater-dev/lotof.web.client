@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 import Card from "@/components/Card.vue";
+import CreatePostModal from "@/components/atrace/CreatePostModal.vue";
+import EditPostModal from "@/components/atrace/EditPostModal.vue";
+import FilterModal from "@/components/atrace/FilterModal.vue";
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
 const { t } = useI18n();
@@ -63,41 +66,19 @@ const isFilterOpen = ref(false)
 const isCreateOpen = ref(false)
 const isEditOpen = ref(false)
 const editingPost = ref<Post | null>(null)
-const isDeleteConfirmOpen = ref(false)
 
 // Create form state
 const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
         { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
 );
 
-function generatePin() {
-    // 6-digit random PIN, leading zeros allowed
-    form.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
-}
-function copyPin() {
-    if (process.client && form.pin) {
-        navigator.clipboard.writeText(form.pin);
-        pinCopied.value = true;
-        setTimeout(() => { pinCopied.value = false; }, 1500);
-    }
-}
-const pinCopied = ref(false);
+// PIN generation/copy handled inside modal component
 
 // Edit form state
 const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
     { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
 );
-const editPinCopied = ref(false);
-function generateEditPin() {
-    editForm.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
-}
-function copyEditPin() {
-    if (typeof window !== 'undefined' && editForm.pin) {
-        window.navigator.clipboard.writeText(editForm.pin);
-        editPinCopied.value = true;
-        setTimeout(() => { editPinCopied.value = false; }, 1500);
-    }
-}
+// Edit PIN helpers handled inside modal component
 
 const router = useRouter();
 const route = useRoute();
@@ -404,35 +385,12 @@ onBeforeUnmount(() => {
 <template>
     
 
-    <UModal v-model="isFilterOpen">
-        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        Filter
-                    </h3>
-                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1"
-                        @click="isFilterOpen = false" />
-                </div>
-            </template>
+    <FilterModal v-model="isFilterOpen" />
 
-            <Placeholder class="h-64" />
-
-            <template #footer>
-                <div class="flex justify-between gap-2">
-                    <UButton icon="lucide:check" size="sm" color="primary" variant="solid"
-                        label="Apply" :trailing="false" />
-                    <UButton icon="lucide:x" size="sm" color="primary" variant="outline"
-                        label="Cancel" :trailing="false" />
-                </div>
-            </template>
-        </UCard>
-    </UModal>
-
-    <div class="h-screen flex flex-col">
-        <div class="flex justify-between items-center mb-5 mt-5 px-4">
+    <div class="h-full flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
             <div class="text-left">
-                <h1 class="text-3xl font-bold">{{ t('app.atraceTitle') }}</h1>
+                <h1 class="text-2xl font-semibold">{{ t('app.atraceTitle') }}</h1>
                 <span>{{ t('app.atraceSubtitle') }}</span>
             </div>
             <div>
@@ -448,9 +406,9 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="overflow-x-auto whitespace-nowrap py-4 px-4" ref="cardsScrollRef">
+        <div class="overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
             <div class="flex space-x-4 items-stretch">
-                <div v-if="loading" class="text-gray-500">Loading…</div>
+                <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
                 <div v-else class="flex space-x-4">
                     <div v-for="post in posts" :key="post.id">
@@ -470,9 +428,9 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="flex justify-between items-center mb-5 mt-5 px-4">
+        <div class="flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
             <div class="text-left">
-                <h2 class="text-2xl font-bold">{{ t('app.attendance') }} — {{ selectedPostTitle }}</h2>
+                <h2 class="text-lg font-medium">{{ t('app.attendance') }} — {{ selectedPostTitle }}</h2>
                 <span>{{ selectedPostLocationLine }}</span>
             </div>
 
@@ -481,7 +439,7 @@ onBeforeUnmount(() => {
 
 
 
-        <div v-if="posts.length > 0 && selectedPostId" class="flex-1 h-full px-4 pb-4 flex flex-col overflow-y-auto">
+        <div v-if="posts.length > 0 && selectedPostId" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
             <Table :post-id="selectedPostId" />
         </div>
         <div v-else class="flex-1 h-full px-4 pb-4 flex flex-col items-center justify-center">
@@ -503,122 +461,14 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Create Post Modal -->
-    <UModal v-model="isCreateOpen">
-        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        {{ t('app.atraceAddLocation') }}
-                    </h3>
-                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isCreateOpen = false" />
-                </div>
-            </template>
-
-            <div class="space-y-3">
-                <UFormGroup :label="t('common.title')">
-                    <UInput v-model="form.title" :placeholder="t('common.title')" />
-                </UFormGroup>
-                <UFormGroup :label="t('common.description')">
-                    <UTextarea v-model="form.description" :placeholder="t('common.description')" />
-                </UFormGroup>
-                <USeparator />
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <UFormGroup :label="t('common.address')">
-                        <UInput v-model="form.location.address" :placeholder="t('common.address')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.city')">
-                        <UInput v-model="form.location.city" :placeholder="t('common.city')" />
-                    </UFormGroup>
-                </div>
-                <USeparator />
-                            <UFormGroup label="PIN (6 digits)">
-                                <div class="flex gap-2 items-center">
-                                    <UInput v-model="form.pin" maxlength="6" placeholder="******" class="w-32" data-testid="create-pin-input" />
-                                    <UButton size="xs" color="primary" @click="() => { form.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6); }">Generate</UButton>
-                                </div>
-                                <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
-                            </UFormGroup>
-            </div>
-
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton icon="lucide:x" color="gray" variant="ghost" @click="isCreateOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                    <UButton icon="lucide:check" color="primary" :disabled="!form.title || String(form.pin).length !== 6" @click="handleCreate">{{ t('common.create') || 'Create' }}</UButton>
-                </div>
-            </template>
-        </UCard>
-    </UModal>
+    <CreatePostModal v-model="isCreateOpen" :form="form" @submit="handleCreate" />
 
     <!-- Edit Post Modal -->
-    <UModal v-model="isEditOpen">
-        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-                        {{ t('common.edit') || 'Edit location' }}
-                    </h3>
-                    <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isEditOpen = false" />
-                </div>
-            </template>
-
-            <div class="space-y-3">
-                <UFormGroup :label="t('common.title')">
-                    <UInput v-model="editForm.title" :placeholder="t('common.title')" />
-                </UFormGroup>
-                <UFormGroup :label="t('common.description')">
-                    <UTextarea v-model="editForm.description" :placeholder="t('common.description')" />
-                </UFormGroup>
-                <USeparator />
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <UFormGroup :label="t('common.address')">
-                        <UInput v-model="editForm.location.address" :placeholder="t('common.address')" />
-                    </UFormGroup>
-                    <UFormGroup :label="t('common.city')">
-                        <UInput v-model="editForm.location.city" :placeholder="t('common.city')" />
-                    </UFormGroup>
-                </div>
-
-                <USeparator />
-
-                                <UFormGroup label="PIN (6 digits)">
-                                    <div class="flex gap-2 items-center">
-                                        <UInput v-model="editForm.pin" maxlength="6" placeholder="******" class="w-32" data-testid="edit-pin-input" />
-                                        <UButton size="xs" color="primary" @click="generateEditPin">Generate</UButton>
-                                        <UButton size="xs" color="gray" variant="outline" @click="copyEditPin" :disabled="!editForm.pin">
-                                            <span v-if="!editPinCopied">Copy</span>
-                                            <span v-else>Copied!</span>
-                                        </UButton>
-                                    </div>
-                                    <div class="text-xs text-yellow-600 mt-1">Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b></div>
-                                </UFormGroup>
-            </div>
-
-            <template #footer>
-                <div class="flex items-center justify-between gap-2">
-                    <!-- Delete with confirmation popover -->
-                    <UPopover v-model="isDeleteConfirmOpen" :popper="{ placement: 'top-start' }">
-                        <UButton color="red" variant="outline" icon="lucide:trash-2"
-                                 :disabled="!editingPost"
-                        >{{ t('common.delete') || 'Delete' }}</UButton>
-                        <template #panel>
-                            <div class="p-3 max-w-xs">
-                                <p class="text-sm mb-3">{{ t('common.confirmDelete') || 'Delete?' }}</p>
-                                <div class="flex gap-2 justify-end">
-                                    <UButton color="gray" variant="ghost" @click="isDeleteConfirmOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                                    <UButton color="red" variant="solid" icon="lucide:trash-2"
-                                             @click="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: true }); isDeleteConfirmOpen = false; }"
-                                    >{{ t('common.delete') || 'Delete' }}</UButton>
-                                </div>
-                            </div>
-                        </template>
-                    </UPopover>
-
-                    <div class="flex justify-end gap-2">
-                        <UButton icon="lucide:x" color="gray" variant="ghost" @click="isEditOpen = false">{{ t('common.cancel') || 'Cancel' }}</UButton>
-                        <UButton icon="lucide:check" color="primary" :disabled="!editForm.title" @click="handleEditSave">{{ t('common.save') || 'Save' }}</UButton>
-                    </div>
-                </div>
-            </template>
-        </UCard>
-    </UModal>
+    <EditPostModal
+      v-model="isEditOpen"
+      :form="editForm"
+      :editingPost="editingPost"
+      @save="handleEditSave"
+      @delete="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: false }) }"
+    />
 </template>

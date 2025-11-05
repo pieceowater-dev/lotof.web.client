@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { FriendshipStatus } from '@gql-hub';
 import { CookieKeys } from '@/utils/storageKeys';
+import AppTable from '@/components/ui/AppTable.vue'
 
 const { token, user } = useAuth();
 const { rows: friends, load, loading } = useFriendships();
@@ -11,7 +12,7 @@ const search = ref('');
 const userFound = ref<boolean | null>(null);
 const foundUser = ref<{ id: string; email: string; username: string } | null>(null);
 const toast = useToast();
-const selectedTab = ref(1); // default to Requests (Pending)
+const selectedTab = ref(0); // default to Contacts (Accepted)
 
 const isValidEmail = computed(() => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -86,7 +87,7 @@ watch(selectedTab, (newTab) => {
 });
 
 onMounted(() => {
-  if (token.value) load(FriendshipStatus.Pending);
+  if (token.value) load(FriendshipStatus.Accepted);
 });
 
 const columns = computed(() => ([
@@ -126,6 +127,15 @@ const tabs = computed(() => ([
 
 const selected = ref([]);
 
+// Pagination for friends table
+const friendsPage = ref(1);
+const friendsPageCount = ref(10);
+const paginatedFriends = computed(() => {
+  const start = (friendsPage.value - 1) * friendsPageCount.value;
+  const end = start + friendsPageCount.value;
+  return friends.value.slice(start, end);
+});
+
 // Namespace switcher + Members table
 const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespaces } = useNamespace();
 const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string }>>([]);
@@ -150,6 +160,18 @@ const loadMembers = async () => {
 watch(() => selectedNS.value, () => { loadMembers(); });
 onMounted(() => { loadNamespaces(); loadMembers(); });
 
+// Reload friend dropdown when members change to filter out newly added ones
+watch(() => nsMembers.value, () => { loadMoreFriends(true); });
+
+// Pagination for namespace members table
+const membersPage = ref(1);
+const membersPageCount = ref(10);
+const paginatedMembers = computed(() => {
+  const start = (membersPage.value - 1) * membersPageCount.value;
+  const end = start + membersPageCount.value;
+  return nsMembers.value.slice(start, end);
+});
+
 // Searchable + infinite-scroll accepted friends dropdown
 const friendSearch = ref('');
 const friendOptions = ref<Array<{ label: string; value: string }>>([]);
@@ -172,7 +194,11 @@ async function loadMoreFriends(reset = false) {
     const { hubSearchAcceptedFriends } = await import('@/api/hub/friendships/searchAccepted');
     const page = friendPage.value;
     const { rows, count } = await hubSearchAcceptedFriends(tok, friendSearch.value, page, 25);
-    const mapped = rows.map(r => ({ label: `${r.friend.username} (${r.friend.email})`, value: r.friend.id }));
+    // Exclude users already in the namespace
+    const existingUserIds = new Set(nsMembers.value.map(m => m.userId));
+    const mapped = rows
+      .filter(r => !existingUserIds.has(r.friend.id))
+      .map(r => ({ label: `${r.friend.username} (${r.friend.email})`, value: r.friend.id }));
     friendOptions.value = reset ? mapped : friendOptions.value.concat(mapped);
     const loaded = friendOptions.value.length;
     friendHasMore.value = loaded < count;
@@ -220,33 +246,33 @@ async function removeMember(userId: string) {
 </script>
 
 <template>
-  <div class="p-4">
-    <UCard class="dark:bg-gray-800 shadow-md hover:shadow-sm">
-  <h1 class="text-2xl font-bold">{{ t('app.myPeopleHeading') }}</h1>
-  <p class="text-gray-600 dark:text-gray-400">{{ t('app.myPeopleSub') }}</p>
-      <div class="mt-4 flex gap-2">
-  <UInput class="w-80" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" @update:modelValue="searchUser" />
-        <UButton v-if="buttonText" @click="sendAction">{{ buttonText }}</UButton>
+  <div class="p-4 h-full flex flex-col min-h-0 overflow-hidden gap-4">
+    <!-- Compact Search Card -->
+    <UCard class="dark:bg-gray-800 shadow-md rounded-xl flex-shrink-0">
+      <h1 class="text-2xl font-semibold mb-2">{{ t('app.myPeopleHeading') }}</h1>
+      <div class="flex gap-2 items-start">
+        <UInput class="flex-1 max-w-md" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
+        <UButton v-if="buttonText" @click="sendAction" size="sm">{{ buttonText }}</UButton>
       </div>
-  <p v-if="!isValidEmail && search" class="mt-2 text-sm text-red-500">{{ t('app.invalidEmail') }}</p>
-      <p v-if="userFound !== null" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-  {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
+      <p v-if="!isValidEmail && search" class="mt-1 text-xs text-red-500">{{ t('app.invalidEmail') }}</p>
+      <p v-if="userFound !== null" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+        {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
       </p>
     </UCard>
     
-    <div class="mt-6">
-      <UTabs v-model="selectedTab" :items="tabs" />
-      <UCard class="dark:bg-gray-800 shadow-md hover:shadow-sm mt-4">
-        <div class="overflow-auto">
-          <UTable
-            :rows="friends"
+    <div class="flex-1 min-h-0 flex flex-col gap-4">
+      <!-- Friends / Requests section -->
+      <div class="flex-1 min-h-0 flex flex-col">
+      <UTabs v-model="selectedTab" :items="tabs" class="mb-2" size="sm" />
+        <div class="flex-1 min-h-0">
+          <AppTable
+            v-model:page="friendsPage"
+            v-model:pageCount="friendsPageCount"
+            :total="friends.length"
+            :rows="paginatedFriends"
             :columns="columns"
             :loading="loading"
-            :loading-state="{ icon: 'lucide:loader', label: '' }"
-            :empty-state="{ icon: 'lucide:bird', label: t('app.emptyTable') }"
-            :progress="{ color: 'primary', animation: 'carousel' }"
-            class="w-full"
-            hover
+            :pagination="true"
           >
             <template #username-data="{ row }">
               <span>{{ row.friend.username }}</span>
@@ -261,27 +287,25 @@ async function removeMember(userId: string) {
                 <UButton color="gray" variant="ghost" icon="lucide:ellipsis" />
               </UDropdown>
             </template>
-          </UTable>
+          </AppTable>
         </div>
-      </UCard>
-    </div>
-  </div>
+      </div>
 
-  <!-- Namespace members section -->
-  <div class="mt-10">
-    <UCard class="dark:bg-gray-800 shadow-md hover:shadow-sm">
-      <div class="flex items-center justify-between mb-4">
+      <!-- Namespace members section -->
+      <div class="flex-1 min-h-0 flex flex-col">
+    <UCard class="dark:bg-gray-800 shadow-md rounded-xl mb-2 flex-shrink-0">
+      <div class="flex items-center justify-between mb-2">
         <div class="flex items-center gap-2">
-          <UIcon name="lucide:users" class="w-5 h-5" />
-          <h2 class="text-xl font-semibold">{{ t('app.namespaceMembers') }}</h2>
+          <span class="text-sm font-medium">{{ t('app.namespaceMembers') }}</span>
         </div>
         <USelect
           :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
           v-model="selectedNS"
+          size="sm"
         />
       </div>
 
-      <div class="flex items-center gap-3 mb-3">
+      <div class="flex items-center gap-2">
         <USelectMenu
           searchable
           v-model="friendToAdd"
@@ -292,33 +316,38 @@ async function removeMember(userId: string) {
           @scroll-bottom="() => loadMoreFriends(false)"
           :loading="friendLoading"
           :placeholder="t('app.selectFriend')"
-          @update:modelValue="val => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
+          size="sm"
+          @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
         />
       </div>
-
-      <UTable
-        :rows="nsMembers"
-        :columns="[
-          { key: 'username', label: t('app.username') },
-          { key: 'email', label: t('app.email') },
-          { key: 'actions', label: '' }
-        ]"
-        :loading="membersLoading"
-        :loading-state="{ icon: 'lucide:loader', label: '' }"
-        :empty-state="{ icon: 'lucide:users', label: t('app.emptyTable') }"
-        class="w-full"
-        hover
-      >
-        <template #username-data="{ row }">
-          <span>{{ row.username }}</span>
-        </template>
-        <template #email-data="{ row }">
-          <span>{{ row.email }}</span>
-        </template>
-        <template #actions-data="{ row }">
-          <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
-        </template>
-      </UTable>
     </UCard>
+
+      <div class="flex-1 min-h-0">
+        <AppTable
+          v-model:page="membersPage"
+          v-model:pageCount="membersPageCount"
+          :total="nsMembers.length"
+          :rows="paginatedMembers"
+          :columns="[
+            { key: 'username', label: t('app.username') },
+            { key: 'email', label: t('app.email') },
+            { key: 'actions', label: '' }
+          ]"
+          :loading="membersLoading"
+          :pagination="true"
+        >
+          <template #username-data="{ row }">
+            <span>{{ row.username }}</span>
+          </template>
+          <template #email-data="{ row }">
+            <span>{{ row.email }}</span>
+          </template>
+          <template #actions-data="{ row }">
+            <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
+          </template>
+        </AppTable>
+      </div>
+      </div>
+    </div>
   </div>
 </template>

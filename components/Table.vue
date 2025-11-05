@@ -1,16 +1,20 @@
 <script lang="ts" setup>
 import { atraceRecordsByPost, type AtraceRecord } from '@/api/atrace/record/listByPost';
 import { CookieKeys } from '@/utils/storageKeys';
+import { useI18n } from '@/composables/useI18n';
+import AppTable from '@/components/ui/AppTable.vue';
 
 const props = defineProps<{ postId?: string | null }>();
 
+const { t } = useI18n();
+
 // Columns for Nuxt UI table
 const columns = [
-  { key: 'timestamp', label: 'Datetime', sortable: true },
-  { key: 'username', label: 'Username', sortable: false },
-  { key: 'email', label: 'Email', sortable: false },
-  { key: 'method', label: 'Method', sortable: false },
-  { key: 'suspicious', label: 'Suspicious', sortable: false },
+  { key: 'timestamp', label: t('common.datetime'), sortable: true },
+  { key: 'username', label: t('common.username'), sortable: false },
+  { key: 'email', label: t('common.email'), sortable: false },
+  { key: 'method', label: t('common.method'), sortable: false },
+  { key: 'suspicious', label: t('common.suspicious'), sortable: false },
 ];
 
 // Selected Rows (not used for actions right now, but keep parity with UTable)
@@ -93,65 +97,17 @@ function fmtMethod(method: string): string {
 </script>
 
 <template>
-  <UCard
-    class="w-full"
-    :ui="{
-      base: '',
-      ring: '',
-      divide: 'divide-y divide-gray-200 dark:divide-gray-700',
-      header: { padding: 'px-4 py-5' },
-      body: { padding: '', base: 'divide-y divide-gray-200 dark:bg-gray-800' },
-      footer: { padding: 'p-4', base: 'dark:bg-gray-800' }
-    }"
-  >
-
-    <!-- Header and Action buttons -->
-    <!-- <div class="flex justify-between items-center w-full px-4 py-3">
-      <div class="flex gap-1.5 items-center">
-        <UDropdown v-if="selectedRows.length > 1" :items="actions" :ui="{ width: 'w-36' }">
-          <UButton
-            icon="i-lucide-chevron-down"
-            trailing
-            color="gray"
-            size="xs"
-          >
-            Mark as
-          </UButton>
-        </UDropdown>
-
-        <USelectMenu v-model="selectedColumns" :options="excludeSelectColumn" multiple>
-          <UButton
-            icon="i-lucide-columns-2"
-            color="gray"
-            size="xs"
-          >
-            Columns
-          </UButton>
-        </USelectMenu>
-
-        <UButton
-          icon="i-lucide-filter"
-          color="gray"
-          size="xs"
-          :disabled="search === '' && selectedStatus.length === 0"
-          @click="resetFilters"
-        >
-          Reset
-        </UButton>
-      </div>
-    </div> -->
-
+  <div class="w-full h-full flex flex-col min-h-0">
     <!-- Table -->
-    <UTable
+    <AppTable
       v-model:sort="sort"
+      v-model:page="page"
+      v-model:pageCount="pageCount"
+      :total="pageTotal"
       :rows="records || []"
       :columns="columns"
       :loading="status === 'pending'"
-      sort-asc-icon="i-lucide-arrow-up"
-      sort-desc-icon="i-lucide-arrow-down"
-      sort-mode="manual"
-      class="w-full"
-      :ui="{ td: { base: 'max-w-[0] truncate' } }"
+      :pagination="true"
     >
       <template #method-data="{ row }">
         <span>{{ fmtMethod(row.method) }}</span>
@@ -162,53 +118,13 @@ function fmtMethod(method: string): string {
       </template>
 
       <template #suspicious-data="{ row }">
-        <UBadge size="xs" :label="row.suspicious ? 'Suspicious' : 'OK'" :color="row.suspicious ? 'red' : 'gray'" variant="subtle" />
-      </template>
-    </UTable>
-
-    <!-- Number of rows & Pagination -->
-    <template #footer>
-      <div class="flex flex-wrap justify-between items-center">
-        <div>
-          <span class="text-sm leading-5">
-            Showing
-            <span class="font-medium">{{ pageFrom }}</span>
-            to
-            <span class="font-medium">{{ pageTo }}</span>
-            of
-            <span class="font-medium">{{ pageTotal }}</span>
-            results
-          </span>
-        </div>
-
-        <div class="flex gap-x-4">
-        <div class="flex items-center gap-1.5">
-        <span class="text-sm leading-5">Rows per page:</span>
-
-        <USelect
-          v-model="pageCount"
-          :options="[10, 25, 50, 100]"
-          class="me-2 w-20"
+        <UBadge
           size="xs"
+          :label="row.suspicious ? t('common.suspicious') : t('common.ok')"
+          :color="row.suspicious ? 'red' : 'gray'"
+          variant="subtle"
         />
-      </div>
-
-        <UPagination
-          v-model="page"
-          :page-count="pageCount"
-          :total="pageTotal"
-          :ui="{
-            wrapper: 'flex items-center ',
-            rounded: 'min-w-[32px] justify-center',
-            default: {
-              activeButton: {
-                variant: 'outline'
-              }
-            }
-          }"
-        />
-      </div>
-      </div>
-    </template>
-  </UCard>
+      </template>
+    </AppTable>
+  </div>
 </template>

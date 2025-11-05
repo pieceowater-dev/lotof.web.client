@@ -130,6 +130,8 @@
   "openInNewTab": "Open in new tab",
   "printQr": "Print QR code",
   "linkCopied": "Copied!",
+  "pin6digits": "PIN (6 digits)",
+  "pinSecurityNote": "Save this PIN securely. It will be required to access the public post page and generate QR codes. Treat it like a password. <b>It cannot be recovered if lost!</b>",
   "atraceSettings": "Atrace Settings",
   "atraceSettingsSubtitle": "Manage members, roles, and working days",
   "members": "Members",
@@ -164,6 +166,17 @@
   "email": "Email",
   "role": "Role",
   "actions": "Actions",
-  "settings": "Settings"
+  "settings": "Settings",
+  "datetime": "Datetime",
+  "method": "Method",
+  "suspicious": "Suspicious",
+  "showing": "Showing",
+  "to": "to",
+  "of": "of",
+  "results": "results",
+  "rowsPerPage": "Rows per page",
+  "generate": "Generate",
+  "copy": "Copy",
+  "copied": "Copied!"
 }
 }

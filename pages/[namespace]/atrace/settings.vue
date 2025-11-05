@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+import AppTable from '@/components/ui/AppTable.vue';
 
 const { t } = useI18n();
 
@@ -30,6 +31,23 @@ const members = ref<Member[]>([]);
 const roles = ref<Role[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const columns = computed(() => ([
+    { key: 'username', label: t('common.username') },
+    { key: 'email', label: t('common.email') },
+    { key: 'roleName', label: t('common.role') },
+    { key: 'requiredWorkingDays', label: t('app.requiredWorkingDays') },
+    { key: 'requiredWorkingHours', label: t('app.requiredWorkingHours') },
+    { key: 'actions', label: t('common.actions') }
+]));
+
+// Pagination
+const membersPage = ref(1);
+const membersPageCount = ref(10);
+const paginatedMembers = computed(() => {
+    const start = (membersPage.value - 1) * membersPageCount.value;
+    const end = start + membersPageCount.value;
+    return members.value.slice(start, end);
+});
 
 // For modals
 const isEditMemberOpen = ref(false);
@@ -191,16 +209,16 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="h-screen flex flex-col p-4">
-        <div class="flex justify-between items-center mb-5">
+    <div class="h-full flex flex-col p-4 min-h-0">
+        <div class="flex justify-between items-center mb-4 flex-shrink-0">
             <div class="text-left">
-                <h1 class="text-3xl font-bold">{{ t('app.atraceSettings') || 'Atrace Settings' }}</h1>
-                <span>{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
+                <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
             </div>
             <div>
                 <UButton 
                     icon="lucide:arrow-left" 
-                    size="xs" 
+                    size="sm" 
                     color="primary" 
                     variant="soft"
                     :to="`/${nsSlug}/atrace`"
@@ -211,75 +229,42 @@ onMounted(async () => {
         </div>
 
         <!-- Members Management Section -->
-        <div class="mb-8">
-            <h2 class="text-2xl font-bold mb-4">{{ t('app.members') || 'Members' }}</h2>
+    <div class="flex-1 min-h-0 flex flex-col">
+            <h2 class="text-base font-medium mb-3">{{ t('app.members') || 'Members' }}</h2>
             
-            <div v-if="loading" class="text-gray-500">Loading…</div>
+            <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
             <div v-else-if="error" class="text-red-500">{{ error }}</div>
             
             <div v-else-if="members.length === 0" class="text-gray-500 text-center py-8">
                 {{ t('app.noMembers') || 'No members found' }}
             </div>
 
-            <div v-else class="overflow-x-auto">
-                <table class="min-w-full bg-white dark:bg-gray-900 rounded-lg shadow-md">
-                    <thead class="bg-gray-100 dark:bg-gray-800">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('common.username') || 'Username' }}
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('common.email') || 'Email' }}
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('common.role') || 'Role' }}
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('app.requiredWorkingDays') || 'Required Days' }}
-                            </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('app.requiredWorkingHours') || 'Hours/Day' }}
-                            </th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-                                {{ t('common.actions') || 'Actions' }}
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr v-for="member in members" :key="member.id" class="hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                                {{ member.username }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {{ member.email }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                <span v-if="member.roleName" class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md">
-                                    {{ member.roleName }}
-                                </span>
-                                <span v-else class="text-gray-400 dark:text-gray-600 italic">
-                                    {{ t('app.noRole') || 'No role' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {{ member.requiredWorkingDays || '—' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                {{ member.requiredWorkingHours || '—' }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <UButton 
-                                    size="xs" 
-                                    color="primary" 
-                                    variant="outline"
-                                    @click="openEditMember(member)"
-                                >
-                                    {{ t('common.edit') || 'Edit' }}
-                                </UButton>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div v-else class="flex-1 min-h-0">
+                <AppTable 
+                    :rows="paginatedMembers" 
+                    :columns="columns" 
+                    :loading="loading"
+                    v-model:page="membersPage"
+                    v-model:pageCount="membersPageCount"
+                    :total="members.length"
+                    :pagination="true"
+                >
+                  <template #roleName-data="{ row }">
+                    <span v-if="row.roleName" class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md">
+                      {{ row.roleName }}
+                    </span>
+                    <span v-else class="text-gray-400 dark:text-gray-600 italic">
+                      {{ t('app.noRole') || 'No role' }}
+                    </span>
+                  </template>
+                  <template #actions-data="{ row }">
+                    <div class="text-right">
+                      <UButton size="xs" color="primary" variant="outline" icon="lucide:pencil" @click="openEditMember(row)">
+                        {{ t('common.edit') || 'Edit' }}
+                      </UButton>
+                    </div>
+                  </template>
+                </AppTable>
             </div>
         </div>
 
