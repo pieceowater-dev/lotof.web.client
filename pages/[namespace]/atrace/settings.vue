@@ -259,7 +259,7 @@ onMounted(async () => {
                   </template>
                   <template #actions-data="{ row }">
                     <div class="text-right">
-                      <UButton size="xs" color="primary" variant="outline" icon="lucide:pencil" @click="openEditMember(row)">
+                      <UButton size="xs" color="primary" variant="soft" icon="lucide:pencil" @click="openEditMember(row)">
                         {{ t('common.edit') || 'Edit' }}
                       </UButton>
                     </div>
@@ -357,20 +357,18 @@ onMounted(async () => {
                 </div>
 
                 <template #footer>
-                    <div class="flex justify-end gap-3">
+                    <div class="flex justify-end gap-2">
                         <UButton 
                             icon="lucide:x" 
-                            color="gray" 
-                            variant="soft" 
-                            size="lg"
+                            color="primary" 
+                            variant="soft"
                             @click="isEditMemberOpen = false"
                         >
                             {{ t('common.cancel') || 'Cancel' }}
                         </UButton>
                         <UButton 
                             icon="lucide:check" 
-                            color="primary" 
-                            size="lg"
+                            color="primary"
                             @click="handleSaveMember"
                         >
                             {{ t('common.save') || 'Save' }}

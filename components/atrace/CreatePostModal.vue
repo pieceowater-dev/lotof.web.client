@@ -62,7 +62,7 @@ function generatePin() {
 
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton icon="lucide:x" color="gray" variant="ghost" @click="open = false">{{ t('common.cancel') }}</UButton>
+          <UButton icon="lucide:x" color="primary" variant="soft" @click="open = false">{{ t('common.cancel') }}</UButton>
           <UButton icon="lucide:check" color="primary" :disabled="!props.form.title || String(props.form.pin).length !== 6" @click="emit('submit')">{{ t('common.create') }}</UButton>
         </div>
       </template>

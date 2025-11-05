@@ -5,7 +5,7 @@ const props = defineProps<{
   modelValue: boolean,  // v-model binding state
   header?: string | object,
   content?: string | object,
-  footerButtons?: { label: string, variant?: 'link' | 'solid' | 'outline' | 'soft' | 'ghost', onClick?: () => void }[]
+  footerButtons?: { label: string, color?: string, variant?: 'link' | 'solid' | 'outline' | 'soft' | 'ghost', onClick?: () => void }[]
 }>();
 
 const emit = defineEmits(['update:modelValue']);
@@ -24,6 +24,7 @@ const emit = defineEmits(['update:modelValue']);
         <div class="flex justify-end gap-2">
           <slot name="footer">
             <UButton v-for="(btn, index) in props.footerButtons" :key="index" :label="btn.label"
+              :color="(btn.color || (btn.variant === 'link' ? 'gray' : 'primary')) as any"
               :variant="btn.variant || 'solid'"
               @click="btn.onClick ? btn.onClick() : emit('update:modelValue', false)" />
           </slot>

@@ -17,8 +17,10 @@
         <div v-if="error" class="text-red-500 text-xs">{{ error }}</div>
       </div>
       <template #footer>
-  <UButton color="primary" @click="submitPin">{{ t('common.ok') }}</UButton>
-  <UButton color="gray" variant="ghost" @click="close">{{ t('common.cancel') }}</UButton>
+        <div class="flex justify-end gap-2">
+          <UButton color="primary" variant="soft" @click="close">{{ t('common.cancel') }}</UButton>
+          <UButton color="primary" @click="submitPin">{{ t('common.ok') }}</UButton>
+        </div>
       </template>
     </UCard>
   </UModal>

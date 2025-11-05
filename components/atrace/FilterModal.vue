@@ -19,9 +19,9 @@ const { t } = useI18n();
       <Placeholder class="h-64" />
 
       <template #footer>
-        <div class="flex justify-between gap-2">
-          <UButton icon="lucide:check" size="sm" color="primary" variant="solid">{{ t('common.apply') }}</UButton>
-          <UButton icon="lucide:x" size="sm" color="primary" variant="outline">{{ t('common.cancel') }}</UButton>
+        <div class="flex justify-end gap-2">
+          <UButton icon="lucide:x" color="primary" variant="soft">{{ t('common.cancel') }}</UButton>
+          <UButton icon="lucide:check" color="primary">{{ t('common.apply') }}</UButton>
         </div>
       </template>
     </UCard>

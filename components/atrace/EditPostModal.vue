@@ -70,7 +70,7 @@ function copyPin() {
           <div class="flex gap-2 items-center">
             <UInput v-model="props.form.pin" maxlength="6" placeholder="******" class="w-32" />
             <UButton size="xs" color="primary" @click="generatePin">{{ t('common.generate') }}</UButton>
-            <UButton size="xs" color="gray" variant="outline" @click="copyPin" :disabled="!props.form.pin">
+            <UButton size="xs" color="primary" variant="soft" @click="copyPin" :disabled="!props.form.pin">
               <span v-if="!editPinCopied">{{ t('common.copy') }}</span>
               <span v-else>{{ t('common.copied') }}</span>
             </UButton>
@@ -83,15 +83,15 @@ function copyPin() {
         <div class="flex items-center justify-between gap-2">
           <!-- Delete with confirmation popover -->
           <UPopover v-model="isDeleteConfirmOpen" :popper="{ placement: 'top-start' }">
-            <UButton color="red" variant="outline" icon="lucide:trash-2" :disabled="!props.editingPost">
+            <UButton color="red" variant="soft" icon="lucide:trash-2" :disabled="!props.editingPost">
               {{ t('common.delete') }}
             </UButton>
             <template #panel>
               <div class="p-3 max-w-xs">
                 <p class="text-sm mb-3">{{ t('common.confirmDelete') }}</p>
                 <div class="flex gap-2 justify-end">
-                  <UButton color="gray" variant="ghost" @click="isDeleteConfirmOpen = false">{{ t('common.cancel') }}</UButton>
-                  <UButton color="red" variant="solid" icon="lucide:trash-2"
+                  <UButton color="primary" variant="soft" @click="isDeleteConfirmOpen = false">{{ t('common.cancel') }}</UButton>
+                  <UButton color="red" icon="lucide:trash-2"
                            @click="() => { emit('delete'); isDeleteConfirmOpen = false; }">
                     {{ t('common.delete') }}
                   </UButton>
@@ -101,7 +101,7 @@ function copyPin() {
           </UPopover>
 
           <div class="flex justify-end gap-2">
-            <UButton icon="lucide:x" color="gray" variant="ghost" @click="open = false">{{ t('common.cancel') }}</UButton>
+            <UButton icon="lucide:x" color="primary" variant="soft" @click="open = false">{{ t('common.cancel') }}</UButton>
             <UButton icon="lucide:check" color="primary" :disabled="!props.form.title" @click="emit('save')">{{ t('common.save') }}</UButton>
           </div>
         </div>

@@ -282,8 +282,8 @@ function handleLogout() {
 
   <Modal v-model="isModalOpen" :header="t('app.profileEditing')" :footerButtons="[
   { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
-    { label: t('app.cancel'), variant: 'ghost', onClick: () => (isModalOpen = false) },
-    { label: t('app.save'), variant: 'solid', onClick: handleSaveProfile }
+    { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
+    { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
   ]">
     <UFormGroup class="mb-5" label="Имя пользователя">
       <UInput v-model="username" />
