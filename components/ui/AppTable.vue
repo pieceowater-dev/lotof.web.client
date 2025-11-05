@@ -56,13 +56,17 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
       td: { base: 'max-w-[0] truncate', padding: 'px-4 py-2' },
       divide: 'divide-y divide-gray-200 dark:divide-gray-800',
       tbody: 'divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-900',
-      thead: ''
+      thead: '',
+      tr: { 
+        base: 'transition-colors duration-150',
+        selected: 'bg-gray-50 dark:bg-gray-800/30'
+      }
     }"
     class="w-full min-w-max"
     :hover="hover ?? true"
   >
     <!-- Dynamic forward of column data slots -->
-    <template v-for="col in columns" v-slot:[`${col.key}-data`]="slotProps">
+    <template v-for="col in columns" :key="col.key" v-slot:[`${col.key}-data`]="slotProps">
       <slot :name="`${col.key}-data`" v-bind="slotProps">
         <span class="truncate">{{ (slotProps.row as any)[col.key] }}</span>
       </slot>
@@ -103,3 +107,26 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
     </template>
   </div>
 </template>
+
+<style scoped>
+/* Table row hover effect */
+:deep(tbody tr) {
+  transition: background-color 150ms ease-in-out;
+}
+
+:deep(tbody tr:hover) {
+  background-color: rgb(249 250 251) !important;
+}
+
+:deep(tbody tr:hover td) {
+  background-color: rgb(249 250 251) !important;
+}
+
+.dark :deep(tbody tr:hover) {
+  background-color: rgb(64 64 64 / 0.3) !important;
+}
+
+.dark :deep(tbody tr:hover td) {
+  background-color: rgb(64 64 64 / 0.3) !important;
+}
+</style>
