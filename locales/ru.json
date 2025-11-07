@@ -125,7 +125,35 @@
   "back": "Назад",
   "workingRequirements": "Требования к работе",
   "selectFriend": "Выберите друга для добавления",
-  "search": "Поиск..."
+  "search": "Поиск...",
+  "thisMonth": "Текущий месяц",
+  "thisWeek": "Текущая неделя",
+  "last3Months": "Последние 3 месяца",
+  "customPeriod": "Произвольно",
+  "startDate": "Дата начала",
+  "endDate": "Дата окончания",
+  "attendancePermissionError": "У вас нет прав для просмотра статистики посещаемости.",
+  "attendanceUnauthorizedError": "Вы не авторизованы для просмотра статистики.",
+  "attendancePermissionErrorHint": "Если считаете, что это ошибка — обратитесь к администратору.",
+  "noData": "Нет данных за выбранный период",
+  "user": "Пользователь",
+  "workDays": "Рабочих дней",
+  "attended": "Посещено",
+  "violations": "Нарушения",
+  "exceptions": "Исключения",
+  "details": "Детали",
+  "viewDetails": "Открыть",
+  "attendanceDetails": "Детали посещаемости",
+  "detailsComingSoon": "Просмотр детальных записей скоро появится...",
+  "customRangeTitle": "Произвольный период",
+  "applyRange": "Применить период",
+  "invalidDateRange": "Некорректный диапазон дат"
+    ,"attendanceLoadFailed": "Не удалось загрузить статистику посещаемости"
+    ,"datePresetToday": "Сегодня"
+    ,"datePresetYesterday": "Вчера"
+    ,"datePresetThisWeek": "Текущая неделя"
+    ,"datePresetLast7": "Последние 7 дней"
+    ,"datePresetLast30": "Последние 30 дней"
 },
 "common": {
   "ok": "ОК",
@@ -159,6 +187,7 @@
   "rowsPerPage": "Строк на странице",
   "generate": "Сгенерировать",
   "copy": "Копировать",
-  "copied": "Скопировано!"
+  "copied": "Скопировано!",
+  "reset": "Сбросить"
 }
 }

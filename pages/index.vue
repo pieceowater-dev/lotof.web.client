@@ -88,7 +88,10 @@ async function handleAppClick(appAddress: string) {
   const existing = useCookie<string | null>(CookieKeys.ATRACE_TOKEN);
       if (!existing.value) {
         const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken');
-        const atraceToken = await atraceGetAppToken(hubToken, ns);
+  const atraceToken = await atraceGetAppToken(hubToken, ns);
+  // Store in reactive global (clients.ts) so subsequent atrace GraphQL calls use it
+  const { setAtraceAppToken } = await import('@/api/clients');
+  setAtraceAppToken(atraceToken);
         // Persist token on the client so the A-Trace page guard won’t redirect
         useCookie(CookieKeys.ATRACE_TOKEN, {
           sameSite: 'lax',
@@ -100,6 +103,10 @@ async function handleAppClick(appAddress: string) {
       } else {
         // Token already present — skip extra auth request
         // Optionally: decode and refresh if near expiry
+        // Ensure in-memory ref matches cookie (e.g., after page reload)
+        const { setAtraceAppToken } = await import('@/api/clients');
+        const existingVal = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value;
+        if (existingVal) setAtraceAppToken(existingVal);
       }
       // Ensure cookie is present before navigating; otherwise, stop and notify
       if (!useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value) {

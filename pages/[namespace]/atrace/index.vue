@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import Card from "@/components/Card.vue";
+import AttendanceStatsTable from '@/components/atrace/AttendanceStatsTable.vue';
 import CreatePostModal from "@/components/atrace/CreatePostModal.vue";
 import EditPostModal from "@/components/atrace/EditPostModal.vue";
 import FilterModal from "@/components/atrace/FilterModal.vue";
@@ -99,11 +100,13 @@ async function ensureAtraceToken(): Promise<string | null> {
             }
         }
     } catch {}
+    if (!cookie.value) return null;
+    const { setAtraceAppToken } = await import('@/api/clients');
+    setAtraceAppToken(cookie.value);
     return cookie.value;
 }
 
 async function loadPosts() {
-    // Initial load (page 1)
     loading.value = true;
     error.value = null;
     try {
@@ -115,10 +118,8 @@ async function loadPosts() {
         const { atracePostsList } = await import('@/api/atrace/post/list');
         page.value = 1;
         const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: pageLength.value });
-        // Always keep client-side ASC title order as a safety net (should already be sorted from server)
         posts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
         totalCount.value = res.count || 0;
-        // Ensure a single selection (radio-like)
         if (!selectedPostId.value || !posts.value.some(p => p.id === selectedPostId.value)) {
             selectedPostId.value = posts.value[0]?.id ?? null;
         }
@@ -407,10 +408,10 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
-            <div class="flex space-x-4 items-stretch">
+            <div class="inline-flex space-x-4 items-stretch">
                 <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
-                <div v-else class="flex space-x-4">
+                <template v-else>
                     <div v-for="post in posts" :key="post.id">
                         <Card :post="post" :selected="post.id === selectedPostId" :can-delete="false"
                               @select="() => (selectedPostId = post.id)"
@@ -424,7 +425,7 @@ onBeforeUnmount(() => {
                     <div v-if="loadingMore" class="flex items-center justify-center w-20 text-gray-500">…</div>
                     <!-- Sentinel element to trigger infinite scroll -->
                     <div ref="cardsSentinelRef" class="w-1 h-1"></div>
-                </div>
+                </template>
             </div>
         </div>
 
@@ -440,7 +441,7 @@ onBeforeUnmount(() => {
 
 
         <div v-if="posts.length > 0 && selectedPostId" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
-            <Table :post-id="selectedPostId" />
+            <AttendanceStatsTable :post-id="selectedPostId" />
         </div>
         <div v-else class="flex-1 h-full px-4 pb-4 flex flex-col items-center justify-center">
             <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">
