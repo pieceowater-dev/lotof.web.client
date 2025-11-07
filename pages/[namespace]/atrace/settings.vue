@@ -218,7 +218,7 @@ onMounted(async () => {
             <div>
                 <UButton 
                     icon="lucide:arrow-left" 
-                    size="sm" 
+                    size="xs" 
                     color="primary" 
                     variant="soft"
                     :to="`/${nsSlug}/atrace`"
