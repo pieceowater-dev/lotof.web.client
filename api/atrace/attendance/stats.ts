@@ -28,6 +28,32 @@ const GET_ALL_USERS_STATS = `
   }
 `;
 
+const GET_ATTENDANCE_REPORT = `
+  query GetAttendanceReport($userId: ID!, $startDate: String!, $endDate: String!) {
+    getAttendanceReport(input: { userId: $userId, startDate: $startDate, endDate: $endDate }) {
+      userId
+      startDate
+      endDate
+      attendances {
+        id
+        userId
+        date
+        firstCheckIn
+        lastCheckOut
+        workedHours
+        requiredHours
+        attended
+        legitimate
+        reason
+        processedAt
+        checkCount
+        firstRecordId
+        lastRecordId
+      }
+    }
+  }
+`;
+
 const GET_USERS_BY_IDS = `
   query GetUsersByIDs($ids: [ID!]!) {
     getUsersByIDs(ids: $ids) {
@@ -94,5 +120,57 @@ export async function atraceGetAllUsersStats(
     }>(GET_ALL_USERS_STATS, { startDate, endDate });
 
     return response.getAllUsersStats;
+  }, nsSlug!);
+}
+
+export async function atraceGetAttendanceReport(
+  userId: string,
+  startDate: string,
+  endDate: string,
+  nsSlug?: string
+): Promise<Array<{
+  id: string;
+  date: string;
+  firstCheckIn: number; // unix timestamp
+  lastCheckOut: number; // unix timestamp
+  workedHours: number;
+  requiredHours: number;
+  attended: boolean;
+  legitimate: boolean;
+  reason?: string;
+}>> {
+  // nsSlug required for token refresh
+  if (!nsSlug) {
+    // Try to get from route if not provided
+    try {
+      nsSlug = useRoute().params.namespace as string;
+    } catch {}
+  }
+  return atraceRequestWithRefresh(async () => {
+    const response = await atraceClient.request<{
+      getAttendanceReport: {
+        userId: string;
+        startDate: string;
+        endDate: string;
+        attendances: Array<{
+          id: string;
+          userId: string;
+          date: string;
+          firstCheckIn: number;
+          lastCheckOut: number;
+          workedHours: number;
+          requiredHours: number;
+          attended: boolean;
+          legitimate: boolean;
+          reason: string;
+          processedAt: number;
+          checkCount: number;
+          firstRecordId: string;
+          lastRecordId: string;
+        }>;
+      };
+    }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate });
+
+    return response.getAttendanceReport.attendances;
   }, nsSlug!);
 }

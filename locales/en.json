@@ -165,13 +165,32 @@
     "detailsComingSoon": "Detailed records view coming soon...",
     "customRangeTitle": "Custom Date Range",
     "applyRange": "Apply Range",
-    "invalidDateRange": "Invalid date range"
-    ,"attendanceLoadFailed": "Failed to load attendance stats"
-    ,"datePresetToday": "Today"
-    ,"datePresetYesterday": "Yesterday"
-    ,"datePresetThisWeek": "This Week"
-    ,"datePresetLast7": "Last 7 Days"
-    ,"datePresetLast30": "Last 30 Days"
+    "invalidDateRange": "Invalid date range",
+    "attendanceLoadFailed": "Failed to load attendance stats",
+    "datePresetToday": "Today",
+    "datePresetYesterday": "Yesterday",
+    "datePresetThisWeek": "This Week",
+    "datePresetLast7": "Last 7 Days",
+    "datePresetLast30": "Last 30 Days",
+    "checkIn": "Check In",
+    "checkOut": "Check Out",
+    "hoursWorked": "Hours Worked",
+    "hoursShort": "h",
+    "status": "Status",
+    "excused": "Excused",
+    "violation": "Violation",
+    "noAttendanceRecords": "No attendance records",
+    "failedToLoadDetails": "Failed to load attendance details",
+    "date": "Date",
+    "methodUnknown": "Unknown",
+    "methodLabels": {
+      "METHOD_QR": "QR code",
+      "METHOD_QR_STATIC": "Static QR",
+      "METHOD_QR_DYNAMIC": "Dynamic QR",
+      "METHOD_PIN": "PIN",
+      "METHOD_MANUAL": "Manual",
+      "METHOD_POST_PHRASE": "Post phrase"
+    }
 },
 "common": {
   "ok": "OK",

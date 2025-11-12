@@ -147,13 +147,32 @@
   "detailsComingSoon": "Просмотр детальных записей скоро появится...",
   "customRangeTitle": "Произвольный период",
   "applyRange": "Применить период",
-  "invalidDateRange": "Некорректный диапазон дат"
-    ,"attendanceLoadFailed": "Не удалось загрузить статистику посещаемости"
-    ,"datePresetToday": "Сегодня"
-    ,"datePresetYesterday": "Вчера"
-    ,"datePresetThisWeek": "Текущая неделя"
-    ,"datePresetLast7": "Последние 7 дней"
-    ,"datePresetLast30": "Последние 30 дней"
+  "invalidDateRange": "Некорректный диапазон дат",
+  "attendanceLoadFailed": "Не удалось загрузить статистику посещаемости",
+  "datePresetToday": "Сегодня",
+  "datePresetYesterday": "Вчера",
+  "datePresetThisWeek": "Текущая неделя",
+  "datePresetLast7": "Последние 7 дней",
+  "datePresetLast30": "Последние 30 дней",
+  "checkIn": "Приход",
+  "checkOut": "Уход",
+  "hoursWorked": "Отработано",
+  "hoursShort": "ч",
+  "status": "Статус",
+  "excused": "Оправдано",
+  "violation": "Нарушение",
+  "noAttendanceRecords": "Нет записей посещаемости",
+  "failedToLoadDetails": "Не удалось загрузить детали посещаемости",
+  "date": "Дата",
+  "methodUnknown": "Неизвестно",
+  "methodLabels": {
+    "METHOD_QR": "QR-код",
+    "METHOD_QR_STATIC": "Статический QR",
+    "METHOD_QR_DYNAMIC": "Динамический QR",
+    "METHOD_PIN": "PIN-код",
+    "METHOD_MANUAL": "Ручной ввод",
+    "METHOD_POST_PHRASE": "Фраза поста"
+  }
 },
 "common": {
   "ok": "ОК",

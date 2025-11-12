@@ -19,15 +19,25 @@ const messages: Record<'en'|'ru', Record<string, any>> = {
 
 export function useI18n() {
   const locale = currentLocale;
+  function getDeep(obj: any, keyPath: string): any {
+    return keyPath.split('.').reduce((acc: any, k: string) => (acc && typeof acc === 'object') ? acc[k] : undefined, obj);
+  }
   function t(path: string): string {
-    const [ns, key] = path.split('.');
-    const dict = (messages as any)[locale.value]?.[ns] || {};
-    return dict[key] || path;
+    const parts = path.split('.');
+    const ns = parts.shift();
+    if (!ns) return path;
+    const dictNs = (messages as any)[locale.value]?.[ns] || {};
+    const restPath = parts.join('.');
+    const val = restPath ? getDeep(dictNs, restPath) : dictNs;
+    return (typeof val === 'string' || typeof val === 'number') ? String(val) : path;
   }
   function tm(path: string): any {
-    const [ns, key] = path.split('.');
-    const dict = (messages as any)[locale.value]?.[ns] || {};
-    return dict[key];
+    const parts = path.split('.');
+    const ns = parts.shift();
+    if (!ns) return undefined;
+    const dictNs = (messages as any)[locale.value]?.[ns] || {};
+    const restPath = parts.join('.');
+    return restPath ? getDeep(dictNs, restPath) : dictNs;
   }
   function setLocale(l: 'en' | 'ru') { currentLocale.value = l; }
   // Persist

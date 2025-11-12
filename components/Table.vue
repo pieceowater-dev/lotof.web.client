@@ -85,14 +85,11 @@ function fmtTs(ts: number): string {
 
 // Helper to format method enum to human readable
 function fmtMethod(method: string): string {
-  switch (method) {
-    case 'METHOD_QR_STATIC': return 'QR Static';
-    case 'METHOD_QR_DYNAMIC': return 'QR Dynamic';
-    case 'METHOD_PIN': return 'PIN';
-    case 'METHOD_MANUAL': return 'Manual';
-    // Add more cases as needed
-    default: return method.replace(/_/g, ' ').replace(/\bMETHOD\b/, '').trim();
-  }
+  const key = `app.methodLabels.${method}`;
+  const label = t(key);
+  return label === key
+    ? method.replace(/^METHOD_/, '').replace(/_/g, ' ')
+    : label;
 }
 </script>
 

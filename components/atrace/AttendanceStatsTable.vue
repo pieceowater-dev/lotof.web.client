@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import PostRecordsDetails from '@/components/atrace/PostRecordsDetails.vue';
+
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -53,10 +55,8 @@ const canApplyRange = computed(() => {
   return true;
 });
 
-// Detail modal state
-const showDetailModal = ref(false);
-const detailUserId = ref<string | null>(null);
-const detailUserName = ref('');
+// Accordion state - track expanded user IDs
+const expandedUserIds = ref<Set<string>>(new Set());
 
 // Calculate date range based on selected period
 const dateRange = computed(() => {
@@ -135,10 +135,18 @@ async function loadStats() {
   }
 }
 
-function openDetails(user: UserStats) {
-  detailUserId.value = user.userId;
-  detailUserName.value = user.username || user.email || user.userId;
-  showDetailModal.value = true;
+function toggleUserDetails(userId: string) {
+  if (expandedUserIds.value.has(userId)) {
+    expandedUserIds.value.delete(userId);
+  } else {
+    expandedUserIds.value.add(userId);
+  }
+  // Trigger reactivity
+  expandedUserIds.value = new Set(expandedUserIds.value);
+}
+
+function isExpanded(userId: string): boolean {
+  return expandedUserIds.value.has(userId);
 }
 
 function openCustomRange() {
@@ -269,74 +277,77 @@ watch(() => props.postId, (newVal) => {
       <table v-else class="w-full">
         <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0">
           <tr>
+            <th class="px-4 py-3 text-left text-sm font-semibold w-8"></th>
             <th class="px-4 py-3 text-left text-sm font-semibold">{{ t('app.user') }}</th>
             <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.workDays') }}</th>
             <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.attended') }}</th>
             <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.violations') }}</th>
             <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.exceptions') }}</th>
-            <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.details') }}</th>
           </tr>
         </thead>
         <tbody>
-          <tr 
-            v-for="user in stats" 
-            :key="user.userId"
-            class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-          >
-            <td class="px-4 py-3">
-              <div class="font-medium">{{ user.username || user.email || user.userId }}</div>
-              <div v-if="user.username && user.email" class="text-xs text-gray-500">{{ user.email }}</div>
-            </td>
-            <td class="px-4 py-3 text-center">{{ user.workDays }}</td>
-            <td class="px-4 py-3 text-center">
-              <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
-                {{ user.attendedDays }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span 
-                v-if="user.violationDays > 0"
-                class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
-              >
-                {{ user.violationDays }}
-              </span>
-              <span v-else class="text-gray-400">0</span>
-            </td>
-            <td class="px-4 py-3 text-center">
-              <span 
-                v-if="user.legitimateAbsences > 0"
-                class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
-              >
-                {{ user.legitimateAbsences }}
-              </span>
-              <span v-else class="text-gray-400">0</span>
-            </td>
-            <td class="px-4 py-3 text-center">
-              <UButton 
-                size="xs" 
-                color="primary" 
-                variant="soft"
-                @click="openDetails(user)"
-              >
-                {{ t('app.viewDetails') }}
-              </UButton>
-            </td>
-          </tr>
+          <template v-for="user in stats" :key="user.userId">
+            <!-- Main row -->
+            <tr 
+              class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
+              @click="toggleUserDetails(user.userId)"
+            >
+              <td class="px-4 py-3 text-center">
+                <UIcon 
+                  :name="isExpanded(user.userId) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'" 
+                  class="w-5 h-5 transition-transform"
+                />
+              </td>
+              <td class="px-4 py-3">
+                <div class="font-medium">{{ user.username || user.email || user.userId }}</div>
+                <div v-if="user.username && user.email" class="text-xs text-gray-500">{{ user.email }}</div>
+              </td>
+              <td class="px-4 py-3 text-center">{{ user.workDays }}</td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
+                  {{ user.attendedDays }}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span 
+                  v-if="user.violationDays > 0"
+                  class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
+                >
+                  {{ user.violationDays }}
+                </span>
+                <span v-else class="text-gray-400">0</span>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span 
+                  v-if="user.legitimateAbsences > 0"
+                  class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
+                >
+                  {{ user.legitimateAbsences }}
+                </span>
+                <span v-else class="text-gray-400">0</span>
+              </td>
+            </tr>
+
+            <!-- Expanded details row -->
+            <tr v-if="isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
+              <td colspan="6" class="px-4 py-4">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
+                  <h4 class="text-sm font-semibold mb-3">{{ t('app.attendanceDetails') }}</h4>
+                  <PostRecordsDetails 
+                    v-if="postId"
+                    :post-id="postId"
+                    :user-id="user.userId"
+                    :start-date="dateRange.startDate"
+                    :end-date="dateRange.endDate"
+                  />
+                </div>
+              </td>
+            </tr>
+          </template>
         </tbody>
       </table>
     </div>
 
-    <!-- Detail Modal (placeholder for now) -->
-  <UModal v-model="showDetailModal">
-      <div class="p-6">
-  <h3 class="text-xl font-bold mb-4">{{ t('app.attendanceDetails') }}</h3>
-        <p class="mb-4">{{ t('app.user') }}: {{ detailUserName }}</p>
-  <p class="text-gray-500">{{ t('app.detailsComingSoon') }}</p>
-        <div class="mt-6 flex justify-end">
-          <UButton @click="showDetailModal = false">{{ t('common.cancel') }}</UButton>
-        </div>
-      </div>
-    </UModal>
     <!-- Custom Date Range Modal -->
     <UModal v-model="showDateModal">
       <div class="p-0 w-full max-w-lg overflow-hidden rounded-xl shadow-xl border border-gray-200 dark:border-gray-800">
