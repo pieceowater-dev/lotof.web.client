@@ -43,7 +43,7 @@ function copyPin() {
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
             {{ t('common.edit') || 'Edit location' }}
           </h3>
-          <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
+          <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
         </div>
       </template>
 

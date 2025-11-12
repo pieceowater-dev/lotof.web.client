@@ -227,7 +227,7 @@ watch(() => props.postId, (newVal) => {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period Filter -->
-  <div class="flex gap-2 mb-4 flex-shrink-0">
+  <div class="flex gap-1.5 mb-3 flex-shrink-0">
       <UButton 
         :color="selectedPeriod === 'month' ? 'primary' : 'gray'" 
         size="sm"
@@ -249,11 +249,11 @@ watch(() => props.postId, (newVal) => {
       >
   {{ t('app.last3Months') }}
       </UButton>
-      <UButton 
-        :color="selectedPeriod === 'custom' ? 'primary' : 'gray'" 
-        size="sm"
+  <UButton 
+    :color="selectedPeriod === 'custom' ? 'primary' : 'gray'" 
+    size="sm"
   @click="openCustomRange()"
-      >
+  >
         {{ t('app.customPeriod') }}
       </UButton>
     </div>
@@ -261,28 +261,28 @@ watch(() => props.postId, (newVal) => {
 
     <!-- Stats Table -->
     <div class="flex-1 min-h-0 overflow-auto">
-      <div v-if="loading" class="flex flex-col items-center justify-center py-8">
-        <UIcon name="i-heroicons-arrow-path" class="w-10 h-10 mb-2 animate-spin text-blue-400 dark:text-blue-300" />
-  <div>{{ t('app.loading') }}</div>
+      <div v-if="loading" class="flex flex-col items-center justify-center py-6">
+        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300" />
+  <div class="text-sm">{{ t('app.loading') }}</div>
       </div>
-      <div v-else-if="error" class="flex flex-col items-center justify-center py-8 text-red-500">
-        <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 mb-2 text-red-400 dark:text-red-300" />
-        <div class="text-lg font-semibold mb-2">{{ error }}</div>
-  <div class="text-sm text-gray-500 dark:text-gray-400">{{ t('app.attendancePermissionErrorHint') }}</div>
+      <div v-else-if="error" class="flex flex-col items-center justify-center py-6 text-red-500">
+        <UIcon name="i-heroicons-lock-closed" class="w-10 h-10 mb-1.5 text-red-400 dark:text-red-300" />
+        <div class="text-base font-semibold mb-1.5">{{ error }}</div>
+  <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.attendancePermissionErrorHint') }}</div>
       </div>
-      <div v-else-if="stats.length === 0" class="text-gray-500 py-8 text-center flex flex-col items-center justify-center">
-        <UIcon name="i-heroicons-information-circle" class="w-10 h-10 mb-2 text-blue-400 dark:text-blue-300" />
-  <div>{{ t('app.noData') }}</div>
+      <div v-else-if="stats.length === 0" class="text-gray-500 py-6 text-center flex flex-col items-center justify-center">
+        <UIcon name="i-heroicons-information-circle" class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300" />
+  <div class="text-sm">{{ t('app.noData') }}</div>
       </div>
-      <table v-else class="w-full">
-        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0">
+      <table v-else class="w-full text-sm">
+        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 text-xs">
           <tr>
-            <th class="px-4 py-3 text-left text-sm font-semibold w-8"></th>
-            <th class="px-4 py-3 text-left text-sm font-semibold">{{ t('app.user') }}</th>
-            <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.workDays') }}</th>
-            <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.attended') }}</th>
-            <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.violations') }}</th>
-            <th class="px-4 py-3 text-center text-sm font-semibold">{{ t('app.exceptions') }}</th>
+            <th class="px-3 py-2 text-left font-medium w-7"></th>
+            <th class="px-3 py-2 text-left font-medium">{{ t('app.user') }}</th>
+            <th class="px-3 py-2 text-center font-medium">{{ t('app.workDays') }}</th>
+            <th class="px-3 py-2 text-center font-medium">{{ t('app.attended') }}</th>
+            <th class="px-3 py-2 text-center font-medium">{{ t('app.violations') }}</th>
+            <th class="px-3 py-2 text-center font-medium">{{ t('app.exceptions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -292,35 +292,35 @@ watch(() => props.postId, (newVal) => {
               class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
               @click="toggleUserDetails(user.userId)"
             >
-              <td class="px-4 py-3 text-center">
+              <td class="px-3 py-2 text-center">
                 <UIcon 
                   :name="isExpanded(user.userId) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'" 
-                  class="w-5 h-5 transition-transform"
+                  class="w-4 h-4 transition-transform"
                 />
               </td>
-              <td class="px-4 py-3">
-                <div class="font-medium">{{ user.username || user.email || user.userId }}</div>
-                <div v-if="user.username && user.email" class="text-xs text-gray-500">{{ user.email }}</div>
+              <td class="px-3 py-2">
+                <div class="font-medium leading-tight">{{ user.username || user.email || user.userId }}</div>
+                <div v-if="user.username && user.email" class="text-xs text-gray-500 leading-tight">{{ user.email }}</div>
               </td>
-              <td class="px-4 py-3 text-center">{{ user.workDays }}</td>
-              <td class="px-4 py-3 text-center">
-                <span class="px-2 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
+              <td class="px-3 py-2 text-center">{{ user.workDays }}</td>
+              <td class="px-3 py-2 text-center">
+                <span class="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
                   {{ user.attendedDays }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td class="px-3 py-2 text-center">
                 <span 
                   v-if="user.violationDays > 0"
-                  class="px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
+                  class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
                 >
                   {{ user.violationDays }}
                 </span>
                 <span v-else class="text-gray-400">0</span>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td class="px-3 py-2 text-center">
                 <span 
                   v-if="user.legitimateAbsences > 0"
-                  class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
+                  class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
                 >
                   {{ user.legitimateAbsences }}
                 </span>
@@ -330,9 +330,9 @@ watch(() => props.postId, (newVal) => {
 
             <!-- Expanded details row -->
             <tr v-if="isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
-              <td colspan="6" class="px-4 py-4">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
-                  <h4 class="text-sm font-semibold mb-3">{{ t('app.attendanceDetails') }}</h4>
+              <td colspan="6" class="px-3 py-3">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
+                  <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
                   <PostRecordsDetails 
                     v-if="postId"
                     :post-id="postId"
@@ -350,20 +350,25 @@ watch(() => props.postId, (newVal) => {
 
     <!-- Custom Date Range Modal -->
     <UModal v-model="showDateModal">
-      <div class="p-0 w-full max-w-lg overflow-hidden rounded-xl shadow-xl border border-gray-200 dark:border-gray-800">
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/40 flex items-center gap-3">
-          <UIcon name="i-heroicons-calendar-days" class="w-6 h-6 text-blue-500" />
-          <h3 class="text-lg font-semibold">{{ t('app.customRangeTitle') }}</h3>
-        </div>
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <UIcon name="i-heroicons-calendar-days" class="w-6 h-6 text-blue-500" />
+              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.customRangeTitle') }}</h3>
+            </div>
+            <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="showDateModal = false" />
+          </div>
+        </template>
 
-        <div class="px-6 py-5 flex flex-col gap-4 bg-white dark:bg-gray-900">
+        <div class="flex flex-col gap-4">
           <!-- Presets -->
           <div class="flex flex-wrap gap-2">
-            <UButton size="xs" variant="soft" color="gray" @click="applyPreset('today')">{{ t('app.datePresetToday') }}</UButton>
-            <UButton size="xs" variant="soft" color="gray" @click="applyPreset('yesterday')">{{ t('app.datePresetYesterday') }}</UButton>
-            <UButton size="xs" variant="soft" color="gray" @click="applyPreset('thisWeek')">{{ t('app.datePresetThisWeek') }}</UButton>
-            <UButton size="xs" variant="soft" color="gray" @click="applyPreset('last7')">{{ t('app.datePresetLast7') }}</UButton>
-            <UButton size="xs" variant="soft" color="gray" @click="applyPreset('last30')">{{ t('app.datePresetLast30') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('today')">{{ t('app.datePresetToday') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('yesterday')">{{ t('app.datePresetYesterday') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('thisWeek')">{{ t('app.datePresetThisWeek') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('last7')">{{ t('app.datePresetLast7') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('last30')">{{ t('app.datePresetLast30') }}</UButton>
           </div>
 
           <!-- Inputs -->
@@ -399,14 +404,16 @@ watch(() => props.postId, (newVal) => {
           </div>
         </div>
 
-        <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/40 flex justify-between">
-          <UButton variant="ghost" color="gray" @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }">{{ t('common.reset') }}</UButton>
-          <div class="flex gap-2">
-            <UButton variant="soft" color="gray" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
+        <template #footer>
+          <div class="flex justify-between w-full">
+            <UButton size="sm" variant="soft" color="primary" @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }">{{ t('common.reset') }}</UButton>
+            <div class="flex gap-2">
+              <UButton size="sm" variant="soft" color="primary" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
+              <UButton size="sm" color="primary" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
+            </div>
           </div>
-        </div>
-      </div>
+        </template>
+      </UCard>
     </UModal>
   </div>
 </template>

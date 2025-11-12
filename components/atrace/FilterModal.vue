@@ -12,7 +12,7 @@ const { t } = useI18n();
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.atraceFilter') }}</h3>
-          <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
+          <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
         </div>
       </template>
 
