@@ -1,4 +1,5 @@
 import { atraceClient } from '@/api/clients';
+import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
 import { getDeviceHeaders } from '@/utils/device';
 
 // Keep it schema-agnostic without relying on generated types (atrace optional)
@@ -29,8 +30,7 @@ export async function atracePostsList(
   atraceToken: string,
   namespaceSlug: string,
   params: { search?: string; page?: number; length?: 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED' } = {}
-): Promise<{ posts: AtracePost[]; count: number }>
-{
+): Promise<{ posts: AtracePost[]; count: number }> {
   const filter: any = {
     pagination: { page: params.page ?? 1, length: params.length ?? 'TWENTY_FIVE' },
     sort: { by: 'ASC', field: 'title' }
@@ -38,14 +38,16 @@ export async function atracePostsList(
   if (params.search) filter.search = params.search;
 
   const devHeaders = await getDeviceHeaders();
-  const res = await atraceClient.request<{
-    getPosts: { posts: AtracePost[]; paginationInfo: { count: number } }
-  }>(AtracePostsDocument, { filter }, {
-    headers: {
-      AtraceAuthorization: `Bearer ${atraceToken}`,
-      Namespace: namespaceSlug,
-      ...devHeaders,
-    }
-  });
-  return { posts: res.getPosts.posts, count: res.getPosts.paginationInfo.count };
+  return atraceRequestWithRefresh(async () => {
+    const res = await atraceClient.request<{
+      getPosts: { posts: AtracePost[]; paginationInfo: { count: number } }
+    }>(AtracePostsDocument, { filter }, {
+      headers: {
+        AtraceAuthorization: `Bearer ${atraceToken}`,
+        Namespace: namespaceSlug,
+        ...devHeaders,
+      }
+    });
+    return { posts: res.getPosts.posts, count: res.getPosts.paginationInfo.count };
+  }, namespaceSlug);
 }

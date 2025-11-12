@@ -1,4 +1,7 @@
-import { atraceClient } from '@/api/clients';
+import { atraceClient, setAtraceAppToken } from '@/api/clients';
+import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
+import { CookieKeys } from '@/utils/storageKeys';
+import { useAuth } from '@/composables/useAuth';
 
 type UserAttendanceStats = {
   userId: string;
@@ -15,6 +18,7 @@ const GET_ALL_USERS_STATS = `
   query GetAllUsersStats($startDate: String!, $endDate: String!) {
     getAllUsersStats(input: { startDate: $startDate, endDate: $endDate }) {
       userId
+      username
       workDays
       attendedDays
       violationDays
@@ -34,14 +38,53 @@ const GET_USERS_BY_IDS = `
   }
 `;
 
+
+// Helper: robust atraceClient request with auto-refresh on unauthorized
+async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string): Promise<T> {
+  try {
+    return await fn();
+  } catch (error: any) {
+    const isUnauthorized = error?.response?.errors?.some((e: any) =>
+      typeof e.message === 'string' &&
+      e.message.includes('AtraceAuthorization token is invalid')
+    );
+    if (isUnauthorized) {
+      // Clear old token
+      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+      setAtraceAppToken(null);
+      // Try to get new token using hub token
+      const { token } = useAuth();
+      const hubToken = token.value;
+      if (!hubToken) throw error;
+      const newToken = await atraceGetAppToken(hubToken, nsSlug);
+      if (newToken) {
+        useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = newToken;
+        setAtraceAppToken(newToken);
+        // Retry original request
+        return await fn();
+      }
+    }
+    throw error;
+  }
+}
+
 export async function atraceGetAllUsersStats(
   startDate: string,
-  endDate: string
+  endDate: string,
+  nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
-  try {
+  // nsSlug required for token refresh
+  if (!nsSlug) {
+    // Try to get from route if not provided
+    try {
+      nsSlug = useRoute().params.namespace as string;
+    } catch {}
+  }
+  return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{
       getAllUsersStats: Array<{
         userId: string;
+        username: string;
         workDays: number;
         attendedDays: number;
         violationDays: number;
@@ -50,39 +93,6 @@ export async function atraceGetAllUsersStats(
       }>;
     }>(GET_ALL_USERS_STATS, { startDate, endDate });
 
-    const stats = response.getAllUsersStats;
-
-    // Get user details
-    const userIds = stats.map((s: any) => s.userId);
-    if (userIds.length > 0) {
-      try {
-        const usersResponse = await atraceClient.request<{
-          getUsersByIDs: Array<{
-            id: string;
-            username: string;
-            email: string;
-          }>;
-        }>(GET_USERS_BY_IDS, { ids: userIds });
-
-        const userMap = new Map(
-          usersResponse.getUsersByIDs.map((u: any) => [u.id, u])
-        );
-
-        return stats.map((stat: any) => ({
-          ...stat,
-          username: (userMap.get(stat.userId) as any)?.username,
-          email: (userMap.get(stat.userId) as any)?.email
-        }));
-      } catch (e) {
-        // If user fetch fails, return stats without user details
-        console.error('Failed to fetch user details:', e);
-        return stats;
-      }
-    }
-
-    return stats;
-  } catch (error) {
-    console.error('Error fetching attendance stats:', error);
-    throw error;
-  }
+    return response.getAllUsersStats;
+  }, nsSlug!);
 }
