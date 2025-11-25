@@ -25,9 +25,38 @@ const error = ref<string | null>(null);
 
 // Date filter state
 type PeriodType = 'month' | 'week' | '3months' | 'custom';
-const selectedPeriod = ref<PeriodType>('month');
-const customStartDate = ref('');
-const customEndDate = ref('');
+
+// Load selected period from localStorage
+const PERIOD_STORAGE_KEY = 'atrace-attendance-period';
+const CUSTOM_START_STORAGE_KEY = 'atrace-attendance-custom-start';
+const CUSTOM_END_STORAGE_KEY = 'atrace-attendance-custom-end';
+
+function loadPeriodFromStorage(): PeriodType {
+  if (typeof window === 'undefined') return 'month';
+  try {
+    const stored = localStorage.getItem(PERIOD_STORAGE_KEY);
+    if (stored && ['month', 'week', '3months', 'custom'].includes(stored)) {
+      return stored as PeriodType;
+    }
+  } catch {}
+  return 'month';
+}
+
+function loadCustomDatesFromStorage() {
+  if (typeof window === 'undefined') return { start: '', end: '' };
+  try {
+    return {
+      start: localStorage.getItem(CUSTOM_START_STORAGE_KEY) || '',
+      end: localStorage.getItem(CUSTOM_END_STORAGE_KEY) || ''
+    };
+  } catch {}
+  return { start: '', end: '' };
+}
+
+const selectedPeriod = ref<PeriodType>(loadPeriodFromStorage());
+const customDates = loadCustomDatesFromStorage();
+const customStartDate = ref(customDates.start);
+const customEndDate = ref(customDates.end);
 const showDateModal = ref(false);
 const dateModalError = ref<string | null>(null);
 const isStartInvalid = computed(() => {
@@ -210,9 +239,25 @@ function applyPreset(preset: 'today' | 'yesterday' | 'thisWeek' | 'last7' | 'las
 }
 
 // Watch for period changes (custom range loads only on apply)
-watch(selectedPeriod, () => {
-  if (selectedPeriod.value !== 'custom') {
+watch(selectedPeriod, (newPeriod) => {
+  if (newPeriod !== 'custom') {
     loadStats();
+  }
+  // Save to localStorage
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(PERIOD_STORAGE_KEY, newPeriod);
+    } catch {}
+  }
+});
+
+// Watch for custom date changes
+watch([customStartDate, customEndDate], ([newStart, newEnd]) => {
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(CUSTOM_START_STORAGE_KEY, newStart);
+      localStorage.setItem(CUSTOM_END_STORAGE_KEY, newEnd);
+    } catch {}
   }
 });
 
