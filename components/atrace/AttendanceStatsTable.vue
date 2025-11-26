@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import PostRecordsDetails from '@/components/atrace/PostRecordsDetails.vue';
+import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
 
 const { t } = useI18n();
 
@@ -22,6 +22,20 @@ type UserStats = {
 const stats = ref<UserStats[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// Time thresholds for highlighting (localStorage) - GLOBAL SETTINGS
+const LATE_ARRIVAL_KEY = 'atrace-late-arrival-time';
+const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
+const lateArrivalTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(LATE_ARRIVAL_KEY) || '09:15') : '09:15');
+const earlyLeaveTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(EARLY_LEAVE_KEY) || '18:15') : '18:15');
+const showSettings = ref(false);
+
+watch(lateArrivalTime, (val) => {
+  if (typeof window !== 'undefined') localStorage.setItem(LATE_ARRIVAL_KEY, val);
+});
+watch(earlyLeaveTime, (val) => {
+  if (typeof window !== 'undefined') localStorage.setItem(EARLY_LEAVE_KEY, val);
+});
 
 // Date filter state
 type PeriodType = 'month' | 'week' | '3months' | 'custom';
@@ -271,41 +285,84 @@ watch(() => props.postId, (newVal) => {
 
 <template>
   <div class="h-full flex flex-col overflow-hidden">
-    <!-- Period Filter -->
-  <div class="flex gap-1.5 mb-3 flex-shrink-0">
-      <UButton 
-        :color="selectedPeriod === 'month' ? 'primary' : 'gray'" 
-        size="sm"
-        @click="selectedPeriod = 'month'"
-      >
-  {{ t('app.thisMonth') }}
-      </UButton>
-      <UButton 
-        :color="selectedPeriod === 'week' ? 'primary' : 'gray'" 
-        size="sm"
-        @click="selectedPeriod = 'week'"
-      >
-  {{ t('app.thisWeek') }}
-      </UButton>
-      <UButton 
-        :color="selectedPeriod === '3months' ? 'primary' : 'gray'" 
-        size="sm"
-        @click="selectedPeriod = '3months'"
-      >
-  {{ t('app.last3Months') }}
-      </UButton>
-  <UButton 
-    :color="selectedPeriod === 'custom' ? 'primary' : 'gray'" 
-    size="sm"
-  @click="openCustomRange()"
-  >
-        {{ t('app.customPeriod') }}
+    <!-- Period Filter, Legend & Settings -->
+    <div class="mb-3 flex flex-wrap lg:flex-nowrap items-center gap-3 lg:gap-8" style="justify-content: space-between;">
+      <!-- Period Filter Buttons -->
+      <div class="flex flex-wrap gap-1.5 flex-shrink-0">
+        <UButton 
+          :color="selectedPeriod === 'month' ? 'primary' : 'gray'" 
+          size="sm"
+          @click="selectedPeriod = 'month'"
+        >
+          {{ t('app.thisMonth') }}
+        </UButton>
+        <UButton 
+          :color="selectedPeriod === 'week' ? 'primary' : 'gray'" 
+          size="sm"
+          @click="selectedPeriod = 'week'"
+        >
+          {{ t('app.thisWeek') }}
+        </UButton>
+        <UButton 
+          :color="selectedPeriod === '3months' ? 'primary' : 'gray'" 
+          size="sm"
+          @click="selectedPeriod = '3months'"
+        >
+          {{ t('app.last3Months') }}
+        </UButton>
+        <UButton 
+          :color="selectedPeriod === 'custom' ? 'primary' : 'gray'" 
+          size="sm"
+          @click="openCustomRange()"
+        >
+          {{ t('app.customPeriod') }}
+        </UButton>
+      </div>
+
+      <!-- Legend -->
+      <div class="flex flex-wrap gap-2 text-xs flex-shrink-0">
+        <div class="flex items-center gap-1">
+          <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+          <span>{{ t('app.violationDay') }}</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+          <span>{{ t('app.legitimateDay') }}</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+          <span>{{ t('app.timeViolation') }}</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700"></div>
+          <span>{{ t('common.suspicious') }}</span>
+        </div>
+      </div>
+
+      <!-- Settings Button -->
+      <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="showSettings = !showSettings" class="flex-shrink-0">
+        {{ t('app.configureTime') }}
       </UButton>
     </div>
 
+    <!-- Settings Panel -->
+    <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex-shrink-0">
+      <div class="text-sm font-medium mb-2">{{ t('app.timeThresholds') }}</div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <div>
+          <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.lateArrivalAfter') }}</label>
+          <input v-model="lateArrivalTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+        </div>
+        <div>
+          <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.earlyLeaveBefore') }}</label>
+          <input v-model="earlyLeaveTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+        </div>
+      </div>
+    </div>
 
     <!-- Stats Table -->
     <div class="flex-1 min-h-0 overflow-auto">
+
       <div v-if="loading" class="flex flex-col items-center justify-center py-6">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300" />
   <div class="text-sm">{{ t('app.loading') }}</div>
@@ -378,12 +435,14 @@ watch(() => props.postId, (newVal) => {
               <td colspan="6" class="px-3 py-3">
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                   <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
-                  <PostRecordsDetails 
+                  <UserDayRecordsAccordion 
                     v-if="postId"
                     :post-id="postId"
                     :user-id="user.userId"
                     :start-date="dateRange.startDate"
                     :end-date="dateRange.endDate"
+                    :late-arrival-time="lateArrivalTime"
+                    :early-leave-time="earlyLeaveTime"
                   />
                 </div>
               </td>

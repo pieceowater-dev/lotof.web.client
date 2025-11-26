@@ -18,6 +18,37 @@ const error = ref<string | null>(null);
 const filteredRecords = ref<AtraceRecord[]>([]);
 const totalCount = ref(0);
 
+// Daily attendance data for violation highlighting
+type DailyAttendance = {
+  date: string;
+  attended: boolean;
+  legitimate: boolean;
+  firstCheckIn: number;
+  lastCheckOut: number;
+  workedHours: number;
+  requiredHours: number;
+};
+const dailyAttendance = ref<DailyAttendance[]>([]);
+const dailyAttendanceMap = computed(() => {
+  const map = new Map<string, DailyAttendance>();
+  dailyAttendance.value.forEach(da => map.set(da.date, da));
+  return map;
+});
+
+// Time thresholds for highlighting (localStorage)
+const LATE_ARRIVAL_KEY = 'atrace-late-arrival-time';
+const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
+const lateArrivalTime = ref(localStorage.getItem(LATE_ARRIVAL_KEY) || '09:15');
+const earlyLeaveTime = ref(localStorage.getItem(EARLY_LEAVE_KEY) || '18:15');
+const showSettings = ref(false);
+
+watch(lateArrivalTime, (val) => {
+  if (typeof window !== 'undefined') localStorage.setItem(LATE_ARRIVAL_KEY, val);
+});
+watch(earlyLeaveTime, (val) => {
+  if (typeof window !== 'undefined') localStorage.setItem(EARLY_LEAVE_KEY, val);
+});
+
 // Pagination
 const currentPage = ref(1);
 const itemsPerPage = ref<'TEN' | 'FIFTEEN' | 'TWENTY' | 'TWENTY_FIVE' | 'THIRTY'>('TEN');
@@ -61,6 +92,9 @@ async function loadRecords() {
     const filtered = aggregated.filter(r => r.userId === props.userId && r.timestamp >= startSec.value && r.timestamp <= endSec.value);
     filteredRecords.value = filtered;
     totalCount.value = filtered.length;
+
+    // Load daily attendance data for violation highlighting
+    await loadDailyAttendance();
   } catch (e: any) {
     console.error('[PostRecordsDetails] failed to load records:', e);
     error.value = t('app.failedToLoadDetails');
@@ -69,6 +103,67 @@ async function loadRecords() {
   } finally {
     loading.value = false;
   }
+}
+
+async function loadDailyAttendance() {
+  try {
+    const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
+    const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate);
+    dailyAttendance.value = result;
+  } catch (e) {
+    console.error('[PostRecordsDetails] failed to load daily attendance:', e);
+    dailyAttendance.value = [];
+  }
+}
+
+function getRecordDate(timestamp: number): string {
+  return new Date(timestamp * 1000).toISOString().split('T')[0];
+}
+
+function isViolationDay(timestamp: number): boolean {
+  const date = getRecordDate(timestamp);
+  const da = dailyAttendanceMap.value.get(date);
+  // Violation day = attended=false AND legitimate=false
+  return da ? (!da.attended && !da.legitimate) : false;
+}
+
+function isLegitimateDay(timestamp: number): boolean {
+  const date = getRecordDate(timestamp);
+  const da = dailyAttendanceMap.value.get(date);
+  return da?.legitimate || false;
+}
+
+function isLateArrival(timestamp: number): boolean {
+  if (!lateArrivalTime.value) return false;
+  const time = new Date(timestamp * 1000);
+  const [h, m] = lateArrivalTime.value.split(':').map(Number);
+  const threshold = new Date(time);
+  threshold.setHours(h, m, 0, 0);
+  return time > threshold;
+}
+
+function isEarlyLeave(timestamp: number): boolean {
+  if (!earlyLeaveTime.value) return false;
+  const time = new Date(timestamp * 1000);
+  const [h, m] = earlyLeaveTime.value.split(':').map(Number);
+  const threshold = new Date(time);
+  threshold.setHours(h, m, 0, 0);
+  return time < threshold;
+}
+
+function getRecordStyle(record: AtraceRecord): string {
+  // Priority: violation day > legitimate day > time-based highlights
+  if (isViolationDay(record.timestamp)) return 'bg-red-50 dark:bg-red-900/20';
+  if (isLegitimateDay(record.timestamp)) return 'bg-blue-50 dark:bg-blue-900/20';
+  // Check if first/last record of the day for time highlighting
+  const date = getRecordDate(record.timestamp);
+  const dayRecords = filteredRecords.value.filter(r => getRecordDate(r.timestamp) === date);
+  if (dayRecords.length === 0) return '';
+  const firstOfDay = dayRecords.reduce((min, r) => r.timestamp < min.timestamp ? r : min);
+  const lastOfDay = dayRecords.reduce((max, r) => r.timestamp > max.timestamp ? r : max);
+  if (record.id === firstOfDay.id && isLateArrival(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === lastOfDay.id && isEarlyLeave(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
+  return '';
 }
 
 function nextPage() {
@@ -155,6 +250,46 @@ watch(itemsPerPage, () => {
     </div>
 
     <div v-else>
+      <!-- Settings & Legend -->
+      <div class="mb-3 flex items-start justify-between gap-3">
+        <div class="flex flex-wrap gap-2 text-xs">
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+            <span>{{ t('app.violationDay') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+            <span>{{ t('app.legitimateDay') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+            <span>{{ t('app.timeViolation') }}</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700"></div>
+            <span>{{ t('common.suspicious') }}</span>
+          </div>
+        </div>
+        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="showSettings = !showSettings">
+          {{ t('app.settings') }}
+        </UButton>
+      </div>
+
+      <!-- Settings Panel -->
+      <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
+        <div class="text-sm font-medium mb-2">{{ t('app.timeThresholds') }}</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div>
+            <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.lateArrivalAfter') }}</label>
+            <input v-model="lateArrivalTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+          </div>
+          <div>
+            <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.earlyLeaveBefore') }}</label>
+            <input v-model="earlyLeaveTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+          </div>
+        </div>
+      </div>
+
       <div class="overflow-x-auto">
         <table class="w-full text-sm">
           <thead class="bg-gray-100 dark:bg-gray-700">
@@ -168,7 +303,8 @@ watch(itemsPerPage, () => {
             <tr
               v-for="r in filteredRecords.slice((currentPage-1)*pageSizeNumber, (currentPage)*pageSizeNumber)"
               :key="r.id"
-              class="border-b dark:border-gray-700"
+              class="border-b dark:border-gray-700 transition-colors"
+              :class="getRecordStyle(r)"
             >
               <td class="px-3 py-2">{{ formatTime(r.timestamp) }}</td>
               <td class="px-3 py-2 text-center">{{ methodLabel(r.method) }}</td>

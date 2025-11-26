@@ -174,3 +174,31 @@ export async function atraceGetAttendanceReport(
     return response.getAttendanceReport.attendances;
   }, nsSlug!);
 }
+
+const MARK_DAY_LEGITIMATE = `
+  mutation MarkDayLegitimate($userId: ID!, $date: String!, $reason: String!) {
+    markDayLegitimate(input: { userId: $userId, date: $date, reason: $reason }) {
+      id
+      userId
+      date
+      attended
+      legitimate
+      reason
+    }
+  }
+`;
+
+export async function atraceMarkDayLegitimate(
+  userId: string,
+  date: string,
+  reason: string,
+  nsSlug?: string
+): Promise<boolean> {
+  return await atraceGetAppToken(async (token: string) => {
+    setAtraceAppToken(token);
+
+    await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason });
+
+    return true;
+  }, nsSlug!);
+}

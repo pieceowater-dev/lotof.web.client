@@ -172,7 +172,19 @@
     "METHOD_PIN": "PIN-код",
     "METHOD_MANUAL": "Ручной ввод",
     "METHOD_POST_PHRASE": "Фраза поста"
-  }
+  },
+  "violationDay": "День нарушения",
+  "legitimateDay": "Оправданный день",
+  "timeViolation": "Опоздание/Ранний уход",
+  "timeThresholds": "Пороги времени",
+  "lateArrivalAfter": "Опоздание после",
+  "earlyLeaveBefore": "Ранний уход до",
+  "records": "отметок",
+  "configureTime": "Настроить время",
+  "markLegitimate": "Оправдать",
+  "markDayLegitimateTitle": "Оправдать день",
+  "enterReason": "Укажите причину",
+  "failedToMarkLegitimate": "Не удалось оправдать день"
 },
 "common": {
   "ok": "ОК",

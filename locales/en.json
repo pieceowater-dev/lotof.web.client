@@ -190,7 +190,19 @@
       "METHOD_PIN": "PIN",
       "METHOD_MANUAL": "Manual",
       "METHOD_POST_PHRASE": "Post phrase"
-    }
+    },
+    "violationDay": "Violation Day",
+    "legitimateDay": "Legitimate Day",
+    "timeViolation": "Late/Early Leave",
+    "timeThresholds": "Time Thresholds",
+    "lateArrivalAfter": "Late arrival after",
+    "earlyLeaveBefore": "Early leave before",
+    "records": "records",
+    "configureTime": "Configure Time",
+    "markLegitimate": "Excuse",
+    "markDayLegitimateTitle": "Excuse Day",
+    "enterReason": "Enter reason",
+    "failedToMarkLegitimate": "Failed to excuse day"
 },
 "common": {
   "ok": "OK",
