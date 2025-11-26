@@ -118,6 +118,24 @@ function getRecordDate(timestamp: number): string {
   return new Date(timestamp * 1000).toISOString().split('T')[0];
 }
 
+function getDayTimeInfo(records: AtraceRecord[]) {
+  if (records.length === 0) return null;
+  
+  const firstRecord = records[0];
+  const lastRecord = records[records.length - 1];
+  
+  const firstTime = formatTime(firstRecord.timestamp).time;
+  const lastTime = formatTime(lastRecord.timestamp).time;
+  
+  // Calculate duration in hours
+  const durationMs = (lastRecord.timestamp - firstRecord.timestamp) * 1000;
+  const hours = Math.floor(durationMs / (1000 * 60 * 60));
+  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+  const duration = `${hours}ч ${minutes}м`;
+  
+  return { firstTime, lastTime, duration };
+}
+
 function isViolationDay(date: string): boolean {
   const da = dailyAttendanceMap.value.get(date);
   return da ? (!da.attended && !da.legitimate) : false;
@@ -266,8 +284,20 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
               :name="isDayExpanded(date) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
               class="w-4 h-4 transition-transform"
             />
-            <span class="font-medium text-sm">{{ formatDate(date) }}</span>
-            <span class="text-xs text-gray-500">{{ t('app.records') }} - {{ records.length }}</span>
+            <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+              <span class="font-medium text-sm">{{ formatDate(date) }}</span>
+              <div class="flex items-center gap-2 text-xs text-gray-500">
+                <span>{{ t('app.records') }} - {{ records.length }}</span>
+                <template v-if="getDayTimeInfo(records)">
+                  <span class="hidden sm:inline">•</span>
+                  <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(records).firstTime }}</span>
+                  <span class="hidden sm:inline">•</span>
+                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(records).lastTime }}</span>
+                  <span class="hidden sm:inline">•</span>
+                  <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(records).duration }}</span>
+                </template>
+              </div>
+            </div>
           </div>
           <div class="flex items-center gap-2">
             <UButton

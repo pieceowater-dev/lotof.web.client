@@ -202,7 +202,10 @@
     "markLegitimate": "Excuse",
     "markDayLegitimateTitle": "Excuse Day",
     "enterReason": "Enter reason",
-    "failedToMarkLegitimate": "Failed to excuse day"
+    "failedToMarkLegitimate": "Failed to excuse day",
+    "arrival": "Arrival",
+    "departure": "Departure",
+    "duration": "Duration"
 },
 "common": {
   "ok": "OK",

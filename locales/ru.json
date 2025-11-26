@@ -184,7 +184,10 @@
   "markLegitimate": "Оправдать",
   "markDayLegitimateTitle": "Оправдать день",
   "enterReason": "Укажите причину",
-  "failedToMarkLegitimate": "Не удалось оправдать день"
+  "failedToMarkLegitimate": "Не удалось оправдать день",
+  "arrival": "Приход",
+  "departure": "Уход",
+  "duration": "Находился"
 },
 "common": {
   "ok": "ОК",
