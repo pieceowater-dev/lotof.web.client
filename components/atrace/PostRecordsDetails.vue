@@ -313,7 +313,7 @@ watch(itemsPerPage, () => {
                   <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
                   {{ t('common.ok') }}
                 </span>
-                <span v-else class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">
+                <span v-else class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
                   <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
                   {{ t('common.suspicious') }}
                 </span>

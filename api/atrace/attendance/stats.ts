@@ -1,7 +1,9 @@
 import { atraceClient, setAtraceAppToken } from '@/api/clients';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
+import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
+import { useRoute } from 'vue-router';
 
 type UserAttendanceStats = {
   userId: string;
@@ -194,11 +196,15 @@ export async function atraceMarkDayLegitimate(
   reason: string,
   nsSlug?: string
 ): Promise<boolean> {
-  return await atraceGetAppToken(async (token: string) => {
-    setAtraceAppToken(token);
-
+  // nsSlug required for token refresh
+  if (!nsSlug) {
+    // Try to get from route if not provided
+    try {
+      nsSlug = useRoute().params.namespace as string;
+    } catch {}
+  }
+  return atraceRequestWithRefresh(async () => {
     await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason });
-
     return true;
   }, nsSlug!);
 }

@@ -342,7 +342,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                     <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-0.5" />
                     {{ t('common.ok') }}
                   </span>
-                  <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100">
+                  <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
                     <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-0.5" />
                     {{ t('common.suspicious') }}
                   </span>

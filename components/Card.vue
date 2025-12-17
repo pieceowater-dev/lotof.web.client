@@ -132,8 +132,8 @@ const dropdownItems = [
 
 <template>
     <div @click="emit('select', post)"
-        :class="selected ? 'bg-primary text-white' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'"
-        class="shadow-md hover:shadow-sm p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col relative">
+        :class="selected ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-400 dark:to-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md hover:shadow-sm'"
+        class="p-4 rounded-xl w-60 cursor-pointer flex-shrink-0 min-h-[100px] h-full self-stretch flex flex-col relative transition-shadow duration-200">
         <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold truncate min-w-0 flex-1" :title="post.title">{{ post.title }}</h3>
                                 <div class="flex-none flex gap-1 items-center">

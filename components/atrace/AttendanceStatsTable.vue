@@ -29,6 +29,9 @@ const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
 const lateArrivalTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(LATE_ARRIVAL_KEY) || '09:15') : '09:15');
 const earlyLeaveTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(EARLY_LEAVE_KEY) || '18:15') : '18:15');
 const showSettings = ref(false);
+const lateArrivalDraft = ref(lateArrivalTime.value);
+const earlyLeaveDraft = ref(earlyLeaveTime.value);
+const timeSettingsError = ref<string | null>(null);
 
 watch(lateArrivalTime, (val) => {
   if (typeof window !== 'undefined') localStorage.setItem(LATE_ARRIVAL_KEY, val);
@@ -36,6 +39,32 @@ watch(lateArrivalTime, (val) => {
 watch(earlyLeaveTime, (val) => {
   if (typeof window !== 'undefined') localStorage.setItem(EARLY_LEAVE_KEY, val);
 });
+
+function openSettings() {
+  showSettings.value = !showSettings.value;
+  if (showSettings.value) {
+    lateArrivalDraft.value = lateArrivalTime.value;
+    earlyLeaveDraft.value = earlyLeaveTime.value;
+    timeSettingsError.value = null;
+  }
+}
+
+function applyTimeSettings() {
+  const isValidTime = (val: string) => /^\d{2}:\d{2}$/.test(val) && (() => {
+    const [h, m] = val.split(':').map((v) => Number(v));
+    return h >= 0 && h < 24 && m >= 0 && m < 60;
+  })();
+
+  if (!isValidTime(lateArrivalDraft.value) || !isValidTime(earlyLeaveDraft.value)) {
+    timeSettingsError.value = t('app.invalidTimeFormat') || 'Неверный формат времени (HH:MM)';
+    return;
+  }
+
+  lateArrivalTime.value = lateArrivalDraft.value;
+  earlyLeaveTime.value = earlyLeaveDraft.value;
+  timeSettingsError.value = null;
+  showSettings.value = false;
+}
 
 // Date filter state
 type PeriodType = 'month' | 'week' | '3months' | 'custom';
@@ -340,24 +369,43 @@ watch(() => props.postId, (newVal) => {
       </div>
 
       <!-- Settings Button -->
-      <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="showSettings = !showSettings" class="flex-shrink-0">
+      <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings" class="flex-shrink-0">
         {{ t('app.configureTime') }}
       </UButton>
     </div>
 
     <!-- Settings Panel -->
-    <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex-shrink-0">
-      <div class="text-sm font-medium mb-2">{{ t('app.timeThresholds') }}</div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+    <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex-shrink-0 space-y-3">
+      <div class="flex items-center justify-between gap-2">
         <div>
-          <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.lateArrivalAfter') }}</label>
-          <input v-model="lateArrivalTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+          <div class="text-sm font-semibold leading-tight">{{ t('app.timeThresholds') }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.timeThresholdsHint') || 'Используется для подсветки опозданий/ранних уходов' }}</div>
         </div>
-        <div>
-          <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.earlyLeaveBefore') }}</label>
-          <input v-model="earlyLeaveTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
-        </div>
+        <UButton size="xs" color="primary" variant="solid" icon="i-heroicons-check" @click="applyTimeSettings">
+          {{ t('common.apply') || 'Применить' }}
+        </UButton>
       </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <UFormGroup :label="t('app.lateArrivalAfter')">
+          <UInput
+            v-model="lateArrivalDraft"
+            type="time"
+            size="sm"
+            icon="i-heroicons-clock"
+            :ui="{ base: 'font-mono' }"
+          />
+        </UFormGroup>
+        <UFormGroup :label="t('app.earlyLeaveBefore')">
+          <UInput
+            v-model="earlyLeaveDraft"
+            type="time"
+            size="sm"
+            icon="i-heroicons-clock"
+            :ui="{ base: 'font-mono' }"
+          />
+        </UFormGroup>
+      </div>
+      <div v-if="timeSettingsError" class="text-xs text-red-500">{{ timeSettingsError }}</div>
     </div>
 
     <!-- Stats Table -->

@@ -418,7 +418,7 @@ onBeforeUnmount(() => {
                               @edit="() => openEdit(post)" />
                     </div>
                     <button @click="isCreateOpen = true"
-                        class="bg-blue-400 dark:bg-blue-900 text-white shadow-md p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:bg-blue-500 dark:hover:bg-blue-800 flex-shrink-0">
+                        class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0">
                         {{ t('app.atraceAddLocation') }}
                     </button>
                     <!-- Loading more indicator -->

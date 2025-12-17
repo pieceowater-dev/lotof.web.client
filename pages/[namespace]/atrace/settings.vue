@@ -23,6 +23,9 @@ type Role = {
     permissionIds: string[];
 };
 
+const DEFAULT_REQUIRED_WORKING_DAYS = 22;
+const DEFAULT_REQUIRED_WORKING_HOURS = 8;
+
 const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
@@ -54,8 +57,8 @@ const isEditMemberOpen = ref(false);
 const editingMember = ref<Member | null>(null);
 const editForm = reactive<{ roleId: string; requiredWorkingDays: number; requiredWorkingHours: number }>({
     roleId: '',
-    requiredWorkingDays: 20,
-    requiredWorkingHours: 8
+    requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
+    requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
 });
 
 async function ensureAtraceToken(): Promise<string | null> {
@@ -107,17 +110,27 @@ async function loadMembers() {
         
         // Load role assignments for each member from atrace API
         const { atraceGetMemberRole } = await import('@/api/atrace/role/getMemberRole');
+        const { atraceGetSchedule } = await import('@/api/atrace/attendance/schedule');
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
         
         members.value = await Promise.all(
             membersList.map(async (m) => {
                 try {
-                    const role = await atraceGetMemberRole(atraceToken, nsSlug.value, m.id);
+                    const [role, schedule] = await Promise.all([
+                        atraceGetMemberRole(atraceToken, nsSlug.value, m.id),
+                        atraceGetSchedule(atraceToken, nsSlug.value, m.id, currentYear, currentMonth).catch((err) => {
+                            console.error(`Failed to load schedule for member ${m.id}:`, err);
+                            return null;
+                        })
+                    ]);
                     return {
                         ...m,
                         roleId: role?.id || null,
                         roleName: role?.name || null,
-                        requiredWorkingDays: 20,
-                        requiredWorkingHours: 8
+                        requiredWorkingDays: schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
+                        requiredWorkingHours: schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS
                     };
                 } catch (err) {
                     console.error(`Failed to load role for member ${m.id}:`, err);
@@ -125,8 +138,8 @@ async function loadMembers() {
                         ...m,
                         roleId: null,
                         roleName: null,
-                        requiredWorkingDays: 20,
-                        requiredWorkingHours: 8
+                        requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
+                        requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
                     };
                 }
             })
@@ -156,8 +169,8 @@ async function loadRoles() {
 function openEditMember(member: Member) {
     editingMember.value = member;
     editForm.roleId = member.roleId || '';
-    editForm.requiredWorkingDays = member.requiredWorkingDays || 20;
-    editForm.requiredWorkingHours = member.requiredWorkingHours || 8;
+    editForm.requiredWorkingDays = member.requiredWorkingDays ?? DEFAULT_REQUIRED_WORKING_DAYS;
+    editForm.requiredWorkingHours = member.requiredWorkingHours ?? DEFAULT_REQUIRED_WORKING_HOURS;
     isEditMemberOpen.value = true;
 }
 
@@ -172,6 +185,10 @@ async function handleSaveMember() {
 
     try {
         const { atraceAssignRole, atraceRemoveRole } = await import('@/api/atrace/role/assign');
+        const { atraceUpdateSchedule } = await import('@/api/atrace/attendance/schedule');
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
         
         // Assign role via Atrace API if roleId is provided
         if (editForm.roleId) {
@@ -184,7 +201,21 @@ async function handleSaveMember() {
             }
         }
 
-        // TODO: Save required working days & hours (need backend support)
+        // Force integers for required work params
+        const requiredDays = Math.round(editForm.requiredWorkingDays);
+        const requiredHours = Math.round(editForm.requiredWorkingHours);
+        editForm.requiredWorkingDays = requiredDays;
+        editForm.requiredWorkingHours = requiredHours;
+
+        await atraceUpdateSchedule(
+            atraceToken,
+            nsSlug.value,
+            editingMember.value.id,
+            currentYear,
+            currentMonth,
+            requiredDays,
+            requiredHours
+        );
         
         // Close modal and reload members to get fresh data from backend
         isEditMemberOpen.value = false;
@@ -334,7 +365,9 @@ onMounted(async () => {
                                     size="lg"
                                     min="0"
                                     max="31"
-                                    :placeholder="'20'"
+                                    step="1"
+                                    inputmode="numeric"
+                                    :placeholder="'22'"
                                 />
                             </UFormGroup>
 
@@ -348,7 +381,8 @@ onMounted(async () => {
                                     size="lg"
                                     min="0"
                                     max="24"
-                                    step="0.5"
+                                    step="1"
+                                    inputmode="numeric"
                                     :placeholder="'8'"
                                 />
                             </UFormGroup>

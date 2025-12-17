@@ -120,6 +120,7 @@ function fmtMethod(method: string): string {
           :label="row.suspicious ? t('common.suspicious') : t('common.ok')"
           :color="row.suspicious ? 'red' : 'gray'"
           variant="subtle"
+          :title="row.suspicious ? t('common.suspiciousReasons') : ''"
         />
       </template>
     </AppTable>
