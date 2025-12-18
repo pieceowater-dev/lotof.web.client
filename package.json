@@ -20,7 +20,8 @@
     "graphql-request": "^7.1.2",
     "nuxt": "^3.15.4",
     "universal-cookie": "^7.2.2",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^5.0.2",

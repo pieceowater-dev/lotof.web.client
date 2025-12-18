@@ -207,7 +207,12 @@
     "failedToMarkLegitimate": "Failed to excuse day",
     "arrival": "Arrival",
     "departure": "Departure",
-    "duration": "Duration"
+    "duration": "Duration",
+    "exportToExcel": "Export",
+    "exportDaily": "Export Daily",
+    "exportRangeTooLarge": "Export range cannot exceed 3 months. Please select a shorter period.",
+    "noDataToExport": "No data to export",
+    "exportFailed": "Export failed. Please try again."
 },
 "common": {
   "ok": "OK",

@@ -66,6 +66,22 @@ const GET_USERS_BY_IDS = `
   }
 `;
 
+const EXPORT_DAILY_ATTENDANCE = `
+  query ExportDailyAttendance($startDate: String!, $endDate: String!) {
+    exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate }) {
+      userId
+      username
+      date
+      firstCheckIn
+      lastCheckOut
+      workedHours
+      attended
+      legitimate
+      reason
+    }
+  }
+`;
+
 
 // Helper: robust atraceClient request with auto-refresh on unauthorized
 async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string): Promise<T> {
@@ -122,6 +138,44 @@ export async function atraceGetAllUsersStats(
     }>(GET_ALL_USERS_STATS, { startDate, endDate });
 
     return response.getAllUsersStats;
+  }, nsSlug!);
+}
+
+export async function atraceExportDailyAttendance(
+  startDate: string,
+  endDate: string,
+  nsSlug?: string
+): Promise<Array<{
+  userId: string;
+  username: string;
+  date: string;
+  firstCheckIn: number;
+  lastCheckOut: number;
+  workedHours: number;
+  attended: boolean;
+  legitimate: boolean;
+  reason?: string;
+}>> {
+  if (!nsSlug) {
+    try {
+      nsSlug = useRoute().params.namespace as string;
+    } catch {}
+  }
+  return atraceRequestWithRefresh(async () => {
+    const response = await atraceClient.request<{
+      exportDailyAttendance: Array<{
+        userId: string;
+        username: string;
+        date: string;
+        firstCheckIn: number;
+        lastCheckOut: number;
+        workedHours: number;
+        attended: boolean;
+        legitimate: boolean;
+        reason?: string;
+      }>;
+    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate });
+    return response.exportDailyAttendance;
   }, nsSlug!);
 }
 

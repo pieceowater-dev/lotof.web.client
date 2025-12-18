@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{
   postId: string | null;
@@ -310,6 +310,58 @@ watch(() => props.postId, (newVal) => {
     loadStats();
   }
 }, { immediate: true });
+
+// Export functionality
+const isExportingExcel = ref(false);
+const exportError = ref<string | null>(null);
+
+function isDateRangeLimited(): boolean {
+  const start = new Date(dateRange.value.startDate);
+  const end = new Date(dateRange.value.endDate);
+  const diffTime = Math.abs(end.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // 3 months ≈ 100 days max
+  return diffDays <= 100;
+}
+
+async function exportToExcel() {
+  exportError.value = null;
+  
+  // Validate date range (max 3 months)
+  if (!isDateRangeLimited()) {
+    exportError.value = t('app.exportRangeTooLarge');
+    return;
+  }
+
+  isExportingExcel.value = true;
+  try {
+    // Use atrace client to call the gateway with proper token
+    const { atraceExportDailyAttendance } = await import('@/api/atrace/attendance/stats');
+    const records = await atraceExportDailyAttendance(
+      dateRange.value.startDate,
+      dateRange.value.endDate
+    );
+    if (records.length === 0) {
+      exportError.value = t('app.noDataToExport');
+      return;
+    }
+
+    const { exportPivotTableToExcel } = await import('@/utils/exportToExcel');
+    await exportPivotTableToExcel(
+      records,
+      dateRange.value.startDate,
+      dateRange.value.endDate,
+      locale.value
+    );
+  } catch (e: any) {
+    console.error('[AttendanceStatsTable] export failed:', e);
+    exportError.value = t('app.exportFailed');
+  } finally {
+    isExportingExcel.value = false;
+  }
+}
+
+
 </script>
 
 <template>
@@ -368,10 +420,26 @@ watch(() => props.postId, (newVal) => {
         </div>
       </div>
 
-      <!-- Settings Button -->
-      <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings" class="flex-shrink-0">
-        {{ t('app.configureTime') }}
-      </UButton>
+      <!-- Export and Settings Buttons -->
+      <div class="flex gap-1.5 flex-shrink-0">
+        <UButton 
+          size="xs" 
+          variant="ghost" 
+          icon="i-heroicons-arrow-down-tray"
+          :loading="isExportingExcel"
+          @click="exportToExcel"
+        >
+          {{ t('app.exportToExcel') || 'Export' }}
+        </UButton>
+        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings" class="flex-shrink-0">
+          {{ t('app.configureTime') }}
+        </UButton>
+      </div>
+    </div>
+
+    <!-- Export Error -->
+    <div v-if="exportError" class="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200">
+      {{ exportError }}
     </div>
 
     <!-- Settings Panel -->
