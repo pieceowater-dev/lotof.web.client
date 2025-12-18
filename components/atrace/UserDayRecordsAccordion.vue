@@ -219,6 +219,11 @@ function methodLabel(method?: string) {
   return label === key ? (method.replace(/^METHOD_/, '').replace(/_/g, ' ')) : label;
 }
 
+function isToday(date: string): boolean {
+  const today = new Date().toISOString().split('T')[0];
+  return date === today;
+}
+
 function openReasonModal(date: string) {
   selectedDate.value = date;
   reason.value = '';
@@ -301,7 +306,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
           </div>
           <div class="flex items-center gap-2">
             <UButton
-              v-if="!isLegitimateDay(date)"
+              v-if="!isLegitimateDay(date) && !isToday(date)"
               size="xs"
               variant="ghost"
               icon="i-heroicons-check-circle"
