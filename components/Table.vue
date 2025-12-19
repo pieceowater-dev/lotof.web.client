@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { atraceRecordsByPost, type AtraceRecord } from '@/api/atrace/record/listByPost';
 import { CookieKeys } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useI18n } from '@/composables/useI18n';
 import AppTable from '@/components/ui/AppTable.vue';
 
@@ -48,18 +49,15 @@ const pageCountToEnum = (n: number): any => {
   }
 };
 
-// Token from cookie (local to this component)
-function getAtraceToken(): string | null {
-  const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
-  return cookie.value || null;
-}
+// Token from cookie (centralized)
+const { current: currentAtraceToken } = useAtraceToken();
 
 // Data loader
 const { data: records, status, refresh } = await useLazyAsyncData<AtraceRecord[]>(
   'atrace:records',
   async () => {
     if (!props.postId) return [];
-    const token = getAtraceToken();
+    const token = currentAtraceToken();
     if (!token) return [];
     const res = await atraceRecordsByPost(token, nsSlug.value, {
       postId: props.postId,

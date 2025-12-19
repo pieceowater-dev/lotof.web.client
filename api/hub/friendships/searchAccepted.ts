@@ -1,5 +1,6 @@
 import { hubClient, setGlobalAuthToken } from '@/api/clients';
 import { FriendshipStatus } from '@gql-hub';
+import { PaginationLength } from '@/utils/constants';
 
 const SEARCH_ACCEPTED_FRIENDS = /* GraphQL */ `
   query SearchAcceptedFriends($search: String, $page: Int, $length: FilterPaginationLengthEnum) {
@@ -26,17 +27,17 @@ export async function hubSearchAcceptedFriends(token: string, search: string, pa
   return { rows, count };
 }
 
-function lengthToEnum(length: number) {
+function lengthToEnum(length: number): PaginationLength {
   switch (length) {
-    case 10: return 'TEN';
-    case 15: return 'FIFTEEN';
-    case 20: return 'TWENTY';
-    case 25: return 'TWENTY_FIVE';
-    case 30: return 'THIRTY';
-    case 35: return 'THIRTY_FIVE';
-    case 40: return 'FORTY';
-    case 45: return 'FORTY_FIVE';
-    case 50: return 'FIFTY';
-    default: return 'TWENTY_FIVE';
+    case 10: return PaginationLength.TEN;
+    case 15: return PaginationLength.FIFTEEN;
+    case 20: return PaginationLength.TWENTY;
+    case 25: return PaginationLength.TWENTY_FIVE;
+    case 30: return PaginationLength.THIRTY;
+    case 35: return PaginationLength.THIRTY_FIVE;
+    case 40: return PaginationLength.FORTY;
+    case 45: return PaginationLength.FORTY_FIVE;
+    case 50: return PaginationLength.FIFTY;
+    default: return PaginationLength.TWENTY_FIVE;
   }
 }

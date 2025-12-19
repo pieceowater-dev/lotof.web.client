@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { QRMethod } from '@/utils/constants';
 const { t } = useI18n();
 import { useClipboard } from '@vueuse/core';
 import { dynamicLS } from '@/utils/storageKeys';
@@ -37,13 +38,13 @@ const qrPrintDialog = ref(false);
 const qrImage = ref<string | null>(null);
 
 const publicUrl = computed(() => {
-    // Попытка получить namespace из текущего роутера
+    // Attempt to get namespace from current router
     let ns = '';
     try {
         const route = useRoute();
         ns = route.params.namespace as string || '';
     } catch {}
-    // fallback если не найден
+    // Fallback if not found
     if (!ns) ns = 'ns';
     return `${window.location.origin}/shared/${ns}/atrace/post/${props.post.id}`;
 });
@@ -72,7 +73,7 @@ async function handlePrint() {
     // skip props.post.namespace (not in type)
     if (!ns) ns = 'ns'; // fallback, but should be dynamic
 
-    // Всегда открываем модалку для ввода PIN
+    // Always open modal for PIN entry
     showPrintPinPrompt.value = true;
     pendingPrint.value = { ns, postId: props.post.id };
 }
@@ -89,8 +90,8 @@ async function handlePrint() {
         const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
         const CryptoJS = (await import('crypto-js')).default;
         const secret = CryptoJS.MD5(pin).toString();
-    const res = await qrGenPublic(props.post.id, 'METHOD_QR_STATIC', secret, ns);
-    // Если res.qr — base64 строка PNG, явно добавляем data:image/png;base64,
+    const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
+    // If res.qr is a base64 PNG string, explicitly add data:image/png;base64, prefix
     const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
     qrImage.value = imgSrc;
         qrPrintDialog.value = true;
@@ -101,7 +102,7 @@ async function handlePrint() {
                 printWindow.document.close();
                 printWindow.focus();
                 printWindow.print();
-                // Попытка закрыть вкладку после печати (работает не во всех браузерах)
+                // Attempt to close tab after print (doesn't work in all browsers)
                 setTimeout(() => {
                   printWindow.close();
                 }, 500);

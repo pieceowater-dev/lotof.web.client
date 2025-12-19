@@ -1,4 +1,5 @@
 import { hubFriendshipsList } from '@/api/hub/friendships/list';
+import { logError } from '@/utils/logger';
 import { useAuth } from './useAuth';
 import { FriendshipStatus } from '@gql-hub';
 
@@ -19,7 +20,7 @@ export function useFriendships() {
       const data = await hubFriendshipsList(token.value, status);
       rows.value = data.rows;
     } catch (e) {
-      console.error('[friendships] load error', e);
+      logError('[friendships] load error', e);
     } finally {
       loading.value = false;
     }

@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { log, logError } from '@/utils/logger';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
 
 const { t, locale } = useI18n();
@@ -354,7 +355,7 @@ async function exportToExcel() {
       locale.value
     );
   } catch (e: any) {
-    console.error('[AttendanceStatsTable] export failed:', e);
+    logError('[AttendanceStatsTable] export failed:', e);
     exportError.value = t('app.exportFailed');
   } finally {
     isExportingExcel.value = false;

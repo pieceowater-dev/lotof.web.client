@@ -1,6 +1,9 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { logError } from '@/utils/logger';
 import { CookieKeys } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
+import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 
 const { t } = useI18n();
@@ -61,23 +64,7 @@ const editForm = reactive<{ roleId: string; requiredWorkingDays: number; require
     requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
 });
 
-async function ensureAtraceToken(): Promise<string | null> {
-    const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
-    const tok = cookie.value;
-    if (!tok) return null;
-    try {
-        const parts = tok.split('.');
-        if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const expSec = payload.exp as number | undefined;
-            if (expSec && Date.now() / 1000 >= expSec) {
-                cookie.value = null;
-                return null;
-            }
-        }
-    } catch {}
-    return cookie.value;
-}
+const { ensure: ensureAtraceToken } = useAtraceToken();
 
 async function loadMembers() {
     loading.value = true;
@@ -121,7 +108,7 @@ async function loadMembers() {
                     const [role, schedule] = await Promise.all([
                         atraceGetMemberRole(atraceToken, nsSlug.value, m.id),
                         atraceGetSchedule(atraceToken, nsSlug.value, m.id, currentYear, currentMonth).catch((err) => {
-                            console.error(`Failed to load schedule for member ${m.id}:`, err);
+                            logError(`Failed to load schedule for member ${m.id}:`, err);
                             return null;
                         })
                     ]);
@@ -133,7 +120,7 @@ async function loadMembers() {
                         requiredWorkingHours: schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS
                     };
                 } catch (err) {
-                    console.error(`Failed to load role for member ${m.id}:`, err);
+                    logError(`Failed to load role for member ${m.id}:`, err);
                     return {
                         ...m,
                         roleId: null,
@@ -145,8 +132,8 @@ async function loadMembers() {
             })
         );
 
-    } catch (e: any) {
-        error.value = e?.message || 'Failed to load members';
+    } catch (e: unknown) {
+        error.value = getErrorMessage(e) || 'Failed to load members';
     } finally {
         loading.value = false;
     }
@@ -160,7 +147,7 @@ async function loadRoles() {
         const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
         roles.value = await atraceGetRoles(atraceToken, nsSlug.value);
     } catch (e) {
-        console.error('Failed to load roles:', e);
+        logError('Failed to load roles:', e);
         // Fallback to empty array on error
         roles.value = [];
     }
@@ -223,13 +210,13 @@ async function handleSaveMember() {
         
         // Reload members to reflect changes from backend
         await loadMembers();
-    } catch (e: any) {
-        error.value = e?.message || 'Failed to update member';
+    } catch (e: unknown) {
+        error.value = getErrorMessage(e) || 'Failed to update member';
     }
 }
 
 onMounted(async () => {
-    const tok = await ensureAtraceToken();
+    const tok = await ensureAtraceToken(nsSlug.value, useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value);
     if (!tok) {
         setTimeout(() => router.push('/'), 0);
         return;

@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import { useAuth } from '@/composables/useAuth';
-import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { atraceCheck } from '@/api/atrace/record/check';
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+import { logError } from '@/utils/logger';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 
 const { t } = useI18n();
 
@@ -52,41 +53,7 @@ function setCooldown() {
   } catch {}
 }
 
-async function ensureAtraceToken(): Promise<string | null> {
-  // Use previously obtained app token if present and valid
-  const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
-  const tok = cookie.value;
-  if (tok) {
-    try {
-      const parts = tok.split('.');
-      if (parts.length === 3) {
-        const payload = JSON.parse(atob(parts[1]));
-        const expSec = payload.exp as number | undefined;
-        if (expSec && Date.now() / 1000 >= expSec) {
-          cookie.value = null;
-        } else {
-          return tok;
-        }
-      }
-    } catch {/* ignore and refresh below */}
-  }
-
-  // If no valid token, exchange hub token -> atrace app token
-  const hub = hubToken.value;
-  if (!hub) return null;
-  try {
-    const at = await atraceGetAppToken(hub, nsSlug.value);
-    useCookie(CookieKeys.ATRACE_TOKEN, {
-      sameSite: 'lax',
-      path: '/',
-      // 6 days validity window, server token may expire earlier; we still validate on each use
-      expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000),
-    }).value = at;
-    return at;
-  } catch (e) {
-    return null;
-  }
-}
+const { ensure: ensureAtraceToken } = useAtraceToken();
 
 async function runCheck() {
   try {
@@ -107,7 +74,7 @@ async function runCheck() {
     }
 
     // Ensure A-Trace app token
-    const at = await ensureAtraceToken();
+    const at = await ensureAtraceToken(nsSlug.value, hubToken.value);
     if (!at) {
       router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
       return;
@@ -124,7 +91,8 @@ async function runCheck() {
     // Set cooldown for static QR regardless of result to avoid spam
     if (qMethodNum.value === '3') setCooldown();
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: ok ? '1' : '0' } });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    logError('[atrace/qr] runCheck failed', e);
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
   } finally {
     // no-op

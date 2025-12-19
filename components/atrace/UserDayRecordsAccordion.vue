@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import type { AtraceRecord } from '@/api/atrace/record/records';
+import { logError } from '@/utils/logger';
 
 const { t, locale } = useI18n();
 
@@ -93,8 +94,8 @@ async function loadData() {
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
     const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate);
     dailyAttendance.value = result;
-  } catch (e: any) {
-    console.error('[UserDayRecordsAccordion] failed to load:', e);
+  } catch (e: unknown) {
+    logError('[UserDayRecordsAccordion] failed to load:', e);
     error.value = t('app.failedToLoadDetails');
   } finally {
     loading.value = false;
@@ -245,7 +246,7 @@ async function markDayAsLegitimate() {
     // Reload data to reflect changes
     await loadData();
   } catch (e) {
-    console.error('[UserDayRecordsAccordion] failed to mark day legitimate:', e);
+    logError('[UserDayRecordsAccordion] failed to mark day legitimate:', e);
     error.value = t('app.failedToMarkLegitimate');
   } finally {
     loading.value = false;

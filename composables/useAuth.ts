@@ -1,4 +1,5 @@
 import { hubMe } from '@/api/hub/me';
+import { logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
@@ -24,7 +25,7 @@ export function useAuth() {
       user.value = data;
     } catch (e) {
       // If token invalid → logout silently
-      console.warn('[auth] fetchUser failed, clearing token');
+      logWarn('[auth] fetchUser failed, clearing token');
       logout();
     } finally {
       loading.value = false;

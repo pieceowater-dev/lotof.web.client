@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { log, logError } from '@/utils/logger';
 import { useRouter } from 'vue-router';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { hubUpdateMe } from '@/api/hub/updateMe';
@@ -83,7 +84,7 @@ async function handleAppClick(appAddress: string) {
   // If opening A-Trace, first exchange for an app token with required headers
   if (appAddress === 'atrace') {
     try {
-  const hubToken = useCookie<string | null>(CookieKeys.TOKEN).value;
+      const hubToken = useCookie<string | null>(CookieKeys.TOKEN).value;
       if (!hubToken) return login();
   const existing = useCookie<string | null>(CookieKeys.ATRACE_TOKEN);
       if (!existing.value) {
@@ -114,7 +115,7 @@ async function handleAppClick(appAddress: string) {
         return;
       }
     } catch (e) {
-      console.error('[atrace] getAppToken failed', e);
+      logError('[atrace] getAppToken failed', e);
       toast.add({ title: 'A-Trace', description: 'Ошибка при получении токена приложения.', color: 'red' });
       return;
     }
@@ -133,16 +134,16 @@ async function handleGetApp(app: AppConfig) {
   try {
     const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
     const res = await hubAddAppToNamespace(token, selectedNS.value, app.bundle);
-    console.info('[apps] Installed app into namespace', res);
+    log('[apps] Installed app into namespace', res);
     // Mark installed and navigate
     appInstalled[app.bundle] = true;
     // Optionally re-check entire list for consistency
     // await checkInstalledForVisibleApps();
     await router.push(`/${selectedNS.value}/${app.address}`);
   } catch (e: any) {
-    console.error('[apps] Install failed', e);
+    logError('[apps] Install failed', e);
     if (typeof window !== 'undefined') {
-      console.error(e?.message || 'Failed to install app');
+      logError(e?.message || 'Failed to install app');
     }
   } finally {
     installingBundles.delete(app.bundle);

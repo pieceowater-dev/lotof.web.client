@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import type { AtraceRecord } from '@/api/atrace/record/records';
+import { logError } from '@/utils/logger';
 
 const { t, locale } = useI18n();
 
@@ -95,8 +96,8 @@ async function loadRecords() {
 
     // Load daily attendance data for violation highlighting
     await loadDailyAttendance();
-  } catch (e: any) {
-    console.error('[PostRecordsDetails] failed to load records:', e);
+  } catch (e: unknown) {
+    logError('[PostRecordsDetails] failed to load records:', e);
     error.value = t('app.failedToLoadDetails');
     filteredRecords.value = [];
     totalCount.value = 0;
@@ -111,7 +112,7 @@ async function loadDailyAttendance() {
     const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate);
     dailyAttendance.value = result;
   } catch (e) {
-    console.error('[PostRecordsDetails] failed to load daily attendance:', e);
+    logError('[PostRecordsDetails] failed to load daily attendance:', e);
     dailyAttendance.value = [];
   }
 }

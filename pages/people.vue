@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { logError } from '@/utils/logger';
 import { FriendshipStatus } from '@gql-hub';
 import { CookieKeys } from '@/utils/storageKeys';
 import AppTable from '@/components/ui/AppTable.vue'
@@ -204,8 +205,7 @@ async function loadMoreFriends(reset = false) {
     friendHasMore.value = loaded < count;
     if (friendHasMore.value) friendPage.value += 1;
   } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error('[friends dropdown] load error', e);
+    logError('[friends dropdown] load error', e);
     friendHasMore.value = false;
   } finally {
     friendLoading.value = false;

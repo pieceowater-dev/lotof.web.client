@@ -6,6 +6,8 @@ import EditPostModal from "@/components/atrace/EditPostModal.vue";
 import FilterModal from "@/components/atrace/FilterModal.vue";
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
+import { getErrorMessage } from '@/utils/types/errors';
 const { t } = useI18n();
 
 // data
@@ -22,7 +24,9 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 // Pagination state for infinite scroll
 const page = ref(1);
-const pageLength = ref<'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'>('TEN');
+import { PaginationLength } from '@/utils/constants';
+
+const pageLength = ref<PaginationLength>(PaginationLength.TEN);
 const totalCount = ref(0);
 const loadingMore = ref(false);
 const hasMore = computed(() => posts.value.length < totalCount.value);
@@ -85,26 +89,7 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
-async function ensureAtraceToken(): Promise<string | null> {
-    const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' });
-    const tok = cookie.value;
-    if (!tok) return null;
-    try {
-        const parts = tok.split('.');
-        if (parts.length === 3) {
-            const payload = JSON.parse(atob(parts[1]));
-            const expSec = payload.exp as number | undefined;
-            if (expSec && Date.now() / 1000 >= expSec) {
-                cookie.value = null;
-                return null;
-            }
-        }
-    } catch {}
-    if (!cookie.value) return null;
-    const { setAtraceAppToken } = await import('@/api/clients');
-    setAtraceAppToken(cookie.value);
-    return cookie.value;
-}
+const { ensure: ensureAtraceToken } = useAtraceToken();
 
 async function loadPosts() {
     loading.value = true;
@@ -123,8 +108,8 @@ async function loadPosts() {
         if (!selectedPostId.value || !posts.value.some(p => p.id === selectedPostId.value)) {
             selectedPostId.value = posts.value[0]?.id ?? null;
         }
-    } catch (e: any) {
-        error.value = e?.message || 'Failed to load posts';
+    } catch (e: unknown) {
+        error.value = getErrorMessage(e) || 'Failed to load posts';
     } finally {
         loading.value = false;
     }
@@ -263,7 +248,7 @@ async function handleEditSave() {
         title: editForm.title,
         description: norm(editForm.description),
     };
-    // Добавляем phrase если PIN заполнен
+    // Add phrase if PIN is filled
     if (editForm.pin && editForm.pin.length === 6) {
         payload.phrase = editForm.pin;
     }
@@ -299,7 +284,7 @@ async function handleEditSave() {
         loc.latitude = lat as number;
         loc.longitude = lon as number;
     }
-    // Заглушки для необходимых полей location
+    // Placeholders for required location fields
     if (Object.keys(loc).length === 0) {
         payload.location = {
             comment: 'placeholder',

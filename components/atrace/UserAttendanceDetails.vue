@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { log, logError } from '@/utils/logger';
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -45,18 +46,18 @@ async function loadAttendanceDetails() {
   error.value = null;
   
   try {
-    console.log('[UserAttendanceDetails] Loading for userId:', props.userId, 'period:', props.startDate, '-', props.endDate);
+    log('[UserAttendanceDetails] Loading for userId:', props.userId, 'period:', props.startDate, '-', props.endDate);
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
     const result = await atraceGetAttendanceReport(
       props.userId,
       props.startDate,
       props.endDate
     );
-    console.log('[UserAttendanceDetails] Loaded', result.length, 'records:', result);
+    log('[UserAttendanceDetails] Loaded', result.length, 'records:', result);
     attendanceRecords.value = result;
     totalRecords.value = result.length;
   } catch (e: any) {
-    console.error('[UserAttendanceDetails] Failed to load attendance details:', e);
+    logError('[UserAttendanceDetails] Failed to load attendance details:', e);
     error.value = t('app.failedToLoadDetails');
     attendanceRecords.value = [];
   } finally {

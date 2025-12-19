@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { log, logWarn } from '@/utils/logger';
 import PinPrompt from '@/components/PinPrompt.vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
@@ -36,11 +37,11 @@ function loadPin() {
 }
 function savePin(val: string) {
   if (process.client && pinKey.value && nsSlug.value && postId.value) {
-    console.log('savePin', 'key:', pinKey.value, 'val:', val, 'ns:', nsSlug.value, 'postId:', postId.value);
+    log('savePin', 'key:', pinKey.value, 'val:', val, 'ns:', nsSlug.value, 'postId:', postId.value);
     localStorage.setItem(pinKey.value, val);
     pin.value = val;
   } else {
-    console.warn('savePin: missing nsSlug or postId', nsSlug.value, postId.value);
+    logWarn('savePin: missing nsSlug or postId', nsSlug.value, postId.value);
   }
 }
 function clearPin() {
@@ -60,7 +61,7 @@ function handlePinSubmit(val: string) {
 
 
 onMounted(() => {
-  console.log('[DEBUG] route.params:', JSON.stringify(route.params));
+  log('[DEBUG] route.params:', JSON.stringify(route.params));
   loadPin();
   if (!pin.value) askPin();
 });
@@ -82,7 +83,7 @@ let pollTimer: any = null;
 
 async function fetchQr() {
   if (!pin.value || !postId.value || !nsSlug.value) {
-    console.warn('fetchQr: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
+    logWarn('fetchQr: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
     return;
   }
   polling.value = true;
@@ -90,7 +91,7 @@ async function fetchQr() {
   try {
     // Use md5(pin) as secret
     const secret = CryptoJS.MD5(pin.value).toString();
-    console.log('fetchQr', 'postId:', postId.value, 'nsSlug:', nsSlug.value, 'secret:', secret);
+    log('fetchQr', 'postId:', postId.value, 'nsSlug:', nsSlug.value, 'secret:', secret);
     const qrRes = await qrGenPublic(postId.value, 'METHOD_QR', secret, nsSlug.value);
     if (qrRes && qrRes.qr) {
       qrBase64.value = qrRes.qr;

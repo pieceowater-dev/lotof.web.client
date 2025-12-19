@@ -42,9 +42,9 @@ export async function hubAreAppsInNamespace(token: string, namespaceSlug: string
       result[bundle] = !!data?.[alias]?.id;
     }
     return result;
-  } catch (err: any) {
+  } catch (err: unknown) {
     // GraphQL servers often return partial data with errors; graphql-request throws but keeps data at err.response.data
-    const data = err?.response?.data;
+    const data = (err as any)?.response?.data;
     if (data && typeof data === 'object') {
       for (const [bundle, alias] of aliasByBundle.entries()) {
         result[bundle] = !!data?.[alias]?.id;
