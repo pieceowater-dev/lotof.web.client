@@ -318,11 +318,11 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                 <span>{{ t('app.records') }} - {{ records.length }}</span>
                 <template v-if="getDayTimeInfo(records)">
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(records).firstTime }}</span>
+                  <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(records)?.firstTime }}</span>
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(records).lastTime }}</span>
+                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(records)?.lastTime }}</span>
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(records).duration }}</span>
+                  <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(records)?.duration }}</span>
                 </template>
               </div>
             </div>

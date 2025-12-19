@@ -36,6 +36,11 @@ const cardsSentinelRef = ref<HTMLElement | null>(null);
 let cardsObserver: IntersectionObserver | null = null;
 const selectedPostId = ref<string | null>(null);
 
+// Track if "All" card is selected (empty string = all posts)
+const selectedPostIdForDisplay = computed(() => {
+    return selectedPostId.value === '' ? '' : selectedPostId.value;
+});
+
 // Currently selected post and its display helpers
 const selectedPost = computed(() => posts.value.find(p => p.id === selectedPostId.value) || null);
 const selectedPostTitle = computed(() => selectedPost.value?.title || '');
@@ -54,14 +59,16 @@ function loadStoredSelection() {
     if (process.client) {
         try {
             const v = localStorage.getItem(selectedStorageKey.value);
-            selectedPostId.value = v || null;
+            // Preserve empty string ("All"), only null means no selection
+            selectedPostId.value = v === null ? null : v;
         } catch {}
     }
 }
 watch(selectedPostId, (val) => {
     if (!process.client) return;
     try {
-        if (val) localStorage.setItem(selectedStorageKey.value, val);
+        // Store both normal IDs and empty string ("All"); remove only for null
+        if (val !== null) localStorage.setItem(selectedStorageKey.value, val);
         else localStorage.removeItem(selectedStorageKey.value);
     } catch {}
 });
@@ -105,7 +112,8 @@ async function loadPosts() {
         const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: pageLength.value });
         posts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
         totalCount.value = res.count || 0;
-        if (!selectedPostId.value || !posts.value.some(p => p.id === selectedPostId.value)) {
+        // Only set default if selectedPostId is explicitly null, preserve empty string ("All")
+        if (selectedPostId.value === null || (selectedPostId.value !== '' && !posts.value.some(p => p.id === selectedPostId.value))) {
             selectedPostId.value = posts.value[0]?.id ?? null;
         }
     } catch (e: unknown) {
@@ -194,10 +202,6 @@ async function handleCreate() {
 }
 
 async function handleDelete(p: Post, opts?: { skipConfirm?: boolean }) {
-    if (!opts?.skipConfirm) {
-        const ok = confirm(t('common.confirmDelete') || 'Delete?');
-        if (!ok) return;
-    }
     const atraceToken = await ensureAtraceToken();
     if (!atraceToken) return router.push('/');
     try {
@@ -397,6 +401,10 @@ onBeforeUnmount(() => {
                 <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
                 <template v-else>
+                    <!-- "All" card - shows common stats, only if there are posts -->
+                    <Card v-if="posts.length > 0" :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }" :selected="selectedPostId === ''" :can-delete="false"
+                          @select="() => (selectedPostId = '')" />
+                    
                     <div v-for="post in posts" :key="post.id">
                         <Card :post="post" :selected="post.id === selectedPostId" :can-delete="false"
                               @select="() => (selectedPostId = post.id)"
@@ -416,8 +424,8 @@ onBeforeUnmount(() => {
 
         <div class="flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
             <div class="text-left">
-                <h2 class="text-lg font-medium">{{ t('app.attendance') }} — {{ selectedPostTitle }}</h2>
-                <span>{{ selectedPostLocationLine }}</span>
+                <h2 class="text-lg font-medium">{{ t('app.attendance') }} — {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}</h2>
+                <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
             </div>
 
             <!-- Search and filter buttons removed -->
@@ -425,8 +433,8 @@ onBeforeUnmount(() => {
 
 
 
-        <div v-if="posts.length > 0 && selectedPostId" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
-            <AttendanceStatsTable :post-id="selectedPostId" />
+        <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
+                <AttendanceStatsTable :post-id="selectedPostId" />
         </div>
         <div v-else class="flex-1 h-full px-4 pb-4 flex flex-col items-center justify-center">
             <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">

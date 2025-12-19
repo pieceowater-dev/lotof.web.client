@@ -63,14 +63,13 @@ export class ApiClient {
     // Merge headers each call to always use latest token + any provided headers
     const t = getTokenRef().value;
     const headers: Record<string, string> = {};
-    if (t) {
-      // For atrace client we override with its own token store
-      if (this.authHeader === 'AtraceAuthorization') {
-        const at = getAtraceTokenRef().value;
-        if (at) headers[this.authHeader] = `Bearer ${at}`;
-      } else {
-        headers[this.authHeader] = `Bearer ${t}`;
-      }
+    // For atrace client, send AtraceAuthorization if we have it, regardless of hub token presence
+    if (this.authHeader === 'AtraceAuthorization') {
+      const at = getAtraceTokenRef().value;
+      if (at) headers[this.authHeader] = `Bearer ${at}`;
+    } else if (t) {
+      // For hub client use hub token
+      headers[this.authHeader] = `Bearer ${t}`;
     }
     if (options?.headers) Object.assign(headers, options.headers);
     if (Object.keys(headers).length) {

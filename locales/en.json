@@ -57,6 +57,8 @@
     "errorBack": "Back to home",
     "atraceTitle": "A-Trace",
     "atraceSubtitle": "Track your staff attendance.",
+    "allLocations": "All locations",
+    "allLocationsDesc": "Attendance across all locations",
   "atraceAddLocation": "+ Add location",
   "noPostsTitle": "No locations yet",
   "noPostsDesc": "Add your first location to start tracking attendance.",
@@ -259,6 +261,7 @@
   "copy": "Copy",
   "copied": "Copied!",
   "reset": "Reset",
-  "close": "Close"
+  "close": "Close",
+  "all": "All"
 }
 }

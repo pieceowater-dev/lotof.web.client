@@ -17,8 +17,8 @@ type UserAttendanceStats = {
 };
 
 const GET_ALL_USERS_STATS = `
-  query GetAllUsersStats($startDate: String!, $endDate: String!) {
-    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate }) {
+  query GetAllUsersStats($startDate: String!, $endDate: String!, $postId: String) {
+    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate, postId: $postId }) {
       userId
       username
       workDays
@@ -115,6 +115,7 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
 export async function atraceGetAllUsersStats(
   startDate: string,
   endDate: string,
+  postId?: string | null,
   nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
   // nsSlug required for token refresh
@@ -135,7 +136,7 @@ export async function atraceGetAllUsersStats(
         legitimateAbsences: number;
         totalWorkedHours: number;
       }>;
-    }>(GET_ALL_USERS_STATS, { startDate, endDate });
+    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null });
 
     return response.getAllUsersStats;
   }, nsSlug!);

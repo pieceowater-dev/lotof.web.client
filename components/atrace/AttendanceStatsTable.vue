@@ -180,8 +180,6 @@ const dateRange = computed(() => {
 });
 
 async function loadStats() {
-  if (!props.postId) return;
-  
   loading.value = true;
   error.value = null;
   
@@ -189,7 +187,8 @@ async function loadStats() {
     const { atraceGetAllUsersStats } = await import('@/api/atrace/attendance/stats');
     const result = await atraceGetAllUsersStats(
       dateRange.value.startDate,
-      dateRange.value.endDate
+      dateRange.value.endDate,
+      props.postId || null
     );
     stats.value = result;
   } catch (e: any) {
@@ -334,10 +333,9 @@ watch([customStartDate, customEndDate], ([newStart, newEnd]) => {
 });
 
 // Watch for postId changes
-watch(() => props.postId, (newVal) => {
-  if (newVal) {
-    loadStats();
-  }
+watch(() => props.postId, () => {
+  // Load for both specific post and "All" (empty string)
+  loadStats();
 }, { immediate: true });
 
 // Export functionality
@@ -471,10 +469,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
           <span>{{ t('app.timeViolation') }}</span>
         </div>
-        <div class="flex items-center gap-1">
-          <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700"></div>
-          <span>{{ t('common.suspicious') }}</span>
-        </div>
+        
       </div>
 
       <!-- Export and Settings Buttons -->
@@ -558,18 +553,22 @@ function formatNumber(val: number, fractionDigits = 0) {
             <th class="px-3 py-2 text-center font-medium">{{ t('app.attended') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.violations') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.exceptions') }}</th>
-            <th class="px-3 py-2 text-right font-medium w-16"></th>
+            <th v-if="!postId" class="px-3 py-2 text-right font-medium w-16"></th>
           </tr>
         </thead>
         <tbody>
           <template v-for="user in stats" :key="user.userId">
             <!-- Main row -->
             <tr 
-              class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-              @click="toggleUserDetails(user.userId)"
+              :class="[
+                'border-b dark:border-gray-700',
+                postId ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer' : 'cursor-default'
+              ]"
+              @click="postId ? toggleUserDetails(user.userId) : null"
             >
               <td class="px-3 py-2 text-center">
                 <UIcon 
+                  v-if="postId"
                   :name="isExpanded(user.userId) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'" 
                   class="w-4 h-4 transition-transform"
                 />
@@ -602,7 +601,7 @@ function formatNumber(val: number, fractionDigits = 0) {
                 </span>
                 <span v-else class="text-gray-400">0</span>
               </td>
-              <td class="px-3 py-2 text-right">
+              <td v-if="!postId" class="px-3 py-2 text-right">
                 <UButton
                   size="xs"
                   variant="soft"
@@ -615,8 +614,8 @@ function formatNumber(val: number, fractionDigits = 0) {
             </tr>
 
             <!-- Expanded details row -->
-            <tr v-if="isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
-              <td colspan="7" class="px-3 py-3">
+            <tr v-if="postId && isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
+              <td :colspan="!postId ? 7 : 6" class="px-3 py-3">
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                   <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
                   <UserDayRecordsAccordion 
