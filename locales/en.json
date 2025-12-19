@@ -212,7 +212,17 @@
     "exportDaily": "Export Daily",
     "exportRangeTooLarge": "Export range cannot exceed 3 months. Please select a shorter period.",
     "noDataToExport": "No data to export",
-    "exportFailed": "Export failed. Please try again."
+    "exportFailed": "Export failed. Please try again.",
+    "calculate": "Calculate",
+    "salaryCalculation": "Salary Calculation",
+    "salary": "Salary",
+    "enterSalary": "Enter salary",
+    "salaryStoredLocally": "Salary is stored locally",
+    "workingDaysInMonth": "Working days per month",
+    "totalWorkedHours": "Total worked hours",
+    "salaryByDays": "Salary by days",
+    "salaryByHours": "Salary by hours",
+    "formula": "Formula"
 },
 "common": {
   "ok": "OK",
@@ -248,6 +258,7 @@
   "generate": "Generate",
   "copy": "Copy",
   "copied": "Copied!",
-  "reset": "Reset"
+  "reset": "Reset",
+  "close": "Close"
 }
 }

@@ -131,6 +131,13 @@ const canApplyRange = computed(() => {
 // Accordion state - track expanded user IDs
 const expandedUserIds = ref<Set<string>>(new Set());
 
+// Salary calculator state
+const showSalaryModal = ref(false);
+const selectedUserId = ref<string | null>(null);
+const salaryInput = ref('');
+const workingDaysInMonth = ref(0);
+const totalWorkedHours = ref(0);
+
 // Calculate date range based on selected period
 const dateRange = computed(() => {
   const today = new Date();
@@ -220,6 +227,27 @@ function toggleUserDetails(userId: string) {
 
 function isExpanded(userId: string): boolean {
   return expandedUserIds.value.has(userId);
+}
+
+function openSalaryCalculator(userId: string) {
+  selectedUserId.value = userId;
+  const savedSalary = typeof window !== 'undefined' ? localStorage.getItem(`salary_${userId}`) : null;
+  salaryInput.value = savedSalary || '';
+  
+  // Calculate working days and hours for the user from stats
+  const user = stats.value.find(u => u.userId === userId);
+  if (user) {
+    workingDaysInMonth.value = user.attendedDays + user.legitimateAbsences;
+    totalWorkedHours.value = user.totalWorkedHours;
+  }
+  
+  showSalaryModal.value = true;
+}
+
+function saveSalary() {
+  if (selectedUserId.value && salaryInput.value) {
+    localStorage.setItem(`salary_${selectedUserId.value}`, salaryInput.value);
+  }
 }
 
 function openCustomRange() {
@@ -362,6 +390,34 @@ async function exportToExcel() {
   }
 }
 
+// Computed properties for salary calculation
+const salaryByDays = computed(() => {
+  const salary = parseFloat(salaryInput.value) || 0;
+  const daysInMonth = 22;
+  return (salary / daysInMonth) * workingDaysInMonth.value;
+});
+
+const salaryByHours = computed(() => {
+  const salary = parseFloat(salaryInput.value) || 0;
+  const hoursInMonth = 22 * 8;
+  return (salary / hoursInMonth) * totalWorkedHours.value;
+});
+
+// Locale-aware number formatting (spaces for thousands in ru-RU)
+function formatNumber(val: number, fractionDigits = 0) {
+  try {
+    return new Intl.NumberFormat(
+      locale.value === 'ru' ? 'ru-RU' : 'en-US',
+      {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      }
+    ).format(val || 0);
+  } catch {
+    const num = typeof val === 'number' ? val : 0;
+    return num.toFixed(fractionDigits);
+  }
+}
 
 </script>
 
@@ -494,7 +550,7 @@ async function exportToExcel() {
   <div class="text-sm">{{ t('app.noData') }}</div>
       </div>
       <table v-else class="w-full text-sm">
-        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 text-xs">
+        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-20 text-xs">
           <tr>
             <th class="px-3 py-2 text-left font-medium w-7"></th>
             <th class="px-3 py-2 text-left font-medium">{{ t('app.user') }}</th>
@@ -502,6 +558,7 @@ async function exportToExcel() {
             <th class="px-3 py-2 text-center font-medium">{{ t('app.attended') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.violations') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.exceptions') }}</th>
+            <th class="px-3 py-2 text-right font-medium w-16"></th>
           </tr>
         </thead>
         <tbody>
@@ -545,11 +602,21 @@ async function exportToExcel() {
                 </span>
                 <span v-else class="text-gray-400">0</span>
               </td>
+              <td class="px-3 py-2 text-right">
+                <UButton
+                  size="xs"
+                  variant="soft"
+                  icon="i-heroicons-calculator"
+                  @click.stop="openSalaryCalculator(user.userId)"
+                >
+                  {{ t('app.calculate') }}
+                </UButton>
+              </td>
             </tr>
 
             <!-- Expanded details row -->
             <tr v-if="isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
-              <td colspan="6" class="px-3 py-3">
+              <td colspan="7" class="px-3 py-3">
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                   <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
                   <UserDayRecordsAccordion 
@@ -631,6 +698,81 @@ async function exportToExcel() {
             <div class="flex gap-2">
               <UButton size="sm" variant="soft" color="primary" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
               <UButton size="sm" color="primary" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
+            </div>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Salary Calculation Modal -->
+    <UModal v-model="showSalaryModal" :ui="{ width: 'w-full sm:max-w-2xl' }">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <UIcon name="i-heroicons-calculator" class="w-6 h-6 text-green-500" />
+              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.salaryCalculation') }}</h3>
+            </div>
+            <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="showSalaryModal = false" />
+          </div>
+        </template>
+
+        <div class="flex flex-col gap-6">
+          <!-- Salary Input -->
+          <div>
+            <label class="text-sm font-medium mb-2 block">{{ t('app.salary') }}</label>
+            <input
+              v-model="salaryInput"
+              type="number"
+              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:border-gray-700"
+              :placeholder="t('app.enterSalary')"
+            />
+            <p class="text-xs text-gray-500 mt-1">{{ t('app.salaryStoredLocally') }}</p>
+          </div>
+
+          <!-- Calculation Results Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Working Days -->
+            <div class="border rounded-lg p-4 dark:border-gray-700">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ t('app.workingDaysInMonth') }}</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(workingDaysInMonth) }} / 22</p>
+            </div>
+
+            <!-- Total Worked Hours -->
+            <div class="border rounded-lg p-4 dark:border-gray-700">
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ t('app.totalWorkedHours') }}</p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(totalWorkedHours, 2) }} / 176</p>
+            </div>
+          </div>
+
+          <!-- Salary by Days -->
+          <div class="border rounded-lg p-4 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
+            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">{{ t('app.salaryByDays') }}</p>
+            <div class="flex items-end gap-2">
+              <div>
+                <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(salaryByDays, 2) }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ t('app.formula') }}: ({{ t('app.salary') }} / 22) × {{ formatNumber(workingDaysInMonth) }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Salary by Hours -->
+          <div class="border rounded-lg p-4 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
+            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">{{ t('app.salaryByHours') }}</p>
+            <div class="flex items-end gap-2">
+              <div>
+                <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(salaryByHours, 2) }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ t('app.formula') }}: ({{ t('app.salary') }} / 22 / 8) × {{ formatNumber(totalWorkedHours, 2) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end w-full">
+            <div class="flex gap-2">
+              <UButton size="sm" variant="soft" color="primary" @click="showSalaryModal = false">{{ t('common.close') }}</UButton>
+              <UButton size="sm" color="primary" @click="saveSalary(); showSalaryModal = false">{{ t('app.save') }}</UButton>
             </div>
           </div>
         </template>

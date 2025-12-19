@@ -20,6 +20,12 @@ const showReasonModal = ref(false);
 const selectedDate = ref<string | null>(null);
 const reason = ref('');
 
+// Salary calculation state will be managed by parent via props
+const showSalaryModal = ref(false);
+const salaryInput = ref('');
+const userName = ref('');
+const userSchedule = ref<any>(null);
+
 // All records and daily attendance
 const allRecords = ref<AtraceRecord[]>([]);
 type DailyAttendance = {
@@ -231,6 +237,12 @@ function openReasonModal(date: string) {
   showReasonModal.value = true;
 }
 
+function saveSalary() {
+  if (salaryInput.value) {
+    localStorage.setItem(`salary_${props.userId}`, salaryInput.value);
+  }
+}
+
 async function markDayAsLegitimate() {
   if (!selectedDate.value || !reason.value.trim()) return;
   
@@ -252,6 +264,16 @@ async function markDayAsLegitimate() {
     loading.value = false;
   }
 }
+
+const workingDaysInMonth = computed(() => {
+  return dailyAttendance.value.filter(da => da.attended || da.legitimate).length;
+});
+
+const totalWorkedHours = computed(() => {
+  return dailyAttendance.value.reduce((sum, da) => sum + (da.workedHours || 0), 0);
+});
+
+// Salary calculations moved to parent component
 
 onMounted(() => {
   loadData();
