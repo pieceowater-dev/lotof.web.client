@@ -257,7 +257,7 @@ onMounted(async () => {
                 {{ t('app.noMembers') || 'No members found' }}
             </div>
 
-            <div v-else class="flex-1 min-h-0">
+                        <div v-else class="flex-1 min-h-0 overflow-x-auto">
                 <AppTable 
                     :rows="paginatedMembers" 
                     :columns="columns" 
@@ -287,7 +287,7 @@ onMounted(async () => {
         </div>
 
         <!-- Edit Member Modal -->
-        <UModal v-model="isEditMemberOpen">
+        <UModal v-model="isEditMemberOpen" :ui="{ container: 'items-center' }">
             <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
                 <template #header>
                     <div class="flex items-center justify-between">

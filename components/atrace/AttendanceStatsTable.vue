@@ -637,7 +637,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Custom Date Range Modal -->
-    <UModal v-model="showDateModal">
+    <UModal v-model="showDateModal" :ui="{ container: 'items-center' }">
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
@@ -705,7 +705,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </UModal>
 
     <!-- Salary Calculation Modal -->
-    <UModal v-model="showSalaryModal" :ui="{ width: 'w-full sm:max-w-2xl' }">
+    <UModal v-model="showSalaryModal" :ui="{ container: 'items-center', width: 'w-full sm:max-w-2xl' }">
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
