@@ -378,10 +378,10 @@ onBeforeUnmount(() => {
     <FilterModal v-model="isFilterOpen" />
 
     <div class="h-full flex flex-col overflow-hidden">
-        <div class="flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
+        <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
             <div class="text-left">
                 <h1 class="text-2xl font-semibold">{{ t('app.atraceTitle') }}</h1>
-                <span>{{ t('app.atraceSubtitle') }}</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
             </div>
             <div>
                 <UButton 
