@@ -102,14 +102,37 @@ async function loadPosts() {
     loading.value = true;
     error.value = null;
     try {
-        const atraceToken = await ensureAtraceToken();
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
         if (!atraceToken) {
             router.push('/');
             return;
         }
         const { atracePostsList } = await import('@/api/atrace/post/list');
         page.value = 1;
-        const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: pageLength.value });
+        // Map enum to API literal type
+        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'> = {
+            [PaginationLength.TEN]: 'TEN',
+            [PaginationLength.FIFTEEN]: 'TEN',
+            [PaginationLength.TWENTY]: 'TWENTY_FIVE',
+            [PaginationLength.TWENTY_FIVE]: 'TWENTY_FIVE',
+            [PaginationLength.THIRTY]: 'FIFTY',
+            [PaginationLength.THIRTY_FIVE]: 'FIFTY',
+            [PaginationLength.FORTY]: 'FIFTY',
+            [PaginationLength.FORTY_FIVE]: 'FIFTY',
+            [PaginationLength.FIFTY]: 'FIFTY',
+            [PaginationLength.FIFTY_FIVE]: 'HUNDRED',
+            [PaginationLength.SIXTY]: 'HUNDRED',
+            [PaginationLength.SIXTY_FIVE]: 'HUNDRED',
+            [PaginationLength.SEVENTY]: 'HUNDRED',
+            [PaginationLength.SEVENTY_FIVE]: 'HUNDRED',
+            [PaginationLength.EIGHTY]: 'HUNDRED',
+            [PaginationLength.EIGHTY_FIVE]: 'HUNDRED',
+            [PaginationLength.NINETY]: 'HUNDRED',
+            [PaginationLength.NINETY_FIVE]: 'HUNDRED',
+            [PaginationLength.ONE_HUNDRED]: 'HUNDRED',
+        };
+        const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: lengthMap[pageLength.value] });
         posts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
         totalCount.value = res.count || 0;
         // Only set default if selectedPostId is explicitly null, preserve empty string ("All")
@@ -128,11 +151,33 @@ async function loadMorePosts() {
     if (!hasMore.value) return;
     loadingMore.value = true;
     try {
-        const atraceToken = await ensureAtraceToken();
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
         if (!atraceToken) return;
         const { atracePostsList } = await import('@/api/atrace/post/list');
         const nextPage = page.value + 1;
-        const res = await atracePostsList(atraceToken, nsSlug.value, { page: nextPage, length: pageLength.value });
+        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'> = {
+            [PaginationLength.TEN]: 'TEN',
+            [PaginationLength.FIFTEEN]: 'TEN',
+            [PaginationLength.TWENTY]: 'TWENTY_FIVE',
+            [PaginationLength.TWENTY_FIVE]: 'TWENTY_FIVE',
+            [PaginationLength.THIRTY]: 'FIFTY',
+            [PaginationLength.THIRTY_FIVE]: 'FIFTY',
+            [PaginationLength.FORTY]: 'FIFTY',
+            [PaginationLength.FORTY_FIVE]: 'FIFTY',
+            [PaginationLength.FIFTY]: 'FIFTY',
+            [PaginationLength.FIFTY_FIVE]: 'HUNDRED',
+            [PaginationLength.SIXTY]: 'HUNDRED',
+            [PaginationLength.SIXTY_FIVE]: 'HUNDRED',
+            [PaginationLength.SEVENTY]: 'HUNDRED',
+            [PaginationLength.SEVENTY_FIVE]: 'HUNDRED',
+            [PaginationLength.EIGHTY]: 'HUNDRED',
+            [PaginationLength.EIGHTY_FIVE]: 'HUNDRED',
+            [PaginationLength.NINETY]: 'HUNDRED',
+            [PaginationLength.NINETY_FIVE]: 'HUNDRED',
+            [PaginationLength.ONE_HUNDRED]: 'HUNDRED',
+        };
+        const res = await atracePostsList(atraceToken, nsSlug.value, { page: nextPage, length: lengthMap[pageLength.value] });
         // Append next page (server already sorted by title ASC)
         posts.value = [...posts.value, ...res.posts];
         page.value = nextPage;
@@ -171,7 +216,8 @@ function setupCardsObserver() {
 }
 
 async function handleCreate() {
-    const atraceToken = await ensureAtraceToken();
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
     if (!atraceToken) return router.push('/');
     try {
         const { atraceCreatePost } = await import('@/api/atrace/post/create');
@@ -202,7 +248,8 @@ async function handleCreate() {
 }
 
 async function handleDelete(p: Post, opts?: { skipConfirm?: boolean }) {
-    const atraceToken = await ensureAtraceToken();
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
     if (!atraceToken) return router.push('/');
     try {
         const { atraceDeletePost } = await import('@/api/atrace/post/delete');
@@ -240,7 +287,8 @@ function openEdit(p: Post) {
 
 async function handleEditSave() {
     if (!editingPost.value) return;
-    const atraceToken = await ensureAtraceToken();
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
     if (!atraceToken) return router.push('/');
 
     const targetId = editingPost.value.id;
@@ -343,7 +391,8 @@ async function handleEditSave() {
 }
 
 onMounted(async () => {
-    const tok = await ensureAtraceToken();
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const tok = await ensureAtraceToken(nsSlug.value, hubToken);
     if (!tok) {
         setTimeout(() => router.push('/'), 0);
         return;

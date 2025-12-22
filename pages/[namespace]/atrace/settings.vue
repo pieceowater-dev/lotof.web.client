@@ -77,7 +77,7 @@ async function loadMembers() {
         }
 
         // Get atrace token
-        const atraceToken = await ensureAtraceToken();
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
         if (!atraceToken) {
             router.push('/');
             return;
@@ -141,7 +141,8 @@ async function loadMembers() {
 
 async function loadRoles() {
     try {
-        const atraceToken = await ensureAtraceToken();
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
         if (!atraceToken) return;
 
         const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
@@ -164,7 +165,8 @@ function openEditMember(member: Member) {
 async function handleSaveMember() {
     if (!editingMember.value) return;
     
-    const atraceToken = await ensureAtraceToken();
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
     if (!atraceToken) {
         router.push('/');
         return;
