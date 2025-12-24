@@ -53,8 +53,28 @@ const searchUser = async () => {
 
 const sendAction = async () => {
   if (!isValidEmail.value || !token.value) return;
+  // If user not found -> send invite to selected namespace
   if (!foundUser.value) {
-    toast.add({ title: t('app.notification'), description: t('app.userNotFound'), color: 'orange' });
+    try {
+      const { selected: selectedNS } = useNamespace();
+      const nsSlug = selectedNS.value;
+      if (!nsSlug) {
+        toast.add({ title: t('app.notification'), description: t('app.userNotFound'), color: 'orange' });
+        return;
+      }
+      const { hubCreateInvite } = await import('@/api/hub/invite/create');
+      const email = search.value.trim();
+      // Minimal actions payload with version and empty operations
+      const actions = JSON.stringify({ version: 1, 'pieceowater.atrace': [] });
+      await hubCreateInvite(token.value, { namespaceSlug: nsSlug, email, actions });
+      toast.add({ title: t('app.notification'), description: t('app.sendInvite') + ' ' + email, color: 'primary' });
+      search.value = '';
+      userFound.value = null;
+      foundUser.value = null;
+    } catch (e: any) {
+      const msg: string = e?.response?.errors?.[0]?.message || e?.message || 'Error';
+      toast.add({ title: t('app.notification'), description: msg, color: 'red' });
+    }
     return;
   }
   try {

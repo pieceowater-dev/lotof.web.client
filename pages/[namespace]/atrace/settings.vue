@@ -55,6 +55,9 @@ const paginatedMembers = computed(() => {
     return members.value.slice(start, end);
 });
 
+// Cache to prevent duplicate requests
+let loadMembersPromise: Promise<void> | null = null;
+
 // For modals
 const isEditMemberOpen = ref(false);
 const editingMember = ref<Member | null>(null);
@@ -66,77 +69,165 @@ const editForm = reactive<{ roleId: string; requiredWorkingDays: number; require
 
 const { ensure: ensureAtraceToken } = useAtraceToken();
 
+// Invite form state
+const inviteEmail = ref('');
+const inviteRoleId = ref<string>('');
+const inviteDays = ref<number>(DEFAULT_REQUIRED_WORKING_DAYS);
+const inviteHours = ref<number>(DEFAULT_REQUIRED_WORKING_HOURS);
+const inviteSubmitting = ref(false);
+const inviteError = ref<string | null>(null);
+const isInviteOpen = ref(false);
+const isValidInviteEmail = computed(() => {
+    const email = inviteEmail.value.trim();
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+});
+const inviteCanSubmit = computed(() => isValidInviteEmail.value && !inviteSubmitting.value);
+
+function buildActionsJson(): string {
+    const ops: Array<any> = [];
+    console.log('[buildActionsJson] inviteRoleId:', inviteRoleId.value);
+    const roleIdNum = inviteRoleId.value ? parseInt(inviteRoleId.value, 10) : NaN;
+    console.log('[buildActionsJson] roleIdNum:', roleIdNum);
+    if (!Number.isNaN(roleIdNum)) {
+        ops.push({ op: 'assign_role', params: { roleId: roleIdNum } });
+    }
+    const d = Math.max(0, Math.round(inviteDays.value));
+    const h = Math.max(0, Math.round(inviteHours.value));
+    ops.push({ op: 'create_schedule', params: { workDays: d, hoursPerDay: h } });
+    console.log('[buildActionsJson] final ops:', ops);
+    return JSON.stringify({ version: 1, 'pieceowater.atrace': ops });
+}
+
+async function submitInvite() {
+    inviteError.value = null;
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    if (!hubToken) {
+        router.push('/');
+        return;
+    }
+    const email = inviteEmail.value.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        inviteError.value = t('app.invalidEmail') || 'Enter a valid email';
+        return;
+    }
+    try {
+        inviteSubmitting.value = true;
+        const { hubCreateInvite } = await import('@/api/hub/invite/create');
+        const actions = buildActionsJson();
+        console.log('[submitInvite] actions:', actions);
+        // default expiresAt: 30 days
+        const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
+        await hubCreateInvite(hubToken, {
+            namespaceSlug: nsSlug.value,
+            email,
+            actions,
+            expiresAt
+        });
+        useToast().add({ title: t('app.notification'), description: t('app.sendInvite') || 'Invite sent', color: 'primary' });
+        inviteEmail.value = '';
+        isInviteOpen.value = false;
+    } catch (e: any) {
+        inviteError.value = e?.response?.errors?.[0]?.message || e?.message || 'Failed to create invite';
+    } finally {
+        inviteSubmitting.value = false;
+    }
+}
+
 async function loadMembers() {
+    // Prevent duplicate concurrent requests
+    if (loadMembersPromise) {
+        return loadMembersPromise;
+    }
+
     loading.value = true;
     error.value = null;
-    try {
-        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
-        if (!hubToken) {
-            router.push('/');
-            return;
+    
+    loadMembersPromise = (async () => {
+        try {
+            const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+            if (!hubToken) {
+                router.push('/');
+                return;
+            }
+
+            // Get atrace token
+            const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+            if (!atraceToken) {
+                router.push('/');
+                return;
+            }
+
+            // Get namespace ID from route or from API
+            const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+            const ns = await hubNamespaceBySlug(hubToken, nsSlug.value);
+            if (!ns?.id) {
+                error.value = 'Namespace not found';
+                return;
+            }
+
+            // Load members - using FIFTY to get more members
+            const { hubMembersList } = await import('@/api/hub/members/list');
+            const membersList = await hubMembersList(hubToken, ns.id, 1, 'FIFTY');
+            
+            // Load role and schedule for each member using combined query
+            const { atraceGetMemberRoleAndSchedule } = await import('@/api/atrace/member/getMemberWithRoleAndSchedule');
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1;
+            
+            members.value = await Promise.all(
+                membersList.map(async (m) => {
+                    try {
+                        // Try with userId first (new style)
+                        let data = await atraceGetMemberRoleAndSchedule(
+                            atraceToken,
+                            nsSlug.value,
+                            m.userId,
+                            currentYear,
+                            currentMonth
+                        );
+                        
+                        // If no data, try with memberId (old style for owner)
+                        if (!data.role) {
+                            data = await atraceGetMemberRoleAndSchedule(
+                                atraceToken,
+                                nsSlug.value,
+                                m.id,
+                                currentYear,
+                                currentMonth
+                            );
+                        }
+                        
+                        return {
+                            ...m,
+                            roleId: data.role?.id || null,
+                            roleName: data.role?.name || null,
+                            requiredWorkingDays: data.schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
+                            requiredWorkingHours: data.schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS
+                        };
+                    } catch (err) {
+                        logError(`Failed to load role/schedule for member ${m.userId}/${m.id}:`, err);
+                        return {
+                            ...m,
+                            roleId: null,
+                            roleName: null,
+                            requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
+                            requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
+                        };
+                    }
+                })
+            );
+
+        } catch (e: unknown) {
+            error.value = getErrorMessage(e) || 'Failed to load members';
+        } finally {
+            loading.value = false;
+            loadMembersPromise = null;
         }
+    })();
 
-        // Get atrace token
-        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
-        if (!atraceToken) {
-            router.push('/');
-            return;
-        }
-
-        // Get namespace ID from route or from API
-        const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
-        const ns = await hubNamespaceBySlug(hubToken, nsSlug.value);
-        if (!ns?.id) {
-            error.value = 'Namespace not found';
-            return;
-        }
-
-        // Load members - using FIFTY to get more members
-        const { hubMembersList } = await import('@/api/hub/members/list');
-        const membersList = await hubMembersList(hubToken, ns.id, 1, 'FIFTY');
-        
-        // Load role assignments for each member from atrace API
-        const { atraceGetMemberRole } = await import('@/api/atrace/role/getMemberRole');
-        const { atraceGetSchedule } = await import('@/api/atrace/attendance/schedule');
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-        
-        members.value = await Promise.all(
-            membersList.map(async (m) => {
-                try {
-                    const [role, schedule] = await Promise.all([
-                        atraceGetMemberRole(atraceToken, nsSlug.value, m.id),
-                        atraceGetSchedule(atraceToken, nsSlug.value, m.id, currentYear, currentMonth).catch((err) => {
-                            logError(`Failed to load schedule for member ${m.id}:`, err);
-                            return null;
-                        })
-                    ]);
-                    return {
-                        ...m,
-                        roleId: role?.id || null,
-                        roleName: role?.name || null,
-                        requiredWorkingDays: schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
-                        requiredWorkingHours: schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS
-                    };
-                } catch (err) {
-                    logError(`Failed to load role for member ${m.id}:`, err);
-                    return {
-                        ...m,
-                        roleId: null,
-                        roleName: null,
-                        requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
-                        requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
-                    };
-                }
-            })
-        );
-
-    } catch (e: unknown) {
-        error.value = getErrorMessage(e) || 'Failed to load members';
-    } finally {
-        loading.value = false;
-    }
+    return loadMembersPromise;
 }
 
 async function loadRoles() {
@@ -147,6 +238,7 @@ async function loadRoles() {
 
         const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
         roles.value = await atraceGetRoles(atraceToken, nsSlug.value);
+        console.log('[loadRoles] loaded roles:', roles.value);
     } catch (e) {
         logError('Failed to load roles:', e);
         // Fallback to empty array on error
@@ -179,14 +271,30 @@ async function handleSaveMember() {
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
         
+        // Try to use userId first for assignment (new style), fall back to memberId (old style)
+        const primaryMemberId = editingMember.value.userId;
+        const fallbackMemberId = editingMember.value.id;
+        
         // Assign role via Atrace API if roleId is provided
         if (editForm.roleId) {
-            await atraceAssignRole(atraceToken, nsSlug.value, editForm.roleId, editingMember.value.id);
+            try {
+                await atraceAssignRole(atraceToken, nsSlug.value, editForm.roleId, primaryMemberId);
+            } catch (err) {
+                // If userId fails, try memberId
+                logError(`Failed to assign role with userId, trying memberId:`, err);
+                await atraceAssignRole(atraceToken, nsSlug.value, editForm.roleId, fallbackMemberId);
+            }
         } else {
             // Remove role if empty
             const previousRoleId = editingMember.value.roleId;
             if (previousRoleId) {
-                await atraceRemoveRole(atraceToken, nsSlug.value, previousRoleId, editingMember.value.id);
+                try {
+                    await atraceRemoveRole(atraceToken, nsSlug.value, previousRoleId, primaryMemberId);
+                } catch (err) {
+                    // If userId fails, try memberId
+                    logError(`Failed to remove role with userId, trying memberId:`, err);
+                    await atraceRemoveRole(atraceToken, nsSlug.value, previousRoleId, fallbackMemberId);
+                }
             }
         }
 
@@ -196,15 +304,29 @@ async function handleSaveMember() {
         editForm.requiredWorkingDays = requiredDays;
         editForm.requiredWorkingHours = requiredHours;
 
-        await atraceUpdateSchedule(
-            atraceToken,
-            nsSlug.value,
-            editingMember.value.id,
-            currentYear,
-            currentMonth,
-            requiredDays,
-            requiredHours
-        );
+        try {
+            await atraceUpdateSchedule(
+                atraceToken,
+                nsSlug.value,
+                primaryMemberId,
+                currentYear,
+                currentMonth,
+                requiredDays,
+                requiredHours
+            );
+        } catch (err) {
+            // If userId fails, try memberId
+            logError(`Failed to update schedule with userId, trying memberId:`, err);
+            await atraceUpdateSchedule(
+                atraceToken,
+                nsSlug.value,
+                fallbackMemberId,
+                currentYear,
+                currentMonth,
+                requiredDays,
+                requiredHours
+            );
+        }
         
         // Close modal and reload members to get fresh data from backend
         isEditMemberOpen.value = false;
@@ -235,7 +357,15 @@ onMounted(async () => {
                 <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
             </div>
-            <div>
+            <div class="flex items-center gap-2">
+                <UButton 
+                    icon="lucide:user-plus" 
+                    size="xs" 
+                    color="primary" 
+                    @click="isInviteOpen = true"
+                >
+                    {{ t('app.sendInvite') || 'Send Invitation' }}
+                </UButton>
                 <UButton 
                     icon="lucide:arrow-left" 
                     size="xs" 
@@ -395,6 +525,127 @@ onMounted(async () => {
                             @click="handleSaveMember"
                         >
                             {{ t('common.save') || 'Save' }}
+                        </UButton>
+                    </div>
+                </template>
+            </UCard>
+        </UModal>
+
+        <!-- Create Invite Modal -->
+        <UModal v-model="isInviteOpen" :ui="{ container: 'items-center justify-center' }">
+            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', base: 'w-full max-w-2xl', body: { base: 'w-full' } }">
+                <template #header>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+                                {{ t('app.sendInvite') || 'Send Invitation' }}
+                            </h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {{ t('app.namespace') || 'Namespace' }}: <span class="font-medium">{{ nsSlug }}</span>
+                            </p>
+                        </div>
+                        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isInviteOpen = false" />
+                    </div>
+                </template>
+
+                <div class="space-y-6">
+                    <!-- Email -->
+                    <div>
+                        <UFormGroup :label="t('common.email') || 'Email'" :help="t('app.searchEmailPlaceholder')" class="space-y-2">
+                            <UInput 
+                                v-model="inviteEmail" 
+                                type="email" 
+                                size="lg" 
+                                :placeholder="'name@example.com'"
+                                :state="inviteEmail && !isValidInviteEmail ? 'error' : 'success'"
+                            />
+                            <p v-if="inviteEmail && !isValidInviteEmail" class="text-xs text-red-500">
+                                {{ t('app.invalidEmail') || 'Please enter a valid email' }}
+                            </p>
+                        </UFormGroup>
+                    </div>
+
+                    <!-- Role -->
+                    <div>
+                        <UFormGroup :label="t('common.role') || 'Role'" class="space-y-2">
+                            <USelectMenu 
+                                v-model="inviteRoleId"
+                                size="lg"
+                                :options="[
+                                    { label: t('app.noRole') || 'No role', value: '' },
+                                    ...roles.map(r => ({ label: r.name, value: r.id }))
+                                ]"
+                                option-attribute="label"
+                                value-attribute="value"
+                                :placeholder="t('app.selectRole') || 'Select a role'"
+                            />
+                        </UFormGroup>
+                    </div>
+
+                    <!-- Working Requirements -->
+                    <div>
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                            {{ t('app.workingRequirements') || 'Working Requirements' }}
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <UFormGroup 
+                                :label="t('app.requiredWorkingDays') || 'Days per Month'"
+                                :help="t('app.requiredWorkingDaysHint') || '1–31 days'"
+                                class="space-y-2"
+                            >
+                                <UInput 
+                                    v-model.number="inviteDays" 
+                                    type="number" 
+                                    size="lg" 
+                                    min="0" 
+                                    max="31" 
+                                    step="1" 
+                                    inputmode="numeric"
+                                />
+                            </UFormGroup>
+
+                            <UFormGroup 
+                                :label="t('app.requiredWorkingHours') || 'Hours per Day'"
+                                :help="t('app.requiredWorkingHoursHint') || '0–24 hours'"
+                                class="space-y-2"
+                            >
+                                <UInput 
+                                    v-model.number="inviteHours" 
+                                    type="number" 
+                                    size="lg" 
+                                    min="0" 
+                                    max="24" 
+                                    step="1" 
+                                    inputmode="numeric"
+                                />
+                            </UFormGroup>
+                        </div>
+                    </div>
+
+                    <!-- Error message -->
+                    <div v-if="inviteError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+                        {{ inviteError }}
+                    </div>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end gap-2">
+                        <UButton 
+                            icon="lucide:x" 
+                            color="primary" 
+                            variant="soft" 
+                            @click="isInviteOpen = false"
+                        >
+                            {{ t('common.cancel') || 'Cancel' }}
+                        </UButton>
+                        <UButton 
+                            :disabled="!inviteCanSubmit" 
+                            :loading="inviteSubmitting" 
+                            icon="lucide:send" 
+                            color="primary" 
+                            @click="submitInvite"
+                        >
+                            {{ t('app.sendInvite') || 'Send Invitation' }}
                         </UButton>
                     </div>
                 </template>
