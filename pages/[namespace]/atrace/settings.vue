@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { setUnauthorizedHandler } from '@/api/clients';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 
@@ -340,6 +341,11 @@ async function handleSaveMember() {
 }
 
 onMounted(async () => {
+    // Redirect to index on atrace token unauthorized
+    setUnauthorizedHandler(() => {
+        try { useAtraceToken().clear(); } catch {}
+        router.push('/');
+    });
     const tok = await ensureAtraceToken(nsSlug.value, useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value);
     if (!tok) {
         setTimeout(() => router.push('/'), 0);
@@ -347,6 +353,11 @@ onMounted(async () => {
     }
     await loadRoles();
     await loadMembers();
+});
+
+onUnmounted(() => {
+    // Remove handler to avoid affecting other pages
+    setUnauthorizedHandler(null);
 });
 </script>
 
@@ -389,7 +400,7 @@ onMounted(async () => {
                 {{ t('app.noMembers') || 'No members found' }}
             </div>
 
-                        <div v-else class="flex-1 min-h-0 overflow-x-auto">
+                        <div v-else class="flex-1 min-h-0 overflow-x-auto member-table">
                 <AppTable 
                     :rows="paginatedMembers" 
                     :columns="columns" 
@@ -653,3 +664,47 @@ onMounted(async () => {
         </UModal>
     </div>
 </template>
+
+<style scoped>
+/* Make text columns wider and numeric columns compact */
+.member-table :deep(thead th:nth-child(1)),
+.member-table :deep(tbody td:nth-child(1)) { /* username */
+    width: 24%;
+}
+
+.member-table :deep(thead th:nth-child(2)),
+.member-table :deep(tbody td:nth-child(2)) { /* email */
+    width: 32%;
+}
+
+.member-table :deep(thead th:nth-child(3)),
+.member-table :deep(tbody td:nth-child(3)) { /* roleName */
+    width: 20%;
+}
+
+.member-table :deep(thead th:nth-child(4)),
+.member-table :deep(tbody td:nth-child(4)) { /* requiredWorkingDays */
+    width: 10%;
+    text-align: right;
+}
+
+.member-table :deep(thead th:nth-child(5)),
+.member-table :deep(tbody td:nth-child(5)) { /* requiredWorkingHours */
+    width: 10%;
+    text-align: right;
+}
+
+.member-table :deep(thead th:nth-child(6)),
+.member-table :deep(tbody td:nth-child(6)) { /* actions */
+    width: 4%;
+}
+
+/* Ensure long text wraps/ellipsis properly */
+.member-table :deep(tbody td) {
+    white-space: nowrap;
+}
+.member-table :deep(tbody td span.truncate) {
+    display: inline-block;
+    max-width: 100%;
+}
+</style>

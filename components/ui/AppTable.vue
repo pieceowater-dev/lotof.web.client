@@ -53,7 +53,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
     :progress="{ color: 'primary', animation: 'carousel' }"
     :ui="{ 
       th: { base: 'normal-case sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/50', padding: 'px-4 py-2' }, 
-      td: { base: 'max-w-[0] truncate', padding: 'px-4 py-2' },
+      td: { base: 'truncate', padding: 'px-4 py-2' },
       divide: 'divide-y divide-gray-200 dark:divide-gray-800',
       tbody: 'divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-900',
       thead: '',

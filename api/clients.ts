@@ -31,7 +31,7 @@ export function setAtraceAppToken(token: string | null) {
 
 type UnauthorizedHandler = () => void;
 let unauthorizedHandler: UnauthorizedHandler | null = null;
-export function setUnauthorizedHandler(fn: UnauthorizedHandler) { unauthorizedHandler = fn; }
+export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) { unauthorizedHandler = fn; }
 
 type ApiClientOptions = {
   authHeader?: 'Authorization' | 'AtraceAuthorization';
@@ -80,7 +80,16 @@ export class ApiClient {
     } catch (error: any) {
       const rawErrors = error.response?.errors;
       const status = error.response?.status;
-      if (status === 401) {
+      // Detect unauthorized both by HTTP status and GraphQL error messages
+      const messages: string[] = Array.isArray(rawErrors)
+        ? rawErrors.map((e: any) => String(e?.message || '').toLowerCase())
+        : [];
+      const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
+        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
+      );
+      const isHubUnauthorized = this.authHeader === 'Authorization' && status === 401;
+
+      if (isAtraceUnauthorized || isHubUnauthorized) {
         logWarn('Unauthorized detected, invoking handler');
         unauthorizedHandler?.();
       } else {

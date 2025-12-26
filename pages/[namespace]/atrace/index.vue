@@ -322,33 +322,22 @@ async function handleEditSave() {
         lon = origLon;
     }
     const loc: Record<string, any> = {};
-    // Always include string fields (allow null to explicitly clear)
+    // Always include string fields (include null to explicitly clear on backend)
     const c = norm(editForm.location.comment);
     const cn = norm(editForm.location.country);
     const ct = norm(editForm.location.city);
     const ad = norm(editForm.location.address);
-    if (c && c !== '') loc.comment = c;
-    if (cn && cn !== '') loc.country = cn;
-    if (ct && ct !== '') loc.city = ct;
-    if (ad && ad !== '') loc.address = ad;
+    loc.comment = c;
+    loc.country = cn;
+    loc.city = ct;
+    loc.address = ad;
     // Include lat/lon only when we have both valid numbers; omit otherwise to avoid 422
     if (lat !== null && lat !== 0 && lon !== null && lon !== 0) {
         loc.latitude = lat as number;
         loc.longitude = lon as number;
     }
-    // Placeholders for required location fields
-    if (Object.keys(loc).length === 0) {
-        payload.location = {
-            comment: 'placeholder',
-            country: 'placeholder',
-            city: 'placeholder',
-            address: 'placeholder',
-            latitude: 1,
-            longitude: 1
-        };
-    } else {
-        payload.location = loc;
-    }
+    // Send location as-is (strings may be null to clear). Only attach lat/lon if both valid.
+    payload.location = loc;
 
     try {
         const { atraceUpdatePost } = await import('@/api/atrace/post/update');
