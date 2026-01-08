@@ -94,6 +94,13 @@ async function loadData() {
       if (page > 20) break;
     }
     const filtered = aggregated.filter(r => r.userId === props.userId && r.timestamp >= startSec.value && r.timestamp <= endSec.value);
+    console.log('[UserDayRecordsAccordion] Filtering:', {
+      'props.userId': props.userId,
+      'aggregated.length': aggregated.length,
+      'aggregated.map(r => r.userId)': aggregated.map(r => r.userId),
+      'filtered.length': filtered.length,
+      'filtered': filtered.map(r => ({ id: r.id, userId: r.userId, timestamp: r.timestamp }))
+    });
     allRecords.value = filtered;
 
     // Load daily attendance
