@@ -18,6 +18,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    environment: ${{ github.ref_name }}
     permissions:
       contents: read
       packages: write
@@ -53,6 +54,9 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.GIT_SHORT_SHA }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_API_HUB=${{ vars.VITE_API_HUB }}
+            VITE_API_ATRACE=${{ vars.VITE_API_ATRACE }}
           secret-files: |
             gh_token=.gh_token
           cache-from: type=gha
