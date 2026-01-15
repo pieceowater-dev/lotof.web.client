@@ -26,7 +26,10 @@ let appsCheckSeq = 0; // sequence guard to avoid race conditions
 const installingBundles = new Set<string>(); // prevent double-installs per app
 
 onMounted(async () => {
-  // 1) Immediate auto-login if redirected with auth-needed flag
+  // 1) Wait a tick for cookies to be available after OAuth redirect
+  await nextTick();
+  
+  // 2) Immediate auto-login if redirected with auth-needed flag
   const q0 = useRoute().query;
   if (!isLoggedIn.value && (q0['auth-needed'] === 'true' || q0['authNeeded'] === 'true')) {
     // Trigger login right away to avoid waiting on other async inits
@@ -34,7 +37,7 @@ onMounted(async () => {
     return;
   }
 
-  // 2) Normal init flow
+  // 3) Normal init flow
   await fetchUser();
   await loadNamespaces();
   await checkInstalledForVisibleApps();
