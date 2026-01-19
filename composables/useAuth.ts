@@ -14,6 +14,10 @@ export function useAuth() {
 
   async function fetchUser(force = false) {
     if (!token.value) {
+      console.warn('[auth] No token found in cookie', { 
+        cookie_value: token.value,
+        all_cookies: document.cookie 
+      });
       user.value = null;
       return;
     }
@@ -22,9 +26,11 @@ export function useAuth() {
     try {
       setGlobalAuthToken(token.value);
       const data = await hubMe(token.value);
+      console.log('[auth] User fetched successfully', { email: data.email });
       user.value = data;
     } catch (e) {
       // If token invalid → logout silently
+      console.warn('[auth] fetchUser failed, clearing token', { error: String(e) });
       logWarn('[auth] fetchUser failed, clearing token');
       logout();
     } finally {
