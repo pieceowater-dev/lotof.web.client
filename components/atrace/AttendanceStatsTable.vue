@@ -102,6 +102,7 @@ const customDates = loadCustomDatesFromStorage();
 const customStartDate = ref(customDates.start);
 const customEndDate = ref(customDates.end);
 const showDateModal = ref(false);
+const showLegendModal = ref(false);
 const dateModalError = ref<string | null>(null);
 const isStartInvalid = computed(() => {
   if (!showDateModal.value) return false;
@@ -422,9 +423,25 @@ function formatNumber(val: number, fractionDigits = 0) {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period Filter, Legend & Settings -->
-    <div class="mb-3 flex flex-wrap lg:flex-nowrap items-center gap-3 lg:gap-8" style="justify-content: space-between;">
+    <div class="mb-3 flex flex-wrap items-center gap-3">
+      <!-- Export and Settings Buttons -->
+      <div class="flex gap-1.5">
+        <UButton 
+          size="xs" 
+          variant="ghost" 
+          icon="i-heroicons-arrow-down-tray"
+          :loading="isExportingExcel"
+          @click="exportToExcel"
+        >
+          {{ t('app.exportToExcel') || 'Export' }}
+        </UButton>
+        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings">
+          {{ t('app.configureTime') }}
+        </UButton>
+      </div>
+
       <!-- Period Filter Buttons -->
-      <div class="flex flex-wrap gap-1.5 flex-shrink-0">
+      <div class="flex flex-wrap gap-1.5">
         <UButton 
           :color="selectedPeriod === 'month' ? 'primary' : 'gray'" 
           size="sm"
@@ -436,6 +453,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           :color="selectedPeriod === 'week' ? 'primary' : 'gray'" 
           size="sm"
           @click="selectedPeriod = 'week'"
+          class="hidden md:inline-flex"
         >
           {{ t('app.thisWeek') }}
         </UButton>
@@ -443,6 +461,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           :color="selectedPeriod === '3months' ? 'primary' : 'gray'" 
           size="sm"
           @click="selectedPeriod = '3months'"
+          class="hidden md:inline-flex"
         >
           {{ t('app.last3Months') }}
         </UButton>
@@ -455,47 +474,31 @@ function formatNumber(val: number, fractionDigits = 0) {
         </UButton>
       </div>
 
-      <!-- Legend -->
-      <div class="flex flex-wrap gap-2 text-xs flex-shrink-0">
-        <div class="flex items-center gap-1">
+      <!-- Legend - full on desktop -->
+      <div class="hidden md:flex items-center gap-2 text-xs ml-auto">
+        <div class="flex items-center gap-1 whitespace-nowrap">
           <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
           <span>{{ t('app.violationDay') }}</span>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 whitespace-nowrap">
           <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
           <span>{{ t('app.legitimateDay') }}</span>
         </div>
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 whitespace-nowrap">
           <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
           <span>{{ t('app.timeViolation') }}</span>
         </div>
-        
-        <UTooltip :text="t('app.legendHint') || 'Color coding: Red = violation, Blue = legitimate absence, Orange = time violation'">
-          <UButton 
-            icon="lucide:info" 
-            size="xs" 
-            color="gray" 
-            variant="ghost"
-            :ui="{ base: 'text-xs leading-none' }"
-          />
-        </UTooltip>
       </div>
-
-      <!-- Export and Settings Buttons -->
-      <div class="flex gap-1.5 flex-shrink-0">
-        <UButton 
-          size="xs" 
-          variant="ghost" 
-          icon="i-heroicons-arrow-down-tray"
-          :loading="isExportingExcel"
-          @click="exportToExcel"
-        >
-          {{ t('app.exportToExcel') || 'Export' }}
-        </UButton>
-        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings" class="flex-shrink-0">
-          {{ t('app.configureTime') }}
-        </UButton>
-      </div>
+      
+      <!-- Legend info button - only on mobile -->
+      <UButton 
+        icon="lucide:info" 
+        size="xs" 
+        color="gray" 
+        variant="ghost"
+        class="md:hidden"
+        @click="showLegendModal = true"
+      />
     </div>
 
     <!-- Export Error -->
@@ -782,6 +785,39 @@ function formatNumber(val: number, fractionDigits = 0) {
               <UButton size="sm" variant="soft" color="primary" @click="showSalaryModal = false">{{ t('common.close') }}</UButton>
               <UButton size="sm" color="primary" @click="saveSalary(); showSalaryModal = false">{{ t('app.save') }}</UButton>
             </div>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Legend Modal -->
+    <UModal v-model="showLegendModal">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.legend') || 'Легенда' }}</h3>
+            <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="showLegendModal = false" />
+          </div>
+        </template>
+
+        <div class="space-y-3 py-2">
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+            <span class="text-sm">{{ t('app.violationDay') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+            <span class="text-sm">{{ t('app.legitimateDay') }}</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-4 h-4 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+            <span class="text-sm">{{ t('app.timeViolation') }}</span>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end">
+            <UButton size="sm" color="primary" @click="showLegendModal = false">{{ t('common.close') }}</UButton>
           </div>
         </template>
       </UCard>

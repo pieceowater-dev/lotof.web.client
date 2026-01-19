@@ -43,7 +43,15 @@ const selectedPostIdForDisplay = computed(() => {
 
 // Currently selected post and its display helpers
 const selectedPost = computed(() => posts.value.find(p => p.id === selectedPostId.value) || null);
-const selectedPostTitle = computed(() => selectedPost.value?.title || '');
+const selectedPostTitle = computed(() => {
+    if (selectedPostId.value === '') return t('app.allLocations') || 'All locations';
+    if (!selectedPost.value) return '';
+    const parts = [];
+    if (selectedPost.value.title?.trim()) parts.push(selectedPost.value.title.trim());
+    if (selectedPost.value.location?.city?.trim()) parts.push(selectedPost.value.location.city);
+    if (selectedPost.value.location?.address?.trim()) parts.push(selectedPost.value.location.address);
+    return parts.join(' — ');
+});
 const selectedPostLocationLine = computed(() => {
     const city = selectedPost.value?.location?.city || '';
     const address = selectedPost.value?.location?.address || '';
@@ -462,33 +470,26 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Mobile: dropdown selector -->
-        <div class="md:hidden px-4 py-4 flex-shrink-0 border-b dark:border-gray-700">
+        <div class="md:hidden px-4 py-4 flex-shrink-0">
             <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
             <div v-else-if="error" class="text-red-500">{{ error }}</div>
             <template v-else>
                 <div class="flex gap-2 items-center">
                     <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
-                    <UDropdown 
-                        :items="[
-                            ...([{ label: t('app.allLocations') || 'All locations', click: () => selectedPostId = '' }].filter(() => posts.length > 0)),
-                            ...posts.map(p => {
-                              const parts = [p.title];
-                              if (p.location?.city) parts.push(p.location.city);
-                              if (p.location?.address) parts.push(p.location.address);
-                              return { label: parts.join(' — '), click: () => selectedPostId = p.id };
+                    <USelectMenu
+                        v-model="selectedPostId"
+                        :options="[
+                            ...(posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
+                            ...posts.filter(p => p.title && p.title.trim()).map(p => {
+                              const parts = [p.title.trim()];
+                              if (p.location?.city?.trim()) parts.push(p.location.city);
+                              if (p.location?.address?.trim()) parts.push(p.location.address);
+                              return { value: p.id, label: parts.join(' — ') };
                             })
                         ]"
-                        :popper="{ placement: 'bottom-start' }"
-                    >
-                        <UButton 
-                            color="primary" 
-                            variant="outline"
-                            trailing-icon="i-lucide-chevron-down"
-                            class="flex-1"
-                        >
-                            {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
-                        </UButton>
-                    </UDropdown>
+                        value-attribute="value"
+                        class="flex-1"
+                    />
                     <UButton 
                         icon="lucide:plus" 
                         size="sm" 
@@ -508,34 +509,6 @@ onBeforeUnmount(() => {
 
             <!-- Search and filter buttons removed -->
         </div>
-
-        <!-- Mobile: compact header -->
-        <div class="md:hidden flex justify-between items-center mb-3 mt-3 px-4 flex-shrink-0">
-            <h2 class="text-base font-medium">{{ t('app.attendance') }}</h2>
-            <div class="flex gap-2 items-center">
-                <UButton 
-                    icon="lucide:calendar" 
-                    size="xs" 
-                    color="primary" 
-                    variant="soft"
-                    @click="isFilterOpen = true"
-                >
-                    {{ t('app.thisMonth') }}
-                </UButton>
-                <UButton 
-                    icon="lucide:sliders-horizontal" 
-                    size="xs" 
-                    color="primary" 
-                    variant="ghost"
-                    @click="isFilterOpen = true"
-                    :ui="{ base: 'text-xs' }"
-                >
-                    {{ t('app.customPeriod') }}
-                </UButton>
-            </div>
-        </div>
-
-
 
         <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
                 <AttendanceStatsTable :post-id="selectedPostId" />

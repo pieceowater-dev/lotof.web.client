@@ -206,6 +206,7 @@
     "violationDay": "Violation Day",
     "legitimateDay": "Legitimate Day",
     "timeViolation": "Late/Early Leave",
+    "legend": "Legend",
     "legendHint": "Red = violation, Blue = legitimate absence, Orange = time violation",
     "timeThresholds": "Time Thresholds",
   "timeThresholdsHint": "Used to highlight late arrivals and early leaves",
