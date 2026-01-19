@@ -266,12 +266,12 @@ async function removeMember(userId: string) {
 </script>
 
 <template>
-  <div class="p-4 h-full flex flex-col min-h-0 overflow-hidden gap-4">
+  <div class="p-2 md:p-4 h-full flex flex-col min-h-0 overflow-hidden gap-2">
     <!-- Compact Search Card -->
-    <UCard class="dark:bg-gray-800 shadow-md rounded-xl flex-shrink-0">
-      <h1 class="text-2xl font-semibold mb-2">{{ t('app.myPeopleHeading') }}</h1>
-      <div class="flex gap-2 items-start">
-        <UInput class="flex-1 max-w-md" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
+    <UCard class="dark:bg-gray-800 shadow-md rounded-xl flex-shrink-0 p-3">
+      <h1 class="text-xl md:text-2xl font-semibold mb-2">{{ t('app.myPeopleHeading') }}</h1>
+      <div class="flex flex-col md:flex-row gap-2 items-start">
+        <UInput class="flex-1" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
         <UButton v-if="buttonText" @click="sendAction" size="sm">{{ buttonText }}</UButton>
       </div>
       <p v-if="!isValidEmail && search" class="mt-1 text-xs text-red-500">{{ t('app.invalidEmail') }}</p>
@@ -280,10 +280,10 @@ async function removeMember(userId: string) {
       </p>
     </UCard>
     
-    <div class="flex-1 min-h-0 flex flex-col gap-4">
+    <div class="flex-1 min-h-0 flex flex-col gap-2">
       <!-- Friends / Requests section -->
       <div class="flex-1 min-h-0 flex flex-col">
-      <UTabs v-model="selectedTab" :items="tabs" class="mb-2" size="sm" />
+      <UTabs v-model="selectedTab" :items="tabs" class="mb-1" size="sm" />
         <div class="flex-1 min-h-0">
           <AppTable
             v-model:page="friendsPage"
@@ -304,7 +304,7 @@ async function removeMember(userId: string) {
 
             <template #actions-data="{ row }">
               <UDropdown :items="items(row)">
-                <UButton color="gray" variant="ghost" icon="lucide:ellipsis" />
+                <UButton color="gray" variant="ghost" icon="lucide:ellipsis" size="xs" />
               </UDropdown>
             </template>
           </AppTable>
@@ -313,10 +313,10 @@ async function removeMember(userId: string) {
 
       <!-- Namespace members section -->
       <div class="flex-1 min-h-0 flex flex-col">
-    <UCard class="dark:bg-gray-800 shadow-md rounded-xl mb-2 flex-shrink-0">
-      <div class="flex items-center justify-between mb-2">
+    <UCard class="dark:bg-gray-800 shadow-md rounded-xl mb-2 flex-shrink-0 p-2 md:p-3">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-1 md:mb-2 gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-sm font-medium">{{ t('app.namespaceMembers') }}</span>
+          <span class="text-xs md:text-sm font-medium">{{ t('app.namespaceMembers') }}</span>
         </div>
         <USelect
           :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
@@ -325,7 +325,7 @@ async function removeMember(userId: string) {
         />
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2">
         <USelectMenu
           searchable
           v-model="friendToAdd"
@@ -337,12 +337,13 @@ async function removeMember(userId: string) {
           :loading="friendLoading"
           :placeholder="t('app.selectFriend')"
           size="sm"
+          class="w-full"
           @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
         />
       </div>
     </UCard>
 
-      <div class="flex-1 min-h-0">
+      <div class="flex-1 min-h-0 text-sm md:text-base">
         <AppTable
           v-model:page="membersPage"
           v-model:pageCount="membersPageCount"
@@ -357,13 +358,13 @@ async function removeMember(userId: string) {
           :pagination="true"
         >
           <template #username-data="{ row }">
-            <span>{{ row.username }}</span>
+            <span class="truncate">{{ row.username }}</span>
           </template>
           <template #email-data="{ row }">
-            <span>{{ row.email }}</span>
+            <span class="truncate">{{ row.email }}</span>
           </template>
           <template #actions-data="{ row }">
-            <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
+            <UButton color="red" variant="ghost" icon="lucide:trash-2" size="xs" @click="removeMember(row.userId)" />
           </template>
         </AppTable>
       </div>

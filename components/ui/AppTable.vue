@@ -52,8 +52,8 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
     :empty-state="{ icon: emptyIcon || 'lucide:bird', label: t('app.emptyTable') }"
     :progress="{ color: 'primary', animation: 'carousel' }"
     :ui="{ 
-      th: { base: 'normal-case sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/50', padding: 'px-4 py-2' }, 
-      td: { base: 'truncate', padding: 'px-4 py-2' },
+      th: { base: 'normal-case sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/50', padding: 'px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm' }, 
+      td: { base: 'truncate', padding: 'px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm' },
       divide: 'divide-y divide-gray-200 dark:divide-gray-800',
       tbody: 'divide-y divide-gray-200 dark:divide-gray-800 bg-white dark:bg-gray-900',
       thead: '',

@@ -363,20 +363,12 @@ onUnmounted(() => {
 
 <template>
     <div class="h-full flex flex-col p-4 min-h-0">
-        <div class="flex justify-between items-center mb-4 flex-shrink-0">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
             <div class="text-left">
                 <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
             </div>
-            <div class="flex items-center gap-2">
-                <UButton 
-                    icon="lucide:user-plus" 
-                    size="xs" 
-                    color="primary" 
-                    @click="isInviteOpen = true"
-                >
-                    {{ t('app.sendInvite') || 'Send Invitation' }}
-                </UButton>
+            <div class="flex flex-col-reverse md:flex-row items-center gap-2">
                 <UButton 
                     icon="lucide:arrow-left" 
                     size="xs" 
@@ -385,6 +377,14 @@ onUnmounted(() => {
                     :to="`/${nsSlug}/atrace`"
                 >
                     {{ t('app.back') }}
+                </UButton>
+                <UButton 
+                    icon="lucide:user-plus" 
+                    size="xs" 
+                    color="primary" 
+                    @click="isInviteOpen = true"
+                >
+                    {{ t('app.sendInvite') || 'Send Invitation' }}
                 </UButton>
             </div>
         </div>

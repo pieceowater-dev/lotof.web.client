@@ -466,11 +466,17 @@ onBeforeUnmount(() => {
             <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
             <div v-else-if="error" class="text-red-500">{{ error }}</div>
             <template v-else>
-                <div class="flex gap-2">
+                <div class="flex gap-2 items-center">
+                    <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
                     <UDropdown 
                         :items="[
                             ...([{ label: t('app.allLocations') || 'All locations', click: () => selectedPostId = '' }].filter(() => posts.length > 0)),
-                            ...posts.map(p => ({ label: p.title, click: () => selectedPostId = p.id }))
+                            ...posts.map(p => {
+                              const parts = [p.title];
+                              if (p.location?.city) parts.push(p.location.city);
+                              if (p.location?.address) parts.push(p.location.address);
+                              return { label: parts.join(' — '), click: () => selectedPostId = p.id };
+                            })
                         ]"
                         :popper="{ placement: 'bottom-start' }"
                     >
@@ -478,7 +484,7 @@ onBeforeUnmount(() => {
                             color="primary" 
                             variant="outline"
                             trailing-icon="i-lucide-chevron-down"
-                            class="w-full"
+                            class="flex-1"
                         >
                             {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
                         </UButton>
@@ -506,6 +512,27 @@ onBeforeUnmount(() => {
         <!-- Mobile: compact header -->
         <div class="md:hidden flex justify-between items-center mb-3 mt-3 px-4 flex-shrink-0">
             <h2 class="text-base font-medium">{{ t('app.attendance') }}</h2>
+            <div class="flex gap-2 items-center">
+                <UButton 
+                    icon="lucide:calendar" 
+                    size="xs" 
+                    color="primary" 
+                    variant="soft"
+                    @click="isFilterOpen = true"
+                >
+                    {{ t('app.thisMonth') }}
+                </UButton>
+                <UButton 
+                    icon="lucide:sliders-horizontal" 
+                    size="xs" 
+                    color="primary" 
+                    variant="ghost"
+                    @click="isFilterOpen = true"
+                    :ui="{ base: 'text-xs' }"
+                >
+                    {{ t('app.customPeriod') }}
+                </UButton>
+            </div>
         </div>
 
 

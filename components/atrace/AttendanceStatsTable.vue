@@ -470,6 +470,15 @@ function formatNumber(val: number, fractionDigits = 0) {
           <span>{{ t('app.timeViolation') }}</span>
         </div>
         
+        <UTooltip :text="t('app.legendHint') || 'Color coding: Red = violation, Blue = legitimate absence, Orange = time violation'">
+          <UButton 
+            icon="lucide:info" 
+            size="xs" 
+            color="gray" 
+            variant="ghost"
+            :ui="{ base: 'text-xs leading-none' }"
+          />
+        </UTooltip>
       </div>
 
       <!-- Export and Settings Buttons -->
