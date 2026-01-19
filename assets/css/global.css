@@ -4,7 +4,18 @@ html, body, #__nuxt {
   height: 100%;
   margin: 0;
   padding: 0;
+  padding-top: max(0px, env(safe-area-inset-top));
+  padding-bottom: max(0px, env(safe-area-inset-bottom));
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
   box-sizing: border-box;
+  background: white;
+  color: black;
+}
+
+.dark html, .dark body, .dark #__nuxt {
+  background: #0f0f0f;
+  color: white;
 }
 
 * {
@@ -41,6 +52,11 @@ html, body {
 /* Prevent full-page scrolling; delegate scrolling to inner containers */
 html, body {
   overflow: hidden;
+}
+
+/* Disable auto-zoom on input focus for iOS Safari */
+input, textarea, select {
+  font-size: 16px;
 }
 
 /* Tables: ensure header text is not uppercased anywhere */
