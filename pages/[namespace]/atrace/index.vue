@@ -434,7 +434,8 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
+        <!-- Desktop: horizontal card scroll -->
+        <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
             <div class="inline-flex space-x-4 items-stretch">
                 <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
@@ -460,13 +461,51 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <div class="flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
+        <!-- Mobile: dropdown selector -->
+        <div class="md:hidden px-4 py-4 flex-shrink-0 border-b dark:border-gray-700">
+            <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
+            <div v-else-if="error" class="text-red-500">{{ error }}</div>
+            <template v-else>
+                <div class="flex gap-2">
+                    <UDropdown 
+                        :items="[
+                            ...([{ label: t('app.allLocations') || 'All locations', click: () => selectedPostId = '' }].filter(() => posts.length > 0)),
+                            ...posts.map(p => ({ label: p.title, click: () => selectedPostId = p.id }))
+                        ]"
+                        :popper="{ placement: 'bottom-start' }"
+                    >
+                        <UButton 
+                            color="primary" 
+                            variant="outline"
+                            trailing-icon="i-lucide-chevron-down"
+                            class="w-full"
+                        >
+                            {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
+                        </UButton>
+                    </UDropdown>
+                    <UButton 
+                        icon="lucide:plus" 
+                        size="sm" 
+                        color="primary" 
+                        variant="soft"
+                        @click="isCreateOpen = true"
+                    />
+                </div>
+            </template>
+        </div>
+
+        <div class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
             <div class="text-left">
                 <h2 class="text-lg font-medium">{{ t('app.attendance') }} — {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}</h2>
                 <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
             </div>
 
             <!-- Search and filter buttons removed -->
+        </div>
+
+        <!-- Mobile: compact header -->
+        <div class="md:hidden flex justify-between items-center mb-3 mt-3 px-4 flex-shrink-0">
+            <h2 class="text-base font-medium">{{ t('app.attendance') }}</h2>
         </div>
 
 
