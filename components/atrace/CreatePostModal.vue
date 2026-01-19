@@ -3,7 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 
 const props = defineProps<{
   modelValue: boolean,
-  form: { title: string; description?: string; location: { address?: string; city?: string }; pin: string }
+  form: { title: string; description?: string; location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | '' }; pin: string }
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void,
@@ -20,6 +20,114 @@ const { t } = useI18n();
 function generatePin() {
   (props.form as any).pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
 }
+
+// Leaflet Map
+const mapContainer = ref<HTMLElement | null>(null);
+const mapLoading = ref(false);
+const mapError = ref<string | null>(null);
+let map: any = null;
+let marker: any = null;
+
+// Default center (World view)
+const defaultCenter: [number, number] = [20, 0];
+const defaultZoom = 2;
+
+async function initMap() {
+  if (!mapContainer.value || !process.client) return;
+  
+  mapLoading.value = true;
+  mapError.value = null;
+  
+  try {
+    // Dynamic import for client-side only
+    const L = (await import('leaflet')).default;
+    await import('leaflet/dist/leaflet.css');
+
+    // Get current color mode
+    const colorMode = useColorMode();
+    const isDark = colorMode.value === 'dark';
+
+    let center: [number, number] = defaultCenter;
+    let zoom = defaultZoom;
+
+    // Try to get user's location
+    if (navigator.geolocation) {
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: false
+          });
+        });
+        center = [position.coords.latitude, position.coords.longitude];
+        zoom = 12;
+        // Set initial form values
+        if (!props.form.location.latitude && !props.form.location.longitude) {
+          props.form.location.latitude = position.coords.latitude;
+          props.form.location.longitude = position.coords.longitude;
+        }
+      } catch (geoError) {
+        console.log('Geolocation denied or unavailable, showing world map');
+        // Use saved coordinates if available
+        if (props.form.location.latitude && props.form.location.longitude) {
+          center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+          zoom = 12;
+        }
+      }
+    } else if (props.form.location.latitude && props.form.location.longitude) {
+      center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+      zoom = 12;
+    }
+
+    map = L.map(mapContainer.value).setView(center, zoom);
+
+    // Use different tile layers based on theme
+    if (isDark) {
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
+      }).addTo(map);
+    } else {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    marker = L.marker(center, { draggable: true }).addTo(map);
+
+    // Update coordinates on marker drag
+    marker.on('dragend', () => {
+      if (!marker) return;
+      const pos = marker.getLatLng();
+      props.form.location.latitude = pos.lat;
+      props.form.location.longitude = pos.lng;
+    });
+
+    // Set marker on map click
+    map.on('click', (e: any) => {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      props.form.location.latitude = lat;
+      props.form.location.longitude = lng;
+      if (marker) {
+        marker.setLatLng(e.latlng);
+      }
+    });
+    
+    mapLoading.value = false;
+  } catch (error) {
+    console.error('Failed to load map:', error);
+    mapError.value = 'Failed to load map';
+    mapLoading.value = false;
+  }
+}
+
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen && process.client) {
+    nextTick(() => {
+      initMap();
+    });
+  }
+});
 </script>
 
 <template>
@@ -50,6 +158,18 @@ function generatePin() {
             <UInput v-model="props.form.location.city" :placeholder="t('common.city')" />
           </UFormGroup>
         </div>
+        
+        <!-- Google Map -->
+        <UFormGroup :label="t('app.location')">
+          <div ref="mapContainer" class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+            <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
+            <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
+          </div>
+          <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500 mt-1">
+            {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
+          </div>
+        </UFormGroup>
+        
         <USeparator />
         <UFormGroup :label="t('app.pin6digits')">
           <div class="flex gap-2 items-center">

@@ -33,6 +33,105 @@ function copyPin() {
     setTimeout(() => { editPinCopied.value = false; }, 1500);
   }
 }
+
+// Leaflet Map
+const mapContainer = ref<HTMLElement | null>(null);
+const mapLoading = ref(false);
+const mapError = ref<string | null>(null);
+let map: any = null;
+let marker: any = null;
+
+// Default center (World view)
+const defaultCenter: [number, number] = [20, 0];
+const defaultZoom = 2;
+
+async function initMap() {
+  if (!mapContainer.value || !process.client) return;
+  
+  mapLoading.value = true;
+  mapError.value = null;
+  
+  try {
+    // Dynamic import for client-side only
+    const L = (await import('leaflet')).default;
+    await import('leaflet/dist/leaflet.css');
+
+    // Get current color mode
+    const colorMode = useColorMode();
+    const isDark = colorMode.value === 'dark';
+
+    let center: [number, number] = defaultCenter;
+    let zoom = defaultZoom;
+
+    // Use saved coordinates if available
+    if (props.form.location.latitude && props.form.location.longitude) {
+      center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+      zoom = 12;
+    } else if (navigator.geolocation) {
+      // Try to get user's location if no saved coordinates
+      try {
+        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 5000,
+            enableHighAccuracy: false
+          });
+        });
+        center = [position.coords.latitude, position.coords.longitude];
+        zoom = 12;
+      } catch (geoError) {
+        console.log('Geolocation denied or unavailable, showing world map');
+      }
+    }
+
+    map = L.map(mapContainer.value).setView(center, zoom);
+
+    // Use different tile layers based on theme
+    if (isDark) {
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap contributors © CARTO'
+      }).addTo(map);
+    } else {
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(map);
+    }
+
+    marker = L.marker(center, { draggable: true }).addTo(map);
+
+    // Update coordinates on marker drag
+    marker.on('dragend', () => {
+      if (!marker) return;
+      const pos = marker.getLatLng();
+      props.form.location.latitude = pos.lat;
+      props.form.location.longitude = pos.lng;
+    });
+
+    // Set marker on map click
+    map.on('click', (e: any) => {
+      const lat = e.latlng.lat;
+      const lng = e.latlng.lng;
+      props.form.location.latitude = lat;
+      props.form.location.longitude = lng;
+      if (marker) {
+        marker.setLatLng(e.latlng);
+      }
+    });
+    
+    mapLoading.value = false;
+  } catch (error) {
+    console.error('Failed to load map:', error);
+    mapError.value = 'Failed to load map';
+    mapLoading.value = false;
+  }
+}
+
+watch(() => props.modelValue, (isOpen) => {
+  if (isOpen && process.client) {
+    nextTick(() => {
+      initMap();
+    });
+  }
+});
 </script>
 
 <template>
@@ -63,6 +162,7 @@ function copyPin() {
             <UInput v-model="props.form.location.city" :placeholder="t('common.city')" />
           </UFormGroup>
         </div>
+
 
         <USeparator />
 

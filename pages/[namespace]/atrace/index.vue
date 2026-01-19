@@ -233,9 +233,16 @@ async function handleCreate() {
         if (form.description) payload.description = form.description;
         // send only filled location fields
         const loc: any = {};
-        for (const k of ['address','city','country','comment','latitude','longitude'] as const) {
+        for (const k of ['address','city','country','comment'] as const) {
             const v = (form.location as any)[k];
             if (v !== undefined && v !== null && v !== '') loc[k] = v;
+        }
+        // Handle coordinates separately to ensure they're numbers
+        if (form.location.latitude !== '' && form.location.latitude !== undefined && form.location.latitude !== null) {
+            loc.latitude = Number(form.location.latitude);
+        }
+        if (form.location.longitude !== '' && form.location.longitude !== undefined && form.location.longitude !== null) {
+            loc.longitude = Number(form.location.longitude);
         }
         if (Object.keys(loc).length) payload.location = loc;
         // Add pin as phrase

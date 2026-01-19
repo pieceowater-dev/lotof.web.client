@@ -50,5 +50,10 @@ export default defineNuxtConfig({
     // Simple relative aliases (Nuxt resolves from project root)
     '@gql-hub': './api/__generated__/hub-types.ts',
     '@gql-atrace': './api/__generated__/atrace-types.ts'
+  },
+  vite: {
+    optimizeDeps: {
+      include: ['leaflet']
+    }
   }
 });
