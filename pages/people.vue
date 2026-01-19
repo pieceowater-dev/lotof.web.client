@@ -268,17 +268,17 @@ async function removeMember(userId: string) {
 <template>
   <div class="p-2 md:p-4 h-full flex flex-col min-h-0 overflow-hidden gap-2">
     <!-- Compact Search Card -->
-    <UCard class="dark:bg-gray-800 shadow-md rounded-xl flex-shrink-0 p-3">
-      <h1 class="text-xl md:text-2xl font-semibold mb-2">{{ t('app.myPeopleHeading') }}</h1>
-      <div class="flex flex-col md:flex-row gap-2 items-start">
-        <UInput class="flex-1" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
-        <UButton v-if="buttonText" @click="sendAction" size="sm">{{ buttonText }}</UButton>
+    <div class="flex-shrink-0 mb-3">
+      <h1 class="text-xl md:text-2xl font-semibold mb-1.5">{{ t('app.myPeopleHeading') }}</h1>
+      <div class="flex flex-row gap-2 items-center">
+        <UInput class="flex-1 md:max-w-md" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
+        <UButton v-if="buttonText" @click="sendAction" size="sm" class="flex-shrink-0">{{ buttonText }}</UButton>
       </div>
       <p v-if="!isValidEmail && search" class="mt-1 text-xs text-red-500">{{ t('app.invalidEmail') }}</p>
       <p v-if="userFound !== null" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
         {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
       </p>
-    </UCard>
+    </div>
     
     <div class="flex-1 min-h-0 flex flex-col gap-2">
       <!-- Friends / Requests section -->
@@ -313,15 +313,16 @@ async function removeMember(userId: string) {
 
       <!-- Namespace members section -->
       <div class="flex-1 min-h-0 flex flex-col">
-    <UCard class="dark:bg-gray-800 shadow-md rounded-xl mb-2 flex-shrink-0 p-2 md:p-3">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-1 md:mb-2 gap-2">
+    <div class="mt-3 flex-shrink-0">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-1 gap-2">
         <div class="flex items-center gap-2">
-          <span class="text-xs md:text-sm font-medium">{{ t('app.namespaceMembers') }}</span>
+          <span class="text-sm md:text-base font-medium">{{ t('app.namespaceMembers') }}</span>
         </div>
         <USelect
           :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
           v-model="selectedNS"
           size="sm"
+          class="w-full md:w-auto md:min-w-[200px]"
         />
       </div>
 
@@ -337,11 +338,11 @@ async function removeMember(userId: string) {
           :loading="friendLoading"
           :placeholder="t('app.selectFriend')"
           size="sm"
-          class="w-full"
+          class="w-full md:max-w-md"
           @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
         />
       </div>
-    </UCard>
+    </div>
 
       <div class="flex-1 min-h-0 text-sm md:text-base">
         <AppTable
