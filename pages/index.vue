@@ -236,11 +236,11 @@ function handleLogout() {
       @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
   </template>
 
-  <div class="max-w-7xl mx-auto mb-20 px-4 space-y-10">
+  <div class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
     <div v-if="activeApps.length">
       <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
-      <div class="flex flex-wrap gap-10 justify-start"> 
-        <div v-for="(app, index) in activeApps" :key="app.bundle">
+      <div class="flex flex-wrap gap-4 md:gap-6 lg:gap-10 justify-start"> 
+        <div v-for="(app, index) in activeApps" :key="app.bundle" class="w-full sm:w-auto">
           <AppCard v-bind="toCard(app)" />
         </div>
       </div>
@@ -248,8 +248,8 @@ function handleLogout() {
 
     <div v-if="possibleApps.length">
       <h3 class="text-xl font-semibold mb-4">{{ t('app.availableHead') }}</h3>
-      <div class="flex flex-wrap gap-10 justify-start">
-        <div v-for="(app, index) in possibleApps" :key="app.bundle">
+      <div class="flex flex-wrap gap-4 md:gap-6 lg:gap-10 justify-start">
+        <div v-for="(app, index) in possibleApps" :key="app.bundle" class="w-full sm:w-auto">
           <AppCard v-bind="toCard(app)" />
         </div>
       </div>
@@ -257,8 +257,8 @@ function handleLogout() {
 
     <div v-if="comingSoonApps.length">
       <h3 class="text-xl font-semibold mb-4">{{ t('app.comingSoonHead') }}</h3>
-      <div class="flex flex-wrap gap-10 justify-start">
-        <div v-for="(app, index) in comingSoonApps" :key="app.bundle">
+      <div class="flex flex-wrap gap-4 md:gap-6 lg:gap-10 justify-start">
+        <div v-for="(app, index) in comingSoonApps" :key="app.bundle" class="w-full sm:w-auto">
           <AppCard v-bind="toCard(app)" />
         </div>
       </div>

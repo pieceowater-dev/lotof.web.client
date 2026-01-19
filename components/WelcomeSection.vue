@@ -26,9 +26,9 @@ const items: { label: string; click: () => void }[][] = [
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center text-center min-h-[65vh]">
-        <span class="text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ username }}</span>!</span>
-        <span class="text-l mb-2">
+    <div class="flex flex-col items-center justify-center text-center min-h-[50vh] md:min-h-[65vh] px-2">
+        <span class="text-xl md:text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ username }}</span>!</span>
+        <span class="text-sm md:text-base mb-4">
                     {{ t('app.currentNamespace') }} —
             <UDropdown 
                 :items="items" 
@@ -36,9 +36,8 @@ const items: { label: string; click: () => void }[][] = [
                 :popper="{ offsetDistance: 0, placement: 'bottom-start' }" 
             >
                 <UButton
-                    
                     icon="i-lucide-chevron-down"
-                    size="xl"
+                    size="md" md:size="lg"
                     color="primary"
                     variant="link"
                     :label="currentNsLabel"
@@ -46,11 +45,11 @@ const items: { label: string; click: () => void }[][] = [
                 />
             </UDropdown>
         </span>
-        <div class="flex gap-4 mt-2">
-            <UButton @click="emit('edit-people')" icon="i-lucide-user-round-check" color="primary" variant="solid">
+        <div class="flex flex-wrap gap-2 md:gap-4 mt-4 justify-center">
+            <UButton @click="emit('edit-people')" icon="i-lucide-user-round-check" color="primary" variant="solid" size="sm" md:size="md">
                 {{ t('app.myPeople') }}
             </UButton>
-            <UButton variant="soft" @click="emit('edit-profile')">{{ t('app.configureProfile') }}</UButton>
+            <UButton variant="soft" size="sm" md:size="md" @click="emit('edit-profile')">{{ t('app.configureProfile') }}</UButton>
         </div>
     </div>
 </template>

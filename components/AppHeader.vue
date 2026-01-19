@@ -19,22 +19,22 @@ const showMenuButton = computed(() => route.path !== '/');
 
 <template>
   <header
-    class="fixed top-0 left-0 w-full flex items-center justify-between p-2 px-4 bg-white dark:bg-gray-800 shadow-md z-50">
+    class="fixed top-0 left-0 w-full flex items-center justify-between p-2 md:p-3 px-2 md:px-4 bg-white dark:bg-gray-800 shadow-md z-50">
     
     <div class="flex items-center space-x-1 cursor-pointer" @click="goHome">
       <img src="/assets/logo.png" alt="Logo" class="h-5 w-5" />
-      <span class="text-lg">lota</span>
+      <span class="text-base md:text-lg">lota</span>
     </div>
 
     <!-- <Navigation /> -->
 
-    <div class="flex items-center">
-      <UButton v-if="showMenuButton" @click="goHome" variant="ghost" size="xl">
-  <UIcon name="i-lucide-home" />
+    <div class="flex items-center gap-1">
+      <UButton v-if="showMenuButton" @click="goHome" variant="ghost" size="md" md:size="lg">
+        <UIcon name="i-lucide-home" />
       </UButton>
-      <UButton @click="toggleTheme" variant="ghost" size="xl">
-  <UIcon name="i-lucide-moon" v-if="colorMode.preference === 'light'" />
-  <UIcon name="i-lucide-sun" v-else />
+      <UButton @click="toggleTheme" variant="ghost" size="md" md:size="lg">
+        <UIcon name="i-lucide-moon" v-if="colorMode.preference === 'light'" />
+        <UIcon name="i-lucide-sun" v-else />
       </UButton>
     </div>
   </header>

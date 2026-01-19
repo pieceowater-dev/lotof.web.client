@@ -7,6 +7,7 @@ export default defineNuxtConfig({
     head: {
       title: "lota",
       meta: [
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "description", content: "services" },
         { name: "keywords", content: "automations" },
         { property: "og:title", content: "lota" },
