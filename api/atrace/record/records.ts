@@ -12,6 +12,7 @@ export type AtraceRecord = {
   timestamp: number;
   method: string;
   suspicious: boolean;
+  geoConfirmed?: boolean;
 };
 
 export type PaginatedRecordList = {
@@ -37,6 +38,7 @@ const GET_RECORD_BY_POST_ID = `
         timestamp
         method
         suspicious
+        geoConfirmed
       }
       paginationInfo { count }
     }

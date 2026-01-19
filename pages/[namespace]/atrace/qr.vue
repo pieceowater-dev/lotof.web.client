@@ -80,11 +80,33 @@ async function runCheck() {
       return;
     }
 
+    // Request geolocation
+    let latitude: number | undefined;
+    let longitude: number | undefined;
+    if (process.client && navigator.geolocation) {
+      try {
+        const position = await new Promise<GeolocationCoordinates>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => resolve(pos.coords),
+            (err) => reject(err),
+            { timeout: 5000, enableHighAccuracy: false }
+          );
+        });
+        latitude = position.latitude;
+        longitude = position.longitude;
+      } catch (e) {
+        logError('[atrace/qr] Geolocation request failed', e);
+        // Continue without geolocation
+      }
+    }
+
     // Perform check
     const res = await atraceCheck(at, nsSlug.value, {
       method: methodEnum,
       postId: String(qPid.value),
       secret: String(qSecret.value),
+      latitude,
+      longitude,
     });
 
     const ok = !!(res && res.id);

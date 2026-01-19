@@ -5,6 +5,9 @@ import { logError } from '@/utils/logger';
 
 const { t, locale } = useI18n();
 
+// Radius for geo confirmation badge (meters)
+const GEO_CONFIRM_RADIUS_M = 20;
+
 const props = defineProps<{
   postId: string;
   userId: string;
@@ -373,14 +376,28 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                 <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r.timestamp).fullDate">{{ formatTime(r.timestamp).time }}</td>
                 <td class="px-2 sm:px-3 py-1.5 text-center hidden sm:table-cell">{{ methodLabel(r.method) }}</td>
                 <td class="px-2 sm:px-3 py-1.5 text-center">
-                  <span v-if="!r.suspicious" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                    <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-0.5" />
-                    {{ t('common.ok') }}
-                  </span>
-                  <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
-                    <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-0.5" />
-                    {{ t('common.suspicious') }}
-                  </span>
+                  <div class="flex flex-row flex-wrap items-center justify-center gap-1">
+                    <span v-if="!r.suspicious" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
+                      <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-0.5" />
+                      {{ t('common.ok') }}
+                    </span>
+                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
+                      <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-0.5" />
+                      {{ t('common.suspicious') }}
+                    </span>
+                    <span
+                      v-if="r.geoConfirmed === true"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 cursor-help"
+                      :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
+                    >
+                      <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
+                      {{ t('app.geoConfirmed') ?? 'Гео подтверждено' }}
+                    </span>
+                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                      <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
+                      {{ t('app.geoNotConfirmed') ?? 'Гео не подтверждено' }}
+                    </span>
+                  </div>
                 </td>
               </tr>
             </tbody>

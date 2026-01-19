@@ -10,6 +10,9 @@ const AtraceCheckDocument = /* GraphQL */ `
       userId
       timestamp
       method
+      latitude
+      longitude
+      geoConfirmed
     }
   }
 `;
@@ -18,6 +21,8 @@ export type AtraceCheckInput = {
   method: string; // GraphQL enum name, e.g., METHOD_QR_STATIC
   postId: string;
   secret: string;
+  latitude?: number;
+  longitude?: number;
 };
 
 export type AtraceCheckResult = {
@@ -26,6 +31,7 @@ export type AtraceCheckResult = {
   userId: string;
   timestamp: number;
   method: string;
+  geoConfirmed?: boolean;
 } | null;
 
 export async function atraceCheck(

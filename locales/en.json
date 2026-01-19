@@ -76,6 +76,9 @@
   "atraceRecordedRedirecting": "Redirecting home in",
   "atraceRecordedWaiting": "Please wait",
   "atraceRecordedRetryIn": "Retrying in",
+  "geoConfirmed": "Geo confirmed",
+  "geoNotConfirmed": "Geo not confirmed",
+  "geoConfirmedHint": "Check was made within {{meters}} meters from the post location",
     "errorMessages": [
       "You shouldn't be here... 🚷",
       "Something went wrong! 🤦‍♂️",
