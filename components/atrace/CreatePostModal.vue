@@ -45,6 +45,7 @@ const defaultZoom = 2;
 
 async function requestGeolocation() {
   geoLoading.value = true;
+  mapError.value = null;
   try {
     const coords = await new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -53,7 +54,7 @@ async function requestGeolocation() {
           longitude: position.coords.longitude
         }),
         (error) => reject(error),
-        { timeout: 10000, enableHighAccuracy: true }
+        { timeout: 30000, enableHighAccuracy: true, maximumAge: 0 }
       );
     });
     
@@ -73,6 +74,10 @@ async function requestGeolocation() {
     console.error('Geolocation error:', error);
     if (error.code === 1) {
       mapError.value = t('app.geolocationDenied') || 'Доступ к геолокации запрещен';
+    } else if (error.code === 2) {
+      mapError.value = t('app.geolocationUnavailable') || 'Местоположение недоступно. Попробуйте еще раз.';
+    } else if (error.code === 3) {
+      mapError.value = t('app.geolocationTimeout') || 'Время ожидания истекло';
     } else {
       mapError.value = t('app.geolocationError') || 'Не удалось получить геолокацию';
     }
