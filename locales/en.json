@@ -82,7 +82,7 @@
   "geoNotConfirmedHint": "Check was made more than {{meters}} meters from the post location or location data was unavailable",
   "allowGeolocation": "Allow geolocation",
   "geolocationDenied": "Geolocation access denied. Please allow location access in browser settings.",
-  "geolocationUnavailable": "Location unavailable. Check: 1) Location services enabled in device settings, 2) Wi-Fi/mobile data connected, 3) GPS signal available.",
+  "geolocationUnavailable": "Location unavailable. Safari: Check Settings → Safari → Location → Allow. Also verify: 1) Location services enabled, 2) Internet connected, 3) GPS signal available.",
   "geolocationTimeout": "Location request timeout. Try again in better conditions.",
   "geolocationError": "Failed to get geolocation",
     "errorMessages": [

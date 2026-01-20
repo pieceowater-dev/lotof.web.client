@@ -264,16 +264,6 @@ watch(() => props.modelValue, (isOpen) => {
             <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500">
               {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
             </div>
-            <UButton 
-              size="xs" 
-              color="primary" 
-              variant="soft"
-              icon="lucide:map-pin" 
-              :loading="geoLoading"
-              @click="requestGeolocation"
-            >
-              {{ t('app.allowGeolocation') || 'Разрешить геолокацию' }}
-            </UButton>
           </div>
         </UFormGroup>
 
