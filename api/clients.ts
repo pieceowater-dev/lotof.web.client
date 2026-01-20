@@ -31,7 +31,15 @@ export function setAtraceAppToken(token: string | null) {
 
 type UnauthorizedHandler = () => void;
 let unauthorizedHandler: UnauthorizedHandler | null = null;
-export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) { unauthorizedHandler = fn; }
+let atraceUnauthorizedHandler: UnauthorizedHandler | null = null;
+
+export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) { 
+  unauthorizedHandler = fn; 
+}
+
+export function setAtraceUnauthorizedHandler(fn: UnauthorizedHandler | null) {
+  atraceUnauthorizedHandler = fn;
+}
 
 type ApiClientOptions = {
   authHeader?: 'Authorization' | 'AtraceAuthorization';
@@ -89,8 +97,11 @@ export class ApiClient {
       );
       const isHubUnauthorized = this.authHeader === 'Authorization' && status === 401;
 
-      if (isAtraceUnauthorized || isHubUnauthorized) {
-        logWarn('Unauthorized detected, invoking handler');
+      if (isAtraceUnauthorized) {
+        logWarn('Atrace unauthorized detected, invoking atrace handler');
+        atraceUnauthorizedHandler?.();
+      } else if (isHubUnauthorized) {
+        logWarn('Hub unauthorized detected, invoking handler');
         unauthorizedHandler?.();
       } else {
         const firstMsg = rawErrors?.[0]?.message || error.message || 'GraphQL request failed';

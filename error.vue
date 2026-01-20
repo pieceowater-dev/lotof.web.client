@@ -13,6 +13,24 @@ function pick(list: any): string {
 }
 const randomMessage = computed(() => pick(tm('app.errorMessages')));
 const randomSubtitle = computed(() => pick(tm('app.errorSubtitles')));
+
+// Auto-handle 401 errors (expired tokens) by clearing cookies and redirecting
+onMounted(() => {
+  if (props.error?.statusCode === 401) {
+    console.log('[error.vue] 401 detected, clearing auth state and redirecting');
+    try {
+      // Clear cookies
+      const cookies = ['token', 'atrace-token'];
+      cookies.forEach(name => {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      });
+    } catch {}
+    // Redirect to home after brief delay
+    setTimeout(() => {
+      clearError({ redirect: '/' });
+    }, 500);
+  }
+});
 </script>
 
 <template>

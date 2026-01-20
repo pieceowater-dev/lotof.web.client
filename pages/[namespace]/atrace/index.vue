@@ -107,11 +107,16 @@ const nsSlug = computed(() => route.params.namespace as string);
 
 const { ensure: ensureAtraceToken } = useAtraceToken();
 
-async function loadPosts() {
+async function loadPosts(retryCount = 0) {
     loading.value = true;
     error.value = null;
     try {
         const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        // Force token refresh on retry
+        if (retryCount > 0) {
+            const { clear } = useAtraceToken();
+            clear();
+        }
         const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
         if (!atraceToken) {
             router.push('/');
@@ -149,7 +154,20 @@ async function loadPosts() {
             selectedPostId.value = posts.value[0]?.id ?? null;
         }
     } catch (e: unknown) {
-        error.value = getErrorMessage(e) || 'Failed to load posts';
+        const errorMsg = getErrorMessage(e) || 'Failed to load posts';
+        // Check if it's an authentication/token error
+        const isAuthError = errorMsg.toLowerCase().includes('unauthorized') || 
+                           errorMsg.toLowerCase().includes('invalid') ||
+                           errorMsg.toLowerCase().includes('token') ||
+                           (e as any)?.response?.status === 401;
+        
+        // Retry once with fresh token if auth error
+        if (isAuthError && retryCount === 0) {
+            console.log('[loadPosts] Auth error detected, retrying with fresh token');
+            await loadPosts(1);
+            return;
+        }
+        error.value = errorMsg;
     } finally {
         loading.value = false;
     }
