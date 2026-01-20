@@ -38,22 +38,3 @@ const config: CodegenConfig = {
 
 export default config;
 
-// Add a check to request geolocation only if not already granted
-if (navigator.geolocation) {
-  navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) => {
-    if (permissionStatus.state === 'prompt') {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          console.log('Geolocation access granted:', position);
-        },
-        (error) => {
-          console.error('Geolocation access denied:', error);
-        }
-      );
-    } else {
-      console.log('Geolocation already granted or denied:', permissionStatus.state);
-    }
-  });
-} else {
-  console.error('Geolocation is not supported by this browser.');
-}

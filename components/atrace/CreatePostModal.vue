@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n';
+import { getGeolocationOnce } from '@/utils/geolocation';
 
 const props = defineProps<{
   modelValue: boolean,
@@ -50,29 +51,19 @@ async function initMap() {
     let center: [number, number] = defaultCenter;
     let zoom = defaultZoom;
 
-    // Try to get user's location
+    // Try to get user's location without re-prompting if already denied
     if (navigator.geolocation) {
-      try {
-        const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 5000,
-            enableHighAccuracy: false
-          });
-        });
-        center = [position.coords.latitude, position.coords.longitude];
+      const coords = await getGeolocationOnce({ timeout: 5000, enableHighAccuracy: false });
+      if (coords.latitude !== undefined && coords.longitude !== undefined) {
+        center = [coords.latitude, coords.longitude];
         zoom = 12;
-        // Set initial form values
         if (!props.form.location.latitude && !props.form.location.longitude) {
-          props.form.location.latitude = position.coords.latitude;
-          props.form.location.longitude = position.coords.longitude;
+          props.form.location.latitude = coords.latitude;
+          props.form.location.longitude = coords.longitude;
         }
-      } catch (geoError) {
-        console.log('Geolocation denied or unavailable, showing world map');
-        // Use saved coordinates if available
-        if (props.form.location.latitude && props.form.location.longitude) {
-          center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
-          zoom = 12;
-        }
+      } else if (props.form.location.latitude && props.form.location.longitude) {
+        center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+        zoom = 12;
       }
     } else if (props.form.location.latitude && props.form.location.longitude) {
       center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];

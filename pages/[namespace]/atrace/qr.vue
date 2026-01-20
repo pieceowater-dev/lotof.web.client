@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { getGeolocationOnce } from '@/utils/geolocation';
 
 const { t } = useI18n();
 
@@ -80,23 +81,16 @@ async function runCheck() {
       return;
     }
 
-    // Request geolocation
+    // Request geolocation only once (skip if previously denied)
     let latitude: number | undefined;
     let longitude: number | undefined;
-    if (process.client && navigator.geolocation) {
+    if (process.client) {
       try {
-        const position = await new Promise<GeolocationCoordinates>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(
-            (pos) => resolve(pos.coords),
-            (err) => reject(err),
-            { timeout: 5000, enableHighAccuracy: false }
-          );
-        });
-        latitude = position.latitude;
-        longitude = position.longitude;
+        const coords = await getGeolocationOnce({ timeout: 5000, enableHighAccuracy: false });
+        latitude = coords.latitude;
+        longitude = coords.longitude;
       } catch (e) {
         logError('[atrace/qr] Geolocation request failed', e);
-        // Continue without geolocation
       }
     }
 
