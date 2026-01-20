@@ -393,7 +393,8 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                       <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
                       {{ t('app.geoConfirmed') ?? 'Гео подтверждено' }}
                     </span>
-                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
+                      :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })">
                       <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
                       {{ t('app.geoNotConfirmed') ?? 'Гео не подтверждено' }}
                     </span>

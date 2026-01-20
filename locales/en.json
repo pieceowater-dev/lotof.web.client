@@ -79,6 +79,7 @@
   "geoConfirmed": "Geo confirmed",
   "geoNotConfirmed": "Geo not confirmed",
   "geoConfirmedHint": "Check was made within {{meters}} meters from the post location",
+  "geoNotConfirmedHint": "Check was made more than {{meters}} meters from the post location or location data was unavailable",
     "errorMessages": [
       "You shouldn't be here... 🚷",
       "Something went wrong! 🤦‍♂️",

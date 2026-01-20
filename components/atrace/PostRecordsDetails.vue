@@ -330,7 +330,8 @@ watch(itemsPerPage, () => {
                     <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-1" />
                     {{ t('app.geoConfirmed') ?? 'Гео подтверждено' }}
                   </span>
-                  <span v-else class="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200">
+                  <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
+                    :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })">
                     <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-1" />
                     {{ t('app.geoNotConfirmed') ?? 'Гео не подтверждено' }}
                   </span>
