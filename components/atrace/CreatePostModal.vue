@@ -43,6 +43,23 @@ let marker: any = null;
 const defaultCenter: [number, number] = [20, 0];
 const defaultZoom = 2;
 
+async function checkAndRequestGeolocation() {
+  // Check geolocation permission status
+  if (!navigator.permissions || !navigator.geolocation) return;
+  
+  try {
+    const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
+    
+    if (permission.state === 'granted' || permission.state === 'prompt') {
+      // Auto-request if granted or prompt (will show browser dialog on prompt)
+      await requestGeolocation();
+    }
+    // If denied, do nothing - user can use the button to try again
+  } catch (error) {
+    console.error('Failed to check geolocation permission:', error);
+  }
+}
+
 async function requestGeolocation() {
   geoLoading.value = true;
   mapError.value = null;
@@ -166,6 +183,9 @@ async function initMap() {
     });
     
     mapLoading.value = false;
+    
+    // Check and request geolocation automatically
+    await checkAndRequestGeolocation();
   } catch (error) {
     console.error('Failed to load map:', error);
     mapError.value = 'Failed to load map';
