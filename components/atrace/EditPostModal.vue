@@ -48,12 +48,51 @@ function copyPin() {
 const mapContainer = ref<HTMLElement | null>(null);
 const mapLoading = ref(false);
 const mapError = ref<string | null>(null);
+const geoLoading = ref(false);
 let map: any = null;
 let marker: any = null;
 
 // Default center (World view)
 const defaultCenter: [number, number] = [20, 0];
 const defaultZoom = 2;
+
+async function requestGeolocation() {
+  geoLoading.value = true;
+  try {
+    const coords = await new Promise<{ latitude: number; longitude: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => resolve({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        }),
+        (error) => reject(error),
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    });
+    
+    if (coords.latitude && coords.longitude) {
+      props.form.location.latitude = coords.latitude;
+      props.form.location.longitude = coords.longitude;
+      
+      // Update map view
+      if (map && marker) {
+        const L = (await import('leaflet')).default;
+        const latlng = L.latLng(coords.latitude, coords.longitude);
+        marker.setLatLng(latlng);
+        map.setView(latlng, 15);
+      }
+    }
+  } catch (error: any) {
+    console.error('Geolocation error:', error);
+    if (error.code === 1) {
+      mapError.value = t('app.geolocationDenied') || 'Доступ к геолокации запрещен';
+    } else {
+      mapError.value = t('app.geolocationError') || 'Не удалось получить геолокацию';
+    }
+  } finally {
+    geoLoading.value = false;
+  }
+}
 
 async function initMap() {
   if (!mapContainer.value || !process.client) return;
@@ -190,6 +229,28 @@ watch(() => props.modelValue, (isOpen) => {
           <div class="text-xs text-gray-500 mt-1">{{ t('app.timezoneHint') }}</div>
         </UFormGroup>
 
+        <!-- Map -->
+        <UFormGroup :label="t('app.location')">
+          <div ref="mapContainer" class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+            <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
+            <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
+          </div>
+          <div class="flex items-center justify-between mt-1">
+            <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500">
+              {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
+            </div>
+            <UButton 
+              size="xs" 
+              color="primary" 
+              variant="soft"
+              icon="lucide:map-pin" 
+              :loading="geoLoading"
+              @click="requestGeolocation"
+            >
+              {{ t('app.allowGeolocation') || 'Разрешить геолокацию' }}
+            </UButton>
+          </div>
+        </UFormGroup>
 
         <USeparator />
 
