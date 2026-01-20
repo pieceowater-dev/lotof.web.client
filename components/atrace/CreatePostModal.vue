@@ -1,10 +1,19 @@
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n';
 import { getGeolocationOnce } from '@/utils/geolocation';
+import { TIMEZONES, getBrowserTimezone, getTimezoneLabel } from '@/utils/timezones';
+
+// Format timezones with dynamic offset for display
+const TIMEZONES_FORMATTED = computed(() => 
+  TIMEZONES.map(tz => ({
+    value: tz.value,
+    label: getTimezoneLabel(tz.value),
+  }))
+);
 
 const props = defineProps<{
   modelValue: boolean,
-  form: { title: string; description?: string; location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | '' }; pin: string }
+  form: { title: string; description?: string; location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string }; pin: string }
 }>();
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void,
@@ -114,6 +123,10 @@ async function initMap() {
 
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && process.client) {
+    // Initialize timezone with browser timezone if not already set
+    if (!props.form.location.timezone) {
+      props.form.location.timezone = getBrowserTimezone();
+    }
     nextTick(() => {
       initMap();
     });
@@ -149,6 +162,19 @@ watch(() => props.modelValue, (isOpen) => {
             <UInput v-model="props.form.location.city" :placeholder="t('common.city')" />
           </UFormGroup>
         </div>
+        
+        <UFormGroup :label="t('app.timezone')">
+          <USelectMenu 
+            v-model="props.form.location.timezone" 
+            :options="TIMEZONES_FORMATTED" 
+            option-attribute="label"
+            value-attribute="value"
+            searchable
+            :placeholder="props.form.location.timezone || t('app.timezone')"
+            :popper="{ placement: 'top' }"
+          />
+          <div class="text-xs text-gray-500 mt-1">{{ t('app.timezoneHint') }}</div>
+        </UFormGroup>
         
         <!-- Google Map -->
         <UFormGroup :label="t('app.location')">

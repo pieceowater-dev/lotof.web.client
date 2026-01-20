@@ -8,6 +8,7 @@ import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
+import { getBrowserTimezone } from '@/utils/timezones';
 const { t } = useI18n();
 
 // data
@@ -15,7 +16,7 @@ type Post = {
     id: string;
     title: string;
     description?: string | null;
-    location?: { comment?: string | null; country?: string | null; city?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null } | null;
+    location?: { comment?: string | null; country?: string | null; city?: string | null; address?: string | null; latitude?: number | null; longitude?: number | null; timezone?: string | null } | null;
     phrase?: string;
 };
 
@@ -88,15 +89,15 @@ const isEditOpen = ref(false)
 const editingPost = ref<Post | null>(null)
 
 // Create form state
-const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
-        { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
+const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | ''; timezone?: string }, pin: string }>(
+        { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' }, pin: '' }
 );
 
 // PIN generation/copy handled inside modal component
 
 // Edit form state
-const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | '' }, pin: string }>(
-    { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' }, pin: '' }
+const editForm = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | ''; timezone?: string }, pin: string }>(
+    { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' }, pin: '' }
 );
 // Edit PIN helpers handled inside modal component
 
@@ -244,6 +245,12 @@ async function handleCreate() {
         if (form.location.longitude !== '' && form.location.longitude !== undefined && form.location.longitude !== null) {
             loc.longitude = Number(form.location.longitude);
         }
+        // Add timezone: use form value if provided, otherwise default to browser timezone
+        if (form.location.timezone) {
+            loc.timezone = form.location.timezone;
+        } else {
+            loc.timezone = getBrowserTimezone();
+        }
         if (Object.keys(loc).length) payload.location = loc;
         // Add pin as phrase
         if (form.pin && form.pin.length === 6) payload.phrase = form.pin;
@@ -255,7 +262,7 @@ async function handleCreate() {
     // reset form
     form.title = '';
     form.description = '';
-    form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '' };
+    form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' };
     form.pin = '';
     } catch (e) {
         // noop; errors are logged in client
@@ -295,8 +302,11 @@ function openEdit(p: Post) {
         comment: p.location?.comment || '',
         latitude: (p.location?.latitude ?? ''),
         longitude: (p.location?.longitude ?? ''),
+        timezone: p.location?.timezone || '',
     };
     editForm.pin = p.phrase || '';
+    console.log('Opening edit for post:', p.id, 'with timezone:', p.location?.timezone);
+    console.log('editForm.location.timezone set to:', editForm.location.timezone);
     isEditOpen.value = true;
 }
 
@@ -351,6 +361,8 @@ async function handleEditSave() {
         loc.latitude = lat as number;
         loc.longitude = lon as number;
     }
+    // Always include timezone (even if empty to allow clearing)
+    loc.timezone = editForm.location.timezone || '';
     // Send location as-is (strings may be null to clear). Only attach lat/lon if both valid.
     payload.location = loc;
 

@@ -158,6 +158,8 @@
   "editMember": "Edit Member",
   "noRole": "No role",
   "back": "Back",
+  "timezone": "Timezone",
+  "timezoneHint": "Select your timezone or leave as browser default",
     "workingRequirements": "Working Requirements",
     "thisMonth": "This Month",
     "thisWeek": "This Week",

@@ -6,7 +6,7 @@ import { getDeviceHeaders } from '@/utils/device';
 const AtracePostsDocument = /* GraphQL */ `
   query AtracePosts($filter: DefaultFilterInput!) {
     getPosts(filter: $filter) {
-      posts { id title description location { comment country city address latitude longitude } }
+      posts { id title description location { comment country city address latitude longitude timezone } }
       paginationInfo { count }
     }
   }
@@ -23,6 +23,7 @@ export type AtracePost = {
     address?: string | null;
     latitude?: number | null;
     longitude?: number | null;
+    timezone?: string | null;
   } | null;
 };
 
