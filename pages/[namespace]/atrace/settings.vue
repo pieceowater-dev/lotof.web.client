@@ -597,43 +597,44 @@ onUnmounted(() => {
 
                     <!-- Working Requirements -->
                     <div>
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                            {{ t('app.workingRequirements') || 'Working Requirements' }}
-                        </h4>
-                        <div class="grid grid-cols-2 gap-4">
-                            <UFormGroup 
-                                :label="t('app.requiredWorkingDays') || 'Days per Month'"
-                                :help="t('app.requiredWorkingDaysHint') || '1–31 days'"
-                                class="space-y-2"
-                            >
-                                <UInput 
-                                    v-model.number="inviteDays" 
-                                    type="number" 
-                                    size="lg" 
-                                    min="0" 
-                                    max="31" 
-                                    step="1" 
-                                    inputmode="numeric"
-                                />
-                            </UFormGroup>
+                        <div style="display: none">
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                {{ t('app.workingRequirements') || 'Working Requirements' }}
+                            </h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <UFormGroup 
+                                    :label="t('app.requiredWorkingDays') || 'Days per Month'"
+                                    :help="t('app.requiredWorkingDaysHint') || '1–31 days'"
+                                    class="space-y-2"
+                                >
+                                    <UInput 
+                                        v-model.number="inviteDays" 
+                                        type="number" 
+                                        size="lg" 
+                                        min="0" 
+                                        max="31" 
+                                        step="1" 
+                                        inputmode="numeric"
+                                    />
+                                </UFormGroup>
 
-                            <UFormGroup 
-                                :label="t('app.requiredWorkingHours') || 'Hours per Day'"
-                                :help="t('app.requiredWorkingHoursHint') || '0–24 hours'"
-                                class="space-y-2"
-                            >
-                                <UInput 
-                                    v-model.number="inviteHours" 
-                                    type="number" 
-                                    size="lg" 
-                                    min="0" 
-                                    max="24" 
-                                    step="1" 
-                                    inputmode="numeric"
-                                />
-                            </UFormGroup>
+                                <UFormGroup 
+                                    :label="t('app.requiredWorkingHours') || 'Hours per Day'"
+                                    :help="t('app.requiredWorkingHoursHint') || '0–24 hours'"
+                                    class="space-y-2"
+                                >
+                                    <UInput 
+                                        v-model.number="inviteHours" 
+                                        type="number" 
+                                        size="lg" 
+                                        min="0" 
+                                        max="24" 
+                                        step="1" 
+                                        inputmode="numeric"
+                                    />
+                                </UFormGroup>
+                            </div>
                         </div>
-                    </div>
 
                     <!-- Error message -->
                     <div v-if="inviteError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
