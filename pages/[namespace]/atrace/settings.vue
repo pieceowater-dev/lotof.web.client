@@ -635,6 +635,7 @@ onUnmounted(() => {
                                 </UFormGroup>
                             </div>
                         </div>
+                    </div>
 
                     <!-- Error message -->
                     <div v-if="inviteError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
