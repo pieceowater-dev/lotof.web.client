@@ -170,7 +170,8 @@ const loadMembers = async () => {
     // We need namespaceId (UUID); resolve from slug via composable idBySlug
     const { idBySlug } = useNamespace();
     const nsId = idBySlug(selectedNS.value);
-  nsMembers.value = await hubMembersList(tok, nsId, 1, 'TEN');
+    if (!nsId) { nsMembers.value = []; membersLoading.value = false; return; }
+    nsMembers.value = await hubMembersList(tok, nsId, 1, 'TEN');
   } catch (e) {
     nsMembers.value = [];
   } finally {
@@ -179,7 +180,25 @@ const loadMembers = async () => {
 };
 
 watch(() => selectedNS.value, () => { loadMembers(); });
-onMounted(() => { loadNamespaces(); loadMembers(); });
+// When namespaces arrive (e.g., after full page reload), ensure selection is valid and load members
+watch(() => allNamespaces.value, (list) => {
+  const { idBySlug } = useNamespace();
+  if (!selectedNS.value && list.length > 0) {
+    selectedNS.value = list[0];
+    return; // watch on selectedNS will load members
+  }
+  if (selectedNS.value && idBySlug(selectedNS.value)) {
+    loadMembers();
+  }
+});
+onMounted(async () => {
+  await loadNamespaces();
+  // If nothing selected after namespaces load, pick first available
+  if (!selectedNS.value && allNamespaces.value.length > 0) {
+    selectedNS.value = allNamespaces.value[0];
+  }
+  await loadMembers();
+});
 
 // Reload friend dropdown when members change to filter out newly added ones
 watch(() => nsMembers.value, () => { loadMoreFriends(true); });
