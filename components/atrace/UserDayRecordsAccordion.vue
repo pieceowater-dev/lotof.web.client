@@ -339,7 +339,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
           </div>
           <div class="flex items-center gap-2">
             <UButton
-              v-if="!isLegitimateDay(date) && !isToday(date)"
+              v-if="isViolationDay(date) && !isToday(date)"
               size="xs"
               variant="ghost"
               icon="i-heroicons-check-circle"
