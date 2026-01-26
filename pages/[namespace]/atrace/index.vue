@@ -37,6 +37,12 @@ const cardsSentinelRef = ref<HTMLElement | null>(null);
 let cardsObserver: IntersectionObserver | null = null;
 const selectedPostId = ref<string | null>(null);
 
+// Computed for USelectMenu (doesn't accept null)
+const selectedPostIdForMenu = computed({
+    get: () => selectedPostId.value ?? '',
+    set: (val: string) => { selectedPostId.value = val === '' ? '' : val; }
+});
+
 // Track if "All" card is selected (empty string = all posts)
 const selectedPostIdForDisplay = computed(() => {
     return selectedPostId.value === '' ? '' : selectedPostId.value;
@@ -514,7 +520,7 @@ onBeforeUnmount(() => {
                 <div class="flex gap-2 items-center">
                     <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
                     <USelectMenu
-                        v-model="selectedPostId"
+                        v-model="selectedPostIdForMenu"
                         :options="[
                             ...(posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
                             ...posts.filter(p => p.title && p.title.trim()).map(p => {
