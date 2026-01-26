@@ -200,7 +200,8 @@ watch(() => selectedNS.value, () => { loadMembers(); });
 // When namespaces arrive (e.g., after full page reload), ensure selection is valid and load members
 watch(() => allNamespaces.value, (list) => {
   const { idBySlug } = useNamespace();
-  applyStoredNamespace();
+  // Only apply if user is loaded (not anon)
+  if (user.value?.id) applyStoredNamespace();
   if (!selectedNS.value && list.length > 0) {
     selectedNS.value = list[0];
     return; // watch on selectedNS will load members
@@ -209,9 +210,18 @@ watch(() => allNamespaces.value, (list) => {
     loadMembers();
   }
 });
+// When user loads (post-SSR), reapply stored namespace in case we initially used 'anon'
+watch(() => user.value?.id, (userId) => {
+  if (userId && allNamespaces.value.length > 0) {
+    applyStoredNamespace();
+  }
+});
 onMounted(async () => {
   await loadNamespaces();
-  applyStoredNamespace();
+  // Apply stored namespace only if user is loaded (not during SSR)
+  if (user.value?.id) {
+    applyStoredNamespace();
+  }
   // If nothing selected after namespaces load, pick first available
   if (!selectedNS.value && allNamespaces.value.length > 0) {
     selectedNS.value = allNamespaces.value[0];
