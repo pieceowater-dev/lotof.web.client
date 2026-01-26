@@ -526,6 +526,7 @@ onBeforeUnmount(() => {
                         ]"
                         value-attribute="value"
                         class="flex-1"
+                        :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
                     />
                     <UButton 
                         icon="lucide:plus" 
