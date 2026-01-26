@@ -557,7 +557,7 @@ function formatNumber(val: number, fractionDigits = 0) {
   <div class="text-sm">{{ t('app.noData') }}</div>
       </div>
       <table v-else class="w-full text-sm">
-        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-20 text-xs">
+        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
           <tr>
             <th class="px-3 py-2 text-left font-medium w-7"></th>
             <th class="px-3 py-2 text-left font-medium">{{ t('app.user') }}</th>
