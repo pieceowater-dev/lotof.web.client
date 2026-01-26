@@ -362,7 +362,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="h-full flex flex-col p-4 min-h-0">
+    <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
             <div class="text-left">
                 <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
@@ -710,5 +710,9 @@ onUnmounted(() => {
 .member-table :deep(tbody td span.truncate) {
     display: inline-block;
     max-width: 100%;
+}
+
+.pb-safe-or-4 {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
 </style>

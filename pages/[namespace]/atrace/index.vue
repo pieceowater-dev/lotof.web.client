@@ -554,10 +554,10 @@ onBeforeUnmount(() => {
             <!-- Search and filter buttons removed -->
         </div>
 
-        <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-4 overflow-hidden">
+        <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-safe-or-4 overflow-hidden">
                 <AttendanceStatsTable :post-id="selectedPostId" />
         </div>
-        <div v-else class="flex-1 h-full px-4 pb-4 flex flex-col items-center justify-center">
+        <div v-else class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
             <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">
                 <div class="mb-4 flex flex-col items-center">
                     <UIcon name="i-heroicons-map-pin" class="w-16 h-16 text-blue-400 dark:text-blue-300 mb-2" />
@@ -587,3 +587,9 @@ onBeforeUnmount(() => {
       @delete="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: false }) }"
     />
 </template>
+
+<style scoped>
+.pb-safe-or-4 {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+</style>

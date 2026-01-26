@@ -223,7 +223,7 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto">
+  <div class="h-full overflow-y-auto pb-safe-or-4">
   <div v-if="isLoading" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
     <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
     <USkeleton class="h-4 w-[250px]" />
@@ -312,3 +312,9 @@ function handleLogout() {
   </div>
   </div>
 </template>
+
+<style scoped>
+.pb-safe-or-4 {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+</style>
