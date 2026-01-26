@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { FriendshipStatus } from '@gql-hub';
-import { CookieKeys } from '@/utils/storageKeys';
+import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import AppTable from '@/components/ui/AppTable.vue'
 
 const { token, user } = useAuth();
@@ -159,6 +159,23 @@ const paginatedFriends = computed(() => {
 
 // Namespace switcher + Members table
 const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespaces } = useNamespace();
+function applyStoredNamespace() {
+  if (!process.client) return;
+  try {
+    const uid = (useAuth().user.value?.id) || 'anon';
+    const mapRaw = localStorage.getItem(LSKeys.SELECTED_NAMESPACE_BY_USER);
+    const legacy = localStorage.getItem(LSKeys.SELECTED_NAMESPACE);
+    let stored: string | null = null;
+    if (mapRaw) {
+      const map = JSON.parse(mapRaw || '{}') as Record<string, string>;
+      stored = map[uid] || null;
+    }
+    if (!stored) stored = legacy;
+    if (stored && allNamespaces.value.includes(stored)) {
+      selectedNS.value = stored;
+    }
+  } catch {}
+}
 const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string }>>([]);
 const membersLoading = ref(false);
 const loadMembers = async () => {
@@ -183,6 +200,7 @@ watch(() => selectedNS.value, () => { loadMembers(); });
 // When namespaces arrive (e.g., after full page reload), ensure selection is valid and load members
 watch(() => allNamespaces.value, (list) => {
   const { idBySlug } = useNamespace();
+  applyStoredNamespace();
   if (!selectedNS.value && list.length > 0) {
     selectedNS.value = list[0];
     return; // watch on selectedNS will load members
@@ -193,6 +211,7 @@ watch(() => allNamespaces.value, (list) => {
 });
 onMounted(async () => {
   await loadNamespaces();
+  applyStoredNamespace();
   // If nothing selected after namespaces load, pick first available
   if (!selectedNS.value && allNamespaces.value.length > 0) {
     selectedNS.value = allNamespaces.value[0];
