@@ -138,7 +138,7 @@ const dropdownItems = [
         <div class="flex items-center gap-2 mb-2">
             <h3 class="text-lg font-semibold truncate min-w-0 flex-1" :title="post.title">{{ post.title }}</h3>
                                 <div class="flex-none flex gap-1 items-center">
-                                                    <UDropdown :items="dropdownItems" :popper="{ placement: 'bottom-end' }" :class="!post.id ? 'invisible pointer-events-none' : ''">
+                                                    <UDropdown :items="dropdownItems" :popper="{ placement: 'bottom-end', modifiers: [{ name: 'hide', enabled: false }] }" :class="!post.id ? 'invisible pointer-events-none' : ''" style="z-index: 1000;">
                                                         <UButton icon="i-lucide-qr-code" size="xs" color="primary" :variant="selected ? 'solid' : 'ghost'" aria-label="QR actions" />
                                                     </UDropdown>
                                         <UButton @click="onEdit" icon="i-lucide-pencil" size="xs" color="primary" :variant="selected ? 'solid' : 'ghost'" :class="!post.id ? 'invisible pointer-events-none' : ''" />
