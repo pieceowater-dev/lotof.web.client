@@ -28,7 +28,7 @@ const goBack = () => {
 const plans = ref<Plan[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const selectedInterval = ref<'monthly' | 'yearly'>('yearly');
+const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 const subscribingPlanCode = ref<string | null>(null);
 
 const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
