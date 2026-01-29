@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
+import { subscribeToPlan } from '@/api/atrace/plans/subscribe';
 
 interface PlanFeature {
   key: string;
@@ -14,11 +15,21 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const toast = useToast();
+
+const goBack = () => {
+  if (process.client) {
+    window.history.back();
+    return;
+  }
+  router.back();
+};
 
 const plans = ref<Plan[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const selectedInterval = ref<'monthly' | 'yearly'>('yearly');
+const subscribingPlanCode = ref<string | null>(null);
 
 const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
 const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
@@ -69,9 +80,41 @@ function formatInterval(interval: string): string {
   return interval === 'MONTH' ? t('app.perMonth') || 'per month' : t('app.perYear') || 'per year';
 }
 
-function selectPlan(plan: Plan) {
-  // TODO: Navigate to subscription checkout
-  console.log('Selected plan:', plan);
+async function subscribePlan(plan: Plan) {
+  const token = useCookie<string | null>('token', { path: '/' }).value;
+  if (!token) {
+    toast.add({ title: 'Error', description: 'Not authenticated', color: 'red' });
+    return;
+  }
+
+  subscribingPlanCode.value = plan.code;
+  try {
+    // Subscribe to plan
+    await subscribeToPlan(nsSlug.value, plan.code, 'pieceowater.atrace', token);
+    
+    toast.add({ 
+      title: 'Success', 
+      description: `Subscribed to ${plan.name}`,
+      color: 'green'
+    });
+
+    // Add app to namespace (trigger real installation)
+    const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+    await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.atrace');
+
+    // Navigate to app
+    const returnTo = route.query.returnTo as string || `/${nsSlug.value}/atrace`;
+    await router.push(returnTo);
+  } catch (err) {
+    console.error('Failed to subscribe:', err);
+    toast.add({
+      title: 'Error',
+      description: getErrorMessage(err),
+      color: 'red'
+    });
+  } finally {
+    subscribingPlanCode.value = null;
+  }
 }
 
 onMounted(() => {
@@ -94,14 +137,16 @@ onMounted(() => {
             </p>
           </div>
           <UButton
-            icon="i-heroicons-arrow-left"
-            color="gray"
-            variant="ghost"
-            @click="router.push(`/${nsSlug}/atrace`)"
+            icon="lucide:arrow-left"
+            size="xs"
+            color="primary"
+            variant="soft"
+            @click="goBack"
+            class="min-w-fit gap-2"
           >
-            {{ t('common.back') || 'Back' }}
+            <span class="hidden sm:inline">{{ t('app.back') }}</span>
           </UButton>
-        </div>
+          </div>
       </div>
     </div>
 
@@ -244,10 +289,17 @@ onMounted(() => {
               size="xl"
               :color="plan.code.includes('start') ? 'primary' : 'gray'"
               :variant="plan.code.includes('start') ? 'solid' : 'outline'"
-              @click="selectPlan(plan)"
+              @click="subscribePlan(plan)"
+              :disabled="subscribingPlanCode !== null"
               class="font-semibold"
             >
-              {{ t('app.selectPlan') || 'Select Plan' }}
+              <template v-if="subscribingPlanCode === plan.code">
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                {{ t('app.connecting') || 'Connecting...' }}
+              </template>
+              <template v-else>
+                {{ t('app.selectPlan') || 'Select Plan' }}
+              </template>
             </UButton>
           </div>
         </div>

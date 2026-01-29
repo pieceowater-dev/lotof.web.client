@@ -130,27 +130,13 @@ async function handleAppClick(appAddress: string) {
 
 async function handleGetApp(app: AppConfig) {
   if (!isLoggedIn.value) return login();
-  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
-  if (!token || !selectedNS.value) return;
-  if (installingBundles.has(app.bundle)) return; // guard
-  installingBundles.add(app.bundle);
-  try {
-    const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
-    const res = await hubAddAppToNamespace(token, selectedNS.value, app.bundle);
-    log('[apps] Installed app into namespace', res);
-    // Mark installed and navigate
-    appInstalled[app.bundle] = true;
-    // Optionally re-check entire list for consistency
-    // await checkInstalledForVisibleApps();
-    await router.push(`/${selectedNS.value}/${app.address}`);
-  } catch (e: any) {
-    logError('[apps] Install failed', e);
-    if (typeof window !== 'undefined') {
-      logError(e?.message || 'Failed to install app');
-    }
-  } finally {
-    installingBundles.delete(app.bundle);
-  }
+  if (!selectedNS.value) return;
+  // Redirect to plan selection page before adding app to namespace
+  // The user must select and subscribe to a plan first
+  await router.push({
+    path: `/${selectedNS.value}/${app.address}/plans`,
+    query: { returnTo: `/${selectedNS.value}/${app.address}` }
+  });
 }
 
 const handleSaveProfile = async () => {

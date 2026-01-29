@@ -34,6 +34,14 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
+const goBack = () => {
+    if (process.client) {
+        window.history.back();
+        return;
+    }
+    router.back();
+};
+
 const members = ref<Member[]>([]);
 const roles = ref<Role[]>([]);
 const loading = ref(false);
@@ -368,14 +376,14 @@ onUnmounted(() => {
                 <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
             </div>
-            <div class="flex flex-row justify-between items-center gap-2 w-full md:w-auto">
+            <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
                 <UButton 
                     icon="lucide:star" 
                     size="xs" 
                     color="amber" 
                     variant="soft"
                     :to="`/${nsSlug}/atrace/plans`"
-                    class="flex-1 md:flex-none whitespace-nowrap"
+                    class="min-w-fit whitespace-nowrap"
                 >
                     {{ t('app.upgradePlan') || 'Upgrade Plan' }}
                 </UButton>
@@ -384,7 +392,7 @@ onUnmounted(() => {
                     size="xs" 
                     color="primary" 
                     @click="isInviteOpen = true"
-                    class="flex-1 md:flex-none whitespace-nowrap"
+                    class="min-w-fit whitespace-nowrap"
                 >
                     {{ t('app.sendInvite') || 'Send Invitation' }}
                 </UButton>
@@ -393,10 +401,10 @@ onUnmounted(() => {
                     size="xs" 
                     color="primary" 
                     variant="soft"
-                    :to="`/${nsSlug}/atrace`"
-                    class="flex-1 md:flex-none"
+                    @click="goBack"
+                    class="min-w-fit gap-2"
                 >
-                    {{ t('app.back') }}
+                    <span class="hidden sm:inline">{{ t('app.back') }}</span>
                 </UButton>
             </div>
         </div>

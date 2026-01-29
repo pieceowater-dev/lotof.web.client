@@ -117,7 +117,7 @@
     "callsDesc":"Track inbound calls and their uniqueness.",
     "open":"Open",
     "comingSoon":"Coming soon...",
-    "getApp":"Get App",
+    "getApp":"Get App Free",
   "address": "Address",
   "city": "City",
   "country": "Country",
@@ -281,6 +281,8 @@
     "includedSeats": "included seats",
     "includedUnits": "included units",
     "selectPlan": "Select Plan",
+    "connecting": "Connecting...",
+    "subscriptionSuccess": "Plan activated successfully!",
     "noPlansAvailable": "No plans available"
 },
 "common": {
