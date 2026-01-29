@@ -1,7 +1,7 @@
 /**
  * Utility to export attendance data to Excel with styling, grouping, and localization
  */
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx';
 
 interface UserStats {
   userId: string;

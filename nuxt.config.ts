@@ -53,7 +53,23 @@ export default defineNuxtConfig({
   },
   vite: {
     optimizeDeps: {
-      include: ['leaflet']
+      include: ['leaflet', 'xlsx']
+    },
+    ssr: {
+      noExternal: []
+    },
+    build: {
+      commonjsOptions: {
+        include: [/leaflet/, /xlsx/, /node_modules/]
+      },
+      rollupOptions: {
+        external: ['leaflet', 'leaflet/dist/leaflet.css', 'xlsx']
+      }
+    }
+  },
+  nitro: {
+    externals: {
+      inline: ['leaflet', 'xlsx']
     }
   }
 });
