@@ -370,6 +370,16 @@ onUnmounted(() => {
             </div>
             <div class="flex flex-row justify-between items-center gap-2 w-full md:w-auto">
                 <UButton 
+                    icon="lucide:star" 
+                    size="xs" 
+                    color="amber" 
+                    variant="soft"
+                    :to="`/${nsSlug}/atrace/plans`"
+                    class="flex-1 md:flex-none whitespace-nowrap"
+                >
+                    {{ t('app.upgradePlan') || 'Upgrade Plan' }}
+                </UButton>
+                <UButton 
                     icon="lucide:user-plus" 
                     size="xs" 
                     color="primary" 

@@ -247,7 +247,41 @@
     "totalWorkedHours": "Total worked hours",
     "salaryByDays": "Salary by days",
     "salaryByHours": "Salary by hours",
-    "formula": "Formula"
+    "formula": "Formula",
+    "subscriptionPlans": "Subscription Plans",
+    "choosePlanDescription": "Choose a plan that works best for your team",
+    "upgradePlan": "Upgrade Plan",
+    "pieceowater": {
+      "atrace": {
+        "mini": {
+          "description": "Perfect for small teams. Get started with essential features to track attendance and manage tasks.",
+          "feature": {
+            "max_employees": "Up to 5 employees",
+            "max_posts": "1 entry point"
+          }
+        },
+        "start": {
+          "description": "Ideal for growing teams. Everything in Mini plus advanced analytics, custom reports, and priority support.",
+          "feature": {
+            "max_employees": "Up to 30 employees",
+            "max_posts": "Up to 3 entry points"
+          }
+        }
+      }
+    },
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "bestPrice": "Best price",
+    "perMonth": "per month",
+    "perYear": "per year",
+    "month": "month",
+    "year": "year",
+    "daysTrial": "days trial",
+    "daysFreeTrial": "days free trial",
+    "includedSeats": "included seats",
+    "includedUnits": "included units",
+    "selectPlan": "Select Plan",
+    "noPlansAvailable": "No plans available"
 },
 "common": {
   "ok": "OK",
@@ -286,6 +320,8 @@
   "reset": "Reset",
   "close": "Close",
   "all": "All",
-  "loading": "Loading..."
+  "loading": "Loading...",
+  "back": "Back",
+  "error": "Error"
 }
 }

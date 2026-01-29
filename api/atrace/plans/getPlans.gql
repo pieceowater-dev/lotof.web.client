@@ -1,0 +1,19 @@
+query GetPlans($includeArchived: Boolean!) {
+  getPlans(includeArchived: $includeArchived) {
+    total
+    plans {
+      id
+      code
+      name
+      description
+      currency
+      interval
+      amountCents
+      trialDays
+      includedSeats
+      includedUnits
+      overagePriceCents
+      status
+    }
+  }
+}

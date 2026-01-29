@@ -1,0 +1,268 @@
+<script lang="ts" setup>
+import { useI18n } from '@/composables/useI18n';
+import { useAtraceToken } from '@/composables/useAtraceToken';
+import { getErrorMessage } from '@/utils/types/errors';
+import { getPlans, type Plan } from '@/api/atrace/plans/plans';
+
+interface PlanFeature {
+  key: string;
+  value: number | string;
+  label: string;
+}
+
+const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
+
+const plans = ref<Plan[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+const selectedInterval = ref<'monthly' | 'yearly'>('yearly');
+
+const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
+const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
+
+const displayedPlans = computed(() => 
+  selectedInterval.value === 'monthly' ? monthlyPlans.value : yearlyPlans.value
+);
+
+// Parse features from metadataJson
+function getPlanFeatures(plan: Plan): PlanFeature[] {
+  if (!plan.metadataJson) return [];
+  try {
+    const metadata = JSON.parse(plan.metadataJson);
+    if (Array.isArray(metadata.features)) {
+      return metadata.features;
+    }
+  } catch (e) {
+    console.error('Failed to parse plan metadata:', e);
+  }
+  return [];
+}
+
+// Fetch plans
+async function fetchPlans() {
+  loading.value = true;
+  error.value = null;
+  try {
+    const result = await getPlans(nsSlug.value, false);
+    plans.value = result.plans;
+    console.log('Fetched plans:', result.plans.length, result.plans);
+  } catch (err) {
+    error.value = getErrorMessage(err);
+    console.error('Failed to fetch plans:', err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function formatPrice(amountCents: number, currency: string): string {
+  const amount = amountCents / 100;
+  if (currency === 'KZT') {
+    return `${amount.toLocaleString('ru-KZ')}₸`;
+  }
+  return `${currency} ${amount.toLocaleString()}`;
+}
+
+function formatInterval(interval: string): string {
+  return interval === 'MONTH' ? t('app.perMonth') || 'per month' : t('app.perYear') || 'per year';
+}
+
+function selectPlan(plan: Plan) {
+  // TODO: Navigate to subscription checkout
+  console.log('Selected plan:', plan);
+}
+
+onMounted(() => {
+  fetchPlans();
+});
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ t('app.subscriptionPlans') || 'Subscription Plans' }}
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('app.choosePlanDescription') || 'Choose a plan that works best for your team' }}
+            </p>
+          </div>
+          <UButton
+            icon="i-heroicons-arrow-left"
+            color="gray"
+            variant="ghost"
+            @click="router.push(`/${nsSlug}/atrace`)"
+          >
+            {{ t('common.back') || 'Back' }}
+          </UButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <!-- Interval Toggle -->
+      <div class="flex justify-center mb-8">
+        <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+          <button
+            @click="selectedInterval = 'monthly'"
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'monthly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+          >
+            {{ t('app.monthly') || 'Monthly' }}
+          </button>
+          <button
+            @click="selectedInterval = 'yearly'"
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'yearly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+          >
+            <span>{{ t('app.yearly') || 'Yearly' }}</span>
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+              <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
+              {{ t('app.bestPrice') || 'Best price' }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+
+      <!-- Error State -->
+      <UAlert
+        v-else-if="error"
+        icon="i-heroicons-exclamation-triangle"
+        color="red"
+        variant="soft"
+        :title="t('common.error') || 'Error'"
+        :description="error"
+        class="mb-6"
+      />
+
+      <!-- Plans Grid -->
+      <div v-else class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div
+          v-for="plan in displayedPlans"
+          :key="plan.id"
+          class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+        >
+          <!-- Trial Badge -->
+          <div v-if="plan.trialDays > 0" class="absolute top-0 right-0">
+            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
+              <div class="flex items-center gap-1.5">
+                <UIcon name="i-heroicons-gift" class="w-4 h-4" />
+                <span class="text-xs font-bold">{{ plan.trialDays }} {{ t('app.daysTrial') || 'days trial' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-8 pt-16">
+            <!-- Plan Name -->
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+              {{ plan.name }}
+            </h3>
+
+            <!-- Description -->
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-8 min-h-[40px]">
+              {{ t('app.' + plan.description) || plan.description }}
+            </p>
+
+            <!-- Price -->
+            <div class="mb-8">
+              <div class="flex items-baseline gap-2">
+                <span class="text-5xl font-bold text-gray-900 dark:text-white">
+                  {{ formatPrice(plan.amountCents, plan.currency) }}
+                </span>
+                <span class="text-lg text-gray-500 dark:text-gray-400">
+                  / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Features -->
+            <div class="space-y-4 mb-8 border-t border-gray-100 dark:border-gray-700 pt-6">
+              <!-- Trial Days -->
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <span class="font-semibold">{{ plan.trialDays }}</span> {{ t('app.daysFreeTrial') || 'days free trial' }}
+                </span>
+              </div>
+
+              <!-- Plan-specific features from metadata -->
+              <div v-for="feature in getPlanFeatures(plan)" :key="feature.key" class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ t('app.' + feature.label) || feature.label }}
+                </span>
+              </div>
+
+              <!-- Included Seats (legacy) -->
+              <div v-if="plan.includedSeats > 0" class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <span class="font-semibold">{{ plan.includedSeats }}</span> {{ t('app.includedSeats') || 'included seats' }}
+                </span>
+              </div>
+
+              <!-- Included Units (legacy) -->
+              <div v-if="plan.includedUnits > 0" class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <span class="font-semibold">{{ plan.includedUnits }}</span> {{ t('app.includedUnits') || 'included units' }}
+                </span>
+              </div>
+            </div>
+
+            <!-- CTA Button -->
+            <UButton
+              block
+              size="xl"
+              :color="plan.code.includes('start') ? 'primary' : 'gray'"
+              :variant="plan.code.includes('start') ? 'solid' : 'outline'"
+              @click="selectPlan(plan)"
+              class="font-semibold"
+            >
+              {{ t('app.selectPlan') || 'Select Plan' }}
+            </UButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div
+        v-if="!loading && !error && displayedPlans.length === 0"
+        class="text-center py-12"
+      >
+        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p class="text-gray-500 dark:text-gray-400">
+          {{ t('app.noPlansAvailable') || 'No plans available' }}
+        </p>
+      </div>
+    </div>
+  </div>
+</template>
