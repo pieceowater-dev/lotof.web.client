@@ -123,13 +123,20 @@ function parseLimitsJson(raw?: string | null): { max_posts?: number; max_employe
 async function loadPlanLimits() {
     planLimitsLoading.value = true
     try {
-        const res = await getPlanLimits(nsSlug.value, 'pieceowater.atrace')
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const res = await getPlanLimits(nsSlug.value, 'pieceowater.atrace', hubToken)
+        console.log('[loadPlanLimits] Response:', res)
         planName.value = res?.planName || ''
-        planLimits.value = parseLimitsJson(res?.limitsJson)
-    } catch {
+        const limits = parseLimitsJson(res?.limitsJson)
+        console.log('[loadPlanLimits] Parsed limits:', limits)
+        planLimits.value = limits
+        console.log('[loadPlanLimits] planLimits.value:', planLimits.value)
+    } catch (err) {
+        console.error('[loadPlanLimits] Error:', err)
         planLimits.value = null
     } finally {
         planLimitsLoading.value = false
+        console.log('[loadPlanLimits] Final state - planLimits:', planLimits.value, 'loading:', planLimitsLoading.value)
     }
 }
 
@@ -223,8 +230,10 @@ async function loadMembers() {
                         // Load active members from A-Trace to mark statuses
                         const { atraceClient } = await import('@/api/clients');
                         const { atraceRequestWithRefresh } = await import('@/api/atrace/atraceRequestWithRefresh');
+                        const { getDeviceHeaders } = await import('@/utils/device');
                         const activeUserIds = new Set<string>();
                         try {
+                                const devHeaders = await getDeviceHeaders();
                                 const activeQuery = `
                                     query GetActiveMembers($page: Int!, $pageSize: Int!) {
                                         getActiveMembers(page: $page, pageSize: $pageSize) {
@@ -238,7 +247,11 @@ async function loadMembers() {
                                         () => atraceClient.request<{ getActiveMembers: Array<{ userId: string; isActive: boolean }> }>(
                                                 activeQuery,
                                                 { page: 1, pageSize: 100 },
-                                                { headers: { AtraceAuthorization: `Bearer ${atraceToken}` } }
+                                                { headers: { 
+                                                    AtraceAuthorization: `Bearer ${atraceToken}`,
+                                                    Namespace: nsSlug.value,
+                                                    ...devHeaders
+                                                } }
                                         ),
                                         nsSlug.value
                                 );
@@ -541,7 +554,7 @@ onUnmounted(() => {
             </div>
         </div>
 
-        <div v-if="planLimits && !planLimitsLoading" class="mb-4">
+        <div v-if="planLimits !== null && !planLimitsLoading" class="mb-4">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-blue-100 dark:border-gray-700 bg-blue-50/60 dark:bg-gray-900/40 px-4 py-3">
                 <div class="text-sm text-gray-700 dark:text-gray-200">
                     <span class="font-semibold">{{ t('app.subscriptionPlans') || 'Plan' }}:</span>

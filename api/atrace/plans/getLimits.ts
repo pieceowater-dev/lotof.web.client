@@ -27,10 +27,11 @@ export async function getPlanLimits(
   const headers: Record<string, string> = {
     Namespace: namespaceSlug,
   };
+  if (resolvedHubToken) {
+    headers.Authorization = `Bearer ${resolvedHubToken}`;
+  }
   if (atraceToken) {
     headers.AtraceAuthorization = `Bearer ${atraceToken}`;
-  } else if (resolvedHubToken) {
-    headers.Authorization = `Bearer ${resolvedHubToken}`;
   }
 
   try {
