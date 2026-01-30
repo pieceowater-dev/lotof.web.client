@@ -141,7 +141,14 @@ async function subscribePlan(plan: Plan) {
 
     // Add app to namespace (trigger real installation)
     const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
-    await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.atrace');
+    try {
+      await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.atrace');
+    } catch (installErr) {
+      const msg = getErrorMessage(installErr).toLowerCase();
+      if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
+        throw installErr;
+      }
+    }
 
     // Navigate to app
     const returnTo = route.query.returnTo as string || `/${nsSlug.value}/atrace`;
@@ -344,7 +351,7 @@ watch([plans, activeSubscription], () => {
               :variant="plan.code.includes('start') ? 'solid' : 'outline'"
               @click="subscribePlan(plan)"
               :disabled="subscribingPlanCode !== null"
-              class="font-semibold"
+              class="font-semibold dark:hover:bg-primary-900/30 dark:hover:border-primary-500 dark:hover:text-primary-100"
             >
               <template v-if="subscribingPlanCode === plan.code">
                 <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />

@@ -85,6 +85,7 @@
   "geolocationUnavailable": "Location unavailable. Safari: Check Settings → Safari → Location → Allow. Also verify: 1) Location services enabled, 2) Internet connected, 3) GPS signal available.",
   "geolocationTimeout": "Location request timeout. Try again in better conditions.",
   "geolocationError": "Failed to get geolocation",
+  "limitReachedReadable": "Post limit reached ({current}/{max}). Upgrade your plan to create more posts.",
     "errorMessages": [
       "You shouldn't be here... 🚷",
       "Something went wrong! 🤦‍♂️",
@@ -251,6 +252,22 @@
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",
     "upgradePlan": "Upgrade Plan",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "bestPrice": "Best price",
+    "perMonth": "per month",
+    "perYear": "per year",
+    "month": "month",
+    "year": "year",
+    "daysTrial": "days trial",
+    "daysFreeTrial": "days free trial",
+    "includedSeats": "included seats",
+    "includedUnits": "included units",
+    "selectPlan": "Select Plan",
+    "connecting": "Connecting...",
+    "activePlan": "Active!",
+    "subscriptionSuccess": "Plan activated successfully!",
+    "noPlansAvailable": "No plans available",
     "pieceowater": {
       "atrace": {
         "mini": {
@@ -266,21 +283,57 @@
             "max_employees": "Up to 30 employees",
             "max_posts": "Up to 3 entry points"
           }
-        },
-        "members": {
-          "title": "Members Management",
-          "subtitle": "Manage active members and their permissions",
-          "activeCount": "Active Members",
-          "user": "User",
-          "status": "Status",
-          "actions": "Actions",
-          "active": "Active",
-          "inactive": "Inactive",
-          "activate": "Activate",
-          "deactivate": "Deactivate",
-          "noMembers": "No members found",
-          "ownerOnly": "Owner only",
-          "limitReached": "You have reached the maximum number of active members for your plan. Upgrade your plan to add more members."
+        }
+      },
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "bestPrice": "Best price",
+      "perMonth": "per month",
+      "perYear": "per year",
+      "month": "month",
+      "year": "year",
+      "daysTrial": "days trial",
+      "daysFreeTrial": "days free trial",
+      "includedSeats": "included seats",
+      "includedUnits": "included units",
+      "selectPlan": "Select Plan",
+      "connecting": "Connecting...",
+      "activePlan": "Active!",
+      "subscriptionSuccess": "Plan activated successfully!",
+      "noPlansAvailable": "No plans available"
+    }
+  },
+  "atrace": {
+    "members": {
+      "title": "Members Management",
+      "subtitle": "Manage active members and their permissions",
+      "activeCount": "Active Members",
+      "user": "User",
+      "status": "Status",
+      "actions": "Actions",
+      "active": "Active",
+      "inactive": "Inactive",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "noMembers": "No members found",
+      "ownerOnly": "Owner only",
+      "limitReached": "You have reached the maximum number of active members for your plan. Upgrade your plan to add more members."
+    }
+  },
+  "pieceowater": {
+    "atrace": {
+      "mini": {
+        "description": "Perfect for small teams. Get started with essential features to track attendance and manage tasks.",
+        "feature": {
+          "max_employees": "Up to 5 employees",
+          "max_posts": "1 entry point"
+        }
+      },
+      "start": {
+        "description": "Ideal for growing teams. Everything in Mini plus advanced analytics, custom reports, and priority support.",
+        "feature": {
+          "max_employees": "Up to 30 employees",
+          "max_posts": "Up to 3 entry points"
         }
       }
     },

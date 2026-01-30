@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n';
 import { getGeolocationOnce } from '@/utils/geolocation';
-import { TIMEZONES, getTimezoneLabel } from '@/utils/timezones';
+import { TIMEZONES, getBrowserTimezone, getTimezoneLabel } from '@/utils/timezones';
 
 // Format timezones with dynamic offset for display
 const TIMEZONES_FORMATTED = computed(() => 
@@ -123,6 +123,12 @@ async function initMap() {
   mapError.value = null;
   
   try {
+    if (map) {
+      map.remove();
+      map = null;
+      marker = null;
+    }
+
     // Dynamic import for client-side only
     const L = (await import('leaflet')).default;
     await import('leaflet/dist/leaflet.css');
@@ -189,6 +195,11 @@ async function initMap() {
     });
     
     mapLoading.value = false;
+
+    // Ensure map renders correctly inside modal
+    setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 0);
     
     // Check and request geolocation automatically
     await checkAndRequestGeolocation();
@@ -208,6 +219,10 @@ watch(() => props.modelValue, (isOpen) => {
     nextTick(() => {
       initMap();
     });
+  } else if (!isOpen && map) {
+    map.remove();
+    map = null;
+    marker = null;
   }
 });
 </script>

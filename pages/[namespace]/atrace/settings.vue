@@ -6,6 +6,7 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { setUnauthorizedHandler } from '@/api/clients';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import { getPlanLimits } from '@/api/atrace/plans/getLimits';
 
 const { t } = useI18n();
 
@@ -46,12 +47,16 @@ const members = ref<Member[]>([]);
 const roles = ref<Role[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const planLimits = ref<{ max_posts?: number; max_employees?: number } | null>(null)
+const planName = ref<string>('')
+const planLimitsLoading = ref(false)
 const columns = computed(() => ([
     { key: 'username', label: t('common.username') },
     { key: 'email', label: t('common.email') },
     { key: 'roleName', label: t('common.role') },
     { key: 'requiredWorkingDays', label: t('app.requiredWorkingDays') },
     { key: 'requiredWorkingHours', label: t('app.requiredWorkingHours') },
+    { key: 'isActive', label: t('atrace.members.status') },
     { key: 'actions', label: t('common.actions') }
 ]));
 
@@ -91,6 +96,41 @@ const isValidInviteEmail = computed(() => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 });
 const inviteCanSubmit = computed(() => isValidInviteEmail.value && !inviteSubmitting.value);
+
+function parseLimitsJson(raw?: string | null): { max_posts?: number; max_employees?: number } {
+    if (!raw) return {}
+    try {
+        const data = JSON.parse(raw)
+        if (typeof data.max_posts === 'number' || typeof data.max_employees === 'number') {
+            return {
+                max_posts: typeof data.max_posts === 'number' ? data.max_posts : undefined,
+                max_employees: typeof data.max_employees === 'number' ? data.max_employees : undefined,
+            }
+        }
+        if (Array.isArray(data.features)) {
+            const result: { max_posts?: number; max_employees?: number } = {}
+            for (const f of data.features) {
+                if (f?.key === 'max_posts') result.max_posts = Number(f.value)
+                if (f?.key === 'max_employees') result.max_employees = Number(f.value)
+            }
+            return result
+        }
+    } catch {}
+    return {}
+}
+
+async function loadPlanLimits() {
+    planLimitsLoading.value = true
+    try {
+        const res = await getPlanLimits(nsSlug.value, 'pieceowater.atrace')
+        planName.value = res?.planName || ''
+        planLimits.value = parseLimitsJson(res?.limitsJson)
+    } catch {
+        planLimits.value = null
+    } finally {
+        planLimitsLoading.value = false
+    }
+}
 
 function buildActionsJson(): string {
     const ops: Array<any> = [];
@@ -263,6 +303,64 @@ function openEditMember(member: Member) {
     isEditMemberOpen.value = true;
 }
 
+async function toggleMemberActive(member: Member) {
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    if (!hubToken) {
+        router.push('/');
+        return;
+    }
+
+    try {
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) {
+            router.push('/');
+            return;
+        }
+
+        const { atraceClient } = await import('@/api/clients');
+        const { atraceRequestWithRefresh } = await import('@/api/atrace/atraceRequestWithRefresh');
+        
+        const query = `
+          mutation SetMemberActive($input: SetMemberActiveInput!) {
+            setMemberActive(input: $input) {
+              id
+              userId
+              isActive
+              createdAt
+              updatedAt
+            }
+          }
+        `;
+        
+        await atraceRequestWithRefresh(
+            () => atraceClient.request<any>(
+                query,
+                {
+                    input: {
+                        userId: member.userId,
+                        isActive: member.isActive,
+                    }
+                },
+                {
+                    headers: {
+                        AtraceAuthorization: `Bearer ${atraceToken}`,
+                    }
+                }
+            ),
+            nsSlug.value
+        );
+    } catch (e: any) {
+        logError('[toggleMemberActive]', e);
+        useToast().add({
+            title: t('app.notification'),
+            description: getErrorMessage(e) || 'Failed to update member status',
+            color: 'red'
+        });
+        // Revert the toggle
+        member.isActive = !member.isActive;
+    }
+}
+
 async function handleSaveMember() {
     if (!editingMember.value) return;
     
@@ -361,6 +459,7 @@ onMounted(async () => {
     }
     await loadRoles();
     await loadMembers();
+    await loadPlanLimits();
 });
 
 onUnmounted(() => {
@@ -409,6 +508,25 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <div v-if="planLimits && !planLimitsLoading" class="mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-blue-100 dark:border-gray-700 bg-blue-50/60 dark:bg-gray-900/40 px-4 py-3">
+                <div class="text-sm text-gray-700 dark:text-gray-200">
+                    <span class="font-semibold">{{ t('app.subscriptionPlans') || 'Plan' }}:</span>
+                    <span class="ml-1">{{ planName || '—' }}</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2 text-sm">
+                    <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+                        {{ t('app.locations') || 'Locations' }}:
+                        <strong>{{ planLimits.max_posts ?? '∞' }}</strong>
+                    </span>
+                    <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+                        {{ t('atrace.members.activeCount') || 'Active members' }}:
+                        <strong>{{ planLimits.max_employees ?? '∞' }}</strong>
+                    </span>
+                </div>
+            </div>
+        </div>
+
         <!-- Members Management Section -->
     <div class="flex-1 min-h-0 flex flex-col">
             <h2 class="text-base font-medium mb-3">{{ t('app.members') || 'Members' }}</h2>
@@ -437,6 +555,9 @@ onUnmounted(() => {
                     <span v-else class="text-gray-400 dark:text-gray-600 italic">
                       {{ t('app.noRole') || 'No role' }}
                     </span>
+                  </template>
+                  <template #isActive-data="{ row }">
+                    <UToggle v-model="row.isActive" @update:model-value="toggleMemberActive(row)" />
                   </template>
                   <template #actions-data="{ row }">
                     <div class="text-right">

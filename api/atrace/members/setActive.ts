@@ -10,37 +10,15 @@ export async function setMemberActive(
   input: SetMemberActiveInput,
   token?: string
 ): Promise<Member> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const query = `
-    mutation SetMemberActive($input: SetMemberActiveInput!) {
-      setMemberActive(input: $input) {
-        id
-        userId
-        isActive
-        createdAt
-        updatedAt
-      }
-    }
-  `
-
-  const response = await fetch(`/api/graphql`, {
+  const response = await fetch(`/api/atrace/members/setActive`, {
     method: 'POST',
-    headers,
+    headers: {
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({
-      query,
-      variables: {
-        input: {
-          userId: input.userId,
-          isActive: input.isActive,
-        },
-      },
+      userId: input.userId,
+      isActive: input.isActive,
+      namespaceSlug,
     }),
   })
 
@@ -50,32 +28,16 @@ export async function setMemberActive(
 
   const data = await response.json()
 
-  if (data.errors) {
-    throw new Error(data.errors[0]?.message || 'Failed to set member active status')
+  if (data.error) {
+    throw new Error(data.error)
   }
 
-  return data.data.setMemberActive
+  return data
 }
 
 export async function getActiveMembersCount(token?: string): Promise<number> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const query = `
-    query GetActiveMembersCount {
-      getActiveMembersCount
-    }
-  `
-
-  const response = await fetch(`/api/graphql`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ query }),
+  const response = await fetch(`/api/atrace/members/count`, {
+    method: 'GET',
   })
 
   if (!response.ok) {
@@ -84,11 +46,11 @@ export async function getActiveMembersCount(token?: string): Promise<number> {
 
   const data = await response.json()
 
-  if (data.errors) {
-    throw new Error(data.errors[0]?.message || 'Failed to get active members count')
+  if (data.error) {
+    throw new Error(data.error)
   }
 
-  return data.data.getActiveMembersCount
+  return data.count
 }
 
 export async function getActiveMembers(
@@ -96,33 +58,13 @@ export async function getActiveMembers(
   pageSize: number = 20,
   token?: string
 ): Promise<Member[]> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  }
+  const query = new URLSearchParams({
+    page: page.toString(),
+    pageSize: pageSize.toString(),
+  })
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`
-  }
-
-  const query = `
-    query GetActiveMembers($page: Int!, $pageSize: Int!) {
-      getActiveMembers(page: $page, pageSize: $pageSize) {
-        id
-        userId
-        isActive
-        createdAt
-        updatedAt
-      }
-    }
-  `
-
-  const response = await fetch(`/api/graphql`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({
-      query,
-      variables: { page, pageSize },
-    }),
+  const response = await fetch(`/api/atrace/members?${query}`, {
+    method: 'GET',
   })
 
   if (!response.ok) {
@@ -131,9 +73,9 @@ export async function getActiveMembers(
 
   const data = await response.json()
 
-  if (data.errors) {
-    throw new Error(data.errors[0]?.message || 'Failed to get active members')
+  if (data.error) {
+    throw new Error(data.error)
   }
 
-  return data.data.getActiveMembers
+  return data.members
 }

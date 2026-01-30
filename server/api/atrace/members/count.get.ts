@@ -4,11 +4,8 @@ export default defineEventHandler(async (event) => {
     const token = getCookie(event, 'auth_token') || getHeader(event, 'authorization') || ''
 
     const query = `
-      query GetPlanLimits {
-        getPlanLimits {
-          maxPosts
-          maxEmployees
-        }
+      query GetActiveMembersCount {
+        getActiveMembersCount
       }
     `
 
@@ -18,21 +15,18 @@ export default defineEventHandler(async (event) => {
         'Content-Type': 'application/json',
         'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
       },
-      body: { query },
+      body: {
+        query,
+      },
     } as any)
 
     if ((response as any).errors) {
-      return { error: (response as any).errors[0]?.message || 'Failed to fetch plan limits' }
+      return { error: (response as any).errors[0]?.message || 'Failed to get active members count' }
     }
 
-    const limits = (response as any).data?.getPlanLimits || {}
-
-    return {
-      max_posts: limits.maxPosts,
-      max_employees: limits.maxEmployees,
-    }
+    return { count: (response as any).data?.getActiveMembersCount || 0 }
   } catch (error) {
-    console.error('Error fetching plan limits:', error)
-    return { error: error instanceof Error ? error.message : 'Failed to fetch plan limits' }
+    console.error('Error getting active members count:', error)
+    return { error: error instanceof Error ? error.message : 'Failed to get active members count' }
   }
 })

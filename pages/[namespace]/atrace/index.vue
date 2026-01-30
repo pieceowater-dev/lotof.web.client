@@ -93,6 +93,8 @@ const isFilterOpen = ref(false)
 const isCreateOpen = ref(false)
 const isEditOpen = ref(false)
 const editingPost = ref<Post | null>(null)
+const isLimitModalOpen = ref(false)
+const limitErrorMessage = ref<string>('')
 
 // Create form state
 const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | ''; timezone?: string }, pin: string }>(
@@ -289,9 +291,24 @@ async function handleCreate() {
     form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' };
     form.pin = '';
     } catch (e) {
-        // noop; errors are logged in client
+        const msg = getErrorMessage(e)
+        const lower = msg.toLowerCase()
+        if (lower.includes('post limit reached') || lower.includes('resourceexhausted')) {
+            const match = msg.match(/You have\s+(\d+)\s+posts,\s+maximum allowed is\s+(\d+)/i)
+            const current = match?.[1]
+            const max = match?.[2]
+            if (current && max) {
+                const template = t('app.limitReachedReadable') || 'Post limit reached ({current}/{max}). Upgrade your plan to create more posts.'
+                limitErrorMessage.value = template.replace('{current}', current).replace('{max}', max)
+            } else {
+                limitErrorMessage.value = t('app.limitReachedReadable') || 'Post limit reached. Upgrade your plan to create more posts.'
+            }
+            isLimitModalOpen.value = true
+            return
+        }
     }
 }
+
 
 async function handleDelete(p: Post, opts?: { skipConfirm?: boolean }) {
     const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
@@ -485,6 +502,7 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+
         <!-- Desktop: horizontal card scroll -->
         <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
             <div class="inline-flex space-x-4 items-stretch">
@@ -586,6 +604,30 @@ onBeforeUnmount(() => {
       @save="handleEditSave"
       @delete="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: false }) }"
     />
+
+    <UModal v-model="isLimitModalOpen" :ui="{ width: 'sm:max-w-md' }">
+        <UCard>
+            <template #header>
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                        {{ t('app.notification') || 'Notification' }}
+                    </h3>
+                    <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="isLimitModalOpen = false" />
+                </div>
+            </template>
+            <div class="text-sm text-gray-700 dark:text-gray-200">
+                {{ limitErrorMessage || (t('atrace.members.limitReached') || 'Limit reached. Please upgrade your plan.') }}
+            </div>
+            <template #footer>
+                <div class="flex justify-end gap-2">
+                    <UButton color="primary" variant="soft" @click="isLimitModalOpen = false">{{ t('common.cancel') }}</UButton>
+                    <UButton color="amber" icon="lucide:star" :to="`/${nsSlug}/atrace/plans`">
+                        {{ t('app.upgradePlan') || 'Upgrade Plan' }}
+                    </UButton>
+                </div>
+            </template>
+        </UCard>
+    </UModal>
 </template>
 
 <style scoped>
