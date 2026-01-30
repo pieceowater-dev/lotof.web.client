@@ -261,6 +261,7 @@
   "includedUnits": "включено единиц",
   "selectPlan": "Выбрать тариф",
   "connecting": "Подключаем...",
+  "activePlan": "Подключено!",
   "subscriptionSuccess": "Тариф успешно активирован!",
   "noPlansAvailable": "Нет доступных тарифов"
 },

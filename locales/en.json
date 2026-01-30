@@ -282,6 +282,7 @@
     "includedUnits": "included units",
     "selectPlan": "Select Plan",
     "connecting": "Connecting...",
+    "activePlan": "Active!",
     "subscriptionSuccess": "Plan activated successfully!",
     "noPlansAvailable": "No plans available"
 },

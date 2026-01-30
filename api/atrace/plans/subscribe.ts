@@ -7,6 +7,7 @@ const SubscribePlanDocument = /* GraphQL */ `
       id
       namespace
       applicationCode
+      planId
       planCode
       status
       startDate
@@ -20,6 +21,7 @@ export type Subscription = {
   id: string;
   namespace: string;
   applicationCode: string;
+  planId: string;
   planCode: string;
   status: string;
   startDate: string;

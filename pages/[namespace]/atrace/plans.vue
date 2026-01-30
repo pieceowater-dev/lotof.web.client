@@ -3,7 +3,8 @@ import { useI18n } from '@/composables/useI18n';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
-import { subscribeToPlan } from '@/api/atrace/plans/subscribe';
+import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';
+import { getActiveSubscription } from '@/api/atrace/plans/getActiveSubscription';
 
 interface PlanFeature {
   key: string;
@@ -30,6 +31,7 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 const subscribingPlanCode = ref<string | null>(null);
+const activeSubscription = ref<Subscription | null>(null);
 
 const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
 const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
@@ -37,6 +39,23 @@ const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'
 const displayedPlans = computed(() => 
   selectedInterval.value === 'monthly' ? monthlyPlans.value : yearlyPlans.value
 );
+
+// Check if a plan is currently active
+function isPlanActive(plan: Plan): boolean {
+  if (!activeSubscription.value) return false;
+  
+  // Match by plan ID (primary method)
+  if (activeSubscription.value.planId === plan.id) {
+    return true;
+  }
+  
+  // Fallback: Match by plan code if available
+  if (activeSubscription.value.planCode && activeSubscription.value.planCode === plan.code) {
+    return true;
+  }
+  
+  return false;
+}
 
 // Parse features from metadataJson
 function getPlanFeatures(plan: Plan): PlanFeature[] {
@@ -65,6 +84,28 @@ async function fetchPlans() {
     console.error('Failed to fetch plans:', err);
   } finally {
     loading.value = false;
+  }
+}
+
+// Fetch active subscription
+async function fetchActiveSubscription() {
+  const token = useCookie<string | null>('token', { path: '/' }).value;
+  if (!token) return;
+
+  try {
+    activeSubscription.value = await getActiveSubscription(nsSlug.value, 'pieceowater.atrace', token);
+    console.log('Active subscription:', activeSubscription.value);
+    
+    // Auto-switch tab to match active subscription interval
+    if (activeSubscription.value && plans.value.length > 0) {
+      const activePlan = plans.value.find(p => p.id === activeSubscription.value!.planId);
+      if (activePlan) {
+        selectedInterval.value = activePlan.interval === 'YEAR' ? 'yearly' : 'monthly';
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch active subscription:', err);
+    // Silently fail - no active subscription is not an error state
   }
 }
 
@@ -117,8 +158,19 @@ async function subscribePlan(plan: Plan) {
   }
 }
 
-onMounted(() => {
-  fetchPlans();
+onMounted(async () => {
+  await fetchPlans();
+  await fetchActiveSubscription();
+});
+
+// Watch for plans changes to re-check active subscription interval
+watch([plans, activeSubscription], () => {
+  if (activeSubscription.value && plans.value.length > 0) {
+    const activePlan = plans.value.find(p => p.id === activeSubscription.value!.planId);
+    if (activePlan) {
+      selectedInterval.value = activePlan.interval === 'YEAR' ? 'yearly' : 'monthly';
+    }
+  }
 });
 </script>
 
@@ -285,6 +337,7 @@ onMounted(() => {
 
             <!-- CTA Button -->
             <UButton
+              v-if="!isPlanActive(plan)"
               block
               size="xl"
               :color="plan.code.includes('start') ? 'primary' : 'gray'"
@@ -301,6 +354,17 @@ onMounted(() => {
                 {{ t('app.selectPlan') || 'Select Plan' }}
               </template>
             </UButton>
+
+            <!-- Active Plan Badge -->
+            <div
+              v-else
+              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white text-center font-bold shadow-lg"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
+                <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
