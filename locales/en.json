@@ -266,6 +266,21 @@
             "max_employees": "Up to 30 employees",
             "max_posts": "Up to 3 entry points"
           }
+        },
+        "members": {
+          "title": "Members Management",
+          "subtitle": "Manage active members and their permissions",
+          "activeCount": "Active Members",
+          "user": "User",
+          "status": "Status",
+          "actions": "Actions",
+          "active": "Active",
+          "inactive": "Inactive",
+          "activate": "Activate",
+          "deactivate": "Deactivate",
+          "noMembers": "No members found",
+          "ownerOnly": "Owner only",
+          "limitReached": "You have reached the maximum number of active members for your plan. Upgrade your plan to add more members."
         }
       }
     },
