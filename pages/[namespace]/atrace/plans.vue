@@ -260,7 +260,7 @@ watch([plans, activeSubscription], () => {
       />
 
       <!-- Plans Grid -->
-      <div v-else class="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+      <div v-else class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         <div
           v-for="plan in displayedPlans"
           :key="plan.id"
@@ -276,21 +276,21 @@ watch([plans, activeSubscription], () => {
             </div>
           </div>
 
-          <div class="p-8 pt-16">
+          <div class="p-6 pt-12">
             <!-- Plan Name -->
-            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {{ plan.name }}
             </h3>
 
             <!-- Description -->
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-8 min-h-[40px]">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">
               {{ t('app.' + plan.description) || plan.description }}
             </p>
 
             <!-- Price -->
-            <div class="mb-8">
+            <div class="mb-6">
               <div class="flex items-baseline gap-2">
-                <span class="text-5xl font-bold text-gray-900 dark:text-white">
+                <span class="text-4xl font-bold text-gray-900 dark:text-white">
                   {{ formatPrice(plan.amountCents, plan.currency) }}
                 </span>
                 <span class="text-lg text-gray-500 dark:text-gray-400">
@@ -300,7 +300,7 @@ watch([plans, activeSubscription], () => {
             </div>
 
             <!-- Features -->
-            <div class="space-y-4 mb-8 border-t border-gray-100 dark:border-gray-700 pt-6">
+            <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
               <!-- Trial Days -->
               <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
@@ -346,7 +346,7 @@ watch([plans, activeSubscription], () => {
             <UButton
               v-if="!isPlanActive(plan)"
               block
-              size="xl"
+              size="lg"
               :color="plan.code.includes('start') ? 'primary' : 'gray'"
               :variant="plan.code.includes('start') ? 'solid' : 'outline'"
               @click="subscribePlan(plan)"
