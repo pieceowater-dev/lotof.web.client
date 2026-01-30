@@ -23,10 +23,13 @@ export async function getPlanLimits(
   hubToken?: string | null
 ): Promise<PlanLimits | null> {
   const resolvedHubToken = hubToken ?? useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+  const atraceToken = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value;
   const headers: Record<string, string> = {
     Namespace: namespaceSlug,
   };
-  if (resolvedHubToken) {
+  if (atraceToken) {
+    headers.AtraceAuthorization = `Bearer ${atraceToken}`;
+  } else if (resolvedHubToken) {
     headers.Authorization = `Bearer ${resolvedHubToken}`;
   }
 

@@ -20,6 +20,7 @@ type Member = {
     roleName?: string | null;
     requiredWorkingDays?: number;
     requiredWorkingHours?: number;
+    isActive?: boolean;
 };
 
 type Role = {
@@ -215,9 +216,39 @@ async function loadMembers() {
                 return;
             }
 
-            // Load members - using FIFTY to get more members
+                        // Load members - using FIFTY to get more members
             const { hubMembersList } = await import('@/api/hub/members/list');
             const membersList = await hubMembersList(hubToken, ns.id, 1, 'FIFTY');
+
+                        // Load active members from A-Trace to mark statuses
+                        const { atraceClient } = await import('@/api/clients');
+                        const { atraceRequestWithRefresh } = await import('@/api/atrace/atraceRequestWithRefresh');
+                        const activeUserIds = new Set<string>();
+                        try {
+                                const activeQuery = `
+                                    query GetActiveMembers($page: Int!, $pageSize: Int!) {
+                                        getActiveMembers(page: $page, pageSize: $pageSize) {
+                                            userId
+                                            isActive
+                                        }
+                                    }
+                                `;
+
+                                const activeRes = await atraceRequestWithRefresh(
+                                        () => atraceClient.request<{ getActiveMembers: Array<{ userId: string; isActive: boolean }> }>(
+                                                activeQuery,
+                                                { page: 1, pageSize: 100 },
+                                                { headers: { AtraceAuthorization: `Bearer ${atraceToken}` } }
+                                        ),
+                                        nsSlug.value
+                                );
+
+                                (activeRes?.getActiveMembers || []).forEach((m) => {
+                                        if (m?.userId && m.isActive) activeUserIds.add(m.userId);
+                                });
+                        } catch (err) {
+                                logError('[loadMembers] Failed to load active members list:', err);
+                        }
             
             // Load role and schedule for each member using combined query
             const { atraceGetMemberRoleAndSchedule } = await import('@/api/atrace/member/getMemberWithRoleAndSchedule');
@@ -253,7 +284,8 @@ async function loadMembers() {
                             roleId: data.role?.id || null,
                             roleName: data.role?.name || null,
                             requiredWorkingDays: data.schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
-                            requiredWorkingHours: data.schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS
+                            requiredWorkingHours: data.schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS,
+                            isActive: activeUserIds.has(m.userId)
                         };
                     } catch (err) {
                         logError(`Failed to load role/schedule for member ${m.userId}/${m.id}:`, err);
@@ -262,7 +294,8 @@ async function loadMembers() {
                             roleId: null,
                             roleName: null,
                             requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
-                            requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
+                            requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS,
+                            isActive: activeUserIds.has(m.userId)
                         };
                     }
                 })
