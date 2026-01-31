@@ -148,6 +148,7 @@ function buildActionsJson(): string {
     if (!Number.isNaN(roleIdNum)) {
         ops.push({ op: 'assign_role', params: { roleId: roleIdNum } });
     }
+    ops.push({ op: 'set_active', params: { isActive: true } });
     const d = Math.max(0, Math.round(inviteDays.value));
     const h = Math.max(0, Math.round(inviteHours.value));
     ops.push({ op: 'create_schedule', params: { workDays: d, hoursPerDay: h } });
