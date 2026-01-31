@@ -4,10 +4,10 @@ html, body, #__nuxt {
   height: 100%;
   margin: 0;
   padding: 0;
-  padding-top: max(0px, env(safe-area-inset-top));
+  /* padding-top: max(0px, env(safe-area-inset-top));
   padding-bottom: max(0px, env(safe-area-inset-bottom));
   padding-left: max(0px, env(safe-area-inset-left));
-  padding-right: max(0px, env(safe-area-inset-right));
+  padding-right: max(0px, env(safe-area-inset-right)); */
   box-sizing: border-box;
   background: white;
   color: black;

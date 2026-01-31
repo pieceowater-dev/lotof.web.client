@@ -293,7 +293,7 @@ function handleLogout() {
     </UFormGroup>
   </Modal>
 
-  <div class="m-2">
+  <div class="m-4">
     <AppFooter />
   </div>
   </div>

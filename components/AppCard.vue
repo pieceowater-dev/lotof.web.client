@@ -1,5 +1,5 @@
 <template>
-    <div class="flex items-center p-8 bg-gray-50 dark:bg-gray-800 shadow-md rounded-2xl w-96 h-60 text-left gap-6 overflow-hidden">
+    <div class="flex items-center p-8 bg-gray-50 dark:bg-gray-800 shadow-md rounded-2xl w-94 h-60 text-left gap-6 overflow-hidden">
         <div class="flex-1 flex flex-col justify-between items-start min-w-0 pr-2">
             <div class="min-w-0">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 break-words whitespace-normal leading-snug">
@@ -21,7 +21,7 @@
                 :label="props.installed ? t('app.open') : (props.canAdd ? t('app.getApp') : t('app.comingSoon'))"
             />
         </div>
-        <UIcon :name="props.icon" class="w-20 h-20 text-primary dark:text-primary-light flex-shrink-0" />
+        <UIcon :name="props.icon" class="w-14 h-14 text-primary dark:text-primary-light flex-shrink-0" />
     </div>
 </template>
 
