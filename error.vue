@@ -13,6 +13,13 @@ function pick(list: any): string {
 }
 const randomMessage = computed(() => pick(tm('app.errorMessages')));
 const randomSubtitle = computed(() => pick(tm('app.errorSubtitles')));
+const isServerError = computed(() => (props.error?.statusCode ?? 500) >= 500);
+
+function retryAfterResume() {
+  if (!process.client) return;
+  // Hard reload to reset any stale error state after background sleep
+  window.location.reload();
+}
 
 // Auto-handle 401 errors (expired tokens) by clearing cookies and redirecting
 onMounted(() => {
@@ -29,6 +36,18 @@ onMounted(() => {
     setTimeout(() => {
       clearError({ redirect: '/' });
     }, 500);
+  }
+
+  if (isServerError.value && process.client) {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        retryAfterResume();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    onBeforeUnmount(() => {
+      document.removeEventListener('visibilitychange', onVisibility);
+    });
   }
 });
 </script>

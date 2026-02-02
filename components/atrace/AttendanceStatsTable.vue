@@ -7,6 +7,7 @@ const { t, locale } = useI18n();
 
 const props = defineProps<{
   postId: string | null;
+  ready?: boolean;
 }>();
 
 type UserStats = {
@@ -181,6 +182,7 @@ const dateRange = computed(() => {
 });
 
 async function loadStats() {
+  if (props.ready === false || props.postId === null) return;
   loading.value = true;
   error.value = null;
   
@@ -213,6 +215,11 @@ async function loadStats() {
   } finally {
     loading.value = false;
   }
+}
+
+function safeLoadStats() {
+  if (props.ready === false || props.postId === null) return;
+  loadStats();
 }
 
 function toggleUserDetails(userId: string) {
@@ -263,7 +270,7 @@ function applyCustomRange() {
     return;
   }
   showDateModal.value = false;
-  loadStats();
+  safeLoadStats();
 }
 
 function formatDateYMD(d: Date) {
@@ -313,7 +320,7 @@ function applyPreset(preset: 'today' | 'yesterday' | 'thisWeek' | 'last7' | 'las
 // Watch for period changes (custom range loads only on apply)
 watch(selectedPeriod, (newPeriod) => {
   if (newPeriod !== 'custom') {
-    loadStats();
+    safeLoadStats();
   }
   // Save to localStorage
   if (typeof window !== 'undefined') {
@@ -334,9 +341,9 @@ watch([customStartDate, customEndDate], ([newStart, newEnd]) => {
 });
 
 // Watch for postId changes
-watch(() => props.postId, () => {
+watch([() => props.postId, () => props.ready], () => {
   // Load for both specific post and "All" (empty string)
-  loadStats();
+  safeLoadStats();
 }, { immediate: true });
 
 // Export functionality

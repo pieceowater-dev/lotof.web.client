@@ -573,7 +573,7 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-safe-or-4 overflow-hidden">
-                <AttendanceStatsTable :post-id="selectedPostId" />
+            <AttendanceStatsTable :post-id="selectedPostId" :ready="!loading && !error" />
         </div>
         <div v-else class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
             <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">
