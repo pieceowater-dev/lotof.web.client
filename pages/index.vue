@@ -16,6 +16,11 @@ const { selected: selectedNS, all: allNamespaces, setNamespace, load: loadNamesp
 
 const router = useRouter();
 const toast = useToast();
+const colorMode = useColorMode();
+const isDarkMode = computed({
+  get: () => colorMode.preference === 'dark',
+  set: (val: boolean) => { colorMode.preference = val ? 'dark' : 'light'; }
+});
 
 const isModalOpen = ref(false);
 const username = ref('');
@@ -282,15 +287,28 @@ function handleLogout() {
     { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
     { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
   ]">
-    <UFormGroup class="mb-5" label="Имя пользователя">
-      <UInput v-model="username" />
-    </UFormGroup>
-    <UFormGroup label="Email">
-      <UInput disabled v-model="email" type="email" />
-    </UFormGroup>
-    <UFormGroup :label="t('app.language')">
-      <USelect :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]" v-model="locale" />
-    </UFormGroup>
+    <div class="space-y-6">
+      <UFormGroup label="Имя пользователя">
+        <UInput v-model="username" />
+      </UFormGroup>
+      
+      <UFormGroup label="Email">
+        <UInput disabled v-model="email" type="email" />
+      </UFormGroup>
+      
+      <UFormGroup :label="t('app.language')">
+        <USelect :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]" v-model="locale" />
+      </UFormGroup>
+      
+      <UFormGroup :label="t('app.theme') || 'Theme'">
+        <div class="flex items-center gap-3">
+          <UToggle v-model="isDarkMode" />
+          <span class="text-sm text-gray-700 dark:text-gray-200">
+            {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
+          </span>
+        </div>
+      </UFormGroup>
+    </div>
   </Modal>
 
   <div class="m-4">

@@ -119,3 +119,10 @@ table tbody tr:hover td,
 .pb-safe-or-4 {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
 }
+
+/* Bottom-sheet menu overlay blur */
+.menu-bottom-sheet .u-overlay {
+  background: rgba(0, 0, 0, 0.4) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
