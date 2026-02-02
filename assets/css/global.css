@@ -56,6 +56,27 @@ html, body {
   overflow: hidden;
 }
 
+/* iOS: allow status-bar tap to scroll to top by making body the scroll container */
+html.ios, body.ios {
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.ios, body.ios, #__nuxt {
+  height: auto;
+  min-height: 100dvh;
+}
+
+.ios .app-shell {
+  height: auto;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.ios .app-shell .main-scroll {
+  overflow: visible;
+}
+
 /* Disable auto-zoom on input focus for iOS Safari */
 input, textarea, select {
   font-size: 16px;
