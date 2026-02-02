@@ -155,9 +155,24 @@ async function subscribePlan(plan: Plan) {
     await router.push(returnTo);
   } catch (err) {
     console.error('Failed to subscribe:', err);
+    const errorMsg = getErrorMessage(err);
+    
+    // Check if it's a downgrade protection error
+    let title = 'Error';
+    let description = errorMsg;
+    
+    if (errorMsg.includes('downgrade not allowed')) {
+      title = 'Cannot Downgrade Plan';
+      // Extract the user-friendly message from the error
+      const match = errorMsg.match(/downgrade not allowed:(.+?)(?:\.|$)/);
+      if (match) {
+        description = match[1].trim();
+      }
+    }
+    
     toast.add({
-      title: 'Error',
-      description: getErrorMessage(err),
+      title,
+      description,
       color: 'red'
     });
   } finally {
