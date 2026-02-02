@@ -424,22 +424,6 @@ function formatNumber(val: number, fractionDigits = 0) {
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period Filter, Legend & Settings -->
     <div class="mb-3 flex flex-wrap items-center gap-3">
-      <!-- Export and Settings Buttons -->
-      <div class="flex gap-1.5">
-        <UButton 
-          size="xs" 
-          variant="ghost" 
-          icon="i-heroicons-arrow-down-tray"
-          :loading="isExportingExcel"
-          @click="exportToExcel"
-        >
-          {{ t('app.exportToExcel') || 'Export' }}
-        </UButton>
-        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings">
-          {{ t('app.configureTime') }}
-        </UButton>
-      </div>
-
       <!-- Period Filter Buttons -->
       <div class="flex flex-wrap gap-1.5">
         <UButton 
@@ -471,6 +455,22 @@ function formatNumber(val: number, fractionDigits = 0) {
           @click="openCustomRange()"
         >
           {{ t('app.customPeriod') }}
+        </UButton>
+      </div>
+
+      <!-- Export and Settings Buttons -->
+      <div class="flex gap-1.5">
+        <UButton 
+          size="xs" 
+          variant="ghost" 
+          icon="i-heroicons-arrow-down-tray"
+          :loading="isExportingExcel"
+          @click="exportToExcel"
+        >
+          {{ t('app.exportToExcel') || 'Export' }}
+        </UButton>
+        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings">
+          {{ t('app.configureTime') }}
         </UButton>
       </div>
 
