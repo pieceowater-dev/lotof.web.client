@@ -63,13 +63,13 @@ export default defineNuxtConfig({
         include: [/leaflet/, /xlsx/, /node_modules/]
       },
       rollupOptions: {
-        external: ['leaflet', 'leaflet/dist/leaflet.css', 'xlsx']
+        external: ['xlsx']
       }
     }
   },
   nitro: {
     externals: {
-      inline: ['leaflet', 'xlsx']
+      inline: ['xlsx']
     }
   }
 });

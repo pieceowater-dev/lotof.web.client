@@ -36,6 +36,7 @@ const mapContainer = ref<HTMLElement | null>(null);
 const mapLoading = ref(false);
 const mapError = ref<string | null>(null);
 const geoLoading = ref(false);
+const geoEnabled = ref(true);
 let map: any = null;
 let marker: any = null;
 
@@ -103,6 +104,14 @@ async function requestGeolocation() {
   }
 }
 
+async function handleGeolocationClick() {
+  if (!map && !mapLoading.value) {
+    await initMap();
+    return;
+  }
+  await requestGeolocation();
+}
+
 async function initMap() {
   if (!mapContainer.value || !process.client) return;
   
@@ -110,6 +119,11 @@ async function initMap() {
   mapError.value = null;
   
   try {
+    if (map) {
+      map.remove();
+      map = null;
+      marker = null;
+    }
     // Dynamic import for client-side only
     const L = (await import('leaflet')).default;
     await import('leaflet/dist/leaflet.css');
@@ -193,15 +207,40 @@ async function initMap() {
   }
 }
 
+function disableGeolocation() {
+  if (map) {
+    map.remove();
+    map = null;
+    marker = null;
+  }
+  mapError.value = null;
+  mapLoading.value = false;
+  props.form.location.latitude = '';
+  props.form.location.longitude = '';
+}
+
+watch(geoEnabled, async (enabled) => {
+  if (!process.client) return;
+  if (enabled) {
+    await nextTick();
+    await initMap();
+  } else {
+    disableGeolocation();
+  }
+});
+
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && process.client) {
     // Initialize timezone with browser timezone if not already set
     if (!props.form.location.timezone) {
       props.form.location.timezone = getBrowserTimezone();
     }
+    geoEnabled.value = true;
     nextTick(() => {
       initMap();
     });
+  } else if (!isOpen) {
+    disableGeolocation();
   }
 });
 </script>
@@ -250,24 +289,32 @@ watch(() => props.modelValue, (isOpen) => {
         
         <!-- Google Map -->
         <UFormGroup :label="t('app.location')">
-          <div ref="mapContainer" class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-            <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
-            <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
-          </div>
-          <div class="flex items-center justify-between mt-1">
-            <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500">
-              {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
-            </div>
-            <UButton 
-              size="xs" 
-              color="primary" 
-              variant="soft"
-              icon="lucide:map-pin" 
-              :loading="geoLoading"
-              @click="requestGeolocation"
-            >
+          <div class="flex items-center gap-3 mb-2">
+            <UToggle v-model="geoEnabled" />
+            <span class="text-sm text-gray-700 dark:text-gray-200">
               {{ t('app.allowGeolocation') || 'Разрешить геолокацию' }}
-            </UButton>
+            </span>
+          </div>
+          <div v-if="geoEnabled">
+            <div ref="mapContainer" class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
+              <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
+              <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
+            </div>
+            <div class="flex items-center justify-between mt-1">
+              <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500">
+                {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
+              </div>
+              <UButton 
+                size="xs" 
+                color="primary" 
+                variant="soft"
+                icon="lucide:map-pin" 
+                :loading="geoLoading"
+                @click="handleGeolocationClick"
+              >
+                {{ t('app.allowGeolocation') || 'Разрешить геолокацию' }}
+              </UButton>
+            </div>
           </div>
         </UFormGroup>
         
