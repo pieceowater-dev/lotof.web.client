@@ -585,7 +585,7 @@ onUnmounted(() => {
                 {{ t('app.noMembers') || 'No members found' }}
             </div>
 
-                        <div v-else class="flex-1 min-h-0 overflow-x-auto member-table">
+                        <div v-else class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table">
                 <AppTable 
                     :rows="paginatedMembers" 
                     :columns="columns" 

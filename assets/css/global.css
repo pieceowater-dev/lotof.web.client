@@ -93,3 +93,8 @@ table tbody tr:hover td,
 .sans, .font-sans, body, html {
   font-family: var(--app-font-sans) !important;
 }
+
+/* Safe-area bottom padding utility for scroll containers */
+.pb-safe-or-4 {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}

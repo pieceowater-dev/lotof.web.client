@@ -548,7 +548,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Stats Table -->
-    <div class="flex-1 min-h-0 overflow-auto">
+    <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
 
       <div v-if="loading" class="flex flex-col items-center justify-center py-6">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300" />
