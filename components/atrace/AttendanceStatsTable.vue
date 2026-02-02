@@ -679,29 +679,27 @@ function formatNumber(val: number, fractionDigits = 0) {
 
           <!-- Inputs -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div class="flex flex-col min-w-0" style="max-width: 100vw;">
+            <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.startDate') }}</label>
               <div class="relative">
                 <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   v-model="customStartDate"
                   type="date"
-                  class="w-full max-w-xs min-w-0 pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+                  class="w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
                   :class="{ 'border-red-500 focus:ring-red-500': isStartInvalid || hasRangeOrderIssue }"
-                  style="max-width: 100%;"
                 />
               </div>
             </div>
-            <div class="flex flex-col min-w-0" style="max-width: 100vw;">
+            <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.endDate') }}</label>
               <div class="relative">
                 <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   v-model="customEndDate"
                   type="date"
-                  class="w-full max-w-xs min-w-0 pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+                  class="w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
                   :class="{ 'border-red-500 focus:ring-red-500': isEndInvalid || hasRangeOrderIssue }"
-                  style="max-width: 100%;"
                 />
               </div>
             </div>
