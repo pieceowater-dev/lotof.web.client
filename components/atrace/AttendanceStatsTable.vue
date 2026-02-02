@@ -655,50 +655,50 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Custom Date Range Modal -->
-    <UModal v-model="showDateModal" :ui="{ container: 'items-center' }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UModal v-model="showDateModal" :ui="{ container: 'items-center', width: 'w-full max-w-2xl sm:max-w-3xl' }">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { padding: 'px-4 py-4 sm:px-6 sm:py-5' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <UIcon name="i-heroicons-calendar-days" class="w-6 h-6 text-blue-500" />
-              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.customRangeTitle') }}</h3>
+              <UIcon name="i-heroicons-calendar-days" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+              <h3 class="text-sm sm:text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.customRangeTitle') }}</h3>
             </div>
-            <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="showDateModal = false" />
+            <UButton color="primary" variant="ghost" icon="lucide:x" size="sm" class="-my-1" @click="showDateModal = false" />
           </div>
         </template>
 
-        <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4 overflow-x-hidden">
           <!-- Presets -->
-          <div class="flex flex-wrap gap-2">
-            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('today')">{{ t('app.datePresetToday') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('yesterday')">{{ t('app.datePresetYesterday') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('thisWeek')">{{ t('app.datePresetThisWeek') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('last7')">{{ t('app.datePresetLast7') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" @click="applyPreset('last30')">{{ t('app.datePresetLast30') }}</UButton>
+          <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
+            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('today')">{{ t('app.datePresetToday') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('yesterday')">{{ t('app.datePresetYesterday') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('thisWeek')">{{ t('app.datePresetThisWeek') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('last7')">{{ t('app.datePresetLast7') }}</UButton>
+            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('last30')">{{ t('app.datePresetLast30') }}</UButton>
           </div>
 
           <!-- Inputs -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.startDate') }}</label>
-              <div class="relative">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div class="relative max-w-full overflow-hidden">
+                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
                 <input
                   v-model="customStartDate"
                   type="date"
-                  class="w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isStartInvalid || hasRangeOrderIssue }"
                 />
               </div>
             </div>
             <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.endDate') }}</label>
-              <div class="relative">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <div class="relative max-w-full overflow-hidden">
+                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
                 <input
                   v-model="customEndDate"
                   type="date"
-                  class="w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isEndInvalid || hasRangeOrderIssue }"
                 />
               </div>
@@ -711,11 +711,11 @@ function formatNumber(val: number, fractionDigits = 0) {
         </div>
 
         <template #footer>
-          <div class="flex justify-between w-full">
-            <UButton size="sm" variant="soft" color="primary" @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }">{{ t('common.reset') }}</UButton>
+          <div class="flex flex-col sm:flex-row justify-between w-full gap-2">
+            <UButton size="sm" variant="soft" color="primary" class="w-full sm:w-auto" @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }">{{ t('common.reset') }}</UButton>
             <div class="flex gap-2">
-              <UButton size="sm" variant="soft" color="primary" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
-              <UButton size="sm" color="primary" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
+              <UButton size="sm" variant="soft" color="primary" class="flex-1 sm:flex-none" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
+              <UButton size="sm" color="primary" class="flex-1 sm:flex-none" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
             </div>
           </div>
         </template>
@@ -831,3 +831,36 @@ function formatNumber(val: number, fractionDigits = 0) {
     </UModal>
   </div>
 </template>
+<style scoped>
+/* iOS Safari specific fixes for date inputs */
+.date-input-ios {
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* iOS specific overrides */
+.ios .date-input-ios {
+  max-width: 100% !important;
+  width: 100% !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Prevent iOS Safari from expanding date picker */
+.ios .date-input-ios::-webkit-date-and-time-value {
+  text-align: left;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Hide default calendar icon on iOS */
+.ios .date-input-ios::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+</style>
