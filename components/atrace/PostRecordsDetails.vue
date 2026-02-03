@@ -120,53 +120,77 @@ async function loadDailyAttendance() {
   }
 }
 
-function getRecordDate(timestamp: number): string {
-  return new Date(timestamp * 1000).toISOString().split('T')[0];
+function getRecordDate(record: AtraceRecord): string {
+  if (record.localDate) return record.localDate;
+  if (record.timezone) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: record.timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date(record.timestamp * 1000));
+    } catch {}
+  }
+  return new Date(record.timestamp * 1000).toISOString().split('T')[0];
 }
 
-function isViolationDay(timestamp: number): boolean {
-  const date = getRecordDate(timestamp);
+function isViolationDay(record: AtraceRecord): boolean {
+  const date = getRecordDate(record);
   const da = dailyAttendanceMap.value.get(date);
   // Violation day = attended=false AND legitimate=false
   return da ? (!da.attended && !da.legitimate) : false;
 }
 
-function isLegitimateDay(timestamp: number): boolean {
-  const date = getRecordDate(timestamp);
+function isLegitimateDay(record: AtraceRecord): boolean {
+  const date = getRecordDate(record);
   const da = dailyAttendanceMap.value.get(date);
   return da?.legitimate || false;
 }
 
-function isLateArrival(timestamp: number): boolean {
-  if (!lateArrivalTime.value) return false;
-  const time = new Date(timestamp * 1000);
-  const [h, m] = lateArrivalTime.value.split(':').map(Number);
-  const threshold = new Date(time);
-  threshold.setHours(h, m, 0, 0);
-  return time > threshold;
+function getTimeParts(timestamp: number, timeZone?: string | null) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone || undefined,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date(timestamp * 1000));
+    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? '0');
+    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
+    return { hour, minute };
+  } catch {
+    const d = new Date(timestamp * 1000);
+    return { hour: d.getHours(), minute: d.getMinutes() };
+  }
 }
 
-function isEarlyLeave(timestamp: number): boolean {
+function isLateArrival(record: AtraceRecord): boolean {
+  if (!lateArrivalTime.value) return false;
+  const [h, m] = lateArrivalTime.value.split(':').map(Number);
+  const t = getTimeParts(record.timestamp, record.timezone);
+  return t.hour > h || (t.hour === h && t.minute > m);
+}
+
+function isEarlyLeave(record: AtraceRecord): boolean {
   if (!earlyLeaveTime.value) return false;
-  const time = new Date(timestamp * 1000);
   const [h, m] = earlyLeaveTime.value.split(':').map(Number);
-  const threshold = new Date(time);
-  threshold.setHours(h, m, 0, 0);
-  return time < threshold;
+  const t = getTimeParts(record.timestamp, record.timezone);
+  return t.hour < h || (t.hour === h && t.minute < m);
 }
 
 function getRecordStyle(record: AtraceRecord): string {
   // Priority: violation day > legitimate day > time-based highlights
-  if (isViolationDay(record.timestamp)) return 'bg-red-50 dark:bg-red-900/20';
-  if (isLegitimateDay(record.timestamp)) return 'bg-blue-50 dark:bg-blue-900/20';
+  if (isViolationDay(record)) return 'bg-red-50 dark:bg-red-900/20';
+  if (isLegitimateDay(record)) return 'bg-blue-50 dark:bg-blue-900/20';
   // Check if first/last record of the day for time highlighting
-  const date = getRecordDate(record.timestamp);
-  const dayRecords = filteredRecords.value.filter(r => getRecordDate(r.timestamp) === date);
+  const date = getRecordDate(record);
+  const dayRecords = filteredRecords.value.filter(r => getRecordDate(r) === date);
   if (dayRecords.length === 0) return '';
   const firstOfDay = dayRecords.reduce((min, r) => r.timestamp < min.timestamp ? r : min);
   const lastOfDay = dayRecords.reduce((max, r) => r.timestamp > max.timestamp ? r : max);
-  if (record.id === firstOfDay.id && isLateArrival(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
-  if (record.id === lastOfDay.id && isEarlyLeave(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === firstOfDay.id && isLateArrival(record)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === lastOfDay.id && isEarlyLeave(record)) return 'bg-orange-50 dark:bg-orange-900/20';
   return '';
 }
 
@@ -198,12 +222,19 @@ const totalPages = computed(() => {
   return Math.max(1, Math.ceil(totalCount.value / pageSizeNumber.value));
 });
 
-function formatTime(ts: number) {
-  if (!ts) return '-';
+function formatTime(record: AtraceRecord) {
+  if (!record?.timestamp) return '-';
   try {
-    const d = new Date(ts * 1000);
+    const d = new Date(record.timestamp * 1000);
     // Use active locale for formatting
-    return d.toLocaleString(locale.value === 'ru' ? 'ru-RU' : 'en-US', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleString(locale.value === 'ru' ? 'ru-RU' : 'en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: record.timezone || undefined
+    });
   } catch {
     return '-';
   }
@@ -310,7 +341,7 @@ watch(itemsPerPage, () => {
               class="border-b dark:border-gray-700 transition-colors"
               :class="getRecordStyle(r)"
             >
-              <td class="px-3 py-2">{{ formatTime(r.timestamp) }}</td>
+              <td class="px-3 py-2">{{ formatTime(r) }}</td>
               <td class="px-3 py-2 text-center">{{ methodLabel(r.method) }}</td>
               <td class="px-3 py-2 text-center">
                 <div class="flex flex-row flex-wrap items-center justify-center gap-1">

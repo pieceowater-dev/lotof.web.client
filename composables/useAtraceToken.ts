@@ -1,15 +1,34 @@
 import { CookieKeys } from '@/utils/storageKeys'
 import { logError } from '@/utils/logger'
 
+const ATRACE_TOKEN_TS_KEY = 'atrace-token-ts'
+const ATRACE_TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // 12h
+
 export function useAtraceToken() {
   async function ensure(nsSlug: string, hubToken?: string | null): Promise<string | null> {
     const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' })
     if (cookie.value) {
+      const shouldForceRefresh = (() => {
+        if (typeof window === 'undefined') return false
+        try {
+          const raw = localStorage.getItem(ATRACE_TOKEN_TS_KEY)
+          const ts = raw ? Number(raw) : NaN
+          if (!Number.isFinite(ts) || ts <= 0) return true
+          return Date.now() - ts > ATRACE_TOKEN_TTL_MS
+        } catch {
+          return false
+        }
+      })()
+      if (!shouldForceRefresh || !hubToken) {
+        try {
+          const { setAtraceAppToken } = await import('@/api/clients')
+          setAtraceAppToken(cookie.value)
+        } catch {}
+        return cookie.value
+      }
       try {
-        const { setAtraceAppToken } = await import('@/api/clients')
-        setAtraceAppToken(cookie.value)
+        cookie.value = null as any
       } catch {}
-      return cookie.value
     }
 
     if (!hubToken) return null
@@ -21,6 +40,9 @@ export function useAtraceToken() {
         setAtraceAppToken(token)
       } catch {}
       useCookie(CookieKeys.ATRACE_TOKEN, { path: '/', sameSite: 'lax', secure: false, maxAge: 60 * 60 * 24 * 6 }).value = token
+      if (typeof window !== 'undefined') {
+        try { localStorage.setItem(ATRACE_TOKEN_TS_KEY, String(Date.now())) } catch {}
+      }
       return token
     } catch (e) {
       logError('[useAtraceToken] exchange failed', e)
@@ -34,6 +56,9 @@ export function useAtraceToken() {
 
   function clear() {
     try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any } catch {}
+    if (typeof window !== 'undefined') {
+      try { localStorage.removeItem(ATRACE_TOKEN_TS_KEY) } catch {}
+    }
   }
 
   return { ensure, current, clear }

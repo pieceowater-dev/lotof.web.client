@@ -77,8 +77,12 @@ watchEffect(() => {
 });
 
 // Helper to format timestamp
-function fmtTs(ts: number): string {
-  try { return new Date(ts * 1000).toLocaleString(); } catch { return String(ts); }
+function fmtTs(ts: number, timeZone?: string | null): string {
+  try {
+    return new Date(ts * 1000).toLocaleString(undefined, { timeZone: timeZone || undefined });
+  } catch {
+    return String(ts);
+  }
 }
 
 // Helper to format method enum to human readable
@@ -109,7 +113,7 @@ function fmtMethod(method: string): string {
       </template>
 
       <template #timestamp-data="{ row }">
-        <span class="font-mono">{{ fmtTs(row.timestamp) }}</span>
+        <span class="font-mono">{{ fmtTs(row.timestamp, row.timezone) }}</span>
       </template>
 
       <template #suspicious-data="{ row }">

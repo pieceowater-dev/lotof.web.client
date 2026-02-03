@@ -54,7 +54,7 @@ const expandedDays = ref<Set<string>>(new Set());
 const recordsByDay = computed(() => {
   const grouped = new Map<string, AtraceRecord[]>();
   allRecords.value.forEach(record => {
-    const date = getRecordDate(record.timestamp);
+    const date = getRecordDate(record);
     if (!grouped.has(date)) grouped.set(date, []);
     grouped.get(date)!.push(record);
   });
@@ -131,8 +131,19 @@ function isDayExpanded(date: string): boolean {
   return expandedDays.value.has(date);
 }
 
-function getRecordDate(timestamp: number): string {
-  return new Date(timestamp * 1000).toISOString().split('T')[0];
+function getRecordDate(record: AtraceRecord): string {
+  if (record.localDate) return record.localDate;
+  if (record.timezone) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: record.timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date(record.timestamp * 1000));
+    } catch {}
+  }
+  return new Date(record.timestamp * 1000).toISOString().split('T')[0];
 }
 
 function getDayTimeInfo(records: AtraceRecord[]) {
@@ -141,8 +152,8 @@ function getDayTimeInfo(records: AtraceRecord[]) {
   const firstRecord = records[0];
   const lastRecord = records[records.length - 1];
   
-  const firstTime = formatTime(firstRecord.timestamp).time;
-  const lastTime = formatTime(lastRecord.timestamp).time;
+  const firstTime = formatTime(firstRecord).time;
+  const lastTime = formatTime(lastRecord).time;
   
   // Calculate duration in hours
   const durationMs = (lastRecord.timestamp - firstRecord.timestamp) * 1000;
@@ -169,29 +180,42 @@ function getDayStyle(date: string): string {
   return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
 }
 
-function isLateArrival(timestamp: number): boolean {
-  if (!props.lateArrivalTime) return false;
-  const time = new Date(timestamp * 1000);
-  const [h, m] = props.lateArrivalTime.split(':').map(Number);
-  const threshold = new Date(time);
-  threshold.setHours(h, m, 0, 0);
-  return time > threshold;
+function getTimeParts(timestamp: number, timeZone?: string | null) {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: timeZone || undefined,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(new Date(timestamp * 1000));
+    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? '0');
+    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
+    return { hour, minute };
+  } catch {
+    const d = new Date(timestamp * 1000);
+    return { hour: d.getHours(), minute: d.getMinutes() };
+  }
 }
 
-function isEarlyLeave(timestamp: number): boolean {
+function isLateArrival(timestamp: number, timeZone?: string | null): boolean {
+  if (!props.lateArrivalTime) return false;
+  const [h, m] = props.lateArrivalTime.split(':').map(Number);
+  const t = getTimeParts(timestamp, timeZone);
+  return t.hour > h || (t.hour === h && t.minute > m);
+}
+
+function isEarlyLeave(timestamp: number, timeZone?: string | null): boolean {
   if (!props.earlyLeaveTime) return false;
-  const time = new Date(timestamp * 1000);
   const [h, m] = props.earlyLeaveTime.split(':').map(Number);
-  const threshold = new Date(time);
-  threshold.setHours(h, m, 0, 0);
-  return time < threshold;
+  const t = getTimeParts(timestamp, timeZone);
+  return t.hour < h || (t.hour === h && t.minute < m);
 }
 
 function getRecordHighlight(record: AtraceRecord, dayRecords: AtraceRecord[]): string {
   const firstOfDay = dayRecords[0];
   const lastOfDay = dayRecords[dayRecords.length - 1];
-  if (record.id === firstOfDay.id && isLateArrival(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
-  if (record.id === lastOfDay.id && isEarlyLeave(record.timestamp)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === firstOfDay.id && isLateArrival(record.timestamp, record.timezone)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === lastOfDay.id && isEarlyLeave(record.timestamp, record.timezone)) return 'bg-orange-50 dark:bg-orange-900/20';
   return '';
 }
 
@@ -208,20 +232,22 @@ function formatDate(date: string): string {
   }
 }
 
-function formatTime(ts: number) {
-  if (!ts) return { time: '-', fullDate: '-' };
+function formatTime(record: AtraceRecord) {
+  if (!record?.timestamp) return { time: '-', fullDate: '-' };
   try {
-    const d = new Date(ts * 1000);
+    const d = new Date(record.timestamp * 1000);
     const time = d.toLocaleTimeString(locale.value === 'ru' ? 'ru-RU' : 'en-US', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: record.timezone || undefined
     });
     const fullDate = d.toLocaleString(locale.value === 'ru' ? 'ru-RU' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: record.timezone || undefined
     });
     return { time, fullDate };
   } catch {
@@ -373,7 +399,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                 class="border-t border-gray-100 dark:border-gray-700 transition-colors"
                 :class="getRecordHighlight(r, records)"
               >
-                <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r.timestamp).fullDate">{{ formatTime(r.timestamp).time }}</td>
+                <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r).fullDate">{{ formatTime(r).time }}</td>
                 <td class="px-2 sm:px-3 py-1.5 text-center hidden sm:table-cell">{{ methodLabel(r.method) }}</td>
                 <td class="px-2 sm:px-3 py-1.5 text-center">
                   <div class="flex flex-row flex-wrap items-center justify-center gap-1">

@@ -5,7 +5,7 @@ import { getDeviceHeaders } from '@/utils/device';
 const AtraceRecordsByPostDocument = /* GraphQL */ `
   query AtraceRecordsByPost($filter: GetByPostIdInput!) {
     getRecordByPostId(filter: $filter) {
-      records { id postId userId username email timestamp method suspicious }
+      records { id postId userId username email timestamp method suspicious timezone localDate }
       paginationInfo { count }
     }
   }
@@ -20,6 +20,8 @@ export type AtraceRecord = {
   timestamp: number; // unix seconds
   method: string;    // GraphQL enum string
   suspicious: boolean;
+  timezone?: string;
+  localDate?: string;
 };
 
 export type AtraceRecordsByPostParams = {

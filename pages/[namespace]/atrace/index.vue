@@ -114,6 +114,34 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
 const { ensure: ensureAtraceToken } = useAtraceToken();
+const LAST_ACTIVE_KEY = 'atrace-last-active'
+const INACTIVE_REFRESH_MS = 12 * 60 * 60 * 1000
+
+function setLastActiveNow() {
+    if (!process.client) return;
+    try { localStorage.setItem(LAST_ACTIVE_KEY, String(Date.now())); } catch {}
+}
+
+function getLastActiveTs(): number | null {
+    if (!process.client) return null;
+    try {
+        const raw = localStorage.getItem(LAST_ACTIVE_KEY);
+        const ts = raw ? Number(raw) : NaN;
+        return Number.isFinite(ts) ? ts : null;
+    } catch {
+        return null;
+    }
+}
+
+async function refreshIfStale() {
+    if (!process.client) return;
+    const last = getLastActiveTs();
+    const now = Date.now();
+    if (last && now - last > INACTIVE_REFRESH_MS) {
+        await loadPosts(1);
+    }
+    setLastActiveNow();
+}
 
 async function loadPosts(retryCount = 0) {
     loading.value = true;
@@ -458,6 +486,11 @@ onMounted(async () => {
     loadStoredSelection();
     await loadPosts();
     setupCardsObserver();
+    if (process.client) {
+        setLastActiveNow();
+        document.addEventListener('visibilitychange', refreshIfStale);
+        window.addEventListener('focus', refreshIfStale);
+    }
 });
 
 watch(() => nsSlug.value, async (n, o) => {
@@ -474,6 +507,10 @@ onBeforeUnmount(() => {
     if (cardsObserver) {
         try { cardsObserver.disconnect(); } catch {}
         cardsObserver = null;
+    }
+    if (process.client) {
+        document.removeEventListener('visibilitychange', refreshIfStale);
+        window.removeEventListener('focus', refreshIfStale);
     }
 });
 </script>
