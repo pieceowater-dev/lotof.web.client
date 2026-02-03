@@ -134,6 +134,7 @@ function stopSse() {
 }
 
 function startSse() {
+  if (!process.client) return;
   stopSse();
   if (!pin.value || !postId.value || !nsSlug.value) {
     logWarn('startSse: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
@@ -267,11 +268,13 @@ onBeforeUnmount(() => {
             {{ t('app.loading') || 'Loading...' }}
           </div>
           <div v-else-if="qrError" class="text-red-500 mt-4">{{ qrError }}</div>
-          <div class="text-xs text-gray-500 mt-2 text-center">QR обновится через {{ qrRefreshCountdown }}с.</div>
-          <div class="text-xs text-gray-500 mt-1 text-center flex items-center justify-center gap-2">
-            <i class="i-lucide-clock"></i>
-            <span>{{ nowTime }}</span>
-          </div>
+          <ClientOnly>
+            <div class="text-xs text-gray-500 mt-2 text-center">QR обновится через {{ qrRefreshCountdown }}с.</div>
+            <div class="text-xs text-gray-500 mt-1 text-center flex items-center justify-center gap-2">
+              <i class="i-lucide-clock"></i>
+              <span>{{ nowTime }}</span>
+            </div>
+          </ClientOnly>
         </div>
       </div>
     </div>

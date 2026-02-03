@@ -2,6 +2,13 @@
 
 export default defineNuxtConfig({
   ssr: true, // Enable server-side rendering for Nitro server and SSE proxy
+  
+  // Route-specific rendering rules
+  routeRules: {
+    // Public SSE pages should be client-side only to avoid hydration issues
+    '/shared/**/atrace/post/**': { ssr: false },
+  },
+  
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
   app: {
     head: {
