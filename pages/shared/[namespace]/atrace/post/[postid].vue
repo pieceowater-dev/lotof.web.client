@@ -213,8 +213,12 @@ onBeforeUnmount(() => stopSse());
 
 if (process.client) {
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && !sseSource) {
-      scheduleSseRetry();
+    if (document.visibilityState === 'visible') {
+      if (!sseSource) {
+        scheduleSseRetry();
+      }
+      // Re-request wake lock when page becomes visible
+      requestWakeLock();
     }
   });
 }
@@ -225,16 +229,49 @@ function updateClock() {
   nowTime.value = new Date().toLocaleTimeString();
 }
 
+// Wake Lock API to keep screen awake
+let wakeLock: any = null;
+
+async function requestWakeLock() {
+  if (!process.client) return;
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await (navigator as any).wakeLock.request('screen');
+      log('[WakeLock] Screen wake lock activated');
+      
+      wakeLock.addEventListener('release', () => {
+        log('[WakeLock] Screen wake lock released');
+      });
+    }
+  } catch (err: any) {
+    logWarn('[WakeLock] Failed to activate:', err.message);
+  }
+}
+
+async function releaseWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+      wakeLock = null;
+    } catch (err) {
+      logWarn('[WakeLock] Failed to release:', err);
+    }
+  }
+}
+
 onMounted(() => {
   log('[DEBUG] route.params:', JSON.stringify(route.params));
   startCountdown();
   updateClock();
   clockTimer = setInterval(updateClock, 1000);
+  requestWakeLock();
 });
+
 onBeforeUnmount(() => {
   if (qrCountdownTimer) clearInterval(qrCountdownTimer);
   if (clockTimer) clearInterval(clockTimer);
   if (sseRetryTimer) clearTimeout(sseRetryTimer);
+  releaseWakeLock();
 });
 
 </script>
