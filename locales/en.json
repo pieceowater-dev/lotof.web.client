@@ -265,6 +265,7 @@
     "month": "month",
     "year": "year",
     "daysTrial": "days trial",
+    "afterTrial": "After trial",
     "daysFreeTrial": "days free trial",
     "includedSeats": "included seats",
     "includedUnits": "included units",

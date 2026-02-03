@@ -306,11 +306,16 @@ watch([plans, activeSubscription], () => {
             <div class="mb-6">
               <div class="flex items-baseline gap-2">
                 <span class="text-4xl font-bold text-gray-900 dark:text-white">
-                  {{ formatPrice(plan.amountCents, plan.currency) }}
+                  {{ plan.trialDays > 0 ? '0' : formatPrice(plan.amountCents, plan.currency) }}
                 </span>
                 <span class="text-lg text-gray-500 dark:text-gray-400">
                   / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
                 </span>
+              </div>
+              <div v-if="plan.trialDays > 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {{ t('app.afterTrial') || 'После триала' }}:
+                <span class="font-semibold">{{ formatPrice(plan.amountCents, plan.currency) }}</span>
+                / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
               </div>
             </div>
 
