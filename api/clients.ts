@@ -95,7 +95,9 @@ export class ApiClient {
       const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
       );
-      const isHubUnauthorized = this.authHeader === 'Authorization' && status === 401;
+      const isHubUnauthorized = this.authHeader === 'Authorization' && (
+        status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
+      );
 
       if (isAtraceUnauthorized) {
         logWarn('Atrace unauthorized detected, invoking atrace handler');

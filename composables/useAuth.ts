@@ -1,4 +1,5 @@
 import { hubMe } from '@/api/hub/me';
+import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 import { logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
@@ -14,12 +15,24 @@ export function useAuth() {
 
   async function fetchUser(force = false) {
     if (!token.value) {
-      console.warn('[auth] No token found in cookie', { 
-        cookie_value: token.value,
-        all_cookies: document.cookie 
-      });
-      user.value = null;
-      return;
+      console.warn('[auth] No access token found, attempting refresh');
+      // Try to refresh access token using httpOnly refresh_token cookie
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        console.warn('[auth] Token refresh failed, no valid session');
+        user.value = null;
+        return;
+      }
+      // Re-read the token cookie after refresh (server sets new 'token' cookie)
+      // Force Nuxt to re-read cookies from document.cookie
+      await nextTick();
+      const tokenCookie = useCookie(CookieKeys.TOKEN);
+      if (!tokenCookie.value) {
+        console.warn('[auth] Token still missing after refresh');
+        user.value = null;
+        return;
+      }
+      token.value = tokenCookie.value;
     }
     if (user.value && !force) return; // cached
     loading.value = true;
@@ -102,10 +115,19 @@ export function useAuth() {
 
   const isLoggedIn = computed(() => !!user.value && !!token.value);
 
-  // Register global unauthorized handler once
+  // Register global unauthorized handler once (with token refresh attempt)
   if (process.client && !useState<boolean>('auth_handler_registered', () => false).value) {
     const reg = useState<boolean>('auth_handler_registered', () => false);
-    setUnauthorizedHandler(() => logout());
+    setUnauthorizedHandler(async () => {
+      console.log('[auth] Unauthorized detected, attempting token refresh');
+      const refreshed = await refreshAccessToken();
+      if (!refreshed) {
+        console.log('[auth] Token refresh failed, logging out');
+        logout();
+      } else {
+        console.log('[auth] Token refreshed successfully');
+      }
+    });
     reg.value = true;
   }
 
