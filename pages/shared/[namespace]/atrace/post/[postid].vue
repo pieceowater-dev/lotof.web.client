@@ -67,19 +67,21 @@ watch([nsSlug, postId], () => {
 
 import CryptoJS from 'crypto-js';
 
-const REFRESH_INTERVAL = ref(15); // Default, will be overridden by server
-const qrRefreshCountdown = ref(REFRESH_INTERVAL.value);
+// Server controls refresh interval - frontend doesn't set default
+const REFRESH_INTERVAL = ref<number | null>(null);
+const qrRefreshCountdownValue = ref(0);
+const qrRefreshCountdown = computed(() => qrRefreshCountdownValue.value);
 let qrCountdownTimer: any = null;
 const nextRefreshAt = ref<number | null>(null);
 
 function updateCountdown() {
-  if (!nextRefreshAt.value) {
-    qrRefreshCountdown.value = REFRESH_INTERVAL.value;
+  if (!nextRefreshAt.value || !REFRESH_INTERVAL.value) {
+    qrRefreshCountdownValue.value = REFRESH_INTERVAL.value || 0;
     return;
   }
   const msLeft = Math.max(0, nextRefreshAt.value - Date.now());
   const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
-  qrRefreshCountdown.value = secLeft || 0;
+  qrRefreshCountdownValue.value = secLeft || 0;
 }
 
 function startCountdown() {
@@ -101,7 +103,7 @@ let sseWatchdogTimer: any = null;
 let lastSseAt = 0;
 
 function computeWatchdogMs() {
-  return (REFRESH_INTERVAL.value * 2 + 5) * 1000;
+  return ((REFRESH_INTERVAL.value || 5) * 2 + 5) * 1000;
 }
 
 function scheduleSseRetry() {
@@ -147,8 +149,8 @@ function startSse() {
   polling.value = true;
   qrError.value = '';
   const secret = CryptoJS.MD5(pin.value).toString();
-  // Use Nuxt server proxy to atrace gateway SSE
-  const url = `/api/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}&interval=${REFRESH_INTERVAL.value}`;
+  // Use Nuxt server proxy to atrace gateway SSE (server determines refresh interval)
+  const url = `/api/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}`;
   sseSource = new EventSource(url);
 
   lastSseAt = Date.now();
@@ -179,7 +181,7 @@ function startSse() {
         qrPostAddress.value = data.postFullAddress || '';
         qrError.value = '';
         polling.value = false;
-        nextRefreshAt.value = Date.now() + REFRESH_INTERVAL.value * 1000;
+        nextRefreshAt.value = Date.now() + (REFRESH_INTERVAL.value || 5) * 1000;
         updateCountdown();
         resetSseRetry();
       }

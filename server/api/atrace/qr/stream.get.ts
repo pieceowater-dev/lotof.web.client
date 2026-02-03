@@ -3,17 +3,16 @@ import https from 'https'
 
 export default defineEventHandler(async (event) => {
   try {
-    console.log('[SSE] Handler called:', event.node.req.url)
     const query = getQuery(event)
 
     const namespaceSlug = String(query.namespace || '')
     const postId = String(query.postId || '')
     const method = String(query.method || 'METHOD_QR')
     const secret = String(query.secret || '')
-    const intervalSec = Math.max(5, parseInt(String(query.interval || '15')) || 15)
+    // Don't set interval - let gateway use its config
+    const intervalParam = query.interval ? `&interval=${query.interval}` : ''
 
     if (!namespaceSlug || !postId || !secret) {
-      console.log('[SSE] Missing required params')
       throw createError({ statusCode: 400, statusMessage: 'Missing namespace, postId, or secret' })
     }
 
@@ -31,9 +30,7 @@ export default defineEventHandler(async (event) => {
 
     const atraceGatewayUrlRaw = process.env.VITE_API_ATRACE || 'http://127.0.0.1:8081'
     const atraceGatewayUrl = atraceGatewayUrlRaw.replace('http://localhost', 'http://127.0.0.1')
-    const gatewayUrl = `${atraceGatewayUrl}/api/v1/atrace/qr/stream?namespace=${encodeURIComponent(namespaceSlug)}&postId=${encodeURIComponent(postId)}&method=${encodeURIComponent(method)}&secret=${encodeURIComponent(secret)}&interval=${intervalSec}`
-
-    console.log('[SSE] Connecting to gateway:', atraceGatewayUrl)
+    const gatewayUrl = `${atraceGatewayUrl}/api/v1/atrace/qr/stream?namespace=${encodeURIComponent(namespaceSlug)}&postId=${encodeURIComponent(postId)}&method=${encodeURIComponent(method)}&secret=${encodeURIComponent(secret)}${intervalParam}`
 
     // Determine if we need http or https module
     const isHttps = atraceGatewayUrl.startsWith('https://')
@@ -47,7 +44,6 @@ export default defineEventHandler(async (event) => {
         },
         agent: new (isHttps ? https.Agent : http.Agent)({ keepAlive: true }),
       }, (res2) => {
-        console.log('[SSE] Gateway response:', res2.statusCode)
         if (res2.statusCode === 200) {
           res2.on('data', (chunk) => {
             res.write(chunk)
