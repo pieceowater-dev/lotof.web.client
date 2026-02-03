@@ -1,4 +1,5 @@
 import { CookieKeys } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/') return;
@@ -6,6 +7,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (/^\/shared\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
   if (process.server) return;
 
+  const isAtraceRoute = /\/atrace(\/|$)/.test(to.path);
   const token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) {
     await Promise.resolve();
@@ -18,6 +20,20 @@ export default defineNuxtRouteMiddleware(async (to) => {
       if (to.path.includes('/atrace/qr')) {
         return navigateTo({ path: '/', query: { 'auth-needed': 'true' } });
       }
+      return navigateTo('/');
+    }
+  }
+
+  if (isAtraceRoute) {
+    const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
+    const { ensure, current } = useAtraceToken();
+    const atraceToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
+    if (!atraceToken) {
+      try {
+        const full = to.fullPath || to.path;
+        const trimmed = full.startsWith('/') ? full.slice(1) : full;
+        localStorage.setItem('back-to', trimmed);
+      } catch {}
       return navigateTo('/');
     }
   }
