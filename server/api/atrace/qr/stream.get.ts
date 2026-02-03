@@ -1,4 +1,5 @@
 import http from 'http'
+import https from 'https'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -34,13 +35,17 @@ export default defineEventHandler(async (event) => {
 
     console.log('[SSE] Connecting to gateway:', atraceGatewayUrl)
 
+    // Determine if we need http or https module
+    const isHttps = atraceGatewayUrl.startsWith('https://')
+    const httpModule = isHttps ? https : http
+
     return new Promise<void>((resolve) => {
-      const req = http.get(gatewayUrl, {
+      const req = httpModule.get(gatewayUrl, {
         headers: {
           Accept: 'text/event-stream',
           Connection: 'keep-alive',
         },
-        agent: new http.Agent({ keepAlive: true }),
+        agent: new (isHttps ? https.Agent : http.Agent)({ keepAlive: true }),
       }, (res2) => {
         console.log('[SSE] Gateway response:', res2.statusCode)
         if (res2.statusCode === 200) {
