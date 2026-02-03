@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
 import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';

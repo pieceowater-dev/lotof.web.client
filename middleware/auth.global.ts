@@ -26,6 +26,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isAtraceRoute) {
     const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
+    // Skip token check for plans page - it doesn't require app token
+    if (to.path.includes('/atrace/plans')) {
+      return;
+    }
     const { ensure, current } = useAtraceToken();
     const atraceToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
     if (!atraceToken) {
