@@ -6,6 +6,7 @@ const { t } = useI18n();
 import { useClipboard } from '@vueuse/core';
 import { dynamicLS } from '@/utils/storageKeys';
 import PinPrompt from '@/components/PinPrompt.vue';
+import QRPrintCard from '@/components/QRPrintCard.vue';
 
 type Post = {
         id: string;
@@ -80,34 +81,136 @@ async function handlePrint() {
 
     const showPrintPinPrompt = ref(false);
     const pendingPrint = ref<{ ns: string; postId: string } | null>(null);
+    const showQRPrintCard = ref(false);
+    const qrPrintCardTitle = ref('');
+    const qrPrintCardAddress = ref('');
+    const qrPrintCardLoading = ref(false);
+
     async function handlePrintPinSubmit(val: string) {
         if (!pendingPrint.value) return;
         await doPrintWithPin(val, pendingPrint.value.ns);
         showPrintPinPrompt.value = false;
         pendingPrint.value = null;
     }
+
+    function closePrintCard() {
+        showQRPrintCard.value = false;
+        qrImage.value = null;
+        qrPrintCardLoading.value = false;
+    }
+
+    function openPrintDialog() {
+        if (qrImage.value) {
+            const printWindow = window.open('', '_blank');
+            if (printWindow) {
+                const title = qrPrintCardTitle.value || props.post.title || '';
+                const address = qrPrintCardAddress.value || '';
+                const imgSrc = qrImage.value;
+                const html = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <title>QR Code</title>
+                        <style>
+                            * { margin: 0; padding: 0; box-sizing: border-box; }
+                            body {
+                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                min-height: 100vh;
+                                background: #f5f5f5;
+                                padding: 20px;
+                            }
+                            .container {
+                                background: white;
+                                padding: 40px;
+                                border-radius: 12px;
+                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                                text-align: center;
+                                max-width: 400px;
+                            }
+                            .title {
+                                font-size: 24px;
+                                font-weight: 600;
+                                margin-bottom: 12px;
+                                color: #1a1a1a;
+                                word-wrap: break-word;
+                            }
+                            .address {
+                                font-size: 14px;
+                                color: #666;
+                                margin-bottom: 28px;
+                                word-wrap: break-word;
+                                min-height: 24px;
+                            }
+                            .qr-wrapper {
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                margin: 20px 0;
+                            }
+                            .qr-image {
+                                width: 280px;
+                                height: 280px;
+                                object-fit: contain;
+                            }
+                            @media print {
+                                body {
+                                    background: white;
+                                    padding: 0;
+                                }
+                                .container {
+                                    box-shadow: none;
+                                    padding: 30px;
+                                    border-radius: 0;
+                                    max-width: 100%;
+                                }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="container">
+                            <div class="title">${title}</div>
+                            <div class="address">${address}</div>
+                            <div class="qr-wrapper">
+                                <img src='${imgSrc}' alt='QR Code' class='qr-image' />
+                            </div>
+                        </div>
+                    </body>
+                    </html>
+                `;
+                printWindow.document.write(html);
+                printWindow.document.close();
+                printWindow.focus();
+                setTimeout(() => {
+                    printWindow.print();
+                    setTimeout(() => {
+                      printWindow.close();
+                    }, 500);
+                }, 100);
+            }
+        }
+    }
+
     async function doPrintWithPin(pin: string, ns: string) {
         const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
         const CryptoJS = (await import('crypto-js')).default;
         const secret = CryptoJS.MD5(pin).toString();
-    const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
-    // If res.qr is a base64 PNG string, explicitly add data:image/png;base64, prefix
-    const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
-    qrImage.value = imgSrc;
-        qrPrintDialog.value = true;
-        setTimeout(() => {
-            const printWindow = window.open('', '_blank');
-            if (printWindow && imgSrc) {
-                printWindow.document.write(`<img src='${imgSrc}' style='width:300px;height:300px;display:block;margin:40px auto;' />`);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-                // Attempt to close tab after print (doesn't work in all browsers)
-                setTimeout(() => {
-                  printWindow.close();
-                }, 500);
-            }
-        }, 200);
+
+        qrPrintCardLoading.value = true;
+        const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
+        
+        // If res.qr is a base64 PNG string, explicitly add data:image/png;base64, prefix
+        const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
+        
+        qrImage.value = imgSrc;
+        qrPrintCardTitle.value = res?.postTitle || props.post.title || '';
+        qrPrintCardAddress.value = res?.postFullAddress || '';
+        qrPrintCardLoading.value = false;
+        
+        showQRPrintCard.value = true;
     }
 
 const dropdownItems = [
@@ -167,5 +270,14 @@ const dropdownItems = [
     :description="t('app.pinPromptDesc') || 'Enter the 6-digit PIN for this post. The PIN was shown to the post creator and is required to print the QR.'"
     :error-text="t('app.pinMustBe6Digits') || 'PIN must be 6 digits'"
     @submit="handlePrintPinSubmit"
+/>
+<QRPrintCard
+    v-if="showQRPrintCard"
+    :title="qrPrintCardTitle"
+    :address="qrPrintCardAddress"
+    :qr-image="qrImage"
+    :loading="qrPrintCardLoading"
+    @close="closePrintCard"
+    @print="openPrintDialog"
 />
 </template>
