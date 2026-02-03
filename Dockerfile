@@ -1,4 +1,4 @@
-# Stage 1: Build the static site
+# Stage 1: Build the Nuxt application
 FROM node:18-alpine AS builder
 
 # Set working directory
@@ -21,20 +21,23 @@ RUN npm install
 # Copy the rest of the application files
 COPY . .
 
-# Build the static site
-RUN npm run generate
+# Build the Nuxt application (SSR with Nitro server)
+RUN npm run build
 
-# Stage 2: Serve the static site with Nginx
-FROM nginx:alpine
+# Stage 2: Run Nitro server
+FROM node:18-alpine
 
-# Copy the built static files to Nginx's default directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-# Copy custom Nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy built application from builder
+COPY --from=builder /app/.output /app/.output
 
-# Expose port 80
-EXPOSE 80
+# Expose port 3000 (Nitro default)
+EXPOSE 3000
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Set runtime environment variables
+ENV NITRO_HOST=0.0.0.0
+ENV NITRO_PORT=3000
+
+# Start Nitro server
+CMD ["node", ".output/server/index.mjs"]

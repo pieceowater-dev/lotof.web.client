@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 export default defineNuxtConfig({
-  ssr: false, // Disable server-side rendering (pure SPA)
+  ssr: true, // Enable server-side rendering for Nitro server and SSE proxy
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
   app: {
     head: {
