@@ -4,7 +4,7 @@ import { log, logWarn } from '@/utils/logger';
 import PinPrompt from '@/components/PinPrompt.vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
-import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
+import { dynamicLS } from '@/utils/storageKeys';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -60,98 +60,171 @@ function handlePinSubmit(val: string) {
 }
 
 
-onMounted(() => {
-  log('[DEBUG] route.params:', JSON.stringify(route.params));
-  loadPin();
-  if (!pin.value) askPin();
-});
-
 watch([nsSlug, postId], () => {
   loadPin();
 });
 
 
-import { qrGenPublic, type QrGenResult } from '@/api/atrace/record/qrgen';
 import CryptoJS from 'crypto-js';
+
+const REFRESH_INTERVAL = 15;
+const qrRefreshCountdown = ref(REFRESH_INTERVAL);
+let qrCountdownTimer: any = null;
+const nextRefreshAt = ref<number | null>(null);
+
+function updateCountdown() {
+  if (!nextRefreshAt.value) {
+    qrRefreshCountdown.value = REFRESH_INTERVAL;
+    return;
+  }
+  const msLeft = Math.max(0, nextRefreshAt.value - Date.now());
+  const secLeft = Math.max(0, Math.ceil(msLeft / 1000));
+  qrRefreshCountdown.value = secLeft || 0;
+}
+
+function startCountdown() {
+  if (qrCountdownTimer) clearInterval(qrCountdownTimer);
+  updateCountdown();
+  qrCountdownTimer = setInterval(updateCountdown, 1000);
+}
 
 const qrBase64 = ref('');
 const qrError = ref('');
 const qrPostTitle = ref('');
 const qrPostAddress = ref('');
 const polling = ref(false);
-let pollTimer: any = null;
+let sseSource: EventSource | null = null;
+let sseRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let sseRetryAttempt = 0;
+const SSE_MAX_DELAY_MS = 30000;
+const SSE_WATCHDOG_MS = (REFRESH_INTERVAL * 2 + 5) * 1000;
+let sseWatchdogTimer: any = null;
+let lastSseAt = 0;
 
-async function fetchQr() {
+function scheduleSseRetry() {
+  if (!process.client) return;
+  if (sseRetryTimer) return;
+  if (document.visibilityState === 'hidden') return;
+  const delay = Math.min(1000 * Math.pow(2, sseRetryAttempt), SSE_MAX_DELAY_MS);
+  sseRetryAttempt += 1;
+  sseRetryTimer = setTimeout(() => {
+    sseRetryTimer = null;
+    startSse();
+  }, delay);
+}
+
+function resetSseRetry() {
+  sseRetryAttempt = 0;
+  if (sseRetryTimer) {
+    clearTimeout(sseRetryTimer);
+    sseRetryTimer = null;
+  }
+}
+
+function stopSse() {
+  if (sseSource) {
+    try { sseSource.close(); } catch {}
+    sseSource = null;
+  }
+  resetSseRetry();
+  if (sseWatchdogTimer) {
+    clearInterval(sseWatchdogTimer);
+    sseWatchdogTimer = null;
+  }
+}
+
+function startSse() {
+  stopSse();
   if (!pin.value || !postId.value || !nsSlug.value) {
-    logWarn('fetchQr: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
+    logWarn('startSse: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
     return;
   }
+
   polling.value = true;
   qrError.value = '';
-  try {
-    // Use md5(pin) as secret
-    const secret = CryptoJS.MD5(pin.value).toString();
-    log('fetchQr', 'postId:', postId.value, 'nsSlug:', nsSlug.value, 'secret:', secret);
-    const qrRes = await qrGenPublic(postId.value, 'METHOD_QR', secret, nsSlug.value);
-    if (qrRes && qrRes.qr) {
-      qrBase64.value = qrRes.qr;
-      qrPostTitle.value = qrRes.postTitle || '';
-      qrPostAddress.value = qrRes.postFullAddress || '';
-    } else {
-      qrBase64.value = '';
-      qrPostTitle.value = '';
-      qrPostAddress.value = '';
-      qrError.value = 'No QR returned';
-    }
-  } catch (e: any) {
-    qrError.value = e?.message || 'Failed to fetch QR';
-  } finally {
-    polling.value = false;
-  }
-}
+  const secret = CryptoJS.MD5(pin.value).toString();
+  // Use Nuxt server proxy to atrace gateway SSE
+  const url = `/api/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}&interval=${REFRESH_INTERVAL}`;
+  sseSource = new EventSource(url);
 
-function startPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  fetchQr();
-  pollTimer = setInterval(fetchQr, 15000);
-}
-function stopPolling() {
-  if (pollTimer) clearInterval(pollTimer);
-  pollTimer = null;
+  lastSseAt = Date.now();
+  if (!sseWatchdogTimer) {
+    sseWatchdogTimer = setInterval(() => {
+      if (!sseSource) return;
+      if (Date.now() - lastSseAt > SSE_WATCHDOG_MS) {
+        try { sseSource.close(); } catch {}
+        sseSource = null;
+        scheduleSseRetry();
+      }
+    }, 5000);
+  }
+
+  sseSource.addEventListener('qr', (ev: MessageEvent) => {
+    try {
+      const data = JSON.parse(ev.data || '{}');
+      if (data?.qr) {
+        lastSseAt = Date.now();
+        qrBase64.value = data.qr;
+        qrPostTitle.value = data.postTitle || '';
+        qrPostAddress.value = data.postFullAddress || '';
+        qrError.value = '';
+        polling.value = false;
+        nextRefreshAt.value = Date.now() + REFRESH_INTERVAL * 1000;
+        updateCountdown();
+        resetSseRetry();
+      }
+    } catch (e) {
+      logWarn('SSE parse error', e as any);
+    }
+  });
+
+  sseSource.addEventListener('error', () => {
+    if (!qrBase64.value) polling.value = false;
+    qrError.value = t('app.loading') || 'Loading...';
+    lastSseAt = Date.now();
+    try { sseSource?.close(); } catch {}
+    sseSource = null;
+    scheduleSseRetry();
+  });
 }
 
 watch(pin, (val) => {
-  if (val) startPolling();
-  else stopPolling();
+  if (val) startSse();
+  else stopSse();
 });
+
 onMounted(() => {
   loadPin();
   if (!pin.value) askPin();
-  else startPolling();
+  else startSse();
 });
-onBeforeUnmount(() => stopPolling());
 
-const REFRESH_INTERVAL = 15;
-const qrRefreshCountdown = ref(REFRESH_INTERVAL);
-let qrCountdownTimer: any = null;
+onBeforeUnmount(() => stopSse());
 
-function startCountdown() {
-  qrRefreshCountdown.value = REFRESH_INTERVAL;
-  if (qrCountdownTimer) clearInterval(qrCountdownTimer);
-  qrCountdownTimer = setInterval(() => {
-    if (qrRefreshCountdown.value > 1) {
-      qrRefreshCountdown.value--;
-    } else {
-      qrRefreshCountdown.value = REFRESH_INTERVAL;
+if (process.client) {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !sseSource) {
+      scheduleSseRetry();
     }
-  }, 1000);
+  });
+}
+
+const nowTime = ref('');
+let clockTimer: any = null;
+function updateClock() {
+  nowTime.value = new Date().toLocaleTimeString();
 }
 
 onMounted(() => {
+  log('[DEBUG] route.params:', JSON.stringify(route.params));
   startCountdown();
+  updateClock();
+  clockTimer = setInterval(updateClock, 1000);
 });
 onBeforeUnmount(() => {
   if (qrCountdownTimer) clearInterval(qrCountdownTimer);
+  if (clockTimer) clearInterval(clockTimer);
+  if (sseRetryTimer) clearTimeout(sseRetryTimer);
 });
 
 </script>
@@ -195,6 +268,10 @@ onBeforeUnmount(() => {
           </div>
           <div v-else-if="qrError" class="text-red-500 mt-4">{{ qrError }}</div>
           <div class="text-xs text-gray-500 mt-2 text-center">QR обновится через {{ qrRefreshCountdown }}с.</div>
+          <div class="text-xs text-gray-500 mt-1 text-center flex items-center justify-center gap-2">
+            <i class="i-lucide-clock"></i>
+            <span>{{ nowTime }}</span>
+          </div>
         </div>
       </div>
     </div>
