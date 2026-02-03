@@ -68,7 +68,7 @@ watch([nsSlug, postId], () => {
 import CryptoJS from 'crypto-js';
 
 const REFRESH_INTERVAL = ref(15); // Default, will be overridden by server
-const qrRefreshCountdown = ref(15);
+const qrRefreshCountdown = ref(REFRESH_INTERVAL.value);
 let qrCountdownTimer: any = null;
 const nextRefreshAt = ref<number | null>(null);
 
