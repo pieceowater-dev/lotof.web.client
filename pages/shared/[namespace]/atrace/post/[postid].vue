@@ -28,6 +28,9 @@ const pin = ref('');
 const pinInput = ref('');
 const pinError = ref('');
 const showPinPrompt = ref(false);
+const wakeLockSupported = ref(false);
+const wakeLockActive = ref(false);
+const wakeLockError = ref('');
 
 
 function loadPin() {
@@ -57,6 +60,7 @@ function askPin() {
 function handlePinSubmit(val: string) {
   savePin(val);
   pin.value = val;
+  requestWakeLock();
 }
 
 
@@ -237,15 +241,21 @@ let wakeLock: any = null;
 async function requestWakeLock() {
   if (!process.client) return;
   try {
-    if ('wakeLock' in navigator) {
+    wakeLockSupported.value = 'wakeLock' in navigator;
+    if (wakeLockSupported.value) {
       wakeLock = await (navigator as any).wakeLock.request('screen');
+      wakeLockActive.value = true;
+      wakeLockError.value = '';
       log('[WakeLock] Screen wake lock activated');
       
       wakeLock.addEventListener('release', () => {
+        wakeLockActive.value = false;
         log('[WakeLock] Screen wake lock released');
       });
     }
   } catch (err: any) {
+    wakeLockActive.value = false;
+    wakeLockError.value = err?.message || 'Wake lock failed';
     logWarn('[WakeLock] Failed to activate:', err.message);
   }
 }
@@ -255,6 +265,7 @@ async function releaseWakeLock() {
     try {
       await wakeLock.release();
       wakeLock = null;
+      wakeLockActive.value = false;
     } catch (err) {
       logWarn('[WakeLock] Failed to release:', err);
     }
@@ -308,7 +319,7 @@ onBeforeUnmount(() => {
               <div v-if="qrPostAddress" class="text-sm text-gray-500">{{ qrPostAddress }}</div>
             </div>
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center" style="min-width:180px; min-height:180px;">
-              <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="w-full max-w-xs h-auto aspect-square object-contain" style="max-width:320px; min-width:120px;" />
+              <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="qr-image w-full max-w-xs h-auto aspect-square object-contain" style="max-width:320px; min-width:120px;" />
             </div>
           </div>
           <div v-else-if="polling" class="text-blue-500 dark:text-blue-300 mt-4 flex items-center gap-2">
@@ -322,9 +333,23 @@ onBeforeUnmount(() => {
               <i class="i-lucide-clock"></i>
               <span>{{ nowTime }}</span>
             </div>
+            <div v-if="wakeLockSupported" class="text-xs mt-2 text-center">
+              <span v-if="wakeLockActive" class="text-emerald-600">Экран не будет гаснуть</span>
+              <span v-else class="text-amber-600">Экран может гаснуть</span>
+            </div>
+            <div v-if="wakeLockSupported && !wakeLockActive" class="mt-2">
+              <UButton size="xs" variant="soft" color="primary" @click="requestWakeLock">Включить удержание экрана</UButton>
+            </div>
+            <div v-if="wakeLockError" class="text-xs text-red-500 mt-1 text-center">{{ wakeLockError }}</div>
           </ClientOnly>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.dark .qr-image {
+  filter: invert(0.8) hue-rotate(180deg);
+}
+</style>

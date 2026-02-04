@@ -24,8 +24,9 @@ const hasContent = computed(() => !!props.title || !!props.address);
 </script>
 
 <template>
-  <div class="fixed inset-0 bg-black/50 dark:bg-black/70 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+  <Teleport to="body">
+    <div class="fixed inset-0 bg-black/50 dark:bg-black/70 z-[9999] flex items-center justify-center p-4">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
       <!-- Close button -->
       <button
         @click="$emit('close')"
@@ -58,7 +59,7 @@ const hasContent = computed(() => !!props.title || !!props.address);
             <img
               :src="props.qrImage"
               alt="QR Code"
-              class="w-full max-w-xs h-auto aspect-square object-contain"
+              class="qr-image w-full max-w-xs h-auto aspect-square object-contain"
               style="max-width: 280px; min-width: 200px;"
             />
           </div>
@@ -105,8 +106,9 @@ const hasContent = computed(() => !!props.title || !!props.address);
           </div>
         </div>
       </div>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -121,5 +123,9 @@ const hasContent = computed(() => !!props.title || !!props.address);
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+.dark .qr-image {
+  filter: invert(0.8) hue-rotate(180deg);
 }
 </style>
