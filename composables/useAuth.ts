@@ -1,9 +1,11 @@
-import { hubMe } from '@/api/hub/me';
+import { hubBootstrap } from '@/api/hub/bootstrap';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 import { logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
+
+const hubApiBase = import.meta.env.VITE_API_HUB || 'http://localhost:8080';
 
 // Centralized auth composable: manages token (via cookie), current user, and auth flows
 export function useAuth() {
@@ -38,9 +40,15 @@ export function useAuth() {
     loading.value = true;
     try {
       setGlobalAuthToken(token.value);
-      const data = await hubMe(token.value);
-      console.log('[auth] User fetched successfully', { email: data.email });
-      user.value = data;
+      const data = await hubBootstrap(token.value);
+      if (data?.me) {
+        console.log('[auth] User fetched successfully', { email: data.me.email });
+        user.value = data.me;
+      }
+      if (data?.namespaces?.rows) {
+        const { applyLoaded } = useNamespace();
+        applyLoaded(data.namespaces.rows, token.value);
+      }
     } catch (e) {
       // If token invalid → logout silently
       console.warn('[auth] fetchUser failed, clearing token', { error: String(e) });
@@ -66,6 +74,9 @@ export function useAuth() {
     // Clean up per-user persisted state that should reset on logout
     if (process.client) {
       try {
+        // Best-effort: ask backend to clear httpOnly refresh token cookie
+        fetch(`${hubApiBase}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});
+
         // Best-effort: clear ALL accessible cookies, including 'atrace-token'
         const expire = 'Thu, 01 Jan 1970 00:00:00 GMT';
         const cookies = (document.cookie || '').split(';');

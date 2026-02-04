@@ -11,6 +11,9 @@ export function useNamespace() {
   const { user, token } = useAuth();
   const loading = useState<boolean>('namespaces_loading', () => false);
   const error = useState<string | null>('namespaces_error', () => null);
+  const lastLoadedToken = useState<string | null>('namespaces_loaded_token', () => null);
+
+  let loadPromise: Promise<void> | null = null;
 
   function readPerUserSelection(): string | null {
     if (!process.client) return null;
@@ -78,33 +81,56 @@ export function useNamespace() {
     if (selected.value !== ns) setNamespace(ns);
   }
 
-  async function load(search?: string) {
+  async function load(search?: string, force = false) {
     if (!token.value) {
       all.value = [];
       records.value = [];
+      lastLoadedToken.value = null;
       return;
     }
+    if (!force && lastLoadedToken.value === token.value && records.value.length > 0) return;
+    if (!force && loadPromise) return loadPromise;
     loading.value = true;
     error.value = null;
     try {
       const { hubNamespacesList } = await import('@/api/hub/namespaces/list');
-  const data = await hubNamespacesList(token.value, search, 1);
-  records.value = data.rows.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
-  const slugs = records.value.map(r => r.slug);
-      all.value = slugs;
-      // Reconcile current selection
-      if (!slugs.includes(selected.value)) {
-        const stored = readPerUserSelection();
-        if (stored && slugs.includes(stored)) {
-          setNamespace(stored);
-        } else if (slugs[0]) {
-          setNamespace(slugs[0]);
+      loadPromise = (async () => {
+        const data = await hubNamespacesList(token.value as string, search, 1);
+        records.value = data.rows.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
+        const slugs = records.value.map(r => r.slug);
+        all.value = slugs;
+        lastLoadedToken.value = token.value as string;
+        // Reconcile current selection
+        if (!slugs.includes(selected.value)) {
+          const stored = readPerUserSelection();
+          if (stored && slugs.includes(stored)) {
+            setNamespace(stored);
+          } else if (slugs[0]) {
+            setNamespace(slugs[0]);
+          }
         }
-      }
+      })();
+      await loadPromise;
     } catch (e: any) {
       error.value = e?.message || 'Failed to load namespaces';
     } finally {
+      loadPromise = null;
       loading.value = false;
+    }
+  }
+
+  function applyLoaded(list: Array<{ id: string; slug: string; title?: string }>, tokenValue?: string | null) {
+    records.value = list.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
+    const slugs = records.value.map(r => r.slug);
+    all.value = slugs;
+    if (tokenValue) lastLoadedToken.value = tokenValue;
+    if (!slugs.includes(selected.value)) {
+      const stored = readPerUserSelection();
+      if (stored && slugs.includes(stored)) {
+        setNamespace(stored);
+      } else if (slugs[0]) {
+        setNamespace(slugs[0]);
+      }
     }
   }
 
@@ -113,6 +139,13 @@ export function useNamespace() {
     watch(
       () => [user.value?.id, token.value] as const,
       async () => {
+        if (!token.value) {
+          all.value = [];
+          records.value = [];
+          lastLoadedToken.value = null;
+          return;
+        }
+        if (!user.value) return;
         const stored = readPerUserSelection();
         if (stored && stored !== selected.value) setNamespace(stored);
         // If selection is not in list, ensure it is present
@@ -132,5 +165,5 @@ export function useNamespace() {
     return records.value.find(r => r.slug === slug)?.title;
   }
 
-  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug, titleBySlug };
+  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug, titleBySlug, applyLoaded };
 }

@@ -12,7 +12,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace, load: loadNamespaces } = useNamespace();
+const { selected: selectedNS, all: allNamespaces, setNamespace } = useNamespace();
 
 const router = useRouter();
 const toast = useToast();
@@ -44,7 +44,6 @@ onMounted(async () => {
 
   // 3) Normal init flow
   await fetchUser();
-  await loadNamespaces();
   await checkInstalledForVisibleApps();
   if (user.value) {
     username.value = user.value.username;
@@ -289,7 +288,7 @@ function handleLogout() {
   ]">
     <div class="space-y-6">
       <UFormGroup label="Имя пользователя">
-        <UInput v-model="username" />
+        <UInput v-model="username" :autofocus="false" />
       </UFormGroup>
       
       <UFormGroup label="Email">

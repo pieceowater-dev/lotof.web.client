@@ -7,7 +7,7 @@ import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import AppTable from '@/components/ui/AppTable.vue'
 
 const { token, user } = useAuth();
-const { rows: friends, load, loading } = useFriendships();
+const { rows: friends, applyLoaded: applyLoadedFriends, load, loading } = useFriendships();
 
 const search = ref('');
 const userFound = ref<boolean | null>(null);
@@ -107,8 +107,60 @@ watch(selectedTab, (newTab) => {
   if (next) load(next);
 });
 
-onMounted(() => {
-  if (token.value) load(FriendshipStatus.Accepted);
+// Bootstrap загрузка всех данных одним запросом
+onMounted(async () => {
+  if (!token.value) return;
+  
+  // Сначала загрузить bootstrap данные
+  try {
+    const { applyLoaded: applyLoadedNS, idBySlug } = useNamespace();
+    const { hubPeopleBootstrap } = await import('@/api/hub/peopleBootstrap');
+    
+    // Определяем namespace ID для загрузки members (используем сохраненный или null)
+    const stored = process.client ? localStorage.getItem('selected_namespace') : null;
+    let nsId: string | undefined = undefined;
+    
+    // Сначала загружаем данные без указания namespace, чтобы получить список namespaces
+    const data = await hubPeopleBootstrap(token.value, nsId);
+    
+    // Применить загруженные данные к composables
+    applyLoadedNS(data.namespaces.rows, token.value);
+    applyLoadedFriends(data.myFriends.rows, FriendshipStatus.Accepted);
+    
+    // Теперь определяем namespace для members
+    const { selected: selectedNS, all: allNamespaces } = useNamespace();
+    const nsSlug = stored || allNamespaces.value[0];
+    if (nsSlug) {
+      nsId = idBySlug(nsSlug);
+      if (nsId) {
+        // Перезагружаем members для выбранного namespace
+        nsMembers.value = data.members;
+      }
+    }
+    
+    // Установить опции для dropdown друзей
+    const existingUserIds = new Set(data.members.map(m => m.userId));
+    friendOptions.value = data.friendsForDropdown.rows
+      .filter(r => !existingUserIds.has(r.friend.id))
+      .map(r => ({ label: `${r.friend.username} (${r.friend.email})`, value: r.friend.id }));
+    const loaded = friendOptions.value.length;
+    friendHasMore.value = loaded < data.friendsForDropdown.info.count;
+    if (friendHasMore.value) friendPage.value = 2;
+  } catch (e) {
+    logError('[people bootstrap] load error', e);
+    // Fallback к обычной загрузке
+    if (token.value) load(FriendshipStatus.Accepted);
+    await loadNamespaces();
+  }
+  
+  // Применить сохраненный namespace
+  if (user.value?.id) {
+    applyStoredNamespace();
+  }
+  // Если ничего не выбрано, выбрать первый
+  if (!selectedNS.value && allNamespaces.value.length > 0) {
+    selectedNS.value = allNamespaces.value[0];
+  }
 });
 
 const columns = computed(() => ([
@@ -216,18 +268,6 @@ watch(() => user.value?.id, (userId) => {
     applyStoredNamespace();
   }
 });
-onMounted(async () => {
-  await loadNamespaces();
-  // Apply stored namespace only if user is loaded (not during SSR)
-  if (user.value?.id) {
-    applyStoredNamespace();
-  }
-  // If nothing selected after namespaces load, pick first available
-  if (!selectedNS.value && allNamespaces.value.length > 0) {
-    selectedNS.value = allNamespaces.value[0];
-  }
-  await loadMembers();
-});
 
 // Reload friend dropdown when members change to filter out newly added ones
 watch(() => nsMembers.value, () => { loadMoreFriends(true); });
@@ -281,7 +321,7 @@ async function loadMoreFriends(reset = false) {
 }
 
 watch(friendSearch, () => loadMoreFriends(true));
-onMounted(() => loadMoreFriends(true));
+// onMounted будет заменен на bootstrap загрузку ниже
 async function addMemberFromFriend(friendUserId: string) {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   const { idBySlug } = useNamespace();
@@ -314,110 +354,143 @@ async function removeMember(userId: string) {
 </script>
 
 <template>
-  <div class="p-2 md:p-4 h-full flex flex-col min-h-0 overflow-hidden gap-2">
-    <!-- Compact Search Card -->
-    <div class="flex-shrink-0 mb-3">
-      <h1 class="text-xl md:text-2xl font-semibold mb-1.5">{{ t('app.myPeopleHeading') }}</h1>
-      <div class="flex flex-row gap-2 items-center">
-        <UInput class="flex-1 md:max-w-md" v-model="search" :placeholder="t('app.searchEmailPlaceholder')" icon="lucide:search" size="sm" @update:modelValue="searchUser" />
-        <UButton v-if="buttonText" @click="sendAction" size="sm" class="flex-shrink-0">{{ buttonText }}</UButton>
-      </div>
-      <p v-if="!isValidEmail && search" class="mt-1 text-xs text-red-500">{{ t('app.invalidEmail') }}</p>
-      <p v-if="userFound !== null" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-        {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
-      </p>
+  <div class="p-4 md:p-6 lg:p-8 min-h-screen">
+    <!-- Header with Search -->
+    <div class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold mb-4">{{ t('app.myPeopleHeading') }}</h1>
+      <UCard class="shadow-sm">
+        <div class="flex flex-row gap-3 items-center">
+          <UInput 
+            class="flex-1 md:max-w-lg" 
+            v-model="search" 
+            :placeholder="t('app.searchEmailPlaceholder')" 
+            icon="lucide:search" 
+            size="md" 
+            @update:modelValue="searchUser" 
+          />
+          <UButton 
+            v-if="buttonText" 
+            @click="sendAction" 
+            size="md" 
+            class="flex-shrink-0"
+          >
+            {{ buttonText }}
+          </UButton>
+        </div>
+        <div v-if="!isValidEmail && search" class="mt-2">
+          <p class="text-sm text-red-500">{{ t('app.invalidEmail') }}</p>
+        </div>
+        <div v-if="userFound !== null" class="mt-2">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
+          </p>
+        </div>
+      </UCard>
     </div>
     
-    <div class="flex-1 min-h-0 flex flex-col gap-2">
+    <!-- Main Content -->
+    <div class="flex flex-col gap-6">
       <!-- Friends / Requests section -->
-      <div class="flex-1 min-h-0 flex flex-col">
-      <UTabs v-model="selectedTab" :items="tabs" class="mb-1" size="sm" />
-        <div class="flex-1 min-h-0">
-          <AppTable
-            v-model:page="friendsPage"
-            v-model:pageCount="friendsPageCount"
-            :total="friends.length"
-            :rows="paginatedFriends"
-            :columns="columns"
-            :loading="loading"
-            :pagination="true"
-          >
-            <template #username-data="{ row }">
-              <span>{{ row.friend.username }}</span>
-            </template>
+      <UCard class="shadow-sm">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg font-semibold">{{ t('app.contacts') }}</h2>
+          </div>
+        </template>
+        
+        <div>
+          <UTabs v-model="selectedTab" :items="tabs" class="mb-4" />
+          <div>
+            <AppTable
+              v-model:page="friendsPage"
+              v-model:pageCount="friendsPageCount"
+              :total="friends.length"
+              :rows="paginatedFriends"
+              :columns="columns"
+              :loading="loading"
+              :pagination="true"
+            >
+              <template #username-data="{ row }">
+                <span class="font-medium">{{ row.friend.username }}</span>
+              </template>
 
-            <template #email-data="{ row }">
-              <span>{{ row.friend.email }}</span>
-            </template>
+              <template #email-data="{ row }">
+                <span class="text-gray-600 dark:text-gray-400">{{ row.friend.email }}</span>
+              </template>
 
-            <template #actions-data="{ row }">
-              <UDropdown :items="items(row)">
-                <UButton color="gray" variant="ghost" icon="lucide:ellipsis" size="xs" />
-              </UDropdown>
-            </template>
-          </AppTable>
+              <template #actions-data="{ row }">
+                <UDropdown :items="items(row)">
+                  <UButton color="gray" variant="ghost" icon="lucide:ellipsis" />
+                </UDropdown>
+              </template>
+            </AppTable>
+          </div>
         </div>
-      </div>
+      </UCard>
 
       <!-- Namespace members section -->
-      <div class="flex-1 min-h-0 flex flex-col">
-    <div class="mt-3 flex-shrink-0">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-1 gap-2">
-        <div class="flex items-center gap-2">
-          <span class="text-sm md:text-base font-medium">{{ t('app.namespaceMembers') }}</span>
+      <UCard class="shadow-sm">
+        <template #header>
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <h2 class="text-lg font-semibold">{{ t('app.namespaceMembers') }}</h2>
+            <USelect
+              :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
+              v-model="selectedNS"
+              size="md"
+              class="w-full md:w-auto md:min-w-[250px]"
+            />
+          </div>
+        </template>
+
+        <div>
+          <div class="mb-4">
+            <USelectMenu
+              searchable
+              v-model="friendToAdd"
+              :options="friendOptions"
+              :searchable-placeholder="t('app.search')"
+              :search-value="friendSearch"
+              @update:search-value="(val: string) => friendSearch = val as any"
+              @scroll-bottom="() => loadMoreFriends(false)"
+              :loading="friendLoading"
+              :placeholder="t('app.selectFriend')"
+              size="md"
+              class="w-full md:max-w-lg"
+              @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
+            >
+              <template #leading>
+                <UIcon name="lucide:user-plus" class="w-5 h-5" />
+              </template>
+            </USelectMenu>
+          </div>
+
+          <div>
+            <AppTable
+              v-model:page="membersPage"
+              v-model:pageCount="membersPageCount"
+              :total="nsMembers.length"
+              :rows="paginatedMembers"
+              :columns="[
+                { key: 'username', label: t('app.username') },
+                { key: 'email', label: t('app.email') },
+                { key: 'actions', label: '' }
+              ]"
+              :loading="membersLoading"
+              :pagination="true"
+            >
+              <template #username-data="{ row }">
+                <span class="font-medium truncate">{{ row.username }}</span>
+              </template>
+              <template #email-data="{ row }">
+                <span class="text-gray-600 dark:text-gray-400 truncate">{{ row.email }}</span>
+              </template>
+              <template #actions-data="{ row }">
+                <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
+              </template>
+            </AppTable>
+          </div>
         </div>
-        <USelect
-          :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
-          v-model="selectedNS"
-          size="sm"
-          class="w-full md:w-auto md:min-w-[200px]"
-        />
-      </div>
-
-      <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-        <USelectMenu
-          searchable
-          v-model="friendToAdd"
-          :options="friendOptions"
-          :searchable-placeholder="t('app.search')"
-          :search-value="friendSearch"
-          @update:search-value="(val: string) => friendSearch = val as any"
-          @scroll-bottom="() => loadMoreFriends(false)"
-          :loading="friendLoading"
-          :placeholder="t('app.selectFriend')"
-          size="sm"
-          class="w-full md:max-w-md"
-          @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
-        />
-      </div>
-    </div>
-
-      <div class="flex-1 min-h-0 text-sm md:text-base">
-        <AppTable
-          v-model:page="membersPage"
-          v-model:pageCount="membersPageCount"
-          :total="nsMembers.length"
-          :rows="paginatedMembers"
-          :columns="[
-            { key: 'username', label: t('app.username') },
-            { key: 'email', label: t('app.email') },
-            { key: 'actions', label: '' }
-          ]"
-          :loading="membersLoading"
-          :pagination="true"
-        >
-          <template #username-data="{ row }">
-            <span class="truncate">{{ row.username }}</span>
-          </template>
-          <template #email-data="{ row }">
-            <span class="truncate">{{ row.email }}</span>
-          </template>
-          <template #actions-data="{ row }">
-            <UButton color="red" variant="ghost" icon="lucide:trash-2" size="xs" @click="removeMember(row.userId)" />
-          </template>
-        </AppTable>
-      </div>
-      </div>
+      </UCard>
     </div>
   </div>
 </template>

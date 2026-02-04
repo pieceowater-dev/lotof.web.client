@@ -17,6 +17,8 @@
     "analyticsDesc": "Reports and data visualization keep you informed and boost team productivity.",
   "analyticsLongDesc": "Reports and data visualisations keep you aware of ongoing processes. Receive key insights in a clear format and continuously elevate your team's productivity with informed decisions.",
     "logout": "Log out",
+    "rateLimitTitle": "Too many requests",
+    "rateLimitDesc": "Please wait a bit and try again.",
     "cancel": "Cancel",
     "save": "Save",
     "editProfile": "Edit profile",

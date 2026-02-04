@@ -26,5 +26,10 @@ export function useFriendships() {
     }
   }
 
-  return { rows, loading, currentStatus, load };
+  function applyLoaded(list: any[], status: FriendshipStatus = FriendshipStatus.Accepted) {
+    currentStatus.value = status;
+    rows.value = list;
+  }
+
+  return { rows, loading, currentStatus, load, applyLoaded };
 }

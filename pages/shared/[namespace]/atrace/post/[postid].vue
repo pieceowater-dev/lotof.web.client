@@ -105,6 +105,9 @@ let sseRetryAttempt = 0;
 const SSE_MAX_DELAY_MS = 30000;
 let sseWatchdogTimer: any = null;
 let lastSseAt = 0;
+let sseEnabled = true;
+let sseReconnectTimer: any = null; // Periodic reconnect to clean up server resources
+const SSE_RECONNECT_INTERVAL = 60000; // Reconnect every 60 seconds to ensure old connections close
 
 function computeWatchdogMs() {
   return ((REFRESH_INTERVAL.value || 5) * 2 + 5) * 1000;
@@ -112,6 +115,7 @@ function computeWatchdogMs() {
 
 function scheduleSseRetry() {
   if (!process.client) return;
+  if (!sseEnabled) return;
   if (sseRetryTimer) return;
   if (document.visibilityState === 'hidden') return;
   const delay = Math.min(1000 * Math.pow(2, sseRetryAttempt), SSE_MAX_DELAY_MS);
@@ -132,6 +136,7 @@ function resetSseRetry() {
 
 function stopSse() {
   if (sseSource) {
+    console.log('[SSE] Closing EventSource');
     try { sseSource.close(); } catch {}
     sseSource = null;
   }
@@ -140,10 +145,18 @@ function stopSse() {
     clearInterval(sseWatchdogTimer);
     sseWatchdogTimer = null;
   }
+  if (sseReconnectTimer) {
+    clearTimeout(sseReconnectTimer);
+    sseReconnectTimer = null;
+  }
 }
 
 function startSse() {
   if (!process.client) return;
+  if (!sseEnabled) {
+    console.log('[SSE] startSse called but sseEnabled=false, ignoring');
+    return;
+  }
   stopSse();
   if (!pin.value || !postId.value || !nsSlug.value) {
     logWarn('startSse: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
@@ -155,6 +168,7 @@ function startSse() {
   const secret = CryptoJS.MD5(pin.value).toString();
   // Use Nuxt server proxy to atrace gateway SSE (server determines refresh interval)
   const url = `/api/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}`;
+  console.log('[SSE] Creating new EventSource:', url);
   sseSource = new EventSource(url);
 
   lastSseAt = Date.now();
@@ -202,6 +216,15 @@ function startSse() {
     sseSource = null;
     scheduleSseRetry();
   });
+
+  // Schedule periodic reconnect to clean up server resources
+  // This ensures old server connections don't stay alive when client closes tab
+  if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
+  sseReconnectTimer = setTimeout(() => {
+    if (!sseEnabled) return;
+    console.log('[SSE] Periodic reconnect to clean up server resources');
+    startSse(); // This will close old connection and create new one
+  }, SSE_RECONNECT_INTERVAL);
 }
 
 watch(pin, (val) => {
@@ -215,10 +238,14 @@ onMounted(() => {
   else startSse();
 });
 
-onBeforeUnmount(() => stopSse());
+onBeforeUnmount(() => {
+  sseEnabled = false;
+  stopSse();
+});
 
 if (process.client) {
-  document.addEventListener('visibilitychange', () => {
+  const onVisibility = () => {
+    if (!sseEnabled) return;
     if (document.visibilityState === 'visible') {
       if (!sseSource) {
         scheduleSseRetry();
@@ -226,6 +253,11 @@ if (process.client) {
       // Re-request wake lock when page becomes visible
       requestWakeLock();
     }
+  };
+  document.addEventListener('visibilitychange', onVisibility);
+
+  onBeforeUnmount(() => {
+    document.removeEventListener('visibilitychange', onVisibility);
   });
 }
 

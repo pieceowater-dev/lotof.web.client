@@ -1,5 +1,7 @@
 import { GraphQLClient } from 'graphql-request';
 import type { Ref } from 'vue';
+import { useToast } from '#imports';
+import { useI18n } from '@/composables/useI18n';
 import { logError, logWarn } from '@/utils/logger';
 
 // Reactive token holder (shared across clients)
@@ -45,6 +47,19 @@ type ApiClientOptions = {
   authHeader?: 'Authorization' | 'AtraceAuthorization';
 };
 
+function notifyRateLimit() {
+  if (!process.client) return;
+  try {
+    const toast = useToast();
+    const { t } = useI18n();
+    toast.add({
+      title: t('app.rateLimitTitle') || 'Too many requests',
+      description: t('app.rateLimitDesc') || 'Please wait a bit and try again.',
+      color: 'red',
+    });
+  } catch {}
+}
+
 export class ApiClient {
   private client: GraphQLClient;
   private baseURL: string;
@@ -87,7 +102,8 @@ export class ApiClient {
       return await this.client.request<T>(query, variables);
     } catch (error: any) {
       const rawErrors = error.response?.errors;
-      const status = error.response?.status;
+      const status = error.response?.status ?? error.response?.statusCode ?? error.status;
+      const isRateLimited = status === 429;
       // Detect unauthorized both by HTTP status and GraphQL error messages
       const messages: string[] = Array.isArray(rawErrors)
         ? rawErrors.map((e: any) => String(e?.message || '').toLowerCase())
@@ -99,7 +115,10 @@ export class ApiClient {
         status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
       );
 
-      if (isAtraceUnauthorized) {
+      if (isRateLimited) {
+        logWarn('Rate limit detected');
+        notifyRateLimit();
+      } else if (isAtraceUnauthorized) {
         logWarn('Atrace unauthorized detected, invoking atrace handler');
         atraceUnauthorizedHandler?.();
       } else if (isHubUnauthorized) {
