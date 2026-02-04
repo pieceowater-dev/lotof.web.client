@@ -14,10 +14,61 @@
   <UNotifications />
 </template>
 
-<script setup>
-import { onMounted, onBeforeUnmount } from 'vue';
+<script setup lang="ts">
+import { onMounted, onBeforeUnmount, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { setAtraceUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
+import { useI18n } from '@/composables/useI18n';
+import { useNamespace } from '@/composables/useNamespace';
+import { ALL_APPS } from '@/config/apps';
+
+const route = useRoute();
+const { t } = useI18n();
+const { titleBySlug } = useNamespace();
+
+const baseTitle = computed(() => t('app.title') || 'lota');
+
+function formatSegment(segment?: string) {
+  if (!segment) return '';
+  return segment
+    .replace(/[-_]/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+const pageTitle = computed(() => {
+  const path = route.path || '';
+  const segments = path.split('/').filter(Boolean);
+
+  if (!segments.length) return baseTitle.value;
+
+  if (segments[0] === 'shared') {
+    const ns = segments[1];
+    if (segments[2] === 'atrace') {
+      const appTitle = t('app.atraceTitle') || t('app.attendance') || 'A-Trace';
+      return ns ? `${appTitle} — ${ns}` : appTitle;
+    }
+    return ns ? `${baseTitle.value} — ${ns}` : baseTitle.value;
+  }
+
+  const nsSlug = (route.params.namespace as string | undefined) || segments[0];
+  const nsTitle = titleBySlug(nsSlug) || nsSlug || '';
+
+  if (nsSlug && segments.length >= 2) {
+    const appSegment = segments[1];
+    const app = ALL_APPS.find((item) => item.address === appSegment);
+    const appTitle = app ? (t(app.titleKey) || app.name) : formatSegment(appSegment);
+    const extra = segments[2] ? formatSegment(segments[2]) : '';
+    if (extra) return `${appTitle} — ${nsTitle} — ${extra}`;
+    return nsTitle ? `${appTitle} — ${nsTitle}` : appTitle;
+  }
+
+  return `${baseTitle.value} — ${formatSegment(segments[0])}`;
+});
+
+useHead(() => ({
+  title: pageTitle.value,
+}));
 
 const onPageLoad = () => {
   setTimeout(() => {
