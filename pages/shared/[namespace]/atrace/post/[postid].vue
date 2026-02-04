@@ -99,96 +99,99 @@ const qrError = ref('');
 const qrPostTitle = ref('');
 const qrPostAddress = ref('');
 const polling = ref(false);
-let sseSource: EventSource | null = null;
-let sseRetryTimer: ReturnType<typeof setTimeout> | null = null;
-let sseRetryAttempt = 0;
-const SSE_MAX_DELAY_MS = 30000;
-let sseWatchdogTimer: any = null;
-let lastSseAt = 0;
-let sseEnabled = true;
-let sseReconnectTimer: any = null; // Periodic reconnect to clean up server resources
-const SSE_RECONNECT_INTERVAL = 60000; // Reconnect every 60 seconds to ensure old connections close
+let ws: WebSocket | null = null;
+let wsRetryTimer: ReturnType<typeof setTimeout> | null = null;
+let wsRetryAttempt = 0;
+const WS_MAX_DELAY_MS = 30000;
+let wsWatchdogTimer: any = null;
+let lastWsAt = 0;
+let wsEnabled = true;
+let isHydrated = false;
 
 function computeWatchdogMs() {
   return ((REFRESH_INTERVAL.value || 5) * 2 + 5) * 1000;
 }
 
-function scheduleSseRetry() {
+function scheduleWsRetry() {
   if (!process.client) return;
-  if (!sseEnabled) return;
-  if (sseRetryTimer) return;
+  if (!wsEnabled) return;
+  if (wsRetryTimer) return;
   if (document.visibilityState === 'hidden') return;
-  const delay = Math.min(1000 * Math.pow(2, sseRetryAttempt), SSE_MAX_DELAY_MS);
-  sseRetryAttempt += 1;
-  sseRetryTimer = setTimeout(() => {
-    sseRetryTimer = null;
-    startSse();
+  const delay = Math.min(1000 * Math.pow(2, wsRetryAttempt), WS_MAX_DELAY_MS);
+  wsRetryAttempt += 1;
+  wsRetryTimer = setTimeout(() => {
+    wsRetryTimer = null;
+    startWs();
   }, delay);
 }
 
-function resetSseRetry() {
-  sseRetryAttempt = 0;
-  if (sseRetryTimer) {
-    clearTimeout(sseRetryTimer);
-    sseRetryTimer = null;
+function resetWsRetry() {
+  wsRetryAttempt = 0;
+  if (wsRetryTimer) {
+    clearTimeout(wsRetryTimer);
+    wsRetryTimer = null;
   }
 }
 
-function stopSse() {
-  if (sseSource) {
-    console.log('[SSE] Closing EventSource');
-    try { sseSource.close(); } catch {}
-    sseSource = null;
+function stopWs() {
+  if (ws) {
+    console.log('[WS] Closing WebSocket');
+    try { 
+      ws.close(); 
+    } catch {}
+    ws = null;
   }
-  resetSseRetry();
-  if (sseWatchdogTimer) {
-    clearInterval(sseWatchdogTimer);
-    sseWatchdogTimer = null;
-  }
-  if (sseReconnectTimer) {
-    clearTimeout(sseReconnectTimer);
-    sseReconnectTimer = null;
+  resetWsRetry();
+  if (wsWatchdogTimer) {
+    clearInterval(wsWatchdogTimer);
+    wsWatchdogTimer = null;
   }
 }
 
-function startSse() {
+function startWs() {
   if (!process.client) return;
-  if (!sseEnabled) {
-    console.log('[SSE] startSse called but sseEnabled=false, ignoring');
+  if (!wsEnabled) {
+    console.log('[WS] startWs called but wsEnabled=false, ignoring');
     return;
   }
-  stopSse();
+  stopWs();
   if (!pin.value || !postId.value || !nsSlug.value) {
-    logWarn('startSse: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
+    logWarn('startWs: missing pin, postId, or nsSlug', pin.value, postId.value, nsSlug.value);
     return;
   }
 
   polling.value = true;
   qrError.value = '';
   const secret = CryptoJS.MD5(pin.value).toString();
-  // Use Nuxt server proxy to atrace gateway SSE (server determines refresh interval)
-  const url = `/api/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}`;
-  console.log('[SSE] Creating new EventSource:', url);
-  sseSource = new EventSource(url);
+  
+  // Build WebSocket URL - connect directly to backend gateway
+  const atraceApiUrl = import.meta.env.VITE_API_ATRACE || 'http://localhost:8081';
+  const protocol = atraceApiUrl.startsWith('https') ? 'wss:' : 'ws:';
+  const host = atraceApiUrl.replace(/^https?:\/\//, '');
+  const wsUrl = `${protocol}//${host}/api/v1/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}`;
+  
+  console.log('[WS] Creating new WebSocket:', wsUrl);
+  ws = new WebSocket(wsUrl);
 
-  lastSseAt = Date.now();
-  if (!sseWatchdogTimer) {
-    sseWatchdogTimer = setInterval(() => {
-      if (!sseSource) return;
-      if (Date.now() - lastSseAt > computeWatchdogMs()) {
-        try { sseSource.close(); } catch {}
-        sseSource = null;
-        scheduleSseRetry();
+  lastWsAt = Date.now();
+  if (!wsWatchdogTimer) {
+    wsWatchdogTimer = setInterval(() => {
+      if (!ws) return;
+      if (Date.now() - lastWsAt > computeWatchdogMs()) {
+        console.log('[WS] Watchdog timeout, closing connection');
+        try { ws.close(); } catch {}
+        ws = null;
+        scheduleWsRetry();
       }
     }, 5000);
   }
 
-  sseSource.addEventListener('qr', (ev: MessageEvent) => {
+  ws.onmessage = (event) => {
     try {
-      const data = JSON.parse(ev.data || '{}');
-      if (data?.qr) {
-        lastSseAt = Date.now();
-        
+      const data = JSON.parse(event.data || '{}');
+      lastWsAt = Date.now();
+      
+      if (data.type === 'qr' && data.qr) {
         // Update interval from server if provided
         if (data.refreshInterval && typeof data.refreshInterval === 'number') {
           REFRESH_INTERVAL.value = data.refreshInterval;
@@ -201,54 +204,66 @@ function startSse() {
         polling.value = false;
         nextRefreshAt.value = Date.now() + (REFRESH_INTERVAL.value || 5) * 1000;
         updateCountdown();
-        resetSseRetry();
+        resetWsRetry();
+      } else if (data.type === 'error') {
+        qrError.value = data.message || t('app.loadingError');
+        polling.value = false;
+      } else if (data.type === 'ping') {
+        // Server ping, connection is alive
       }
     } catch (e) {
-      logWarn('SSE parse error', e as any);
+      logWarn('WS parse error', e as any);
     }
-  });
+  };
 
-  sseSource.addEventListener('error', () => {
+  ws.onerror = (error) => {
+    console.log('[WS] WebSocket error:', error);
     if (!qrBase64.value) polling.value = false;
     qrError.value = t('app.loading') || 'Loading...';
-    lastSseAt = Date.now();
-    try { sseSource?.close(); } catch {}
-    sseSource = null;
-    scheduleSseRetry();
-  });
+    lastWsAt = Date.now();
+  };
 
-  // Schedule periodic reconnect to clean up server resources
-  // This ensures old server connections don't stay alive when client closes tab
-  if (sseReconnectTimer) clearTimeout(sseReconnectTimer);
-  sseReconnectTimer = setTimeout(() => {
-    if (!sseEnabled) return;
-    console.log('[SSE] Periodic reconnect to clean up server resources');
-    startSse(); // This will close old connection and create new one
-  }, SSE_RECONNECT_INTERVAL);
+  ws.onclose = () => {
+    console.log('[WS] WebSocket closed');
+    ws = null;
+    if (!qrBase64.value) polling.value = false;
+    scheduleWsRetry();
+  };
+
+  ws.onopen = () => {
+    console.log('[WS] WebSocket opened');
+    resetWsRetry();
+  };
 }
 
-watch(pin, (val) => {
-  if (val) startSse();
-  else stopSse();
-});
+let stopWatch: (() => void) | null = null;
 
 onMounted(() => {
+  isHydrated = true;
   loadPin();
+  
+  // Set up watcher only after hydration
+  stopWatch = watch(pin, (val) => {
+    if (val) startWs();
+    else stopWs();
+  });
+  
   if (!pin.value) askPin();
-  else startSse();
+  else startWs();
 });
 
 onBeforeUnmount(() => {
-  sseEnabled = false;
-  stopSse();
+  wsEnabled = false;
+  stopWs();
+  if (stopWatch) stopWatch();
 });
 
 if (process.client) {
   const onVisibility = () => {
-    if (!sseEnabled) return;
+    if (!wsEnabled) return;
     if (document.visibilityState === 'visible') {
-      if (!sseSource) {
-        scheduleSseRetry();
+      if (!ws) {
+        scheduleWsRetry();
       }
       // Re-request wake lock when page becomes visible
       requestWakeLock();
@@ -315,7 +330,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (qrCountdownTimer) clearInterval(qrCountdownTimer);
   if (clockTimer) clearInterval(clockTimer);
-  if (sseRetryTimer) clearTimeout(sseRetryTimer);
+  if (wsRetryTimer) clearTimeout(wsRetryTimer);
   releaseWakeLock();
 });
 

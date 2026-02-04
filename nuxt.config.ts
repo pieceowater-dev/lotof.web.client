@@ -1,12 +1,12 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 export default defineNuxtConfig({
-  ssr: true, // Enable server-side rendering for Nitro server and SSE proxy
+  ssr: true, // Enable server-side rendering for Nitro server
   
   // Route-specific rendering rules
   routeRules: {
-    // Public SSE pages should be client-side only to avoid hydration issues
-    '/shared/**/atrace/post/**': { ssr: false },
+    // Public QR display pages should be client-side only to avoid hydration issues with WebSocket
+    '/shared/**': { ssr: false },
   },
   
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
@@ -71,6 +71,14 @@ export default defineNuxtConfig({
       },
       rollupOptions: {
         external: ['xlsx']
+      }
+    },
+    server: {
+      middlewareMode: false,
+      hmr: {
+        protocol: 'ws',
+        host: 'localhost',
+        port: 5173,
       }
     }
   },
