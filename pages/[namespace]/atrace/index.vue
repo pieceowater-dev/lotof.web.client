@@ -78,6 +78,15 @@ const selectedPostLocationLine = computed(() => {
 // Sync selectedPostId with URL
 watch(selectedPostId, (val) => {
     if (!process.client) return;
+
+    try {
+        const key = getStoredSelectionKey(nsSlug.value);
+        if (val === null) {
+            localStorage.removeItem(key);
+        } else {
+            localStorage.setItem(key, val);
+        }
+    } catch {}
     
     // Update URL based on selected post
     if (val === '' || val === null) {
@@ -117,6 +126,28 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { ensure: ensureAtraceToken } = useAtraceToken();
 const LAST_ACTIVE_KEY = 'atrace-last-active'
 const INACTIVE_REFRESH_MS = 12 * 60 * 60 * 1000
+const STORED_SELECTION_KEY_PREFIX = 'atrace-selected-post:'
+
+function getStoredSelectionKey(ns: string) {
+    return `${STORED_SELECTION_KEY_PREFIX}${ns}`;
+}
+
+function loadStoredSelection() {
+    if (!process.client) return;
+    const urlPostId = route.params.postId as string | undefined;
+    if (urlPostId) {
+        selectedPostId.value = urlPostId;
+        return;
+    }
+    try {
+        const raw = localStorage.getItem(getStoredSelectionKey(nsSlug.value));
+        if (raw === '') {
+            selectedPostId.value = '';
+        } else if (raw) {
+            selectedPostId.value = raw;
+        }
+    } catch {}
+}
 
 function setLastActiveNow() {
     if (!process.client) return;
