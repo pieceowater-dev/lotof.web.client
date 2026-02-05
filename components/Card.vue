@@ -106,6 +106,7 @@ async function handlePrint() {
                 const title = qrPrintCardTitle.value || props.post.title || '';
                 const address = qrPrintCardAddress.value || '';
                 const imgSrc = qrImage.value;
+                const postId = props.post.id || '';
                 const html = `
                     <!DOCTYPE html>
                     <html>
@@ -156,6 +157,12 @@ async function handlePrint() {
                                 height: 280px;
                                 object-fit: contain;
                             }
+                            .post-id {
+                                margin-top: 20px;
+                                font-size: 12px;
+                                color: #666;
+                                font-family: monospace;
+                            }
                             @media print {
                                 body {
                                     background: white;
@@ -167,6 +174,15 @@ async function handlePrint() {
                                     border-radius: 0;
                                     max-width: 100%;
                                 }
+                                .qr-image {
+                                    width: 200px;
+                                    height: 200px;
+                                }
+                                .post-id {
+                                    font-size: 14pt;
+                                    font-weight: normal;
+                                    color: #000;
+                                }
                             }
                         </style>
                     </head>
@@ -177,6 +193,7 @@ async function handlePrint() {
                             <div class="qr-wrapper">
                                 <img src='${imgSrc}' alt='QR Code' class='qr-image' />
                             </div>
+                            <div class="post-id">ID: ${postId}</div>
                         </div>
                     </body>
                     </html>
@@ -277,6 +294,7 @@ const dropdownItems = [
     :address="qrPrintCardAddress"
     :qr-image="qrImage"
     :loading="qrPrintCardLoading"
+    :post-id="props.post.id"
     @close="closePrintCard"
     @print="openPrintDialog"
 />

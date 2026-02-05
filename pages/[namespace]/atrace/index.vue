@@ -11,6 +11,11 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { getBrowserTimezone } from '@/utils/timezones';
 const { t } = useI18n();
 
+definePageMeta({
+  name: 'atrace',
+  path: '/:namespace/atrace/:postId?'
+});
+
 // data
 type Post = {
     id: string;
@@ -68,24 +73,20 @@ const selectedPostLocationLine = computed(() => {
     return parts.join(', ');
 });
 
-// Persistence helpers (prefix everything related to atrace with 'atrace-')
-const selectedStorageKey = computed(() => dynamicLS.atraceSelectedPostId(nsSlug.value));
-function loadStoredSelection() {
-    if (process.client) {
-        try {
-            const v = localStorage.getItem(selectedStorageKey.value);
-            // Preserve empty string ("All"), only null means no selection
-            selectedPostId.value = v === null ? null : v;
-        } catch {}
-    }
-}
+
+
+// Sync selectedPostId with URL
 watch(selectedPostId, (val) => {
     if (!process.client) return;
-    try {
-        // Store both normal IDs and empty string ("All"); remove only for null
-        if (val !== null) localStorage.setItem(selectedStorageKey.value, val);
-        else localStorage.removeItem(selectedStorageKey.value);
-    } catch {}
+    
+    // Update URL based on selected post
+    if (val === '' || val === null) {
+        // "All" or no selection -> /:namespace/atrace
+        router.push({ name: 'atrace', params: { namespace: nsSlug.value } });
+    } else {
+        // Specific post -> /:namespace/atrace/:postId
+        router.push({ name: 'atrace', params: { namespace: nsSlug.value, postId: val } });
+    }
 });
 
 const isOpen = ref(false)
@@ -482,8 +483,17 @@ onMounted(async () => {
         setTimeout(() => router.push('/'), 0);
         return;
     }
-    // Load previously selected post for this namespace (if any)
-    loadStoredSelection();
+    
+    // First check URL for postId param
+    const urlPostId = route.params.postId as string | undefined;
+    if (urlPostId) {
+        // URL has a specific post ID
+        selectedPostId.value = urlPostId;
+    } else {
+        // No URL param means "All" should be selected
+        selectedPostId.value = '';
+    }
+    
     await loadPosts();
     setupCardsObserver();
     if (process.client) {

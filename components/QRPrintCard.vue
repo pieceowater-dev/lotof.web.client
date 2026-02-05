@@ -6,6 +6,7 @@ interface Props {
   address?: string;
   qrImage?: string | null;
   loading?: boolean;
+  postId?: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -13,6 +14,7 @@ const props = withDefaults(defineProps<Props>(), {
   address: '',
   qrImage: null,
   loading: false,
+  postId: '',
 });
 
 const emit = defineEmits<{
@@ -55,13 +57,17 @@ const hasContent = computed(() => !!props.title || !!props.address);
           </div>
 
           <!-- QR Code -->
-          <div v-if="props.qrImage" class="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-6 flex items-center justify-center w-full">
+          <div v-if="props.qrImage" class="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-4 flex flex-col items-center justify-center w-full">
             <img
               :src="props.qrImage"
               alt="QR Code"
               class="qr-image w-full max-w-xs h-auto aspect-square object-contain"
-              style="max-width: 280px; min-width: 200px;"
+              style="max-width: 200px; min-width: 160px;"
             />
+            <!-- Post ID всегда показываем -->
+            <div class="post-id mt-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
+              ID: {{ props.postId || 'N/A' }}
+            </div>
           </div>
 
           <!-- Loading state -->
@@ -127,5 +133,135 @@ const hasContent = computed(() => !!props.title || !!props.address);
 
 .dark .qr-image {
   filter: invert(0.8) hue-rotate(180deg);
+}
+
+@media print {
+  /* Скрыть оверлей и сделать модальное окно статичным */
+  :deep(.fixed.inset-0) {
+    position: static !important;
+    background: white !important;
+  }
+  
+  /* Убрать все кнопки при печати */
+  :deep(button) {
+    display: none !important;
+  }
+  
+  /* Скрыть информационный блок */
+  :deep(.bg-blue-50),
+  :deep([class*="bg-blue-900"]) {
+    display: none !important;
+  }
+  
+  /* Убрать декоративные стили */
+  :deep(.rounded-2xl),
+  :deep(.shadow-2xl),
+  :deep(.rounded-xl) {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  
+  /* Оптимизация отступов для печати */
+  :deep(.p-8) {
+    padding: 10mm !important;
+  }
+  
+  :deep(.mb-6),
+  :deep(.mb-4) {
+    margin-bottom: 5mm !important;
+  }
+  
+  /* Заголовок */
+  :deep(.text-xl) {
+    font-size: 14pt !important;
+    margin-bottom: 5mm !important;
+  }
+  
+  /* Адрес и текст */
+  :deep(.text-sm) {
+    font-size: 10pt !important;
+  }
+  
+  :deep(.text-lg) {
+    font-size: 12pt !important;
+  }
+  
+  /* QR код - фиксированный размер для печати */
+  .qr-image {
+    max-width: 50mm !important;
+    width: 50mm !important;
+    height: auto !important;
+    filter: none !important;
+  }
+  
+  /* Контейнер QR */
+  :deep(.bg-gray-50) {
+    background: transparent !important;
+    padding: 5mm !important;
+  }
+  
+  /* Post ID - гарантировать отображение */
+  .post-id,
+  :deep(.post-id),
+  :deep(.font-mono),
+  .font-mono {
+    display: block !important;
+    font-size: 10pt !important;
+    margin-top: 3mm !important;
+    color: #000 !important;
+    visibility: visible !important;
+    text-align: center !important;
+  }
+  
+  /* Текст ID должен быть виден */
+  :deep(.text-xs) {
+    font-size: 10pt !important;
+  }
+  
+  /* Настройки страницы */
+  @page {
+    size: A4 portrait;
+    margin: 15mm;
+  }
+  
+  /* Убрать лишние отступы */
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}
+</style>
+
+<!-- Глобальные стили для печати (без scoped) -->
+<style>
+@media print {
+  /* Убрать все лишнее */
+  body * {
+    visibility: hidden !important;
+  }
+  
+  /* Показать только контейнер печати */
+  .fixed.inset-0,
+  .fixed.inset-0 *,
+  .bg-white,
+  .bg-white *,
+  .qr-image,
+  .post-id {
+    visibility: visible !important;
+  }
+  
+  /* Post ID - максимально агрессивные стили */
+  .post-id {
+    display: block !important;
+    font-size: 14pt !important;
+    margin-top: 5mm !important;
+    color: #000 !important;
+    visibility: visible !important;
+    text-align: center !important;
+    font-family: monospace !important;
+    font-weight: bold !important;
+    opacity: 1 !important;
+    position: relative !important;
+  }
 }
 </style>
