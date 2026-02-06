@@ -26,6 +26,21 @@ function goTargetOrHome() {
   if (targetUrl.value) {
     window.location.href = targetUrl.value as string;
   } else {
+    tryCloseTabOrGoHome();
+  }
+}
+
+function tryCloseTabOrGoHome() {
+  // Попытка закрыть вкладку (работает только если она была открыта через JS)
+  if (process.client) {
+    window.close();
+    // Если вкладка не закрылась через 100мс, делаем редирект
+    setTimeout(() => {
+      if (!window.closed) {
+        router.push('/');
+      }
+    }, 100);
+  } else {
     router.push('/');
   }
 }
@@ -58,7 +73,7 @@ function startCountdown() {
         // Redirect back to original QR link to retry
         window.location.href = targetUrl.value;
       } else {
-        router.push('/');
+        tryCloseTabOrGoHome();
       }
     }
   }, step);
@@ -126,7 +141,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-4">
-              <UButton color="primary" variant="outline" @click="router.push('/')">
+              <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
                 {{ t('app.home') }}
               </UButton>
@@ -156,7 +171,7 @@ onBeforeUnmount(() => {
             </div>
 
             <div class="mt-4">
-              <UButton color="primary" variant="outline" @click="router.push('/')">
+              <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
                 {{ t('app.home') }}
               </UButton>
