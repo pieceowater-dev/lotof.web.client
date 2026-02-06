@@ -1,1 +1,11 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Disallow sensitive areas
+Disallow: /api/
+Disallow: /*.json$
+
+# Sitemap location
+Sitemap: https://lota.tools/sitemap.xml
 
