@@ -6,6 +6,8 @@ const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 
+const isMounted = ref(false);
+
 const ok = computed(() => {
   const v = (route.query.ok as string) || '0';
   return v === '1' || v.toLowerCase?.() === 'true';
@@ -88,6 +90,7 @@ function stopCountdown() {
 }
 
 onMounted(() => {
+  isMounted.value = true;
   if (isWaiting.value) {
     totalMs.value = waitSecondsInitial.value * 1000;
     leftMs.value = totalMs.value;
@@ -119,7 +122,15 @@ onBeforeUnmount(() => {
       </template>
 
       <div class="py-8 text-center">
-        <template v-if="isWaiting">
+        <!-- Loading state to prevent layout flash -->
+        <template v-if="!isMounted">
+          <div class="flex flex-col items-center gap-4">
+            <div class="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse">
+              <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+            </div>
+          </div>
+        </template>
+        <template v-else-if="isWaiting">
           <div class="flex flex-col items-center gap-4">
             <!-- Waiting icon -->
             <div class="h-16 w-16 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
