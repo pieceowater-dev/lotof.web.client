@@ -31,6 +31,16 @@ function isElementVisible(el: Element): boolean {
     && rect.left <= window.innerWidth;
 }
 
+function getViewportMetrics() {
+  const vv = window.visualViewport;
+  return {
+    offsetTop: vv?.offsetTop ?? 0,
+    offsetLeft: vv?.offsetLeft ?? 0,
+    width: vv?.width ?? window.innerWidth,
+    height: vv?.height ?? window.innerHeight,
+  };
+}
+
 function resolveTargetElement(target: string | string[]): Element | null {
   const selectors = Array.isArray(target)
     ? target
@@ -77,10 +87,11 @@ function updateHighlight() {
 
   const rect = target.getBoundingClientRect();
   const padding = currentStep.value.highlightPadding || 8;
+  const viewport = getViewportMetrics();
 
   highlightRect.value = {
-    top: rect.top + window.scrollY,
-    left: rect.left + window.scrollX,
+    top: rect.top + viewport.offsetTop,
+    left: rect.left + viewport.offsetLeft,
     width: rect.width,
     height: rect.height,
     padding,
@@ -103,8 +114,9 @@ function calculatePopupPosition(
   const popupWidth = 360; // max-w-sm = 384px, use 360 for safety
   const estimatedHeight = 220;
   const gap = 16;
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
+  const viewport = getViewportMetrics();
+  const viewportWidth = viewport.width;
+  const viewportHeight = viewport.height;
 
   let effectivePlacement = placement;
 
@@ -126,26 +138,26 @@ function calculatePopupPosition(
 
   switch (effectivePlacement) {
     case 'bottom':
-      top = targetRect.bottom + window.scrollY + gap;
-      left = targetRect.left + window.scrollX + targetRect.width / 2 - popupWidth / 2;
-      if (top + estimatedHeight > window.scrollY + viewportHeight) {
+      top = targetRect.bottom + viewport.offsetTop + gap;
+      left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
+      if (top + estimatedHeight > viewport.offsetTop + viewportHeight) {
         effectivePlacement = 'top';
       }
       break;
     case 'top':
-      top = targetRect.top + window.scrollY - gap - estimatedHeight;
-      left = targetRect.left + window.scrollX + targetRect.width / 2 - popupWidth / 2;
-      if (top < window.scrollY + 8) {
+      top = targetRect.top + viewport.offsetTop - gap - estimatedHeight;
+      left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
+      if (top < viewport.offsetTop + 8) {
         effectivePlacement = 'bottom';
       }
       break;
     case 'left':
-      top = targetRect.top + window.scrollY + targetRect.height / 2 - estimatedHeight / 2;
-      left = targetRect.left + window.scrollX - popupWidth - gap;
+      top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
+      left = targetRect.left + viewport.offsetLeft - popupWidth - gap;
       break;
     case 'right':
-      top = targetRect.top + window.scrollY + targetRect.height / 2 - estimatedHeight / 2;
-      left = targetRect.right + window.scrollX + gap;
+      top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
+      left = targetRect.right + viewport.offsetLeft + gap;
       break;
   }
 
@@ -154,8 +166,8 @@ function calculatePopupPosition(
   }
 
   // Constrain to viewport
-  const maxLeft = window.innerWidth - popupWidth - 16;
-  left = Math.max(16, Math.min(left, maxLeft));
+  const maxLeft = viewport.offsetLeft + viewportWidth - popupWidth - 16;
+  left = Math.max(viewport.offsetLeft + 16, Math.min(left, maxLeft));
 
   popupRect.value = { top, left, width: popupWidth, placement: effectivePlacement };
 }
