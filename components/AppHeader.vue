@@ -3,6 +3,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { atraceTour } from '@/config/tours';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -19,6 +21,19 @@ const isMobileMenuOpen = ref(false);
 
 const isWalter = Math.random() < 1 / 21;
 const homeText = computed(() => isWalter ? 'Домой, Уолтер' : t('app.home'));
+
+// Onboarding
+const { startTour, reset } = useOnboarding();
+const showHelpButton = computed(() => {
+  return route.path.includes('/atrace');
+});
+
+function handleHelpClick() {
+  if (route.path.includes('/atrace')) {
+    reset(atraceTour.id);
+    startTour(atraceTour, 0);
+  }
+}
 
 function closeMenu(source: 'desktop' | 'mobile') {
   if (source === 'desktop') isMenuOpen.value = false;
@@ -63,6 +78,18 @@ const goHome = () => {
       <!-- <UButton v-if="showMenuButton" @click="goHome" variant="ghost" size="md" md:size="lg">
         <UIcon name="i-lucide-home" />
       </UButton> -->
+
+      <!-- Help/Tutorial button (life ring) -->
+      <UButton
+        v-if="showHelpButton"
+        data-tour="help-button"
+        @click="handleHelpClick"
+        variant="ghost"
+        size="md"
+        :title="t('app.startTour') || 'Start interactive tutorial'"
+      >
+        <UIcon name="i-lucide-life-buoy" />
+      </UButton>
 
       <!-- Mobile burger -->
       <UButton class="md:hidden" @click="isMobileMenuOpen = true" variant="ghost" size="md">

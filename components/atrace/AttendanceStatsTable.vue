@@ -563,7 +563,7 @@ function formatNumber(val: number, fractionDigits = 0) {
         <UIcon name="i-heroicons-information-circle" class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300" />
   <div class="text-sm">{{ t('app.noData') }}</div>
       </div>
-      <table v-else class="w-full text-sm">
+      <table v-else class="w-full text-sm" data-tour="attendance-table">
         <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
           <tr>
             <th class="px-3 py-2 text-left font-medium w-7"></th>
@@ -572,7 +572,6 @@ function formatNumber(val: number, fractionDigits = 0) {
             <th class="px-3 py-2 text-center font-medium">{{ t('app.attended') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.violations') }}</th>
             <th class="px-3 py-2 text-center font-medium">{{ t('app.exceptions') }}</th>
-            <th v-if="!postId" class="px-3 py-2 text-right font-medium w-16"></th>
           </tr>
         </thead>
         <tbody>
@@ -586,9 +585,19 @@ function formatNumber(val: number, fractionDigits = 0) {
               @click="postId ? toggleUserDetails(user.userId) : null"
             >
               <td class="px-3 py-2 text-center">
-                <UIcon 
-                  v-if="postId"
-                  :name="isExpanded(user.userId) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'" 
+                <UButton
+                  v-if="!postId"
+                  data-tour="calculate-btn"
+                  size="xs"
+                  variant="soft"
+                  icon="i-heroicons-calculator"
+                  @click.stop="openSalaryCalculator(user.userId)"
+                >
+                  {{ t('app.calculate') }}
+                </UButton>
+                <UIcon
+                  v-else
+                  :name="isExpanded(user.userId) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
                   class="w-4 h-4 transition-transform"
                 />
               </td>
@@ -620,21 +629,11 @@ function formatNumber(val: number, fractionDigits = 0) {
                 </span>
                 <span v-else class="text-gray-400">0</span>
               </td>
-              <td v-if="!postId" class="px-3 py-2 text-right">
-                <UButton
-                  size="xs"
-                  variant="soft"
-                  icon="i-heroicons-calculator"
-                  @click.stop="openSalaryCalculator(user.userId)"
-                >
-                  {{ t('app.calculate') }}
-                </UButton>
-              </td>
             </tr>
 
             <!-- Expanded details row -->
             <tr v-if="postId && isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
-              <td :colspan="!postId ? 7 : 6" class="px-3 py-3">
+              <td :colspan="6" class="px-3 py-3">
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                   <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
                   <UserDayRecordsAccordion 

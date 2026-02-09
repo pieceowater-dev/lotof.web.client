@@ -4,11 +4,14 @@ import AttendanceStatsTable from '@/components/atrace/AttendanceStatsTable.vue';
 import CreatePostModal from "@/components/atrace/CreatePostModal.vue";
 import EditPostModal from "@/components/atrace/EditPostModal.vue";
 import FilterModal from "@/components/atrace/FilterModal.vue";
+import TourGuide from "@/components/TourGuide.vue";
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getBrowserTimezone } from '@/utils/timezones';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { atraceTour } from '@/config/tours';
 const { t } = useI18n();
 
 definePageMeta({
@@ -531,6 +534,16 @@ onMounted(async () => {
         setLastActiveNow();
         document.addEventListener('visibilitychange', refreshIfStale);
         window.addEventListener('focus', refreshIfStale);
+        
+        // Start onboarding tour if conditions are met
+        const { isCompleted, startTour } = useOnboarding();
+        const shouldShowTour = posts.value.length === 0 && !isCompleted(atraceTour.id);
+        if (shouldShowTour) {
+            // Wait a bit for DOM to settle
+            setTimeout(() => {
+                startTour(atraceTour);
+            }, 1000);
+        }
     }
 });
 
@@ -557,17 +570,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    
+    <TourGuide />
 
     <FilterModal v-model="isFilterOpen" />
 
     <div class="h-full flex flex-col overflow-hidden">
         <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
-            <div class="text-left">
+            <div class="text-left" data-tour="atrace-title">
                 <h1 class="text-2xl font-semibold">{{ t('app.atraceTitle') }}</h1>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
             </div>
-            <div>
+            <div data-tour="settings-btn">
                 <UButton 
                     icon="lucide:settings" 
                     size="xs" 
@@ -582,7 +595,7 @@ onBeforeUnmount(() => {
 
 
         <!-- Desktop: horizontal card scroll -->
-        <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef">
+        <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef" data-tour="posts-list">
             <div class="inline-flex space-x-4 items-stretch">
                 <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
                 <div v-else-if="error" class="text-red-500">{{ error }}</div>
@@ -597,6 +610,7 @@ onBeforeUnmount(() => {
                               @edit="() => openEdit(post)" />
                     </div>
                     <button @click="isCreateOpen = true"
+                        data-tour="create-post-btn"
                         class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0">
                         {{ t('app.atraceAddLocation') }}
                     </button>
@@ -609,7 +623,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Mobile: dropdown selector -->
-        <div class="md:hidden px-4 py-4 flex-shrink-0">
+        <div class="md:hidden px-4 py-4 flex-shrink-0" data-tour="posts-list-mobile">
             <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
             <div v-else-if="error" class="text-red-500">{{ error }}</div>
             <template v-else>
@@ -631,6 +645,7 @@ onBeforeUnmount(() => {
                         :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
                     />
                     <UButton 
+                        data-tour="create-post-btn-mobile"
                         icon="lucide:plus" 
                         size="sm" 
                         color="primary" 
@@ -664,7 +679,13 @@ onBeforeUnmount(() => {
                         {{ t('app.noPostsDesc') || 'Add your first location to start tracking attendance.' }}
                     </p>
                 </div>
-                <UButton color="primary" size="lg" class="w-full py-3 text-lg font-semibold" @click="isCreateOpen = true">
+                                <UButton
+                                    data-tour="create-post-btn-empty"
+                                    color="primary"
+                                    size="lg"
+                                    class="w-full py-3 text-lg font-semibold"
+                                    @click="isCreateOpen = true"
+                                >
                     {{ t('app.atraceAddLocation') || 'Add Location' }}
                 </UButton>
             </div>
