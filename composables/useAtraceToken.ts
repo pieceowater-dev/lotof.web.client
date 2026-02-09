@@ -6,6 +6,10 @@ const ATRACE_TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // 12h
 const ATRACE_TOKEN_NS_KEY = LSKeys.ATRACE_TOKEN_NS
 
 export function useAtraceToken() {
+  function sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
   function readStoredNamespace(): string | null {
     if (typeof window === 'undefined') return null
     try {
@@ -77,7 +81,11 @@ export function useAtraceToken() {
     if (!hubToken) return null
     try {
       const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken')
-      const token = await atraceGetAppToken(hubToken, nsSlug)
+      let token = await atraceGetAppToken(hubToken, nsSlug)
+      if (!token) {
+        await sleep(250)
+        token = await atraceGetAppToken(hubToken, nsSlug)
+      }
       try {
         const { setAtraceAppToken } = await import('@/api/clients')
         setAtraceAppToken(token)
