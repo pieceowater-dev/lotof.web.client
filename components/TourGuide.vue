@@ -90,8 +90,9 @@ function updateHighlight() {
   const placement = currentStep.value.placement || 'bottom';
   calculatePopupPosition(rect, placement, padding);
 
-  // Scroll target into view
-  target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  // Scroll target into view - instant on mobile for reliability
+  const isMobile = window.innerWidth < 768;
+  target.scrollIntoView({ behavior: isMobile ? 'instant' : 'smooth', block: 'center' });
 }
 
 function calculatePopupPosition(

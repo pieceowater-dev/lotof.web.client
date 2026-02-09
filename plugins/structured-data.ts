@@ -1,4 +1,7 @@
 export default defineNuxtPlugin(() => {
+  const config = useRuntimeConfig();
+  const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+
   useHead({
     script: [
       {
@@ -8,8 +11,8 @@ export default defineNuxtPlugin(() => {
           '@type': 'Organization',
           name: 'lota',
           alternateName: 'LOTA',
-          url: 'https://lota.tools',
-          logo: 'https://lota.tools/apple-touch-icon.png',
+          url: siteUrl,
+          logo: `${siteUrl}/apple-touch-icon.png`,
           description: 'Платформа автоматизации для современного бизнеса. Управляйте посещаемостью, трекингом и рабочими процессами эффективно.',
           sameAs: [],
           contactPoint: {
@@ -27,13 +30,13 @@ export default defineNuxtPlugin(() => {
           '@type': 'WebSite',
           name: 'lota',
           alternateName: 'LOTA',
-          url: 'https://lota.tools',
+          url: siteUrl,
           inLanguage: 'ru-RU',
           potentialAction: {
             '@type': 'SearchAction',
             target: {
               '@type': 'EntryPoint',
-              urlTemplate: 'https://lota.tools/search?q={search_term_string}'
+              urlTemplate: `${siteUrl}/search?q={search_term_string}`
             },
             'query-input': 'required name=search_term_string'
           }
@@ -46,7 +49,7 @@ export default defineNuxtPlugin(() => {
           '@type': 'WebApplication',
           name: 'lota',
           alternateName: 'LOTA - Платформа автоматизации бизнеса',
-          url: 'https://lota.tools',
+          url: siteUrl,
           applicationCategory: 'BusinessApplication',
           operatingSystem: 'All',
           inLanguage: ['ru-RU', 'en-US'],

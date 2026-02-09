@@ -152,6 +152,27 @@ const handleSaveProfile = async () => {
 };
 
 const { t, locale } = useI18n();
+const config = useRuntimeConfig();
+const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+
+useSeoMeta(() => ({
+  title: t('app.title') || 'lota',
+  description: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+  ogTitle: t('app.title') || 'lota',
+  ogDescription: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+  ogType: 'website',
+  ogUrl: siteUrl,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+  twitterTitle: t('app.title') || 'lota',
+  twitterDescription: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+  twitterImage: `${siteUrl}/og-image.png`
+}));
+
+useHead(() => ({
+  link: [{ rel: 'canonical', href: siteUrl }]
+}));
+
 const greeting = computed(() => {
   const hours = new Date().getHours();
   if (hours >= 0 && hours < 4) return t('app.greetingNight');

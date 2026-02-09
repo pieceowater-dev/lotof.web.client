@@ -563,7 +563,7 @@ function formatNumber(val: number, fractionDigits = 0) {
         <UIcon name="i-heroicons-information-circle" class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300" />
   <div class="text-sm">{{ t('app.noData') }}</div>
       </div>
-      <table v-else class="w-full text-sm" data-tour="attendance-table">
+      <table v-else class="w-full text-sm">
         <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
           <tr>
             <th class="px-3 py-2 text-left font-medium w-7"></th>
@@ -575,13 +575,14 @@ function formatNumber(val: number, fractionDigits = 0) {
           </tr>
         </thead>
         <tbody>
-          <template v-for="user in stats" :key="user.userId">
+          <template v-for="(user, index) in stats" :key="user.userId">
             <!-- Main row -->
             <tr 
               :class="[
                 'border-b dark:border-gray-700',
                 postId ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer' : 'cursor-default'
               ]"
+              :data-tour="index === 0 ? 'attendance-table' : undefined"
               @click="postId ? toggleUserDetails(user.userId) : null"
             >
               <td class="px-3 py-2 text-center">

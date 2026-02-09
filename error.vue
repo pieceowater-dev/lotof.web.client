@@ -8,6 +8,13 @@ const handleError = () => clearError({ redirect: '/' })
 import { useI18n } from '@/composables/useI18n';
 const { t, tm } = useI18n();
 
+useHead(() => ({
+  meta: [
+    { name: 'robots', content: 'noindex, nofollow, noarchive' },
+    { name: 'googlebot', content: 'noindex, nofollow, noarchive' }
+  ]
+}));
+
 function pick(list: any): string {
   if (!Array.isArray(list) || !list.length) return '';
   return list[Math.floor(Math.random()*list.length)];
