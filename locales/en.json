@@ -109,7 +109,7 @@
   "tourAtraceCalculateTitle": "Calculate",
   "tourAtraceCalculateContent": "Use this button to calculate salary data for the selected member.",
   "tourAtraceSettingsTitle": "A-Trace settings",
-  "tourAtraceSettingsContent": "In settings you can manage members, plan limits, edit locations, and get QR codes for check-ins.",
+  "tourAtraceSettingsContent": "In settings you can manage members, plan limits etc.",
   "tourAtraceHelpTitle": "Need help later?",
   "tourAtraceHelpContent": "Use the life ring button in the header to replay this tutorial anytime.",
     "errorMessages": [

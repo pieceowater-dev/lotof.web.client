@@ -107,7 +107,7 @@
     "tourAtraceCalculateTitle": "Посчитать",
     "tourAtraceCalculateContent": "Кнопка рассчитывает данные по зарплате для выбранного участника.",
     "tourAtraceSettingsTitle": "Настройки A-Trace",
-    "tourAtraceSettingsContent": "В настройках можно управлять участниками, лимитами тарифа, редактировать локации и получать QR-коды для регистрации.",
+    "tourAtraceSettingsContent": "В настройках можно управлять участниками, лимитами тарифа и многим другим.",
     "tourAtraceHelpTitle": "Нужна подсказка позже?",
     "tourAtraceHelpContent": "Нажмите на спасательный круг сверху, чтобы перепройти обучение в любое время.",
     "errorMessages": [
