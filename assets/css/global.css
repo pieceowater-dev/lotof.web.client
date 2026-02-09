@@ -85,6 +85,7 @@ input, textarea, select {
 /* Tables: ensure header text is not uppercased anywhere */
 table thead th {
   text-transform: none !important;
+  white-space: nowrap;
 }
 
 /* Nuxt UI UTable header normalization and sticky positioning */
@@ -93,6 +94,7 @@ table thead th {
   position: sticky;
   top: 0;
   z-index: 10;
+  white-space: nowrap;
 }
 
 /* Table row hover effect for better readability */
