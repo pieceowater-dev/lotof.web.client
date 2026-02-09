@@ -40,7 +40,7 @@ const pageTitle = computed(() => {
   const path = route.path || '';
   const segments = path.split('/').filter(Boolean);
 
-  if (!segments.length) return baseTitle.value;
+  if (!segments.length) return 'Hub'; // Main page title
 
   if (segments[0] === 'shared') {
     const ns = segments[1];
