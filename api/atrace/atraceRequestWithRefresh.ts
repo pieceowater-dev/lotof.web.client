@@ -2,6 +2,7 @@ import { atraceClient, setAtraceAppToken } from '@/api/clients';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 
 /**
  * Universal wrapper for atraceClient requests with auto-refresh on AtraceAuthorization error.
@@ -19,6 +20,7 @@ export async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: 
       // Clear old token
       try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
       setAtraceAppToken(null);
+      try { useAtraceToken().clear(); } catch {}
       // Try to get new token using hub token
       const { token } = useAuth();
       const hubToken = token.value;

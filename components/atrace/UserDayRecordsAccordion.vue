@@ -255,6 +255,17 @@ function formatTime(record: AtraceRecord) {
   }
 }
 
+function getRecordDirection(record: AtraceRecord, dayRecords: AtraceRecord[]): string {
+  if (!dayRecords.length) return '';
+  const first = dayRecords[0];
+  const last = dayRecords[dayRecords.length - 1];
+  if (record.id === first.id) return t('app.checkIn');
+  if (record.id === last.id) return t('app.checkOut');
+  const index = dayRecords.findIndex(r => r.id === record.id);
+  if (index < 0) return '';
+  return index % 2 === 0 ? t('app.checkIn') : t('app.checkOut');
+}
+
 function methodLabel(method?: string) {
   if (!method) return t('app.methodUnknown');
   const key = `app.methodLabels.${method}`;
@@ -399,7 +410,12 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                 class="border-t border-gray-100 dark:border-gray-700 transition-colors"
                 :class="getRecordHighlight(r, records)"
               >
-                <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r).fullDate">{{ formatTime(r).time }}</td>
+                <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r).fullDate">
+                  {{ formatTime(r).time }}
+                  <span v-if="getRecordDirection(r, records)" class="ml-1 text-gray-500">
+                    ({{ getRecordDirection(r, records) }})
+                  </span>
+                </td>
                 <td class="px-2 sm:px-3 py-1.5 text-center hidden sm:table-cell">{{ methodLabel(r.method) }}</td>
                 <td class="px-2 sm:px-3 py-1.5 text-center">
                   <div class="flex flex-row flex-wrap items-center justify-center gap-1">

@@ -1,12 +1,54 @@
-import { CookieKeys } from '@/utils/storageKeys'
+import { CookieKeys, LSKeys } from '@/utils/storageKeys'
 import { logError } from '@/utils/logger'
 
 const ATRACE_TOKEN_TS_KEY = 'atrace-token-ts'
 const ATRACE_TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // 12h
+const ATRACE_TOKEN_NS_KEY = LSKeys.ATRACE_TOKEN_NS
 
 export function useAtraceToken() {
+  function readStoredNamespace(): string | null {
+    if (typeof window === 'undefined') return null
+    try {
+      return localStorage.getItem(ATRACE_TOKEN_NS_KEY)
+    } catch {
+      return null
+    }
+  }
+
+  function writeStoredNamespace(nsSlug: string) {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(ATRACE_TOKEN_NS_KEY, nsSlug)
+    } catch {}
+  }
+
+  function clearStoredNamespace() {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.removeItem(ATRACE_TOKEN_NS_KEY)
+    } catch {}
+  }
+
+  async function clearInMemoryToken() {
+    try {
+      const { setAtraceAppToken } = await import('@/api/clients')
+      setAtraceAppToken(null)
+    } catch {}
+  }
+
   async function ensure(nsSlug: string, hubToken?: string | null): Promise<string | null> {
     const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' })
+    const storedNs = readStoredNamespace()
+    const hasNsMismatch = !!storedNs && storedNs !== nsSlug
+    const shouldForceByNs = !storedNs && !!cookie.value && !!hubToken && !!nsSlug
+
+    if (cookie.value && (hasNsMismatch || shouldForceByNs)) {
+      try { cookie.value = null as any } catch {}
+      try { localStorage.removeItem(ATRACE_TOKEN_TS_KEY) } catch {}
+      clearStoredNamespace()
+      await clearInMemoryToken()
+    }
+
     if (cookie.value) {
       const shouldForceRefresh = (() => {
         if (typeof window === 'undefined') return false
@@ -24,6 +66,7 @@ export function useAtraceToken() {
           const { setAtraceAppToken } = await import('@/api/clients')
           setAtraceAppToken(cookie.value)
         } catch {}
+        if (!storedNs && nsSlug) writeStoredNamespace(nsSlug)
         return cookie.value
       }
       try {
@@ -43,6 +86,7 @@ export function useAtraceToken() {
       if (typeof window !== 'undefined') {
         try { localStorage.setItem(ATRACE_TOKEN_TS_KEY, String(Date.now())) } catch {}
       }
+      if (nsSlug) writeStoredNamespace(nsSlug)
       return token
     } catch (e) {
       logError('[useAtraceToken] exchange failed', e)
@@ -58,7 +102,9 @@ export function useAtraceToken() {
     try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any } catch {}
     if (typeof window !== 'undefined') {
       try { localStorage.removeItem(ATRACE_TOKEN_TS_KEY) } catch {}
+      try { localStorage.removeItem(ATRACE_TOKEN_NS_KEY) } catch {}
     }
+    clearInMemoryToken()
   }
 
   return { ensure, current, clear }

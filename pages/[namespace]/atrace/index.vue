@@ -12,7 +12,9 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { getBrowserTimezone } from '@/utils/timezones';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { atraceTour } from '@/config/tours';
+import { useNamespace } from '@/composables/useNamespace';
 const { t } = useI18n();
+const { titleBySlug } = useNamespace();
 
 definePageMeta({
   name: 'atrace',
@@ -76,6 +78,25 @@ const selectedPostLocationLine = computed(() => {
     return parts.join(', ');
 });
 
+const router = useRouter();
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
+
+const appTitle = computed(() => t('app.atraceTitle') || t('app.attendance') || 'A-Trace');
+const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
+const pageTitle = computed(() => {
+    const base = nsTitle.value ? `${appTitle.value} — ${nsTitle.value}` : appTitle.value;
+    if (!selectedPostId.value || selectedPostId.value === '') return base;
+    if (!selectedPostTitle.value) return base;
+    return nsTitle.value
+        ? `${appTitle.value} — ${nsTitle.value} — ${selectedPostTitle.value}`
+        : `${appTitle.value} — ${selectedPostTitle.value}`;
+});
+
+useHead(() => ({
+    title: pageTitle.value,
+}));
+
 
 
 // Sync selectedPostId with URL
@@ -121,10 +142,6 @@ const editForm = reactive<{ title: string; description?: string; location: { add
     { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' }, pin: '' }
 );
 // Edit PIN helpers handled inside modal component
-
-const router = useRouter();
-const route = useRoute();
-const nsSlug = computed(() => route.params.namespace as string);
 
 const { ensure: ensureAtraceToken } = useAtraceToken();
 const LAST_ACTIVE_KEY = 'atrace-last-active'

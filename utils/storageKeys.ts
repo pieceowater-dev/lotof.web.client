@@ -11,6 +11,7 @@ export const LSKeys = {
   LANGUAGE: 'lang',
   SELECTED_NAMESPACE: 'selectedNamespace', // legacy fallback
   SELECTED_NAMESPACE_BY_USER: 'selectedNamespaceByUser',
+  ATRACE_TOKEN_NS: 'atraceTokenNs',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',

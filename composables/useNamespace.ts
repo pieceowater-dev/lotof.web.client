@@ -1,5 +1,6 @@
 // Manages current namespace selection (multi-tenant context)
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
@@ -68,10 +69,10 @@ export function useNamespace() {
     // On namespace switch, clear app-scoped tokens (e.g., A-Trace token)
     if (process.client) {
       try {
-        // Prefer Nuxt helper
-  try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+        const { clear } = useAtraceToken();
+        clear();
         // Fallback: manual expire in case path/domain differs
-  document.cookie = `${CookieKeys.ATRACE_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+        document.cookie = `${CookieKeys.ATRACE_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
     }
   }

@@ -9,6 +9,7 @@ import IntroSection from '@/components/IntroSection.vue';
 import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
@@ -93,31 +94,10 @@ async function handleAppClick(appAddress: string) {
     try {
       const hubToken = useCookie<string | null>(CookieKeys.TOKEN).value;
       if (!hubToken) return login();
-  const existing = useCookie<string | null>(CookieKeys.ATRACE_TOKEN);
-      if (!existing.value) {
-        const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken');
-  const atraceToken = await atraceGetAppToken(hubToken, ns);
-  // Store in reactive global (clients.ts) so subsequent atrace GraphQL calls use it
-  const { setAtraceAppToken } = await import('@/api/clients');
-  setAtraceAppToken(atraceToken);
-        // Persist token on the client so the A-Trace page guard won’t redirect
-        useCookie(CookieKeys.ATRACE_TOKEN, {
-          sameSite: 'lax',
-          path: '/',
-          expires: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000)
-        }).value = atraceToken;
-        // Give the cookie a tick to flush before navigating
-        await nextTick();
-      } else {
-        // Token already present — skip extra auth request
-        // Optionally: decode and refresh if near expiry
-        // Ensure in-memory ref matches cookie (e.g., after page reload)
-        const { setAtraceAppToken } = await import('@/api/clients');
-        const existingVal = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value;
-        if (existingVal) setAtraceAppToken(existingVal);
-      }
+      const { ensure } = useAtraceToken();
+      const atraceToken = await ensure(ns, hubToken);
       // Ensure cookie is present before navigating; otherwise, stop and notify
-      if (!useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value) {
+      if (!atraceToken || !useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value) {
         toast.add({ title: 'A-Trace', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
         return;
       }
@@ -302,14 +282,14 @@ function handleLogout() {
     <p class="mb-4">{{ t('app.analyticsLongDesc') }}</p>
   </div>
 
-  <Modal v-model="isModalOpen" :header="t('app.profileEditing')" :footerButtons="[
+  <Modal v-model="isModalOpen" :header="t('app.profileEditing')" :disable-autofocus="true" :footerButtons="[
   { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
     { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
     { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
   ]">
     <div class="space-y-6">
       <UFormGroup label="Имя пользователя">
-        <UInput v-model="username" :autofocus="false" />
+        <UInput v-model="username" />
       </UFormGroup>
       
       <UFormGroup label="Email">
