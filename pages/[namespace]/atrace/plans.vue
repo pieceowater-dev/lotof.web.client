@@ -326,7 +326,12 @@ watch([plans, activeSubscription], () => {
                   <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
                 </div>
                 <span class="text-sm text-gray-700 dark:text-gray-300">
-                  <span class="font-semibold">{{ plan.trialDays }}</span> {{ t('app.daysFreeTrial') || 'days free trial' }}
+                  <template v-if="plan.trialDays === 0">
+                    <span class="font-semibold">{{ t('app.freeForever') || 'Free forever' }}</span>
+                  </template>
+                  <template v-else>
+                    <span class="font-semibold">{{ plan.trialDays }}</span> {{ t('app.daysFreeTrial') || 'days free trial' }}
+                  </template>
                 </span>
               </div>
 

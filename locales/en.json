@@ -288,13 +288,39 @@
     "daysTrial": "days trial",
     "afterTrial": "After trial",
     "daysFreeTrial": "days free trial",
+    "freeForever": "Free forever",
     "includedSeats": "included seats",
     "includedUnits": "included units",
     "selectPlan": "Select Plan",
     "connecting": "Connecting...",
     "activePlan": "Active!",
     "subscriptionSuccess": "Plan activated successfully!",
-    "noPlansAvailable": "No plans available"
+    "noPlansAvailable": "No plans available",
+    "pieceowater": {
+      "atrace": {
+        "free": {
+          "description": "Free plan to get started with A-Trace",
+          "feature": {
+            "max_employees": "Up to 1 active employee",
+            "max_posts": "Up to 3 locations"
+          }
+        },
+        "mini": {
+          "description": "Compact plan for small businesses",
+          "feature": {
+            "max_employees": "Up to 5 active employees",
+            "max_posts": "Up to 1 location"
+          }
+        },
+        "start": {
+          "description": "Full-featured plan for effective work",
+          "feature": {
+            "max_employees": "Up to 30 active employees",
+            "max_posts": "Up to 3 locations"
+          }
+        }
+      }
+    }
   },
   "billing": {
     "subscriptionExpired": "Your subscription has expired!",
