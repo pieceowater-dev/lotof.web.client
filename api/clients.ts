@@ -125,6 +125,12 @@ export class ApiClient {
         logWarn('Hub unauthorized detected, invoking handler');
         unauthorizedHandler?.();
       } else {
+        if (process.client) {
+          try {
+            const nuxtApp = useNuxtApp();
+            nuxtApp.$handleGraphQLError?.(error);
+          } catch {}
+        }
         const firstMsg = rawErrors?.[0]?.message || error.message || 'GraphQL request failed';
         logError('GraphQL Error:', rawErrors || firstMsg);
       }

@@ -11,6 +11,21 @@
     <NuxtPage />
   </NuxtLayout>
 
+  <ClientOnly>
+    <SubscriptionRenewalModal
+      v-if="showSubscriptionModal"
+      :modelValue="showSubscriptionModal"
+      :subscriptionStatus="null"
+      :isExpired="true"
+      :isPastDue="false"
+      :isTrialing="false"
+      :trialEndsAt="null"
+      :currentPeriodEnd="null"
+      @renew="handleSubscriptionRenew"
+      @close="handleSubscriptionClose"
+    />
+  </ClientOnly>
+
   <UNotifications />
 </template>
 
@@ -22,10 +37,15 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
+import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
 
 const route = useRoute();
 const { t } = useI18n();
 const { titleBySlug } = useNamespace();
+const subscriptionError = useState<string | null>('subscription_error', () => null);
+const subscriptionErrorShown = useState<boolean>('subscription_error_shown', () => false);
+
+const showSubscriptionModal = computed(() => Boolean(subscriptionError.value) && !subscriptionErrorShown.value);
 
 const baseTitle = computed(() => t('app.title') || 'lota');
 
@@ -69,6 +89,20 @@ const pageTitle = computed(() => {
 useHead(() => ({
   title: pageTitle.value,
 }));
+
+function handleSubscriptionRenew() {
+  const nsSlug = (route.params.namespace as string | undefined) || '';
+  if (nsSlug) {
+    navigateTo(`/${nsSlug}/atrace/plans`);
+  }
+  subscriptionErrorShown.value = true;
+  subscriptionError.value = null;
+}
+
+function handleSubscriptionClose() {
+  subscriptionErrorShown.value = true;
+  subscriptionError.value = null;
+}
 
 const onPageLoad = () => {
   setTimeout(() => {

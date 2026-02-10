@@ -3,6 +3,7 @@ import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
+import { getDeviceHeaders } from '@/utils/device';
 import { useRoute } from 'vue-router';
 
 type UserAttendanceStats = {
@@ -126,6 +127,7 @@ export async function atraceGetAllUsersStats(
     } catch {}
   }
   return atraceRequestWithRefresh(async () => {
+    const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
       getAllUsersStats: Array<{
         userId: string;
@@ -136,7 +138,12 @@ export async function atraceGetAllUsersStats(
         legitimateAbsences: number;
         totalWorkedHours: number;
       }>;
-    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null });
+    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
+      headers: {
+        Namespace: nsSlug,
+        ...devHeaders,
+      },
+    });
 
     return response.getAllUsersStats;
   }, nsSlug!);
@@ -163,6 +170,7 @@ export async function atraceExportDailyAttendance(
     } catch {}
   }
   return atraceRequestWithRefresh(async () => {
+    const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
       exportDailyAttendance: Array<{
         userId: string;
@@ -174,8 +182,13 @@ export async function atraceExportDailyAttendance(
         attended: boolean;
         legitimate: boolean;
         reason?: string;
-      }>;
-    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate });
+      }>
+    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
+      headers: {
+        Namespace: nsSlug,
+        ...devHeaders,
+      },
+    });
     return response.exportDailyAttendance;
   }, nsSlug!);
 }
@@ -204,6 +217,7 @@ export async function atraceGetAttendanceReport(
     } catch {}
   }
   return atraceRequestWithRefresh(async () => {
+    const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
       getAttendanceReport: {
         userId: string;
@@ -226,7 +240,12 @@ export async function atraceGetAttendanceReport(
           lastRecordId: string;
         }>;
       };
-    }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate });
+    }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate }, {
+      headers: {
+        Namespace: nsSlug,
+        ...devHeaders,
+      },
+    });
 
     return response.getAttendanceReport.attendances;
   }, nsSlug!);
@@ -259,7 +278,13 @@ export async function atraceMarkDayLegitimate(
     } catch {}
   }
   return atraceRequestWithRefresh(async () => {
-    await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason });
+    const devHeaders = await getDeviceHeaders();
+    await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason }, {
+      headers: {
+        Namespace: nsSlug,
+        ...devHeaders,
+      },
+    });
     return true;
   }, nsSlug!);
 }

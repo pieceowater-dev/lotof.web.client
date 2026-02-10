@@ -294,48 +294,25 @@
     "connecting": "Connecting...",
     "activePlan": "Active!",
     "subscriptionSuccess": "Plan activated successfully!",
-    "noPlansAvailable": "No plans available",
-    "pieceowater": {
-      "atrace": {
-        "mini": {
-          "description": "Perfect for small teams. Get started with essential features to track attendance and manage tasks.",
-          "feature": {
-            "max_employees": "Up to 5 employees",
-            "max_posts": "1 entry point"
-          }
-        },
-        "start": {
-          "description": "Ideal for growing teams. Everything in Mini plus advanced analytics, custom reports, and priority support.",
-          "feature": {
-            "max_employees": "Up to 30 employees",
-            "max_posts": "Up to 3 entry points"
-          }
-        },
-        "free": {
-          "description": "Free plan to get started. Basic limits for trying A-Trace.",
-          "feature": {
-            "max_employees": "Up to 1 employee",
-            "max_posts": "Up to 3 entry points"
-          }
-        }
-      },
-      "monthly": "Monthly",
-      "yearly": "Yearly",
-      "bestPrice": "Best price",
-      "perMonth": "per month",
-      "perYear": "per year",
-      "month": "month",
-      "year": "year",
-      "daysTrial": "days trial",
-      "daysFreeTrial": "days free trial",
-      "includedSeats": "included seats",
-      "includedUnits": "included units",
-      "selectPlan": "Select Plan",
-      "connecting": "Connecting...",
-      "activePlan": "Active!",
-      "subscriptionSuccess": "Plan activated successfully!",
-      "noPlansAvailable": "No plans available"
-    }
+    "noPlansAvailable": "No plans available"
+  },
+  "billing": {
+    "subscriptionExpired": "Your subscription has expired!",
+    "subscriptionPastDue": "Your subscription payment is past due.",
+    "renewalModalTitle": "Subscription Renewal Required",
+    "renewCTA": "Please renew your subscription to continue.",
+    "renewSubscription": "Renew Subscription",
+    "upgradePlan": "Upgrade Plan",
+    "dismiss": "Dismiss",
+    "trialEndsMessage": "Your trial ends on {date}.",
+    "periodEnd": "Current Period Ends:",
+    "renewalInfo": "Without an active subscription, you can only view records and generate QR codes. All other features will be unavailable.",
+    "expiredMessage": "Your subscription has expired. Please renew to access all features.",
+    "trialsEndedMessage": "Your trial has ended. Subscribe to continue using all features.",
+    "featureUnavailable": "This feature is unavailable with your current subscription status.",
+    "subscriptionRequired": "Active subscription required",
+    "onlyRecordsAvailable": "Only records and QR generation are available.",
+    "contactSupport": "Contact support if you believe this is an error."
   },
   "atrace": {
     "members": {

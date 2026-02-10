@@ -33,6 +33,7 @@ type Post = {
 const posts = ref<Post[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const showSkeletons = computed(() => loading.value || Boolean(error.value));
 // Pagination state for infinite scroll
 const page = ref(1);
 import { PaginationLength } from '@/utils/constants';
@@ -614,8 +615,23 @@ onBeforeUnmount(() => {
         <!-- Desktop: horizontal card scroll -->
         <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef" data-tour="posts-list">
             <div class="inline-flex space-x-4 items-stretch">
-                <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
-                <div v-else-if="error" class="text-red-500">{{ error }}</div>
+                <template v-if="showSkeletons">
+                    <div
+                        v-for="i in 5"
+                        :key="`skeleton-${i}`"
+                        class="w-60 max-w-[90vw] sm:max-w-xs min-h-[100px] rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white/60 dark:bg-gray-900/60 flex flex-col self-stretch"
+                    >
+                        <div class="flex items-center gap-2 mb-2">
+                            <USkeleton class="h-5 w-3/4" />
+                            <USkeleton class="h-5 w-16" />
+                        </div>
+                        <USkeleton class="h-4 w-5/6" />
+                        <div class="flex-1"></div>
+                        <div class="mt-1 h-5">
+                            <USkeleton class="h-3 w-1/2" />
+                        </div>
+                    </div>
+                </template>
                 <template v-else>
                     <!-- "All" card - shows common stats, only if there are posts -->
                     <Card v-if="posts.length > 0" :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }" :selected="selectedPostId === ''" :can-delete="false"
@@ -641,8 +657,13 @@ onBeforeUnmount(() => {
 
         <!-- Mobile: dropdown selector -->
         <div class="md:hidden px-4 py-4 flex-shrink-0" data-tour="posts-list-mobile">
-            <div v-if="loading" class="text-gray-500">{{ t('app.loading') }}</div>
-            <div v-else-if="error" class="text-red-500">{{ error }}</div>
+            <template v-if="showSkeletons">
+                <div class="flex gap-2 items-center">
+                    <USkeleton class="h-4 w-20" />
+                    <USkeleton class="h-9 flex-1" />
+                    <USkeleton class="h-9 w-10" />
+                </div>
+            </template>
             <template v-else>
                 <div class="flex gap-2 items-center">
                     <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>

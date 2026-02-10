@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
+import { useRoute } from 'vue-router';
 
 const { t, locale } = useI18n();
 
@@ -9,6 +10,9 @@ const props = defineProps<{
   postId: string | null;
   ready?: boolean;
 }>();
+
+const route = useRoute();
+const namespaceSlug = computed(() => route.params.namespace as string | undefined);
 
 type UserStats = {
   userId: string;
@@ -183,6 +187,11 @@ const dateRange = computed(() => {
 
 async function loadStats() {
   if (props.ready === false || props.postId === null) return;
+  if (!namespaceSlug.value) {
+    error.value = t('app.attendanceLoadFailed');
+    stats.value = [];
+    return;
+  }
   loading.value = true;
   error.value = null;
   
@@ -191,7 +200,8 @@ async function loadStats() {
     const result = await atraceGetAllUsersStats(
       dateRange.value.startDate,
       dateRange.value.endDate,
-      props.postId || null
+      props.postId || null,
+      namespaceSlug.value
     );
     stats.value = result;
   } catch (e: any) {
