@@ -310,6 +310,13 @@
             "max_employees": "Up to 30 employees",
             "max_posts": "Up to 3 entry points"
           }
+        },
+        "free": {
+          "description": "Free plan to get started. Basic limits for trying A-Trace.",
+          "feature": {
+            "max_employees": "Up to 1 employee",
+            "max_posts": "Up to 3 entry points"
+          }
         }
       },
       "monthly": "Monthly",
@@ -360,6 +367,13 @@
         "description": "Ideal for growing teams. Everything in Mini plus advanced analytics, custom reports, and priority support.",
         "feature": {
           "max_employees": "Up to 30 employees",
+          "max_posts": "Up to 3 entry points"
+        }
+      },
+      "free": {
+        "description": "Free plan to get started. Basic limits for trying A-Trace.",
+        "feature": {
+          "max_employees": "Up to 1 employee",
           "max_posts": "Up to 3 entry points"
         }
       }
