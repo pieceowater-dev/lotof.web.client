@@ -109,7 +109,9 @@ async function handleAppClick(appAddress: string) {
   }
   // Navigate only after cookie is available (guards may read it immediately)
   await nextTick();
-  router.push(`/${ns}/${appAddress}`);
+  // For A-Trace, always navigate to attendance/all
+  const path = appAddress === 'atrace' ? `/${ns}/atrace/attendance/all` : `/${ns}/${appAddress}`;
+  router.push(path);
 }
 
 async function handleGetApp(app: AppConfig) {

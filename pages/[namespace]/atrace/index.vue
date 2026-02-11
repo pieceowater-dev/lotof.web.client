@@ -8,6 +8,7 @@ import TourGuide from "@/components/TourGuide.vue";
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { useAuth } from '@/composables/useAuth';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getBrowserTimezone } from '@/utils/timezones';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -17,8 +18,45 @@ const { t } = useI18n();
 const { titleBySlug } = useNamespace();
 
 definePageMeta({
-  name: 'atrace',
-  path: '/:namespace/atrace/:postId?'
+    name: 'atrace',
+    path: '/:namespace/atrace/:type/:id?',
+    middleware: (to) => {
+        // type: 'attendance' or 'route'
+        // For attendance: id can be specific location, 'all', or empty
+        // For route: id is the route ID
+        const type = to.params.type as string | undefined;
+        const id = to.params.id as string | undefined;
+        
+        // If type is not set, default to attendance
+        if (!type) {
+            let defaultPostId = 'all';
+            if (process.client) {
+                try {
+                    const storageKey = `atrace-selected-post:${to.params.namespace}`;
+                    const saved = localStorage.getItem(storageKey);
+                    defaultPostId = saved || 'all';
+                } catch {
+                    defaultPostId = 'all';
+                }
+            }
+            return navigateTo(`/${to.params.namespace}/atrace/attendance/${defaultPostId}`, { replace: true });
+        }
+        
+        // For attendance, ensure id is set
+        if (type === 'attendance' && !id) {
+            let defaultPostId = 'all';
+            if (process.client) {
+                try {
+                    const storageKey = `atrace-selected-post:${to.params.namespace}`;
+                    const saved = localStorage.getItem(storageKey);
+                    defaultPostId = saved || 'all';
+                } catch {
+                    defaultPostId = 'all';
+                }
+            }
+            return navigateTo(`/${to.params.namespace}/atrace/attendance/${defaultPostId}`, { replace: true });
+        }
+    }
 });
 
 // data
@@ -30,10 +68,75 @@ type Post = {
     phrase?: string;
 };
 
+type RouteMilestone = {
+    postId: string;
+    priority: number;
+};
+
+type Route = {
+    id: string;
+    title: string;
+    milestones: RouteMilestone[];
+};
+
+type RouteMilestoneDetail = {
+    postId: string;
+    priority: number;
+    recordId?: string | null;
+    timestamp?: string | null;
+    isCorrectOrder: boolean;
+};
+
+type RoutePass = {
+    id: string;
+    routeId: string;
+    userId: string;
+    date: string;
+    status: string;
+    firstRecordId?: string | null;
+    lastRecordId?: string | null;
+    processedAt?: string | null;
+    details: RouteMilestoneDetail[];
+};
+
+type RouteProgressRow = {
+    userId: string;
+    username: string;
+    email: string;
+    lastDate: string | null;
+    lastStatus: string | null;
+    completedCount: number;
+    partialCount: number;
+    violatedCount: number;
+    pendingCount: number;
+};
+
 const posts = ref<Post[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const showSkeletons = computed(() => loading.value || Boolean(error.value));
+const routes = ref<Route[]>([]);
+const routesLoading = ref(false);
+const routesError = ref<string | null>(null);
+const activeTab = ref<string>('attendance');
+const activeRouteId = computed(() => (activeTab.value.startsWith('route:') ? activeTab.value.slice(6) : null));
+const activeRoute = computed(() => routes.value.find((r) => r.id === activeRouteId.value) || null);
+const isRouteTab = computed(() => activeRouteId.value !== null);
+const routePass = ref<RoutePass | null>(null);
+const routePassLoading = ref(false);
+const routePassError = ref<string | null>(null);
+const routeValidationDate = ref(getTodayDateString());
+const lastAttendancePostId = ref<string | null>(null);
+const isRouteAll = ref(false);
+const routeProgressStart = ref(getDateDaysAgo(6));
+const routeProgressEnd = ref(getTodayDateString());
+const routePasses = ref<RoutePass[]>([]);
+const routePassesLoading = ref(false);
+const routePassesError = ref<string | null>(null);
+const routeMembers = ref<Array<{ userId: string; username: string; email: string }>>([]);
+const routeMembersLoading = ref(false);
+// Cache namespace id to avoid repeated lookups
+const cachedNamespaceId = ref<string | null>(null);
 // Pagination state for infinite scroll
 const page = ref(1);
 import { PaginationLength } from '@/utils/constants';
@@ -82,6 +185,10 @@ const selectedPostLocationLine = computed(() => {
 const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const { user, fetchUser } = useAuth();
+const isSyncingFromRoute = ref(false);
+const ROUTE_SEG_ATTENDANCE = 'attendance';
+const ROUTE_SEG_ALL = 'all';
 
 const appTitle = computed(() => t('app.atraceTitle') || t('app.attendance') || 'A-Trace');
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
@@ -100,26 +207,34 @@ useHead(() => ({
 
 
 
-// Sync selectedPostId with URL
-watch(selectedPostId, (val) => {
-    if (!process.client) return;
+watch([selectedPostId, activeTab], ([val, tab]) => {
+    if (!process.client || isSyncingFromRoute.value) return;
 
-    try {
-        const key = getStoredSelectionKey(nsSlug.value);
-        if (val === null) {
-            localStorage.removeItem(key);
-        } else {
-            localStorage.setItem(key, val);
-        }
-    } catch {}
+    const isAttendance = tab === 'attendance';
+    const routeId = tab.startsWith('route:') ? tab.slice(6) : null;
     
-    // Update URL based on selected post
-    if (val === '' || val === null) {
-        // "All" or no selection -> /:namespace/atrace
-        router.push({ name: 'atrace', params: { namespace: nsSlug.value } });
+    let nextPath: string;
+    if (isAttendance) {
+        // For attendance: use actual postId or 'all' for empty string
+        const id = val === null ? '' : (val === '' ? '' : val);
+        nextPath = buildAtracePath('attendance', id);
+        try {
+            const key = getStoredSelectionKey(nsSlug.value);
+            if (val === null || val === '') {
+                localStorage.removeItem(key);
+            } else {
+                localStorage.setItem(key, val);
+            }
+        } catch {}
+    } else if (routeId) {
+        // For routes: use route ID
+        nextPath = buildAtracePath('route', routeId);
     } else {
-        // Specific post -> /:namespace/atrace/:postId
-        router.push({ name: 'atrace', params: { namespace: nsSlug.value, postId: val } });
+        nextPath = buildAtracePath('attendance', '');
+    }
+
+    if (route.path !== nextPath) {
+        router.push(nextPath);
     }
 });
 
@@ -130,6 +245,8 @@ const isEditOpen = ref(false)
 const editingPost = ref<Post | null>(null)
 const isLimitModalOpen = ref(false)
 const limitErrorMessage = ref<string>('')
+const showRouteConceptInfo = ref(false)
+const showStatInfoTooltip = ref(false)
 
 // Create form state
 const form = reactive<{ title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | '' ; longitude?: number | ''; timezone?: string }, pin: string }>(
@@ -149,25 +266,66 @@ const LAST_ACTIVE_KEY = 'atrace-last-active'
 const INACTIVE_REFRESH_MS = 12 * 60 * 60 * 1000
 const STORED_SELECTION_KEY_PREFIX = 'atrace-selected-post:'
 
+function getTodayDateString(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+function getDateDaysAgo(days: number): string {
+    const d = new Date();
+    d.setDate(d.getDate() - days);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 function getStoredSelectionKey(ns: string) {
     return `${STORED_SELECTION_KEY_PREFIX}${ns}`;
 }
 
-function loadStoredSelection() {
-    if (!process.client) return;
-    const urlPostId = route.params.postId as string | undefined;
-    if (urlPostId) {
-        selectedPostId.value = urlPostId;
-        return;
+function buildAtracePath(type: string, id: string | null = null): string {
+    const safeType = type || 'attendance';
+    if (safeType === 'attendance') {
+        const safeId = id && id !== '' ? id : 'all';
+        return `/${nsSlug.value}/atrace/attendance/${safeId}`;
     }
-    try {
-        const raw = localStorage.getItem(getStoredSelectionKey(nsSlug.value));
-        if (raw === '') {
+    // For routes, id is the route ID
+    return `/${nsSlug.value}/atrace/route/${id}`;
+}
+
+function applyRouteParamsFromUrl() {
+    const typeParam = (route.params.type as string | undefined) || 'attendance';
+    const idParam = (route.params.id as string | undefined) || 'all';
+
+    isSyncingFromRoute.value = true;
+
+    if (typeParam === 'attendance') {
+        activeTab.value = 'attendance';
+        isRouteAll.value = false;
+        if (idParam === 'all' || !idParam) {
             selectedPostId.value = '';
-        } else if (raw) {
-            selectedPostId.value = raw;
+        } else {
+            selectedPostId.value = idParam;
         }
-    } catch {}
+    } else if (typeParam === 'route') {
+        // For routes: set tab to route, don't select posts
+        activeTab.value = `route:${idParam}`;
+        selectedPostId.value = null;
+        isRouteAll.value = true;
+    } else {
+        // Default to attendance
+        activeTab.value = 'attendance';
+        isRouteAll.value = false;
+        selectedPostId.value = '';
+    }
+
+    nextTick(() => {
+        isSyncingFromRoute.value = false;
+    });
 }
 
 function setLastActiveNow() {
@@ -214,7 +372,7 @@ async function loadPosts(retryCount = 0) {
         const { atracePostsList } = await import('@/api/atrace/post/list');
         page.value = 1;
         // Map enum to API literal type
-        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'> = {
+        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'ONE_HUNDRED'> = {
             [PaginationLength.TEN]: 'TEN',
             [PaginationLength.FIFTEEN]: 'TEN',
             [PaginationLength.TWENTY]: 'TWENTY_FIVE',
@@ -224,23 +382,25 @@ async function loadPosts(retryCount = 0) {
             [PaginationLength.FORTY]: 'FIFTY',
             [PaginationLength.FORTY_FIVE]: 'FIFTY',
             [PaginationLength.FIFTY]: 'FIFTY',
-            [PaginationLength.FIFTY_FIVE]: 'HUNDRED',
-            [PaginationLength.SIXTY]: 'HUNDRED',
-            [PaginationLength.SIXTY_FIVE]: 'HUNDRED',
-            [PaginationLength.SEVENTY]: 'HUNDRED',
-            [PaginationLength.SEVENTY_FIVE]: 'HUNDRED',
-            [PaginationLength.EIGHTY]: 'HUNDRED',
-            [PaginationLength.EIGHTY_FIVE]: 'HUNDRED',
-            [PaginationLength.NINETY]: 'HUNDRED',
-            [PaginationLength.NINETY_FIVE]: 'HUNDRED',
-            [PaginationLength.ONE_HUNDRED]: 'HUNDRED',
+            [PaginationLength.FIFTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.SIXTY]: 'ONE_HUNDRED',
+            [PaginationLength.SIXTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.SEVENTY]: 'ONE_HUNDRED',
+            [PaginationLength.SEVENTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.EIGHTY]: 'ONE_HUNDRED',
+            [PaginationLength.EIGHTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.NINETY]: 'ONE_HUNDRED',
+            [PaginationLength.NINETY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.ONE_HUNDRED]: 'ONE_HUNDRED',
         };
         const res = await atracePostsList(atraceToken, nsSlug.value, { page: page.value, length: lengthMap[pageLength.value] });
         posts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
         totalCount.value = res.count || 0;
-        // Only set default if selectedPostId is explicitly null, preserve empty string ("All")
-        if (selectedPostId.value === null || (selectedPostId.value !== '' && !posts.value.some(p => p.id === selectedPostId.value))) {
-            selectedPostId.value = posts.value[0]?.id ?? null;
+        if (!isRouteTab.value) {
+            // Only set default if selectedPostId is explicitly null, preserve empty string ("All")
+            if (selectedPostId.value === null || (selectedPostId.value !== '' && !posts.value.some(p => p.id === selectedPostId.value))) {
+                selectedPostId.value = posts.value[0]?.id ?? null;
+            }
         }
     } catch (e: unknown) {
         const errorMsg = getErrorMessage(e) || 'Failed to load posts';
@@ -262,6 +422,259 @@ async function loadPosts(retryCount = 0) {
     }
 }
 
+async function loadRoutes() {
+    routesLoading.value = true;
+    routesError.value = null;
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) return;
+        const { atraceGetRoutes } = await import('@/api/atrace/route/list');
+        const res = await atraceGetRoutes(atraceToken, nsSlug.value, { page: 1, length: 'ONE_HUNDRED' });
+        routes.value = [...res.routes].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        if (!activeRouteId.value && routes.value.length > 0 && activeTab.value !== 'attendance') {
+            activeTab.value = 'attendance';
+        }
+    } catch (e) {
+        routesError.value = getErrorMessage(e) || (t('app.route.loadFailed') || 'Failed to load routes');
+        routes.value = [];
+    } finally {
+        routesLoading.value = false;
+    }
+}
+
+const orderedRoutePostIds = computed(() => {
+    if (!activeRoute.value) return [] as string[];
+    return [...activeRoute.value.milestones]
+        .sort((a, b) => a.priority - b.priority)
+        .map((m) => m.postId);
+});
+
+const routePosts = computed(() => {
+    if (!activeRoute.value) return [] as Post[];
+    const postMap = new Map(posts.value.map((p) => [p.id, p] as const));
+    return orderedRoutePostIds.value
+        .map((id) => postMap.get(id))
+        .filter(Boolean) as Post[];
+});
+
+const visiblePosts = computed(() => posts.value);
+
+function formatRouteStatus(status?: string | null): { label: string; color: string } {
+    const normalized = String(status || '').toLowerCase();
+    if (normalized === 'completed') return { label: t('app.route.status.ok') || 'OK', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-100' };
+    if (normalized === 'partial') return { label: t('app.route.status.partial') || 'Partial', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100' };
+    if (normalized === 'violated') return { label: t('app.route.status.violation') || 'Violation', color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-100' };
+    return { label: t('app.route.status.pending') || 'Pending', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100' };
+}
+
+const formatProgressStatus = formatRouteStatus;
+
+const routeMilestoneDetails = computed(() => {
+    if (!routePass.value?.details) return [] as RouteMilestoneDetail[];
+    return [...routePass.value.details].sort((a, b) => a.priority - b.priority);
+});
+
+function getRoutePostLabel(postId: string): string {
+    const post = posts.value.find((p) => p.id === postId);
+    if (!post) return postId;
+    const parts = [] as string[];
+    if (post.title?.trim()) parts.push(post.title.trim());
+    if (post.location?.city?.trim()) parts.push(post.location.city);
+    if (post.location?.address?.trim()) parts.push(post.location.address);
+    return parts.join(' — ');
+}
+
+function getMilestoneStatusLabel(detail: any): string {
+    if (!detail.recordId) return t('app.route.status.pending') || 'Pending';
+    if (detail.isCorrectOrder) return t('app.route.status.ok') || 'OK';
+    return t('app.route.status.partial') || 'Out of order';
+}
+
+async function validateRoutePass() {
+    if (routePassLoading.value) return;
+    if (!activeRouteId.value) {
+        routePass.value = null;
+        routePassError.value = null;
+        return;
+    }
+    if (!user.value?.id) {
+        routePassError.value = t('app.userNotLoaded') || 'User not loaded';
+        routePass.value = null;
+        return;
+    }
+
+    await loadRouteAtraceBundle(true);
+}
+
+async function loadRoutePass() {
+    await validateRoutePass();
+}
+
+async function loadRouteMembers() {
+    if (routeMembersLoading.value) return;
+    routeMembersLoading.value = true;
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        if (!hubToken) {
+            routeMembers.value = [];
+            return;
+        }
+        
+        // Use combined query that fetches namespace and members in optimized way
+        const { hubGetNamespaceAndMembers } = await import('@/api/hub/route/data');
+        const result = await hubGetNamespaceAndMembers(hubToken, nsSlug.value, 1, 'FIFTY');
+        
+        // Cache namespace ID for future use
+        if (result.namespace?.id) {
+            cachedNamespaceId.value = result.namespace.id;
+        }
+        
+        // Update members list
+        routeMembers.value = (result.members || []).map((m: any) => ({
+            userId: m.userId,
+            username: m.username || m.email || m.userId,
+            email: m.email || ''
+        }));
+    } catch {
+        routeMembers.value = [];
+    } finally {
+        routeMembersLoading.value = false;
+    }
+}
+
+async function loadRouteAtraceBundle(includeValidation: boolean) {
+    if (!activeRouteId.value) {
+        routePasses.value = [];
+        routePassesError.value = null;
+        routePass.value = null;
+        routePassError.value = null;
+        return;
+    }
+    if (!user.value?.id) {
+        routePassError.value = t('app.userNotLoaded') || 'User not loaded';
+        routePass.value = null;
+        return;
+    }
+
+    const shouldSetRoutesLoading = routes.value.length === 0;
+    if (shouldSetRoutesLoading) {
+        routesLoading.value = true;
+        routesError.value = null;
+    }
+    routePassesLoading.value = true;
+    routePassesError.value = null;
+    if (includeValidation) {
+        routePassLoading.value = true;
+        routePassError.value = null;
+    }
+
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) return;
+
+        const { atraceGetRouteBundle } = await import('@/api/atrace/route/bundle');
+        const result = await atraceGetRouteBundle(atraceToken, nsSlug.value, {
+            routes: { page: 1, length: 'ONE_HUNDRED' },
+            routeId: activeRouteId.value,
+            startDate: routeProgressStart.value,
+            endDate: routeProgressEnd.value,
+            validateUserId: user.value.id,
+            validateDate: routeValidationDate.value,
+            includeValidation,
+        });
+
+        routes.value = [...result.routes].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        routePasses.value = result.passes || [];
+        if (includeValidation) {
+            routePass.value = result.validation;
+        }
+    } catch (e) {
+        const errorMsg = getErrorMessage(e) || 'Failed to load route data';
+        if (shouldSetRoutesLoading) {
+            routesError.value = errorMsg;
+            routes.value = [];
+        }
+        routePassesError.value = errorMsg;
+        routePasses.value = [];
+        if (includeValidation) {
+            routePassError.value = getErrorMessage(e) || (t('app.route.validateFailed') || 'Failed to validate route');
+            routePass.value = null;
+        }
+    } finally {
+        if (shouldSetRoutesLoading) {
+            routesLoading.value = false;
+        }
+        routePassesLoading.value = false;
+        if (includeValidation) {
+            routePassLoading.value = false;
+        }
+    }
+}
+
+async function loadRoutePasses() {
+    await loadRouteAtraceBundle(false);
+}
+
+// Load both members and passes in parallel
+async function loadRouteData() {
+    await Promise.all([
+        loadRouteMembers(),
+        loadRouteAtraceBundle(true)
+    ]);
+}
+
+const routeProgressRows = computed<RouteProgressRow[]>(() => {
+    if (!activeRouteId.value || routePasses.value.length === 0) return [];
+    
+    // Group passes by userId
+    const grouped = new Map<string, RoutePass[]>();
+    for (const pass of routePasses.value) {
+        if (!grouped.has(pass.userId)) {
+            grouped.set(pass.userId, []);
+        }
+        grouped.get(pass.userId)!.push(pass);
+    }
+    
+    const membersById = new Map(routeMembers.value.map((m) => [m.userId, m]));
+
+    // Build rows
+    const rows: RouteProgressRow[] = [];
+    for (const [userId, passes] of grouped.entries()) {
+        const sortedPasses = [...passes].sort((a, b) => b.date.localeCompare(a.date));
+        const lastPass = sortedPasses[0];
+        const member = membersById.get(userId);
+        
+        let completedCount = 0;
+        let partialCount = 0;
+        let violatedCount = 0;
+        let pendingCount = 0;
+        
+        for (const pass of passes) {
+            const status = pass.status.toLowerCase();
+            if (status === 'completed') completedCount++;
+            else if (status === 'partial') partialCount++;
+            else if (status === 'violated') violatedCount++;
+            else pendingCount++;
+        }
+        
+        rows.push({
+            userId,
+            username: member?.username || member?.email || userId.substring(0, 8),
+            email: member?.email || '',
+            lastDate: lastPass?.date || null,
+            lastStatus: lastPass?.status || null,
+            completedCount,
+            partialCount,
+            violatedCount,
+            pendingCount
+        });
+    }
+    
+    return rows.sort((a, b) => (b.lastDate || '').localeCompare(a.lastDate || ''));
+});
+
 async function loadMorePosts() {
     if (loading.value || loadingMore.value) return;
     if (!hasMore.value) return;
@@ -272,7 +685,7 @@ async function loadMorePosts() {
         if (!atraceToken) return;
         const { atracePostsList } = await import('@/api/atrace/post/list');
         const nextPage = page.value + 1;
-        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED'> = {
+        const lengthMap: Record<PaginationLength, 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'ONE_HUNDRED'> = {
             [PaginationLength.TEN]: 'TEN',
             [PaginationLength.FIFTEEN]: 'TEN',
             [PaginationLength.TWENTY]: 'TWENTY_FIVE',
@@ -282,16 +695,16 @@ async function loadMorePosts() {
             [PaginationLength.FORTY]: 'FIFTY',
             [PaginationLength.FORTY_FIVE]: 'FIFTY',
             [PaginationLength.FIFTY]: 'FIFTY',
-            [PaginationLength.FIFTY_FIVE]: 'HUNDRED',
-            [PaginationLength.SIXTY]: 'HUNDRED',
-            [PaginationLength.SIXTY_FIVE]: 'HUNDRED',
-            [PaginationLength.SEVENTY]: 'HUNDRED',
-            [PaginationLength.SEVENTY_FIVE]: 'HUNDRED',
-            [PaginationLength.EIGHTY]: 'HUNDRED',
-            [PaginationLength.EIGHTY_FIVE]: 'HUNDRED',
-            [PaginationLength.NINETY]: 'HUNDRED',
-            [PaginationLength.NINETY_FIVE]: 'HUNDRED',
-            [PaginationLength.ONE_HUNDRED]: 'HUNDRED',
+            [PaginationLength.FIFTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.SIXTY]: 'ONE_HUNDRED',
+            [PaginationLength.SIXTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.SEVENTY]: 'ONE_HUNDRED',
+            [PaginationLength.SEVENTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.EIGHTY]: 'ONE_HUNDRED',
+            [PaginationLength.EIGHTY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.NINETY]: 'ONE_HUNDRED',
+            [PaginationLength.NINETY_FIVE]: 'ONE_HUNDRED',
+            [PaginationLength.ONE_HUNDRED]: 'ONE_HUNDRED',
         };
         const res = await atracePostsList(atraceToken, nsSlug.value, { page: nextPage, length: lengthMap[pageLength.value] });
         // Append next page (server already sorted by title ASC)
@@ -535,44 +948,95 @@ onMounted(async () => {
         setTimeout(() => router.push('/'), 0);
         return;
     }
-    
-    // First check URL for postId param
-    const urlPostId = route.params.postId as string | undefined;
-    if (urlPostId) {
-        // URL has a specific post ID
-        selectedPostId.value = urlPostId;
-    } else {
-        // No URL param means "All" should be selected
-        selectedPostId.value = '';
+    await fetchUser();
+
+    applyRouteParamsFromUrl();
+
+    // Always load posts (needed for post names in route timeline)
+    await loadPosts();
+    if (!isRouteTab.value) {
+        setupCardsObserver();
+    }
+    // Always load routes unless route bundle will fetch them
+    if (!isRouteTab.value || !activeRouteId.value) {
+        await loadRoutes();
     }
     
-    await loadPosts();
-    setupCardsObserver();
     if (process.client) {
         setLastActiveNow();
         document.addEventListener('visibilitychange', refreshIfStale);
         window.addEventListener('focus', refreshIfStale);
         
-        // Start onboarding tour if conditions are met
-        const { isCompleted, startTour } = useOnboarding();
-        const shouldShowTour = posts.value.length === 0 && !isCompleted(atraceTour.id);
-        if (shouldShowTour) {
-            // Wait a bit for DOM to settle
-            setTimeout(() => {
-                startTour(atraceTour);
-            }, 1000);
+        // Start onboarding tour if conditions are met (attendance mode only)
+        if (!isRouteTab.value) {
+            const { isCompleted, startTour } = useOnboarding();
+            const shouldShowTour = posts.value.length === 0 && !isCompleted(atraceTour.id);
+            if (shouldShowTour) {
+                // Wait a bit for DOM to settle
+                setTimeout(() => {
+                    startTour(atraceTour);
+                }, 1000);
+            }
         }
     }
 });
 
+watch(activeRouteId, (next, prev) => {
+    routePasses.value = [];
+    routePassesError.value = null;
+    if (next) {
+        lastAttendancePostId.value = selectedPostId.value;
+        // For routes: don't select individual posts, just set to null
+        selectedPostId.value = null;
+        isRouteAll.value = true;
+        // Load route data (members + passes in parallel)
+        loadRouteData();
+    } else if (prev) {
+        isRouteAll.value = false;
+        // Load posts if switching back to attendance mode
+        if (posts.value.length === 0) {
+            loadPosts();
+        }
+        const candidate = lastAttendancePostId.value;
+        if (candidate === '' || (candidate && posts.value.some((p) => p.id === candidate))) {
+            selectedPostId.value = candidate as string;
+        } else {
+            selectedPostId.value = posts.value[0]?.id ?? null;
+        }
+    }
+});
+
+watch([routeValidationDate, user], () => {
+    if (!isRouteTab.value) return;
+    loadRoutePass();
+});
+
+// Watch only date changes to reload passes (members are loaded once when route opens)
+watch([routeProgressStart, routeProgressEnd], () => {
+    if (!isRouteTab.value) return;
+    loadRoutePasses();
+});
+
 watch(() => nsSlug.value, async (n, o) => {
     if (n && n !== o) {
-        // Load selection tied to the new namespace before fetching posts
-        loadStoredSelection();
+        applyRouteParamsFromUrl();
+        routeMembers.value = [];
+        routePasses.value = [];
+        cachedNamespaceId.value = null; // Clear cache on namespace change
+        // Always load posts (needed for post names in route timeline)
         await loadPosts();
-        // Recreate observer on namespace change (DOM refs may stay but data changed)
-        setupCardsObserver();
+        if (!isRouteTab.value) {
+            setupCardsObserver();
+        }
+        // Always load routes unless route bundle will fetch them
+        if (!isRouteTab.value || !activeRouteId.value) {
+            await loadRoutes();
+        }
     }
+});
+
+watch(() => [route.params.type, route.params.id], () => {
+    applyRouteParamsFromUrl();
 });
 
 onBeforeUnmount(() => {
@@ -592,7 +1056,7 @@ onBeforeUnmount(() => {
 
     <FilterModal v-model="isFilterOpen" />
 
-    <div class="h-full flex flex-col overflow-hidden">
+    <div class="flex flex-col">
         <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
             <div class="text-left" data-tour="atrace-title">
                 <h1 class="text-2xl font-semibold">{{ t('app.atraceTitle') }}</h1>
@@ -611,9 +1075,351 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
+        <div class="px-4 flex-shrink-0">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2">
+                <button
+                    class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
+                    :class="activeTab === 'attendance'
+                        ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+                        : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+                    @click="activeTab = 'attendance'"
+                >
+                    {{ t('app.attendance') || 'Посещаемость' }}
+                </button>
+                <button
+                    v-for="r in routes"
+                    :key="r.id"
+                    class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
+                    :class="activeTab === `route:${r.id}`
+                        ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+                        : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+                    @click="activeTab = `route:${r.id}`"
+                >
+                    {{ r.title || (t('app.route.label') || 'Маршрут') }}
+                </button>
+                <UButton
+                    icon="lucide:plus"
+                    size="xs"
+                    color="primary"
+                    variant="soft"
+                    class="flex-shrink-0"
+                    :to="`/${nsSlug}/atrace/settings`"
+                >
+                    {{ t('app.route.add') || 'Добавить маршрут' }}
+                </UButton>
+                <span v-if="routesLoading" class="text-xs text-gray-500">{{ t('app.loading') }}</span>
+                <span v-else-if="routesError" class="text-xs text-red-500">{{ routesError }}</span>
+            </div>
+        </div>
 
-        <!-- Desktop: horizontal card scroll -->
-        <div class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef" data-tour="posts-list">
+        <div v-if="isRouteTab" class="px-4 mt-2 flex-shrink-0">
+            <!-- Route Statistics Card -->
+            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6 mb-4">
+                <div class="flex flex-col gap-4">
+                    <!-- Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                <UIcon name="i-heroicons-map" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                        {{ t('app.route.label') || 'Маршрут' }}
+                                    </div>
+                                    <button 
+                                        @click="showRouteConceptInfo = !showRouteConceptInfo"
+                                        class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                                        :title="t('app.route.concept.title') || 'Как работают маршруты'"
+                                    >
+                                        <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
+                                    </button>
+                                </div>
+                                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ activeRoute?.title || '—' }}</h2>
+                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                                    <UIcon name="i-heroicons-view-columns" class="w-4 h-4" />
+                                    <span>{{ orderedRoutePostIds.length }} {{ t('app.route.posts') || 'постов' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Info Block: Route Concept Explanation (Collapsible) -->
+                    <Transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-[500px]"
+                        leave-active-class="transition-all duration-300 ease-in"
+                        leave-from-class="opacity-100 max-h-[500px]"
+                        leave-to-class="opacity-0 max-h-0"
+                    >
+                        <div v-if="showRouteConceptInfo" class="overflow-hidden">
+                            <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0">
+                                        <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                            {{ t('app.route.concept.title') || 'Как работают маршруты' }}
+                                        </h4>
+                                        <div class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                                            <p>{{ t('app.route.concept.description') || 'Маршрут — это список постов в заданном порядке. Сотрудник отмечается на постах, а система связывает эти отметки с маршрутом.' }}</p>
+                                            <p>{{ t('app.route.concept.dataCollection') || 'Статистика берется из отметок на постах (records): по каждой дате строится отдельное прохождение маршрута.' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
+                    
+                    <!-- Statistics Info Toggle -->
+                    <div v-if="!routePassesLoading && !routePassesError && routePasses.length > 0" class="flex items-center gap-2 mb-2">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('app.route.statistics') || 'Статистика' }}</span>
+                        <button 
+                            @click="showStatInfoTooltip = !showStatInfoTooltip"
+                            class="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            :title="t('app.route.stat.info') || 'Как считаются цифры'"
+                        >
+                            <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    <!-- Statistics Info Panel -->
+                    <Transition
+                        enter-active-class="transition-all duration-300 ease-out"
+                        enter-from-class="opacity-0 max-h-0"
+                        enter-to-class="opacity-100 max-h-[200px]"
+                        leave-active-class="transition-all duration-300 ease-in"
+                        leave-from-class="opacity-100 max-h-[200px]"
+                        leave-to-class="opacity-0 max-h-0"
+                    >
+                        <div v-if="showStatInfoTooltip" class="overflow-hidden mb-3">
+                            <div class="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
+                                <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                            <UIcon name="i-heroicons-arrow-path" class="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ t('app.route.stat.total') || 'Всего' }}</span> — {{ t('app.route.stat.totalHint') || 'Количество прохождений маршрута за выбранный период (каждая дата = одно прохождение)' }}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-5 h-5 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                            <UIcon name="i-heroicons-check-circle" class="w-3 h-3 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ t('app.route.status.ok') || 'Успешно' }}</span> — {{ t('app.route.stat.completedHint') || 'Полные прохождения: есть отметки по всем постам и порядок соблюдён' }}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-5 h-5 rounded bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                                            <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 text-orange-600 dark:text-orange-400" />
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ t('app.route.status.partial') || 'Частично' }}</span> — {{ t('app.route.stat.partialHint') || 'Есть отметки только по части постов маршрута' }}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2">
+                                        <div class="w-5 h-5 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                                            <UIcon name="i-heroicons-x-circle" class="w-3 h-3 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <div>
+                                            <span class="font-medium">{{ t('app.route.status.violation') || 'Нарушения' }}</span> — {{ t('app.route.stat.violatedHint') || 'Отметки есть, но порядок маршрута нарушен' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Transition>
+
+                    <!-- Statistics Grid -->
+                    <div v-if="!routePassesLoading && !routePassesError && routePasses.length > 0" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
+                        <!-- Total passes -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                    <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ routePasses.length }}</div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.stat.total') || 'Всего' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Completed -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                                    <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'completed').length }}
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.ok') || 'Успешно' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Partial -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                                    <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'partial').length }}
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.partial') || 'Частично' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Violations -->
+                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                                    <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-600 dark:text-red-400" />
+                                </div>
+                                <div>
+                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'violated').length }}
+                                    </div>
+                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.violation') || 'Нарушения' }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Route Progress Section -->
+            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
+                <div class="mb-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                <UIcon name="i-heroicons-users" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                {{ t('app.route.employees') || 'Сотрудники' }}
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {{ t('app.route.employeesHint') || 'Статистика прохождения маршрута по сотрудникам' }}
+                            </p>
+                        </div>
+                        
+                        <!-- Period selector moved here -->
+                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
+                            <UInput v-model="routeProgressStart" type="date" size="sm" class="w-32 sm:w-36" />
+                            <span class="text-xs text-gray-400">—</span>
+                            <UInput v-model="routeProgressEnd" type="date" size="sm" class="w-32 sm:w-36" />
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="routePassesLoading" class="flex items-center justify-center py-6">
+                    <div class="flex flex-col items-center gap-2">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        <p class="text-xs text-gray-500">{{ t('app.loading') || 'Loading...' }}</p>
+                    </div>
+                </div>
+                <div v-else-if="routePassesError" class="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
+                    <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 flex-shrink-0" />
+                    <span class="text-sm">{{ routePassesError }}</span>
+                </div>
+                <div v-else-if="routeProgressRows.length === 0" class="text-center py-8">
+                    <UIcon name="i-heroicons-users" class="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p class="text-sm text-gray-500">{{ t('app.route.progress.empty') || 'Нет данных по сотрудникам' }}</p>
+                </div>
+                <div v-else class="space-y-3">
+                        <div 
+                            v-for="row in routeProgressRows" 
+                            :key="row.userId"
+                            class="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                            <div class="p-4">
+                                <!-- User header -->
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-base font-semibold flex-shrink-0">
+                                        {{ row.username.substring(0, 2).toUpperCase() }}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ row.username }}</h4>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ row.email || row.userId }}</p>
+                                    </div>
+                                    <div 
+                                        class="px-2.5 py-1 rounded-md text-xs font-medium border flex-shrink-0"
+                                        :class="formatProgressStatus(row.lastStatus).color"
+                                    >
+                                        {{ formatProgressStatus(row.lastStatus).label }}
+                                    </div>
+                                </div>
+
+                                <!-- Meta info -->
+                                <div class="flex items-center gap-4 mb-3 text-xs text-gray-600 dark:text-gray-400">
+                                    <div class="flex items-center gap-1.5">
+                                        <UIcon name="i-heroicons-arrow-path" class="w-3.5 h-3.5" />
+                                        <span class="font-medium">{{ row.completedCount + row.partialCount + row.violatedCount + row.pendingCount }}</span>
+                                        <span>{{ t('app.route.passes') || 'прохождений' }}</span>
+                                    </div>
+                                    <span class="text-gray-300 dark:text-gray-600">•</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />
+                                        <span>{{ row.lastDate || (t('app.noData') || 'Нет данных') }}</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Progress stats -->
+                                <div class="grid grid-cols-4 gap-2">
+                                    <!-- Completed -->
+                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 mx-auto rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1.5">
+                                            <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.completedCount }}</div>
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.ok') || 'Успешно' }}</div>
+                                    </div>
+                                    
+                                    <!-- Partial -->
+                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 mx-auto rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1.5">
+                                            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                        </div>
+                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.partialCount }}</div>
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.partial') || 'Частично' }}</div>
+                                    </div>
+                                    
+                                    <!-- Violated -->
+                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 mx-auto rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-1.5">
+                                            <UIcon name="i-heroicons-x-circle" class="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        </div>
+                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.violatedCount }}</div>
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.violation') || 'Нарушения' }}</div>
+                                    </div>
+                                    
+                                    <!-- Pending -->
+                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                                        <div class="w-8 h-8 mx-auto rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-1.5">
+                                            <UIcon name="i-heroicons-clock" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                                        </div>
+                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.pendingCount }}</div>
+                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.pending') || 'Не пройдено' }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </div>
+        </div>
+
+
+        <!-- Desktop: horizontal card scroll (only show for attendance) -->
+        <div v-if="!isRouteTab" class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef" data-tour="posts-list">
             <div class="inline-flex space-x-4 items-stretch">
                 <template v-if="showSkeletons">
                     <div
@@ -634,15 +1440,15 @@ onBeforeUnmount(() => {
                 </template>
                 <template v-else>
                     <!-- "All" card - shows common stats, only if there are posts -->
-                    <Card v-if="posts.length > 0" :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }" :selected="selectedPostId === ''" :can-delete="false"
+                    <Card v-if="!isRouteTab && posts.length > 0" :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }" :selected="selectedPostId === ''" :can-delete="false"
                           @select="() => (selectedPostId = '')" />
                     
-                    <div v-for="post in posts" :key="post.id">
+                    <div v-for="post in visiblePosts" :key="post.id">
                         <Card :post="post" :selected="post.id === selectedPostId" :can-delete="false"
                               @select="() => (selectedPostId = post.id)"
                               @edit="() => openEdit(post)" />
                     </div>
-                    <button @click="isCreateOpen = true"
+                    <button v-if="!isRouteTab" @click="isCreateOpen = true"
                         data-tour="create-post-btn"
                         class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0">
                         {{ t('app.atraceAddLocation') }}
@@ -655,8 +1461,8 @@ onBeforeUnmount(() => {
             </div>
         </div>
 
-        <!-- Mobile: dropdown selector -->
-        <div class="md:hidden px-4 py-4 flex-shrink-0" data-tour="posts-list-mobile">
+        <!-- Mobile: dropdown selector (only show for attendance) -->
+        <div v-if="!isRouteTab" class="md:hidden px-4 py-4 flex-shrink-0" data-tour="posts-list-mobile">
             <template v-if="showSkeletons">
                 <div class="flex gap-2 items-center">
                     <USkeleton class="h-4 w-20" />
@@ -670,8 +1476,8 @@ onBeforeUnmount(() => {
                     <USelectMenu
                         v-model="selectedPostIdForMenu"
                         :options="[
-                            ...(posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
-                            ...posts.filter(p => p.title && p.title.trim()).map(p => {
+                            ...(!isRouteTab && posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
+                            ...visiblePosts.filter(p => p.title && p.title.trim()).map(p => {
                               const parts = [p.title.trim()];
                               if (p.location?.city?.trim()) parts.push(p.location.city);
                               if (p.location?.address?.trim()) parts.push(p.location.address);
@@ -688,42 +1494,46 @@ onBeforeUnmount(() => {
                         size="sm" 
                         color="primary" 
                         variant="soft"
+                        v-if="!isRouteTab"
                         @click="isCreateOpen = true"
                     />
                 </div>
             </template>
         </div>
 
-        <div class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
+        <div v-if="!isRouteTab" class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
             <div class="text-left">
-                <h2 class="text-lg font-medium">{{ t('app.attendance') }} — {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}</h2>
+                <h2 class="text-lg font-medium">
+                    {{ t('app.attendance') }} —
+                    {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
+                </h2>
                 <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
             </div>
 
             <!-- Search and filter buttons removed -->
         </div>
 
-        <div v-if="selectedPostId !== null" class="flex-1 min-h-0 px-4 pb-safe-or-4 overflow-hidden">
+        <div v-if="selectedPostId !== null && !isRouteTab" class="flex-1 px-4 pb-safe-or-4">
             <AttendanceStatsTable :post-id="selectedPostId" :ready="!loading && !error" />
         </div>
-        <div v-else class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
-            <div class="max-w-md w-full bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-8 flex flex-col items-center border border-blue-200 dark:border-gray-800">
-                <div class="mb-4 flex flex-col items-center">
-                    <UIcon name="i-heroicons-map-pin" class="w-16 h-16 text-blue-400 dark:text-blue-300 mb-2" />
-                    <h2 class="text-2xl font-extrabold text-center mb-1 text-blue-900 dark:text-white">
+        <div v-else-if="!isRouteTab" class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
+            <div class="max-w-sm w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 dark:border-gray-800">
+                <div class="mb-3 flex flex-col items-center">
+                    <UIcon name="i-heroicons-map-pin" class="w-12 h-12 text-blue-400 dark:text-blue-300 mb-2" />
+                    <h2 class="text-xl font-bold text-center mb-1 text-gray-900 dark:text-white">
                         {{ t('app.noPostsTitle') || 'No locations yet' }}
                     </h2>
-                    <p class="text-base text-gray-700 dark:text-gray-200 text-center mb-4">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
                         {{ t('app.noPostsDesc') || 'Add your first location to start tracking attendance.' }}
                     </p>
                 </div>
-                                <UButton
-                                    data-tour="create-post-btn-empty"
-                                    color="primary"
-                                    size="lg"
-                                    class="w-full py-3 text-lg font-semibold"
-                                    @click="isCreateOpen = true"
-                                >
+                <UButton
+                    data-tour="create-post-btn-empty"
+                    color="primary"
+                    size="md"
+                    class="w-full"
+                    @click="isCreateOpen = true"
+                >
                     {{ t('app.atraceAddLocation') || 'Add Location' }}
                 </UButton>
             </div>
@@ -770,5 +1580,40 @@ onBeforeUnmount(() => {
 <style scoped>
 .pb-safe-or-4 {
   padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+/* Custom scrollbar for timeline */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(209, 213, 219) transparent;
+}
+
+.dark .scrollbar-thin {
+  scrollbar-color: rgb(55, 65, 81) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(209, 213, 219);
+  border-radius: 3px;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgb(55, 65, 81);
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(156, 163, 175);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(75, 85, 99);
 }
 </style>

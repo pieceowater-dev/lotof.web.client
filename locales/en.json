@@ -67,9 +67,80 @@
     "allLocations": "All locations",
     "allLocationsDesc": "Attendance across all locations",
     "location": "Location",
+    "period": "Period",
     "atraceAddLocation": "+ Add location",
   "noPostsTitle": "No locations yet",
   "noPostsDesc": "Add your first location to start tracking attendance.",
+    "route": {
+      "label": "Route",
+      "add": "Add route",
+      "create": "Create route",
+      "edit": "Edit route",
+      "list": "Routes",
+      "listHint": "Combine posts into a route and track progress",
+      "empty": "No routes yet",
+      "posts": "Posts",
+      "editWarning": "Editing a route will recreate it and reset the current completion history.",
+      "noPostsSelected": "No posts selected",
+      "loadFailed": "Failed to load routes",
+      "validateFailed": "Failed to validate route",
+      "noData": "No route data",
+      "lastDate": "Last date",
+      "form": {
+        "title": "Title",
+        "titlePlaceholder": "Route",
+        "posts": "Route posts",
+        "postsHint": "Add posts in the required order",
+        "noPostsSelected": "No posts selected"
+      },
+      "status": {
+        "ok": "OK",
+        "partial": "Partial",
+        "violation": "Violation",
+        "pending": "Pending"
+      },
+      "progress": {
+        "title": "Route progress",
+        "hint": "Employee completion status",
+        "empty": "No employee data",
+        "columns": {
+          "completed": "OK",
+          "partial": "Partial",
+          "violated": "Violation",
+          "pending": "Pending"
+        }
+      },
+      "select": {
+        "post": "Select post",
+        "postHint": "To view attendance, select a route post."
+      },
+      "employees": "Employees",
+      "employeesHint": "Route completion statistics by employee",
+      "passes": "passes",
+      "statistics": "Statistics",
+      "concept": {
+        "title": "How Routes Work",
+        "description": "A route is a sequence of locations (posts) that an employee must visit in a specific order.",
+        "dataCollection": "Statistics are collected automatically: when an employee checks in at posts from the route, the system verifies the correct order and timing.",
+        "completedExplain": "all posts completed in correct sequence",
+        "partialExplain": "some posts visited, but not all",
+        "violationExplain": "post order violated",
+        "pendingExplain": "route not started or in progress"
+      },
+      "stat": {
+        "total": "Total",
+        "totalHint": "Total number of route completions for the period",
+        "completedHint": "Completed all checkpoints in correct order",
+        "partialHint": "Visited some checkpoints",
+        "violatedHint": "Violated the route sequence",
+        "pendingHint": "Not yet completed or in progress"
+      }
+    },
+    "select": {
+      "location": "Select post"
+    },
+    "userNotLoaded": "User not loaded",
+    "noData": "No data",
     "atraceFilter": "Filter",
     "atraceSearch": "Search...",
     "atraceAttendanceTitle": "Attendance — Office A",
@@ -190,6 +261,7 @@
   "requiredWorkingHoursHint": "Number of hours this member should work per day",
   "editMember": "Edit Member",
   "noRole": "No role",
+  "roleHint": "Assign a role to control access permissions",
   "back": "Back",
   "timezone": "Timezone",
   "timezoneHint": "Select your timezone or leave as browser default",
@@ -437,6 +509,7 @@
   "all": "All",
   "loading": "Loading...",
   "back": "Back",
-  "error": "Error"
+  "error": "Error",
+  "add": "Add"
 }
 }

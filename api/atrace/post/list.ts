@@ -30,7 +30,7 @@ export type AtracePost = {
 export async function atracePostsList(
   atraceToken: string,
   namespaceSlug: string,
-  params: { search?: string; page?: number; length?: 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED' } = {}
+  params: { search?: string; page?: number; length?: 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'ONE_HUNDRED' } = {}
 ): Promise<{ posts: AtracePost[]; count: number }> {
   const filter: any = {
     pagination: { page: params.page ?? 1, length: params.length ?? 'TWENTY_FIVE' },

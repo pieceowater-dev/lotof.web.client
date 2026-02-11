@@ -16,7 +16,9 @@ const { t } = useI18n();
         </div>
       </template>
 
-      <Placeholder class="h-64" />
+      <div class="h-64 flex items-center justify-center text-gray-500 dark:text-gray-400">
+        <p>{{ t('app.atraceFilter') }}</p>
+      </div>
 
       <template #footer>
         <div class="flex justify-end gap-2">

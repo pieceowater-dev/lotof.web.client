@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, watch, nextTick } from 'vue';
+import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
   modelValue: boolean,  // v-model binding state

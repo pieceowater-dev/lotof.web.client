@@ -96,7 +96,12 @@ export async function atraceGetRecordsByPostId(
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getRecordByPostId: PaginatedRecordList }>(
       GET_RECORD_BY_POST_ID,
-      { postId, page, length, sortField, sortBy }
+      { postId, page, length, sortField, sortBy },
+      {
+        headers: {
+          Namespace: nsSlug || '',
+        }
+      }
     );
     return response.getRecordByPostId;
   }, nsSlug!);

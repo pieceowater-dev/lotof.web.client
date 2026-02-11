@@ -264,7 +264,7 @@ watch(() => props.modelValue, (isOpen) => {
         <UFormGroup :label="t('common.description')">
           <UTextarea v-model="props.form.description" :placeholder="t('common.description')" />
         </UFormGroup>
-        <USeparator />
+        <div class="h-px bg-gray-100 dark:bg-gray-800"></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <UFormGroup :label="t('common.address')">
             <UInput v-model="props.form.location.address" :placeholder="t('common.address')" />
@@ -318,7 +318,7 @@ watch(() => props.modelValue, (isOpen) => {
           </div>
         </UFormGroup>
         
-        <USeparator />
+        <div class="h-px bg-gray-100 dark:bg-gray-800"></div>
         <UFormGroup :label="t('app.pin6digits')">
           <div class="flex gap-2 items-center">
             <UInput v-model="props.form.pin" maxlength="6" placeholder="******" class="w-32" />

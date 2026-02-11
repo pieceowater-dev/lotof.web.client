@@ -29,6 +29,23 @@ type Role = {
     permissionIds: string[];
 };
 
+type RouteMilestone = {
+    postId: string;
+    priority: number;
+};
+
+type Route = {
+    id: string;
+    title: string;
+    milestones: RouteMilestone[];
+};
+
+type Post = {
+    id: string;
+    title: string;
+    location?: { city?: string | null; address?: string | null } | null;
+};
+
 const DEFAULT_REQUIRED_WORKING_DAYS = 22;
 const DEFAULT_REQUIRED_WORKING_HOURS = 8;
 
@@ -48,6 +65,19 @@ const members = ref<Member[]>([]);
 const roles = ref<Role[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const atraceRoutes = ref<Route[]>([]);
+const routesLoading = ref(false);
+const routesError = ref<string | null>(null);
+const routePosts = ref<Post[]>([]);
+const isRouteModalOpen = ref(false);
+const editingRouteId = ref<string | null>(null);
+const routeFormError = ref<string | null>(null);
+const routeFormPostId = ref('');
+const routeForm = reactive<{ title: string; postIds: string[] }>({
+    title: '',
+    postIds: [],
+});
+const dragIndex = ref<number | null>(null);
 const planLimits = ref<{ max_posts?: number; max_employees?: number } | null>(null)
 const planName = ref<string>('')
 const planLimitsLoading = ref(false)
@@ -60,6 +90,16 @@ const columns = computed(() => ([
     { key: 'isActive', label: t('atrace.members.status') },
     { key: 'actions', label: t('common.actions') }
 ]));
+
+const routePostOptions = computed(() => {
+    const used = new Set(routeForm.postIds);
+    return routePosts.value
+        .filter((post) => !used.has(post.id))
+        .map((post) => ({
+            label: buildPostLabel(post),
+            value: post.id,
+        }));
+});
 
 // Pagination
 const membersPage = ref(1);
@@ -97,6 +137,180 @@ const isValidInviteEmail = computed(() => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 });
 const inviteCanSubmit = computed(() => isValidInviteEmail.value && !inviteSubmitting.value);
+
+function buildPostLabel(post: Post): string {
+    const parts: string[] = [];
+    if (post.title?.trim()) parts.push(post.title.trim());
+    if (post.location?.city?.trim()) parts.push(post.location.city);
+    if (post.location?.address?.trim()) parts.push(post.location.address);
+    return parts.join(' — ');
+}
+
+function resetRouteForm() {
+    routeForm.title = '';
+    routeForm.postIds = [];
+    routeFormPostId.value = '';
+    routeFormError.value = null;
+}
+
+function openCreateRoute() {
+    editingRouteId.value = null;
+    resetRouteForm();
+    isRouteModalOpen.value = true;
+    loadRoutePosts();
+}
+
+function openEditRoute(routeItem: Route) {
+    editingRouteId.value = routeItem.id;
+    routeForm.title = routeItem.title || '';
+    routeForm.postIds = [...routeItem.milestones]
+        .sort((a, b) => a.priority - b.priority)
+        .map((m) => m.postId);
+    routeFormPostId.value = '';
+    routeFormError.value = null;
+    isRouteModalOpen.value = true;
+    loadRoutePosts();
+}
+
+function addPostToRoute(postId: string) {
+    if (!postId) return;
+    if (routeForm.postIds.includes(postId)) {
+        routeFormPostId.value = '';
+        return;
+    }
+    routeForm.postIds.push(postId);
+    routeFormPostId.value = '';
+}
+
+function removeRoutePost(index: number) {
+    routeForm.postIds.splice(index, 1);
+}
+
+function moveRoutePost(index: number, dir: -1 | 1) {
+    const nextIndex = index + dir;
+    if (nextIndex < 0 || nextIndex >= routeForm.postIds.length) return;
+    const copy = [...routeForm.postIds];
+    const temp = copy[index];
+    copy[index] = copy[nextIndex];
+    copy[nextIndex] = temp;
+    routeForm.postIds = copy;
+}
+
+function handleRouteDragStart(index: number) {
+    dragIndex.value = index;
+}
+
+function handleRouteDragOver(event: DragEvent) {
+    event.preventDefault();
+}
+
+function handleRouteDrop(index: number) {
+    if (dragIndex.value === null || dragIndex.value === index) {
+        dragIndex.value = null;
+        return;
+    }
+    const next = [...routeForm.postIds];
+    const [moved] = next.splice(dragIndex.value, 1);
+    next.splice(index, 0, moved);
+    routeForm.postIds = next;
+    dragIndex.value = null;
+}
+
+function handleRouteDragEnd() {
+    dragIndex.value = null;
+}
+
+function getRoutePostTitle(postId: string): string {
+    const post = routePosts.value.find((p) => p.id === postId);
+    if (!post) return postId;
+    return buildPostLabel(post);
+}
+
+function getSortedMilestones(routeItem: Route): RouteMilestone[] {
+    return [...routeItem.milestones].sort((a, b) => a.priority - b.priority);
+}
+
+async function loadRoutes() {
+    routesLoading.value = true;
+    routesError.value = null;
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) return;
+        const { atraceGetRoutes } = await import('@/api/atrace/route/list');
+        const res = await atraceGetRoutes(atraceToken, nsSlug.value, { page: 1, length: 'ONE_HUNDRED' });
+        atraceRoutes.value = [...res.routes].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+    } catch (e) {
+        routesError.value = getErrorMessage(e) || (t('app_routes_load_failed') || 'Failed to load routes');
+        atraceRoutes.value = [];
+    } finally {
+        routesLoading.value = false;
+    }
+}
+
+async function loadRoutePosts() {
+    if (routePosts.value.length > 0) return;
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) return;
+        const { atracePostsList } = await import('@/api/atrace/post/list');
+        const res = await atracePostsList(atraceToken, nsSlug.value, { page: 1, length: 'ONE_HUNDRED' });
+        routePosts.value = [...res.posts].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+    } catch (e) {
+        routePosts.value = [];
+    }
+}
+
+async function saveRoute() {
+    routeFormError.value = null;
+    const title = routeForm.title.trim();
+    if (!title) {
+        routeFormError.value = t('app_route_title_required') || 'Введите название маршрута';
+        return;
+    }
+    if (routeForm.postIds.length === 0) {
+        routeFormError.value = t('app_route_posts_required') || 'Добавьте хотя бы один пост';
+        return;
+    }
+
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+    if (!atraceToken) return;
+
+    try {
+        const { atraceCreateRoute } = await import('@/api/atrace/route/create');
+        const { atraceDeleteRoute } = await import('@/api/atrace/route/delete');
+        const milestones = routeForm.postIds.map((postId, idx) => ({ postId, priority: idx + 1 }));
+        const created = await atraceCreateRoute(atraceToken, nsSlug.value, { title, milestones });
+
+        if (editingRouteId.value) {
+            await atraceDeleteRoute(atraceToken, nsSlug.value, editingRouteId.value);
+            atraceRoutes.value = atraceRoutes.value.filter((r) => r.id !== editingRouteId.value);
+        }
+        atraceRoutes.value = [...atraceRoutes.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        isRouteModalOpen.value = false;
+        resetRouteForm();
+    } catch (e) {
+        routeFormError.value = getErrorMessage(e) || (t('app_route_save_failed') || 'Failed to save route');
+    }
+}
+
+async function deleteRoute(routeItem: Route) {
+    const confirmText = t('app_route_delete_confirm') || 'Удалить маршрут?';
+    const ok = typeof window === 'undefined' ? true : window.confirm(confirmText);
+    if (!ok) return;
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) return;
+        const { atraceDeleteRoute } = await import('@/api/atrace/route/delete');
+        await atraceDeleteRoute(atraceToken, nsSlug.value, routeItem.id);
+        atraceRoutes.value = atraceRoutes.value.filter((r) => r.id !== routeItem.id);
+    } catch (e) {
+        routesError.value = getErrorMessage(e) || (t('app_route_delete_failed') || 'Failed to delete route');
+    }
+}
 
 function parseLimitsJson(raw?: string | null): { max_posts?: number; max_employees?: number } {
     if (!raw) return {}
@@ -507,6 +721,8 @@ onMounted(async () => {
     await loadRoles();
     await loadMembers();
     await loadPlanLimits();
+    await loadRoutes();
+    await loadRoutePosts();
 });
 
 onUnmounted(() => {
@@ -574,6 +790,65 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <div class="mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+                <div>
+                    <h2 class="text-base font-medium">{{ t('app.route.list') || 'Маршруты' }}</h2>
+                    <p class="text-xs text-gray-500">{{ t('app.route.listHint') || 'Соберите посты в маршрут и отслеживайте прохождение' }}</p>
+                </div>
+                <UButton icon="lucide:plus" size="xs" color="primary" class="self-start w-auto" @click="openCreateRoute">
+                    {{ t('app.route.create') || 'Создать маршрут' }}
+                </UButton>
+            </div>
+
+            <div v-if="routesLoading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
+            <div v-else-if="routesError" class="text-red-500 text-sm">{{ routesError }}</div>
+            <div v-else-if="atraceRoutes.length === 0" class="text-gray-500 text-sm">
+                {{ t('app.route.empty') || 'Маршрутов пока нет' }}
+            </div>
+            <div v-else class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr class="text-left">
+                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{{ t('app.route.label') || 'Маршрут' }}</th>
+                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{{ t('app.route.posts') || 'Посты' }}</th>
+                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 text-right">{{ t('common.actions') || 'Actions' }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="routeItem in atraceRoutes" :key="routeItem.id" class="border-t border-gray-100 dark:border-gray-800">
+                            <td class="px-4 py-3 align-top">
+                                <div class="font-semibold text-gray-900 dark:text-white">{{ routeItem.title }}</div>
+                                <div class="text-xs text-gray-500">{{ routeItem.milestones.length }} {{ t('app.locations') || 'постов' }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="space-y-1">
+                                    <div
+                                        v-for="milestone in getSortedMilestones(routeItem)"
+                                        :key="`${routeItem.id}-${milestone.postId}-${milestone.priority}`"
+                                        class="text-gray-700 dark:text-gray-200"
+                                    >
+                                        <span class="font-semibold">#{{ milestone.priority }}</span>
+                                        <span class="ml-2">{{ getRoutePostTitle(milestone.postId) }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <UButton size="xs" variant="soft" color="primary" icon="lucide:pencil" @click="openEditRoute(routeItem)">
+                                        {{ t('app.route.edit') || 'Edit' }}
+                                    </UButton>
+                                    <UButton size="xs" variant="soft" color="red" icon="lucide:trash" @click="deleteRoute(routeItem)">
+                                        {{ t('common.delete') || 'Delete' }}
+                                    </UButton>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Members Management Section -->
     <div class="flex-1 min-h-0 flex flex-col">
             <h2 class="text-base font-medium mb-3">{{ t('app.members') || 'Members' }}</h2>
@@ -617,6 +892,85 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <!-- Create/Edit Route Modal -->
+        <UModal v-model="isRouteModalOpen" :ui="{ container: 'items-center' }">
+            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+                <template #header>
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+                            {{ editingRouteId ? (t('app.route.titleEdit') || 'Edit Route') : (t('app.route.titleCreate') || 'Create Route') }}
+                        </h3>
+                        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isRouteModalOpen = false" />
+                    </div>
+                </template>
+
+                <div class="space-y-4">
+                    <div v-if="editingRouteId" class="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-200 px-3 py-2 rounded-md">
+                        {{ t('app.route.editWarning') || 'Изменение маршрута пересоздаст его и сбросит текущую историю прохождений.' }}
+                    </div>
+                    <UFormGroup :label="t('app.route.form.title') || 'Название'">
+                        <UInput v-model="routeForm.title" size="lg" :placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'" />
+                    </UFormGroup>
+
+                    <UFormGroup :label="t('app.route.form.posts') || 'Посты маршрута'" :help="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'">
+                        <div class="flex gap-2">
+                            <USelectMenu
+                                v-model="routeFormPostId"
+                                :options="routePostOptions"
+                                option-attribute="label"
+                                value-attribute="value"
+                                :placeholder="t('app.select.location') || 'Выберите пост'"
+                                class="flex-1"
+                            />
+                            <UButton size="sm" color="primary" icon="lucide:plus" @click="addPostToRoute(routeFormPostId)">
+                                {{ t('common.add') || 'Add' }}
+                            </UButton>
+                        </div>
+
+                        <div v-if="routeForm.postIds.length === 0" class="text-xs text-gray-500 mt-2">
+                            {{ t('app.route.form.noPostsSelected') || 'Посты не выбраны' }}
+                        </div>
+                        <div v-else class="mt-3 space-y-2">
+                            <div
+                                v-for="(postId, index) in routeForm.postIds"
+                                :key="`${postId}-${index}`"
+                                class="flex items-center justify-between rounded-lg border border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/50 px-3 py-2"
+                                draggable="true"
+                                @dragstart="handleRouteDragStart(index)"
+                                @dragover="handleRouteDragOver"
+                                @drop="handleRouteDrop(index)"
+                                @dragend="handleRouteDragEnd"
+                            >
+                                <div class="flex items-center gap-2 text-sm">
+                                    <UIcon name="i-heroicons-bars-3" class="w-4 h-4 text-gray-400" />
+                                    <span class="font-semibold">#{{ index + 1 }}</span>
+                                    <span class="ml-1">{{ getRoutePostTitle(postId) }}</span>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <UButton size="xs" variant="soft" icon="lucide:arrow-up" @click="moveRoutePost(index, -1)" />
+                                    <UButton size="xs" variant="soft" icon="lucide:arrow-down" @click="moveRoutePost(index, 1)" />
+                                    <UButton size="xs" variant="soft" color="red" icon="lucide:x" @click="removeRoutePost(index)" />
+                                </div>
+                            </div>
+                        </div>
+                    </UFormGroup>
+
+                    <div v-if="routeFormError" class="text-sm text-red-500">{{ routeFormError }}</div>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-end gap-2">
+                        <UButton color="primary" variant="soft" @click="isRouteModalOpen = false">
+                            {{ t('common.cancel') || 'Cancel' }}
+                        </UButton>
+                        <UButton color="primary" icon="lucide:check" @click="saveRoute">
+                            {{ t('common.save') || 'Save' }}
+                        </UButton>
+                    </div>
+                </template>
+            </UCard>
+        </UModal>
+
         <!-- Edit Member Modal -->
         <UModal v-model="isEditMemberOpen" :ui="{ container: 'items-center' }">
             <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
@@ -653,7 +1007,7 @@ onUnmounted(() => {
                     </div>
 
                     <!-- Role Selection -->
-                    <UFormGroup :label="t('common.role') || 'Role'" class="space-y-2">
+                    <UFormGroup :label="t('common.role') || 'Role'" :help="t('app.roleHint') || 'Assign a role to control access permissions'" class="space-y-2">
                         <USelect 
                             v-model="editForm.roleId"
                             size="lg"
@@ -675,7 +1029,7 @@ onUnmounted(() => {
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <UFormGroup 
                                 :label="t('app.requiredWorkingDays') || 'Required Days/Month'"
-                                :help="t('app.requiredWorkingDaysHint') || 'Days per month'"
+                                :help="t('app.requiredWorkingDaysHint') || 'Number of required working days per month'"
                             >
                                 <UInput 
                                     v-model.number="editForm.requiredWorkingDays" 
@@ -691,7 +1045,7 @@ onUnmounted(() => {
 
                             <UFormGroup 
                                 :label="t('app.requiredWorkingHours') || 'Required Hours/Day'"
-                                :help="t('app.requiredWorkingHoursHint') || 'Hours per day'"
+                                :help="t('app.requiredWorkingHoursHint') || 'Number of required working hours per day'"
                             >
                                 <UInput 
                                     v-model.number="editForm.requiredWorkingHours" 

@@ -17,6 +17,9 @@ type FPMeta = {
 };
 
 const FP_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const SUMMARY_TTL_MS = 30 * 1000; // 30 seconds
+let summaryPromise: Promise<FeatureSummary> | null = null;
+let summaryCachedAt = 0;
 
 function parseUAMajorFromUA(ua: string): number | null {
   try {
@@ -48,7 +51,23 @@ async function computeUAMajor(): Promise<number | null> {
   } catch { return null; }
 }
 
+function releaseWebglContext(canvas: HTMLCanvasElement, gl: WebGLRenderingContext | null): void {
+  try {
+    const lose = gl?.getExtension('WEBGL_lose_context') as { loseContext?: () => void } | null;
+    if (lose?.loseContext) lose.loseContext();
+  } catch {}
+  try {
+    canvas.width = 0;
+    canvas.height = 0;
+  } catch {}
+}
+
 async function computeFeatureSummary(): Promise<FeatureSummary> {
+  const now = Date.now();
+  if (summaryPromise && now - summaryCachedAt < SUMMARY_TTL_MS) return summaryPromise;
+
+  summaryCachedAt = now;
+  summaryPromise = (async () => {
   const nav: any = typeof navigator !== 'undefined' ? navigator : {};
   const scr: any = typeof screen !== 'undefined' ? screen : {};
   let renderer = '';
@@ -59,6 +78,7 @@ async function computeFeatureSummary(): Promise<FeatureSummary> {
       const dbgInfo = gl.getExtension('WEBGL_debug_renderer_info');
       if (dbgInfo) renderer = String(gl.getParameter((dbgInfo as any).UNMASKED_RENDERER_WEBGL) || '');
     }
+    releaseWebglContext(canvas, gl);
   } catch {}
   let tz = '';
   try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
@@ -72,6 +92,8 @@ async function computeFeatureSummary(): Promise<FeatureSummary> {
     touch: String(nav.maxTouchPoints || 0),
   };
   return s;
+  })();
+  return summaryPromise;
 }
 
 function countSummaryDiffs(a: FeatureSummary, b: FeatureSummary): number {
@@ -180,6 +202,7 @@ async function computeFingerprint(): Promise<string> {
           }
         } catch {}
       }
+      releaseWebglContext(canvas, gl);
     } catch {}
 
     // Media devices count (labels usually empty without permission)
