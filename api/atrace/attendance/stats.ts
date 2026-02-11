@@ -68,8 +68,8 @@ const GET_USERS_BY_IDS = `
 `;
 
 const EXPORT_DAILY_ATTENDANCE = `
-  query ExportDailyAttendance($startDate: String!, $endDate: String!) {
-    exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate }) {
+  query ExportDailyAttendance($startDate: String!, $endDate: String!, $onlyGeoVerified: Boolean) {
+    exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate, onlyGeoVerified: $onlyGeoVerified }) {
       userId
       username
       date
@@ -152,6 +152,7 @@ export async function atraceGetAllUsersStats(
 export async function atraceExportDailyAttendance(
   startDate: string,
   endDate: string,
+  onlyGeoVerified: boolean = true,
   nsSlug?: string
 ): Promise<Array<{
   userId: string;
@@ -183,7 +184,7 @@ export async function atraceExportDailyAttendance(
         legitimate: boolean;
         reason?: string;
       }>
-    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
+    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate, onlyGeoVerified }, {
       headers: {
         Namespace: nsSlug,
         ...devHeaders,
