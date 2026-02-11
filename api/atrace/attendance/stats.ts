@@ -18,8 +18,8 @@ type UserAttendanceStats = {
 };
 
 const GET_ALL_USERS_STATS = `
-  query GetAllUsersStats($startDate: String!, $endDate: String!, $postId: String) {
-    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate, postId: $postId }) {
+  query GetAllUsersStats($startDate: String!, $endDate: String!, $postId: String, $onlyGeoVerified: Boolean) {
+    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate, postId: $postId, onlyGeoVerified: $onlyGeoVerified }) {
       userId
       username
       workDays
@@ -68,8 +68,8 @@ const GET_USERS_BY_IDS = `
 `;
 
 const EXPORT_DAILY_ATTENDANCE = `
-  query ExportDailyAttendance($startDate: String!, $endDate: String!, $onlyGeoVerified: Boolean) {
-    exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate, onlyGeoVerified: $onlyGeoVerified }) {
+  query ExportDailyAttendance($startDate: String!, $endDate: String!) {
+    exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate }) {
       userId
       username
       date
@@ -117,6 +117,7 @@ export async function atraceGetAllUsersStats(
   startDate: string,
   endDate: string,
   postId?: string | null,
+  onlyGeoVerified?: boolean,
   nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
   // nsSlug required for token refresh
@@ -138,7 +139,7 @@ export async function atraceGetAllUsersStats(
         legitimateAbsences: number;
         totalWorkedHours: number;
       }>;
-    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
+    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null, onlyGeoVerified }, {
       headers: {
         Namespace: nsSlug,
         ...devHeaders,
@@ -152,7 +153,6 @@ export async function atraceGetAllUsersStats(
 export async function atraceExportDailyAttendance(
   startDate: string,
   endDate: string,
-  onlyGeoVerified: boolean = true,
   nsSlug?: string
 ): Promise<Array<{
   userId: string;
@@ -184,7 +184,7 @@ export async function atraceExportDailyAttendance(
         legitimate: boolean;
         reason?: string;
       }>
-    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate, onlyGeoVerified }, {
+    }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
       headers: {
         Namespace: nsSlug,
         ...devHeaders,

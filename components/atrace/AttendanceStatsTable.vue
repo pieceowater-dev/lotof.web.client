@@ -235,6 +235,7 @@ async function loadStats() {
       dateRange.value.startDate,
       dateRange.value.endDate,
       props.postId || null,
+      onlyGeoVerified.value,
       namespaceSlug.value
     );
     stats.value = result;
@@ -384,11 +385,19 @@ watch([customStartDate, customEndDate], ([newStart, newEnd]) => {
   }
 });
 
-// Watch for postId changes
+watch(onlyGeoVerified, () => {
+  safeLoadStats();
+});
+
+// Watch for postId/ready changes
 watch([() => props.postId, () => props.ready], () => {
   // Load for both specific post and "All" (empty string)
   safeLoadStats();
-}, { immediate: true });
+});
+
+onMounted(() => {
+  safeLoadStats();
+});
 
 // Export functionality
 const isExportingExcel = ref(false);
@@ -418,8 +427,7 @@ async function exportToExcel() {
     const { atraceExportDailyAttendance } = await import('@/api/atrace/attendance/stats');
     const records = await atraceExportDailyAttendance(
       dateRange.value.startDate,
-      dateRange.value.endDate,
-      onlyGeoVerified.value
+      dateRange.value.endDate
     );
     if (records.length === 0) {
       exportError.value = t('app.noDataToExport');
