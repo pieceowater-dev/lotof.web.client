@@ -4,6 +4,7 @@ import AttendanceStatsTable from '@/components/atrace/AttendanceStatsTable.vue';
 import CreatePostModal from "@/components/atrace/CreatePostModal.vue";
 import EditPostModal from "@/components/atrace/EditPostModal.vue";
 import FilterModal from "@/components/atrace/FilterModal.vue";
+import RouteModal from '@/components/atrace/RouteModal.vue';
 import TourGuide from "@/components/TourGuide.vue";
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys, dynamicLS } from '@/utils/storageKeys';
@@ -135,6 +136,12 @@ const routePassesLoading = ref(false);
 const routePassesError = ref<string | null>(null);
 const routeMembers = ref<Array<{ userId: string; username: string; email: string }>>([]);
 const routeMembersLoading = ref(false);
+const isRouteCreateOpen = ref(false);
+const routeCreateTitle = ref('');
+const routeCreatePostIds = ref<string[]>([]);
+const routeCreatePostId = ref('');
+const routeCreateError = ref<string | null>(null);
+const routeCreateSaving = ref(false);
 // Cache namespace id to avoid repeated lookups
 const cachedNamespaceId = ref<string | null>(null);
 // Pagination state for infinite scroll
@@ -475,14 +482,71 @@ const routeMilestoneDetails = computed(() => {
     return [...routePass.value.details].sort((a, b) => a.priority - b.priority);
 });
 
-function getRoutePostLabel(postId: string): string {
-    const post = posts.value.find((p) => p.id === postId);
-    if (!post) return postId;
-    const parts = [] as string[];
+function buildPostLabel(post: Post): string {
+    const parts: string[] = [];
     if (post.title?.trim()) parts.push(post.title.trim());
     if (post.location?.city?.trim()) parts.push(post.location.city);
     if (post.location?.address?.trim()) parts.push(post.location.address);
     return parts.join(' — ');
+}
+
+function getRoutePostLabel(postId: string): string {
+    const post = posts.value.find((p) => p.id === postId);
+    if (!post) return postId;
+    return buildPostLabel(post);
+}
+
+const routeCreatePostOptions = computed(() => {
+    const used = new Set(routeCreatePostIds.value);
+    return posts.value
+        .filter((post) => !used.has(post.id))
+        .map((post) => ({ label: buildPostLabel(post), value: post.id }));
+});
+
+function resetRouteCreateForm() {
+    routeCreateTitle.value = '';
+    routeCreatePostIds.value = [];
+    routeCreatePostId.value = '';
+    routeCreateError.value = null;
+}
+
+async function openCreateRouteModal() {
+    resetRouteCreateForm();
+    isRouteCreateOpen.value = true;
+    if (posts.value.length === 0) {
+        await loadPosts();
+    }
+}
+
+async function saveNewRoute() {
+    routeCreateError.value = null;
+    const title = routeCreateTitle.value.trim();
+    if (!title) {
+        routeCreateError.value = t('app_route_title_required') || 'Введите название маршрута';
+        return;
+    }
+    if (routeCreatePostIds.value.length === 0) {
+        routeCreateError.value = t('app_route_posts_required') || 'Добавьте хотя бы один пост';
+        return;
+    }
+
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+    if (!atraceToken) return;
+
+    routeCreateSaving.value = true;
+    try {
+        const { atraceCreateRoute } = await import('@/api/atrace/route/create');
+        const milestones = routeCreatePostIds.value.map((postId, idx) => ({ postId, priority: idx + 1 }));
+        const created = await atraceCreateRoute(atraceToken, nsSlug.value, { title, milestones });
+        routes.value = [...routes.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        isRouteCreateOpen.value = false;
+        resetRouteCreateForm();
+    } catch (e) {
+        routeCreateError.value = getErrorMessage(e) || (t('app_route_save_failed') || 'Failed to save route');
+    } finally {
+        routeCreateSaving.value = false;
+    }
 }
 
 function getMilestoneStatusLabel(detail: any): string {
@@ -1103,7 +1167,7 @@ onBeforeUnmount(() => {
                     color="primary"
                     variant="soft"
                     class="flex-shrink-0"
-                    :to="`/${nsSlug}/atrace/settings`"
+                    @click="openCreateRouteModal"
                 >
                     {{ t('app.route.add') || 'Добавить маршрут' }}
                 </UButton>
@@ -1314,9 +1378,11 @@ onBeforeUnmount(() => {
                         <!-- Period selector moved here -->
                         <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
                             <label class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
-                            <UInput v-model="routeProgressStart" type="date" size="sm" class="w-32 sm:w-36" />
-                            <span class="text-xs text-gray-400">—</span>
-                            <UInput v-model="routeProgressEnd" type="date" size="sm" class="w-32 sm:w-36" />
+                            <div class="flex items-center gap-2 flex-nowrap">
+                                <UInput v-model="routeProgressStart" type="date" size="sm" class="w-32 sm:w-36" />
+                                <span class="text-xs text-gray-400">—</span>
+                                <UInput v-model="routeProgressEnd" type="date" size="sm" class="w-32 sm:w-36" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1539,6 +1605,30 @@ onBeforeUnmount(() => {
             </div>
         </div>
     </div>
+
+    <!-- Create Route Modal -->
+    <RouteModal
+        v-model="isRouteCreateOpen"
+        :title="t('app.route.titleCreate') || 'Create Route'"
+        :show-edit-warning="false"
+        :edit-warning="''"
+        :name-label="t('app.route.form.title') || 'Название'"
+        :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
+        :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
+        :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
+        :select-placeholder="t('app.select.location') || 'Выберите пост'"
+        :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
+        :cancel-label="t('common.cancel') || 'Cancel'"
+        :save-label="t('common.save') || 'Save'"
+        v-model:route-title="routeCreateTitle"
+        v-model:selected-post-id="routeCreatePostId"
+        v-model:selected-post-ids="routeCreatePostIds"
+        :post-options="routeCreatePostOptions"
+        :get-post-label="getRoutePostLabel"
+        :error="routeCreateError"
+        :saving="routeCreateSaving"
+        @save="saveNewRoute"
+    />
 
     <!-- Create Post Modal -->
     <CreatePostModal v-model="isCreateOpen" :form="form" @submit="handleCreate" />

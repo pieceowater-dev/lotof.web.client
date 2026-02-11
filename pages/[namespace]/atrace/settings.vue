@@ -7,6 +7,7 @@ import { setUnauthorizedHandler } from '@/api/clients';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import { getPlanLimits } from '@/api/atrace/plans/getLimits';
+import RouteModal from '@/components/atrace/RouteModal.vue';
 
 const { t } = useI18n();
 
@@ -77,7 +78,6 @@ const routeForm = reactive<{ title: string; postIds: string[] }>({
     title: '',
     postIds: [],
 });
-const dragIndex = ref<number | null>(null);
 const planLimits = ref<{ max_posts?: number; max_employees?: number } | null>(null)
 const planName = ref<string>('')
 const planLimitsLoading = ref(false)
@@ -172,53 +172,6 @@ function openEditRoute(routeItem: Route) {
     loadRoutePosts();
 }
 
-function addPostToRoute(postId: string) {
-    if (!postId) return;
-    if (routeForm.postIds.includes(postId)) {
-        routeFormPostId.value = '';
-        return;
-    }
-    routeForm.postIds.push(postId);
-    routeFormPostId.value = '';
-}
-
-function removeRoutePost(index: number) {
-    routeForm.postIds.splice(index, 1);
-}
-
-function moveRoutePost(index: number, dir: -1 | 1) {
-    const nextIndex = index + dir;
-    if (nextIndex < 0 || nextIndex >= routeForm.postIds.length) return;
-    const copy = [...routeForm.postIds];
-    const temp = copy[index];
-    copy[index] = copy[nextIndex];
-    copy[nextIndex] = temp;
-    routeForm.postIds = copy;
-}
-
-function handleRouteDragStart(index: number) {
-    dragIndex.value = index;
-}
-
-function handleRouteDragOver(event: DragEvent) {
-    event.preventDefault();
-}
-
-function handleRouteDrop(index: number) {
-    if (dragIndex.value === null || dragIndex.value === index) {
-        dragIndex.value = null;
-        return;
-    }
-    const next = [...routeForm.postIds];
-    const [moved] = next.splice(dragIndex.value, 1);
-    next.splice(index, 0, moved);
-    routeForm.postIds = next;
-    dragIndex.value = null;
-}
-
-function handleRouteDragEnd() {
-    dragIndex.value = null;
-}
 
 function getRoutePostTitle(postId: string): string {
     const post = routePosts.value.find((p) => p.id === postId);
@@ -811,7 +764,7 @@ onUnmounted(() => {
                     <thead class="bg-gray-50 dark:bg-gray-800">
                         <tr class="text-left">
                             <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{{ t('app.route.label') || 'Маршрут' }}</th>
-                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{{ t('app.route.posts') || 'Посты' }}</th>
+                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 w-[55%] min-w-[320px]">{{ t('app.route.posts') || 'Посты' }}</th>
                             <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 text-right">{{ t('common.actions') || 'Actions' }}</th>
                         </tr>
                     </thead>
@@ -821,8 +774,8 @@ onUnmounted(() => {
                                 <div class="font-semibold text-gray-900 dark:text-white">{{ routeItem.title }}</div>
                                 <div class="text-xs text-gray-500">{{ routeItem.milestones.length }} {{ t('app.locations') || 'постов' }}</div>
                             </td>
-                            <td class="px-4 py-3">
-                                <div class="space-y-1">
+                            <td class="px-4 py-3 w-[55%] min-w-[320px]">
+                                <div class="space-y-1 whitespace-normal">
                                     <div
                                         v-for="milestone in getSortedMilestones(routeItem)"
                                         :key="`${routeItem.id}-${milestone.postId}-${milestone.priority}`"
@@ -893,83 +846,27 @@ onUnmounted(() => {
         </div>
 
         <!-- Create/Edit Route Modal -->
-        <UModal v-model="isRouteModalOpen" :ui="{ container: 'items-center' }">
-            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-                <template #header>
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
-                            {{ editingRouteId ? (t('app.route.titleEdit') || 'Edit Route') : (t('app.route.titleCreate') || 'Create Route') }}
-                        </h3>
-                        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isRouteModalOpen = false" />
-                    </div>
-                </template>
-
-                <div class="space-y-4">
-                    <div v-if="editingRouteId" class="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-200 px-3 py-2 rounded-md">
-                        {{ t('app.route.editWarning') || 'Изменение маршрута пересоздаст его и сбросит текущую историю прохождений.' }}
-                    </div>
-                    <UFormGroup :label="t('app.route.form.title') || 'Название'">
-                        <UInput v-model="routeForm.title" size="lg" :placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'" />
-                    </UFormGroup>
-
-                    <UFormGroup :label="t('app.route.form.posts') || 'Посты маршрута'" :help="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'">
-                        <div class="flex gap-2">
-                            <USelectMenu
-                                v-model="routeFormPostId"
-                                :options="routePostOptions"
-                                option-attribute="label"
-                                value-attribute="value"
-                                :placeholder="t('app.select.location') || 'Выберите пост'"
-                                class="flex-1"
-                            />
-                            <UButton size="sm" color="primary" icon="lucide:plus" @click="addPostToRoute(routeFormPostId)">
-                                {{ t('common.add') || 'Add' }}
-                            </UButton>
-                        </div>
-
-                        <div v-if="routeForm.postIds.length === 0" class="text-xs text-gray-500 mt-2">
-                            {{ t('app.route.form.noPostsSelected') || 'Посты не выбраны' }}
-                        </div>
-                        <div v-else class="mt-3 space-y-2">
-                            <div
-                                v-for="(postId, index) in routeForm.postIds"
-                                :key="`${postId}-${index}`"
-                                class="flex items-center justify-between rounded-lg border border-gray-100 dark:border-gray-800 bg-white/60 dark:bg-gray-900/50 px-3 py-2"
-                                draggable="true"
-                                @dragstart="handleRouteDragStart(index)"
-                                @dragover="handleRouteDragOver"
-                                @drop="handleRouteDrop(index)"
-                                @dragend="handleRouteDragEnd"
-                            >
-                                <div class="flex items-center gap-2 text-sm">
-                                    <UIcon name="i-heroicons-bars-3" class="w-4 h-4 text-gray-400" />
-                                    <span class="font-semibold">#{{ index + 1 }}</span>
-                                    <span class="ml-1">{{ getRoutePostTitle(postId) }}</span>
-                                </div>
-                                <div class="flex items-center gap-1">
-                                    <UButton size="xs" variant="soft" icon="lucide:arrow-up" @click="moveRoutePost(index, -1)" />
-                                    <UButton size="xs" variant="soft" icon="lucide:arrow-down" @click="moveRoutePost(index, 1)" />
-                                    <UButton size="xs" variant="soft" color="red" icon="lucide:x" @click="removeRoutePost(index)" />
-                                </div>
-                            </div>
-                        </div>
-                    </UFormGroup>
-
-                    <div v-if="routeFormError" class="text-sm text-red-500">{{ routeFormError }}</div>
-                </div>
-
-                <template #footer>
-                    <div class="flex justify-end gap-2">
-                        <UButton color="primary" variant="soft" @click="isRouteModalOpen = false">
-                            {{ t('common.cancel') || 'Cancel' }}
-                        </UButton>
-                        <UButton color="primary" icon="lucide:check" @click="saveRoute">
-                            {{ t('common.save') || 'Save' }}
-                        </UButton>
-                    </div>
-                </template>
-            </UCard>
-        </UModal>
+        <RouteModal
+            v-model="isRouteModalOpen"
+            :title="editingRouteId ? (t('app.route.titleEdit') || 'Edit Route') : (t('app.route.titleCreate') || 'Create Route')"
+            :show-edit-warning="Boolean(editingRouteId)"
+            :edit-warning="t('app.route.editWarning') || 'Изменение маршрута пересоздаст его и сбросит текущую историю прохождений.'"
+            :name-label="t('app.route.form.title') || 'Название'"
+            :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
+            :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
+            :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
+            :select-placeholder="t('app.select.location') || 'Выберите пост'"
+            :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
+            :cancel-label="t('common.cancel') || 'Cancel'"
+            :save-label="t('common.save') || 'Save'"
+            v-model:route-title="routeForm.title"
+            v-model:selected-post-id="routeFormPostId"
+            v-model:selected-post-ids="routeForm.postIds"
+            :post-options="routePostOptions"
+            :get-post-label="getRoutePostTitle"
+            :error="routeFormError"
+            @save="saveRoute"
+        />
 
         <!-- Edit Member Modal -->
         <UModal v-model="isEditMemberOpen" :ui="{ container: 'items-center' }">

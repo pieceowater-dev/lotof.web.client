@@ -29,6 +29,21 @@ const stats = ref<UserStats[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
+const sortedStats = computed(() => {
+  return stats.value
+    .map((user, index) => ({ user, index }))
+    .sort((a, b) => {
+      const diff = (b.user.violationDays || 0) - (a.user.violationDays || 0);
+      if (diff !== 0) return diff;
+      const nameA = (a.user.username || a.user.email || a.user.userId || '').toLowerCase();
+      const nameB = (b.user.username || b.user.email || b.user.userId || '').toLowerCase();
+      if (nameA < nameB) return -1;
+      if (nameA > nameB) return 1;
+      return a.index - b.index;
+    })
+    .map((item) => item.user);
+});
+
 // Time thresholds for highlighting (localStorage) - GLOBAL SETTINGS
 const LATE_ARRIVAL_KEY = 'atrace-late-arrival-time';
 const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
@@ -585,7 +600,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           </tr>
         </thead>
         <tbody>
-          <template v-for="(user, index) in stats" :key="user.userId">
+          <template v-for="(user, index) in sortedStats" :key="user.userId">
             <!-- Main row -->
             <tr 
               :class="[
