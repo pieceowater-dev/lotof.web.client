@@ -1463,7 +1463,7 @@ onBeforeUnmount(() => {
                     <div
                         v-for="i in 5"
                         :key="`skeleton-${i}`"
-                        class="w-60 max-w-[90vw] sm:max-w-xs min-h-[100px] rounded-xl border border-gray-200 dark:border-gray-800 p-4 bg-white/60 dark:bg-gray-900/60 flex flex-col self-stretch"
+                        class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[100px] self-stretch flex flex-col border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60"
                     >
                         <div class="flex items-center gap-2 mb-2">
                             <USkeleton class="h-5 w-3/4" />
