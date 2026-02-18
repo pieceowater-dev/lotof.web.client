@@ -512,6 +512,7 @@
   "loading": "Loading...",
   "back": "Back",
   "error": "Error",
-  "add": "Add"
+  "add": "Add",
+  "namespaceMissing": "Namespace is not selected. Please select a namespace."
 }
 }

@@ -84,9 +84,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { getActiveMembersCount, setMemberActive } from '~/api/atrace/members/setActive'
 import type { Member, PlanLimits } from '~/types/atrace'
 
+const { t } = useI18n()
 const route = useRoute()
 
 const namespace = computed(() => route.params.namespace as string)
@@ -162,7 +164,16 @@ async function toggleMemberStatus(member: Member) {
 
     error.value = ''
   } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to update member status'
+    const errorMessage = err instanceof Error ? err.message : 'Failed to update member status'
+    // Check if error message is a localization key (e.g., "common.namespaceMissing")
+    if (errorMessage.includes('.')) {
+      // Try to translate using i18n
+      const translated = t(errorMessage)
+      // If translation exists (not the key itself), use it, otherwise use the raw message
+      error.value = translated !== errorMessage ? translated : errorMessage
+    } else {
+      error.value = errorMessage
+    }
     console.error('Error updating member:', err)
   } finally {
     toggling.value.delete(member.id)

@@ -20,42 +20,14 @@ const { titleBySlug } = useNamespace();
 
 definePageMeta({
     name: 'atrace',
-    path: '/:namespace/atrace/:type/:id?',
+    path: '/:namespace/atrace/:type?/:id?',
     middleware: (to) => {
-        // type: 'attendance' or 'route'
-        // For attendance: id can be specific location, 'all', or empty
-        // For route: id is the route ID
         const type = to.params.type as string | undefined;
         const id = to.params.id as string | undefined;
         
-        // If type is not set, default to attendance
-        if (!type) {
-            let defaultPostId = 'all';
-            if (process.client) {
-                try {
-                    const storageKey = `atrace-selected-post:${to.params.namespace}`;
-                    const saved = localStorage.getItem(storageKey);
-                    defaultPostId = saved || 'all';
-                } catch {
-                    defaultPostId = 'all';
-                }
-            }
-            return navigateTo(`/${to.params.namespace}/atrace/attendance/${defaultPostId}`, { replace: true });
-        }
-        
-        // For attendance, ensure id is set
-        if (type === 'attendance' && !id) {
-            let defaultPostId = 'all';
-            if (process.client) {
-                try {
-                    const storageKey = `atrace-selected-post:${to.params.namespace}`;
-                    const saved = localStorage.getItem(storageKey);
-                    defaultPostId = saved || 'all';
-                } catch {
-                    defaultPostId = 'all';
-                }
-            }
-            return navigateTo(`/${to.params.namespace}/atrace/attendance/${defaultPostId}`, { replace: true });
+        // If no type or type+id, redirect to attendance/all
+        if (!type || (type === 'attendance' && !id)) {
+            return navigateTo(`/${to.params.namespace}/atrace/attendance/all`, { replace: true });
         }
     }
 });

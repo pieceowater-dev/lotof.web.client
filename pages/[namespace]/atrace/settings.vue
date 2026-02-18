@@ -146,6 +146,25 @@ function buildPostLabel(post: Post): string {
     return parts.join(' — ');
 }
 
+// Function to localize known backend error messages
+function localizeErrorMessage(error: unknown): string {
+    const message = getErrorMessage(error);
+    
+    // Map of known backend errors to localization keys
+    const errorMap: Record<string, string> = {
+        'namespace header is missing': 'common.namespaceMissing',
+    };
+    
+    // Check if this is a known error
+    const localizationKey = errorMap[message];
+    if (localizationKey) {
+        return t(localizationKey);
+    }
+    
+    // Return original message if no localization found
+    return message;
+}
+
 function resetRouteForm() {
     routeForm.title = '';
     routeForm.postIds = [];
@@ -194,7 +213,7 @@ async function loadRoutes() {
         const res = await atraceGetRoutes(atraceToken, nsSlug.value, { page: 1, length: 'ONE_HUNDRED' });
         atraceRoutes.value = [...res.routes].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
     } catch (e) {
-        routesError.value = getErrorMessage(e) || (t('app_routes_load_failed') || 'Failed to load routes');
+        routesError.value = localizeErrorMessage(e) || (t('app_routes_load_failed') || 'Failed to load routes');
         atraceRoutes.value = [];
     } finally {
         routesLoading.value = false;
@@ -245,7 +264,7 @@ async function saveRoute() {
         isRouteModalOpen.value = false;
         resetRouteForm();
     } catch (e) {
-        routeFormError.value = getErrorMessage(e) || (t('app_route_save_failed') || 'Failed to save route');
+        routeFormError.value = localizeErrorMessage(e) || (t('app_route_save_failed') || 'Failed to save route');
     }
 }
 
@@ -261,7 +280,7 @@ async function deleteRoute(routeItem: Route) {
         await atraceDeleteRoute(atraceToken, nsSlug.value, routeItem.id);
         atraceRoutes.value = atraceRoutes.value.filter((r) => r.id !== routeItem.id);
     } catch (e) {
-        routesError.value = getErrorMessage(e) || (t('app_route_delete_failed') || 'Failed to delete route');
+        routesError.value = localizeErrorMessage(e) || (t('app_route_delete_failed') || 'Failed to delete route');
     }
 }
 
@@ -483,7 +502,7 @@ async function loadMembers() {
             );
 
         } catch (e: unknown) {
-            error.value = getErrorMessage(e) || 'Failed to load members';
+            error.value = localizeErrorMessage(e) || 'Failed to load members';
         } finally {
             loading.value = false;
             loadMembersPromise = null;
@@ -533,6 +552,9 @@ async function toggleMemberActive(member: Member) {
 
         const { atraceClient } = await import('@/api/clients');
         const { atraceRequestWithRefresh } = await import('@/api/atrace/atraceRequestWithRefresh');
+        const { getDeviceHeaders } = await import('@/utils/device');
+        
+        const devHeaders = await getDeviceHeaders();
         
         const query = `
           mutation SetMemberActive($input: SetMemberActiveInput!) {
@@ -558,6 +580,8 @@ async function toggleMemberActive(member: Member) {
                 {
                     headers: {
                         AtraceAuthorization: `Bearer ${atraceToken}`,
+                        Namespace: nsSlug.value,
+                        ...devHeaders
                     }
                 }
             ),
@@ -567,7 +591,7 @@ async function toggleMemberActive(member: Member) {
         logError('[toggleMemberActive]', e);
         useToast().add({
             title: t('app.notification'),
-            description: getErrorMessage(e) || 'Failed to update member status',
+            description: localizeErrorMessage(e) || 'Failed to update member status',
             color: 'red'
         });
         // Revert the toggle
@@ -656,7 +680,7 @@ async function handleSaveMember() {
         // Reload members to reflect changes from backend
         await loadMembers();
     } catch (e: unknown) {
-        error.value = getErrorMessage(e) || 'Failed to update member';
+        error.value = localizeErrorMessage(e) || 'Failed to update member';
     }
 }
 

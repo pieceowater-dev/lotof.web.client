@@ -44,7 +44,12 @@ export default defineEventHandler(async (event) => {
     } as any)
 
     if ((response as any).errors) {
-      return { error: (response as any).errors[0]?.message || 'Failed to set member active status' }
+      const errorMessage = (response as any).errors[0]?.message || 'Failed to set member active status'
+      // Map backend errors to frontend localization keys
+      const localizedError = errorMessage === 'namespace header is missing' 
+        ? 'common.namespaceMissing'
+        : errorMessage
+      return { error: localizedError }
     }
 
     return (response as any).data?.setMemberActive || {}

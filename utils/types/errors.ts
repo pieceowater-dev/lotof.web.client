@@ -29,6 +29,15 @@ export function isNetworkError(error: unknown): error is NetworkErrorLike {
 export function getErrorMessage(e: unknown): string {
   if (typeof e === 'string') return e
   if (e instanceof Error) return e.message
+  
+  // Check for GraphQL response structure: response.errors[0].message
+  if (typeof e === 'object' && e !== null) {
+    const obj = e as any
+    if (obj.response?.errors && Array.isArray(obj.response.errors) && obj.response.errors.length > 0) {
+      return obj.response.errors[0]?.message || 'GraphQL error'
+    }
+  }
+  
   if (isGraphQLError(e)) return e.message
   return 'Unexpected error'
 }
