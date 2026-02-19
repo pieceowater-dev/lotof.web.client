@@ -31,6 +31,7 @@ export default defineEventHandler(async (event) => {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': token.startsWith('Bearer ') ? token : `Bearer ${token}`,
+        'x-namespace': namespaceSlug,
       },
       body: {
         query,

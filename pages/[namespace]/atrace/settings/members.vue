@@ -84,7 +84,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { getActiveMembersCount, setMemberActive } from '~/api/atrace/members/setActive'
 import type { Member, PlanLimits } from '~/types/atrace'
 
