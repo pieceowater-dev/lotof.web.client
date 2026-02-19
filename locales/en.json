@@ -513,6 +513,7 @@
   "back": "Back",
   "error": "Error",
   "add": "Add",
+  "settingsAccessDenied": "You do not have permission to access settings. Only administrators can manage members.",
   "namespaceMissing": "Namespace is not selected. Please select a namespace."
 }
 }

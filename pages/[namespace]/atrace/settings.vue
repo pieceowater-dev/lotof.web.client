@@ -695,6 +695,38 @@ onMounted(async () => {
         setTimeout(() => router.push('/'), 0);
         return;
     }
+    
+    // Check if user has access to settings (must be admin/manager, not teammate)
+    // Try to load roles - if it fails with permission denied, user can't access settings
+    try {
+        const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+        const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
+        if (!atraceToken) {
+            router.push('/');
+            return;
+        }
+        
+        // Try to load roles to check if user has permission
+        // If user is a teammate, this will likely fail or return empty
+        const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
+        const loadedRoles = await atraceGetRoles(atraceToken, nsSlug.value);
+        
+        // If no roles returned or error, it might be a teammate - check by trying getActiveMembers
+        // (which teammates can do) vs getAllUsersStats (which they can't do anymore)
+        if (!loadedRoles || loadedRoles.length === 0) {
+            // Try to access the members - if it fails for teammates, they'll get a clear error
+            // For now, allow loading and let the API handle the permission check
+        }
+    } catch (e: any) {
+        const message = getErrorMessage(e);
+        if (message.includes('access denied') || message.includes('permission') || message.includes('unauthorized')) {
+            error.value = t('app.settingsAccessDenied') || 'You do not have permission to access settings. Only administrators can manage members.';
+            // Redirect after showing error
+            setTimeout(() => router.push(`/${nsSlug.value}/atrace`), 2000);
+            return;
+        }
+    }
+    
     await loadRoles();
     await loadMembers();
     await loadPlanLimits();
