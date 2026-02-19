@@ -125,24 +125,6 @@ const showDateModal = ref(false);
 const showLegendModal = ref(false);
 const dateModalError = ref<string | null>(null);
 
-// Geo-verified violations filter state (localStorage)
-const GEO_VERIFIED_FILTER_KEY = 'atrace-violations-filter-geo-verified';
-function loadGeoVerifiedFilterFromStorage(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    const stored = localStorage.getItem(GEO_VERIFIED_FILTER_KEY);
-    if (stored === 'false') return false;
-    return true; // default to true
-  } catch {}
-  return true;
-}
-const onlyGeoVerified = ref(loadGeoVerifiedFilterFromStorage());
-// Watch for changes and save to localStorage
-watch(onlyGeoVerified, (val) => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(GEO_VERIFIED_FILTER_KEY, String(val));
-  }
-});
 const isStartInvalid = computed(() => {
   if (!showDateModal.value) return false;
   if (!customStartDate.value) return false;
@@ -235,7 +217,6 @@ async function loadStats() {
       dateRange.value.startDate,
       dateRange.value.endDate,
       props.postId || null,
-      onlyGeoVerified.value,
       namespaceSlug.value
     );
     stats.value = result;
@@ -385,9 +366,6 @@ watch([customStartDate, customEndDate], ([newStart, newEnd]) => {
   }
 });
 
-watch(onlyGeoVerified, () => {
-  safeLoadStats();
-});
 
 // Watch for postId/ready changes
 watch([() => props.postId, () => props.ready], () => {
@@ -520,14 +498,6 @@ function formatNumber(val: number, fractionDigits = 0) {
 
       <!-- Export and Settings Buttons -->
       <div class="flex flex-col md:flex-row gap-2 md:gap-1.5 md:items-center">
-        <!-- Geo-verified violations filter toggle -->
-        <div class="flex items-center gap-2 px-2 py-1.5 rounded-md bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
-          <span class="text-xs font-medium whitespace-nowrap">
-            {{ onlyGeoVerified ? (t('app.onlyGeoVerified') || 'Только гео-верифицированные') : (t('app.allViolations') || 'Все нарушения') }}
-          </span>
-          <UToggle v-model="onlyGeoVerified" :ui="{ base: 'relative inline-flex flex-shrink-0' }" />
-        </div>
-        
         <UButton 
           size="xs" 
           variant="ghost" 

@@ -18,8 +18,8 @@ type UserAttendanceStats = {
 };
 
 const GET_ALL_USERS_STATS = `
-  query GetAllUsersStats($startDate: String!, $endDate: String!, $postId: String, $onlyGeoVerified: Boolean) {
-    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate, postId: $postId, onlyGeoVerified: $onlyGeoVerified }) {
+  query GetAllUsersStats($startDate: String!, $endDate: String!, $postId: String) {
+    getAllUsersStats(input: { startDate: $startDate, endDate: $endDate, postId: $postId }) {
       userId
       username
       workDays
@@ -117,7 +117,6 @@ export async function atraceGetAllUsersStats(
   startDate: string,
   endDate: string,
   postId?: string | null,
-  onlyGeoVerified?: boolean,
   nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
   // nsSlug required for token refresh
@@ -139,7 +138,7 @@ export async function atraceGetAllUsersStats(
         legitimateAbsences: number;
         totalWorkedHours: number;
       }>;
-    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null, onlyGeoVerified }, {
+    }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
       headers: {
         Namespace: nsSlug,
         ...devHeaders,

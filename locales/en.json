@@ -337,8 +337,6 @@
     "exportRangeTooLarge": "Export range cannot exceed 3 months. Please select a shorter period.",
     "noDataToExport": "No data to export",
     "exportFailed": "Export failed. Please try again.",
-    "onlyGeoVerified": "Only geo-verified",
-    "allViolations": "All violations",
     "calculate": "Calculate",
     "salaryCalculation": "Salary Calculation",
     "salary": "Salary",
