@@ -281,6 +281,7 @@
   "status": "Статус",
   "excused": "Оправдано",
   "violation": "Нарушение",
+  "reason": "Причина",
   "noAttendanceRecords": "Нет записей посещаемости",
   "failedToLoadDetails": "Не удалось загрузить детали посещаемости",
   "date": "Дата",

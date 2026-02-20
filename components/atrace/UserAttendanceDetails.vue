@@ -142,6 +142,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
               <th class="px-3 py-2 text-center font-medium">{{ t('app.checkOut') }}</th>
               <th class="px-3 py-2 text-center font-medium">{{ t('app.hoursWorked') }}</th>
               <th class="px-3 py-2 text-center font-medium">{{ t('app.status') }}</th>
+              <th class="px-3 py-2 text-left font-medium">{{ t('app.reason') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -167,7 +168,6 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                 <span 
                   v-else-if="record.legitimate"
                   class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
-                  :title="record.reason"
                 >
                   <UIcon name="i-heroicons-information-circle" class="w-3 h-3 mr-1" />
                   {{ t('app.excused') }}
@@ -179,6 +179,12 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                   <UIcon name="i-heroicons-x-circle" class="w-3 h-3 mr-1" />
                   {{ t('app.violation') }}
                 </span>
+              </td>
+              <td class="px-3 py-2 text-sm">
+                <span v-if="record.legitimate && record.reason" class="text-gray-700 dark:text-gray-300">
+                  {{ record.reason }}
+                </span>
+                <span v-else class="text-gray-400 dark:text-gray-500">-</span>
               </td>
             </tr>
           </tbody>

@@ -387,7 +387,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
             <span v-if="isViolationDay(date)" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded">
               {{ t('app.violation') }}
             </span>
-            <span v-else-if="isLegitimateDay(date)" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded">
+            <span v-else-if="isLegitimateDay(date)" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded" :title="dailyAttendanceMap.get(date)?.legitimate ? dailyAttendanceMap.get(date)?.reason : ''">
               {{ t('app.excused') }}
             </span>
           </div>

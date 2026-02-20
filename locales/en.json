@@ -301,6 +301,7 @@
     "status": "Status",
     "excused": "Excused",
     "violation": "Violation",
+    "reason": "Reason",
     "noAttendanceRecords": "No attendance records",
     "failedToLoadDetails": "Failed to load attendance details",
     "date": "Date",
