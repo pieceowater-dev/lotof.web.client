@@ -2,11 +2,9 @@
 import { useI18n } from '@/composables/useI18n';
 import type { AtraceRecord } from '@/api/atrace/record/records';
 import { logError } from '@/utils/logger';
+import { GEO_CONFIRM_RADIUS_M } from '@/utils/geolocation';
 
 const { t, locale } = useI18n();
-
-// Radius for geo confirmation badge (meters)
-const GEO_CONFIRM_RADIUS_M = 20;
 
 const props = defineProps<{
   postId: string;

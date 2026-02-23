@@ -3,6 +3,12 @@ export type GeoPoint = {
   longitude?: number;
 };
 
+/**
+ * Radius for geo confirmation in meters
+ * Used when verifying that a record's geolocation is within this distance
+ */
+export const GEO_CONFIRM_RADIUS_M = 50;
+
 // Returns coords if permission is granted or prompted once; skips if denied or already prompted and still not granted.
 export async function getGeolocationOnce(options?: PositionOptions): Promise<GeoPoint> {
   if (typeof window === 'undefined') return {};
