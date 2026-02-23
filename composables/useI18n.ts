@@ -22,14 +22,23 @@ export function useI18n() {
   function getDeep(obj: any, keyPath: string): any {
     return keyPath.split('.').reduce((acc: any, k: string) => (acc && typeof acc === 'object') ? acc[k] : undefined, obj);
   }
-  function t(path: string): string {
+  function t(path: string, params?: Record<string, string | number>): string {
     const parts = path.split('.');
     const ns = parts.shift();
     if (!ns) return path;
     const dictNs = (messages as any)[locale.value]?.[ns] || {};
     const restPath = parts.join('.');
-    const val = restPath ? getDeep(dictNs, restPath) : dictNs;
-    return (typeof val === 'string' || typeof val === 'number') ? String(val) : path;
+    let val = restPath ? getDeep(dictNs, restPath) : dictNs;
+    let result = (typeof val === 'string' || typeof val === 'number') ? String(val) : path;
+    
+    // Interpolate parameters if provided
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), String(value));
+      });
+    }
+    
+    return result;
   }
   function tm(path: string): any {
     const parts = path.split('.');

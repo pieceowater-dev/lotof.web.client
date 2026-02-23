@@ -31,10 +31,15 @@ const userSchedule = ref<any>(null);
 
 // All records and daily attendance
 const allRecords = ref<AtraceRecord[]>([]);
+const hasMoreRecords = ref(true);
+const currentPage = ref(1);
+const pageSize = 30;
+
 type DailyAttendance = {
   date: string;
   attended: boolean;
   legitimate: boolean;
+  reason?: string;
   firstCheckIn: number;
   lastCheckOut: number;
   workedHours: number;
@@ -73,38 +78,13 @@ async function loadData() {
   if (!props.postId || !props.userId) return;
   loading.value = true;
   error.value = null;
+  currentPage.value = 1;
+  allRecords.value = [];
+  hasMoreRecords.value = true;
+  
   try {
-    // Load records
-    const { atraceGetRecordsByPostId } = await import('@/api/atrace/record/records');
-    let page = 1;
-    const aggregated: AtraceRecord[] = [];
-    let fetched = 0;
-    let total = Infinity;
-    while (fetched < total) {
-      const res = await atraceGetRecordsByPostId(props.postId, {
-        page,
-        length: 'FIFTY' as any,
-        sortField: 'timestamp',
-        sortBy: 'DESC',
-      });
-      total = res.paginationInfo.count;
-      fetched += res.records.length;
-      if (res.records.length === 0) break;
-      aggregated.push(...res.records);
-      const oldest = res.records[res.records.length - 1]?.timestamp ?? 0;
-      if (oldest < startSec.value) break;
-      page += 1;
-      if (page > 20) break;
-    }
-    const filtered = aggregated.filter(r => r.userId === props.userId && r.timestamp >= startSec.value && r.timestamp <= endSec.value);
-    console.log('[UserDayRecordsAccordion] Filtering:', {
-      'props.userId': props.userId,
-      'aggregated.length': aggregated.length,
-      'aggregated.map(r => r.userId)': aggregated.map(r => r.userId),
-      'filtered.length': filtered.length,
-      'filtered': filtered.map(r => ({ id: r.id, userId: r.userId, timestamp: r.timestamp }))
-    });
-    allRecords.value = filtered;
+    // Load first page of records with userId filter
+    await loadMoreRecords();
 
     // Load daily attendance
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
@@ -112,6 +92,48 @@ async function loadData() {
     dailyAttendance.value = result;
   } catch (e: unknown) {
     logError('[UserDayRecordsAccordion] failed to load:', e);
+    error.value = t('app.failedToLoadDetails');
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function loadMoreRecords() {
+  if (!props.postId || !props.userId || !hasMoreRecords.value) return;
+  
+  loading.value = true;
+  try {
+    const { atraceGetRecordsByPostId } = await import('@/api/atrace/record/records');
+    const res = await atraceGetRecordsByPostId(props.postId, {
+      userId: props.userId, // Pass userId for efficient filtering
+      page: currentPage.value,
+      length: 'THIRTY' as any,
+      sortField: 'timestamp',
+      sortBy: 'DESC',
+    });
+    
+    const newRecords = res.records.filter(r => 
+      r.userId === props.userId && 
+      r.timestamp >= startSec.value && 
+      r.timestamp <= endSec.value
+    );
+    
+    allRecords.value.push(...newRecords);
+    
+    // Check if there are more records to load
+    const totalFetched = currentPage.value * 30;
+    hasMoreRecords.value = totalFetched < res.paginationInfo.count && res.records.length > 0;
+    
+    currentPage.value++;
+    
+    console.log('[UserDayRecordsAccordion] Loaded page:', {
+      page: currentPage.value - 1,
+      recordsLoaded: newRecords.length,
+      totalRecords: allRecords.value.length,
+      hasMore: hasMoreRecords.value,
+    });
+  } catch (e: unknown) {
+    logError('[UserDayRecordsAccordion] failed to load more records:', e);
     error.value = t('app.failedToLoadDetails');
   } finally {
     loading.value = false;
@@ -447,6 +469,17 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
           </table>
         </div>
       </div>
+    </div>
+
+    <!-- Load More Button -->
+    <div v-if="hasMoreRecords && !loading" class="flex justify-center py-4">
+      <UButton 
+        @click="loadMoreRecords"
+        variant="soft"
+        size="md"
+      >
+        {{ t('app.loadMore') || 'Load More' }}
+      </UButton>
     </div>
 
     <!-- Reason Modal -->

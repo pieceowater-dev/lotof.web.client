@@ -23,10 +23,11 @@ export type PaginatedRecordList = {
 };
 
 const GET_RECORD_BY_POST_ID = `
-  query GetRecordByPostId($postId: ID!, $page: Int, $length: FilterPaginationLengthEnum, $sortField: String, $sortBy: FilterSortByEnum) {
+  query GetRecordByPostId($postId: ID!, $userId: ID, $page: Int, $length: FilterPaginationLengthEnum, $sortField: String, $sortBy: FilterSortByEnum) {
     getRecordByPostId(
       filter: {
         postId: $postId
+        userId: $userId
         pagination: { page: $page, length: $length }
         sort: { field: $sortField, by: $sortBy }
       }
@@ -77,6 +78,7 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
 export async function atraceGetRecordsByPostId(
   postId: string,
   options?: {
+    userId?: string;
     page?: number;
     length?: 'TEN' | 'FIFTEEN' | 'TWENTY' | 'TWENTY_FIVE' | 'THIRTY' | 'THIRTY_FIVE' | 'FORTY' | 'FORTY_FIVE' | 'FIFTY' | 'FIFTY_FIVE' | 'SIXTY' | 'SIXTY_FIVE' | 'SEVENTY' | 'SEVENTY_FIVE' | 'EIGHTY' | 'EIGHTY_FIVE' | 'NINETY' | 'NINETY_FIVE' | 'ONE_HUNDRED';
     sortField?: string;
@@ -88,6 +90,7 @@ export async function atraceGetRecordsByPostId(
   if (!nsSlug) {
     try { nsSlug = useRoute().params.namespace as string; } catch {}
   }
+  const userId = options?.userId ?? null;
   const page = options?.page ?? 1;
   const length = options?.length ?? 'TEN';
   const sortField = options?.sortField ?? 'timestamp';
@@ -96,7 +99,7 @@ export async function atraceGetRecordsByPostId(
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getRecordByPostId: PaginatedRecordList }>(
       GET_RECORD_BY_POST_ID,
-      { postId, page, length, sortField, sortBy },
+      { postId, userId, page, length, sortField, sortBy },
       {
         headers: {
           Namespace: nsSlug || '',
