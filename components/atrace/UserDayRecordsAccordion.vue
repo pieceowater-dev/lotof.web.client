@@ -55,6 +55,9 @@ const dailyAttendanceMap = computed(() => {
 // Expanded days state
 const expandedDays = ref<Set<string>>(new Set());
 
+// Loading states
+const loadingMore = ref(false);
+
 // Group records by date
 const recordsByDay = computed(() => {
   const grouped = new Map<string, AtraceRecord[]>();
@@ -101,7 +104,7 @@ async function loadData() {
 async function loadMoreRecords() {
   if (!props.postId || !props.userId || !hasMoreRecords.value) return;
   
-  loading.value = true;
+  loadingMore.value = true;
   try {
     const { atraceGetRecordsByPostId } = await import('@/api/atrace/record/records');
     const res = await atraceGetRecordsByPostId(props.postId, {
@@ -118,7 +121,8 @@ async function loadMoreRecords() {
       r.timestamp <= endSec.value
     );
     
-    allRecords.value.push(...newRecords);
+    // Use a new array reference to trigger reactivity properly
+    allRecords.value = [...allRecords.value, ...newRecords];
     
     // Check if there are more records to load
     const totalFetched = currentPage.value * 30;
@@ -136,7 +140,7 @@ async function loadMoreRecords() {
     logError('[UserDayRecordsAccordion] failed to load more records:', e);
     error.value = t('app.failedToLoadDetails');
   } finally {
-    loading.value = false;
+    loadingMore.value = false;
   }
 }
 
@@ -475,6 +479,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
     <div v-if="hasMoreRecords && !loading" class="flex justify-center py-4">
       <UButton 
         @click="loadMoreRecords"
+        :loading="loadingMore"
         variant="soft"
         size="md"
       >
