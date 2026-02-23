@@ -81,11 +81,28 @@ export function useAtraceToken() {
     if (!hubToken) return null
     try {
       const { atraceGetAppToken } = await import('@/api/atrace/auth/getAppToken')
-      let token = await atraceGetAppToken(hubToken, nsSlug)
-      if (!token) {
-        await sleep(250)
-        token = await atraceGetAppToken(hubToken, nsSlug)
+      let token: string | null = null
+      let lastError: any = null
+      
+      // Try up to 2 times with a small delay to handle transient DB errors like "cached plan must not change result type"
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          token = await atraceGetAppToken(hubToken, nsSlug)
+          if (token) break
+        } catch (e) {
+          lastError = e
+          logError(`[useAtraceToken] attempt ${attempt}/2 failed`, e)
+          if (attempt < 2) {
+            await sleep(300)
+          }
+        }
       }
+      
+      if (!token) {
+        if (lastError) throw lastError
+        throw new Error('Failed to get atrace token')
+      }
+      
       try {
         const { setAtraceAppToken } = await import('@/api/clients')
         setAtraceAppToken(token)

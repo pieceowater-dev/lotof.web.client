@@ -137,23 +137,23 @@ const { t, locale } = useI18n();
 const config = useRuntimeConfig();
 const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
 
-useSeoMeta(() => ({
-  title: t('app.title') || 'lota',
-  description: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
-  ogTitle: t('app.title') || 'lota',
-  ogDescription: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+useSeoMeta({
+  title: () => t('app.title') || 'lota',
+  description: () => t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+  ogTitle: () => t('app.title') || 'lota',
+  ogDescription: () => t('app.description') || 'Платформа автоматизации для современного бизнеса.',
   ogType: 'website',
   ogUrl: siteUrl,
-  ogImage: `${siteUrl}/og-image.png`,
+  ogImage: () => `${siteUrl}/og-image.png`,
   twitterCard: 'summary_large_image',
-  twitterTitle: t('app.title') || 'lota',
-  twitterDescription: t('app.description') || 'Платформа автоматизации для современного бизнеса.',
-  twitterImage: `${siteUrl}/og-image.png`
-}));
+  twitterTitle: () => t('app.title') || 'lota',
+  twitterDescription: () => t('app.description') || 'Платформа автоматизации для современного бизнеса.',
+  twitterImage: () => `${siteUrl}/og-image.png`
+});
 
-useHead(() => ({
+useHead({
   link: [{ rel: 'canonical', href: siteUrl }]
-}));
+});
 
 const greeting = computed(() => {
   const hours = new Date().getHours();
@@ -201,7 +201,7 @@ async function checkInstalledForVisibleApps() {
 
 function handleSwitchNamespace(ns: string) {
   setNamespace(ns);
-  checkInstalledForVisibleApps();
+  // Note: checkInstalledForVisibleApps() is called automatically by the watch below
 }
 
 // Re-check when selected namespace changes outside of dropdown (e.g., deep link)
