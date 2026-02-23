@@ -7,6 +7,7 @@ import { logError, logWarn } from '@/utils/logger';
 // Reactive token holder (shared across clients)
 let tokenRef: Ref<string | null> | null = null; // hub token (Authorization)
 let atraceTokenRef: Ref<string | null> | null = null; // atrace app token (AtraceAuthorization)
+let contactsTokenRef: Ref<string | null> | null = null; // contacts app token (ContactsAuthorization)
 
 function getTokenRef() {
   if (!tokenRef) {
@@ -23,6 +24,13 @@ function getAtraceTokenRef() {
   return atraceTokenRef;
 }
 
+function getContactsTokenRef() {
+  if (!contactsTokenRef) {
+    contactsTokenRef = useState<string | null>('contacts_app_token', () => null);
+  }
+  return contactsTokenRef;
+}
+
 export function setGlobalAuthToken(token: string | null) {
   getTokenRef().value = token;
 }
@@ -31,9 +39,14 @@ export function setAtraceAppToken(token: string | null) {
   getAtraceTokenRef().value = token;
 }
 
+export function setContactsAppToken(token: string | null) {
+  getContactsTokenRef().value = token;
+}
+
 type UnauthorizedHandler = () => void;
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 let atraceUnauthorizedHandler: UnauthorizedHandler | null = null;
+let contactsUnauthorizedHandler: UnauthorizedHandler | null = null;
 
 export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) { 
   unauthorizedHandler = fn; 
@@ -43,8 +56,12 @@ export function setAtraceUnauthorizedHandler(fn: UnauthorizedHandler | null) {
   atraceUnauthorizedHandler = fn;
 }
 
+export function setContactsUnauthorizedHandler(fn: UnauthorizedHandler | null) {
+  contactsUnauthorizedHandler = fn;
+}
+
 type ApiClientOptions = {
-  authHeader?: 'Authorization' | 'AtraceAuthorization';
+  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization';
 };
 
 function notifyRateLimit() {
@@ -90,6 +107,9 @@ export class ApiClient {
     if (this.authHeader === 'AtraceAuthorization') {
       const at = getAtraceTokenRef().value;
       if (at) headers[this.authHeader] = `Bearer ${at}`;
+    } else if (this.authHeader === 'ContactsAuthorization') {
+      const ct = getContactsTokenRef().value;
+      if (ct) headers[this.authHeader] = `Bearer ${ct}`;
     } else if (t) {
       // For hub client use hub token
       headers[this.authHeader] = `Bearer ${t}`;
@@ -142,3 +162,4 @@ export class ApiClient {
 
 export const hubClient = new ApiClient(import.meta.env.VITE_API_HUB, { authHeader: 'Authorization' });
 export const atraceClient = new ApiClient(import.meta.env.VITE_API_ATRACE, { authHeader: 'AtraceAuthorization' });
+export const contactsClient = new ApiClient(import.meta.env.VITE_API_CONTACTS, { authHeader: 'ContactsAuthorization' });

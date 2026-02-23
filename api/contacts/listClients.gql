@@ -1,0 +1,30 @@
+query ListClients($filter: DefaultFilterInput) {
+  clients(filter: $filter) {
+    rows {
+      client {
+        id
+        clientType
+        status
+        createdAt
+        updatedAt
+      }
+      individual {
+        firstName
+        lastName
+        middleName
+        birthDate
+        gender
+      }
+      legalEntity {
+        legalName
+        brandName
+        binIin
+        registrationCountry
+        registrationDate
+      }
+    }
+    info {
+      count
+    }
+  }
+}

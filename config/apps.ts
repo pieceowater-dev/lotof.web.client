@@ -28,13 +28,13 @@ export const ALL_APPS: AppConfig[] = [
     canAdd: false,
   },
   {
-    name: 'lota Clients',
-    bundle: 'pieceowater.clients',
-    address: 'clients',
+    name: 'lota Contacts',
+    bundle: 'pieceowater.contacts',
+    address: 'contacts',
   icon: 'lucide:briefcase',
     titleKey: 'app.clients',
     descriptionKey: 'app.clientsDesc',
-    canAdd: false,
+    canAdd: true,
   },
   {
     name: 'lota Routes',

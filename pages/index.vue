@@ -10,6 +10,7 @@ import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { useContactsToken } from '@/composables/useContactsToken';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
@@ -104,6 +105,22 @@ async function handleAppClick(appAddress: string) {
     } catch (e) {
       logError('[atrace] getAppToken failed', e);
       toast.add({ title: 'A-Trace', description: 'Ошибка при получении токена приложения.', color: 'red' });
+      return;
+    }
+  }
+  if (appAddress === 'contacts') {
+    try {
+      const hubToken = useCookie<string | null>(CookieKeys.TOKEN).value;
+      if (!hubToken) return login();
+      const { ensure } = useContactsToken();
+      const contactsToken = await ensure(ns, hubToken);
+      if (!contactsToken || !useCookie<string | null>(CookieKeys.CONTACTS_TOKEN, { path: '/' }).value) {
+        toast.add({ title: 'Contacts', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
+        return;
+      }
+    } catch (e) {
+      logError('[contacts] getAppToken failed', e);
+      toast.add({ title: 'Contacts', description: 'Ошибка при получении токена приложения.', color: 'red' });
       return;
     }
   }
