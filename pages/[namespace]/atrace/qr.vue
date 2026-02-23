@@ -7,6 +7,10 @@ import { logError } from '@/utils/logger';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getGeolocationOnce } from '@/utils/geolocation';
 
+definePageMeta({
+  layout: false
+});
+
 const { t } = useI18n();
 
 const router = useRouter();

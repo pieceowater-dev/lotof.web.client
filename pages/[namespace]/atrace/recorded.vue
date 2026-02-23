@@ -1,6 +1,11 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+
+definePageMeta({
+  layout: false
+});
+
 const { t } = useI18n();
 
 const router = useRouter();
@@ -154,7 +159,7 @@ onBeforeUnmount(() => {
             <div class="mt-4">
               <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
-                {{ t('app.home') }}
+                {{ t('common.close') }}
               </UButton>
             </div>
           </div>
@@ -184,7 +189,7 @@ onBeforeUnmount(() => {
             <div class="mt-4">
               <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
-                {{ t('app.home') }}
+                {{ t('common.close') }}
               </UButton>
             </div>
           </div>
@@ -203,7 +208,7 @@ onBeforeUnmount(() => {
             <div class="mt-2">
               <UButton color="primary" variant="outline" @click="goHomeAndBurn">
                 <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
-                {{ t('app.home') }}
+                {{ t('common.close') }}
               </UButton>
             </div>
           </div>
