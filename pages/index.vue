@@ -99,12 +99,20 @@ async function handleAppClick(appAddress: string) {
       const atraceToken = await ensure(ns, hubToken);
       // Ensure cookie is present before navigating; otherwise, stop and notify
       if (!atraceToken || !useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value) {
-        toast.add({ title: 'A-Trace', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
+        toast.add({
+          title: t('app.atraceTitle') || 'A-Trace',
+          description: t('app.appTokenFailed') || 'Failed to get app token. Please try again later.',
+          color: 'red'
+        });
         return;
       }
     } catch (e) {
       logError('[atrace] getAppToken failed', e);
-      toast.add({ title: 'A-Trace', description: 'Ошибка при получении токена приложения.', color: 'red' });
+      toast.add({
+        title: t('app.atraceTitle') || 'A-Trace',
+        description: t('app.appTokenError') || 'Failed to get app token.',
+        color: 'red'
+      });
       return;
     }
   }
@@ -115,12 +123,20 @@ async function handleAppClick(appAddress: string) {
       const { ensure } = useContactsToken();
       const contactsToken = await ensure(ns, hubToken);
       if (!contactsToken || !useCookie<string | null>(CookieKeys.CONTACTS_TOKEN, { path: '/' }).value) {
-        toast.add({ title: 'Contacts', description: 'Не удалось получить токен приложения. Повторите попытку позже.', color: 'red' });
+        toast.add({
+          title: t('app.contacts') || 'Contacts',
+          description: t('app.appTokenFailed') || 'Failed to get app token. Please try again later.',
+          color: 'red'
+        });
         return;
       }
     } catch (e) {
       logError('[contacts] getAppToken failed', e);
-      toast.add({ title: 'Contacts', description: 'Ошибка при получении токена приложения.', color: 'red' });
+      toast.add({
+        title: t('app.contacts') || 'Contacts',
+        description: t('app.appTokenError') || 'Failed to get app token.',
+        color: 'red'
+      });
       return;
     }
   }

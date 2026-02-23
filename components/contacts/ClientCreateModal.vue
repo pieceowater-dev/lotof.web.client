@@ -86,8 +86,8 @@ async function handleSubmit() {
   } catch (error) {
     logError('Failed to create client:', error);
     toast.add({
-      title: t('app.error'),
-      description: t('contacts.createError'),
+      title: t('common.error'),
+      description: t('common.contacts.createError'),
       color: 'red',
     });
   } finally {
@@ -107,7 +107,7 @@ function handleClose() {
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ t('contacts.createClient') }}
+            {{ t('common.contacts.createClient') }}
           </h2>
         </div>
       </template>
@@ -116,7 +116,7 @@ function handleClose() {
         <!-- Client Type Selection -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            {{ t('contacts.clientType') }}
+            {{ t('common.contacts.clientType') }}
           </label>
           <div class="flex gap-3">
             <UButton
@@ -127,7 +127,7 @@ function handleClose() {
               :color="clientType === type ? 'primary' : 'gray'"
               class="flex-1"
             >
-              {{ type === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}
+              {{ type === 'INDIVIDUAL' ? t('common.contacts.individual') : t('common.contacts.legalEntity') }}
             </UButton>
           </div>
         </div>
@@ -135,45 +135,45 @@ function handleClose() {
         <!-- Individual Form -->
         <div v-if="clientType === 'INDIVIDUAL'" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('contacts.firstName') + ' *'">
+            <UFormGroup :label="t('common.contacts.firstName') + ' *'">
               <UInput
                 v-model="individualForm.firstName"
                 type="text"
-                :placeholder="t('contacts.firstName')"
+                :placeholder="t('common.contacts.firstName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.lastName') + ' *'">
+            <UFormGroup :label="t('common.contacts.lastName') + ' *'">
               <UInput
                 v-model="individualForm.lastName"
                 type="text"
-                :placeholder="t('contacts.lastName')"
+                :placeholder="t('common.contacts.lastName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.middleName')">
+            <UFormGroup :label="t('common.contacts.middleName')">
               <UInput
                 v-model="individualForm.middleName"
                 type="text"
-                :placeholder="t('contacts.middleName')"
+                :placeholder="t('common.contacts.middleName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.gender')">
+            <UFormGroup :label="t('common.contacts.gender')">
               <USelect
                 v-model="individualForm.gender"
                 :options="[
-                  { value: 'M', label: t('contacts.male') },
-                  { value: 'F', label: t('contacts.female') },
+                  { value: 'M', label: t('common.contacts.male') },
+                  { value: 'F', label: t('common.contacts.female') },
                 ]"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.birthDate')" class="md:col-span-2">
+            <UFormGroup :label="t('common.contacts.birthDate')" class="md:col-span-2">
               <UInput
                 v-model="individualForm.birthDate"
                 type="date"
@@ -186,43 +186,43 @@ function handleClose() {
         <!-- Legal Entity Form -->
         <div v-if="clientType === 'LEGAL'" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('contacts.legalName') + ' *'" class="md:col-span-2">
+            <UFormGroup :label="t('common.contacts.legalName') + ' *'" class="md:col-span-2">
               <UInput
                 v-model="legalEntityForm.legalName"
                 type="text"
-                :placeholder="t('contacts.legalName')"
+                :placeholder="t('common.contacts.legalName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.brandName')" class="md:col-span-2">
+            <UFormGroup :label="t('common.contacts.brandName')" class="md:col-span-2">
               <UInput
                 v-model="legalEntityForm.brandName"
                 type="text"
-                :placeholder="t('contacts.brandName')"
+                :placeholder="t('common.contacts.brandName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.binIin')">
+            <UFormGroup :label="t('common.contacts.binIin')">
               <UInput
                 v-model="legalEntityForm.binIin"
                 type="text"
-                :placeholder="t('contacts.binIin')"
+                :placeholder="t('common.contacts.binIin')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.registrationCountry')">
+            <UFormGroup :label="t('common.contacts.registrationCountry')">
               <UInput
                 v-model="legalEntityForm.registrationCountry"
                 type="text"
-                :placeholder="t('contacts.registrationCountry')"
+                :placeholder="t('common.contacts.registrationCountry')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.registrationDate')" class="md:col-span-2">
+            <UFormGroup :label="t('common.contacts.registrationDate')" class="md:col-span-2">
               <UInput
                 v-model="legalEntityForm.registrationDate"
                 type="date"

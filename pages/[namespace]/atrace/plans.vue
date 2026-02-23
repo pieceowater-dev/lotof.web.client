@@ -123,7 +123,11 @@ function formatInterval(interval: string): string {
 async function subscribePlan(plan: Plan) {
   const token = useCookie<string | null>('token', { path: '/' }).value;
   if (!token) {
-    toast.add({ title: 'Error', description: 'Not authenticated', color: 'red' });
+    toast.add({
+      title: t('common.error') || 'Error',
+      description: t('common.notAuthenticated') || 'Not authenticated',
+      color: 'red'
+    });
     return;
   }
 
@@ -132,9 +136,9 @@ async function subscribePlan(plan: Plan) {
     // Subscribe to plan
     await subscribeToPlan(nsSlug.value, plan.code, 'pieceowater.atrace', token);
     
-    toast.add({ 
-      title: 'Success', 
-      description: `Subscribed to ${plan.name}`,
+    toast.add({
+      title: t('common.success') || 'Success',
+      description: t('app.subscribedToPlan', { plan: plan.name }) || `Subscribed to ${plan.name}`,
       color: 'green'
     });
 
@@ -157,11 +161,11 @@ async function subscribePlan(plan: Plan) {
     const errorMsg = getErrorMessage(err);
     
     // Check if it's a downgrade protection error
-    let title = 'Error';
+    let title = t('common.error') || 'Error';
     let description = errorMsg;
     
     if (errorMsg.includes('downgrade not allowed')) {
-      title = 'Cannot Downgrade Plan';
+      title = t('app.cannotDowngradePlan') || 'Cannot Downgrade Plan';
       // Extract the user-friendly message from the error
       const match = errorMsg.match(/downgrade not allowed:(.+?)(?:\.|$)/);
       if (match) {

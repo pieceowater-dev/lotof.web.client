@@ -67,8 +67,8 @@ async function loadClient() {
   } catch (error) {
     logError('Failed to load client:', error);
     toast.add({
-      title: t('app.error'),
-      description: t('contacts.loadError'),
+      title: t('common.error'),
+      description: t('common.contacts.loadError'),
       color: 'red',
     });
   } finally {
@@ -84,15 +84,15 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
     await contactsUpdateClientStatus(token.value, selectedNS.value, clientId.value, newStatus);
     client.value.client.status = newStatus;
     toast.add({
-      title: t('app.success'),
-      description: t('contacts.statusUpdated'),
+      title: t('common.success'),
+      description: t('common.contacts.statusUpdated'),
       color: 'green',
     });
   } catch (error) {
     logError('Failed to update client status:', error);
     toast.add({
-      title: t('app.error'),
-      description: t('contacts.updateError'),
+      title: t('common.error'),
+      description: t('common.contacts.updateError'),
       color: 'red',
     });
   } finally {
@@ -117,10 +117,13 @@ function handleBack() {
       />
       <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-          {{ displayName || t('contacts.clients') }}
+          {{ displayName || t('common.contacts.clients') }}
         </h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-1" v-if="client">
-          {{ t('contacts.type') }}: {{ client.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}
+          {{ t('common.contacts.type') }}:
+          {{ client.client.clientType === 'INDIVIDUAL'
+            ? t('common.contacts.individual')
+            : t('common.contacts.legalEntity') }}
         </p>
       </div>
     </div>
@@ -129,7 +132,7 @@ function handleBack() {
     <div v-if="loading" class="flex items-center justify-center py-16">
       <div class="text-center">
         <UIcon name="lucide:loader" class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4" />
-        <p class="text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</p>
+        <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
       </div>
     </div>
 
@@ -140,7 +143,7 @@ function handleBack() {
         <UCard class="bg-white dark:bg-gray-900 rounded-xl shadow-lg ring-1 ring-gray-200 dark:ring-gray-800">
           <template #header>
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-              {{ t('contacts.information') }}
+              {{ t('common.contacts.information') }}
             </h2>
           </template>
 
@@ -150,7 +153,7 @@ function handleBack() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.firstName') }}
+                    {{ t('common.contacts.firstName') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.individual.firstName }}
@@ -159,7 +162,7 @@ function handleBack() {
 
                 <div>
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.lastName') }}
+                    {{ t('common.contacts.lastName') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.individual.lastName }}
@@ -168,7 +171,7 @@ function handleBack() {
 
                 <div v-if="client.individual.middleName">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.middleName') }}
+                    {{ t('common.contacts.middleName') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.individual.middleName }}
@@ -177,7 +180,7 @@ function handleBack() {
 
                 <div v-if="client.individual.birthDate">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.birthDate') }}
+                    {{ t('common.contacts.birthDate') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}
@@ -191,7 +194,7 @@ function handleBack() {
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="sm:col-span-2">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.legalName') }}
+                    {{ t('common.contacts.legalName') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.legalEntity.legalName }}
@@ -200,7 +203,7 @@ function handleBack() {
 
                 <div v-if="client.legalEntity.brandName">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.brandName') }}
+                    {{ t('common.contacts.brandName') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.legalEntity.brandName }}
@@ -209,7 +212,7 @@ function handleBack() {
 
                 <div v-if="client.legalEntity.binIin">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.binIin') }}
+                    {{ t('common.contacts.binIin') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.legalEntity.binIin }}
@@ -218,7 +221,7 @@ function handleBack() {
 
                 <div v-if="client.legalEntity.registrationCountry">
                   <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                    {{ t('contacts.registrationCountry') }}
+                    {{ t('common.contacts.registrationCountry') }}
                   </p>
                   <p class="mt-1 text-lg text-gray-900 dark:text-white">
                     {{ client.legalEntity.registrationCountry }}
@@ -235,7 +238,7 @@ function handleBack() {
         <UCard class="bg-white dark:bg-gray-900 rounded-xl shadow-lg ring-1 ring-gray-200 dark:ring-gray-800">
           <template #header>
             <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-              {{ t('contacts.status') }}
+              {{ t('common.contacts.status') }}
             </h2>
           </template>
 
@@ -243,7 +246,7 @@ function handleBack() {
             <!-- Current Status -->
             <div>
               <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                {{ t('contacts.status') }}
+                {{ t('common.contacts.status') }}
               </p>
               <UBadge :color="statusColor" size="lg" class="justify-center w-full">
                 {{ client.client.status }}
@@ -253,7 +256,7 @@ function handleBack() {
             <!-- Status Buttons -->
             <div class="pt-4 border-t border-gray-200 dark:border-gray-800">
               <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                {{ t('app.actions') }}
+                {{ t('common.actions') }}
               </p>
               <div class="space-y-2 flex flex-col">
                 <UButton
@@ -274,7 +277,7 @@ function handleBack() {
             <div class="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
               <div>
                 <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                  {{ t('contacts.createdAt') }}
+                  {{ t('common.contacts.createdAt') }}
                 </p>
                 <p class="mt-1 text-sm text-gray-900 dark:text-white">
                   {{ new Date(client.client.createdAt).toLocaleDateString('ru-RU') }}
@@ -282,7 +285,7 @@ function handleBack() {
               </div>
               <div>
                 <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
-                  {{ t('contacts.updatedAt') }}
+                  {{ t('common.contacts.updatedAt') }}
                 </p>
                 <p class="mt-1 text-sm text-gray-900 dark:text-white">
                   {{ new Date(client.client.updatedAt).toLocaleDateString('ru-RU') }}

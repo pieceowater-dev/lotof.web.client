@@ -7,6 +7,7 @@ import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
 import AppTable from '@/components/ui/AppTable.vue';
+import ClientCreateModal from '@/components/contacts/ClientCreateModal.vue';
 
 const router = useRouter();
 const toast = useToast();
@@ -27,7 +28,7 @@ const filteredClients = computed(() => {
 const columns = computed(() => [
   {
     accessorKey: 'name',
-    header: t('contacts.name'),
+    header: t('common.contacts.name'),
     cell: (info: any) => {
       const row = info.row.original as ClientRow;
       if (row.client.clientType === 'INDIVIDUAL' && row.individual) {
@@ -38,15 +39,17 @@ const columns = computed(() => [
   },
   {
     accessorKey: 'type',
-    header: t('contacts.type'),
+    header: t('common.contacts.type'),
     cell: (info: any) => {
       const row = info.row.original as ClientRow;
-      return row.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity');
+      return row.client.clientType === 'INDIVIDUAL'
+        ? t('common.contacts.individual')
+        : t('common.contacts.legalEntity');
     },
   },
   {
     accessorKey: 'status',
-    header: t('contacts.status'),
+    header: t('common.contacts.status'),
     cell: (info: any) => {
       const row = info.row.original as ClientRow;
       const statusColors: Record<string, string> = {
@@ -63,7 +66,7 @@ const columns = computed(() => [
   },
   {
     accessorKey: 'createdAt',
-    header: t('contacts.createdAt'),
+    header: t('common.contacts.createdAt'),
     cell: (info: any) => {
       const row = info.row.original as ClientRow;
       return new Date(row.client.createdAt).toLocaleDateString('ru-RU');
@@ -88,8 +91,8 @@ async function loadClients() {
   } catch (error) {
     logError('Failed to load clients:', error);
     toast.add({
-      title: t('app.error'),
-      description: t('contacts.loadError'),
+      title: t('common.error'),
+      description: t('common.contacts.loadError'),
       color: 'red',
     });
   } finally {
@@ -105,8 +108,8 @@ async function handleClientCreated() {
   isModalOpen.value = false;
   await loadClients();
   toast.add({
-    title: t('app.success'),
-    description: t('contacts.clientCreated'),
+    title: t('common.success'),
+    description: t('common.contacts.clientCreated'),
     color: 'green',
   });
 }
@@ -118,17 +121,17 @@ async function handleClientCreated() {
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-          {{ t('contacts.clients') }}
+          {{ t('common.contacts.clients') }}
         </h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-          {{ t('contacts.allClients') }}
+          {{ t('common.contacts.allClients') }}
         </p>
       </div>
       <UButton
         icon="lucide:plus"
         size="lg"
         color="primary"
-        :label="t('contacts.createClient')"
+        :label="t('common.contacts.createClient')"
         @click="isModalOpen = true"
       />
     </div>
@@ -145,14 +148,14 @@ async function handleClientCreated() {
       >
         {{
           type === 'ALL'
-            ? t('contacts.all')
+            ? t('common.contacts.all')
             : type === 'INDIVIDUAL'
-              ? t('contacts.individual')
-              : t('contacts.legalEntity')
+              ? t('common.contacts.individual')
+              : t('common.contacts.legalEntity')
         }}
       </UButton>
       <div class="text-sm text-gray-600 dark:text-gray-400 ml-auto flex items-center">
-        {{ filteredClients.length }} {{ t('contacts.clients').toLowerCase() }}
+        {{ filteredClients.length }} {{ t('common.contacts.clients').toLowerCase() }}
       </div>
     </div>
 
@@ -160,18 +163,18 @@ async function handleClientCreated() {
     <div v-if="loading" class="flex items-center justify-center py-16">
       <div class="text-center">
         <UIcon name="lucide:loader" class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4" />
-        <p class="text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</p>
+        <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
       </div>
     </div>
 
     <div v-else-if="clients.length === 0" class="flex items-center justify-center py-16">
       <div class="text-center">
         <UIcon name="lucide:inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
-        <p class="text-gray-600 dark:text-gray-400 mb-4">{{ t('contacts.noClients') }}</p>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">{{ t('common.contacts.noClients') }}</p>
         <UButton
           icon="lucide:plus"
           color="primary"
-          :label="t('contacts.createClient')"
+          :label="t('common.contacts.createClient')"
           @click="isModalOpen = true"
         />
       </div>

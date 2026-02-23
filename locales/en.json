@@ -369,6 +369,10 @@
     "connecting": "Connecting...",
     "activePlan": "Active!",
     "subscriptionSuccess": "Plan activated successfully!",
+    "subscribedToPlan": "Subscribed to {plan}",
+    "cannotDowngradePlan": "Cannot downgrade plan",
+    "appTokenFailed": "Failed to get app token. Please try again later.",
+    "appTokenError": "Failed to get app token.",
     "noPlansAvailable": "No plans available",
     "pieceowater": {
       "atrace": {
@@ -512,6 +516,8 @@
   "loading": "Loading...",
   "back": "Back",
   "error": "Error",
+  "notAuthenticated": "Not authenticated",
+  "success": "Success",
   "add": "Add",
   "settingsAccessDenied": "You do not have permission to access settings. Only administrators can manage members.",
   "namespaceMissing": "Namespace is not selected. Please select a namespace.",

@@ -349,6 +349,10 @@
   "connecting": "Подключаем...",
   "activePlan": "Подключено!",
   "subscriptionSuccess": "Тариф успешно активирован!",
+  "subscribedToPlan": "Подписка оформлена: {plan}",
+  "cannotDowngradePlan": "Нельзя понизить тариф",
+  "appTokenFailed": "Не удалось получить токен приложения. Повторите попытку позже.",
+  "appTokenError": "Ошибка при получении токена приложения.",
   "noPlansAvailable": "Нет доступных тарифов",
   "pieceowater": {
     "atrace": {
@@ -452,6 +456,7 @@
   "back": "Назад",
   "error": "Ошибка",
   "errorTitle": "Произошла ошибка",
+  "notAuthenticated": "Вы не авторизованы",
   "success": "Успешно",
   "add": "Добавить",
   "create": "Создать",
