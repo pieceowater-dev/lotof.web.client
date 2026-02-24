@@ -27,9 +27,9 @@ const displayName = computed(() => {
   return c.legalEntity?.legalName || 'Unknown';
 });
 
-const statusColor = computed(() => {
+const statusColor = computed<'green' | 'gray' | 'red'>(() => {
   const status = client.value?.client.status;
-  const colors: Record<string, string> = {
+  const colors: Record<string, 'green' | 'gray' | 'red'> = {
     ACTIVE: 'green',
     ARCHIVED: 'gray',
     BLOCKED: 'red',
