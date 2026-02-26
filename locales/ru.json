@@ -535,8 +535,18 @@
     "enterPhone": "Введите номер телефона",
     "enterEmail": "Введите email",
     "invalidPhone": "Неверный формат телефона",
+    "phoneFormatHelp": "Поддерживаемые форматы: 777 777 777 77 77, +7 (777) 777-77-77, +77 777-777-77-77",
     "invalidEmail": "Неверный формат email",
-    "clientStatus": "Статус клиента"
+    "clientStatus": "Статус клиента",
+    "telegram": "Telegram",
+    "whatsapp": "WhatsApp",
+    "website": "Веб-сайт",
+    "comments": "Комментарий",
+    "name": "Имя",
+    "unsavedChanges": "У вас есть несохраненные изменения. Вы уверены, что хотите уйти?",
+    "confirmLeave": "Подтвердить выход",
+    "discardChanges": "Отбросить изменения",
+    "keepEditing": "Продолжить редактирование"
   }
 }
 }

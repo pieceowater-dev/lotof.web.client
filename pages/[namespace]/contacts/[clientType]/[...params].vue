@@ -7,7 +7,6 @@ import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
-import ClientCreateModal from '@/components/contacts/ClientCreateModal.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import SegmentsModal from '@/components/contacts/SegmentsModal.vue';
 import IdentitiesModal from '@/components/contacts/IdentitiesModal.vue';
@@ -23,7 +22,6 @@ const { selected: selectedNS, titleBySlug } = useNamespace();
 
 const clients = ref<ClientRow[]>([]);
 const loading = ref(false);
-const isModalOpen = ref(false);
 const isTagsModalOpen = ref(false);
 const isSegmentsModalOpen = ref(false);
 const isIdentitiesModalOpen = ref(false);
@@ -231,7 +229,6 @@ function handleRowClick(row: ClientRow) {
 }
 
 async function handleClientCreated() {
-  isModalOpen.value = false;
   await loadClients();
   toast.add({
     title: t('common.success'),
@@ -308,7 +305,7 @@ async function handleClientCreated() {
           size="sm"
           color="primary"
           variant="soft"
-          @click="isModalOpen = true"
+          :to="`/${nsSlug}/contacts/new`"
         >
           {{ t('common.contacts.createClient') }}
         </UButton>
@@ -339,7 +336,7 @@ async function handleClientCreated() {
           color="primary"
           size="md"
           class="w-full"
-          @click="isModalOpen = true"
+          :to="`/${nsSlug}/contacts/new`"
         >
           {{ t('common.contacts.createClient') }}
         </UButton>
@@ -360,13 +357,6 @@ async function handleClientCreated() {
         @row-click="handleRowClick"
       />
     </div>
-
-    <!-- Create Modal -->
-    <ClientCreateModal
-      v-if="isModalOpen"
-      @close="isModalOpen = false"
-      @created="handleClientCreated"
-    />
 
     <!-- Tags Modal -->
     <TagsModal
