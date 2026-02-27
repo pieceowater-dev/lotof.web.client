@@ -23,6 +23,20 @@ const { selected: selectedNS } = useNamespace();
 
 const isOpen = ref(true);
 const clientType = ref<'INDIVIDUAL' | 'LEGAL'>('INDIVIDUAL');
+const clientTypeOptions = [
+  {
+    value: 'INDIVIDUAL' as const,
+    labelKey: 'common.contacts.individual',
+    shortKey: 'common.contacts.individualShort',
+    icon: 'i-heroicons-user',
+  },
+  {
+    value: 'LEGAL' as const,
+    labelKey: 'common.contacts.legalEntity',
+    shortKey: 'common.contacts.legalEntityShort',
+    icon: 'i-heroicons-building-office-2',
+  },
+];
 const loading = ref(false);
 
 // Phone input ref for autofocus
@@ -58,6 +72,14 @@ const statusOptions = [
   { value: 'BLOCKED', label: t('common.contacts.blocked') },
   { value: 'ARCHIVED', label: t('common.contacts.archived') },
 ];
+
+function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^\d+()\s-]/g, '');
+}
+
+function updatePhoneValue(index: number, value: string) {
+  phones.value[index] = sanitizePhoneInput(value);
+}
 
 // Validation
 const isPhoneValid = (phone: string) => {
@@ -232,17 +254,33 @@ function handleKeyDown(event: KeyboardEvent) {
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             {{ t('common.contacts.clientType') }}
           </label>
-          <div class="flex gap-3">
-            <UButton
-              v-for="type in ['INDIVIDUAL', 'LEGAL']"
-              :key="type"
-              @click="clientType = type as any"
-              :variant="clientType === type ? 'solid' : 'outline'"
-              :color="clientType === type ? 'primary' : 'gray'"
-              class="flex-1"
+          <div class="grid grid-cols-2 gap-3">
+            <label
+              v-for="option in clientTypeOptions"
+              :key="option.value"
+              class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition focus-within:ring-2 focus-within:ring-blue-500"
+              :class="clientType === option.value
+                ? 'border-blue-500 bg-blue-50/70 text-gray-900 dark:border-blue-400 dark:bg-blue-950/40 dark:text-white'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700'"
             >
-              {{ type === 'INDIVIDUAL' ? t('common.contacts.individual') : t('common.contacts.legalEntity') }}
-            </UButton>
+              <input
+                v-model="clientType"
+                type="radio"
+                class="peer sr-only"
+                :value="option.value"
+              />
+              <span class="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
+                <span class="h-2 w-2 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100"></span>
+              </span>
+              <span class="flex-1 font-medium">
+                <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
+                <span class="sm:hidden">{{ t(option.shortKey) }}</span>
+              </span>
+              <UIcon
+                :name="option.icon"
+                class="w-4 h-4 text-gray-400 peer-checked:text-blue-600"
+              />
+            </label>
           </div>
         </div>
 
@@ -256,12 +294,15 @@ function handleKeyDown(event: KeyboardEvent) {
           <UFormGroup 
             :label="t('common.contacts.primaryPhone') || 'Primary Phone' + ' *'"
             :help="!hasValidPrimaryPhone && phones[0] ? (t('common.contacts.invalidPhone') || 'Invalid phone format') : ''"
-            :error="!hasValidPrimaryPhone && phones[0]"
+            :error="!!(!hasValidPrimaryPhone && phones[0])"
           >
             <UInput
               ref="phoneInputRef"
-              v-model="phones[0]"
+              :model-value="phones[0]"
+              @update:model-value="value => updatePhoneValue(0, value)"
               type="tel"
+              inputmode="tel"
+              pattern="[0-9+()\s-]*"
               :placeholder="t('common.contacts.enterPhone') || '+7 700 123 45 67'"
               size="lg"
               autofocus
@@ -274,11 +315,14 @@ function handleKeyDown(event: KeyboardEvent) {
               :label="index === 0 ? (t('common.contacts.additionalPhone') || 'Additional Phone') : ''"
               class="flex-1"
               :help="phone && !isPhoneValid(phone) ? (t('common.contacts.invalidPhone') || 'Invalid phone format') : ''"
-              :error="phone && !isPhoneValid(phone)"
+              :error="!!(phone && !isPhoneValid(phone))"
             >
               <UInput
-                v-model="phones[index + 1]"
+                :model-value="phones[index + 1]"
+                @update:model-value="value => updatePhoneValue(index + 1, value)"
                 type="tel"
+                inputmode="tel"
+                pattern="[0-9+()\s-]*"
                 :placeholder="t('common.contacts.enterPhone') || '+7 700 123 45 67'"
                 size="lg"
               />
@@ -301,14 +345,14 @@ function handleKeyDown(event: KeyboardEvent) {
             @click="addPhone"
             class="w-full"
           >
-            {{ t('common.contacts.addPhone') || '+ Add phone' }}
+            {{ t('common.contacts.addPhone') || 'Add phone' }}
           </UButton>
 
           <!-- Primary Email -->
           <UFormGroup 
             :label="t('common.contacts.primaryEmail') || 'Primary Email'"
             :help="emails[0] && !isEmailValid(emails[0]) ? (t('common.contacts.invalidEmail') || 'Invalid email format') : ''"
-            :error="emails[0] && !isEmailValid(emails[0])"
+            :error="!!(emails[0] && !isEmailValid(emails[0]))"
           >
             <UInput
               v-model="emails[0]"
@@ -324,7 +368,7 @@ function handleKeyDown(event: KeyboardEvent) {
               :label="index === 0 ? (t('common.contacts.additionalEmail') || 'Additional Email') : ''"
               class="flex-1"
               :help="email && !isEmailValid(email) ? (t('common.contacts.invalidEmail') || 'Invalid email format') : ''"
-              :error="email && !isEmailValid(email)"
+              :error="!!(email && !isEmailValid(email))"
             >
               <UInput
                 v-model="emails[index + 1]"
@@ -351,7 +395,7 @@ function handleKeyDown(event: KeyboardEvent) {
             @click="addEmail"
             class="w-full"
           >
-            {{ t('common.contacts.addEmail') || '+ Add email' }}
+            {{ t('common.contacts.addEmail') || 'Add email' }}
           </UButton>
         </div>
 

@@ -7,6 +7,7 @@ export interface ClientIdentity {
   type: string;
   value: string;
   isPrimary: boolean;
+  comments?: string;
   verifiedAt?: string;
 }
 
@@ -49,6 +50,7 @@ const CREATE_IDENTITY_MUTATION = gql`
       type
       value
       isPrimary
+      comments
       verifiedAt
     }
   }
@@ -62,6 +64,7 @@ const UPDATE_IDENTITY_MUTATION = gql`
       type
       value
       isPrimary
+      comments
       verifiedAt
     }
   }
@@ -109,25 +112,26 @@ export async function createIdentity(
   clientId: string,
   type: string,
   value: string,
-  isPrimary?: boolean
+  isPrimary?: boolean,
+  comments?: string
 ) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ createIdentity: ClientIdentity }>(
     CREATE_IDENTITY_MUTATION,
     {
-      input: { clientId, type, value, isPrimary },
+      input: { clientId, type, value, isPrimary, comments },
     }
   );
 }
 
-export async function updateIdentity(token: string, id: string, value: string) {
+export async function updateIdentity(token: string, id: string, value: string, comments?: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ updateIdentity: ClientIdentity }>(
     UPDATE_IDENTITY_MUTATION,
     {
-      input: { id, value },
+      input: { id, value, comments },
     }
   );
 }
