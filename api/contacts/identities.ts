@@ -15,9 +15,7 @@ export interface IdentityListResponse {
   clientIdentities: {
     rows: ClientIdentity[];
     info: {
-      total: number;
-      limit: number;
-      offset: number;
+      count: number;
     };
   };
 }
@@ -34,9 +32,7 @@ const CLIENT_IDENTITIES_QUERY = gql`
         verifiedAt
       }
       info {
-        total
-        limit
-        offset
+        count
       }
     }
   }

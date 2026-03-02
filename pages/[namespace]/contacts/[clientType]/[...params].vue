@@ -225,7 +225,9 @@ function handleRowClick(row: ClientRow) {
   // Check visibility before navigation (client-side only)
   if (process.client && document.visibilityState !== 'visible') return;
   
-  router.push(`/${selectedNS.value}/contacts/${row.client.id}`);
+  // Use shortId if available, fallback to UUID
+  const clientId = row.client.shortId || row.client.id;
+  router.push(`/${selectedNS.value}/contacts/${clientId}`);
 }
 
 async function handleClientCreated() {

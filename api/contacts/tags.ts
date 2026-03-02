@@ -14,9 +14,7 @@ export interface TagListResponse {
   tags: {
     rows: Tag[];
     info: {
-      total: number;
-      limit: number;
-      offset: number;
+      count: number;
     };
   };
 }
@@ -29,9 +27,7 @@ const LIST_TAGS_QUERY = gql`
         name
       }
       info {
-        total
-        limit
-        offset
+        count
       }
     }
   }

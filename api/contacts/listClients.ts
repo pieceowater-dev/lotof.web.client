@@ -3,6 +3,7 @@ import { contactsClient, setContactsAppToken } from '../clients';
 export interface ClientRow {
   client: {
     id: string;
+    shortId?: string;
     clientType: 'INDIVIDUAL' | 'LEGAL';
     status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
     createdAt: string;
@@ -39,6 +40,7 @@ const LIST_CLIENTS_QUERY = /* GraphQL */ `
       rows {
         client {
           id
+          shortId
           clientType
           status
           createdAt
