@@ -350,6 +350,7 @@ async function handleClientCreated() {
         :loading="loading"
         :page="page"
         :page-size="pageSize"
+        :ns-slug="nsSlug"
         v-model:search-query="searchQuery"
         v-model:selected-tags="selectedTags"
         @update:page="(newPage) => updateRoute(newPage, pageSize)"

@@ -12,6 +12,7 @@ const props = defineProps<{
   selectedTags?: string[];
   page?: number;
   pageSize?: number;
+  nsSlug?: string;
 }>();
 
 const emit = defineEmits<{
@@ -87,12 +88,12 @@ const STORAGE_KEY = 'contacts-table-columns';
 
 const defaultColumns: ColumnDef[] = [
   { key: 'type', label: 'Type', width: 50, minWidth: 50, sortable: false },
+  { key: 'createdAt', label: 'Created', width: 160, minWidth: 140, sortable: true },
   { key: 'name', label: 'Name', width: 240, minWidth: 150, sortable: true },
   { key: 'identifier', label: 'BIN/IIN', width: 140, minWidth: 120, sortable: false },
   { key: 'additionalInfo', label: 'Info', width: 180, minWidth: 140, sortable: false },
   { key: 'status', label: 'Status', width: 110, minWidth: 90, sortable: false },
   { key: 'tags', label: 'Tags', width: 180, minWidth: 120, sortable: false },
-  { key: 'createdAt', label: 'Created', width: 160, minWidth: 140, sortable: true },
   { key: 'updatedAt', label: 'Updated', width: 160, minWidth: 140, sortable: true },
 ];
 
@@ -103,8 +104,8 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 const pageSizeOptions = [10, 20, 50, 100];
 
 // Sorting state
-const sortBy = ref<string | null>(null);
-const sortDirection = ref<'asc' | 'desc'>('asc');
+const sortBy = ref<string | null>('createdAt');
+const sortDirection = ref<'asc' | 'desc'>('desc');
 
 // Sorting computed
 const sortedClients = computed(() => {
@@ -151,6 +152,9 @@ const pageTo = computed(() => {
 
 // Sort handler
 function handleSort(columnKey: string) {
+  // Don't sort while resizing
+  if (resizing.value) return;
+  
   const column = columns.value.find(c => c.key === columnKey);
   if (!column?.sortable) return;
   
@@ -429,9 +433,7 @@ function clearSearch() {
                 @mousedown="startResize(index, $event)"
                 @click.stop
                 :title="t('common.contacts.resizeColumns') || 'Drag to resize'"
-              >
-                <div class="absolute inset-y-0 -inset-x-2"></div>
-              </div>
+              />
             </th>
           </tr>
         </thead>
@@ -468,17 +470,39 @@ function clearSearch() {
               </div>
             </td>
 
-            <!-- Name -->
+            <!-- Created At -->
             <td
               :style="{ width: `${columns[1].width}px` }"
-              class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-white"
+              class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
-              <div class="truncate" :title="getClientName(client)">{{ getClientName(client) }}</div>
+              <div class="truncate">
+                {{ new Date(client.client.createdAt).toLocaleDateString('ru-RU', { 
+                  year: 'numeric', 
+                  month: 'short', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) }}
+              </div>
+            </td>
+
+            <!-- Name -->
+            <td
+              :style="{ width: `${columns[2].width}px` }"
+              class="px-4 py-3 text-sm font-medium"
+            >
+              <NuxtLink
+                :to="`/${props.nsSlug}/contacts/${client.client.id}`"
+                class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
+                :title="getClientName(client)"
+              >
+                {{ getClientName(client) }}
+              </NuxtLink>
             </td>
 
             <!-- Identifier (BIN/IIN) -->
             <td
-              :style="{ width: `${columns[2].width}px` }"
+              :style="{ width: `${columns[3].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate font-mono">{{ getClientIdentifier(client) }}</div>
@@ -486,7 +510,7 @@ function clearSearch() {
 
             <!-- Additional Info -->
             <td
-              :style="{ width: `${columns[3].width}px` }"
+              :style="{ width: `${columns[4].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">{{ getAdditionalInfo(client) }}</div>
@@ -494,7 +518,7 @@ function clearSearch() {
 
             <!-- Status -->
             <td
-              :style="{ width: `${columns[4].width}px` }"
+              :style="{ width: `${columns[5].width}px` }"
               class="px-4 py-3 text-sm"
             >
               <span :class="getStatusBadgeClass(client.client.status)">
@@ -504,7 +528,7 @@ function clearSearch() {
 
             <!-- Tags -->
             <td
-              :style="{ width: `${columns[5].width}px` }"
+              :style="{ width: `${columns[6].width}px` }"
               class="px-4 py-3 text-sm"
             >
               <div class="flex flex-wrap gap-1">
@@ -518,22 +542,6 @@ function clearSearch() {
                   {{ tag }}
                 </UBadge>
                 <span v-if="getClientTags(client).length === 0" class="text-gray-400 text-xs">—</span>
-              </div>
-            </td>
-
-            <!-- Created At -->
-            <td
-              :style="{ width: `${columns[6].width}px` }"
-              class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
-            >
-              <div class="truncate">
-                {{ new Date(client.client.createdAt).toLocaleDateString('ru-RU', { 
-                  year: 'numeric', 
-                  month: 'short', 
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) }}
               </div>
             </td>
 
