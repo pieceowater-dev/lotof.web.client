@@ -48,7 +48,7 @@ function formatDate(date: string | Date): string {
       <div class="flex items-center gap-2">
         <UIcon name="i-heroicons-clock" class="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          История
+          {{ t('common.contacts.timeline') }}
         </h2>
       </div>
       <UButton
@@ -86,7 +86,7 @@ function formatDate(date: string | Date): string {
       </div>
       <div v-else>
         <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
-          Нет истории событий
+          {{ t('common.contacts.noTimelineEvents') }}
         </p>
       </div>
     </div>

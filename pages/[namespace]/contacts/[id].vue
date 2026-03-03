@@ -5,7 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { logError } from '@/utils/logger';
 import { contactsUpdateClientStatus } from '@/api/contacts/mutations';
-import type { ClientRow } from '@/api/contacts/listClients';
+import { contactsListClients, type ClientRow } from '@/api/contacts/listClients';
 import { getClient } from '@/api/contacts/getClient';
 import { getClientIdentities, type ClientIdentity } from '@/api/contacts/identities';
 import { getClientTags } from '@/api/contacts/tags';
@@ -43,7 +43,7 @@ const loading = ref(true);
 const statusChangeLoading = ref(false);
 
 // Mock data for preview
-const useMockData = ref(true);
+const useMockData = ref(false);
 
 // Edit mode state
 const editMode = ref({
@@ -70,6 +70,7 @@ const editingRegistrationDate = ref('');
 // Edit form data - Identities
 const editingPhones = ref<string[]>([]);
 const editingEmails = ref<string[]>([]);
+const identityDisplayValues = ref<Record<string, string>>({});
 
 const displayName = computed(() => {
   if (!client.value) return '';
@@ -86,6 +87,84 @@ const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 const pageTitle = computed(() => {
   return displayName.value ? `${displayName.value} — ${nsTitle.value}` : t('common.loading');
 });
+
+function isUnimplementedError(error: unknown): boolean {
+  const message = String((error as any)?.message || error || '');
+  return message.includes('Unimplemented') || message.includes('not implemented');
+}
+
+function isUUID(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function getClientDisplayName(row: ClientRow | null | undefined): string {
+  if (!row) return '';
+  if (row.client.clientType === 'INDIVIDUAL' && row.individual) {
+    return [row.individual.lastName, row.individual.firstName, row.individual.middleName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+  return row.legalEntity?.legalName || '';
+}
+
+async function tryEnrichClient(contactsToken: string, namespace: string) {
+  if (!client.value) return;
+  if (client.value.individual || client.value.legalEntity) return;
+
+  try {
+    const list = await contactsListClients(contactsToken, namespace, {
+      search: client.value.client.id,
+      pagination: { page: 1, length: 'TEN' },
+    });
+    const matched = (list.rows || []).find((row) => row.client.id === client.value?.client.id);
+    if (!matched || !client.value) return;
+
+    client.value = {
+      ...client.value,
+      individual: matched.individual,
+      legalEntity: matched.legalEntity,
+    };
+  } catch (error) {
+    logError('Failed to enrich client with list fallback:', error);
+  }
+}
+
+async function resolveIdentityDisplayValues(contactsToken: string, namespace: string) {
+  const displayMap: Record<string, string> = {};
+  const identityRows = identities.value || [];
+
+  const relatedUUIDs = Array.from(
+    new Set(
+      identityRows
+        .filter((item) => (item.type === 'contact_person' || item.type === 'company') && isUUID(item.value))
+        .map((item) => item.value),
+    ),
+  );
+
+  const relatedNames: Record<string, string> = {};
+  await Promise.all(relatedUUIDs.map(async (uuid) => {
+    try {
+      const related = await getClient(contactsToken, namespace, uuid);
+      const relatedName = getClientDisplayName(related as ClientRow);
+      if (relatedName) {
+        relatedNames[uuid] = relatedName;
+      }
+    } catch {
+      // ignore unresolved related clients
+    }
+  }));
+
+  for (const item of identityRows) {
+    if (item.type === 'company' || item.type === 'contact_person') {
+      displayMap[item.id] = item.comments?.trim() || relatedNames[item.value] || t('common.contacts.relatedClient');
+      continue;
+    }
+    displayMap[item.id] = item.value;
+  }
+
+  identityDisplayValues.value = displayMap;
+}
 
 useHead(() => ({
   title: pageTitle.value,
@@ -407,40 +486,114 @@ async function loadClient() {
     const contactsToken = await ensure(selectedNS.value, token.value);
     if (!contactsToken) return;
 
+    // Get client data first
     const clientData = await getClient(contactsToken, selectedNS.value, clientId.value);
     if (!clientData) {
       toast.add({
         title: t('common.error'),
-        description: t('common.contacts.notFound'),
+        description: t('common.contacts.loadError'),
         color: 'red',
       });
       router.push(`/${selectedNS.value}/contacts`);
       return;
     }
+    
     client.value = clientData;
+    await tryEnrichClient(contactsToken, selectedNS.value);
 
     const fullClientId = client.value.client.id;
 
-    const identitiesData = await getClientIdentities(contactsToken, fullClientId);
-    identities.value = identitiesData.clientIdentities.rows;
+    // Load all related data in parallel
+    const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, clientTierResult, stampCardsResult] = 
+      await Promise.allSettled([
+        getClientIdentities(contactsToken, fullClientId, selectedNS.value),
+        getClientTags(contactsToken, fullClientId),
+        getClientEvents(contactsToken, fullClientId),
+        getBonusBalance(contactsToken, fullClientId),
+        getClientTier(contactsToken, fullClientId),
+        getStampCards(contactsToken),
+      ]);
 
-    const tagsData = await getClientTags(contactsToken, fullClientId);
-    tags.value = tagsData.tags || [];
+    // Process identities
+    if (identitiesResult.status === 'fulfilled') {
+      try {
+        identities.value = identitiesResult.value.clientIdentities.rows;
+        await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
+      } catch (error) {
+        logError('Failed to process identities:', error);
+        identities.value = [];
+        identityDisplayValues.value = {};
+      }
+    } else {
+      if (!isUnimplementedError(identitiesResult.reason)) {
+        logError('Failed to load identities:', identitiesResult.reason);
+      }
+      identities.value = [];
+      identityDisplayValues.value = {};
+    }
 
-    const eventsData = await getClientEvents(contactsToken, fullClientId);
-    events.value = eventsData.rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    // Process tags
+    if (tagsResult.status === 'fulfilled') {
+      tags.value = tagsResult.value.tags || [];
+    } else {
+      if (!isUnimplementedError(tagsResult.reason)) {
+        logError('Failed to load tags:', tagsResult.reason);
+      }
+      tags.value = [];
+    }
 
-    bonusBalance.value = await getBonusBalance(contactsToken, fullClientId);
-    clientTier.value = await getClientTier(contactsToken, fullClientId);
-    
-    const cards = await getStampCards(contactsToken);
-    stampCards.value = cards;
-    
-    const progressPromises = cards.map(card => 
-      getClientStampProgress(contactsToken, fullClientId, card.id)
-    );
-    const progressResults = await Promise.all(progressPromises);
-    stampProgress.value = progressResults.filter(p => p !== null) as ClientStampProgress[];
+    // Process events
+    if (eventsResult.status === 'fulfilled') {
+      events.value = eventsResult.value.rows.sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } else {
+      if (!isUnimplementedError(eventsResult.reason)) {
+        logError('Failed to load events:', eventsResult.reason);
+      }
+      events.value = [];
+    }
+
+    // Process bonus balance
+    if (bonusBalanceResult.status === 'fulfilled') {
+      bonusBalance.value = bonusBalanceResult.value;
+    } else {
+      if (!isUnimplementedError(bonusBalanceResult.reason)) {
+        logError('Failed to load bonus balance:', bonusBalanceResult.reason);
+      }
+      bonusBalance.value = null;
+    }
+
+    // Process client tier
+    if (clientTierResult.status === 'fulfilled') {
+      clientTier.value = clientTierResult.value;
+    } else {
+      if (!isUnimplementedError(clientTierResult.reason)) {
+        logError('Failed to load client tier:', clientTierResult.reason);
+      }
+      clientTier.value = null;
+    }
+
+    // Process stamp cards and progress
+    if (stampCardsResult.status === 'fulfilled' && stampCardsResult.value) {
+      stampCards.value = stampCardsResult.value;
+      try {
+        const progressPromises = stampCardsResult.value.map(card =>
+          getClientStampProgress(contactsToken, fullClientId, card.id),
+        );
+        const progressResults = await Promise.all(progressPromises);
+        stampProgress.value = progressResults.filter(p => p !== null) as ClientStampProgress[];
+      } catch (error) {
+        logError('Failed to load stamp progress:', error);
+        stampProgress.value = [];
+      }
+    } else {
+      if (stampCardsResult.status === 'rejected' && !isUnimplementedError(stampCardsResult.reason)) {
+        logError('Failed to load stamp cards:', stampCardsResult.reason);
+      }
+      stampCards.value = [];
+      stampProgress.value = [];
+    }
   } catch (error) {
     logError('Failed to load client:', error);
     toast.add({
@@ -479,14 +632,27 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
 
 async function copyToClipboard(text: string) {
   try {
-    await navigator.clipboard.writeText(text);
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      const tempInput = document.createElement('input');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempInput);
+    }
     toast.add({
-      title: 'Скопировано',
+      title: t('common.contacts.copied'),
       icon: 'i-heroicons-clipboard-document-check',
       color: 'green',
     });
   } catch (err) {
     logError('Failed to copy to clipboard', err);
+    toast.add({
+      title: t('common.contacts.copyFailed'),
+      color: 'red',
+    });
   }
 }
 
@@ -561,7 +727,7 @@ function savePersonalInfo() {
     editMode.value.personalInfo = false;
     toast.add({
       title: t('common.success'),
-      description: 'Данные клиента обновлены',
+      description: t('common.contacts.clientDataUpdated'),
       color: 'green',
     });
   }
@@ -628,7 +794,7 @@ function saveIdentities() {
     editMode.value.identities = false;
     toast.add({
       title: t('common.success'),
-      description: 'Контактные данные обновлены',
+      description: t('common.contacts.contactDataUpdated'),
       color: 'green',
     });
   }
@@ -715,6 +881,7 @@ function removeEmailField(index: number) {
           <!-- Identities Section -->
           <ContactIdentities
             :identities="identities"
+            :identity-display-values="identityDisplayValues"
             :edit-mode="editMode.identities"
             :editing-phones="editingPhones"
             :editing-emails="editingEmails"
@@ -741,48 +908,6 @@ function removeEmailField(index: number) {
             :stamp-cards="stampCards"
             :stamp-progress="stampProgress"
           />
-
-          <!-- Additional Fields Section -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
-            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                  Дополнительно
-                </h2>
-              </div>
-              <UButton
-                icon="lucide:pencil"
-                size="xs"
-                color="gray"
-                variant="ghost"
-              />
-            </div>
-            <div class="px-5 py-5">
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Источник лида</p>
-                  <p class="text-sm text-gray-900 dark:text-white">Instagram</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Ответственный менеджер</p>
-                  <p class="text-sm text-gray-900 dark:text-white">Иванова Мария</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Предпочитаемый канал связи</p>
-                  <p class="text-sm text-gray-900 dark:text-white">Telegram</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Скидка (%)</p>
-                  <p class="text-sm text-gray-900 dark:text-white">15%</p>
-                </div>
-                <div class="col-span-2">
-                  <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Примечания</p>
-                  <p class="text-sm text-gray-900 dark:text-white">Предпочитает утренние звонки. Заказывает регулярно оптом на сумму от 500 000 ₸</p>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <!-- Tags Section -->
           <ContactTags :tags="tags" />

@@ -64,6 +64,15 @@ const legalEntityForm = ref({
   registrationDate: '',
 });
 
+// Contact person form (for legal entities)
+const contactPersonForm = ref({
+  firstName: '',
+  lastName: '',
+  middleName: '',
+  birthDate: '',
+  gender: '',
+});
+
 // Client status
 const clientStatus = ref<'ACTIVE' | 'ARCHIVED' | 'BLOCKED'>('ACTIVE');
 
@@ -115,7 +124,7 @@ const isFormValid = computed(() => {
   }
   
   if (clientType.value === 'INDIVIDUAL') {
-    return individualForm.value.firstName.trim() && individualForm.value.lastName.trim();
+    return individualForm.value.firstName.trim();
   } else {
     return legalEntityForm.value.legalName.trim();
   }
@@ -154,6 +163,12 @@ async function handleSubmit() {
   try {
     loading.value = true;
 
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) {
+      throw new Error('Failed to get contacts token');
+    }
+
     let clientId: string;
 
     // Create client
@@ -164,11 +179,11 @@ async function handleSubmit() {
           lastName: individualForm.value.lastName,
           middleName: individualForm.value.middleName || undefined,
           birthDate: individualForm.value.birthDate || undefined,
-          gender: individualForm.value.gender || undefined,
+          gender: individualForm.value.gender ? (individualForm.value.gender === 'M' ? true : false) : undefined,
         },
         status: clientStatus.value,
       };
-      const result = await contactsCreateIndividualClient(token.value, selectedNS.value, input);
+      const result = await contactsCreateIndividualClient(contactsToken, selectedNS.value, input);
       clientId = result.client.id;
     } else {
       const input: CreateLegalEntityClientInput = {
@@ -179,22 +194,25 @@ async function handleSubmit() {
           registrationCountry: legalEntityForm.value.registrationCountry || undefined,
           registrationDate: legalEntityForm.value.registrationDate || undefined,
         },
+        contactPerson: contactPersonForm.value.firstName ? {
+          firstName: contactPersonForm.value.firstName,
+          lastName: contactPersonForm.value.lastName || undefined,
+          middleName: contactPersonForm.value.middleName || undefined,
+          birthDate: contactPersonForm.value.birthDate || undefined,
+          gender: contactPersonForm.value.gender ? (contactPersonForm.value.gender === 'M' ? true : false) : undefined,
+        } : undefined,
         status: clientStatus.value,
       };
-      const result = await contactsCreateLegalEntityClient(token.value, selectedNS.value, input);
+      const result = await contactsCreateLegalEntityClient(contactsToken, selectedNS.value, input);
       clientId = result.client.id;
     }
-
-    // Get contacts token
-    const { ensure } = useContactsToken();
-    const contactsToken = await ensure(selectedNS.value, token.value);
     
     if (contactsToken) {
       // Create phone identities
       for (let i = 0; i < phones.value.length; i++) {
         const phone = phones.value[i].trim();
         if (phone && isPhoneValid(phone)) {
-          await createIdentity(contactsToken, clientId, 'phone', phone, i === 0);
+          await createIdentity(contactsToken, selectedNS.value, clientId, 'phone', phone, i === 0);
         }
       }
 
@@ -202,7 +220,7 @@ async function handleSubmit() {
       for (let i = 0; i < emails.value.length; i++) {
         const email = emails.value[i].trim();
         if (email && isEmailValid(email)) {
-          await createIdentity(contactsToken, clientId, 'email', email, i === 0);
+          await createIdentity(contactsToken, selectedNS.value, clientId, 'email', email, i === 0);
         }
       }
     }
@@ -286,9 +304,12 @@ function handleKeyDown(event: KeyboardEvent) {
 
         <!-- Contact Information Section (Most Important) -->
         <div class="space-y-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-            📞 {{ t('common.contacts.contactInformation') || 'Contact Information' }}
-          </h3>
+          <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('common.contacts.contactInformation') || 'Contact Information' }}
+            </h3>
+          </div>
           
           <!-- Primary Phone (Required, Autofocus) -->
           <UFormGroup 
@@ -401,12 +422,15 @@ function handleKeyDown(event: KeyboardEvent) {
 
         <!-- Individual Personal Information -->
         <div v-if="clientType === 'INDIVIDUAL'" class="space-y-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-            👤 {{ t('common.contacts.personalInformation') || 'Personal Information' }}
-          </h3>
+          <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <UIcon name="i-heroicons-user" class="w-4 h-4" />
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('common.contacts.personalInformation') || 'Personal Information' }}
+            </h3>
+          </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <UFormGroup :label="t('common.contacts.lastName') + ' *'">
+            <UFormGroup :label="t('common.contacts.lastName')">
               <UInput
                 v-model="individualForm.lastName"
                 type="text"
@@ -459,9 +483,12 @@ function handleKeyDown(event: KeyboardEvent) {
 
         <!-- Legal Entity Company Information -->
         <div v-if="clientType === 'LEGAL'" class="space-y-4">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">
-            🏢 {{ t('common.contacts.companyInformation') || 'Company Information' }}
-          </h3>
+          <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
+            <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('common.contacts.companyInformation') || 'Company Information' }}
+            </h3>
+          </div>
           
           <div class="grid grid-cols-1 gap-4">
             <UFormGroup :label="t('common.contacts.legalName') + ' *'">
@@ -510,14 +537,78 @@ function handleKeyDown(event: KeyboardEvent) {
                 size="lg"
               />
             </UFormGroup>
+
+            <!-- Contact Person -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <div class="flex items-center gap-2 mb-3">
+                <UIcon name="i-heroicons-user" class="w-4 h-4" />
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                  {{ t('common.contacts.contactPersonOptional') }}
+                </h4>
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormGroup :label="t('common.contacts.firstName')">
+                  <UInput
+                    v-model="contactPersonForm.firstName"
+                    type="text"
+                    :placeholder="t('common.contacts.firstName')"
+                    size="lg"
+                  />
+                </UFormGroup>
+
+                <UFormGroup :label="t('common.contacts.lastName')">
+                  <UInput
+                    v-model="contactPersonForm.lastName"
+                    type="text"
+                    :placeholder="t('common.contacts.lastName')"
+                    size="lg"
+                  />
+                </UFormGroup>
+              </div>
+
+              <UFormGroup :label="t('common.contacts.middleName')">
+                <UInput
+                  v-model="contactPersonForm.middleName"
+                  type="text"
+                  :placeholder="t('common.contacts.middleName')"
+                  size="lg"
+                />
+              </UFormGroup>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <UFormGroup :label="t('common.contacts.birthDate')">
+                  <UInput
+                    v-model="contactPersonForm.birthDate"
+                    type="date"
+                    size="lg"
+                  />
+                </UFormGroup>
+
+                <UFormGroup :label="t('common.contacts.gender')">
+                  <USelect
+                    v-model="contactPersonForm.gender"
+                    :options="[
+                      { value: '', label: '-' },
+                      { value: 'M', label: t('common.contacts.male') },
+                      { value: 'F', label: t('common.contacts.female') },
+                    ]"
+                    size="lg"
+                  />
+                </UFormGroup>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- Client Status -->
         <div>
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-            ⚡ {{ t('common.contacts.clientStatus') || 'Client Status' }}
-          </h3>
+          <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
+            <UIcon name="i-heroicons-cog-8-tooth" class="w-4 h-4" />
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+              {{ t('common.contacts.clientStatus') || 'Client Status' }}
+            </h3>
+          </div>
           <UFormGroup :label="t('common.contacts.status')">
             <USelect
               v-model="clientStatus"

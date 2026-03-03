@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { onBeforeUnmount, ref } from 'vue';
 import type { ClientIdentity } from '@/api/contacts/identities';
 
 interface Props {
   identities: ClientIdentity[];
+  identityDisplayValues?: Record<string, string>;
   editMode?: boolean;
   editingPhones?: string[];
   editingEmails?: string[];
@@ -35,16 +37,36 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>();
 const { t } = useI18n();
+const copiedIdentityId = ref<string | null>(null);
+let copiedTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function getDisplayValue(identity: ClientIdentity): string {
+  return props.identityDisplayValues?.[identity.id] || identity.value;
+}
+
+function handleCopy(identity: ClientIdentity) {
+  emit('copyToClipboard', getDisplayValue(identity));
+  copiedIdentityId.value = identity.id;
+
+  if (copiedTimeout) clearTimeout(copiedTimeout);
+  copiedTimeout = setTimeout(() => {
+    copiedIdentityId.value = null;
+  }, 1500);
+}
+
+onBeforeUnmount(() => {
+  if (copiedTimeout) clearTimeout(copiedTimeout);
+});
 
 function getIdentityIcon(type: string): string {
   const iconMap: Record<string, string> = {
-    phone: 'lucide:phone',
-    email: 'lucide:mail',
-    telegram: 'lucide:send',
-    whatsapp: 'lucide:message-circle',
-    website: 'lucide:globe',
+    phone: 'i-heroicons-phone',
+    email: 'i-heroicons-envelope',
+    telegram: 'i-heroicons-paper-airplane',
+    whatsapp: 'i-heroicons-chat-bubble-left-right',
+    website: 'i-heroicons-globe-alt',
   };
-  return iconMap[type] || 'lucide:link';
+  return iconMap[type] || 'i-heroicons-link';
 }
 </script>
 
@@ -54,20 +76,20 @@ function getIdentityIcon(type: string): string {
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <UIcon name="i-heroicons-phone" class="w-5 h-5 text-violet-600 dark:text-violet-400" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Контакты</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.identities') }}</h2>
       </div>
       <div class="flex gap-2">
         <UButton
           v-if="!editMode"
-          icon="lucide:pencil"
+          icon="i-heroicons-pencil"
           size="xs"
           color="gray"
           variant="ghost"
           @click="() => emit('startEdit')"
         />
         <template v-else>
-          <UButton size="xs" color="primary" variant="soft" @click="() => emit('saveEdit')">Сохранить</UButton>
-          <UButton size="xs" color="gray" variant="ghost" @click="() => emit('cancelEdit')">Отменить</UButton>
+          <UButton size="xs" color="primary" variant="soft" @click="() => emit('saveEdit')">{{ t('common.save') }}</UButton>
+          <UButton size="xs" color="gray" variant="ghost" @click="() => emit('cancelEdit')">{{ t('common.cancel') }}</UButton>
         </template>
       </div>
     </div>
@@ -86,14 +108,14 @@ function getIdentityIcon(type: string): string {
               <div class="min-w-0">
                 <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">{{ identity.type }}</p>
                 <p :class="['text-sm text-gray-900 dark:text-white truncate', identity.isPrimary ? 'font-bold' : 'font-medium']">
-                  {{ identity.value }}
+                  {{ getDisplayValue(identity) }}
                 </p>
               </div>
             </div>
             <div class="flex items-center gap-1 flex-shrink-0">
               <UButton
                 v-if="identity.type === 'phone'"
-                icon="lucide:phone"
+                icon="i-heroicons-phone"
                 size="xs"
                 color="blue"
                 variant="soft"
@@ -102,7 +124,7 @@ function getIdentityIcon(type: string): string {
               />
               <UButton
                 v-else-if="identity.type === 'email'"
-                icon="lucide:mail"
+                icon="i-heroicons-envelope"
                 size="xs"
                 color="blue"
                 variant="soft"
@@ -111,7 +133,7 @@ function getIdentityIcon(type: string): string {
               />
               <UButton
                 v-else-if="identity.type === 'telegram'"
-                icon="lucide:send"
+                icon="i-heroicons-paper-airplane"
                 size="xs"
                 color="blue"
                 variant="soft"
@@ -120,7 +142,7 @@ function getIdentityIcon(type: string): string {
               />
               <UButton
                 v-else-if="identity.type === 'whatsapp'"
-                icon="lucide:message-circle"
+                icon="i-heroicons-chat-bubble-left-right"
                 size="xs"
                 color="green"
                 variant="soft"
@@ -128,12 +150,13 @@ function getIdentityIcon(type: string): string {
                 class="h-8 w-8 p-0"
               />
               <UButton
-                icon="lucide:clipboard"
+                :icon="copiedIdentityId === identity.id ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
                 size="xs"
                 color="gray"
-                variant="soft"
-                @click="() => emit('copyToClipboard', identity.value)"
+                :variant="copiedIdentityId === identity.id ? 'soft' : 'ghost'"
+                @click="() => handleCopy(identity)"
                 class="h-8 w-8 p-0"
+                :title="copiedIdentityId === identity.id ? t('common.contacts.copied') : t('common.contacts.copy')"
               />
             </div>
           </div>
@@ -146,7 +169,7 @@ function getIdentityIcon(type: string): string {
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-phone" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Телефоны</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('common.contacts.phones') }}</label>
             </div>
             
             <div v-for="(phone, idx) in editingPhones" :key="`phone-${idx}`" class="flex gap-2">
@@ -154,13 +177,13 @@ function getIdentityIcon(type: string): string {
                 <UInput
                   :model-value="phone"
                   type="tel"
-                  :placeholder="idx === 0 ? 'Основной номер *' : 'Дополнительный номер'"
+                  :placeholder="idx === 0 ? t('common.contacts.primaryNumber') + ' *' : t('common.contacts.additionalNumber')"
                   size="md"
                   @update:model-value="$emit('updatePhone', idx, $event)"
                 />
               </UFormGroup>
               <UButton
-                icon="i-heroicons-trash-20-solid"
+                icon="i-heroicons-trash"
                 color="red"
                 variant="ghost"
                 size="md"
@@ -172,13 +195,13 @@ function getIdentityIcon(type: string): string {
 
             <UButton
               v-if="editingPhones.length < 5"
-              icon="i-heroicons-plus-20-solid"
+              icon="i-heroicons-plus"
               variant="outline"
               color="blue"
               size="sm"
               @click="() => $emit('addPhone')"
             >
-              Добавить телефон
+              {{ t('common.contacts.addPhone') }}
             </UButton>
           </div>
 
@@ -186,7 +209,7 @@ function getIdentityIcon(type: string): string {
           <div class="space-y-2 pt-4">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-envelope" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email адреса</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('common.contacts.emails') }}</label>
             </div>
             
             <div v-for="(email, idx) in editingEmails" :key="`email-${idx}`" class="flex gap-2">
@@ -201,7 +224,7 @@ function getIdentityIcon(type: string): string {
               </UFormGroup>
               <UButton
                 v-if="editingEmails.length > 0"
-                icon="i-heroicons-trash-20-solid"
+                icon="i-heroicons-trash"
                 color="red"
                 variant="ghost"
                 size="md"
@@ -212,13 +235,13 @@ function getIdentityIcon(type: string): string {
 
             <UButton
               v-if="editingEmails.length < 5"
-              icon="i-heroicons-plus-20-solid"
+              icon="i-heroicons-plus"
               variant="outline"
               color="blue"
               size="sm"
               @click="() => $emit('addEmail')"
             >
-              Добавить email
+              {{ t('common.contacts.addEmail') }}
             </UButton>
           </div>
         </form>

@@ -21,6 +21,7 @@ const { token } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
 
 const clients = ref<ClientRow[]>([]);
+const totalCount = ref(0);
 const loading = ref(false);
 const isTagsModalOpen = ref(false);
 const isSegmentsModalOpen = ref(false);
@@ -28,7 +29,9 @@ const isIdentitiesModalOpen = ref(false);
 const selectedClientId = ref<string | null>(null);
 const searchQuery = ref('');
 const selectedTags = ref<string[]>([]);
-const useMockData = ref(true);
+const useMockData = ref(false);
+const sortField = ref('createdAt');
+const sortDirection = ref<'ASC' | 'DESC'>('DESC');
 
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -110,19 +113,6 @@ const filteredClients = computed(() => {
     result = result.filter((c) => c.client.clientType === clientTypeFilter.value);
   }
   
-  // Filter by search query
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    result = result.filter((c) => {
-      const name = c.client.clientType === 'INDIVIDUAL' && c.individual
-        ? `${c.individual.lastName} ${c.individual.firstName} ${c.individual.middleName || ''}`.toLowerCase()
-        : (c.legalEntity?.legalName || '').toLowerCase();
-      
-      return name.includes(query) || 
-             (c.legalEntity?.binIin || '').toLowerCase().includes(query);
-    });
-  }
-  
   // Filter by tags (when implemented)
   if (selectedTags.value.length > 0) {
     // TODO: Filter by tags when backend supports it
@@ -131,8 +121,8 @@ const filteredClients = computed(() => {
   return result;
 });
 
-// Calculate total pages for validation
-const totalPages = computed(() => Math.ceil(filteredClients.value.length / pageSize.value));
+// Calculate total pages from backend count
+const totalPages = computed(() => Math.ceil(totalCount.value / pageSize.value));
 
 // Validate page against total pages
 const isPageOutOfBounds = computed(() => {
@@ -168,9 +158,27 @@ watch([isValidPagination, isPageOutOfBounds], ([invalidPagination, outOfBounds])
   }
 }, { immediate: true });
 
+// Watch for search query changes - reload clients from backend with new search
+watch(searchQuery, async () => {
+  if (process.client && document.visibilityState !== 'visible') return;
+  // Reset to page 1 when search changes
+  if (page.value !== 1) {
+    await router.push(`/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-${pageSize.value}`);
+    return;
+  }
+
+  await loadClients();
+});
+
+// Watch for route changes (pagination, filtering) - reload clients
+watch(() => route.params, async () => {
+  await loadClients();
+}, { deep: true });
+
 async function loadClients() {
   if (useMockData.value) {
     clients.value = mockClients;
+    totalCount.value = mockClients.length;
     return;
   }
   
@@ -181,8 +189,32 @@ async function loadClients() {
   
   try {
     loading.value = true;
-    const data = await contactsListClients(contactsToken, selectedNS.value);
+    const filter: any = {};
+    
+    // Add search if present
+    const normalizedSearch = searchQuery.value.trim();
+    if (normalizedSearch.length >= 2) {
+      filter.search = normalizedSearch;
+    }
+    
+    // Add pagination
+    filter.pagination = {
+      page: page.value,
+      length: pageSize.value === 10 ? 'TEN' :
+              pageSize.value === 20 ? 'TWENTY' :
+              pageSize.value === 50 ? 'FIFTY' :
+              pageSize.value === 100 ? 'ONE_HUNDRED' : 'TWENTY',
+    };
+
+    // Add sorting (server-side)
+    filter.sort = {
+      field: sortField.value,
+      by: sortDirection.value,
+    };
+    
+    const data = await contactsListClients(contactsToken, selectedNS.value, filter);
     clients.value = data.rows;
+    totalCount.value = data.info?.count || 0;
   } catch (error) {
     logError('Failed to load clients:', error);
     toast.add({
@@ -193,6 +225,18 @@ async function loadClients() {
   } finally {
     loading.value = false;
   }
+}
+
+async function handleSortUpdate(payload: { field: string; direction: 'asc' | 'desc' }) {
+  sortField.value = payload.field;
+  sortDirection.value = payload.direction === 'asc' ? 'ASC' : 'DESC';
+
+  if (page.value !== 1) {
+    await updateRoute(1, pageSize.value);
+    return;
+  }
+
+  await loadClients();
 }
 
 function updateRoute(newPage: number, newPageSize: number) {
@@ -227,7 +271,7 @@ function handleRowClick(row: ClientRow) {
   
   // Use shortId if available, fallback to UUID
   const clientId = row.client.shortId || row.client.id;
-  router.push(`/${selectedNS.value}/contacts/${clientId}`);
+  router.push(`/${nsSlug.value}/contacts/${clientId}`);
 }
 
 async function handleClientCreated() {
@@ -299,7 +343,7 @@ async function handleClientCreated() {
             }}
           </button>
           <span class="text-sm text-gray-500 dark:text-gray-400 ml-2">
-            {{ t('common.contacts.clients').toLowerCase() }}: {{ filteredClients.length }} 
+            {{ t('common.contacts.clients').toLowerCase() }}: {{ totalCount }} 
           </span>
         </div>
         <UButton
@@ -314,16 +358,16 @@ async function handleClientCreated() {
       </div>
     </div>
 
-    <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center py-16 px-4">
+    <!-- Loading State (only on initial load, not while having search) -->
+    <div v-if="loading && clients.length === 0 && searchQuery === ''" class="flex items-center justify-center py-16 px-4">
       <div class="text-center">
         <UIcon name="lucide:loader" class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4" />
         <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
       </div>
     </div>
 
-    <!-- Empty State -->
-    <div v-else-if="clients.length === 0" class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
+    <!-- Empty State (only when no clients exist AND no search) -->
+    <div v-else-if="totalCount === 0 && searchQuery === '' && !loading" class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
       <div class="max-w-sm w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 dark:border-gray-800">
         <div class="mb-3 flex flex-col items-center">
           <UIcon name="lucide:users" class="w-12 h-12 text-blue-400 dark:text-blue-300 mb-2" />
@@ -345,18 +389,23 @@ async function handleClientCreated() {
       </div>
     </div>
 
-    <!-- Table -->
+    <!-- Table (always shown when there's data or active search) -->
     <div v-else class="px-4 pb-safe-or-4">
       <ClientsTable 
         :clients="filteredClients" 
         :loading="loading"
         :page="page"
         :page-size="pageSize"
+        :total-pages="totalPages"
+        :total-items="totalCount"
+        :sort-field="sortField"
+        :sort-direction="sortDirection === 'ASC' ? 'asc' : 'desc'"
         :ns-slug="nsSlug"
         v-model:search-query="searchQuery"
         v-model:selected-tags="selectedTags"
         @update:page="(newPage) => updateRoute(newPage, pageSize)"
         @update:page-size="(newPageSize) => updateRoute(1, newPageSize)"
+        @update:sort="handleSortUpdate"
         @row-click="handleRowClick"
       />
     </div>

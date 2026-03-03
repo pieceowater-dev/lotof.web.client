@@ -2,6 +2,8 @@
 import { ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import { useContactsToken } from '@/composables/useContactsToken';
+import { useNamespace } from '@/composables/useNamespace';
 import { useToast } from '#imports';
 import type { ClientIdentity } from '@/api/contacts/identities';
 import { 
@@ -15,6 +17,8 @@ import {
 const { t } = useI18n();
 const toast = useToast();
 const { token } = useAuth();
+const { ensure } = useContactsToken();
+const { selected: selectedNS } = useNamespace();
 
 const props = defineProps<{
   isOpen: boolean;
@@ -35,10 +39,12 @@ const newValue = ref('');
 const identityTypes = ['email', 'phone', 'telegram', 'whatsapp'];
 
 async function loadIdentities() {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
     loading.value = true;
-    const response = await getClientIdentities(token.value, props.clientId);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+    const response = await getClientIdentities(contactsToken, props.clientId, selectedNS.value);
     identities.value = response.clientIdentities?.rows || [];
   } catch (error) {
     toast.add({
@@ -52,13 +58,15 @@ async function loadIdentities() {
 }
 
 async function handleCreateIdentity() {
-  if (!newValue.value.trim() || !token.value) return;
+  if (!newValue.value.trim() || !token.value || !selectedNS.value) return;
   
   try {
     isCreating.value = true;
-    if (!token.value) return;
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
     const newIdentity = await createIdentity(
-      token.value,
+      contactsToken,
+      selectedNS.value,
       props.clientId,
       newType.value,
       newValue.value.trim()
@@ -83,9 +91,11 @@ async function handleCreateIdentity() {
 }
 
 async function handleDeleteIdentity(id: string) {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
-    await deleteIdentity(token.value, id);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+    await deleteIdentity(contactsToken, selectedNS.value, id);
     identities.value = identities.value.filter(i => i.id !== id);
     toast.add({
       title: t('common.success'),
@@ -102,9 +112,11 @@ async function handleDeleteIdentity(id: string) {
 }
 
 async function handleVerifyIdentity(id: string) {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
-    await verifyIdentity(token.value, id);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+    await verifyIdentity(contactsToken, selectedNS.value, id);
     const identity = identities.value.find(i => i.id === id);
     if (identity) {
       identity.verifiedAt = new Date().toISOString();
@@ -124,9 +136,11 @@ async function handleVerifyIdentity(id: string) {
 }
 
 async function handleSetPrimary(id: string) {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
-    await setPrimaryIdentity(token.value, id);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+    await setPrimaryIdentity(contactsToken, selectedNS.value, id);
     identities.value.forEach(i => {
       i.isPrimary = i.id === id;
     });

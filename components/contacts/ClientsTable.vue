@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
 
@@ -12,6 +12,10 @@ const props = defineProps<{
   selectedTags?: string[];
   page?: number;
   pageSize?: number;
+  totalPages?: number;
+  totalItems?: number;
+  sortField?: string;
+  sortDirection?: 'asc' | 'desc';
   nsSlug?: string;
 }>();
 
@@ -21,6 +25,7 @@ const emit = defineEmits<{
   (e: 'update:selectedTags', value: string[]): void;
   (e: 'update:page', value: number): void;
   (e: 'update:pageSize', value: number): void;
+  (e: 'update:sort', value: { field: string; direction: 'asc' | 'desc' }): void;
 }>();
 
 // Local state for pagination that syncs with props
@@ -76,6 +81,12 @@ const page = computed<number>(() => localPage.value);
 
 const pageSize = computed<number>(() => localPageSize.value);
 
+const totalItems = computed<number>(() => props.totalItems ?? props.clients.length);
+const resolvedTotalPages = computed<number>(() => {
+  if (props.totalPages && props.totalPages > 0) return props.totalPages;
+  return Math.max(1, Math.ceil(totalItems.value / pageSize.value));
+});
+
 interface ColumnDef {
   key: string;
   label: string;
@@ -103,51 +114,39 @@ const searchInputRef = ref<HTMLInputElement | null>(null);
 
 const pageSizeOptions = [10, 20, 50, 100];
 
+// Watch for external searchQuery changes (from parent)
+watch(() => props.searchQuery, (newSearch) => {
+  if (newSearch !== undefined && newSearch !== internalSearchQuery.value) {
+    internalSearchQuery.value = newSearch;
+  }
+});
+
 // Sorting state
-const sortBy = ref<string | null>('createdAt');
-const sortDirection = ref<'asc' | 'desc'>('desc');
+const sortBy = ref<string | null>(props.sortField ?? 'createdAt');
+const sortDirection = ref<'asc' | 'desc'>(props.sortDirection ?? 'desc');
 
-// Sorting computed
-const sortedClients = computed(() => {
-  if (!sortBy.value) return props.clients;
-  
-  const sorted = [...props.clients].sort((a, b) => {
-    let aVal: any;
-    let bVal: any;
-    
-    if (sortBy.value === 'name') {
-      aVal = getClientName(a).toLowerCase();
-      bVal = getClientName(b).toLowerCase();
-    } else if (sortBy.value === 'createdAt' || sortBy.value === 'updatedAt') {
-      aVal = new Date(a.client[sortBy.value]).getTime();
-      bVal = new Date(b.client[sortBy.value]).getTime();
-    } else {
-      return 0;
-    }
-    
-    if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1;
-    if (aVal > bVal) return sortDirection.value === 'asc' ? 1 : -1;
-    return 0;
-  });
-  
-  return sorted;
+watch(() => props.sortField, (newField) => {
+  if (newField) sortBy.value = newField;
 });
 
-// Pagination computed
-const totalPages = computed(() => Math.ceil(sortedClients.value.length / pageSize.value));
-const paginatedClients = computed(() => {
-  const start = (page.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return sortedClients.value.slice(start, end);
+watch(() => props.sortDirection, (newDirection) => {
+  if (newDirection) sortDirection.value = newDirection;
 });
+
+// Sorting is server-driven
+const sortedClients = computed(() => props.clients);
+
+// Pagination: Use clients as-is from backend (already paginated)
+// Don't re-slice, backend already returned correct page
+const paginatedClients = computed(() => sortedClients.value);
 
 const pageFrom = computed(() => {
-  if (sortedClients.value.length === 0) return 0;
+  if (props.clients.length === 0) return 0;
   return (page.value - 1) * pageSize.value + 1;
 });
 
 const pageTo = computed(() => {
-  return Math.min(page.value * pageSize.value, sortedClients.value.length);
+  return pageFrom.value + props.clients.length - 1;
 });
 
 // Sort handler
@@ -166,6 +165,8 @@ function handleSort(columnKey: string) {
     sortBy.value = columnKey;
     sortDirection.value = 'asc';
   }
+
+  emit('update:sort', { field: columnKey, direction: sortDirection.value });
   
   // Reset to page 1 when sorting changes
   localPage.value = 1;
@@ -173,7 +174,7 @@ function handleSort(columnKey: string) {
 
 // Reset to page 1 when clients change or page is out of bounds
 watch(() => sortedClients.value.length, () => {
-  if (localPage.value > totalPages.value && totalPages.value > 0) {
+  if (localPage.value > (props.totalPages ?? 1) && (props.totalPages ?? 0) > 0) {
     localPage.value = 1;
   }
 });
@@ -184,8 +185,11 @@ watch(internalSearchQuery, (newVal) => {
   if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     emit('update:searchQuery', newVal);
-  }, 300);
+  }, 250);
 });
+
+// Track if search should be focused
+const shouldFocusSearch = ref(false);
 
 // Load column widths from localStorage
 onMounted(() => {
@@ -207,6 +211,22 @@ onMounted(() => {
     ...col,
     label: t(`common.contacts.${col.key}`) || col.label,
   }));
+  
+  // Focus search input when component mounts
+  nextTick(() => {
+    if (searchInputRef.value) {
+      searchInputRef.value.focus();
+    }
+  });
+});
+
+// Focus search input when search updates
+watch(internalSearchQuery, () => {
+  nextTick(() => {
+    if (searchInputRef.value && shouldFocusSearch.value) {
+      searchInputRef.value.focus();
+    }
+  });
 });
 
 // Save column widths to localStorage
@@ -358,6 +378,8 @@ function clearSearch() {
             v-model="internalSearchQuery"
             type="text"
             :placeholder="t('common.contacts.searchPlaceholder') || 'Search clients...'"
+            @focus="shouldFocusSearch = true"
+            @blur="shouldFocusSearch = false"
             class="w-full pl-10 pr-10 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
           />
           <button
@@ -388,10 +410,7 @@ function clearSearch() {
       </div>
     </div>
 
-    <!-- Loading overlay -->
-    <div v-if="loading" class="absolute inset-0 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-20 flex items-center justify-center">
-      <UIcon name="lucide:loader" class="w-8 h-8 text-gray-400 animate-spin" />
-    </div>
+    <!-- No blocking overlay to avoid table blinking on updates -->
 
     <!-- Table container with horizontal scroll -->
     <div 
@@ -492,7 +511,7 @@ function clearSearch() {
               class="px-4 py-3 text-sm font-medium"
             >
               <NuxtLink
-                :to="`/${props.nsSlug}/contacts/${client.client.id}`"
+                :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
                 class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
                 :title="getClientName(client)"
               >
@@ -576,7 +595,7 @@ function clearSearch() {
             {{ t('common.to') }}
             <span class="font-medium text-gray-900 dark:text-white">{{ pageTo }}</span>
             {{ t('common.of') }}
-            <span class="font-medium text-gray-900 dark:text-white">{{ sortedClients.length }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ totalItems }}</span>
             {{ t('common.contacts.clients').toLowerCase() }}
           </span>
         </div>
@@ -597,11 +616,12 @@ function clearSearch() {
           <!-- Pagination -->
           <UPagination
             v-model="localPage"
+            :total="totalItems"
             :page-count="pageSize"
-            :total="sortedClients.length"
             size="xs"
             :show-last="true"
             :show-first="true"
+            :max="7"
           />
         </div>
       </div>

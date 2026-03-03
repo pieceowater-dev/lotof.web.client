@@ -27,7 +27,7 @@ function getProgressPercentage(current: number | undefined, total: number | unde
       <div class="flex items-center gap-2">
         <UIcon name="i-heroicons-gift" class="w-5 h-5 text-amber-600 dark:text-amber-400" />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          Бонусы
+          {{ t('common.contacts.bonuses') }}
         </h2>
       </div>
     </div>
@@ -37,26 +37,26 @@ function getProgressPercentage(current: number | undefined, total: number | unde
         <div class="flex items-center gap-2 mb-3">
           <UIcon name="i-heroicons-wallet" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Баланс
+            {{ t('common.contacts.balance') }}
           </h3>
         </div>
         <div class="grid grid-cols-3 gap-4">
           <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-lg p-4">
-            <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">Всего</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">{{ t('common.contacts.total') }}</p>
             <p class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{ bonusBalance.totalBonuses }}</p>
           </div>
           <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/20 rounded-lg p-4">
-            <p class="text-xs text-green-600 dark:text-green-400 uppercase tracking-wide mb-1">Доступно</p>
+            <p class="text-xs text-green-600 dark:text-green-400 uppercase tracking-wide mb-1">{{ t('common.contacts.available') }}</p>
             <p class="text-2xl font-bold text-green-700 dark:text-green-300">{{ bonusBalance.availableBonuses }}</p>
           </div>
           <div class="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/20 rounded-lg p-4">
-            <p class="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">Сгорают</p>
+            <p class="text-xs text-orange-600 dark:text-orange-400 uppercase tracking-wide mb-1">{{ t('common.contacts.expiring') }}</p>
             <p class="text-2xl font-bold text-orange-700 dark:text-orange-300">{{ bonusBalance.expiringSoon }}</p>
           </div>
         </div>
       </div>
       <div v-else>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Нет данных о бонусном балансе</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.contacts.noBonusData') }}</p>
       </div>
 
       <!-- Client Tier -->
@@ -64,23 +64,23 @@ function getProgressPercentage(current: number | undefined, total: number | unde
         <div class="flex items-center gap-2 mb-3">
           <UIcon name="i-heroicons-star" class="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Уровень
+            {{ t('common.contacts.tier') }}
           </h3>
         </div>
         <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg p-4">
           <div class="flex items-center justify-between mb-3">
             <div>
-              <p class="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">Текущий уровень</p>
+              <p class="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">{{ t('common.contacts.currentTier') }}</p>
               <p class="text-lg font-bold text-purple-700 dark:text-purple-300">Tier {{ clientTier.tierId }}</p>
             </div>
             <div class="text-right">
-              <p class="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">Прогресс</p>
+              <p class="text-xs text-purple-600 dark:text-purple-400 uppercase tracking-wide mb-1">{{ t('common.contacts.progress') }}</p>
               <p class="text-lg font-bold text-purple-700 dark:text-purple-300">{{ clientTier.currentValue }}</p>
             </div>
           </div>
           <div class="space-y-1">
             <div class="flex justify-between text-xs text-purple-600 dark:text-purple-400">
-              <span>До следующего уровня</span>
+              <span>{{ t('common.contacts.untilNextTier') }}</span>
               <span>{{ clientTier.nextTierThreshold }}</span>
             </div>
             <div class="w-full bg-purple-200 dark:bg-purple-800/50 rounded-full h-2">
@@ -93,7 +93,7 @@ function getProgressPercentage(current: number | undefined, total: number | unde
         </div>
       </div>
       <div v-else>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Нет данных об уровне клиента</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.contacts.noTierData') }}</p>
       </div>
 
       <!-- Stamp Cards -->
@@ -101,7 +101,7 @@ function getProgressPercentage(current: number | undefined, total: number | unde
         <div class="flex items-center gap-2 mb-3">
           <UIcon name="i-heroicons-ticket" class="w-4 h-4 text-pink-600 dark:text-pink-400" />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Карты штампов
+            {{ t('common.contacts.stampCards') }}
           </h3>
         </div>
         <div class="space-y-3">
@@ -120,7 +120,7 @@ function getProgressPercentage(current: number | undefined, total: number | unde
               <div class="flex-1">
                 <div class="flex justify-between text-xs text-amber-600 dark:text-amber-400 mb-1">
                   <span>{{ progress.currentStamps }} / {{ progress.stampCard?.totalStamps }}</span>
-                  <span>{{ progress.completedRounds }} раундов</span>
+                  <span>{{ progress.completedRounds }} {{ t('common.contacts.rounds') }}</span>
                 </div>
                 <div class="w-full bg-amber-200 dark:bg-amber-800/50 rounded-full h-2">
                   <div 
@@ -134,7 +134,7 @@ function getProgressPercentage(current: number | undefined, total: number | unde
         </div>
       </div>
       <div v-else-if="stampCards.length === 0">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Нет активных карт штампов</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('common.contacts.noStampCards') }}</p>
       </div>
     </div>
   </div>

@@ -41,6 +41,20 @@ const emit = defineEmits<Emits>();
 const { t } = useI18n();
 
 const isIndividual = computed(() => props.client?.client.clientType === 'INDIVIDUAL');
+
+function formatGender(gender?: string): string {
+  if (!gender) return '';
+
+  const normalized = gender.toUpperCase();
+  if (normalized === 'M' || normalized === 'MALE') {
+    return t('common.contacts.male') || 'Мужской';
+  }
+  if (normalized === 'F' || normalized === 'FEMALE') {
+    return t('common.contacts.female') || 'Женский';
+  }
+
+  return t('common.contacts.genderUnknown') || 'Не указано';
+}
 </script>
 
 <template>
@@ -69,7 +83,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
             variant="soft"
             @click="() => emit('saveEdit')"
           >
-            Сохранить
+            {{ t('common.save') }}
           </UButton>
           <UButton
             size="xs"
@@ -77,7 +91,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
             variant="ghost"
             @click="() => emit('cancelEdit')"
           >
-            Отменить
+            {{ t('common.cancel') }}
           </UButton>
         </template>
       </div>
@@ -91,7 +105,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Персональные данные
+              {{ t('common.contacts.personalInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
@@ -113,7 +127,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
             </div>
             <div v-if="client.individual.gender">
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.gender') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white capitalize">{{ client.individual.gender }}</p>
+              <p class="text-sm text-gray-900 dark:text-white">{{ formatGender(client.individual.gender) }}</p>
             </div>
           </div>
         </div>
@@ -122,7 +136,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Данные юридического лица
+              {{ t('common.contacts.companyInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
@@ -156,10 +170,10 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">Персональные данные</h3>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.personalInformation') }}</h3>
             </div>
             
-            <UFormGroup label="Фамилия *" required>
+            <UFormGroup :label="t('common.contacts.lastName') + ' *'" required>
               <UInput
                 :model-value="editingLastName"
                 type="text"
@@ -168,7 +182,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
               />
             </UFormGroup>
 
-            <UFormGroup label="Имя *" required>
+            <UFormGroup :label="t('common.contacts.firstName') + ' *'" required>
               <UInput
                 :model-value="editingFirstName"
                 type="text"
@@ -177,7 +191,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
               />
             </UFormGroup>
 
-            <UFormGroup label="Отчество">
+            <UFormGroup :label="t('common.contacts.middleName')">
               <UInput
                 :model-value="editingMiddleName"
                 type="text"
@@ -187,7 +201,7 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup label="Дата рождения">
+              <UFormGroup :label="t('common.contacts.birthDate')">
                 <UInput
                   :model-value="editingBirthDate"
                   type="date"
@@ -196,13 +210,13 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
                 />
               </UFormGroup>
 
-              <UFormGroup label="Пол">
+              <UFormGroup :label="t('common.contacts.gender')">
                 <USelect
                   :model-value="editingGender"
                   :options="[
-                    { value: '', label: 'Не указано' },
-                    { value: 'M', label: 'Мужской' },
-                    { value: 'F', label: 'Женский' }
+                    { value: '', label: t('common.contacts.genderUnknown') },
+                    { value: 'M', label: t('common.contacts.male') },
+                    { value: 'F', label: t('common.contacts.female') }
                   ]"
                   option-attribute="label"
                   value-attribute="value"
@@ -218,51 +232,32 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white">Данные юридического лица</h2>
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.companyInformation') }}</h2>
             </div>
             
-            <UFormGroup label="Юридическое название *" required>
+            <UFormGroup :label="t('common.contacts.legalName') + ' *'" required>
               <UInput :model-value="editingLegalName" type="text" size="md" @update:model-value="$emit('updateField', 'legalName', $event)" />
             </UFormGroup>
 
-            <UFormGroup label="Торговое название">
+            <UFormGroup :label="t('common.contacts.brandName')">
               <UInput :model-value="editingBrandName" type="text" size="md" @update:model-value="$emit('updateField', 'brandName', $event)" />
             </UFormGroup>
 
-            <UFormGroup label="БИН/ИИН">
+            <UFormGroup :label="t('common.contacts.binIin')">
               <UInput :model-value="editingBinIin" type="text" size="md" @update:model-value="$emit('updateField', 'binIin', $event)" />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup label="Страна регистрации">
+              <UFormGroup :label="t('common.contacts.registrationCountry')">
                 <UInput :model-value="editingRegistrationCountry" type="text" size="md" @update:model-value="$emit('updateField', 'registrationCountry', $event)" />
               </UFormGroup>
 
-              <UFormGroup label="Дата регистрации">
+              <UFormGroup :label="t('common.contacts.registrationDate')">
                 <UInput :model-value="editingRegistrationDate" type="date" size="md" @update:model-value="$emit('updateField', 'registrationDate', $event)" />
               </UFormGroup>
             </div>
           </div>
         </form>
-      </template>
-
-      <!-- Basic Information at the bottom (View Mode) -->
-      <template v-if="!editMode && client">
-        <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
-          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-            Базовая информация
-          </h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Создано</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.client.createdAt).toLocaleString('ru-RU') }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Обновлено</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.client.updatedAt).toLocaleString('ru-RU') }}</p>
-            </div>
-          </div>
-        </div>
       </template>
     </div>
   </div>

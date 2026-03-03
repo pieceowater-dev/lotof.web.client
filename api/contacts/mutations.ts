@@ -1,4 +1,4 @@
-import { contactsClient, setGlobalAuthToken } from '../clients';
+import { contactsClient, setContactsAppToken } from '../clients';
 import type { ClientsListResponse, ClientRow } from './listClients';
 
 const CREATE_INDIVIDUAL_CLIENT_MUTATION = /* GraphQL */ `
@@ -75,7 +75,7 @@ export interface CreateIndividualClientInput {
     lastName: string;
     middleName?: string;
     birthDate?: string;
-    gender?: string;
+    gender?: boolean | null;
   };
   status?: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
 }
@@ -88,6 +88,13 @@ export interface CreateLegalEntityClientInput {
     registrationCountry?: string;
     registrationDate?: string;
   };
+  contactPerson?: {
+    firstName: string;
+    lastName?: string;
+    middleName?: string;
+    birthDate?: string;
+    gender?: boolean | null;
+  };
   status?: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
 }
 
@@ -96,7 +103,7 @@ export async function contactsCreateIndividualClient(
   namespaceSlug: string,
   input: CreateIndividualClientInput
 ): Promise<ClientRow> {
-  setGlobalAuthToken(token);
+  setContactsAppToken(token);
 
   const response = await contactsClient.request<{ createIndividualClient: ClientRow }>(
     CREATE_INDIVIDUAL_CLIENT_MUTATION as any,
@@ -112,7 +119,7 @@ export async function contactsCreateLegalEntityClient(
   namespaceSlug: string,
   input: CreateLegalEntityClientInput
 ): Promise<ClientRow> {
-  setGlobalAuthToken(token);
+  setContactsAppToken(token);
 
   const response = await contactsClient.request<{ createLegalEntityClient: ClientRow }>(
     CREATE_LEGAL_ENTITY_CLIENT_MUTATION as any,
@@ -129,7 +136,7 @@ export async function contactsUpdateClientStatus(
   id: string,
   status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED'
 ): Promise<any> {
-  setGlobalAuthToken(token);
+  setContactsAppToken(token);
 
   const response = await contactsClient.request<{
     updateClientStatus: {

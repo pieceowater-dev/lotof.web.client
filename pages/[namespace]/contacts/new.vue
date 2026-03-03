@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
@@ -9,6 +9,7 @@ import {
   type CreateIndividualClientInput,
   type CreateLegalEntityClientInput,
 } from '@/api/contacts/mutations';
+import { contactsListClients, type ClientRow } from '@/api/contacts/listClients';
 import { createIdentity } from '@/api/contacts/identities';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
@@ -21,6 +22,7 @@ const { token } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
 
 const nsSlug = computed(() => route.params.namespace as string);
+const CLIENT_TYPE_STORAGE_KEY = 'contacts.new.clientType';
 
 const clientType = ref<'INDIVIDUAL' | 'LEGAL'>('INDIVIDUAL');
 const clientTypeOptions = [
@@ -52,6 +54,13 @@ const whatsapp = ref('');
 const website = ref('');
 const comments = ref('');
 
+// Link contact person (individual) to legal company
+const legalCompanySearch = ref('');
+const legalCompanyOptions = ref<ClientRow[]>([]);
+const legalCompanyLoading = ref(false);
+const selectedLegalCompany = ref<ClientRow | null>(null);
+let legalCompanySearchTimeout: ReturnType<typeof setTimeout> | null = null;
+
 // Individual form - separate name fields
 const individualFirstName = ref('');
 const individualLastName = ref('');
@@ -67,6 +76,20 @@ const legalEntityForm = ref({
   registrationCountry: '',
   registrationDate: '',
 });
+
+// Contact person form (for legal entities)
+const contactPersonForm = ref({
+  firstName: '',
+  lastName: '',
+  middleName: '',
+  birthDate: '',
+  gender: '',
+});
+
+const legalEntityOptions = ref<ClientRow[]>([]);
+const legalEntityLoading = ref(false);
+const selectedExistingLegalEntity = ref<ClientRow | null>(null);
+let legalEntitySearchTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function sanitizePhoneInput(value: string): string {
   return value.replace(/[^\d+()\s-]/g, '');
@@ -95,9 +118,120 @@ function formatBinInput(value: string): string {
 }
 
 // Track changes for unsaved warning
-watch([phones, emails, telegram, whatsapp, website, comments, individualFirstName, individualLastName, individualMiddleName, individualBirthDate, individualGender, clientType, legalEntityForm], () => {
+watch([phones, emails, telegram, whatsapp, website, comments, individualFirstName, individualLastName, individualMiddleName, individualBirthDate, individualGender, legalEntityForm], () => {
   hasChanges.value = true;
 }, { deep: true });
+
+watch(selectedLegalCompany, () => {
+  hasChanges.value = true;
+});
+
+watch(clientType, (newType) => {
+  if (process.client) {
+    localStorage.setItem(CLIENT_TYPE_STORAGE_KEY, newType);
+  }
+  if (newType === 'LEGAL') {
+    legalCompanySearch.value = '';
+    legalCompanyOptions.value = [];
+    selectedLegalCompany.value = null;
+  } else {
+    selectedExistingLegalEntity.value = null;
+    legalEntityOptions.value = [];
+  }
+});
+
+watch(() => legalEntityForm.value.legalName, (value) => {
+  if (clientType.value !== 'LEGAL') return;
+
+  if (selectedExistingLegalEntity.value) {
+    const selectedName = selectedExistingLegalEntity.value.legalEntity?.legalName || '';
+    if (value.trim() !== selectedName) {
+      selectedExistingLegalEntity.value = null;
+    }
+  }
+
+  if (legalEntitySearchTimeout) clearTimeout(legalEntitySearchTimeout);
+  legalEntitySearchTimeout = setTimeout(async () => {
+    const q = value.trim();
+    if (!q || q.length < 2 || selectedExistingLegalEntity.value) {
+      legalEntityOptions.value = [];
+      return;
+    }
+
+    if (!token.value || !selectedNS.value) return;
+    try {
+      legalEntityLoading.value = true;
+      const { ensure } = useContactsToken();
+      const contactsToken = await ensure(selectedNS.value, token.value);
+      if (!contactsToken) return;
+
+      const response = await contactsListClients(contactsToken, selectedNS.value, {
+        search: q,
+        pagination: {
+          page: 1,
+          length: 'TEN',
+        },
+      });
+
+      const seen = new Set<string>();
+      legalEntityOptions.value = (response.rows || [])
+        .filter(item => item.client.clientType === 'LEGAL')
+        .filter((item) => {
+          if (seen.has(item.client.id)) return false;
+          seen.add(item.client.id);
+          return true;
+        })
+        .slice(0, 6);
+    } catch (err) {
+      logError('Failed to search existing legal entities:', err);
+      legalEntityOptions.value = [];
+    } finally {
+      legalEntityLoading.value = false;
+    }
+  }, 250);
+});
+
+watch(legalCompanySearch, (value) => {
+  if (clientType.value !== 'INDIVIDUAL') return;
+  if (legalCompanySearchTimeout) clearTimeout(legalCompanySearchTimeout);
+
+  legalCompanySearchTimeout = setTimeout(async () => {
+    const q = value.trim();
+    if (!q || q.length < 2) {
+      legalCompanyOptions.value = [];
+      return;
+    }
+
+    if (!token.value || !selectedNS.value) return;
+    try {
+      legalCompanyLoading.value = true;
+      const { ensure } = useContactsToken();
+      const contactsToken = await ensure(selectedNS.value, token.value);
+      if (!contactsToken) return;
+
+      const response = await contactsListClients(contactsToken, selectedNS.value, {
+        search: q,
+        pagination: {
+          page: 1,
+          length: 'TEN',
+        },
+        sort: {
+          field: 'createdAt',
+          by: 'DESC',
+        },
+      });
+
+      legalCompanyOptions.value = (response.rows || [])
+        .filter(item => item.client.clientType === 'LEGAL')
+        .slice(0, 6);
+    } catch (err) {
+      logError('Failed to search legal companies:', err);
+      legalCompanyOptions.value = [];
+    } finally {
+      legalCompanyLoading.value = false;
+    }
+  }, 250);
+});
 
 // Validation
 const isPhoneValid = (phone: string) => {
@@ -135,7 +269,7 @@ const isFormValid = computed(() => {
   }
   
   if (clientType.value === 'INDIVIDUAL') {
-    return individualFirstName.value.trim().length > 0 && individualLastName.value.trim().length > 0;
+    return individualFirstName.value.trim().length > 0;
   } else {
     return legalEntityForm.value.legalName.trim().length > 0;
   }
@@ -189,6 +323,13 @@ async function handleSubmit() {
   try {
     loading.value = true;
 
+    // Get contacts token before creating client
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) {
+      throw new Error('Failed to get contacts token');
+    }
+
     let clientId: string;
 
     // Create client - always with ACTIVE status
@@ -199,55 +340,94 @@ async function handleSubmit() {
           lastName: individualLastName.value.trim(),
           middleName: individualMiddleName.value.trim() || undefined,
           birthDate: individualBirthDate.value || undefined,
-          gender: individualGender.value || undefined,
+          gender: individualGender.value ? (individualGender.value === 'M' ? true : false) : undefined,
         },
         status: 'ACTIVE',
       };
-      const result = await contactsCreateIndividualClient(token.value, selectedNS.value, input);
+      const result = await contactsCreateIndividualClient(contactsToken, selectedNS.value, input);
       clientId = result.client.id;
     } else {
-      const input: CreateLegalEntityClientInput = {
-        legalEntity: {
-          legalName: legalEntityForm.value.legalName,
-          brandName: legalEntityForm.value.brandName || undefined,
-          binIin: legalEntityForm.value.binIin?.replace(/\s/g, '') || undefined,
-          registrationCountry: legalEntityForm.value.registrationCountry || undefined,
-          registrationDate: legalEntityForm.value.registrationDate || undefined,
-        },
-        status: 'ACTIVE',
-      };
-      const result = await contactsCreateLegalEntityClient(token.value, selectedNS.value, input);
-      clientId = result.client.id;
+      if (selectedExistingLegalEntity.value) {
+        clientId = selectedExistingLegalEntity.value.client.id;
+      } else {
+        const input: CreateLegalEntityClientInput = {
+          legalEntity: {
+            legalName: legalEntityForm.value.legalName,
+            brandName: legalEntityForm.value.brandName || undefined,
+            binIin: legalEntityForm.value.binIin?.replace(/\s/g, '') || undefined,
+            registrationCountry: legalEntityForm.value.registrationCountry || undefined,
+            registrationDate: legalEntityForm.value.registrationDate || undefined,
+          },
+          contactPerson: contactPersonForm.value.firstName ? {
+            firstName: contactPersonForm.value.firstName,
+            lastName: contactPersonForm.value.lastName || undefined,
+            middleName: contactPersonForm.value.middleName || undefined,
+            birthDate: contactPersonForm.value.birthDate || undefined,
+            gender: contactPersonForm.value.gender ? (contactPersonForm.value.gender === 'M' ? true : false) : undefined,
+          } : undefined,
+          status: 'ACTIVE',
+        };
+        const result = await contactsCreateLegalEntityClient(contactsToken, selectedNS.value, input);
+        clientId = result.client.id;
+      }
     }
-
-    // Get contacts token
-    const { ensure } = useContactsToken();
-    const contactsToken = await ensure(selectedNS.value, token.value);
     
     if (contactsToken) {
       // Create phone identities (max 5)
       const validPhonesToCreate = phones.value.filter(p => p.trim() && isPhoneValid(p)).slice(0, 5);
       for (let i = 0; i < validPhonesToCreate.length; i++) {
         const phone = validPhonesToCreate[i].trim();
-        await createIdentity(contactsToken, clientId, 'phone', phone.replace(/\D/g, ''), i === 0);
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'phone', phone.replace(/\D/g, ''), i === 0);
       }
 
       // Create email identities (max 5)
       const validEmailsToCreate = emails.value.filter(e => e.trim() && isEmailValid(e)).slice(0, 5);
       for (let i = 0; i < validEmailsToCreate.length; i++) {
         const email = validEmailsToCreate[i].trim();
-        await createIdentity(contactsToken, clientId, 'email', email, i === 0);
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'email', email, i === 0);
       }
 
       // Create other identities
       if (telegram.value.trim()) {
-        await createIdentity(contactsToken, clientId, 'telegram', telegram.value.trim());
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'telegram', telegram.value.trim());
       }
       if (whatsapp.value.trim()) {
-        await createIdentity(contactsToken, clientId, 'whatsapp', whatsapp.value.trim());
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'whatsapp', whatsapp.value.trim());
       }
       if (website.value.trim()) {
-        await createIdentity(contactsToken, clientId, 'website', website.value.trim());
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'website', website.value.trim());
+      }
+
+      // Link individual contact to selected legal company (if provided)
+      if (clientType.value === 'INDIVIDUAL' && selectedLegalCompany.value) {
+        const legalClientId = selectedLegalCompany.value.client.id;
+        const legalCompanyName = selectedLegalCompany.value.legalEntity?.legalName || '';
+        const personName = [individualLastName.value, individualFirstName.value, individualMiddleName.value]
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+        // Individual -> Company
+        await createIdentity(
+          contactsToken,
+          selectedNS.value,
+          clientId,
+          'company',
+          legalClientId,
+          false,
+          legalCompanyName,
+        );
+
+        // Company -> Contact Person
+        await createIdentity(
+          contactsToken,
+          selectedNS.value,
+          legalClientId,
+          'contact_person',
+          clientId,
+          false,
+          personName,
+        );
       }
     }
 
@@ -312,10 +492,63 @@ function preventUnload(e: BeforeUnloadEvent) {
   e.returnValue = '';
 }
 
+function getLegalCompanyLabel(item: ClientRow): string {
+  const legalName = item.legalEntity?.legalName || '';
+  const brandName = item.legalEntity?.brandName || '';
+  const binIin = item.legalEntity?.binIin || '';
+  if (brandName && binIin) return `${legalName} (${brandName}, ${binIin})`;
+  if (brandName) return `${legalName} (${brandName})`;
+  if (binIin) return `${legalName} (${binIin})`;
+  return legalName || item.client.id;
+}
+
+function chooseLegalCompany(item: ClientRow) {
+  selectedLegalCompany.value = item;
+  legalCompanySearch.value = getLegalCompanyLabel(item);
+  legalCompanyOptions.value = [];
+}
+
+function clearLegalCompany() {
+  selectedLegalCompany.value = null;
+  legalCompanySearch.value = '';
+  legalCompanyOptions.value = [];
+}
+
+function chooseExistingLegalEntity(item: ClientRow) {
+  selectedExistingLegalEntity.value = item;
+  legalEntityForm.value.legalName = item.legalEntity?.legalName || '';
+  legalEntityForm.value.brandName = item.legalEntity?.brandName || '';
+  legalEntityForm.value.binIin = formatBinInput(item.legalEntity?.binIin || '');
+  legalEntityForm.value.registrationCountry = item.legalEntity?.registrationCountry || '';
+  legalEntityForm.value.registrationDate = item.legalEntity?.registrationDate || '';
+  legalEntityOptions.value = [];
+}
+
+function clearSelectedExistingLegalEntity() {
+  selectedExistingLegalEntity.value = null;
+  legalEntityForm.value.legalName = '';
+  contactPersonForm.value = {
+    firstName: '',
+    lastName: '',
+    middleName: '',
+    birthDate: '',
+    gender: '',
+  };
+  legalEntityOptions.value = [];
+}
+
 // Auto-focus on phone input when page loads
 nextTick(() => {
   if (phoneInputRef.value) {
     phoneInputRef.value.$el?.querySelector('input')?.focus();
+  }
+});
+
+onMounted(() => {
+  if (!process.client) return;
+  const storedType = localStorage.getItem(CLIENT_TYPE_STORAGE_KEY);
+  if (storedType === 'INDIVIDUAL' || storedType === 'LEGAL') {
+    clientType.value = storedType;
   }
 });
 
@@ -498,7 +731,7 @@ useHead(() => ({
             </UFormGroup>
 
             <UFormGroup 
-              :label="t('common.contacts.lastName') + ' *'"
+              :label="t('common.contacts.lastName')"
             >
               <UInput
                 v-model="individualLastName"
@@ -518,6 +751,70 @@ useHead(() => ({
                 size="md"
               />
             </UFormGroup>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <UFormGroup :label="t('common.contacts.birthDate')">
+                <UInput
+                  v-model="individualBirthDate"
+                  type="date"
+                  size="md"
+                />
+              </UFormGroup>
+
+              <UFormGroup :label="t('common.contacts.gender')">
+                <USelect
+                  v-model="individualGender"
+                  :options="[
+                    { value: '', label: '-' },
+                    { value: 'M', label: t('common.contacts.male') },
+                    { value: 'F', label: t('common.contacts.female') },
+                  ]"
+                  size="md"
+                />
+              </UFormGroup>
+            </div>
+
+            <UFormGroup :label="t('common.contacts.legalEntity')" :description="t('common.contacts.attachLegalEntityDescription')">
+              <div class="space-y-2">
+                <UInput
+                  v-model="legalCompanySearch"
+                  type="text"
+                  :placeholder="t('common.contacts.searchLegalEntityPlaceholder')"
+                  size="md"
+                />
+
+                <div v-if="legalCompanyLoading" class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('common.contacts.searchingCompanies') }}
+                </div>
+
+                <div
+                  v-if="legalCompanyOptions.length > 0"
+                  class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900"
+                >
+                  <button
+                    v-for="item in legalCompanyOptions"
+                    :key="item.client.id"
+                    type="button"
+                    class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                    @click="chooseLegalCompany(item)"
+                  >
+                    {{ getLegalCompanyLabel(item) }}
+                  </button>
+                </div>
+
+                <div v-if="selectedLegalCompany" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
+                  <span class="text-blue-800 dark:text-blue-200">{{ t('common.contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
+                  <UButton
+                    type="button"
+                    icon="i-heroicons-x-mark"
+                    color="gray"
+                    variant="ghost"
+                    size="xs"
+                    @click="clearLegalCompany"
+                  />
+                </div>
+              </div>
+            </UFormGroup>
           </div>
 
           <div v-if="clientType === 'LEGAL'" class="space-y-3">
@@ -528,13 +825,46 @@ useHead(() => ({
               </h2>
             </div>
             
-            <UFormGroup :label="t('common.contacts.legalName') + ' *'">
-              <UInput
-                v-model="legalEntityForm.legalName"
-                type="text"
-                :placeholder="t('common.contacts.legalNamePlaceholder')"
-                size="md"
-              />
+            <UFormGroup :label="t('common.contacts.legalName') + ' *'" :description="t('common.contacts.searchToAvoidDuplicates')">
+              <div class="space-y-2">
+                <UInput
+                  v-model="legalEntityForm.legalName"
+                  type="text"
+                  :placeholder="t('common.contacts.legalNamePlaceholder')"
+                  size="md"
+                />
+
+                <div v-if="legalEntityLoading" class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('common.contacts.searchingSimilarCompanies') }}
+                </div>
+
+                <div
+                  v-if="legalEntityOptions.length > 0"
+                  class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-900"
+                >
+                  <button
+                    v-for="item in legalEntityOptions"
+                    :key="item.client.id"
+                    type="button"
+                    class="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 border-b border-gray-100 dark:border-gray-800 last:border-b-0"
+                    @click="chooseExistingLegalEntity(item)"
+                  >
+                    {{ getLegalCompanyLabel(item) }}
+                  </button>
+                </div>
+
+                <div v-if="selectedExistingLegalEntity" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
+                  <span class="text-blue-800 dark:text-blue-200">{{ t('common.contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
+                  <UButton
+                    type="button"
+                    icon="i-heroicons-x-mark"
+                    color="gray"
+                    variant="ghost"
+                    size="xs"
+                    @click="clearSelectedExistingLegalEntity"
+                  />
+                </div>
+              </div>
             </UFormGroup>
 
             <UFormGroup :label="t('common.contacts.brandName')">
@@ -543,6 +873,7 @@ useHead(() => ({
                 type="text"
                 :placeholder="t('common.contacts.brandNamePlaceholder')"
                 size="md"
+                :disabled="!!selectedExistingLegalEntity"
               />
             </UFormGroup>
 
@@ -552,6 +883,7 @@ useHead(() => ({
                 type="text"
                 :placeholder="t('common.contacts.binIinPlaceholder')"
                 size="md"
+                :disabled="!!selectedExistingLegalEntity"
               />
             </UFormGroup>
 
@@ -562,6 +894,7 @@ useHead(() => ({
                   type="text"
                   :placeholder="t('common.contacts.registrationCountryPlaceholder')"
                   size="md"
+                  :disabled="!!selectedExistingLegalEntity"
                 />
               </UFormGroup>
 
@@ -570,8 +903,72 @@ useHead(() => ({
                   v-model="legalEntityForm.registrationDate"
                   type="date"
                   size="md"
+                  :disabled="!!selectedExistingLegalEntity"
                 />
               </UFormGroup>
+            </div>
+
+            <!-- Contact Person Section -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+                {{ t('common.contacts.contactPersonOptional') }}
+              </h4>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <UFormGroup :label="t('common.contacts.firstName')">
+                  <UInput
+                    v-model="contactPersonForm.firstName"
+                    type="text"
+                    :placeholder="t('common.contacts.firstName')"
+                    size="md"
+                    :disabled="!!selectedExistingLegalEntity"
+                  />
+                </UFormGroup>
+
+                <UFormGroup :label="t('common.contacts.lastName')">
+                  <UInput
+                    v-model="contactPersonForm.lastName"
+                    type="text"
+                    :placeholder="t('common.contacts.lastName')"
+                    size="md"
+                    :disabled="!!selectedExistingLegalEntity"
+                  />
+                </UFormGroup>
+              </div>
+
+              <UFormGroup :label="t('common.contacts.middleName')">
+                <UInput
+                  v-model="contactPersonForm.middleName"
+                  type="text"
+                  :placeholder="t('common.contacts.middleName')"
+                  size="md"
+                  :disabled="!!selectedExistingLegalEntity"
+                />
+              </UFormGroup>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <UFormGroup :label="t('common.contacts.birthDate')">
+                  <UInput
+                    v-model="contactPersonForm.birthDate"
+                    type="date"
+                    size="md"
+                    :disabled="!!selectedExistingLegalEntity"
+                  />
+                </UFormGroup>
+
+                <UFormGroup :label="t('common.contacts.gender')">
+                  <USelect
+                    v-model="contactPersonForm.gender"
+                    :options="[
+                      { value: '', label: '-' },
+                      { value: 'M', label: t('common.contacts.male') },
+                      { value: 'F', label: t('common.contacts.female') },
+                    ]"
+                    size="md"
+                    :disabled="!!selectedExistingLegalEntity"
+                  />
+                </UFormGroup>
+              </div>
             </div>
           </div>
 
