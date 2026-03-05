@@ -2,21 +2,28 @@
 import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import { useContactsToken } from '@/composables/useContactsToken';
+import { useNamespace } from '@/composables/useNamespace';
 import { useToast } from '#imports';
 import type { Tag } from '@/api/contacts/tags';
-import { listTags, createTag, updateTag, deleteTag } from '@/api/contacts/tags';
+import { listTags, createTag, updateTag, deleteTag, addTagToClient } from '@/api/contacts/tags';
 
 const { t } = useI18n();
 const toast = useToast();
 const { token } = useAuth();
+const { ensure } = useContactsToken();
+const { selected: selectedNS } = useNamespace();
 
 const props = defineProps<{
   isOpen: boolean;
+  mode?: 'manage' | 'select'; // 'manage' for CRUD, 'select' for choosing tags for a client
+  clientId?: string;
 }>();
 
 const emit = defineEmits<{
   (e: 'close'): void;
   (e: 'tagCreated', tag: Tag): void;
+  (e: 'tagAdded', tag: Tag): void;
 }>();
 
 const tags = ref<Tag[]>([]);
@@ -25,6 +32,11 @@ const isCreating = ref(false);
 const newTagName = ref('');
 const editingId = ref<string | null>(null);
 const editingName = ref('');
+const selectedTagId = ref<string | null>(null);
+const isAddingTag = ref(false);
+
+const mode = computed(() => props.mode || 'manage');
+const isSelectMode = computed(() => mode.value === 'select');
 
 const displayTags = computed(() => {
   if (editingId.value) {
@@ -36,10 +48,13 @@ const displayTags = computed(() => {
 });
 
 async function loadTags() {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
     loading.value = true;
-    const response = await listTags(token.value);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    const response = await listTags(contactsToken, selectedNS.value);
     tags.value = response.tags?.rows || [];
   } catch (error) {
     toast.add({
@@ -53,14 +68,25 @@ async function loadTags() {
 }
 
 async function handleCreateTag() {
-  if (!newTagName.value.trim() || !token.value) return;
+  if (!newTagName.value.trim() || !token.value || !selectedNS.value) return;
   
   try {
     isCreating.value = true;
-    const newTag = await createTag(token.value, newTagName.value.trim());
-    tags.value.push(newTag.createTag);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    const response = await createTag(contactsToken, selectedNS.value, newTagName.value.trim());
+    const newTag = response.createTag;
+    tags.value.push(newTag);
     newTagName.value = '';
-    emit('tagCreated', newTag.createTag);
+    emit('tagCreated', newTag);
+    
+    // If in select mode, immediately select and add the new tag
+    if (isSelectMode && props.clientId) {
+      selectedTagId.value = newTag.id;
+      await handleAddTag(newTag.id);
+    }
+    
     toast.add({
       title: t('common.success'),
       description: 'Tag created successfully',
@@ -78,13 +104,16 @@ async function handleCreateTag() {
 }
 
 async function handleUpdateTag() {
-  if (!editingId.value || !editingName.value.trim() || !token.value) return;
+  if (!editingId.value || !editingName.value.trim() || !token.value || !selectedNS.value) return;
   
   try {
-    const updated = await updateTag(token.value, editingId.value, editingName.value.trim());
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    const response = await updateTag(contactsToken, selectedNS.value, editingId.value, editingName.value.trim());
     const index = tags.value.findIndex(t => t.id === editingId.value);
     if (index !== -1) {
-      tags.value[index] = updated.updateTag;
+      tags.value[index] = response.updateTag;
     }
     editingId.value = null;
     editingName.value = '';
@@ -103,9 +132,12 @@ async function handleUpdateTag() {
 }
 
 async function handleDeleteTag(id: string) {
-  if (!token.value) return;
+  if (!token.value || !selectedNS.value) return;
   try {
-    await deleteTag(token.value, id);
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    await deleteTag(contactsToken, selectedNS.value, id);
     tags.value = tags.value.filter(t => t.id !== id);
     toast.add({
       title: t('common.success'),
@@ -118,6 +150,48 @@ async function handleDeleteTag(id: string) {
       description: 'Failed to delete tag',
       color: 'red',
     });
+  }
+}
+
+async function handleAddTag(tagId: string) {
+  if (!props.clientId || !token.value || !selectedNS.value) return;
+  
+  try {
+    isAddingTag.value = true;
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    await addTagToClient(contactsToken, selectedNS.value, props.clientId, tagId);
+    const tag = tags.value.find(t => t.id === tagId);
+    if (tag) {
+      emit('tagAdded', tag);
+    }
+    
+    emit('close');
+    toast.add({
+      title: t('common.success'),
+      description: 'Tag added to client',
+      color: 'green',
+    });
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error);
+    // Check if it's a duplicate key error
+    if (errorMessage.includes('duplicate key') || errorMessage.includes('23505')) {
+      toast.add({
+        title: t('common.info'),
+        description: 'This tag is already assigned to the client',
+        color: 'blue',
+      });
+      emit('close');
+    } else {
+      toast.add({
+        title: t('common.error'),
+        description: 'Failed to add tag',
+        color: 'red',
+      });
+    }
+  } finally {
+    isAddingTag.value = false;
   }
 }
 
@@ -139,13 +213,13 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('close')" title="Manage Tags">
+  <UModal :model-value="isOpen" @update:model-value="$emit('close')" :title="isSelectMode ? 'Add tag to client' : 'Manage Tags'">
     <div class="p-4 space-y-4">
       <!-- Create new tag -->
       <div class="flex gap-2">
         <UInput
           v-model="newTagName"
-          placeholder="New tag name..."
+          :placeholder="isSelectMode ? 'New tag name or select below...' : 'New tag name...'"
           size="sm"
           @keyup.enter="handleCreateTag"
         />
@@ -154,7 +228,7 @@ watch(() => props.isOpen, (newVal) => {
           @click="handleCreateTag"
           size="sm"
         >
-          {{ t('common.add') }}
+          {{ isSelectMode ? t('common.create') : t('common.add') }}
         </UButton>
       </div>
 
@@ -164,60 +238,90 @@ watch(() => props.isOpen, (newVal) => {
       </div>
 
       <div v-else class="space-y-2 max-h-[400px] overflow-y-auto">
-        <div
-          v-for="tag in displayTags"
-          :key="tag.id"
-          class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
-        >
-          <div class="flex-1">
-            <input
-              v-if="editingId === tag.id"
-              v-model="editingName"
-              type="text"
-              class="w-full px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-              @keyup.enter="handleUpdateTag"
-              @keyup.escape="cancelEdit"
+        <!-- Select mode: just show tags to select -->
+        <template v-if="isSelectMode">
+          <div
+            v-for="tag in displayTags"
+            :key="tag.id"
+            @click="handleAddTag(tag.id)"
+            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+            :class="{ 'ring-2 ring-blue-500': selectedTagId === tag.id }"
+          >
+            <div class="flex items-center gap-2">
+              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <span class="text-sm font-medium">{{ tag.name }}</span>
+            </div>
+            <UIcon 
+              v-if="isAddingTag && selectedTagId === tag.id"
+              name="lucide:loader-2" 
+              class="w-4 h-4 animate-spin text-blue-500"
             />
-            <span v-else class="text-sm font-medium">{{ tag.name }}</span>
-          </div>
-          <div class="flex gap-1">
-            <UButton
-              v-if="editingId === tag.id"
-              size="xs"
-              color="green"
-              variant="ghost"
-              icon="lucide:check"
-              @click="handleUpdateTag"
-            />
-            <UButton
+            <UIcon
               v-else
-              size="xs"
-              color="blue"
-              variant="ghost"
-              icon="lucide:edit-2"
-              @click="startEdit(tag)"
-            />
-            <UButton
-              v-if="editingId === tag.id"
-              size="xs"
-              color="gray"
-              variant="ghost"
-              icon="lucide:x"
-              @click="cancelEdit"
-            />
-            <UButton
-              v-else
-              size="xs"
-              color="red"
-              variant="ghost"
-              icon="lucide:trash-2"
-              @click="handleDeleteTag(tag.id)"
+              name="lucide:plus-circle"
+              class="w-4 h-4 text-gray-400 hover:text-blue-500"
             />
           </div>
-        </div>
+        </template>
+
+        <!-- Manage mode: show all CRUD operations -->
+        <template v-else>
+          <div
+            v-for="tag in displayTags"
+            :key="tag.id"
+            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+          >
+            <div class="flex items-center gap-2 flex-1">
+              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+              <input
+                v-if="editingId === tag.id"
+                v-model="editingName"
+                type="text"
+                class="flex-1 px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                @keyup.enter="handleUpdateTag"
+                @keyup.escape="cancelEdit"
+              />
+              <span v-else class="text-sm font-medium">{{ tag.name }}</span>
+            </div>
+            <div class="flex gap-1">
+              <UButton
+                v-if="editingId === tag.id"
+                size="xs"
+                color="green"
+                variant="ghost"
+                icon="lucide:check"
+                @click="handleUpdateTag"
+              />
+              <UButton
+                v-else
+                size="xs"
+                color="blue"
+                variant="ghost"
+                icon="lucide:edit-2"
+                @click="startEdit(tag)"
+              />
+              <UButton
+                v-if="editingId === tag.id"
+                size="xs"
+                color="gray"
+                variant="ghost"
+                icon="lucide:x"
+                @click="cancelEdit"
+              />
+              <UButton
+                v-else
+                size="xs"
+                color="red"
+                variant="ghost"
+                icon="lucide:trash-2"
+                @click="handleDeleteTag(tag.id)"
+              />
+            </div>
+          </div>
+        </template>
 
         <div v-if="!loading && tags.length === 0" class="text-center py-8 text-gray-500 text-sm">
-          No tags yet. Create one to get started.
+          {{ isSelectMode ? 'No tags available. Create one first.' : 'No tags yet. Create one to get started.' }}
         </div>
       </div>
     </div>

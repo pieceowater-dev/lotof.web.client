@@ -86,64 +86,80 @@ const REMOVE_TAG_FROM_CLIENT_MUTATION = gql`
   }
 `;
 
-export async function listTags(token: string, search?: string) {
+export async function listTags(token: string, namespaceSlug: string, search?: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ tags: TagListResponse['tags'] }>(LIST_TAGS_QUERY, {
     filter: search ? { search } : {},
+  }, {
+    headers: { Namespace: namespaceSlug },
   });
 }
 
-export async function getClientTags(token: string, clientId: string) {
+export async function getClientTags(token: string, namespaceSlug: string, clientId: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<ClientTagsResponse>(CLIENT_TAGS_QUERY, {
     clientId,
+  }, {
+    headers: { Namespace: namespaceSlug },
   });
 }
 
-export async function createTag(token: string, name: string) {
+export async function createTag(token: string, namespaceSlug: string, name: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ createTag: Tag }>(CREATE_TAG_MUTATION, {
     input: { name },
+  }, {
+    headers: { Namespace: namespaceSlug },
   });
 }
 
-export async function updateTag(token: string, id: string, name: string) {
+export async function updateTag(token: string, namespaceSlug: string, id: string, name: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ updateTag: Tag }>(UPDATE_TAG_MUTATION, {
     input: { id, name },
+  }, {
+    headers: { Namespace: namespaceSlug },
   });
 }
 
-export async function deleteTag(token: string, id: string) {
+export async function deleteTag(token: string, namespaceSlug: string, id: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ deleteTag: { success: boolean } }>(DELETE_TAG_MUTATION, {
     id,
+  }, {
+    headers: { Namespace: namespaceSlug },
   });
 }
 
-export async function addTagToClient(token: string, clientId: string, tagId: string) {
+export async function addTagToClient(token: string, namespaceSlug: string, clientId: string, tagId: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ addTagToClient: { success: boolean } }>(
     ADD_TAG_TO_CLIENT_MUTATION,
     {
       input: { clientId, tagId },
+    },
+    {
+      headers: { Namespace: namespaceSlug },
     }
   );
 }
 
-export async function removeTagFromClient(token: string, clientId: string, tagId: string) {
+export async function removeTagFromClient(token: string, namespaceSlug: string, clientId: string, tagId: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ removeTagFromClient: { success: boolean } }>(
     REMOVE_TAG_FROM_CLIENT_MUTATION,
     {
       input: { clientId, tagId },
+    },
+    {
+      headers: { Namespace: namespaceSlug },
     }
   );
 }

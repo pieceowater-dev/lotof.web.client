@@ -18,6 +18,7 @@ import ContactIdentities from '@/components/contacts/ContactIdentities.vue';
 import ContactLoyalty from '@/components/contacts/ContactLoyalty.vue';
 import ContactTimeline from '@/components/contacts/ContactTimeline.vue';
 import ContactTags from '@/components/contacts/ContactTags.vue';
+import TagsModal from '@/components/contacts/TagsModal.vue';
 
 definePageMeta({
   viewTransition: false,
@@ -41,6 +42,7 @@ const stampCards = ref<StampCard[]>([]);
 const stampProgress = ref<ClientStampProgress[]>([]);
 const loading = ref(true);
 const statusChangeLoading = ref(false);
+const isTagsModalOpen = ref(false);
 
 // Mock data for preview
 const useMockData = ref(false);
@@ -60,7 +62,7 @@ const editingFirstName = ref('');
 const editingLastName = ref('');
 const editingMiddleName = ref('');
 const editingBirthDate = ref('');
-const editingGender = ref('');
+const editingGender = ref<boolean | null>(null);
 const editingLegalName = ref('');
 const editingBrandName = ref('');
 const editingBinIin = ref('');
@@ -197,7 +199,7 @@ async function loadClient() {
         lastName: 'Петров',
         middleName: 'Иванович',
         birthDate: '1990-05-15',
-        gender: 'male',
+        gender: true,
       },
     };
     
@@ -507,7 +509,7 @@ async function loadClient() {
     const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, clientTierResult, stampCardsResult] = 
       await Promise.allSettled([
         getClientIdentities(contactsToken, fullClientId, selectedNS.value),
-        getClientTags(contactsToken, fullClientId),
+        getClientTags(contactsToken, selectedNS.value, fullClientId),
         getClientEvents(contactsToken, fullClientId),
         getBonusBalance(contactsToken, fullClientId),
         getClientTier(contactsToken, fullClientId),
@@ -689,7 +691,7 @@ function startEditPersonalInfo() {
     editingLastName.value = client.value.individual.lastName;
     editingMiddleName.value = client.value.individual.middleName || '';
     editingBirthDate.value = client.value.individual.birthDate ? new Date(client.value.individual.birthDate).toISOString().split('T')[0] : '';
-    editingGender.value = client.value.individual.gender || '';
+    editingGender.value = client.value.individual.gender !== undefined ? client.value.individual.gender : null;
   } else if (client.value.legalEntity) {
     editingLegalName.value = client.value.legalEntity.legalName;
     editingBrandName.value = client.value.legalEntity.brandName || '';
@@ -865,16 +867,16 @@ function removeEmailField(index: number) {
             @save-edit="savePersonalInfo"
             @cancel-edit="cancelEditPersonalInfo"
             @update-field="(field, value) => {
-              if (field === 'firstName') editingFirstName = value;
-              if (field === 'lastName') editingLastName = value;
-              if (field === 'middleName') editingMiddleName = value;
-              if (field === 'birthDate') editingBirthDate = value;
-              if (field === 'gender') editingGender = value;
-              if (field === 'legalName') editingLegalName = value;
-              if (field === 'brandName') editingBrandName = value;
-              if (field === 'binIin') editingBinIin = value;
-              if (field === 'registrationCountry') editingRegistrationCountry = value;
-              if (field === 'registrationDate') editingRegistrationDate = value;
+              if (field === 'firstName') editingFirstName = value as string;
+              if (field === 'lastName') editingLastName = value as string;
+              if (field === 'middleName') editingMiddleName = value as string;
+              if (field === 'birthDate') editingBirthDate = value as string;
+              if (field === 'gender') editingGender = value as (boolean | null);
+              if (field === 'legalName') editingLegalName = value as string;
+              if (field === 'brandName') editingBrandName = value as string;
+              if (field === 'binIin') editingBinIin = value as string;
+              if (field === 'registrationCountry') editingRegistrationCountry = value as string;
+              if (field === 'registrationDate') editingRegistrationDate = value as string;
             }"
           />
 
@@ -910,7 +912,13 @@ function removeEmailField(index: number) {
           />
 
           <!-- Tags Section -->
-          <ContactTags :tags="tags" />
+          <ContactTags 
+            :tags="tags" 
+            :client-id="client?.client.id"
+            @open-tags-modal="isTagsModalOpen = true"
+            @tag-added="loadClient"
+            @tag-removed="loadClient"
+          />
         </div>
 
         <!-- Right Column - Timeline -->
@@ -919,5 +927,14 @@ function removeEmailField(index: number) {
         </div>
       </div>
     </div>
+
+    <!-- Tags Modal -->
+    <TagsModal
+      :is-open="isTagsModalOpen"
+      mode="select"
+      :client-id="client?.client.id"
+      @close="isTagsModalOpen = false"
+      @tag-added="loadClient"
+    />
   </div>
 </template>

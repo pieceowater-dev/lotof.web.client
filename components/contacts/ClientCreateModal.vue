@@ -52,7 +52,7 @@ const individualForm = ref({
   lastName: '',
   middleName: '',
   birthDate: '',
-  gender: '',
+  gender: null as boolean | null,
 });
 
 // Legal entity form
@@ -70,7 +70,7 @@ const contactPersonForm = ref({
   lastName: '',
   middleName: '',
   birthDate: '',
-  gender: '',
+  gender: null as boolean | null,
 });
 
 // Client status
@@ -179,7 +179,7 @@ async function handleSubmit() {
           lastName: individualForm.value.lastName,
           middleName: individualForm.value.middleName || undefined,
           birthDate: individualForm.value.birthDate || undefined,
-          gender: individualForm.value.gender ? (individualForm.value.gender === 'M' ? true : false) : undefined,
+          gender: individualForm.value.gender !== null ? individualForm.value.gender : undefined,
         },
         status: clientStatus.value,
       };
@@ -199,7 +199,7 @@ async function handleSubmit() {
           lastName: contactPersonForm.value.lastName || undefined,
           middleName: contactPersonForm.value.middleName || undefined,
           birthDate: contactPersonForm.value.birthDate || undefined,
-          gender: contactPersonForm.value.gender ? (contactPersonForm.value.gender === 'M' ? true : false) : undefined,
+          gender: contactPersonForm.value.gender !== null ? contactPersonForm.value.gender : undefined,
         } : undefined,
         status: clientStatus.value,
       };
@@ -468,14 +468,16 @@ function handleKeyDown(event: KeyboardEvent) {
             </UFormGroup>
 
             <UFormGroup :label="t('common.contacts.gender')">
+              <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
               <USelect
-                v-model="individualForm.gender"
+                :model-value="individualForm.gender"
                 :options="[
-                  { value: '', label: '—' },
-                  { value: 'M', label: t('common.contacts.male') },
-                  { value: 'F', label: t('common.contacts.female') },
+                  { value: null, label: '--' },
+                  { value: true, label: t('common.contacts.male') },
+                  { value: false, label: t('common.contacts.female') },
                 ]"
                 size="lg"
+                @update:model-value="(val: any) => individualForm.gender = val"
               />
             </UFormGroup>
           </div>
@@ -586,14 +588,16 @@ function handleKeyDown(event: KeyboardEvent) {
                 </UFormGroup>
 
                 <UFormGroup :label="t('common.contacts.gender')">
+                  <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
-                    v-model="contactPersonForm.gender"
+                    :model-value="contactPersonForm.gender"
                     :options="[
-                      { value: '', label: '-' },
-                      { value: 'M', label: t('common.contacts.male') },
-                      { value: 'F', label: t('common.contacts.female') },
+                      { value: null, label: '--' },
+                      { value: true, label: t('common.contacts.male') },
+                      { value: false, label: t('common.contacts.female') },
                     ]"
                     size="lg"
+                    @update:model-value="(val: any) => contactPersonForm.gender = val"
                   />
                 </UFormGroup>
               </div>

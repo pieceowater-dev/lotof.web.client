@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import ContactTags from './ContactTags.vue';
 
 const { t } = useI18n();
 
 const props = defineProps<{
   client: ClientRow | null;
+}>();
+
+const emit = defineEmits<{
+  (e: 'openTagsModal'): void;
 }>();
 
 const clientName = computed(() => {
@@ -175,5 +180,12 @@ const clientType = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Tags Card -->
+    <ContactTags
+      :tags="client.tags || []"
+      :client-id="client.client.id"
+      @open-tags-modal="$emit('openTagsModal')"
+    />
   </div>
 </template>

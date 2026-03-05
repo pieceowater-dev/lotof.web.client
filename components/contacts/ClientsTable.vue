@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import FinderStyleSearch from './FinderStyleSearch.vue';
 
 const { t } = useI18n();
 
@@ -9,7 +10,7 @@ const props = defineProps<{
   clients: ClientRow[];
   loading?: boolean;
   searchQuery?: string;
-  selectedTags?: string[];
+  selectedTags?: Array<{ id: string; name: string }>;
   page?: number;
   pageSize?: number;
   totalPages?: number;
@@ -22,10 +23,11 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'rowClick', client: ClientRow): void;
   (e: 'update:searchQuery', value: string): void;
-  (e: 'update:selectedTags', value: string[]): void;
+  (e: 'update:selectedTags', value: Array<{ id: string; name: string }>): void;
   (e: 'update:page', value: number): void;
   (e: 'update:pageSize', value: number): void;
   (e: 'update:sort', value: { field: string; direction: 'asc' | 'desc' }): void;
+  (e: 'openTagsModal', clientId: string): void;
 }>();
 
 // Local state for pagination that syncs with props
@@ -38,7 +40,10 @@ watch(() => props.page, (newPage) => {
 });
 
 watch(() => props.pageSize, (newPageSize) => {
-  if (newPageSize !== undefined) localPageSize.value = newPageSize;
+  if (newPageSize !== undefined) {
+    const numValue = typeof newPageSize === 'number' ? newPageSize : parseInt(String(newPageSize), 10);
+    localPageSize.value = numValue;
+  }
 });
 
 // Emit events when local state changes
@@ -61,12 +66,14 @@ watch(localPage, (newPage) => {
 });
 
 watch(localPageSize, (newPageSize) => {
+  // Ensure it's always a number
+  const numValue = typeof newPageSize === 'number' ? newPageSize : parseInt(String(newPageSize), 10);
   // Client-side only: Prevent view transition errors when document is hidden
   if (process.client) {
     if (document.visibilityState !== 'visible') {
       const handleVisibilityChange = () => {
         if (document.visibilityState === 'visible') {
-          emit('update:pageSize', newPageSize);
+          emit('update:pageSize', numValue);
           document.removeEventListener('visibilitychange', handleVisibilityChange);
         }
       };
@@ -74,7 +81,7 @@ watch(localPageSize, (newPageSize) => {
       return;
     }
   }
-  emit('update:pageSize', newPageSize);
+  emit('update:pageSize', numValue);
 });
 
 const page = computed<number>(() => localPage.value);
@@ -109,17 +116,13 @@ const defaultColumns: ColumnDef[] = [
 ];
 
 const columns = ref<ColumnDef[]>([...defaultColumns]);
-const internalSearchQuery = ref(props.searchQuery || '');
-const searchInputRef = ref<HTMLInputElement | null>(null);
 
-const pageSizeOptions = [10, 20, 50, 100];
-
-// Watch for external searchQuery changes (from parent)
-watch(() => props.searchQuery, (newSearch) => {
-  if (newSearch !== undefined && newSearch !== internalSearchQuery.value) {
-    internalSearchQuery.value = newSearch;
-  }
-});
+const pageSizeOptions = [
+  { value: 10, label: '10' },
+  { value: 20, label: '20' },
+  { value: 50, label: '50' },
+  { value: 100, label: '100' }
+];
 
 // Sorting state
 const sortBy = ref<string | null>(props.sortField ?? 'createdAt');
@@ -179,18 +182,6 @@ watch(() => sortedClients.value.length, () => {
   }
 });
 
-// Debounce search
-let searchTimeout: ReturnType<typeof setTimeout> | null = null;
-watch(internalSearchQuery, (newVal) => {
-  if (searchTimeout) clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    emit('update:searchQuery', newVal);
-  }, 250);
-});
-
-// Track if search should be focused
-const shouldFocusSearch = ref(false);
-
 // Load column widths from localStorage
 onMounted(() => {
   try {
@@ -211,22 +202,6 @@ onMounted(() => {
     ...col,
     label: t(`common.contacts.${col.key}`) || col.label,
   }));
-  
-  // Focus search input when component mounts
-  nextTick(() => {
-    if (searchInputRef.value) {
-      searchInputRef.value.focus();
-    }
-  });
-});
-
-// Focus search input when search updates
-watch(internalSearchQuery, () => {
-  nextTick(() => {
-    if (searchInputRef.value && shouldFocusSearch.value) {
-      searchInputRef.value.focus();
-    }
-  });
 });
 
 // Save column widths to localStorage
@@ -349,65 +324,32 @@ function handleRowClick(client: ClientRow) {
 }
 
 // Mock tags for now - will be replaced with real data from backend
-function getClientTags(client: ClientRow): string[] {
-  // TODO: Replace with real tags from client object when backend supports it
-  return [];
+function getClientTags(client: ClientRow): Array<{ id: string; name: string }> {
+  return client.tags || [];
 }
 
-function removeSearchTag(tag: string) {
-  const tags = props.selectedTags?.filter(t => t !== tag) || [];
-  emit('update:selectedTags', tags);
+function openTagsModal(clientId: string) {
+  emit('openTagsModal', clientId);
 }
 
-function clearSearch() {
-  internalSearchQuery.value = '';
-  emit('update:searchQuery', '');
-  emit('update:selectedTags', []);
+function addTagToFilter(tagId: string, tagName: string) {
+  const tags = props.selectedTags || [];
+  if (!tags.find(t => t.id === tagId)) {
+    emit('update:selectedTags', [...tags, { id: tagId, name: tagName }]);
+  }
 }
 </script>
 
 <template>
   <div class="relative overflow-hidden rounded-xl shadow-lg ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900">
-    <!-- Search bar -->
+    <!-- Finder-style search bar -->
     <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
-      <div class="flex items-center gap-2">
-        <div class="relative flex-1">
-          <UIcon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            ref="searchInputRef"
-            v-model="internalSearchQuery"
-            type="text"
-            :placeholder="t('common.contacts.searchPlaceholder') || 'Search clients...'"
-            @focus="shouldFocusSearch = true"
-            @blur="shouldFocusSearch = false"
-            class="w-full pl-10 pr-10 py-2 text-sm bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent"
-          />
-          <button
-            v-if="internalSearchQuery || (selectedTags && selectedTags.length > 0)"
-            @click="clearSearch"
-            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          >
-            <UIcon name="lucide:x" class="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-      
-      <!-- Selected tags (Finder-style chips) -->
-      <div v-if="selectedTags && selectedTags.length > 0" class="flex flex-wrap gap-1.5 mt-2">
-        <div
-          v-for="tag in selectedTags"
-          :key="tag"
-          class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-        >
-          <span>{{ tag }}</span>
-          <button
-            @click.stop="removeSearchTag(tag)"
-            class="hover:bg-blue-200 dark:hover:bg-blue-800 rounded transition-colors"
-          >
-            <UIcon name="lucide:x" class="w-3 h-3" />
-          </button>
-        </div>
-      </div>
+      <FinderStyleSearch
+        :selected-tags="selectedTags"
+        :search-query="searchQuery"
+        @update:selected-tags="(tags) => emit('update:selectedTags', tags)"
+        @update:search-query="(query) => emit('update:searchQuery', query)"
+      />
     </div>
 
     <!-- No blocking overlay to avoid table blinking on updates -->
@@ -459,8 +401,26 @@ function clearSearch() {
 
         <!-- Body -->
         <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
+          <!-- Loading skeleton -->
+          <template v-if="loading">
+            <tr
+              v-for="i in pageSize"
+              :key="`skeleton-${i}`"
+              class="animate-pulse"
+            >
+              <td
+                v-for="(col, colIndex) in columns"
+                :key="`skeleton-${i}-${col.key}`"
+                :style="{ width: `${col.width}px` }"
+                class="px-4 py-3"
+              >
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded" :class="colIndex === 0 ? 'w-6' : colIndex === 2 ? 'w-32' : 'w-24'"></div>
+              </td>
+            </tr>
+          </template>
+
           <!-- Empty state -->
-          <tr v-if="!loading && paginatedClients.length === 0">
+          <tr v-else-if="paginatedClients.length === 0">
             <td :colspan="columns.length" class="px-4 py-12 text-center">
               <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                 <UIcon name="lucide:inbox" class="w-12 h-12 mb-2 opacity-50" />
@@ -471,9 +431,11 @@ function clearSearch() {
 
           <!-- Data rows -->
           <tr
+            v-else
             v-for="client in paginatedClients"
             :key="client.client.id"
-            class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+            @click="emit('rowClick', client)"
           >
             <!-- Type -->
             <td
@@ -550,16 +512,24 @@ function clearSearch() {
               :style="{ width: `${columns[6].width}px` }"
               class="px-4 py-3 text-sm"
             >
-              <div class="flex flex-wrap gap-1">
-                <UBadge
+              <div class="flex flex-wrap gap-1 items-center">
+                <button
                   v-for="tag in getClientTags(client)"
-                  :key="tag"
-                  color="gray"
-                  size="xs"
-                  variant="soft"
+                  :key="tag.id"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  @click.stop="addTagToFilter(tag.id, tag.name)"
+                  :title="`Filter by ${tag.name}`"
                 >
-                  {{ tag }}
-                </UBadge>
+                  <UIcon name="lucide:tag" class="w-3 h-3 text-gray-500 dark:text-gray-400" />
+                  <span>{{ tag.name }}</span>
+                </button>
+                <button
+                  @click.stop="openTagsModal(client.client.id)"
+                  class="inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  :title="getClientTags(client).length === 0 ? 'Add tag' : 'Add more tags'"
+                >
+                  <UIcon name="lucide:plus" class="w-3 h-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
                 <span v-if="getClientTags(client).length === 0" class="text-gray-400 text-xs">—</span>
               </div>
             </td>
@@ -606,8 +576,11 @@ function clearSearch() {
           <div class="flex items-center gap-2">
             <span class="text-xs text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</span>
             <USelect 
-              v-model="localPageSize" 
+              :model-value="localPageSize" 
+              @update:model-value="(val) => localPageSize = typeof val === 'number' ? val : parseInt(String(val), 10)"
               :options="pageSizeOptions" 
+              option-attribute="label"
+              value-attribute="value"
               size="xs"
               class="w-20"
             />

@@ -9,7 +9,7 @@ interface Props {
   editingLastName?: string;
   editingMiddleName?: string;
   editingBirthDate?: string;
-  editingGender?: string;
+  editingGender?: boolean | null;
   editingLegalName?: string;
   editingBrandName?: string;
   editingBinIin?: string;
@@ -21,7 +21,7 @@ interface Emits {
   startEdit: [];
   saveEdit: [];
   cancelEdit: [];
-  updateField: [field: string, value: string];
+  updateField: [field: string, value: string | boolean | null];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -29,7 +29,7 @@ const props = withDefaults(defineProps<Props>(), {
   editingLastName: '',
   editingMiddleName: '',
   editingBirthDate: '',
-  editingGender: '',
+  editingGender: null,
   editingLegalName: '',
   editingBrandName: '',
   editingBinIin: '',
@@ -42,18 +42,15 @@ const { t } = useI18n();
 
 const isIndividual = computed(() => props.client?.client.clientType === 'INDIVIDUAL');
 
-function formatGender(gender?: string): string {
-  if (!gender) return '';
-
-  const normalized = gender.toUpperCase();
-  if (normalized === 'M' || normalized === 'MALE') {
+function formatGender(gender?: boolean | null): string {
+  if (gender === null || gender === undefined) return '--';
+  if (gender === true) {
     return t('common.contacts.male') || 'Мужской';
   }
-  if (normalized === 'F' || normalized === 'FEMALE') {
+  if (gender === false) {
     return t('common.contacts.female') || 'Женский';
   }
-
-  return t('common.contacts.genderUnknown') || 'Не указано';
+  return '--';
 }
 </script>
 
@@ -125,7 +122,7 @@ function formatGender(gender?: string): string {
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.birthDate') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}</p>
             </div>
-            <div v-if="client.individual.gender">
+            <div>
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.gender') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ formatGender(client.individual.gender) }}</p>
             </div>
@@ -211,12 +208,13 @@ function formatGender(gender?: string): string {
               </UFormGroup>
 
               <UFormGroup :label="t('common.contacts.gender')">
+                <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
                   :model-value="editingGender"
                   :options="[
-                    { value: '', label: t('common.contacts.genderUnknown') },
-                    { value: 'M', label: t('common.contacts.male') },
-                    { value: 'F', label: t('common.contacts.female') }
+                    { value: null, label: '--' },
+                    { value: true, label: t('common.contacts.male') },
+                    { value: false, label: t('common.contacts.female') }
                   ]"
                   option-attribute="label"
                   value-attribute="value"

@@ -250,17 +250,19 @@ function handleLogout() {
 
 <template>
   <div class="h-full overflow-y-auto pb-safe-or-4">
-  <div v-if="isLoading" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
-    <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-    <USkeleton class="h-4 w-[250px]" />
-    <USkeleton class="h-4 w-[200px]" />
-  </div>
-
-  <template v-else>
+  <ClientOnly>
+    <template #fallback>
+      <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
+        <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
+        <USkeleton class="h-4 w-[250px]" />
+        <USkeleton class="h-4 w-[200px]" />
+      </div>
+    </template>
+    
     <IntroSection v-if="!isLoggedIn" :onAction="login" />
     <WelcomeSection v-else :greeting="greeting" :username="username" :current-namespace="selectedNS" :all-namespaces="allNamespaces"
       @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
-  </template>
+  </ClientOnly>
 
   <div class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
     <div v-if="activeApps.length">

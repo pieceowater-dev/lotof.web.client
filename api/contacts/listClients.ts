@@ -1,5 +1,10 @@
 import { contactsClient, setContactsAppToken } from '../clients';
 
+export interface Tag {
+  id: string;
+  name: string;
+}
+
 export interface ClientRow {
   client: {
     id: string;
@@ -14,7 +19,7 @@ export interface ClientRow {
     lastName: string;
     middleName?: string;
     birthDate?: string;
-    gender?: string;
+    gender?: boolean | null;
   };
   legalEntity?: {
     legalName: string;
@@ -23,6 +28,7 @@ export interface ClientRow {
     registrationCountry?: string;
     registrationDate?: string;
   };
+  tags: Tag[];
 }
 
 export interface ClientsListResponse {
@@ -35,7 +41,7 @@ export interface ClientsListResponse {
 }
 
 const LIST_CLIENTS_QUERY = /* GraphQL */ `
-  query ListClients($filter: DefaultFilterInput) {
+  query ListClients($filter: ClientFilterInput) {
     clients(filter: $filter) {
       rows {
         client {
@@ -59,6 +65,10 @@ const LIST_CLIENTS_QUERY = /* GraphQL */ `
           binIin
           registrationCountry
           registrationDate
+        }
+        tags {
+          id
+          name
         }
       }
       info {

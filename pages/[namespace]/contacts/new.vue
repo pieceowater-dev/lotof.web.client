@@ -66,7 +66,7 @@ const individualFirstName = ref('');
 const individualLastName = ref('');
 const individualMiddleName = ref('');
 const individualBirthDate = ref('');
-const individualGender = ref('');
+const individualGender = ref<boolean | null>(null);
 
 // Legal entity form
 const legalEntityForm = ref({
@@ -83,7 +83,7 @@ const contactPersonForm = ref({
   lastName: '',
   middleName: '',
   birthDate: '',
-  gender: '',
+  gender: null as boolean | null,
 });
 
 const legalEntityOptions = ref<ClientRow[]>([]);
@@ -340,7 +340,7 @@ async function handleSubmit() {
           lastName: individualLastName.value.trim(),
           middleName: individualMiddleName.value.trim() || undefined,
           birthDate: individualBirthDate.value || undefined,
-          gender: individualGender.value ? (individualGender.value === 'M' ? true : false) : undefined,
+          gender: individualGender.value !== null ? individualGender.value : undefined,
         },
         status: 'ACTIVE',
       };
@@ -363,7 +363,7 @@ async function handleSubmit() {
             lastName: contactPersonForm.value.lastName || undefined,
             middleName: contactPersonForm.value.middleName || undefined,
             birthDate: contactPersonForm.value.birthDate || undefined,
-            gender: contactPersonForm.value.gender ? (contactPersonForm.value.gender === 'M' ? true : false) : undefined,
+            gender: contactPersonForm.value.gender !== null ? contactPersonForm.value.gender : undefined,
           } : undefined,
           status: 'ACTIVE',
         };
@@ -532,7 +532,7 @@ function clearSelectedExistingLegalEntity() {
     lastName: '',
     middleName: '',
     birthDate: '',
-    gender: '',
+    gender: null,
   };
   legalEntityOptions.value = [];
 }
@@ -762,14 +762,16 @@ useHead(() => ({
               </UFormGroup>
 
               <UFormGroup :label="t('common.contacts.gender')">
+                <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
-                  v-model="individualGender"
+                  :model-value="individualGender"
                   :options="[
-                    { value: '', label: '-' },
-                    { value: 'M', label: t('common.contacts.male') },
-                    { value: 'F', label: t('common.contacts.female') },
+                    { value: null, label: '--' },
+                    { value: true, label: t('common.contacts.male') },
+                    { value: false, label: t('common.contacts.female') },
                   ]"
                   size="md"
+                  @update:model-value="(val: any) => individualGender = val"
                 />
               </UFormGroup>
             </div>
@@ -957,15 +959,17 @@ useHead(() => ({
                 </UFormGroup>
 
                 <UFormGroup :label="t('common.contacts.gender')">
+                  <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
-                    v-model="contactPersonForm.gender"
+                    :model-value="contactPersonForm.gender"
                     :options="[
-                      { value: '', label: '-' },
-                      { value: 'M', label: t('common.contacts.male') },
-                      { value: 'F', label: t('common.contacts.female') },
+                      { value: null, label: '--' },
+                      { value: true, label: t('common.contacts.male') },
+                      { value: false, label: t('common.contacts.female') },
                     ]"
                     size="md"
                     :disabled="!!selectedExistingLegalEntity"
+                    @update:model-value="(val: any) => contactPersonForm.gender = val"
                   />
                 </UFormGroup>
               </div>
@@ -1082,28 +1086,6 @@ useHead(() => ({
                     />
                   </UFormGroup>
 
-                  <!-- Birth Date & Gender (for individuals) -->
-                  <div v-if="clientType === 'INDIVIDUAL'" class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <UFormGroup :label="t('common.contacts.birthDate')">
-                      <UInput
-                        v-model="individualBirthDate"
-                        type="date"
-                        size="md"
-                      />
-                    </UFormGroup>
-
-                    <UFormGroup :label="t('common.contacts.gender')">
-                      <USelect
-                        v-model="individualGender"
-                        :options="[
-                          { value: '', label: t('common.contacts.genderUnknown') },
-                          { value: 'M', label: t('common.contacts.male') },
-                          { value: 'F', label: t('common.contacts.female') },
-                        ]"
-                        size="md"
-                      />
-                    </UFormGroup>
-                  </div>
                 </div>
               </template>
             </UAccordion>
@@ -1118,14 +1100,15 @@ useHead(() => ({
         </p>
         <div class="flex gap-2">
           <UButton
-            color="gray"
-            variant="outline"
+            color="primary"
+            variant="soft"
             size="sm"
             :label="t('app.cancel')"
             @click="handleBack"
           />
           <UButton
-            color="blue"
+            color="primary"
+            variant="soft"
             size="md"
             :loading="loading"
             :disabled="!isFormValid || loading"
@@ -1160,8 +1143,8 @@ useHead(() => ({
         <template #footer>
           <div class="flex gap-3 justify-end">
             <UButton
-              color="gray"
-              variant="outline"
+              color="primary"
+              variant="soft"
               :label="t('common.contacts.keepEditing')"
               @click="cancelLeave"
             />
