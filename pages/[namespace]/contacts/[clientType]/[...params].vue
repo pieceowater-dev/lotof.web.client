@@ -340,7 +340,7 @@ async function handleClientCreated() {
           >
             {{ t('common.contacts.tags') }}
           </UButton>
-          <UButton 
+          <!-- <UButton 
             icon="lucide:boxes" 
             size="xs"
             color="primary" 
@@ -348,7 +348,7 @@ async function handleClientCreated() {
             @click="isSegmentsModalOpen = true"
           >
             {{ t('common.contacts.segments') }}
-          </UButton>
+          </UButton> -->
           <UButton 
             icon="lucide:settings" 
             size="xs" 
