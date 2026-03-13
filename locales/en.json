@@ -342,9 +342,15 @@
     "salaryStoredLocally": "Salary is stored locally",
     "workingDaysInMonth": "Working days per month",
     "totalWorkedHours": "Total worked hours",
+    "totalStamps": "Total Stamps",
     "salaryByDays": "Salary by days",
     "salaryByHours": "Salary by hours",
     "formula": "Formula",
+    "from": "From",
+    "until": "Until",
+    "limitActiveUsers": "Active clients",
+    "limitCustomFields": "Custom fields",
+    "limitLoyaltyPrograms": "Loyalty programs",
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",
     "upgradePlan": "Upgrade Plan",
@@ -399,7 +405,7 @@
         "free": {
           "description": "Free plan to get started with Contacts",
           "feature": {
-            "max_active_users": "Up to 100 active clients",
+            "max_clients": "Up to 100 active clients",
             "max_custom_fields": "Up to 3 custom fields",
             "max_loyalty_programs": "Up to 1 loyalty program"
           }
@@ -407,7 +413,7 @@
         "mini": {
           "description": "Compact plan for a small client base",
           "feature": {
-            "max_active_users": "Up to 500 active clients",
+            "max_clients": "Up to 500 active clients",
             "max_custom_fields": "Up to 10 custom fields",
             "max_loyalty_programs": "Up to 3 loyalty programs"
           }
@@ -415,7 +421,7 @@
         "start": {
           "description": "Full-featured plan for growing businesses",
           "feature": {
-            "max_active_users": "Up to 5000 active clients",
+            "max_clients": "Up to 5000 active clients",
             "max_custom_fields": "Up to 30 custom fields",
             "max_loyalty_programs": "Up to 10 loyalty programs"
           }

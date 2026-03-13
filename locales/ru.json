@@ -338,9 +338,15 @@
     "salaryStoredLocally": "Оклад сохраняется только на вашем устройстве и не отправляется на сервер.",
     "workingDaysInMonth": "Рабочих дней в месяц",
     "totalWorkedHours": "Всего отработано часов",
+    "totalStamps": "Всего штампов",
     "salaryByDays": "Зарплата по дням",
     "salaryByHours": "Зарплата по часам",
     "formula": "Формула",
+    "from": "От",
+    "until": "До",
+    "limitActiveUsers": "Активные клиенты",
+    "limitCustomFields": "Пользовательские поля",
+    "limitLoyaltyPrograms": "Программы лояльности",
     "subscriptionPlans": "Тарифные планы",
     "choosePlanDescription": "Выберите тарифный план для вашей команды",
     "upgradePlan": "Улучшить тариф",
@@ -395,7 +401,7 @@
         "free": {
           "description": "Бесплатный тариф для начала работы с клиентами",
           "feature": {
-            "max_active_users": "До 100 активных клиентов",
+            "max_clients": "До 100 активных клиентов",
             "max_custom_fields": "До 3 пользовательских полей",
             "max_loyalty_programs": "До 1 программы лояльности"
           }
@@ -403,7 +409,7 @@
         "mini": {
           "description": "Компактный тариф для небольшой клиентской базы",
           "feature": {
-            "max_active_users": "До 500 активных клиентов",
+            "max_clients": "До 500 активных клиентов",
             "max_custom_fields": "До 10 пользовательских полей",
             "max_loyalty_programs": "До 3 программ лояльности"
           }
@@ -411,7 +417,7 @@
         "start": {
           "description": "Полнофункциональный тариф для роста бизнеса",
           "feature": {
-            "max_active_users": "До 5000 активных клиентов",
+            "max_clients": "До 5000 активных клиентов",
             "max_custom_fields": "До 30 пользовательских полей",
             "max_loyalty_programs": "До 10 программ лояльности"
           }

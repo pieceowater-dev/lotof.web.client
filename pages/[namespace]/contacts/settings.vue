@@ -6,6 +6,9 @@ import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
+import { getContactsPlanLimits } from '@/api/contacts/plans/getLimits';
+import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
+import { hubMembersList } from '@/api/hub/members/list';
 import BonusPinManager from '@/components/contacts/BonusPinManager.vue';
 import {
   createStampCard,
@@ -27,10 +30,32 @@ const { selected: selectedNS, titleBySlug } = useNamespace();
 const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 
+type StaticAccessRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
+
+type NamespaceMember = {
+  id: string;
+  userId: string;
+  username: string;
+  email: string;
+};
+
 // State
 const loading = ref(true);
 const error = ref<string | null>(null);
 const contactsToken = ref<string | null>(null);
+const planLimits = ref<{ max_clients?: number; max_custom_fields?: number; max_loyalty_programs?: number } | null>(null);
+const planName = ref<string>('');
+const planLimitsLoading = ref(false);
+const namespaceMembers = ref<NamespaceMember[]>([]);
+const memberRoles = ref<Record<string, StaticAccessRole>>({});
+const rolesLoading = ref(false);
+const roleSavingMemberId = ref<string | null>(null);
+const rolesPage = ref(1);
+const rolesPageSize = ref(10);
+const showRolesLegend = ref(false);
+const showRoleModal = ref(false);
+const roleModalMemberId = ref<string | null>(null);
+const roleModalValue = ref<StaticAccessRole>('VIEWER');
 const stampCards = ref<StampCard[]>([]);
 const stampCardsLoading = ref(false);
 const stampCardsError = ref<string | null>(null);
@@ -47,6 +72,14 @@ const showEditStampPin = ref(false);
 const showEditConfirmStampPin = ref(false);
 const selectedStampCardId = ref<string | null>(null);
 const pendingDeleteStampCardId = ref<string | null>(null);
+const staticRoleOptions: Array<{ label: string; value: StaticAccessRole }> = [
+  { label: 'Владелец', value: 'OWNER' },
+  { label: 'Админ', value: 'ADMIN' },
+  { label: 'Оператор', value: 'OPERATOR' },
+  { label: 'Наблюдатель', value: 'VIEWER' },
+];
+const rolesPageSizeOptions = [10, 20, 50];
+const staticRolesStorageKey = computed(() => `contacts:roles:${nsSlug.value}`);
 const createFormData = ref({
   name: '',
   description: '',
@@ -70,6 +103,46 @@ const editFormData = ref({
 });
 
 const rewardPlaceholder = computed(() => t('app.reward') || 'Reward');
+const paginatedMembers = computed(() => {
+  const start = (rolesPage.value - 1) * rolesPageSize.value;
+  return namespaceMembers.value.slice(start, start + rolesPageSize.value);
+});
+const rolesFrom = computed(() => {
+  if (namespaceMembers.value.length === 0) return 0;
+  return (rolesPage.value - 1) * rolesPageSize.value + 1;
+});
+const rolesTo = computed(() => {
+  return Math.min(rolesPage.value * rolesPageSize.value, namespaceMembers.value.length);
+});
+
+function normalizeRole(raw?: string | null): StaticAccessRole {
+  if (raw === 'OWNER' || raw === 'ADMIN' || raw === 'OPERATOR' || raw === 'VIEWER') return raw;
+  // Backward compatibility for old saved role.
+  if (raw === 'EDITOR') return 'OPERATOR';
+  return 'VIEWER';
+}
+
+function roleTone(role: StaticAccessRole): string {
+  if (role === 'OWNER') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
+  if (role === 'ADMIN') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
+  if (role === 'OPERATOR') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+  return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+}
+
+function planLimitLabel(key: 'max_clients' | 'max_custom_fields' | 'max_loyalty_programs'): string {
+  if (key === 'max_clients') {
+    return t('app.limitActiveUsers') || 'Активные клиенты';
+  }
+  if (key === 'max_custom_fields') {
+    return t('app.limitCustomFields') || 'Пользовательские поля';
+  }
+  return t('app.limitLoyaltyPrograms') || 'Программы лояльности';
+}
+
+const roleModalMember = computed(() => {
+  if (!roleModalMemberId.value) return null;
+  return namespaceMembers.value.find((member) => member.id === roleModalMemberId.value) || null;
+});
 const isCreateFormValid = computed(() => {
   const data = createFormData.value;
   const hasRequired =
@@ -412,6 +485,137 @@ const goBack = () => {
   router.back();
 };
 
+function parseLimitsJson(raw?: string | null): { max_clients?: number; max_custom_fields?: number; max_loyalty_programs?: number } {
+  if (!raw) return {};
+  try {
+    const data = JSON.parse(raw);
+    if (Array.isArray(data?.features)) {
+      const limits: { max_clients?: number; max_custom_fields?: number; max_loyalty_programs?: number } = {};
+      for (const feature of data.features) {
+        if (feature?.key === 'max_clients') limits.max_clients = Number(feature.value);
+        if (feature?.key === 'max_custom_fields') limits.max_custom_fields = Number(feature.value);
+        if (feature?.key === 'max_loyalty_programs') limits.max_loyalty_programs = Number(feature.value);
+      }
+      return limits;
+    }
+  } catch {
+    return {};
+  }
+  return {};
+}
+
+async function loadPlanLimits() {
+  planLimitsLoading.value = true;
+  try {
+    const res = await getContactsPlanLimits(nsSlug.value, 'pieceowater.contacts', hubToken.value);
+    planName.value = res?.planName || '';
+    planLimits.value = parseLimitsJson(res?.limitsJson);
+  } catch (e) {
+    logError('Failed to load contacts plan limits:', e);
+    planLimits.value = null;
+  } finally {
+    planLimitsLoading.value = false;
+  }
+}
+
+function loadPersistedRoles(): Record<string, StaticAccessRole> {
+  if (!process.client) return {};
+  try {
+    const raw = localStorage.getItem(staticRolesStorageKey.value);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, string>;
+    const normalized: Record<string, StaticAccessRole> = {};
+    for (const [memberId, role] of Object.entries(parsed || {})) {
+      normalized[memberId] = normalizeRole(role);
+    }
+    return normalized;
+  } catch {
+    return {};
+  }
+}
+
+function persistRoles(next: Record<string, StaticAccessRole>) {
+  if (!process.client) return;
+  localStorage.setItem(staticRolesStorageKey.value, JSON.stringify(next));
+}
+
+async function loadMembersAndRoles() {
+  if (!hubToken.value || !nsSlug.value) return;
+  rolesLoading.value = true;
+  try {
+    const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
+    if (!namespace?.id) {
+      namespaceMembers.value = [];
+      memberRoles.value = {};
+      return;
+    }
+
+    const members: NamespaceMember[] = [];
+    let page = 1;
+    while (true) {
+      // Use FIFTY like atrace/settings to match backend-supported enum values.
+      const batch = await hubMembersList(hubToken.value, namespace.id, page, 'FIFTY');
+      if (!batch.length) break;
+      members.push(...batch);
+      if (batch.length < 50) break;
+      page += 1;
+    }
+
+    namespaceMembers.value = members;
+    rolesPage.value = 1;
+
+    const persisted = loadPersistedRoles();
+    const nextRoles: Record<string, StaticAccessRole> = {};
+    for (const member of members) {
+      nextRoles[member.id] = normalizeRole(persisted[member.id]);
+    }
+    const ownerMember = members.find((member) => member.userId === namespace.owner);
+    if (ownerMember) {
+      nextRoles[ownerMember.id] = 'OWNER';
+    }
+
+    memberRoles.value = nextRoles;
+    persistRoles(nextRoles);
+  } catch (e) {
+    logError('Failed to load members/roles in contacts settings:', e);
+  } finally {
+    rolesLoading.value = false;
+  }
+}
+
+async function assignStaticRole(memberId: string, role: StaticAccessRole) {
+  try {
+    roleSavingMemberId.value = memberId;
+    const next = { ...memberRoles.value, [memberId]: role };
+    memberRoles.value = next;
+    persistRoles(next);
+    toast.add({
+      title: t('common.success') || 'Success',
+      description: t('common.saved') || 'Saved',
+      color: 'green',
+    });
+  } finally {
+    roleSavingMemberId.value = null;
+  }
+}
+
+function openRoleModal(memberId: string) {
+  roleModalMemberId.value = memberId;
+  roleModalValue.value = memberRoles.value[memberId] || 'VIEWER';
+  showRoleModal.value = true;
+}
+
+function closeRoleModal() {
+  showRoleModal.value = false;
+  roleModalMemberId.value = null;
+}
+
+async function confirmRoleModal() {
+  if (!roleModalMemberId.value) return;
+  await assignStaticRole(roleModalMemberId.value, roleModalValue.value);
+  closeRoleModal();
+}
+
 async function loadSettings() {
   try {
     loading.value = true;
@@ -427,7 +631,11 @@ async function loadSettings() {
     
     contactsToken.value = token;
 
-    await loadLoyaltyData(token);
+    await Promise.all([
+      loadLoyaltyData(token),
+      loadPlanLimits(),
+      loadMembersAndRoles(),
+    ]);
   } catch (e) {
     logError('Failed to load settings:', e);
     error.value = t('common.error.loadFailed');
@@ -467,16 +675,27 @@ onMounted(async () => {
           {{ nsTitle }}
         </span>
       </div>
-      <UButton 
-        icon="lucide:arrow-left" 
-        size="xs" 
-        color="primary" 
-        variant="soft"
-        @click="goBack"
-        class="self-start min-w-fit whitespace-nowrap gap-2"
-      >
-        <span class="hidden sm:inline">{{ t('app.back') }}</span>
-      </UButton>
+      <div class="flex gap-2">
+        <UButton
+          icon="lucide:star"
+          size="xs"
+          color="amber"
+          variant="soft"
+          :to="`/${nsSlug}/contacts/plans`"
+        >
+          {{ t('app.upgradePlan') || 'Upgrade Plan' }}
+        </UButton>
+        <UButton
+          icon="lucide:arrow-left"
+          size="xs"
+          color="primary"
+          variant="soft"
+          @click="goBack"
+          class="self-start min-w-fit whitespace-nowrap gap-2"
+        >
+          <span class="hidden sm:inline">{{ t('app.back') }}</span>
+        </UButton>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -492,14 +711,32 @@ onMounted(async () => {
     <!-- Settings Content -->
     <div v-else class="flex-1 flex flex-col min-h-0">
       <div class="flex-1 flex flex-col min-h-0 gap-4 overflow-y-auto">
-        <!-- General Settings -->
-        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-            {{ t('common.settings.general') }}
-          </h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400">
-            {{ t('common.settings.title') }}
-          </p>
+        <!-- Current Plan -->
+        <div v-if="planLimits !== null && !planLimitsLoading" class="rounded-lg border border-blue-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-900/40 p-4">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100">
+                {{ t('app.subscriptionPlans') || 'Plan' }}: {{ planName || '—' }}
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {{ t('app.contactsSubtitle') || 'Manage your clients and partners.' }}
+              </p>
+            </div>
+            <div class="flex flex-wrap gap-2 text-sm">
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+                {{ planLimitLabel('max_clients') }}:
+                <strong>{{ planLimits.max_clients ?? '∞' }}</strong>
+              </span>
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+                {{ planLimitLabel('max_custom_fields') }}:
+                <strong>{{ planLimits.max_custom_fields ?? '∞' }}</strong>
+              </span>
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+                {{ planLimitLabel('max_loyalty_programs') }}:
+                <strong>{{ planLimits.max_loyalty_programs ?? '∞' }}</strong>
+              </span>
+            </div>
+          </div>
         </div>
 
         <!-- Stamp Cards -->
@@ -610,8 +847,154 @@ onMounted(async () => {
             @error="(msg) => toast.add({ title: msg, color: 'red' })"
           />
         </div>
+
+        <!-- Members Roles -->
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/40 p-4 shadow-sm">
+          <div class="flex flex-col gap-3 mb-4">
+            <div class="flex items-start justify-between gap-3">
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-lg">Роли участников</h3>
+              <UButton
+                size="xs"
+                color="gray"
+                variant="soft"
+                icon="lucide:circle-help"
+                @click="showRolesLegend = !showRolesLegend"
+              >
+                {{ showRolesLegend ? 'Скрыть подсказку по ролям' : 'Подсказка по ролям' }}
+              </UButton>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              Управление ролями участников неймспейса.
+            </p>
+            <div v-if="showRolesLegend" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+              <div class="rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-900/10 p-3">
+                <div class="text-sm font-semibold text-red-700 dark:text-red-300">Владелец</div>
+                <p class="text-xs text-red-600/80 dark:text-red-200/80 mt-1">Полный контроль над неймспейсом и приложением.</p>
+              </div>
+              <div class="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-900/10 p-3">
+                <div class="text-sm font-semibold text-amber-700 dark:text-amber-300">Админ</div>
+                <p class="text-xs text-amber-600/80 dark:text-amber-200/80 mt-1">Расширенные полномочия: больше прав, чем у оператора.</p>
+              </div>
+              <div class="rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-900/10 p-3">
+                <div class="text-sm font-semibold text-blue-700 dark:text-blue-300">Оператор</div>
+                <p class="text-xs text-blue-600/80 dark:text-blue-200/80 mt-1">Операционная работа с клиентами и кампаниями.</p>
+              </div>
+              <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-3">
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Наблюдатель</div>
+                <p class="text-xs text-gray-600/80 dark:text-gray-300/80 mt-1">Доступ на просмотр без изменений.</p>
+              </div>
+            </div>
+          </div>
+
+          <div v-if="rolesLoading" class="py-8 flex justify-center">
+            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+
+          <div v-else-if="namespaceMembers.length === 0" class="text-sm text-gray-500 dark:text-gray-400 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+            Участники не найдены в текущем неймспейсе.
+          </div>
+
+          <div v-else class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Участник</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Email</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Текущая роль</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 w-56">Действие</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="member in paginatedMembers"
+                    :key="member.id"
+                    class="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors"
+                  >
+                    <td class="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium">{{ member.username }}</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ member.email }}</td>
+                    <td class="px-4 py-3">
+                      <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="roleTone(memberRoles[member.id] || 'VIEWER')">
+                        {{ staticRoleOptions.find((opt) => opt.value === (memberRoles[member.id] || 'VIEWER'))?.label || 'Наблюдатель' }}
+                      </span>
+                    </td>
+                    <td class="px-4 py-3">
+                      <UButton
+                        size="xs"
+                        variant="soft"
+                        color="primary"
+                        icon="lucide:shield-check"
+                        :disabled="roleSavingMemberId === member.id"
+                        @click="openRoleModal(member.id)"
+                      >
+                        Изменить роль
+                      </UButton>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="flex flex-wrap justify-between items-center gap-3 px-4 py-3 bg-gray-50 dark:bg-gray-800/40 border-t border-gray-200 dark:border-gray-700">
+              <div class="text-xs text-gray-600 dark:text-gray-400">
+                Показаны {{ rolesFrom }}-{{ rolesTo }} из {{ namespaceMembers.length }} участников
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-gray-600 dark:text-gray-400">Строк на странице</span>
+                <USelect
+                  :model-value="rolesPageSize"
+                  :options="rolesPageSizeOptions"
+                  class="w-20"
+                  size="xs"
+                  @update:model-value="(value) => { rolesPageSize = Number(value); rolesPage = 1; }"
+                />
+                <UPagination
+                  v-model="rolesPage"
+                  :page-count="rolesPageSize"
+                  :total="namespaceMembers.length"
+                  size="xs"
+                  :ui="{ wrapper: 'flex items-center gap-0.5', rounded: 'min-w-[28px] justify-center text-xs', default: { activeButton: { variant: 'outline' } } }"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
+
+    <UModal v-model="showRoleModal" @close="closeRoleModal">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Назначение роли</h3>
+              <p v-if="roleModalMember" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {{ roleModalMember.username }} · {{ roleModalMember.email }}
+              </p>
+            </div>
+            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeRoleModal" />
+          </div>
+        </template>
+
+        <div class="space-y-4">
+          <UFormGroup label="Роль">
+            <USelect
+              v-model="roleModalValue"
+              :options="staticRoleOptions"
+              option-attribute="label"
+              value-attribute="value"
+            />
+          </UFormGroup>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="soft" @click="closeRoleModal">Отмена</UButton>
+            <UButton color="primary" :loading="!!roleSavingMemberId" @click="confirmRoleModal">Сохранить</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
 
     <!-- Create Stamp Card Modal -->
     <UModal v-model="showCreateModal" @close="closeCreateModal">
