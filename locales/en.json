@@ -23,6 +23,8 @@
     "save": "Save",
     "editProfile": "Edit profile",
     "create": "Create",
+    "reward": "Reward",
+    "stampCards": "Stamp Cards",
     "loading": "Loading...",
     "myPeople": "My People",
     "myPeopleHeading": "My People",
@@ -150,7 +152,6 @@
   "atraceRecordedHeader": "A-Trace",
   "atraceRecordedSuccess": "Congrats! Your attendance is recorded.",
   "atraceRecordedFail": "Something went wrong",
-  "home": "Home",
   "atraceCheckingHeader": "Checking...",
   "atraceCheckingText": "We're validating your QR. This will only take a moment.",
   "atraceRecordedRedirecting": "Redirecting home in",
@@ -226,13 +227,7 @@
   "longitude": "Longitude",
   "namespaceMembers":"Namespace members",
   "userId":"User ID",
-  "noRole":"No role",
   "selectRole":"Select a role",
-  "workingRequirements":"Working Requirements",
-  "requiredWorkingDays":"Days per Month",
-  "requiredWorkingDaysHint":"1–31 days",
-  "requiredWorkingHours":"Hours per Day",
-  "requiredWorkingHoursHint":"0–24 hours",
   "added":"Added",
   "search":"Search...",
   "selectFriend":"Select friend to add",
@@ -244,7 +239,6 @@
   "enterPin": "Enter PIN",
   "pinMustBe6Digits": "PIN must be 6 digits",
   "forgetPin": "Forget PIN",
-  "loading": "Loading...",
   "qrRefreshNote": "QR refreshes every 15 seconds",
   "pinPromptDesc": "Enter the 6-digit PIN shown to the post creator. This PIN is required to access the page.",
   "copyLink": "Copy link",
@@ -277,7 +271,7 @@
     "attendancePermissionError": "You don't have permission to view attendance stats.",
     "attendanceUnauthorizedError": "You are not authorized to view attendance stats.",
     "attendancePermissionErrorHint": "If you believe this is a mistake — contact your administrator.",
-    "noData": "No data for selected period",
+    "attendanceNoData": "No data for selected period",
     "user": "User",
     "workDays": "Work Days",
     "attended": "Attended",
@@ -375,7 +369,6 @@
     "cannotDowngradePlan": "Cannot downgrade plan",
     "appTokenFailed": "Failed to get app token. Please try again later.",
     "appTokenError": "Failed to get app token.",
-    "contacts": "Contacts",
     "contactsSubtitle": "Manage your clients and partners.",
     "noPlansAvailable": "No plans available",
     "pieceowater": {
@@ -399,6 +392,32 @@
           "feature": {
             "max_employees": "Up to 30 active employees",
             "max_posts": "Up to 3 locations"
+          }
+        }
+      },
+      "contacts": {
+        "free": {
+          "description": "Free plan to get started with Contacts",
+          "feature": {
+            "max_active_users": "Up to 100 active clients",
+            "max_custom_fields": "Up to 3 custom fields",
+            "max_loyalty_programs": "Up to 1 loyalty program"
+          }
+        },
+        "mini": {
+          "description": "Compact plan for a small client base",
+          "feature": {
+            "max_active_users": "Up to 500 active clients",
+            "max_custom_fields": "Up to 10 custom fields",
+            "max_loyalty_programs": "Up to 3 loyalty programs"
+          }
+        },
+        "start": {
+          "description": "Full-featured plan for growing businesses",
+          "feature": {
+            "max_active_users": "Up to 5000 active clients",
+            "max_custom_fields": "Up to 30 custom fields",
+            "max_loyalty_programs": "Up to 10 loyalty programs"
           }
         }
       }
@@ -494,6 +513,7 @@
   "latitude": "Latitude",
   "longitude": "Longitude",
   "cancel": "Cancel",
+  "continue": "Continue",
   "create": "Create",
   "apply": "Apply",
   "confirmDelete": "Delete?",
@@ -501,7 +521,7 @@
   "email": "Email",
   "role": "Role",
   "actions": "Actions",
-  "settings": "Settings",
+  "settingsLabel": "Settings",
   "datetime": "Datetime",
   "method": "Method",
   "suspicious": "Suspicious",
@@ -523,10 +543,22 @@
   "error": "Error",
   "notAuthenticated": "Not authenticated",
   "success": "Success",
+  "pinChanged": "PIN changed",
   "info": "Information",
+  "name": "Name",
+  "noData": "No data",
   "add": "Add",
+  "stampCards": "Stamp Cards",
+  "totalStamps": "Total Stamps",
+  "reward": "Reward",
+  "from": "From",
+  "until": "Until",
   "settingsAccessDenied": "You do not have permission to access settings. Only administrators can manage members.",
   "namespaceMissing": "Namespace is not selected. Please select a namespace.",
+  "settings": {
+    "title": "Settings",
+    "general": "General settings"
+  },
   "contacts": {
     "clients": "Clients",
     "createClient": "Create client",
@@ -619,12 +651,10 @@
     "website": "Website",
     "comments": "Comments",
     "moreOptions": "More options",
-    "name": "Name",
     "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?",
     "confirmLeave": "Confirm leaving",
     "discardChanges": "Discard changes",
     "keepEditing": "Keep editing",
-    "legalEntity": "Legal entity",
     "attachLegalEntityDescription": "Optional: Link contact person to a company",
     "searchLegalEntityPlaceholder": "Enter company name or BIN",
     "searchingCompanies": "Searching companies...",
@@ -643,22 +673,59 @@
     "emails": "Email addresses",
     "primaryNumber": "Primary number",
     "additionalNumber": "Additional number",
+    "call": "Call",
+    "sendEmail": "Send email",
+    "openTelegram": "Open Telegram",
+    "openWhatsApp": "Open WhatsApp",
     "timeline": "Timeline",
+    "timelineComingSoon": "Coming soon",
     "noTimelineEvents": "No timeline events",
     "bonuses": "Bonuses",
+    "accrueBonuses": "Accrue bonuses",
+    "spendBonuses": "Spend bonuses",
+    "accrue": "Accrue",
+    "spend": "Spend",
     "balance": "Balance",
     "total": "Total",
     "available": "Available",
-    "expiring": "Expiring",
+    "expiringSoon": "Expiring soon",
+    "amount": "Amount",
+    "pin": "PIN",
+    "pinRequired": "PIN is required",
+    "invalidPin": "Invalid PIN",
+    "tooManyPinAttempts": "Too many invalid PIN attempts. Please try again later",
+    "pinMustBe4Digits": "PIN must contain 4 digits",
+    "enterGlobalPinFirst": "Enter global PIN to accrue bonuses",
+    "enterGlobalPinFirstSpend": "Enter global PIN to spend bonuses",
+    "enterBonusAmount": "Specify bonus amount",
+    "enterSpendAmount": "Specify amount to spend",
+    "enterValidAmount": "Enter a valid amount",
+    "insufficientBonuses": "Insufficient available bonuses",
+    "descriptionOptional": "Comment (optional)",
+    "resetStoredPin": "Reset saved PIN",
+    "pinStoredFor8h": "PIN is stored for 8 hours in this browser cookie",
+    "pinStoredAsHashFor8h": "PIN hash is stored in a cookie for 8 hours. Raw PIN is kept only in tab memory",
+    "bonusAccrued": "Bonuses accrued",
+    "bonusSpent": "Bonuses spent",
+    "changePin": "Change PIN",
+    "accrueStamp": "Accrue stamp",
+    "enterCardPinFirst": "Enter stamp card PIN to accrue",
     "noBonusData": "No bonus balance data",
-    "tier": "Tier",
-    "currentTier": "Current tier",
     "progress": "Progress",
-    "untilNextTier": "Until next tier",
-    "noTierData": "No client tier data",
     "stampCards": "Stamp cards",
     "rounds": "rounds",
-    "noStampCards": "No active stamp cards"
+    "noStampCards": "No active stamp cards",
+    "loyalty": {
+      "title": "Loyalty",
+      "stampCardsDescription": "Active stamp cards for your clients",
+      "bonusPin": "Bonus PIN",
+      "bonusPinDescription": "Set a 4-digit PIN to protect bonus operations",
+      "aboutBonusPin": "About Bonus PIN",
+      "bonusPinInfo1": "PIN must be exactly 4 digits (0000-9999)",
+      "bonusPinInfo2": "Required for spending bonuses and redemptions",
+      "bonusPinInfo3": "Keep it secure and change regularly",
+      "pinFormat": "Must be exactly 4 digits (0000-9999)"
+    }
   }
 }
 }

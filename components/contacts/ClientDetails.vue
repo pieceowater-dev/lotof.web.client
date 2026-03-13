@@ -37,8 +37,8 @@ const statusColor = computed(() => {
 const clientType = computed(() => {
   if (!props.client) return '';
   return props.client.client.clientType === 'INDIVIDUAL'
-    ? t('common.contacts.individual')
-    : t('common.contacts.legalEntity');
+    ? t('contacts.individual')
+    : t('contacts.legalEntity');
 });
 </script>
 
@@ -46,7 +46,7 @@ const clientType = computed(() => {
   <div v-if="!client" class="flex items-center justify-center h-full">
     <div class="text-center text-gray-500 dark:text-gray-400">
       <UIcon name="lucide:users" class="w-16 h-16 mx-auto mb-4 opacity-50" />
-      <p>{{ t('common.contacts.selectClient') }}</p>
+      <p>{{ t('contacts.selectClient') }}</p>
     </div>
   </div>
 
@@ -74,7 +74,7 @@ const clientType = computed(() => {
           size="sm"
           :to="`/${$route.params.namespace}/contacts/${client.client.id}`"
         >
-          {{ t('common.contacts.viewDetails') }}
+          {{ t('contacts.viewDetails') }}
         </UButton>
       </div>
     </div>
@@ -82,14 +82,14 @@ const clientType = computed(() => {
     <!-- Details Card -->
     <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
       <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-        {{ t('common.contacts.details') }}
+        {{ t('contacts.details') }}
       </h3>
 
       <div v-if="client.client.clientType === 'INDIVIDUAL' && client.individual" class="space-y-3">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.lastName') }}
+              {{ t('contacts.lastName') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.individual.lastName }}
@@ -97,7 +97,7 @@ const clientType = computed(() => {
           </div>
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.firstName') }}
+              {{ t('contacts.firstName') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.individual.firstName }}
@@ -105,7 +105,7 @@ const clientType = computed(() => {
           </div>
           <div v-if="client.individual.middleName">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.middleName') }}
+              {{ t('contacts.middleName') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.individual.middleName }}
@@ -113,7 +113,7 @@ const clientType = computed(() => {
           </div>
           <div v-if="client.individual.birthDate">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.birthDate') }}
+              {{ t('contacts.birthDate') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}
@@ -126,7 +126,7 @@ const clientType = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.legalName') }}
+              {{ t('contacts.legalName') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.legalEntity.legalName }}
@@ -134,7 +134,7 @@ const clientType = computed(() => {
           </div>
           <div v-if="client.legalEntity.binIin">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.binIin') }}
+              {{ t('contacts.binIin') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.legalEntity.binIin }}
@@ -142,7 +142,7 @@ const clientType = computed(() => {
           </div>
           <div v-if="client.legalEntity.brandName">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.brandName') }}
+              {{ t('contacts.brandName') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.legalEntity.brandName }}
@@ -150,7 +150,7 @@ const clientType = computed(() => {
           </div>
           <div v-if="client.legalEntity.registrationCountry">
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.registrationCountry') }}
+              {{ t('contacts.registrationCountry') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ client.legalEntity.registrationCountry }}
@@ -163,7 +163,7 @@ const clientType = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.createdAt') }}
+              {{ t('contacts.createdAt') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ new Date(client.client.createdAt).toLocaleString('ru-RU') }}
@@ -171,7 +171,7 @@ const clientType = computed(() => {
           </div>
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
-              {{ t('common.contacts.updatedAt') }}
+              {{ t('contacts.updatedAt') }}
             </p>
             <p class="text-sm font-medium text-gray-900 dark:text-white">
               {{ new Date(client.client.updatedAt).toLocaleString('ru-RU') }}

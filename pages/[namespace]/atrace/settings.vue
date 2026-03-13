@@ -744,7 +744,7 @@ onUnmounted(() => {
     <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
             <div class="text-left">
-                <h1 class="text-2xl font-semibold">{{ t('common.settings') }}</h1>
+                <h1 class="text-2xl font-semibold">{{ t('common.settings.title') }}</h1>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
             </div>
             <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
@@ -773,7 +773,7 @@ onUnmounted(() => {
                     color="primary" 
                     variant="soft"
                     @click="goBack"
-                    class="min-w-fit gap-2"
+                    class="min-w-fit whitespace-nowrap gap-2"
                 >
                     <span class="hidden sm:inline">{{ t('app.back') }}</span>
                 </UButton>

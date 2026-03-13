@@ -213,8 +213,13 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('close')" :title="isSelectMode ? 'Add tag to client' : 'Manage Tags'">
+  <UModal :model-value="isOpen" @update:model-value="$emit('close')">
     <div class="p-4 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">{{ isSelectMode ? 'Add tag to client' : 'Manage Tags' }}</h2>
+        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="$emit('close')" />
+      </div>
+
       <!-- Create new tag -->
       <div class="flex gap-2">
         <UInput

@@ -45,10 +45,10 @@ const isIndividual = computed(() => props.client?.client.clientType === 'INDIVID
 function formatGender(gender?: boolean | null): string {
   if (gender === null || gender === undefined) return '--';
   if (gender === true) {
-    return t('common.contacts.male') || 'Мужской';
+    return t('contacts.male') || 'Мужской';
   }
   if (gender === false) {
-    return t('common.contacts.female') || 'Женский';
+    return t('contacts.female') || 'Женский';
   }
   return '--';
 }
@@ -61,7 +61,7 @@ function formatGender(gender?: boolean | null): string {
       <div class="flex items-center gap-2">
         <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('common.contacts.information') || 'Информация' }}
+          {{ t('contacts.information') || 'Информация' }}
         </h2>
       </div>
       <div class="flex gap-2">
@@ -102,28 +102,28 @@ function formatGender(gender?: boolean | null): string {
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {{ t('common.contacts.personalInformation') }}
+              {{ t('contacts.personalInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.lastName') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.lastName') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.lastName }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.firstName') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.firstName') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.firstName }}</p>
             </div>
             <div v-if="client.individual.middleName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.middleName') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.middleName') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.middleName }}</p>
             </div>
             <div v-if="client.individual.birthDate">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.birthDate') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.birthDate') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}</p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.gender') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.gender') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ formatGender(client.individual.gender) }}</p>
             </div>
           </div>
@@ -133,28 +133,28 @@ function formatGender(gender?: boolean | null): string {
           <div class="flex items-center gap-2 mb-3">
             <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              {{ t('common.contacts.companyInformation') }}
+              {{ t('contacts.companyInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div class="col-span-2" v-if="client.legalEntity.legalName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.legalName') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.legalName') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.legalName }}</p>
             </div>
             <div v-if="client.legalEntity.brandName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.brandName') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.brandName') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.brandName }}</p>
             </div>
             <div v-if="client.legalEntity.binIin">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.binIin') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.binIin') }}</p>
               <p class="text-sm font-mono text-gray-900 dark:text-white">{{ client.legalEntity.binIin }}</p>
             </div>
             <div v-if="client.legalEntity.registrationCountry">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.registrationCountry') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.registrationCountry') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.registrationCountry }}</p>
             </div>
             <div v-if="client.legalEntity.registrationDate">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('common.contacts.registrationDate') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.registrationDate') }}</p>
               <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.legalEntity.registrationDate).toLocaleDateString('ru-RU') }}</p>
             </div>
           </div>
@@ -167,10 +167,10 @@ function formatGender(gender?: boolean | null): string {
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.personalInformation') }}</h3>
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('contacts.personalInformation') }}</h3>
             </div>
             
-            <UFormGroup :label="t('common.contacts.lastName') + ' *'" required>
+            <UFormGroup :label="t('contacts.lastName')" required>
               <UInput
                 :model-value="editingLastName"
                 type="text"
@@ -179,7 +179,7 @@ function formatGender(gender?: boolean | null): string {
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.firstName') + ' *'" required>
+            <UFormGroup :label="t('contacts.firstName')" required>
               <UInput
                 :model-value="editingFirstName"
                 type="text"
@@ -188,7 +188,7 @@ function formatGender(gender?: boolean | null): string {
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.middleName')">
+            <UFormGroup :label="t('contacts.middleName')">
               <UInput
                 :model-value="editingMiddleName"
                 type="text"
@@ -198,7 +198,7 @@ function formatGender(gender?: boolean | null): string {
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup :label="t('common.contacts.birthDate')">
+              <UFormGroup :label="t('contacts.birthDate')">
                 <UInput
                   :model-value="editingBirthDate"
                   type="date"
@@ -207,14 +207,14 @@ function formatGender(gender?: boolean | null): string {
                 />
               </UFormGroup>
 
-              <UFormGroup :label="t('common.contacts.gender')">
+              <UFormGroup :label="t('contacts.gender')">
                 <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
                   :model-value="editingGender"
                   :options="[
                     { value: null, label: '--' },
-                    { value: true, label: t('common.contacts.male') },
-                    { value: false, label: t('common.contacts.female') }
+                    { value: true, label: t('contacts.male') },
+                    { value: false, label: t('contacts.female') }
                   ]"
                   option-attribute="label"
                   value-attribute="value"
@@ -230,27 +230,27 @@ function formatGender(gender?: boolean | null): string {
           <div class="space-y-3">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.companyInformation') }}</h2>
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('contacts.companyInformation') }}</h2>
             </div>
             
-            <UFormGroup :label="t('common.contacts.legalName') + ' *'" required>
+            <UFormGroup :label="t('contacts.legalName')" required>
               <UInput :model-value="editingLegalName" type="text" size="md" @update:model-value="$emit('updateField', 'legalName', $event)" />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.brandName')">
+            <UFormGroup :label="t('contacts.brandName')">
               <UInput :model-value="editingBrandName" type="text" size="md" @update:model-value="$emit('updateField', 'brandName', $event)" />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.binIin')">
+            <UFormGroup :label="t('contacts.binIin')">
               <UInput :model-value="editingBinIin" type="text" size="md" @update:model-value="$emit('updateField', 'binIin', $event)" />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup :label="t('common.contacts.registrationCountry')">
+              <UFormGroup :label="t('contacts.registrationCountry')">
                 <UInput :model-value="editingRegistrationCountry" type="text" size="md" @update:model-value="$emit('updateField', 'registrationCountry', $event)" />
               </UFormGroup>
 
-              <UFormGroup :label="t('common.contacts.registrationDate')">
+              <UFormGroup :label="t('contacts.registrationDate')">
                 <UInput :model-value="editingRegistrationDate" type="date" size="md" @update:model-value="$emit('updateField', 'registrationDate', $event)" />
               </UFormGroup>
             </div>

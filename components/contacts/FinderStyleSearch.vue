@@ -24,7 +24,7 @@ const emit = defineEmits<{
 }>();
 
 const inputRef = ref<HTMLInputElement | null>(null);
-const inputValue = ref('');
+const inputValue = ref(props.searchQuery || '');
 const showDropdown = ref(false);
 const availableTags = ref<Tag[]>([]);
 const loading = ref(false);
@@ -43,6 +43,10 @@ watch(() => props.selectedTags, (newTags) => {
 watch(() => props.searchQuery, (newQuery) => {
   if (newQuery !== undefined) {
     localSearchQuery.value = newQuery;
+    // Sync the visible input value when prop changes externally (e.g. from URL)
+    if (newQuery !== inputValue.value) {
+      inputValue.value = newQuery;
+    }
   }
 });
 
@@ -249,7 +253,7 @@ onMounted(() => {
         ref="inputRef"
         v-model="inputValue"
         type="text"
-        :placeholder="localSelectedTags.length > 0 || localSearchQuery ? '' : t('common.contacts.searchPlaceholder') || 'Search or add tags...'"
+        :placeholder="localSelectedTags.length > 0 || localSearchQuery ? '' : t('contacts.searchPlaceholder') || 'Search or add tags...'"
         class="flex-1 min-w-[100px] bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
         @input="handleInput"
         @focus="handleInputFocus"

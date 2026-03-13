@@ -1,16 +1,9 @@
 <script setup lang="ts">
-import { useRouter, useRoute } from 'vue-router';
-import { onMounted } from 'vue';
-
-const router = useRouter();
 const route = useRoute();
 
 const nsSlug = route.params.namespace as string;
 
-// Redirect immediately
-onMounted(() => {
-  router.replace(`/${nsSlug}/contacts/all/1-20`);
-});
+await navigateTo(`/${nsSlug}/contacts/all/1-20`, { replace: true });
 </script>
 
 <template>

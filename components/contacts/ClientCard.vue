@@ -26,8 +26,8 @@ const clientName = computed(() => {
 
 const clientType = computed(() => {
   return props.client.client.clientType === 'INDIVIDUAL'
-    ? t('common.contacts.individual')
-    : t('common.contacts.legalEntity');
+    ? t('contacts.individual')
+    : t('contacts.legalEntity');
 });
 
 const statusColor = computed(() => {

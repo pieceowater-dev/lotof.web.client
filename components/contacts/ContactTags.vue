@@ -76,7 +76,7 @@ function openTagsModal() {
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
       <UIcon name="i-heroicons-tag" class="w-5 h-5 text-rose-500 dark:text-rose-400" />
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.tags') }}</h2>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('contacts.tags') }}</h2>
     </div>
     <div class="px-5 py-5">
       <div class="flex flex-wrap gap-2">

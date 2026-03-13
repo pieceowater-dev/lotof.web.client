@@ -200,7 +200,7 @@ onMounted(() => {
   // Update labels
   columns.value = columns.value.map((col) => ({
     ...col,
-    label: t(`common.contacts.${col.key}`) || col.label,
+    label: t(`contacts.${col.key}`) || col.label,
   }));
 });
 
@@ -299,9 +299,9 @@ function getStatusColor(status: string): 'green' | 'red' | 'gray' {
 
 function getStatusLabel(status: string): string {
   const statusMap: Record<string, string> = {
-    'ACTIVE': t('common.contacts.active'),
-    'BLOCKED': t('common.contacts.blocked'),
-    'ARCHIVED': t('common.contacts.archived'),
+    'ACTIVE': t('contacts.active'),
+    'BLOCKED': t('contacts.blocked'),
+    'ARCHIVED': t('contacts.archived'),
   };
   return statusMap[status] || status;
 }
@@ -374,7 +374,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               @click="col.sortable ? handleSort(col.key) : undefined"
             >
               <div class="flex items-center gap-1">
-                <span>{{ t(`common.contacts.${col.key}`) }}</span>
+                <span>{{ t(`contacts.${col.key}`) }}</span>
                 <UIcon 
                   v-if="col.sortable && sortBy === col.key"
                   :name="sortDirection === 'asc' ? 'lucide:arrow-up' : 'lucide:arrow-down'"
@@ -393,7 +393,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 class="absolute top-0 -right-[1.5px] w-[3px] h-full cursor-col-resize bg-gray-400 dark:bg-gray-500 hover:bg-blue-500 active:bg-blue-600 transition-colors z-20"
                 @mousedown="startResize(index, $event)"
                 @click.stop
-                :title="t('common.contacts.resizeColumns') || 'Drag to resize'"
+                :title="t('contacts.resizeColumns') || 'Drag to resize'"
               />
             </th>
           </tr>
@@ -424,7 +424,7 @@ function addTagToFilter(tagId: string, tagName: string) {
             <td :colspan="columns.length" class="px-4 py-12 text-center">
               <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
                 <UIcon name="lucide:inbox" class="w-12 h-12 mb-2 opacity-50" />
-                <p>{{ t('common.contacts.noClients') }}</p>
+                <p>{{ t('contacts.noClients') }}</p>
               </div>
             </td>
           </tr>
@@ -446,7 +446,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 <UIcon 
                   :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user' : 'lucide:building-2'" 
                   class="w-4 h-4"
-                  :title="client.client.clientType === 'INDIVIDUAL' ? t('common.contacts.individual') : t('common.contacts.legalEntity')"
+                  :title="client.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity')"
                 />
               </div>
             </td>
@@ -566,7 +566,7 @@ function addTagToFilter(tagId: string, tagName: string) {
             <span class="font-medium text-gray-900 dark:text-white">{{ pageTo }}</span>
             {{ t('common.of') }}
             <span class="font-medium text-gray-900 dark:text-white">{{ totalItems }}</span>
-            {{ t('common.contacts.clients').toLowerCase() }}
+            {{ t('contacts.clients').toLowerCase() }}
           </span>
         </div>
 

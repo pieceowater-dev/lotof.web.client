@@ -68,6 +68,18 @@ function getIdentityIcon(type: string): string {
   };
   return iconMap[type] || 'i-heroicons-link';
 }
+
+function getIdentityTypeLabel(type: string): string {
+  const keyMap: Record<string, string> = {
+    phone: 'contacts.phone',
+    email: 'contacts.email',
+    telegram: 'contacts.telegram',
+    whatsapp: 'contacts.whatsapp',
+    website: 'contacts.website',
+  };
+  const key = keyMap[type];
+  return key ? (t(key) || type) : type;
+}
 </script>
 
 <template>
@@ -76,7 +88,7 @@ function getIdentityIcon(type: string): string {
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <UIcon name="i-heroicons-phone" class="w-5 h-5 text-violet-600 dark:text-violet-400" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('common.contacts.identities') }}</h2>
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('contacts.identities') }}</h2>
       </div>
       <div class="flex gap-2">
         <UButton
@@ -104,9 +116,11 @@ function getIdentityIcon(type: string): string {
             class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             <div class="flex items-center gap-3 flex-1 min-w-0">
-              <UIcon :name="getIdentityIcon(identity.type)" class="w-5 h-5 text-gray-400 flex-shrink-0" />
+              <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
+                <UIcon :name="getIdentityIcon(identity.type)" class="w-4 h-4 text-gray-500 dark:text-gray-300" />
+              </div>
               <div class="min-w-0">
-                <p class="text-xs text-gray-500 dark:text-gray-400 uppercase">{{ identity.type }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ getIdentityTypeLabel(identity.type) }}</p>
                 <p :class="['text-sm text-gray-900 dark:text-white truncate', identity.isPrimary ? 'font-bold' : 'font-medium']">
                   {{ getDisplayValue(identity) }}
                 </p>
@@ -119,8 +133,9 @@ function getIdentityIcon(type: string): string {
                 size="xs"
                 color="blue"
                 variant="soft"
+                :title="t('contacts.call') || 'Позвонить'"
                 @click="() => emit('phoneAction', identity.value)"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 justify-center"
               />
               <UButton
                 v-else-if="identity.type === 'email'"
@@ -128,8 +143,9 @@ function getIdentityIcon(type: string): string {
                 size="xs"
                 color="blue"
                 variant="soft"
+                :title="t('contacts.sendEmail') || 'Написать email'"
                 @click="() => emit('emailAction', identity.value)"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 justify-center"
               />
               <UButton
                 v-else-if="identity.type === 'telegram'"
@@ -137,8 +153,9 @@ function getIdentityIcon(type: string): string {
                 size="xs"
                 color="blue"
                 variant="soft"
+                :title="t('contacts.openTelegram') || 'Открыть Telegram'"
                 @click="() => emit('telegramAction', identity.value.replace(/^@/, ''))"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 justify-center"
               />
               <UButton
                 v-else-if="identity.type === 'whatsapp'"
@@ -146,8 +163,9 @@ function getIdentityIcon(type: string): string {
                 size="xs"
                 color="green"
                 variant="soft"
+                :title="t('contacts.openWhatsApp') || 'Открыть WhatsApp'"
                 @click="() => emit('whatsappAction', identity.value)"
-                class="h-8 w-8 p-0"
+                class="h-8 w-8 p-0 justify-center"
               />
               <UButton
                 :icon="copiedIdentityId === identity.id ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
@@ -155,8 +173,8 @@ function getIdentityIcon(type: string): string {
                 color="gray"
                 :variant="copiedIdentityId === identity.id ? 'soft' : 'ghost'"
                 @click="() => handleCopy(identity)"
-                class="h-8 w-8 p-0"
-                :title="copiedIdentityId === identity.id ? t('common.contacts.copied') : t('common.contacts.copy')"
+                class="h-8 w-8 p-0 justify-center"
+                :title="copiedIdentityId === identity.id ? t('contacts.copied') : t('contacts.copy')"
               />
             </div>
           </div>
@@ -169,7 +187,7 @@ function getIdentityIcon(type: string): string {
           <div class="space-y-2">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-phone" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('common.contacts.phones') }}</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.phones') }}</label>
             </div>
             
             <div v-for="(phone, idx) in editingPhones" :key="`phone-${idx}`" class="flex gap-2">
@@ -177,7 +195,7 @@ function getIdentityIcon(type: string): string {
                 <UInput
                   :model-value="phone"
                   type="tel"
-                  :placeholder="idx === 0 ? t('common.contacts.primaryNumber') + ' *' : t('common.contacts.additionalNumber')"
+                  :placeholder="idx === 0 ? t('contacts.primaryNumber') + ' *' : t('contacts.additionalNumber')"
                   size="md"
                   @update:model-value="$emit('updatePhone', idx, $event)"
                 />
@@ -201,7 +219,7 @@ function getIdentityIcon(type: string): string {
               size="sm"
               @click="() => $emit('addPhone')"
             >
-              {{ t('common.contacts.addPhone') }}
+              {{ t('contacts.addPhone') }}
             </UButton>
           </div>
 
@@ -209,7 +227,7 @@ function getIdentityIcon(type: string): string {
           <div class="space-y-2 pt-4">
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-envelope" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('common.contacts.emails') }}</label>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.emails') }}</label>
             </div>
             
             <div v-for="(email, idx) in editingEmails" :key="`email-${idx}`" class="flex gap-2">
@@ -241,7 +259,7 @@ function getIdentityIcon(type: string): string {
               size="sm"
               @click="() => $emit('addEmail')"
             >
-              {{ t('common.contacts.addEmail') }}
+              {{ t('contacts.addEmail') }}
             </UButton>
           </div>
         </form>

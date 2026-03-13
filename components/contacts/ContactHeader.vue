@@ -48,9 +48,9 @@ const statusBadgeClass = computed(() => {
 const statusLabel = computed(() => {
   const status = props.client?.client.status;
   const statusMap: Record<string, string> = {
-    'ACTIVE': t('common.contacts.active') || 'Active',
-    'BLOCKED': t('common.contacts.blocked') || 'Blocked',
-    'ARCHIVED': t('common.contacts.archived') || 'Archived',
+    'ACTIVE': t('contacts.active') || 'Active',
+    'BLOCKED': t('contacts.blocked') || 'Blocked',
+    'ARCHIVED': t('contacts.archived') || 'Archived',
   };
   return statusMap[status!] || status;
 });
@@ -70,7 +70,7 @@ useHead(() => ({
             {{ displayName }}
           </h1>
           <div v-if="client" class="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>{{ client.client.clientType === 'INDIVIDUAL' ? t('common.contacts.individual') : t('common.contacts.legalEntity') }}</span>
+            <span>{{ client.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}</span>
             <span>•</span>
             <span :class="statusBadgeClass">
               {{ statusLabel }}

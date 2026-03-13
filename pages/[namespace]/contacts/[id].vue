@@ -10,7 +10,7 @@ import { getClient } from '@/api/contacts/getClient';
 import { getClientIdentities, type ClientIdentity } from '@/api/contacts/identities';
 import { getClientTags } from '@/api/contacts/tags';
 import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
-import { getBonusBalance, getClientTier, getStampCards, getClientStampProgress, type BonusBalance, type ClientTier, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
+import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
 import { useNamespace } from '@/composables/useNamespace';
 import ContactHeader from '@/components/contacts/ContactHeader.vue';
 import ContactPersonalInfo from '@/components/contacts/ContactPersonalInfo.vue';
@@ -28,16 +28,17 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const { t } = useI18n();
-const { token } = useAuth();
+const { token, user } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
 const clientId = computed(() => route.params.id as string);
+const contactsAppToken = ref('');
+const createdByUserId = computed(() => user.value?.id || '00000000-0000-0000-0000-000000000000');
 
 const client = ref<ClientRow | null>(null);
 const identities = ref<ClientIdentity[]>([]);
 const tags = ref<any[]>([]);
 const events = ref<ClientEvent[]>([]);
 const bonusBalance = ref<BonusBalance | null>(null);
-const clientTier = ref<ClientTier | null>(null);
 const stampCards = ref<StampCard[]>([]);
 const stampProgress = ref<ClientStampProgress[]>([]);
 const loading = ref(true);
@@ -159,7 +160,7 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
 
   for (const item of identityRows) {
     if (item.type === 'company' || item.type === 'contact_person') {
-      displayMap[item.id] = item.comments?.trim() || relatedNames[item.value] || t('common.contacts.relatedClient');
+      displayMap[item.id] = item.comments?.trim() || relatedNames[item.value] || t('contacts.relatedClient');
       continue;
     }
     displayMap[item.id] = item.value;
@@ -201,13 +202,16 @@ async function loadClient() {
         birthDate: '1990-05-15',
         gender: true,
       },
+      tags: [],
     };
+
+    const mockClientId = client.value.client.id;
     
     // Mock identities
     identities.value = [
       {
         id: '1',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         type: 'phone',
         value: '+7 (777) 123-45-67',
         isPrimary: true,
@@ -215,7 +219,7 @@ async function loadClient() {
       },
       {
         id: '2',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         type: 'email',
         value: 'a.petrov@example.com',
         isPrimary: true,
@@ -223,7 +227,7 @@ async function loadClient() {
       },
       {
         id: '3',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         type: 'telegram',
         value: '@apetrov',
         isPrimary: false,
@@ -241,7 +245,7 @@ async function loadClient() {
     events.value = [
       {
         id: '1',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'CLIENT_CREATED',
         payload: '{}',
         createdAt: '2024-01-15T10:30:00Z',
@@ -249,7 +253,7 @@ async function loadClient() {
       },
       {
         id: '2',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'IDENTITY_ADDED',
         payload: JSON.stringify({ type: 'phone', value: '+7 (777) 123-45-67' }),
         createdAt: '2024-01-15T10:31:00Z',
@@ -257,7 +261,7 @@ async function loadClient() {
       },
       {
         id: '3',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'IDENTITY_ADDED',
         payload: JSON.stringify({ type: 'email', value: 'a.petrov@example.com' }),
         createdAt: '2024-01-16T11:20:00Z',
@@ -265,7 +269,7 @@ async function loadClient() {
       },
       {
         id: '4',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'VIP' }),
         createdAt: '2024-01-20T09:15:00Z',
@@ -273,7 +277,7 @@ async function loadClient() {
       },
       {
         id: '5',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'Постоянный клиент' }),
         createdAt: '2024-01-22T14:30:00Z',
@@ -281,7 +285,7 @@ async function loadClient() {
       },
       {
         id: '6',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_EARNED',
         payload: JSON.stringify({ amount: 1500, reason: 'REGISTRATION' }),
         createdAt: '2024-02-01T08:00:00Z',
@@ -289,7 +293,7 @@ async function loadClient() {
       },
       {
         id: '7',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_SPENT',
         payload: JSON.stringify({ amount: 500, description: 'Скидка 10% на покупку' }),
         createdAt: '2024-02-05T16:45:00Z',
@@ -297,7 +301,7 @@ async function loadClient() {
       },
       {
         id: '8',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'Оптовик' }),
         createdAt: '2024-02-08T10:20:00Z',
@@ -305,7 +309,7 @@ async function loadClient() {
       },
       {
         id: '9',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'IDENTITY_ADDED',
         payload: JSON.stringify({ type: 'telegram', value: '@apetrov' }),
         createdAt: '2024-02-10T12:00:00Z',
@@ -313,7 +317,7 @@ async function loadClient() {
       },
       {
         id: '10',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_EARNED',
         payload: JSON.stringify({ amount: 2500, reason: 'PURCHASE' }),
         createdAt: '2024-02-15T09:30:00Z',
@@ -321,7 +325,7 @@ async function loadClient() {
       },
       {
         id: '11',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'TIER_UPGRADED',
         payload: JSON.stringify({ from: 'SILVER', to: 'GOLD' }),
         createdAt: '2024-02-20T13:22:00Z',
@@ -329,7 +333,7 @@ async function loadClient() {
       },
       {
         id: '12',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_SPENT',
         payload: JSON.stringify({ amount: 1200, description: 'Скидка 20% на покупку' }),
         createdAt: '2024-02-22T11:15:00Z',
@@ -337,7 +341,7 @@ async function loadClient() {
       },
       {
         id: '13',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_EARNED',
         payload: JSON.stringify({ amount: 3000, reason: 'TIER_BONUS' }),
         createdAt: '2024-02-25T08:00:00Z',
@@ -345,7 +349,7 @@ async function loadClient() {
       },
       {
         id: '14',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'IDENTITY_VERIFIED',
         payload: JSON.stringify({ type: 'email', value: 'a.petrov@example.com' }),
         createdAt: '2024-02-26T15:45:00Z',
@@ -353,7 +357,7 @@ async function loadClient() {
       },
       {
         id: '15',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'COMMENT_ADDED',
         payload: JSON.stringify({ text: 'Звоним только с 10:00 до 12:00' }),
         createdAt: '2024-02-28T09:00:00Z',
@@ -361,7 +365,7 @@ async function loadClient() {
       },
       {
         id: '16',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_EARNED',
         payload: JSON.stringify({ amount: 1800, reason: 'VISIT' }),
         createdAt: '2024-03-01T10:30:00Z',
@@ -369,7 +373,7 @@ async function loadClient() {
       },
       {
         id: '17',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'STATUS_CHANGED',
         payload: JSON.stringify({ from: 'ACTIVE', to: 'ACTIVE' }),
         createdAt: '2024-03-01T14:22:00Z',
@@ -377,7 +381,7 @@ async function loadClient() {
       },
       {
         id: '18',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'IDENTITY_ADDED',
         payload: JSON.stringify({ type: 'whatsapp', value: '+7 777 123-45-67' }),
         createdAt: '2024-03-02T10:15:00Z',
@@ -385,7 +389,7 @@ async function loadClient() {
       },
       {
         id: '19',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'RECORD_UPDATED',
         payload: JSON.stringify({ field: 'birthDate', oldValue: '1990-05-15', newValue: '1990-05-15' }),
         createdAt: '2024-03-02T11:00:00Z',
@@ -393,7 +397,7 @@ async function loadClient() {
       },
       {
         id: '20',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         eventType: 'BONUS_EXPIRED',
         payload: JSON.stringify({ amount: 520 }),
         createdAt: '2024-03-02T23:59:00Z',
@@ -403,21 +407,10 @@ async function loadClient() {
     
     // Mock bonus balance
     bonusBalance.value = {
-      clientId: client.value.client.id,
+      clientId: mockClientId,
       totalBonuses: 15420,
       availableBonuses: 12850,
       expiringSoon: 2570,
-      updatedAt: '2024-03-01T14:22:00Z',
-    };
-    
-    // Mock client tier
-    clientTier.value = {
-      id: '1',
-      clientId: client.value.client.id,
-      tierId: 'tier-gold',
-      currentValue: 78500,
-      nextTierThreshold: 100000,
-      achievedAt: '2024-02-01T10:00:00Z',
       updatedAt: '2024-03-01T14:22:00Z',
     };
     
@@ -454,7 +447,7 @@ async function loadClient() {
     stampProgress.value = [
       {
         id: 'progress-1',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         stampCardId: 'stamp-1',
         currentStamps: 7,
         completedRounds: 3,
@@ -463,7 +456,7 @@ async function loadClient() {
       },
       {
         id: 'progress-2',
-        clientId: client.value.client.id,
+        clientId: mockClientId,
         stampCardId: 'stamp-2',
         currentStamps: 11,
         completedRounds: 0,
@@ -487,13 +480,14 @@ async function loadClient() {
     const { ensure } = useContactsToken();
     const contactsToken = await ensure(selectedNS.value, token.value);
     if (!contactsToken) return;
+    contactsAppToken.value = contactsToken;
 
     // Get client data first
     const clientData = await getClient(contactsToken, selectedNS.value, clientId.value);
     if (!clientData) {
       toast.add({
         title: t('common.error'),
-        description: t('common.contacts.loadError'),
+        description: t('contacts.loadError'),
         color: 'red',
       });
       router.push(`/${selectedNS.value}/contacts`);
@@ -506,13 +500,12 @@ async function loadClient() {
     const fullClientId = client.value.client.id;
 
     // Load all related data in parallel
-    const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, clientTierResult, stampCardsResult] = 
+    const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, stampCardsResult] = 
       await Promise.allSettled([
         getClientIdentities(contactsToken, fullClientId, selectedNS.value),
         getClientTags(contactsToken, selectedNS.value, fullClientId),
         getClientEvents(contactsToken, fullClientId),
         getBonusBalance(contactsToken, fullClientId),
-        getClientTier(contactsToken, fullClientId),
         getStampCards(contactsToken),
       ]);
 
@@ -536,7 +529,7 @@ async function loadClient() {
 
     // Process tags
     if (tagsResult.status === 'fulfilled') {
-      tags.value = tagsResult.value.tags || [];
+      tags.value = tagsResult.value.clientTags?.tags || (tagsResult.value as any).tags || [];
     } else {
       if (!isUnimplementedError(tagsResult.reason)) {
         logError('Failed to load tags:', tagsResult.reason);
@@ -566,16 +559,6 @@ async function loadClient() {
       bonusBalance.value = null;
     }
 
-    // Process client tier
-    if (clientTierResult.status === 'fulfilled') {
-      clientTier.value = clientTierResult.value;
-    } else {
-      if (!isUnimplementedError(clientTierResult.reason)) {
-        logError('Failed to load client tier:', clientTierResult.reason);
-      }
-      clientTier.value = null;
-    }
-
     // Process stamp cards and progress
     if (stampCardsResult.status === 'fulfilled' && stampCardsResult.value) {
       stampCards.value = stampCardsResult.value;
@@ -600,7 +583,7 @@ async function loadClient() {
     logError('Failed to load client:', error);
     toast.add({
       title: t('common.error'),
-      description: t('common.contacts.loadError'),
+      description: t('contacts.loadError'),
       color: 'red',
     });
   } finally {
@@ -617,14 +600,14 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
     client.value.client.status = newStatus;
     toast.add({
       title: t('common.success'),
-      description: t('common.contacts.statusUpdated'),
+      description: t('contacts.statusUpdated'),
       color: 'green',
     });
   } catch (error) {
     logError('Failed to update client status:', error);
     toast.add({
       title: t('common.error'),
-      description: t('common.contacts.updateError'),
+      description: t('contacts.updateError'),
       color: 'red',
     });
   } finally {
@@ -645,14 +628,14 @@ async function copyToClipboard(text: string) {
       document.body.removeChild(tempInput);
     }
     toast.add({
-      title: t('common.contacts.copied'),
+      title: t('contacts.copied'),
       icon: 'i-heroicons-clipboard-document-check',
       color: 'green',
     });
   } catch (err) {
     logError('Failed to copy to clipboard', err);
     toast.add({
-      title: t('common.contacts.copyFailed'),
+      title: t('contacts.copyFailed'),
       color: 'red',
     });
   }
@@ -729,7 +712,7 @@ function savePersonalInfo() {
     editMode.value.personalInfo = false;
     toast.add({
       title: t('common.success'),
-      description: t('common.contacts.clientDataUpdated'),
+      description: t('contacts.clientDataUpdated'),
       color: 'green',
     });
   }
@@ -796,7 +779,7 @@ function saveIdentities() {
     editMode.value.identities = false;
     toast.add({
       title: t('common.success'),
-      description: t('common.contacts.contactDataUpdated'),
+      description: t('contacts.contactDataUpdated'),
       color: 'green',
     });
   }
@@ -906,9 +889,13 @@ function removeEmailField(index: number) {
           <!-- Loyalty Section -->
           <ContactLoyalty
             :bonus-balance="bonusBalance"
-            :client-tier="clientTier"
             :stamp-cards="stampCards"
             :stamp-progress="stampProgress"
+            :contacts-token="contactsAppToken"
+            :client-id="client?.client.id"
+            :namespace="selectedNS || nsSlug"
+            :created-by="createdByUserId"
+            @bonus-earned="loadClient"
           />
 
           <!-- Tags Section -->

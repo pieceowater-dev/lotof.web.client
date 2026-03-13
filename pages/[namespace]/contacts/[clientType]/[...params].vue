@@ -6,6 +6,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
+import { listTags } from '@/api/contacts/tags';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import SegmentsModal from '@/components/contacts/SegmentsModal.vue';
@@ -28,8 +29,9 @@ const isSegmentsModalOpen = ref(false);
 const isIdentitiesModalOpen = ref(false);
 const selectedClientId = ref<string | null>(null);
 const selectedClientIdForTagsModal = ref<string | null>(null);
-const searchQuery = ref('');
+const searchQuery = ref((route.query.s as string) || '');
 const selectedTags = ref<Array<{ id: string; name: string }>>([]);
+const isInitializingFromUrl = ref(false);
 const useMockData = ref(false);
 const sortField = ref('createdAt');
 const sortDirection = ref<'ASC' | 'DESC'>('DESC');
@@ -132,7 +134,42 @@ useHead(() => ({
   title: pageTitle.value,
 }));
 
+// Build URL query params from current filter state
+function buildUrlQuery(): Record<string, string | string[]> {
+  const query: Record<string, string | string[]> = {};
+  const s = searchQuery.value.trim();
+  if (s) query.s = s;
+  if (selectedTags.value.length > 0) {
+    query.t = selectedTags.value.map(tag => tag.name);
+  }
+  return query;
+}
+
 onMounted(async () => {
+  // Initialize selectedTags from ?t= URL params
+  const t = route.query.t;
+  if (t && token.value && selectedNS.value) {
+    const tagNames = (Array.isArray(t) ? t : [t]) as string[];
+    if (tagNames.length > 0) {
+      isInitializingFromUrl.value = true;
+      try {
+        const { ensure } = useContactsToken();
+        const contactsToken = await ensure(selectedNS.value, token.value);
+        if (contactsToken) {
+          const data = await listTags(contactsToken, selectedNS.value);
+          const allTags = data.tags.rows;
+          const matched = tagNames
+            .map(name => allTags.find(tag => tag.name === name))
+            .filter(Boolean) as Array<{ id: string; name: string }>;
+          if (matched.length > 0) selectedTags.value = matched;
+        }
+      } catch {
+        // ignore tag init errors
+      } finally {
+        isInitializingFromUrl.value = false;
+      }
+    }
+  }
   await loadClients();
 });
 
@@ -144,29 +181,34 @@ watch([isValidPagination, isPageOutOfBounds], ([invalidPagination, outOfBounds])
   if (invalidPagination === false) {
     // Invalid pagination format/values
     router.replace({ 
-      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-20`
+      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-20`,
+      query: { ...route.query },
     });
   } else if (outOfBounds) {
     // Page is beyond available pages
     const maxPage = totalPages.value || 1;
     router.replace({ 
-      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/${maxPage}-${pageSize.value}`
+      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/${maxPage}-${pageSize.value}`,
+      query: { ...route.query },
     });
   }
 }, { immediate: true });
 
-// Watch for search query changes - reload clients from backend with new search
+// Watch for search query changes - update URL and reload
 watch(searchQuery, async (newQuery) => {
+  if (isInitializingFromUrl.value) return;
   if (process.client && document.visibilityState !== 'visible') return;
-  
+
   // Reset to page 1 when search changes
   if (page.value !== 1) {
-    await router.push({ 
-      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-${pageSize.value}`
+    await router.push({
+      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-${pageSize.value}`,
+      query: buildUrlQuery(),
     });
     return;
   }
 
+  await router.replace({ query: buildUrlQuery() });
   await loadClients();
 });
 
@@ -175,18 +217,21 @@ watch(() => route.params, async () => {
   await loadClients();
 }, { deep: true });
 
-// Watch for selected tags changes - reload clients
+// Watch for selected tags changes - update URL and reload
 watch(selectedTags, async () => {
+  if (isInitializingFromUrl.value) return;
   if (process.client && document.visibilityState !== 'visible') return;
-  
+
   // Reset to page 1 when tag filter changes
   if (page.value !== 1) {
-    await router.push({ 
-      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-${pageSize.value}`
+    await router.push({
+      path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/1-${pageSize.value}`,
+      query: buildUrlQuery(),
     });
     return;
   }
 
+  await router.replace({ query: buildUrlQuery() });
   await loadClients();
 }, { deep: true });
 
@@ -244,7 +289,7 @@ async function loadClients() {
     logError('Failed to load clients:', error);
     toast.add({
       title: t('common.error'),
-      description: t('common.contacts.loadError'),
+      description: t('contacts.loadError'),
       color: 'red',
     });
   } finally {
@@ -297,8 +342,9 @@ function updateRoute(newPage: number, newPageSize: number) {
     return;
   }
   
-  router.push({ 
-    path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/${newPage}-${newPageSize}`
+  router.push({
+    path: `/${nsSlug.value}/contacts/${clientTypeFilter.value.toLowerCase()}/${newPage}-${newPageSize}`,
+    query: buildUrlQuery(),
   });
 }
 
@@ -315,7 +361,7 @@ async function handleClientCreated() {
   await loadClients();
   toast.add({
     title: t('common.success'),
-    description: t('common.contacts.clientCreated'),
+    description: t('contacts.clientCreated'),
     color: 'green',
   });
 }
@@ -338,7 +384,7 @@ async function handleClientCreated() {
             variant="soft"
             @click="isTagsModalOpen = true"
           >
-            {{ t('common.contacts.tags') }}
+            {{ t('contacts.tags') }}
           </UButton>
           <!-- <UButton 
             icon="lucide:boxes" 
@@ -347,7 +393,7 @@ async function handleClientCreated() {
             variant="soft"
             @click="isSegmentsModalOpen = true"
           >
-            {{ t('common.contacts.segments') }}
+            {{ t('contacts.segments') }}
           </UButton> -->
           <UButton 
             icon="lucide:settings" 
@@ -356,7 +402,7 @@ async function handleClientCreated() {
             variant="soft"
             :to="`/${nsSlug}/contacts/settings`"
           >
-            {{ t('common.settings') }}
+            {{ t('common.settings.title') }}
           </UButton>
         </div>
       </div>
@@ -377,10 +423,10 @@ async function handleClientCreated() {
           >
             {{
               type === 'ALL'
-                ? t('common.contacts.all')
+                ? t('contacts.all')
                 : type === 'INDIVIDUAL'
-                  ? t('common.contacts.individual')
-                  : t('common.contacts.legalEntity')
+                  ? t('contacts.individual')
+                  : t('contacts.legalEntity')
             }}
           </button>
         </div>
@@ -391,7 +437,7 @@ async function handleClientCreated() {
           variant="soft"
           :to="`/${nsSlug}/contacts/new`"
         >
-          {{ t('common.contacts.createClient') }}
+          {{ t('contacts.createClient') }}
         </UButton>
       </div>
     </div>
@@ -405,36 +451,32 @@ async function handleClientCreated() {
     </div>
 
     <!-- Empty State (only when no clients exist AND no search) -->
-    <div v-else-if="totalCount === 0 && searchQuery === '' && !loading" class="flex-1 flex items-center justify-center px-4 py-16">
-      <div class="max-w-md w-full text-center">
-        <!-- Icon with gradient background -->
-        <div class="mb-6 flex justify-center">
-          <div class="relative">
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full blur-lg opacity-40"></div>
-            <div class="relative bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-full p-6 border border-blue-200 dark:border-blue-800/50">
-              <UIcon name="lucide:users" class="w-12 h-12 text-blue-600 dark:text-blue-400 mx-auto" />
-            </div>
+    <div v-else-if="totalCount === 0 && searchQuery === '' && !loading" class="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
+      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
+        <div class="px-6 py-8 sm:px-10 sm:py-10 text-center">
+          <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700">
+            <UIcon name="lucide:users" class="w-7 h-7 text-gray-600 dark:text-gray-300" />
+          </div>
+
+          <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+            {{ t('contacts.noClients') }}
+          </h2>
+          <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-7 leading-relaxed">
+            {{ t('contacts.noClientsDescription') || 'Создавайте новых клиентов и управляйте всеми деталями их контактной информации в одном месте' }}
+          </p>
+
+          <div class="flex justify-center">
+            <UButton
+              icon="lucide:plus"
+              size="md"
+              color="primary"
+              class="w-auto"
+              :to="`/${nsSlug}/contacts/new`"
+            >
+              {{ t('contacts.createFirstClient') || t('contacts.createClient') }}
+            </UButton>
           </div>
         </div>
-        
-        <!-- Text content -->
-        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          {{ t('common.contacts.noClients') }}
-        </h2>
-        <p class="text-gray-600 dark:text-gray-400 mb-8 leading-relaxed">
-          {{ t('common.contacts.noClientsDescription') || 'Создавайте новых клиентов и управляйте всеми деталями их контактной информации в одном месте' }}
-        </p>
-        
-        <!-- CTA Button -->
-        <UButton
-          icon="lucide:plus-circle"
-          size="lg"
-          color="primary"
-          class="w-full"
-          :to="`/${nsSlug}/contacts/new`"
-        >
-          {{ t('common.contacts.createFirstClient') || t('common.contacts.createClient') }}
-        </UButton>
       </div>
     </div>
 

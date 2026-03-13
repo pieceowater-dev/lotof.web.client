@@ -1106,7 +1106,7 @@ onBeforeUnmount(() => {
                     variant="soft"
                     :to="`/${nsSlug}/atrace/settings`"
                 >
-                    {{ t('common.settings') }}
+                    {{ t('common.settings.title') }}
                 </UButton>
             </div>
         </div>

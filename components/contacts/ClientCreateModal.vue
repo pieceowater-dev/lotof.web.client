@@ -26,14 +26,14 @@ const clientType = ref<'INDIVIDUAL' | 'LEGAL'>('INDIVIDUAL');
 const clientTypeOptions = [
   {
     value: 'INDIVIDUAL' as const,
-    labelKey: 'common.contacts.individual',
-    shortKey: 'common.contacts.individualShort',
+    labelKey: 'contacts.individual',
+    shortKey: 'contacts.individualShort',
     icon: 'i-heroicons-user',
   },
   {
     value: 'LEGAL' as const,
-    labelKey: 'common.contacts.legalEntity',
-    shortKey: 'common.contacts.legalEntityShort',
+    labelKey: 'contacts.legalEntity',
+    shortKey: 'contacts.legalEntityShort',
     icon: 'i-heroicons-building-office-2',
   },
 ];
@@ -77,9 +77,9 @@ const contactPersonForm = ref({
 const clientStatus = ref<'ACTIVE' | 'ARCHIVED' | 'BLOCKED'>('ACTIVE');
 
 const statusOptions = [
-  { value: 'ACTIVE', label: t('common.contacts.active') },
-  { value: 'BLOCKED', label: t('common.contacts.blocked') },
-  { value: 'ARCHIVED', label: t('common.contacts.archived') },
+  { value: 'ACTIVE', label: t('contacts.active') },
+  { value: 'BLOCKED', label: t('contacts.blocked') },
+  { value: 'ARCHIVED', label: t('contacts.archived') },
 ];
 
 function sanitizePhoneInput(value: string): string {
@@ -231,7 +231,7 @@ async function handleSubmit() {
     logError('Failed to create client:', error);
     toast.add({
       title: t('common.error'),
-      description: t('common.contacts.createError'),
+      description: t('contacts.createError'),
       color: 'red',
     });
   } finally {
@@ -258,7 +258,7 @@ function handleKeyDown(event: KeyboardEvent) {
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ t('common.contacts.createClient') }}
+            {{ t('contacts.createClient') }}
           </h2>
           <p class="text-xs text-gray-500 dark:text-gray-400 ml-4">
             ⌘/Ctrl + Enter
@@ -270,7 +270,7 @@ function handleKeyDown(event: KeyboardEvent) {
         <!-- Client Type Selection -->
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            {{ t('common.contacts.clientType') }}
+            {{ t('contacts.clientType') }}
           </label>
           <div class="grid grid-cols-2 gap-3">
             <label
@@ -307,14 +307,14 @@ function handleKeyDown(event: KeyboardEvent) {
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
             <UIcon name="i-heroicons-phone" class="w-4 h-4" />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.contactInformation') || 'Contact Information' }}
+              {{ t('contacts.contactInformation') || 'Contact Information' }}
             </h3>
           </div>
           
           <!-- Primary Phone (Required, Autofocus) -->
           <UFormGroup 
-            :label="t('common.contacts.primaryPhone') || 'Primary Phone' + ' *'"
-            :help="!hasValidPrimaryPhone && phones[0] ? (t('common.contacts.invalidPhone') || 'Invalid phone format') : ''"
+            :label="t('contacts.primaryPhone') || 'Primary Phone' + ' *'"
+            :help="!hasValidPrimaryPhone && phones[0] ? (t('contacts.invalidPhone') || 'Invalid phone format') : ''"
             :error="!!(!hasValidPrimaryPhone && phones[0])"
           >
             <UInput
@@ -324,7 +324,7 @@ function handleKeyDown(event: KeyboardEvent) {
               type="tel"
               inputmode="tel"
               pattern="[0-9+()\s-]*"
-              :placeholder="t('common.contacts.enterPhone') || '+7 700 123 45 67'"
+              :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
               size="lg"
               autofocus
             />
@@ -333,9 +333,9 @@ function handleKeyDown(event: KeyboardEvent) {
           <!-- Additional Phones -->
           <div v-for="(phone, index) in phones.slice(1)" :key="'phone-' + index" class="flex gap-2">
             <UFormGroup 
-              :label="index === 0 ? (t('common.contacts.additionalPhone') || 'Additional Phone') : ''"
+              :label="index === 0 ? (t('contacts.additionalPhone') || 'Additional Phone') : ''"
               class="flex-1"
-              :help="phone && !isPhoneValid(phone) ? (t('common.contacts.invalidPhone') || 'Invalid phone format') : ''"
+              :help="phone && !isPhoneValid(phone) ? (t('contacts.invalidPhone') || 'Invalid phone format') : ''"
               :error="!!(phone && !isPhoneValid(phone))"
             >
               <UInput
@@ -344,7 +344,7 @@ function handleKeyDown(event: KeyboardEvent) {
                 type="tel"
                 inputmode="tel"
                 pattern="[0-9+()\s-]*"
-                :placeholder="t('common.contacts.enterPhone') || '+7 700 123 45 67'"
+                :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
                 size="lg"
               />
             </UFormGroup>
@@ -366,19 +366,19 @@ function handleKeyDown(event: KeyboardEvent) {
             @click="addPhone"
             class="w-full"
           >
-            {{ t('common.contacts.addPhone') || 'Add phone' }}
+            {{ t('contacts.addPhone') || 'Add phone' }}
           </UButton>
 
           <!-- Primary Email -->
           <UFormGroup 
-            :label="t('common.contacts.primaryEmail') || 'Primary Email'"
-            :help="emails[0] && !isEmailValid(emails[0]) ? (t('common.contacts.invalidEmail') || 'Invalid email format') : ''"
+            :label="t('contacts.primaryEmail') || 'Primary Email'"
+            :help="emails[0] && !isEmailValid(emails[0]) ? (t('contacts.invalidEmail') || 'Invalid email format') : ''"
             :error="!!(emails[0] && !isEmailValid(emails[0]))"
           >
             <UInput
               v-model="emails[0]"
               type="email"
-              :placeholder="t('common.contacts.enterEmail') || 'email@example.com'"
+              :placeholder="t('contacts.enterEmail') || 'email@example.com'"
               size="lg"
             />
           </UFormGroup>
@@ -386,15 +386,15 @@ function handleKeyDown(event: KeyboardEvent) {
           <!-- Additional Emails -->
           <div v-for="(email, index) in emails.slice(1)" :key="'email-' + index" class="flex gap-2">
             <UFormGroup 
-              :label="index === 0 ? (t('common.contacts.additionalEmail') || 'Additional Email') : ''"
+              :label="index === 0 ? (t('contacts.additionalEmail') || 'Additional Email') : ''"
               class="flex-1"
-              :help="email && !isEmailValid(email) ? (t('common.contacts.invalidEmail') || 'Invalid email format') : ''"
+              :help="email && !isEmailValid(email) ? (t('contacts.invalidEmail') || 'Invalid email format') : ''"
               :error="!!(email && !isEmailValid(email))"
             >
               <UInput
                 v-model="emails[index + 1]"
                 type="email"
-                :placeholder="t('common.contacts.enterEmail') || 'email@example.com'"
+                :placeholder="t('contacts.enterEmail') || 'email@example.com'"
                 size="lg"
               />
             </UFormGroup>
@@ -416,7 +416,7 @@ function handleKeyDown(event: KeyboardEvent) {
             @click="addEmail"
             class="w-full"
           >
-            {{ t('common.contacts.addEmail') || 'Add email' }}
+            {{ t('contacts.addEmail') || 'Add email' }}
           </UButton>
         </div>
 
@@ -425,41 +425,41 @@ function handleKeyDown(event: KeyboardEvent) {
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
             <UIcon name="i-heroicons-user" class="w-4 h-4" />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.personalInformation') || 'Personal Information' }}
+              {{ t('contacts.personalInformation') || 'Personal Information' }}
             </h3>
           </div>
           
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <UFormGroup :label="t('common.contacts.lastName')">
+            <UFormGroup :label="t('contacts.lastName')">
               <UInput
                 v-model="individualForm.lastName"
                 type="text"
-                :placeholder="t('common.contacts.lastName')"
+                :placeholder="t('contacts.lastName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.firstName') + ' *'">
+            <UFormGroup :label="t('contacts.firstName') + ' *'">
               <UInput
                 v-model="individualForm.firstName"
                 type="text"
-                :placeholder="t('common.contacts.firstName')"
+                :placeholder="t('contacts.firstName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.middleName')">
+            <UFormGroup :label="t('contacts.middleName')">
               <UInput
                 v-model="individualForm.middleName"
                 type="text"
-                :placeholder="t('common.contacts.middleName')"
+                :placeholder="t('contacts.middleName')"
                 size="lg"
               />
             </UFormGroup>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('common.contacts.birthDate')">
+            <UFormGroup :label="t('contacts.birthDate')">
               <UInput
                 v-model="individualForm.birthDate"
                 type="date"
@@ -467,14 +467,14 @@ function handleKeyDown(event: KeyboardEvent) {
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.gender')">
+            <UFormGroup :label="t('contacts.gender')">
               <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
               <USelect
                 :model-value="individualForm.gender"
                 :options="[
                   { value: null, label: '--' },
-                  { value: true, label: t('common.contacts.male') },
-                  { value: false, label: t('common.contacts.female') },
+                  { value: true, label: t('contacts.male') },
+                  { value: false, label: t('contacts.female') },
                 ]"
                 size="lg"
                 @update:model-value="(val: any) => individualForm.gender = val"
@@ -488,51 +488,51 @@ function handleKeyDown(event: KeyboardEvent) {
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
             <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.companyInformation') || 'Company Information' }}
+              {{ t('contacts.companyInformation') || 'Company Information' }}
             </h3>
           </div>
           
           <div class="grid grid-cols-1 gap-4">
-            <UFormGroup :label="t('common.contacts.legalName') + ' *'">
+            <UFormGroup :label="t('contacts.legalName') + ' *'">
               <UInput
                 v-model="legalEntityForm.legalName"
                 type="text"
-                :placeholder="t('common.contacts.legalName')"
+                :placeholder="t('contacts.legalName')"
                 size="lg"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.brandName')">
+            <UFormGroup :label="t('contacts.brandName')">
               <UInput
                 v-model="legalEntityForm.brandName"
                 type="text"
-                :placeholder="t('common.contacts.brandName')"
+                :placeholder="t('contacts.brandName')"
                 size="lg"
               />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <UFormGroup :label="t('common.contacts.binIin')">
+              <UFormGroup :label="t('contacts.binIin')">
                 <UInput
                   v-model="legalEntityForm.binIin"
                   type="text"
-                  :placeholder="t('common.contacts.binIin')"
+                  :placeholder="t('contacts.binIin')"
                   size="lg"
                   maxlength="12"
                 />
               </UFormGroup>
 
-              <UFormGroup :label="t('common.contacts.registrationCountry')">
+              <UFormGroup :label="t('contacts.registrationCountry')">
                 <UInput
                   v-model="legalEntityForm.registrationCountry"
                   type="text"
-                  :placeholder="t('common.contacts.registrationCountry')"
+                  :placeholder="t('contacts.registrationCountry')"
                   size="lg"
                 />
               </UFormGroup>
             </div>
 
-            <UFormGroup :label="t('common.contacts.registrationDate')">
+            <UFormGroup :label="t('contacts.registrationDate')">
               <UInput
                 v-model="legalEntityForm.registrationDate"
                 type="date"
@@ -545,41 +545,41 @@ function handleKeyDown(event: KeyboardEvent) {
               <div class="flex items-center gap-2 mb-3">
                 <UIcon name="i-heroicons-user" class="w-4 h-4" />
                 <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                  {{ t('common.contacts.contactPersonOptional') }}
+                  {{ t('contacts.contactPersonOptional') }}
                 </h4>
               </div>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <UFormGroup :label="t('common.contacts.firstName')">
+                <UFormGroup :label="t('contacts.firstName')">
                   <UInput
                     v-model="contactPersonForm.firstName"
                     type="text"
-                    :placeholder="t('common.contacts.firstName')"
+                    :placeholder="t('contacts.firstName')"
                     size="lg"
                   />
                 </UFormGroup>
 
-                <UFormGroup :label="t('common.contacts.lastName')">
+                <UFormGroup :label="t('contacts.lastName')">
                   <UInput
                     v-model="contactPersonForm.lastName"
                     type="text"
-                    :placeholder="t('common.contacts.lastName')"
+                    :placeholder="t('contacts.lastName')"
                     size="lg"
                   />
                 </UFormGroup>
               </div>
 
-              <UFormGroup :label="t('common.contacts.middleName')">
+              <UFormGroup :label="t('contacts.middleName')">
                 <UInput
                   v-model="contactPersonForm.middleName"
                   type="text"
-                  :placeholder="t('common.contacts.middleName')"
+                  :placeholder="t('contacts.middleName')"
                   size="lg"
                 />
               </UFormGroup>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <UFormGroup :label="t('common.contacts.birthDate')">
+                <UFormGroup :label="t('contacts.birthDate')">
                   <UInput
                     v-model="contactPersonForm.birthDate"
                     type="date"
@@ -587,14 +587,14 @@ function handleKeyDown(event: KeyboardEvent) {
                   />
                 </UFormGroup>
 
-                <UFormGroup :label="t('common.contacts.gender')">
+                <UFormGroup :label="t('contacts.gender')">
                   <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
                     :model-value="contactPersonForm.gender"
                     :options="[
                       { value: null, label: '--' },
-                      { value: true, label: t('common.contacts.male') },
-                      { value: false, label: t('common.contacts.female') },
+                      { value: true, label: t('contacts.male') },
+                      { value: false, label: t('contacts.female') },
                     ]"
                     size="lg"
                     @update:model-value="(val: any) => contactPersonForm.gender = val"
@@ -610,10 +610,10 @@ function handleKeyDown(event: KeyboardEvent) {
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
             <UIcon name="i-heroicons-cog-8-tooth" class="w-4 h-4" />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.clientStatus') || 'Client Status' }}
+              {{ t('contacts.clientStatus') || 'Client Status' }}
             </h3>
           </div>
-          <UFormGroup :label="t('common.contacts.status')">
+          <UFormGroup :label="t('contacts.status')">
             <USelect
               v-model="clientStatus"
               :options="statusOptions"
@@ -626,7 +626,7 @@ function handleKeyDown(event: KeyboardEvent) {
       <template #footer>
         <div class="flex justify-between items-center">
           <p class="text-xs text-gray-500 dark:text-gray-400">
-            * = {{ t('common.contacts.required') || 'Required' }}
+            * = {{ t('contacts.required') || 'Required' }}
           </p>
           <div class="flex gap-3">
             <UButton

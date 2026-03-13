@@ -7,7 +7,9 @@ export interface Tag {
 }
 
 export interface ClientTagsResponse {
-  tags: Tag[];
+  clientTags: {
+    tags: Tag[];
+  };
 }
 
 export interface TagListResponse {

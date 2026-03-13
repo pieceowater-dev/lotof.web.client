@@ -28,14 +28,14 @@ const clientType = ref<'INDIVIDUAL' | 'LEGAL'>('INDIVIDUAL');
 const clientTypeOptions = [
   {
     value: 'INDIVIDUAL' as const,
-    labelKey: 'common.contacts.individual',
-    shortKey: 'common.contacts.individualShort',
+    labelKey: 'contacts.individual',
+    shortKey: 'contacts.individualShort',
     icon: 'i-heroicons-user',
   },
   {
     value: 'LEGAL' as const,
-    labelKey: 'common.contacts.legalEntity',
-    shortKey: 'common.contacts.legalEntityShort',
+    labelKey: 'contacts.legalEntity',
+    shortKey: 'contacts.legalEntityShort',
     icon: 'i-heroicons-building-office-2',
   },
 ];
@@ -434,7 +434,7 @@ async function handleSubmit() {
     hasChanges.value = false;
     toast.add({
       title: t('common.success'),
-      description: t('common.contacts.clientCreated'),
+      description: t('contacts.clientCreated'),
       color: 'green',
     });
 
@@ -444,7 +444,7 @@ async function handleSubmit() {
     logError('Failed to create client:', error);
     toast.add({
       title: t('common.error'),
-      description: t('common.contacts.createError'),
+      description: t('contacts.createError'),
       color: 'red',
     });
   } finally {
@@ -554,7 +554,7 @@ onMounted(() => {
 
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 const pageTitle = computed(() => {
-  return nsTitle.value ? `${t('common.contacts.createClient')} — ${nsTitle.value}` : t('common.contacts.createClient');
+  return nsTitle.value ? `${t('contacts.createClient')} — ${nsTitle.value}` : t('contacts.createClient');
 });
 
 useHead(() => ({
@@ -570,10 +570,10 @@ useHead(() => ({
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.createClient') }}
+              {{ t('contacts.createClient') }}
             </h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {{ nsTitle }} • {{ clientType === 'INDIVIDUAL' ? t('common.contacts.individual') : t('common.contacts.legalEntity') }}
+              {{ nsTitle }} • {{ clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}
             </p>
           </div>
           <UButton
@@ -597,7 +597,7 @@ useHead(() => ({
           <!-- 0. Client Type Selection -->
           <div class="space-y-3">
             <label class="block text-base font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.clientType') }}
+              {{ t('contacts.clientType') }}
             </label>
             <div class="grid grid-cols-2 gap-3">
               <label
@@ -636,16 +636,16 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-phone" class="w-4 h-4 text-blue-600" />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('common.contacts.contactInformation') }}
+                {{ t('contacts.contactInformation') }}
               </h2>
             </div>
             
             <!-- Primary Phone -->
             <div>
               <UFormGroup 
-                :label="t('common.contacts.primaryPhone') + ' *'"
-                :description="t('common.contacts.required')"
-                :help="!hasValidPrimaryPhone && phones[0] ? (t('common.contacts.invalidPhone')) : ''"
+                :label="t('contacts.primaryPhone') + ' *'"
+                :description="t('contacts.required')"
+                :help="!hasValidPrimaryPhone && phones[0] ? (t('contacts.invalidPhone')) : ''"
                 :error="!!(!hasValidPrimaryPhone && phones[0])"
               >
                 <UInput
@@ -655,7 +655,7 @@ useHead(() => ({
                   type="tel"
                   inputmode="tel"
                   pattern="[0-9+()\s-]*"
-                  :placeholder="t('common.contacts.enterPhone')"
+                  :placeholder="t('contacts.enterPhone')"
                   size="md"
                   autofocus
                   data-phone-input
@@ -668,8 +668,8 @@ useHead(() => ({
               <div class="flex gap-2">
                 <div class="flex-1">
                   <UFormGroup 
-                    :label="idx === 0 ? t('common.contacts.additionalPhone') : ''"
-                    :help="phone && !isPhoneValid(phone) ? (t('common.contacts.invalidPhone')) : ''"
+                    :label="idx === 0 ? t('contacts.additionalPhone') : ''"
+                    :help="phone && !isPhoneValid(phone) ? (t('contacts.invalidPhone')) : ''"
                     :error="!!(phone && !isPhoneValid(phone))"
                   >
                     <UInput
@@ -678,7 +678,7 @@ useHead(() => ({
                       type="tel"
                       inputmode="tel"
                       pattern="[0-9+()\s-]*"
-                      :placeholder="t('common.contacts.enterPhone')"
+                      :placeholder="t('contacts.enterPhone')"
                       size="md"
                       data-phone-input
                     />
@@ -704,7 +704,7 @@ useHead(() => ({
               :disabled="phones.length >= 5"
               @click="addPhone"
             >
-              {{ t('common.contacts.addPhone') }}
+              {{ t('contacts.addPhone') }}
             </UButton>
           </div>
 
@@ -715,45 +715,45 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('common.contacts.personalInformation') }}
+                {{ t('contacts.personalInformation') }}
               </h2>
             </div>
             
             <UFormGroup 
-              :label="t('common.contacts.firstName') + ' *'"
+              :label="t('contacts.firstName') + ' *'"
             >
               <UInput
                 v-model="individualFirstName"
                 type="text"
-                :placeholder="t('common.contacts.firstNamePlaceholder')"
+                :placeholder="t('contacts.firstNamePlaceholder')"
                 size="md"
               />
             </UFormGroup>
 
             <UFormGroup 
-              :label="t('common.contacts.lastName')"
+              :label="t('contacts.lastName')"
             >
               <UInput
                 v-model="individualLastName"
                 type="text"
-                :placeholder="t('common.contacts.lastNamePlaceholder')"
+                :placeholder="t('contacts.lastNamePlaceholder')"
                 size="md"
               />
             </UFormGroup>
 
             <UFormGroup 
-              :label="t('common.contacts.middleName')"
+              :label="t('contacts.middleName')"
             >
               <UInput
                 v-model="individualMiddleName"
                 type="text"
-                :placeholder="t('common.contacts.middleNamePlaceholder')"
+                :placeholder="t('contacts.middleNamePlaceholder')"
                 size="md"
               />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup :label="t('common.contacts.birthDate')">
+              <UFormGroup :label="t('contacts.birthDate')">
                 <UInput
                   v-model="individualBirthDate"
                   type="date"
@@ -761,14 +761,14 @@ useHead(() => ({
                 />
               </UFormGroup>
 
-              <UFormGroup :label="t('common.contacts.gender')">
+              <UFormGroup :label="t('contacts.gender')">
                 <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
                   :model-value="individualGender"
                   :options="[
                     { value: null, label: '--' },
-                    { value: true, label: t('common.contacts.male') },
-                    { value: false, label: t('common.contacts.female') },
+                    { value: true, label: t('contacts.male') },
+                    { value: false, label: t('contacts.female') },
                   ]"
                   size="md"
                   @update:model-value="(val: any) => individualGender = val"
@@ -776,17 +776,17 @@ useHead(() => ({
               </UFormGroup>
             </div>
 
-            <UFormGroup :label="t('common.contacts.legalEntity')" :description="t('common.contacts.attachLegalEntityDescription')">
+            <UFormGroup :label="t('contacts.legalEntity')" :description="t('contacts.attachLegalEntityDescription')">
               <div class="space-y-2">
                 <UInput
                   v-model="legalCompanySearch"
                   type="text"
-                  :placeholder="t('common.contacts.searchLegalEntityPlaceholder')"
+                  :placeholder="t('contacts.searchLegalEntityPlaceholder')"
                   size="md"
                 />
 
                 <div v-if="legalCompanyLoading" class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('common.contacts.searchingCompanies') }}
+                  {{ t('contacts.searchingCompanies') }}
                 </div>
 
                 <div
@@ -805,7 +805,7 @@ useHead(() => ({
                 </div>
 
                 <div v-if="selectedLegalCompany" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
-                  <span class="text-blue-800 dark:text-blue-200">{{ t('common.contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
+                  <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
                   <UButton
                     type="button"
                     icon="i-heroicons-x-mark"
@@ -823,21 +823,21 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-blue-600" />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
-                {{ t('common.contacts.companyInformation') }}
+                {{ t('contacts.companyInformation') }}
               </h2>
             </div>
             
-            <UFormGroup :label="t('common.contacts.legalName') + ' *'" :description="t('common.contacts.searchToAvoidDuplicates')">
+            <UFormGroup :label="t('contacts.legalName') + ' *'" :description="t('contacts.searchToAvoidDuplicates')">
               <div class="space-y-2">
                 <UInput
                   v-model="legalEntityForm.legalName"
                   type="text"
-                  :placeholder="t('common.contacts.legalNamePlaceholder')"
+                  :placeholder="t('contacts.legalNamePlaceholder')"
                   size="md"
                 />
 
                 <div v-if="legalEntityLoading" class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ t('common.contacts.searchingSimilarCompanies') }}
+                  {{ t('contacts.searchingSimilarCompanies') }}
                 </div>
 
                 <div
@@ -856,7 +856,7 @@ useHead(() => ({
                 </div>
 
                 <div v-if="selectedExistingLegalEntity" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
-                  <span class="text-blue-800 dark:text-blue-200">{{ t('common.contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
+                  <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
                   <UButton
                     type="button"
                     icon="i-heroicons-x-mark"
@@ -869,38 +869,38 @@ useHead(() => ({
               </div>
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.brandName')">
+            <UFormGroup :label="t('contacts.brandName')">
               <UInput
                 v-model="legalEntityForm.brandName"
                 type="text"
-                :placeholder="t('common.contacts.brandNamePlaceholder')"
+                :placeholder="t('contacts.brandNamePlaceholder')"
                 size="md"
                 :disabled="!!selectedExistingLegalEntity"
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('common.contacts.binIin')">
+            <UFormGroup :label="t('contacts.binIin')">
               <UInput
                 v-model="legalEntityForm.binIin"
                 type="text"
-                :placeholder="t('common.contacts.binIinPlaceholder')"
+                :placeholder="t('contacts.binIinPlaceholder')"
                 size="md"
                 :disabled="!!selectedExistingLegalEntity"
               />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <UFormGroup :label="t('common.contacts.registrationCountry')">
+              <UFormGroup :label="t('contacts.registrationCountry')">
                 <UInput
                   v-model="legalEntityForm.registrationCountry"
                   type="text"
-                  :placeholder="t('common.contacts.registrationCountryPlaceholder')"
+                  :placeholder="t('contacts.registrationCountryPlaceholder')"
                   size="md"
                   :disabled="!!selectedExistingLegalEntity"
                 />
               </UFormGroup>
 
-              <UFormGroup :label="t('common.contacts.registrationDate')">
+              <UFormGroup :label="t('contacts.registrationDate')">
                 <UInput
                   v-model="legalEntityForm.registrationDate"
                   type="date"
@@ -913,43 +913,43 @@ useHead(() => ({
             <!-- Contact Person Section -->
             <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
               <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">
-                {{ t('common.contacts.contactPersonOptional') }}
+                {{ t('contacts.contactPersonOptional') }}
               </h4>
               
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <UFormGroup :label="t('common.contacts.firstName')">
+                <UFormGroup :label="t('contacts.firstName')">
                   <UInput
                     v-model="contactPersonForm.firstName"
                     type="text"
-                    :placeholder="t('common.contacts.firstName')"
+                    :placeholder="t('contacts.firstName')"
                     size="md"
                     :disabled="!!selectedExistingLegalEntity"
                   />
                 </UFormGroup>
 
-                <UFormGroup :label="t('common.contacts.lastName')">
+                <UFormGroup :label="t('contacts.lastName')">
                   <UInput
                     v-model="contactPersonForm.lastName"
                     type="text"
-                    :placeholder="t('common.contacts.lastName')"
+                    :placeholder="t('contacts.lastName')"
                     size="md"
                     :disabled="!!selectedExistingLegalEntity"
                   />
                 </UFormGroup>
               </div>
 
-              <UFormGroup :label="t('common.contacts.middleName')">
+              <UFormGroup :label="t('contacts.middleName')">
                 <UInput
                   v-model="contactPersonForm.middleName"
                   type="text"
-                  :placeholder="t('common.contacts.middleName')"
+                  :placeholder="t('contacts.middleName')"
                   size="md"
                   :disabled="!!selectedExistingLegalEntity"
                 />
               </UFormGroup>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <UFormGroup :label="t('common.contacts.birthDate')">
+                <UFormGroup :label="t('contacts.birthDate')">
                   <UInput
                     v-model="contactPersonForm.birthDate"
                     type="date"
@@ -958,14 +958,14 @@ useHead(() => ({
                   />
                 </UFormGroup>
 
-                <UFormGroup :label="t('common.contacts.gender')">
+                <UFormGroup :label="t('contacts.gender')">
                   <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
                     :model-value="contactPersonForm.gender"
                     :options="[
                       { value: null, label: '--' },
-                      { value: true, label: t('common.contacts.male') },
-                      { value: false, label: t('common.contacts.female') },
+                      { value: true, label: t('contacts.male') },
+                      { value: false, label: t('contacts.female') },
                     ]"
                     size="md"
                     :disabled="!!selectedExistingLegalEntity"
@@ -985,7 +985,7 @@ useHead(() => ({
               :items="[
                 {
                   slot: 'additional',
-                  label: t('common.contacts.additionalInformation'),
+                  label: t('contacts.additionalInformation'),
                   icon: 'i-heroicons-envelope',
                   defaultOpen: false
                 }
@@ -1004,19 +1004,19 @@ useHead(() => ({
                   <!-- Emails -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {{ t('common.contacts.email') }}
+                      {{ t('contacts.email') }}
                     </label>
                     
                     <div v-for="(email, index) in emails" :key="'email-' + index" class="flex gap-2">
                       <UFormGroup 
                         class="flex-1"
-                        :help="email && !isEmailValid(email) ? t('common.contacts.invalidEmail') : ''"
+                        :help="email && !isEmailValid(email) ? t('contacts.invalidEmail') : ''"
                         :error="!!(email && !isEmailValid(email))"
                       >
                         <UInput
                           v-model="emails[index]"
                           type="email"
-                          :placeholder="t('common.contacts.enterEmail')"
+                          :placeholder="t('contacts.enterEmail')"
                           size="md"
                           data-email-input
                         />
@@ -1040,48 +1040,48 @@ useHead(() => ({
                       :disabled="emails.length >= 5"
                       @click="addEmail"
                     >
-                      {{ t('common.contacts.addEmail') }}
+                      {{ t('contacts.addEmail') }}
                     </UButton>
                   </div>
 
                   <!-- Telegram -->
-                  <UFormGroup :label="t('common.contacts.telegram')">
+                  <UFormGroup :label="t('contacts.telegram')">
                     <UInput
                       v-model="telegram"
                       type="text"
-                      :placeholder="t('common.contacts.telegramPlaceholder')"
+                      :placeholder="t('contacts.telegramPlaceholder')"
                       size="md"
                     />
                   </UFormGroup>
 
                   <!-- WhatsApp -->
-                  <UFormGroup :label="t('common.contacts.whatsapp')">
+                  <UFormGroup :label="t('contacts.whatsapp')">
                     <UInput
                       :model-value="whatsapp"
                       @update:model-value="updateWhatsappValue"
                       type="tel"
                       inputmode="tel"
                       pattern="[0-9+()\s-]*"
-                      :placeholder="t('common.contacts.enterPhone')"
+                      :placeholder="t('contacts.enterPhone')"
                       size="md"
                     />
                   </UFormGroup>
 
                   <!-- Website -->
-                  <UFormGroup :label="t('common.contacts.website')">
+                  <UFormGroup :label="t('contacts.website')">
                     <UInput
                       v-model="website"
                       type="url"
-                      :placeholder="t('common.contacts.websitePlaceholder')"
+                      :placeholder="t('contacts.websitePlaceholder')"
                       size="md"
                     />
                   </UFormGroup>
 
                   <!-- Comments -->
-                  <UFormGroup :label="t('common.contacts.comments')">
+                  <UFormGroup :label="t('contacts.comments')">
                     <UTextarea
                       v-model="comments"
-                      :placeholder="t('common.contacts.commentsPlaceholder')"
+                      :placeholder="t('contacts.commentsPlaceholder')"
                       size="md"
                     />
                   </UFormGroup>
@@ -1096,7 +1096,7 @@ useHead(() => ({
       <!-- Action Buttons -->
       <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
         <p class="text-xs text-gray-500 dark:text-gray-500">
-          * = {{ t('common.contacts.required') }}
+          * = {{ t('contacts.required') }}
         </p>
         <div class="flex gap-2">
           <UButton
@@ -1131,13 +1131,13 @@ useHead(() => ({
           <div class="flex items-center gap-3">
             <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-amber-500" />
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('common.contacts.confirmLeave') }}
+              {{ t('contacts.confirmLeave') }}
             </h3>
           </div>
         </template>
 
         <div class="text-gray-600 dark:text-gray-300">
-          {{ t('common.contacts.unsavedChanges') }}
+          {{ t('contacts.unsavedChanges') }}
         </div>
 
         <template #footer>
@@ -1145,12 +1145,12 @@ useHead(() => ({
             <UButton
               color="primary"
               variant="soft"
-              :label="t('common.contacts.keepEditing')"
+              :label="t('contacts.keepEditing')"
               @click="cancelLeave"
             />
             <UButton
               color="red"
-              :label="t('common.contacts.discardChanges')"
+              :label="t('contacts.discardChanges')"
               @click="confirmLeave"
             />
           </div>
