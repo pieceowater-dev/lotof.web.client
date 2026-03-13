@@ -351,6 +351,11 @@
     "limitActiveUsers": "Active clients",
     "limitCustomFields": "Custom fields",
     "limitLoyaltyPrograms": "Loyalty programs",
+    "planFeature": {
+      "max_clients": "Up to {value} clients",
+      "max_custom_fields": "Up to {value} custom fields",
+      "max_loyalty_programs": "Up to {value} loyalty programs"
+    },
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",
     "upgradePlan": "Upgrade Plan",

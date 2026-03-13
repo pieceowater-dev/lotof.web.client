@@ -11,6 +11,8 @@ interface PlanFeature {
   label: string;
 }
 
+type FeatureKey = 'max_clients' | 'max_active_users' | 'max_custom_fields' | 'max_loyalty_programs';
+
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -118,6 +120,24 @@ function formatPrice(amountCents: number, currency: string): string {
 
 function formatInterval(interval: string): string {
   return interval === 'MONTH' ? t('app.perMonth') || 'per month' : t('app.perYear') || 'per year';
+}
+
+function formatPlanFeature(feature: PlanFeature): string {
+  const key = feature.key as FeatureKey;
+  const value = feature.value;
+
+  if (key === 'max_clients' || key === 'max_active_users') {
+    return t('app.planFeature.max_clients', { value: String(value) }) || `Up to ${value} clients`;
+  }
+  if (key === 'max_custom_fields') {
+    return t('app.planFeature.max_custom_fields', { value: String(value) }) || `Up to ${value} custom fields`;
+  }
+  if (key === 'max_loyalty_programs') {
+    return t('app.planFeature.max_loyalty_programs', { value: String(value) }) || `Up to ${value} loyalty programs`;
+  }
+
+  const localizedLabel = t('app.' + feature.label) || feature.label || feature.key;
+  return `${localizedLabel}: ${value}`;
 }
 
 async function subscribePlan(plan: Plan) {
@@ -345,7 +365,7 @@ watch([plans, activeSubscription], () => {
                   <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
                 </div>
                 <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ t('app.' + feature.label) || feature.label }}
+                  {{ formatPlanFeature(feature) }}
                 </span>
               </div>
 

@@ -347,6 +347,11 @@
     "limitActiveUsers": "Активные клиенты",
     "limitCustomFields": "Пользовательские поля",
     "limitLoyaltyPrograms": "Программы лояльности",
+    "planFeature": {
+      "max_clients": "До {value} клиентов",
+      "max_custom_fields": "До {value} пользовательских полей",
+      "max_loyalty_programs": "До {value} программ лояльности"
+    },
     "subscriptionPlans": "Тарифные планы",
     "choosePlanDescription": "Выберите тарифный план для вашей команды",
     "upgradePlan": "Улучшить тариф",
