@@ -98,16 +98,52 @@ export interface CreateLegalEntityClientInput {
   status?: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
 }
 
+function normalizeBoolean(value: unknown): boolean | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    if (value.toLowerCase() === 'true') return true;
+    if (value.toLowerCase() === 'false') return false;
+  }
+  return undefined;
+}
+
+function normalizeCreateIndividualInput(input: CreateIndividualClientInput): CreateIndividualClientInput {
+  return {
+    ...input,
+    individual: {
+      ...input.individual,
+      gender: normalizeBoolean(input.individual.gender),
+    },
+  };
+}
+
+function normalizeCreateLegalEntityInput(input: CreateLegalEntityClientInput): CreateLegalEntityClientInput {
+  if (!input.contactPerson) {
+    return input;
+  }
+
+  return {
+    ...input,
+    contactPerson: {
+      ...input.contactPerson,
+      gender: normalizeBoolean(input.contactPerson.gender),
+    },
+  };
+}
+
 export async function contactsCreateIndividualClient(
   token: string,
   namespaceSlug: string,
   input: CreateIndividualClientInput
 ): Promise<ClientRow> {
   setContactsAppToken(token);
+  const normalizedInput = normalizeCreateIndividualInput(input);
 
   const response = await contactsClient.request<{ createIndividualClient: ClientRow }>(
     CREATE_INDIVIDUAL_CLIENT_MUTATION as any,
-    { input },
+    { input: normalizedInput },
     { headers: { Namespace: namespaceSlug } }
   );
 
@@ -120,10 +156,11 @@ export async function contactsCreateLegalEntityClient(
   input: CreateLegalEntityClientInput
 ): Promise<ClientRow> {
   setContactsAppToken(token);
+  const normalizedInput = normalizeCreateLegalEntityInput(input);
 
   const response = await contactsClient.request<{ createLegalEntityClient: ClientRow }>(
     CREATE_LEGAL_ENTITY_CLIENT_MUTATION as any,
-    { input },
+    { input: normalizedInput },
     { headers: { Namespace: namespaceSlug } }
   );
 
