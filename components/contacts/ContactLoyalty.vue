@@ -60,31 +60,41 @@ const cachedPinHash = useCookie<string | null>(pinHashCookieName.value, {
   path: '/',
   default: () => null,
 });
+// Clean up any legacy plain-text PIN cookies that may exist from older versions
 const pinValueCookieName = computed(() => `contacts_bonus_pin_value_${props.namespace || 'default'}`);
-const cachedPinValue = useCookie<string | null>(pinValueCookieName.value, {
-  maxAge: 8 * 60 * 60,
-  sameSite: 'strict',
-  secure: process.env.NODE_ENV === 'production',
-  path: '/',
-  default: () => null,
-});
+const _legacyPinValueCookie = useCookie<string | null>(pinValueCookieName.value, { default: () => null });
+if (process.client && _legacyPinValueCookie.value) {
+  _legacyPinValueCookie.value = null;
+}
 const legacyPinCookieName = computed(() => `contacts_bonus_pin_${props.namespace || 'default'}`);
-const legacyCachedPin = useCookie<string | null>(legacyPinCookieName.value, {
-  sameSite: 'strict',
-  secure: process.env.NODE_ENV === 'production',
-  path: '/',
-  default: () => null,
-});
+const legacyCachedPin = useCookie<string | null>(legacyPinCookieName.value, { default: () => null });
 if (legacyCachedPin.value) {
   legacyCachedPin.value = null;
 }
 
-const restoredPin = sanitizePin(String(cachedPinValue.value || ''));
-if (restoredPin.length === 4) {
-  inMemoryPin.value = restoredPin;
-  pinInput.value = restoredPin;
-} else if (cachedPinValue.value) {
-  cachedPinValue.value = null;
+// PIN value is stored in sessionStorage only (per-tab, not visible in cookies, cleared on tab close)
+function bonusPinSessionKey(): string {
+  return `contacts_bonus_pin_value_${props.namespace || 'default'}`;
+}
+function getSessionPin(): string {
+  if (!process.client) return '';
+  return sanitizePin(sessionStorage.getItem(bonusPinSessionKey()) || '');
+}
+function setSessionPin(pin: string | null): void {
+  if (!process.client) return;
+  if (pin) {
+    sessionStorage.setItem(bonusPinSessionKey(), pin);
+  } else {
+    sessionStorage.removeItem(bonusPinSessionKey());
+  }
+}
+
+if (process.client) {
+  const restoredPin = getSessionPin();
+  if (restoredPin.length === 4) {
+    inMemoryPin.value = restoredPin;
+    pinInput.value = restoredPin;
+  }
 }
 
 watch(pinInput, (value) => {
@@ -159,7 +169,7 @@ function openEarnModal() {
 
   bonusAction.value = 'earn';
   submitError.value = '';
-  pinInput.value = sanitizePin(String(inMemoryPin.value || cachedPinValue.value || ''));
+  pinInput.value = sanitizePin(inMemoryPin.value || getSessionPin());
   amountInput.value = null;
   earnStep.value = pinInput.value.length === 4 ? 'amount' : 'pin';
   isEarnModalOpen.value = true;
@@ -172,7 +182,7 @@ function openSpendModal() {
 
   bonusAction.value = 'spend';
   submitError.value = '';
-  pinInput.value = sanitizePin(String(inMemoryPin.value || cachedPinValue.value || ''));
+  pinInput.value = sanitizePin(inMemoryPin.value || getSessionPin());
   amountInput.value = null;
   earnStep.value = pinInput.value.length === 4 ? 'amount' : 'pin';
   isEarnModalOpen.value = true;
@@ -190,7 +200,7 @@ async function confirmPinStep() {
   }
 
   cachedPinHash.value = await sha256Hex(normalizedPin);
-  cachedPinValue.value = normalizedPin;
+  setSessionPin(normalizedPin);
   inMemoryPin.value = normalizedPin;
   pinInput.value = normalizedPin;
   submitError.value = '';
@@ -199,7 +209,7 @@ async function confirmPinStep() {
 
 function resetStoredPin() {
   cachedPinHash.value = null;
-  cachedPinValue.value = null;
+  setSessionPin(null);
   inMemoryPin.value = null;
   pinInput.value = '';
   earnStep.value = 'pin';
