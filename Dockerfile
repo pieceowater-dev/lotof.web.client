@@ -7,10 +7,12 @@ WORKDIR /app
 # Build arguments for environment variables
 ARG VITE_API_HUB
 ARG VITE_API_ATRACE
+ARG VITE_API_CONTACTS
 
 # Set environment variables
 ENV VITE_API_HUB=$VITE_API_HUB
 ENV VITE_API_ATRACE=$VITE_API_ATRACE
+ENV VITE_API_CONTACTS=$VITE_API_CONTACTS
 
 # Copy package.json and package-lock.json
 COPY package.json package-lock.json ./
