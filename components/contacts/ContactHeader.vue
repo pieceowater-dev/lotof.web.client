@@ -24,7 +24,7 @@ const displayName = computed(() => {
     const parts = [c.individual.lastName, c.individual.firstName, c.individual.middleName].filter(Boolean);
     return parts.join(' ');
   }
-  return c.legalEntity?.legalName || 'Unknown';
+  return c.legalEntity?.legalName || '---';
 });
 
 const nsTitle = computed(() => titleBySlug(props.namespace || '') || props.namespace || '');

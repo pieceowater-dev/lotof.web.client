@@ -61,7 +61,7 @@ async function loadTags() {
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to load tags',
+      description: t('contacts.tagsLoadError'),
       color: 'red',
     });
   } finally {
@@ -91,13 +91,13 @@ async function handleCreateTag() {
     
     toast.add({
       title: t('common.success'),
-      description: 'Tag created successfully',
+      description: t('contacts.tagCreated'),
       color: 'green',
     });
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to create tag',
+      description: t('contacts.createTagError'),
       color: 'red',
     });
   } finally {
@@ -121,13 +121,13 @@ async function handleUpdateTag() {
     editingName.value = '';
     toast.add({
       title: t('common.success'),
-      description: 'Tag updated successfully',
+      description: t('contacts.tagUpdated'),
       color: 'green',
     });
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to update tag',
+      description: t('contacts.updateTagError'),
       color: 'red',
     });
   }
@@ -152,14 +152,14 @@ async function handleDeleteTag(id: string) {
     confirmDeleteId.value = null;
     toast.add({
       title: t('common.success'),
-      description: 'Tag deleted successfully',
+      description: t('contacts.tagDeleted'),
       color: 'green',
     });
   } catch (error) {
     confirmDeleteId.value = null;
     toast.add({
       title: t('common.error'),
-      description: 'Failed to delete tag',
+      description: t('contacts.deleteTagError'),
       color: 'red',
     });
   }
@@ -182,7 +182,7 @@ async function handleAddTag(tagId: string) {
     emit('close');
     toast.add({
       title: t('common.success'),
-      description: 'Tag added to client',
+      description: t('contacts.tagAddedToClient'),
       color: 'green',
     });
   } catch (error: any) {
@@ -191,14 +191,14 @@ async function handleAddTag(tagId: string) {
     if (errorMessage.includes('duplicate key') || errorMessage.includes('23505')) {
       toast.add({
         title: t('common.info'),
-        description: 'This tag is already assigned to the client',
+        description: t('contacts.tagAlreadyAssigned'),
         color: 'blue',
       });
       emit('close');
     } else {
       toast.add({
         title: t('common.error'),
-        description: 'Failed to add tag',
+        description: t('contacts.addTagError'),
         color: 'red',
       });
     }
@@ -233,7 +233,7 @@ watch(() => props.isOpen, (newVal) => {
   <UModal :model-value="isOpen" @update:model-value="$emit('close')">
     <div class="p-4 space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ isSelectMode ? 'Add tag to client' : 'Manage Tags' }}</h2>
+        <h2 class="text-lg font-semibold">{{ isSelectMode ? t('contacts.addTagToClient') : t('contacts.manageTags') }}</h2>
         <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="$emit('close')" />
       </div>
 
@@ -241,7 +241,7 @@ watch(() => props.isOpen, (newVal) => {
       <div class="flex gap-2">
         <UInput
           v-model="newTagName"
-          :placeholder="isSelectMode ? 'New tag name or select below...' : 'New tag name...'"
+          :placeholder="isSelectMode ? t('contacts.newTagNameOrSelect') : t('contacts.newTagName')"
           size="sm"
           @keyup.enter="handleCreateTag"
         />
@@ -284,7 +284,7 @@ watch(() => props.isOpen, (newVal) => {
               <span
                 v-else
                 class="text-sm font-medium truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
-                title="Double-click to rename"
+                :title="t('contacts.doubleClickToRename')"
                 @dblclick.stop="startEdit(tag)"
                 @click.stop="confirmDeleteId !== tag.id && handleAddTag(tag.id)"
               >{{ tag.name }}</span>
@@ -299,7 +299,7 @@ watch(() => props.isOpen, (newVal) => {
               </template>
               <!-- Confirm delete -->
               <template v-else-if="confirmDeleteId === tag.id">
-                <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">Уверен?</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">{{ t('contacts.areYouSure') }}</span>
                 <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click.stop="handleDeleteTag(tag.id)" />
                 <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click.stop="cancelDeleteTag()" />
               </template>
@@ -308,12 +308,12 @@ watch(() => props.isOpen, (newVal) => {
                 <UButton
                   size="xs" color="gray" variant="ghost" icon="lucide:pencil"
                   @click.stop="startEdit(tag)"
-                  title="Rename"
+                  :title="t('contacts.renameTag')"
                 />
                 <UButton
                   size="xs" color="gray" variant="ghost" icon="lucide:trash-2"
                   @click.stop="requestDeleteTag(tag.id)"
-                  title="Delete"
+                  :title="t('common.delete')"
                 />
                 <UButton
                   size="xs"
@@ -322,7 +322,7 @@ watch(() => props.isOpen, (newVal) => {
                   icon="lucide:plus"
                   :loading="isAddingTag && selectedTagId === tag.id"
                   @click.stop="handleAddTag(tag.id)"
-                  title="Add to client"
+                  :title="t('contacts.addTagToClient')"
                 />
               </template>
             </div>
@@ -352,7 +352,7 @@ watch(() => props.isOpen, (newVal) => {
               <span
                 v-else
                 class="text-sm font-medium truncate cursor-text select-none"
-                title="Double-click to rename"
+                :title="t('contacts.doubleClickToRename')"
                 @dblclick="startEdit(tag)"
               >{{ tag.name }}</span>
               <!-- Pencil hint — visible on row hover when not editing -->
@@ -360,7 +360,7 @@ watch(() => props.isOpen, (newVal) => {
                 v-if="editingId !== tag.id && confirmDeleteId !== tag.id"
                 name="lucide:pencil"
                 class="w-3 h-3 text-gray-300 dark:text-gray-600 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer hover:text-blue-500"
-                title="Double-click to rename"
+                :title="t('contacts.doubleClickToRename')"
                 @click="startEdit(tag)"
               />
             </div>
@@ -372,7 +372,7 @@ watch(() => props.isOpen, (newVal) => {
                 <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelEdit" />
               </template>
               <template v-else-if="confirmDeleteId === tag.id">
-                <span class="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">Уверен?</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">{{ t('contacts.areYouSure') }}</span>
                 <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click="handleDeleteTag(tag.id)" />
                 <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelDeleteTag()" />
               </template>
@@ -384,7 +384,7 @@ watch(() => props.isOpen, (newVal) => {
         </template>
 
         <div v-if="!loading && tags.length === 0" class="text-center py-8 text-gray-500 text-sm">
-          {{ isSelectMode ? 'No tags available. Create one first.' : 'No tags yet. Create one to get started.' }}
+          {{ isSelectMode ? t('contacts.noTagsAvailable') : t('contacts.noTagsYet') }}
         </div>
       </div>
     </div>

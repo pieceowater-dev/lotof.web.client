@@ -11,7 +11,9 @@ import { createIdentity, deleteIdentity, getClientIdentities, setPrimaryIdentity
 import { getClientTags } from '@/api/contacts/tags';
 import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
 import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
+import { getClientPageData } from '@/api/contacts/clientPage';
 import { useNamespace } from '@/composables/useNamespace';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import ContactHeader from '@/components/contacts/ContactHeader.vue';
 import ContactPersonalInfo from '@/components/contacts/ContactPersonalInfo.vue';
 import ContactIdentities from '@/components/contacts/ContactIdentities.vue';
@@ -84,7 +86,7 @@ const displayName = computed(() => {
     const parts = [c.individual.lastName, c.individual.firstName, c.individual.middleName].filter(Boolean);
     return parts.join(' ');
   }
-  return c.legalEntity?.legalName || 'Unknown';
+  return c.legalEntity?.legalName || '---';
 });
 
 const nsSlug = computed(() => route.params.namespace as string);
@@ -163,6 +165,10 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   for (const item of identityRows) {
     if (item.type === 'company' || item.type === 'contact_person') {
       displayMap[item.id] = item.comments?.trim() || relatedNames[item.value] || t('contacts.relatedClient');
+      continue;
+    }
+    if (item.type === 'phone' || item.type === 'whatsapp') {
+      displayMap[item.id] = formatDisplayPhoneUniversal(item.value);
       continue;
     }
     displayMap[item.id] = item.value;
@@ -484,88 +490,125 @@ async function loadClient() {
     if (!contactsToken) return;
     contactsAppToken.value = contactsToken;
 
-    // Get client data first
-    const clientData = await getClient(contactsToken, selectedNS.value, clientId.value);
-    if (!clientData) {
-      toast.add({
-        title: t('common.error'),
-        description: t('contacts.loadError'),
-        color: 'red',
-      });
-      router.push(`/${selectedNS.value}/contacts`);
-      return;
-    }
-    
-    client.value = clientData;
-    await tryEnrichClient(contactsToken, selectedNS.value);
+    let stampCardsList: StampCard[] = [];
+    let fullClientId = '';
 
-    const fullClientId = client.value.client.id;
+    try {
+      // Aggregated GraphQL call for most client-page data.
+      const pageData = await getClientPageData(contactsToken, selectedNS.value, clientId.value);
+      if (!pageData.client) {
+        toast.add({
+          title: t('common.error'),
+          description: t('contacts.loadError'),
+          color: 'red',
+        });
+        router.push(`/${selectedNS.value}/contacts`);
+        return;
+      }
 
-    // Load all related data in parallel
-    const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, stampCardsResult] = 
-      await Promise.allSettled([
-        getClientIdentities(contactsToken, fullClientId, selectedNS.value),
-        getClientTags(contactsToken, selectedNS.value, fullClientId),
-        getClientEvents(contactsToken, fullClientId),
-        getBonusBalance(contactsToken, fullClientId),
-        getStampCards(contactsToken),
-      ]);
+      client.value = pageData.client;
+      fullClientId = pageData.client.client.id;
+      identities.value = pageData.identities;
+      tags.value = pageData.tags;
+      events.value = (pageData.events || []).sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+      bonusBalance.value = pageData.bonusBalance;
+      stampCardsList = pageData.stampCards || [];
+      stampCards.value = stampCardsList;
 
-    // Process identities
-    if (identitiesResult.status === 'fulfilled') {
-      try {
-        identities.value = identitiesResult.value.clientIdentities.rows;
-        await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
-      } catch (error) {
-        logError('Failed to process identities:', error);
+      await tryEnrichClient(contactsToken, selectedNS.value);
+      await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
+    } catch (aggregatedError) {
+      logError('Failed to load aggregated client page data, falling back:', aggregatedError);
+
+      const clientData = await getClient(contactsToken, selectedNS.value, clientId.value);
+      if (!clientData) {
+        toast.add({
+          title: t('common.error'),
+          description: t('contacts.loadError'),
+          color: 'red',
+        });
+        router.push(`/${selectedNS.value}/contacts`);
+        return;
+      }
+
+      client.value = clientData;
+      await tryEnrichClient(contactsToken, selectedNS.value);
+
+      fullClientId = client.value.client.id;
+
+      const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, stampCardsResult] =
+        await Promise.allSettled([
+          getClientIdentities(contactsToken, fullClientId, selectedNS.value),
+          getClientTags(contactsToken, selectedNS.value, fullClientId),
+          getClientEvents(contactsToken, fullClientId),
+          getBonusBalance(contactsToken, fullClientId),
+          getStampCards(contactsToken),
+        ]);
+
+      if (identitiesResult.status === 'fulfilled') {
+        try {
+          identities.value = identitiesResult.value.clientIdentities.rows;
+          await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
+        } catch (error) {
+          logError('Failed to process identities:', error);
+          identities.value = [];
+          identityDisplayValues.value = {};
+        }
+      } else {
+        if (!isUnimplementedError(identitiesResult.reason)) {
+          logError('Failed to load identities:', identitiesResult.reason);
+        }
         identities.value = [];
         identityDisplayValues.value = {};
       }
-    } else {
-      if (!isUnimplementedError(identitiesResult.reason)) {
-        logError('Failed to load identities:', identitiesResult.reason);
+
+      if (tagsResult.status === 'fulfilled') {
+        tags.value = tagsResult.value.clientTags?.tags || (tagsResult.value as any).tags || [];
+      } else {
+        if (!isUnimplementedError(tagsResult.reason)) {
+          logError('Failed to load tags:', tagsResult.reason);
+        }
+        tags.value = [];
       }
-      identities.value = [];
-      identityDisplayValues.value = {};
+
+      if (eventsResult.status === 'fulfilled') {
+        events.value = eventsResult.value.rows.sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      } else {
+        if (!isUnimplementedError(eventsResult.reason)) {
+          logError('Failed to load events:', eventsResult.reason);
+        }
+        events.value = [];
+      }
+
+      if (bonusBalanceResult.status === 'fulfilled') {
+        bonusBalance.value = bonusBalanceResult.value;
+      } else {
+        if (!isUnimplementedError(bonusBalanceResult.reason)) {
+          logError('Failed to load bonus balance:', bonusBalanceResult.reason);
+        }
+        bonusBalance.value = null;
+      }
+
+      if (stampCardsResult.status === 'fulfilled' && stampCardsResult.value) {
+        stampCardsList = stampCardsResult.value;
+        stampCards.value = stampCardsList;
+      } else {
+        if (stampCardsResult.status === 'rejected' && !isUnimplementedError(stampCardsResult.reason)) {
+          logError('Failed to load stamp cards:', stampCardsResult.reason);
+        }
+        stampCardsList = [];
+        stampCards.value = [];
+      }
     }
 
-    // Process tags
-    if (tagsResult.status === 'fulfilled') {
-      tags.value = tagsResult.value.clientTags?.tags || (tagsResult.value as any).tags || [];
-    } else {
-      if (!isUnimplementedError(tagsResult.reason)) {
-        logError('Failed to load tags:', tagsResult.reason);
-      }
-      tags.value = [];
-    }
-
-    // Process events
-    if (eventsResult.status === 'fulfilled') {
-      events.value = eventsResult.value.rows.sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-    } else {
-      if (!isUnimplementedError(eventsResult.reason)) {
-        logError('Failed to load events:', eventsResult.reason);
-      }
-      events.value = [];
-    }
-
-    // Process bonus balance
-    if (bonusBalanceResult.status === 'fulfilled') {
-      bonusBalance.value = bonusBalanceResult.value;
-    } else {
-      if (!isUnimplementedError(bonusBalanceResult.reason)) {
-        logError('Failed to load bonus balance:', bonusBalanceResult.reason);
-      }
-      bonusBalance.value = null;
-    }
-
-    // Process stamp cards and progress
-    if (stampCardsResult.status === 'fulfilled' && stampCardsResult.value) {
-      stampCards.value = stampCardsResult.value;
+    // Process stamp cards and progress (separate round-trip per card is still required by API)
+    if (stampCardsList.length > 0 && fullClientId) {
       try {
-        const progressPromises = stampCardsResult.value.map(card =>
+        const progressPromises = stampCardsList.map(card =>
           getClientStampProgress(contactsToken, fullClientId, card.id),
         );
         const progressResults = await Promise.all(progressPromises);
@@ -575,10 +618,6 @@ async function loadClient() {
         stampProgress.value = [];
       }
     } else {
-      if (stampCardsResult.status === 'rejected' && !isUnimplementedError(stampCardsResult.reason)) {
-        logError('Failed to load stamp cards:', stampCardsResult.reason);
-      }
-      stampCards.value = [];
       stampProgress.value = [];
     }
   } catch (error) {

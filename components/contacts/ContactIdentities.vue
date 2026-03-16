@@ -191,7 +191,7 @@ function getIdentityTypeLabel(type: string): string {
           </div>
         </div>
         <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
-          {{ t('contacts.noIdentities') || 'Контактные данные не добавлены' }}
+          {{ t('contacts.noIdentities') }}
         </div>
       </template>
 
@@ -249,7 +249,7 @@ function getIdentityTypeLabel(type: string): string {
                 <UInput
                   :model-value="email"
                   type="email"
-                  placeholder="example@email.com"
+                  :placeholder="t('contacts.enterEmail')"
                   size="md"
                   @update:model-value="$emit('updateEmail', idx, $event)"
                 />
@@ -289,7 +289,7 @@ function getIdentityTypeLabel(type: string): string {
                 <UInput
                   :model-value="telegram"
                   type="text"
-                  placeholder="@username"
+                  :placeholder="t('contacts.telegramPlaceholder')"
                   size="md"
                   @update:model-value="$emit('updateTelegram', idx, $event)"
                 />
@@ -313,7 +313,7 @@ function getIdentityTypeLabel(type: string): string {
               size="sm"
               @click="() => $emit('addTelegram')"
             >
-              {{ t('contacts.addTelegram') || 'Добавить Telegram' }}
+              {{ t('contacts.addTelegram') }}
             </UButton>
           </div>
 
@@ -329,7 +329,7 @@ function getIdentityTypeLabel(type: string): string {
                 <UInput
                   :model-value="whatsapp"
                   type="tel"
-                  placeholder="+7 777 123 45 67"
+                  :placeholder="t('contacts.enterPhone')"
                   size="md"
                   @update:model-value="$emit('updateWhatsapp', idx, $event)"
                 />
@@ -353,7 +353,7 @@ function getIdentityTypeLabel(type: string): string {
               size="sm"
               @click="() => $emit('addWhatsapp')"
             >
-              {{ t('contacts.addWhatsapp') || 'Добавить WhatsApp' }}
+              {{ t('contacts.addWhatsapp') }}
             </UButton>
           </div>
         </form>

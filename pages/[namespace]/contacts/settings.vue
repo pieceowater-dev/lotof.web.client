@@ -73,7 +73,6 @@ const showEditConfirmStampPin = ref(false);
 const selectedStampCardId = ref<string | null>(null);
 const pendingDeleteStampCardId = ref<string | null>(null);
 const staticRoleOptions: Array<{ label: string; value: StaticAccessRole }> = [
-  { label: 'Владелец', value: 'OWNER' },
   { label: 'Админ', value: 'ADMIN' },
   { label: 'Оператор', value: 'OPERATOR' },
   { label: 'Наблюдатель', value: 'VIEWER' },
@@ -1057,7 +1056,7 @@ onMounted(async () => {
               v-model="createFormData.description"
               :placeholder="t('common.description') || 'Description'"
               :disabled="createFormLoading"
-              rows="3"
+              :rows="3"
             />
           </UFormGroup>
 
@@ -1226,7 +1225,7 @@ onMounted(async () => {
           </div>
 
           <UFormGroup :label="t('common.description') || 'Description'">
-            <UTextarea v-model="editFormData.description" rows="3" :disabled="editFormLoading" />
+            <UTextarea v-model="editFormData.description" :rows="3" :disabled="editFormLoading" />
           </UFormGroup>
 
           <UFormGroup :label="t('app.reward') || 'Reward'" required>
