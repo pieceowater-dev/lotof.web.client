@@ -57,6 +57,7 @@ jobs:
           build-args: |
             VITE_API_HUB=${{ vars.VITE_API_HUB }}
             VITE_API_ATRACE=${{ vars.VITE_API_ATRACE }}
+            VITE_API_CONTACTS=${{ vars.VITE_API_CONTACTS }}
           secret-files: |
             gh_token=.gh_token
           cache-from: type=gha
