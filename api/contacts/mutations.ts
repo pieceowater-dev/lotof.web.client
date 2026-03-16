@@ -69,6 +69,72 @@ const UPDATE_CLIENT_STATUS_MUTATION = /* GraphQL */ `
   }
 `;
 
+const UPDATE_INDIVIDUAL_CLIENT_MUTATION = /* GraphQL */ `
+  mutation UpdateIndividualClient($id: ID!, $input: IndividualInput!) {
+    updateIndividualClient(id: $id, input: $input) {
+      client {
+        id
+        shortId
+        clientType
+        status
+        createdAt
+        updatedAt
+      }
+      individual {
+        firstName
+        lastName
+        middleName
+        birthDate
+        gender
+      }
+      legalEntity {
+        legalName
+        brandName
+        binIin
+        registrationCountry
+        registrationDate
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const UPDATE_LEGAL_ENTITY_CLIENT_MUTATION = /* GraphQL */ `
+  mutation UpdateLegalEntityClient($id: ID!, $input: LegalEntityInput!) {
+    updateLegalEntityClient(id: $id, input: $input) {
+      client {
+        id
+        shortId
+        clientType
+        status
+        createdAt
+        updatedAt
+      }
+      individual {
+        firstName
+        lastName
+        middleName
+        birthDate
+        gender
+      }
+      legalEntity {
+        legalName
+        brandName
+        binIin
+        registrationCountry
+        registrationDate
+      }
+      tags {
+        id
+        name
+      }
+    }
+  }
+`;
+
 export interface CreateIndividualClientInput {
   individual: {
     firstName: string;
@@ -191,4 +257,38 @@ export async function contactsUpdateClientStatus(
   });
 
   return response.updateClientStatus;
+}
+
+export async function contactsUpdateIndividualClient(
+  token: string,
+  namespaceSlug: string,
+  id: string,
+  input: CreateIndividualClientInput['individual']
+): Promise<ClientRow> {
+  setContactsAppToken(token);
+
+  const response = await contactsClient.request<{ updateIndividualClient: ClientRow }>(
+    UPDATE_INDIVIDUAL_CLIENT_MUTATION as any,
+    { id, input: { ...input, gender: normalizeBoolean(input.gender) } },
+    { headers: { Namespace: namespaceSlug } }
+  );
+
+  return response.updateIndividualClient;
+}
+
+export async function contactsUpdateLegalEntityClient(
+  token: string,
+  namespaceSlug: string,
+  id: string,
+  input: CreateLegalEntityClientInput['legalEntity']
+): Promise<ClientRow> {
+  setContactsAppToken(token);
+
+  const response = await contactsClient.request<{ updateLegalEntityClient: ClientRow }>(
+    UPDATE_LEGAL_ENTITY_CLIENT_MUTATION as any,
+    { id, input },
+    { headers: { Namespace: namespaceSlug } }
+  );
+
+  return response.updateLegalEntityClient;
 }

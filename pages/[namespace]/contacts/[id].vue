@@ -4,10 +4,10 @@ import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { logError } from '@/utils/logger';
-import { contactsUpdateClientStatus } from '@/api/contacts/mutations';
+import { contactsUpdateClientStatus, contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { contactsListClients, type ClientRow } from '@/api/contacts/listClients';
 import { getClient } from '@/api/contacts/getClient';
-import { getClientIdentities, type ClientIdentity } from '@/api/contacts/identities';
+import { createIdentity, deleteIdentity, getClientIdentities, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
 import { getClientTags } from '@/api/contacts/tags';
 import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
 import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
@@ -73,6 +73,8 @@ const editingRegistrationDate = ref('');
 // Edit form data - Identities
 const editingPhones = ref<string[]>([]);
 const editingEmails = ref<string[]>([]);
+const editingTelegrams = ref<string[]>([]);
+const editingWhatsapps = ref<string[]>([]);
 const identityDisplayValues = ref<Record<string, string>>({});
 
 const displayName = computed(() => {
@@ -696,9 +698,9 @@ function cancelEditPersonalInfo() {
   backupClient.value = null;
 }
 
-function savePersonalInfo() {
+async function savePersonalInfo() {
   if (!client.value) return;
-  
+
   if (useMockData.value) {
     if (client.value.individual) {
       client.value.individual.firstName = editingFirstName.value;
@@ -713,12 +715,54 @@ function savePersonalInfo() {
       client.value.legalEntity.registrationCountry = editingRegistrationCountry.value;
       client.value.legalEntity.registrationDate = editingRegistrationDate.value ? editingRegistrationDate.value : undefined;
     }
-    
+
     editMode.value.personalInfo = false;
     toast.add({
       title: t('common.success'),
       description: t('contacts.clientDataUpdated'),
       color: 'green',
+    });
+    return;
+  }
+
+  if (!token.value || !selectedNS.value) return;
+
+  try {
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    if (client.value.individual) {
+      await contactsUpdateIndividualClient(contactsToken, selectedNS.value, client.value.client.id, {
+        firstName: editingFirstName.value.trim(),
+        lastName: editingLastName.value.trim(),
+        middleName: editingMiddleName.value.trim() || undefined,
+        birthDate: editingBirthDate.value || undefined,
+        gender: editingGender.value,
+      });
+    } else if (client.value.legalEntity) {
+      await contactsUpdateLegalEntityClient(contactsToken, selectedNS.value, client.value.client.id, {
+        legalName: editingLegalName.value.trim(),
+        brandName: editingBrandName.value.trim() || undefined,
+        binIin: editingBinIin.value.trim() || undefined,
+        registrationCountry: editingRegistrationCountry.value.trim() || undefined,
+        registrationDate: editingRegistrationDate.value || undefined,
+      });
+    }
+
+    editMode.value.personalInfo = false;
+    await loadClient();
+    toast.add({
+      title: t('common.success'),
+      description: t('contacts.clientDataUpdated'),
+      color: 'green',
+    });
+  } catch (error) {
+    logError('Failed to save personal info:', error);
+    toast.add({
+      title: t('common.error'),
+      description: t('contacts.updateError'),
+      color: 'red',
     });
   }
 }
@@ -741,6 +785,22 @@ function startEditIdentities() {
   if (editingEmails.value.length === 0) {
     editingEmails.value = [''];
   }
+
+  editingTelegrams.value = identities.value
+    .filter(id => id.type === 'telegram')
+    .map(id => id.value)
+    .slice(0, 5);
+  if (editingTelegrams.value.length === 0) {
+    editingTelegrams.value = [''];
+  }
+
+  editingWhatsapps.value = identities.value
+    .filter(id => id.type === 'whatsapp')
+    .map(id => id.value)
+    .slice(0, 5);
+  if (editingWhatsapps.value.length === 0) {
+    editingWhatsapps.value = [''];
+  }
   
   editMode.value.identities = true;
 }
@@ -750,9 +810,51 @@ function cancelEditIdentities() {
   backupIdentities.value = [];
 }
 
-function saveIdentities() {
+async function syncIdentityType(
+  contactsToken: string,
+  namespace: string,
+  clientIdValue: string,
+  type: 'phone' | 'email' | 'telegram' | 'whatsapp',
+  desiredValues: string[],
+  existingItems: ClientIdentity[],
+) {
+  const normalizedDesired = desiredValues.map(value => value.trim()).filter(Boolean);
+  const resultingIds: string[] = [];
+  const maxLength = Math.max(normalizedDesired.length, existingItems.length);
+
+  for (let index = 0; index < maxLength; index += 1) {
+    const desiredValue = normalizedDesired[index];
+    const existingItem = existingItems[index];
+
+    if (existingItem && desiredValue) {
+      if (existingItem.value !== desiredValue) {
+        const result = await updateIdentity(contactsToken, namespace, existingItem.id, desiredValue);
+        resultingIds.push(result.updateIdentity.id);
+      } else {
+        resultingIds.push(existingItem.id);
+      }
+      continue;
+    }
+
+    if (existingItem && !desiredValue) {
+      await deleteIdentity(contactsToken, namespace, existingItem.id);
+      continue;
+    }
+
+    if (!existingItem && desiredValue) {
+      const result = await createIdentity(contactsToken, namespace, clientIdValue, type, desiredValue, resultingIds.length === 0);
+      resultingIds.push(result.createIdentity.id);
+    }
+  }
+
+  if (resultingIds.length > 0) {
+    await setPrimaryIdentity(contactsToken, namespace, resultingIds[0]);
+  }
+}
+
+async function saveIdentities() {
   if (!client.value) return;
-  
+
   if (useMockData.value) {
     identities.value = [
       ...editingPhones.value
@@ -779,13 +881,95 @@ function saveIdentities() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })),
+      ...editingTelegrams.value
+        .filter(v => v.trim())
+        .map((value, idx) => ({
+          id: `telegram-${idx}`,
+          clientId: client.value!.client.id,
+          type: 'telegram',
+          value,
+          isPrimary: idx === 0,
+          verifiedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })),
+      ...editingWhatsapps.value
+        .filter(v => v.trim())
+        .map((value, idx) => ({
+          id: `whatsapp-${idx}`,
+          clientId: client.value!.client.id,
+          type: 'whatsapp',
+          value,
+          isPrimary: idx === 0,
+          verifiedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })),
     ];
-    
+
     editMode.value.identities = false;
     toast.add({
       title: t('common.success'),
       description: t('contacts.contactDataUpdated'),
       color: 'green',
+    });
+    return;
+  }
+
+  if (!token.value || !selectedNS.value) return;
+
+  try {
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    const clientIdValue = client.value.client.id;
+    await syncIdentityType(
+      contactsToken,
+      selectedNS.value,
+      clientIdValue,
+      'phone',
+      editingPhones.value,
+      identities.value.filter(id => id.type === 'phone'),
+    );
+    await syncIdentityType(
+      contactsToken,
+      selectedNS.value,
+      clientIdValue,
+      'email',
+      editingEmails.value,
+      identities.value.filter(id => id.type === 'email'),
+    );
+    await syncIdentityType(
+      contactsToken,
+      selectedNS.value,
+      clientIdValue,
+      'telegram',
+      editingTelegrams.value,
+      identities.value.filter(id => id.type === 'telegram'),
+    );
+    await syncIdentityType(
+      contactsToken,
+      selectedNS.value,
+      clientIdValue,
+      'whatsapp',
+      editingWhatsapps.value,
+      identities.value.filter(id => id.type === 'whatsapp'),
+    );
+
+    editMode.value.identities = false;
+    await loadClient();
+    toast.add({
+      title: t('common.success'),
+      description: t('contacts.contactDataUpdated'),
+      color: 'green',
+    });
+  } catch (error) {
+    logError('Failed to save identities:', error);
+    toast.add({
+      title: t('common.error'),
+      description: t('contacts.updateError'),
+      color: 'red',
     });
   }
 }
@@ -811,6 +995,30 @@ function addEmailField() {
 function removeEmailField(index: number) {
   if (editingEmails.value.length > 1) {
     editingEmails.value.splice(index, 1);
+  }
+}
+
+function addTelegramField() {
+  if (editingTelegrams.value.length < 5) {
+    editingTelegrams.value.push('');
+  }
+}
+
+function removeTelegramField(index: number) {
+  if (editingTelegrams.value.length > 1) {
+    editingTelegrams.value.splice(index, 1);
+  }
+}
+
+function addWhatsappField() {
+  if (editingWhatsapps.value.length < 5) {
+    editingWhatsapps.value.push('');
+  }
+}
+
+function removeWhatsappField(index: number) {
+  if (editingWhatsapps.value.length > 1) {
+    editingWhatsapps.value.splice(index, 1);
   }
 }
 </script>
@@ -875,6 +1083,8 @@ function removeEmailField(index: number) {
             :edit-mode="editMode.identities"
             :editing-phones="editingPhones"
             :editing-emails="editingEmails"
+            :editing-telegrams="editingTelegrams"
+            :editing-whatsapps="editingWhatsapps"
             @start-edit="startEditIdentities"
             @save-edit="saveIdentities"
             @cancel-edit="cancelEditIdentities"
@@ -882,8 +1092,14 @@ function removeEmailField(index: number) {
             @remove-phone="removePhoneField"
             @add-email="addEmailField"
             @remove-email="removeEmailField"
+            @add-telegram="addTelegramField"
+            @remove-telegram="removeTelegramField"
+            @add-whatsapp="addWhatsappField"
+            @remove-whatsapp="removeWhatsappField"
             @update-phone="(idx, val) => editingPhones[idx] = val"
             @update-email="(idx, val) => editingEmails[idx] = val"
+            @update-telegram="(idx, val) => editingTelegrams[idx] = val"
+            @update-whatsapp="(idx, val) => editingWhatsapps[idx] = val"
             @phone-action="handlePhoneAction"
             @email-action="handleEmailAction"
             @telegram-action="handleTelegramAction"

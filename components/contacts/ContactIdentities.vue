@@ -9,6 +9,8 @@ interface Props {
   editMode?: boolean;
   editingPhones?: string[];
   editingEmails?: string[];
+  editingTelegrams?: string[];
+  editingWhatsapps?: string[];
   loading?: boolean;
 }
 
@@ -20,8 +22,14 @@ interface Emits {
   removePhone: [index: number];
   addEmail: [];
   removeEmail: [index: number];
+  addTelegram: [];
+  removeTelegram: [index: number];
+  addWhatsapp: [];
+  removeWhatsapp: [index: number];
   updatePhone: [index: number, value: string];
   updateEmail: [index: number, value: string];
+  updateTelegram: [index: number, value: string];
+  updateWhatsapp: [index: number, value: string];
   phoneAction: [phone: string];
   emailAction: [email: string];
   telegramAction: [handle: string];
@@ -33,6 +41,8 @@ const props = withDefaults(defineProps<Props>(), {
   editMode: false,
   editingPhones: () => [],
   editingEmails: () => [],
+  editingTelegrams: () => [],
+  editingWhatsapps: () => [],
   loading: false,
 });
 
@@ -84,7 +94,7 @@ function getIdentityTypeLabel(type: string): string {
 </script>
 
 <template>
-  <div v-if="identities.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
     <!-- Header -->
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-2">
@@ -110,7 +120,7 @@ function getIdentityTypeLabel(type: string): string {
     <!-- Content -->
     <div class="px-5 py-5">
       <template v-if="!editMode">
-        <div class="space-y-2">
+        <div class="space-y-2" v-if="identities.length > 0">
           <div
             v-for="identity in identities"
             :key="identity.id"
@@ -179,6 +189,9 @@ function getIdentityTypeLabel(type: string): string {
               />
             </div>
           </div>
+        </div>
+        <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
+          {{ t('contacts.noIdentities') || 'Контактные данные не добавлены' }}
         </div>
       </template>
 
@@ -261,6 +274,86 @@ function getIdentityTypeLabel(type: string): string {
               @click="() => $emit('addEmail')"
             >
               {{ t('contacts.addEmail') }}
+            </UButton>
+          </div>
+
+          <!-- Telegram -->
+          <div class="space-y-2 pt-4">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.telegram') || 'Telegram' }}</label>
+            </div>
+
+            <div v-for="(telegram, idx) in editingTelegrams" :key="`telegram-${idx}`" class="flex gap-2">
+              <UFormGroup :label="''" class="flex-1">
+                <UInput
+                  :model-value="telegram"
+                  type="text"
+                  placeholder="@username"
+                  size="md"
+                  @update:model-value="$emit('updateTelegram', idx, $event)"
+                />
+              </UFormGroup>
+              <UButton
+                icon="i-heroicons-trash"
+                color="red"
+                variant="ghost"
+                size="md"
+                @click="() => $emit('removeTelegram', idx)"
+                :disabled="editingTelegrams.length === 1"
+                style="margin-top: 0"
+              />
+            </div>
+
+            <UButton
+              v-if="editingTelegrams.length < 5"
+              icon="i-heroicons-plus"
+              variant="outline"
+              color="blue"
+              size="sm"
+              @click="() => $emit('addTelegram')"
+            >
+              {{ t('contacts.addTelegram') || 'Добавить Telegram' }}
+            </UButton>
+          </div>
+
+          <!-- WhatsApp -->
+          <div class="space-y-2 pt-4">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-chat-bubble-left-right" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.whatsapp') || 'WhatsApp' }}</label>
+            </div>
+
+            <div v-for="(whatsapp, idx) in editingWhatsapps" :key="`whatsapp-${idx}`" class="flex gap-2">
+              <UFormGroup :label="''" class="flex-1">
+                <UInput
+                  :model-value="whatsapp"
+                  type="tel"
+                  placeholder="+7 777 123 45 67"
+                  size="md"
+                  @update:model-value="$emit('updateWhatsapp', idx, $event)"
+                />
+              </UFormGroup>
+              <UButton
+                icon="i-heroicons-trash"
+                color="red"
+                variant="ghost"
+                size="md"
+                @click="() => $emit('removeWhatsapp', idx)"
+                :disabled="editingWhatsapps.length === 1"
+                style="margin-top: 0"
+              />
+            </div>
+
+            <UButton
+              v-if="editingWhatsapps.length < 5"
+              icon="i-heroicons-plus"
+              variant="outline"
+              color="blue"
+              size="sm"
+              @click="() => $emit('addWhatsapp')"
+            >
+              {{ t('contacts.addWhatsapp') || 'Добавить WhatsApp' }}
             </UButton>
           </div>
         </form>
