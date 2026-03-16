@@ -762,9 +762,8 @@ useHead(() => ({
               </UFormGroup>
 
               <UFormGroup :label="t('contacts.gender')">
-                <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
-                  :model-value="individualGender"
+                  :model-value="(individualGender as any)"
                   :options="[
                     { value: null, label: '--' },
                     { value: true, label: t('contacts.male') },
@@ -959,9 +958,8 @@ useHead(() => ({
                 </UFormGroup>
 
                 <UFormGroup :label="t('contacts.gender')">
-                  <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
-                    :model-value="contactPersonForm.gender"
+                    :model-value="(contactPersonForm.gender as any)"
                     :options="[
                       { value: null, label: '--' },
                       { value: true, label: t('contacts.male') },

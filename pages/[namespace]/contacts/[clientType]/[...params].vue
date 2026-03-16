@@ -90,11 +90,11 @@ const isValidPagination = computed(() => {
   return true;
 });
 
-const page = computed({
+const page = computed<number>({
   get: () => pageParts.value.page,
 });
 
-const pageSize = computed({
+const pageSize = computed<number>({
   get: () => pageParts.value.pageSize,
 });
 

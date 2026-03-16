@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useI18n } from '@/composables/useI18n';
 import type { ClientEvent } from '@/api/contacts/events';
 import { getEventDescription, getEventIcon } from '@/api/contacts/events';
 

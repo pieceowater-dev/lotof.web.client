@@ -15,8 +15,9 @@ const baseClients: ClientRow[] = [
       lastName: 'Иванов',
       middleName: 'Петрович',
       birthDate: '1985-06-15',
-      gender: 'male',
+      gender: true,
     },
+    tags: [],
   },
   
   // Individual - Blocked
@@ -33,8 +34,9 @@ const baseClients: ClientRow[] = [
       lastName: 'Смирнова',
       middleName: 'Александровна',
       birthDate: '1992-03-28',
-      gender: 'female',
+      gender: false,
     },
+    tags: [],
   },
   
   // Individual - No middle name
@@ -50,8 +52,9 @@ const baseClients: ClientRow[] = [
       firstName: 'John',
       lastName: 'Smith',
       birthDate: '1988-09-12',
-      gender: 'male',
+      gender: true,
     },
+    tags: [],
   },
   
   // Legal Entity - With brand name
@@ -70,6 +73,7 @@ const baseClients: ClientRow[] = [
       registrationCountry: 'Kazakhstan',
       registrationDate: '2020-03-15',
     },
+    tags: [],
   },
   
   // Legal Entity - Archived
@@ -87,6 +91,7 @@ const baseClients: ClientRow[] = [
       registrationCountry: 'Russia',
       registrationDate: '2015-06-20',
     },
+    tags: [],
   },
   
   // Legal Entity - Active with long name
@@ -105,6 +110,7 @@ const baseClients: ClientRow[] = [
       registrationCountry: 'Kazakhstan',
       registrationDate: '2021-11-10',
     },
+    tags: [],
   },
   
   // Individual - Archived
@@ -121,8 +127,9 @@ const baseClients: ClientRow[] = [
       lastName: 'Петрова',
       middleName: 'Владимировна',
       birthDate: '1995-12-05',
-      gender: 'female',
+      gender: false,
     },
+    tags: [],
   },
   
   // Legal Entity - Blocked
@@ -141,6 +148,7 @@ const baseClients: ClientRow[] = [
       registrationCountry: 'Kazakhstan',
       registrationDate: '2018-04-22',
     },
+    tags: [],
   },
   
   // Individual - Young person
@@ -157,8 +165,9 @@ const baseClients: ClientRow[] = [
       lastName: 'Новиков',
       middleName: 'Андреевич',
       birthDate: '2002-07-18',
-      gender: 'male',
+      gender: true,
     },
+    tags: [],
   },
   
   // Legal Entity - Minimal info
@@ -176,6 +185,7 @@ const baseClients: ClientRow[] = [
       registrationCountry: 'Kazakhstan',
       registrationDate: '2024-01-10',
     },
+    tags: [],
   },
 ];
 

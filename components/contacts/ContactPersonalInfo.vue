@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
 
 interface Props {
@@ -208,9 +209,8 @@ function formatGender(gender?: boolean | null): string {
               </UFormGroup>
 
               <UFormGroup :label="t('contacts.gender')">
-                <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                 <USelect
-                  :model-value="editingGender"
+                  :model-value="(editingGender as any)"
                   :options="[
                     { value: null, label: '--' },
                     { value: true, label: t('contacts.male') },

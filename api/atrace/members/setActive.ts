@@ -1,4 +1,4 @@
-import type { Member } from '~/types/atrace'
+import type { Member } from '@/types/atrace'
 
 export interface SetMemberActiveInput {
   userId: string

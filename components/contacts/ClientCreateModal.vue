@@ -468,9 +468,8 @@ function handleKeyDown(event: KeyboardEvent) {
             </UFormGroup>
 
             <UFormGroup :label="t('contacts.gender')">
-              <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
               <USelect
-                :model-value="individualForm.gender"
+                :model-value="(individualForm.gender as any)"
                 :options="[
                   { value: null, label: '--' },
                   { value: true, label: t('contacts.male') },
@@ -588,9 +587,8 @@ function handleKeyDown(event: KeyboardEvent) {
                 </UFormGroup>
 
                 <UFormGroup :label="t('contacts.gender')">
-                  <!-- @ts-expect-error USelect types don't support boolean | null but it works at runtime -->
                   <USelect
-                    :model-value="contactPersonForm.gender"
+                    :model-value="(contactPersonForm.gender as any)"
                     :options="[
                       { value: null, label: '--' },
                       { value: true, label: t('contacts.male') },

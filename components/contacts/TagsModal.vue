@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
@@ -32,8 +32,10 @@ const isCreating = ref(false);
 const newTagName = ref('');
 const editingId = ref<string | null>(null);
 const editingName = ref('');
+const editInputRef = ref<HTMLInputElement | null>(null);
 const selectedTagId = ref<string | null>(null);
 const isAddingTag = ref(false);
+const confirmDeleteId = ref<string | null>(null);
 
 const mode = computed(() => props.mode || 'manage');
 const isSelectMode = computed(() => mode.value === 'select');
@@ -131,6 +133,14 @@ async function handleUpdateTag() {
   }
 }
 
+function requestDeleteTag(id: string) {
+  confirmDeleteId.value = id;
+}
+
+function cancelDeleteTag() {
+  confirmDeleteId.value = null;
+}
+
 async function handleDeleteTag(id: string) {
   if (!token.value || !selectedNS.value) return;
   try {
@@ -139,12 +149,14 @@ async function handleDeleteTag(id: string) {
 
     await deleteTag(contactsToken, selectedNS.value, id);
     tags.value = tags.value.filter(t => t.id !== id);
+    confirmDeleteId.value = null;
     toast.add({
       title: t('common.success'),
       description: 'Tag deleted successfully',
       color: 'green',
     });
   } catch (error) {
+    confirmDeleteId.value = null;
     toast.add({
       title: t('common.error'),
       description: 'Failed to delete tag',
@@ -198,6 +210,8 @@ async function handleAddTag(tagId: string) {
 function startEdit(tag: Tag) {
   editingId.value = tag.id;
   editingName.value = tag.name;
+  confirmDeleteId.value = null;
+  nextTick(() => editInputRef.value?.focus());
 }
 
 function cancelEdit() {
@@ -208,6 +222,9 @@ function cancelEdit() {
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     loadTags();
+  } else {
+    confirmDeleteId.value = null;
+    editingId.value = null;
   }
 });
 </script>
@@ -243,84 +260,125 @@ watch(() => props.isOpen, (newVal) => {
       </div>
 
       <div v-else class="space-y-2 max-h-[400px] overflow-y-auto">
-        <!-- Select mode: just show tags to select -->
+        <!-- Select mode -->
         <template v-if="isSelectMode">
           <div
             v-for="tag in displayTags"
             :key="tag.id"
-            @click="handleAddTag(tag.id)"
-            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+            class="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors"
             :class="{ 'ring-2 ring-blue-500': selectedTagId === tag.id }"
           >
-            <div class="flex items-center gap-2">
-              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-500 dark:text-gray-400" />
-              <span class="text-sm font-medium">{{ tag.name }}</span>
+            <!-- Name / inline edit -->
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <template v-if="editingId === tag.id">
+                <input
+                  ref="editInputRef"
+                  v-model="editingName"
+                  type="text"
+                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
+                  @keyup.enter="handleUpdateTag"
+                  @keyup.escape="cancelEdit"
+                />
+              </template>
+              <span
+                v-else
+                class="text-sm font-medium truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                title="Double-click to rename"
+                @dblclick.stop="startEdit(tag)"
+                @click.stop="confirmDeleteId !== tag.id && handleAddTag(tag.id)"
+              >{{ tag.name }}</span>
             </div>
-            <UIcon 
-              v-if="isAddingTag && selectedTagId === tag.id"
-              name="lucide:loader-2" 
-              class="w-4 h-4 animate-spin text-blue-500"
-            />
-            <UIcon
-              v-else
-              name="lucide:plus-circle"
-              class="w-4 h-4 text-gray-400 hover:text-blue-500"
-            />
+
+            <!-- Actions -->
+            <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+              <!-- Save/cancel edit -->
+              <template v-if="editingId === tag.id">
+                <UButton size="xs" color="green" variant="ghost" icon="lucide:check" @click.stop="handleUpdateTag" />
+                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click.stop="cancelEdit" />
+              </template>
+              <!-- Confirm delete -->
+              <template v-else-if="confirmDeleteId === tag.id">
+                <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">Уверен?</span>
+                <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click.stop="handleDeleteTag(tag.id)" />
+                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click.stop="cancelDeleteTag()" />
+              </template>
+              <!-- Normal -->
+              <template v-else>
+                <UButton
+                  size="xs" color="gray" variant="ghost" icon="lucide:pencil"
+                  @click.stop="startEdit(tag)"
+                  title="Rename"
+                />
+                <UButton
+                  size="xs" color="gray" variant="ghost" icon="lucide:trash-2"
+                  @click.stop="requestDeleteTag(tag.id)"
+                  title="Delete"
+                />
+                <UButton
+                  size="xs"
+                  color="blue"
+                  variant="soft"
+                  icon="lucide:plus"
+                  :loading="isAddingTag && selectedTagId === tag.id"
+                  @click.stop="handleAddTag(tag.id)"
+                  title="Add to client"
+                />
+              </template>
+            </div>
           </div>
         </template>
 
-        <!-- Manage mode: show all CRUD operations -->
+        <!-- Manage mode -->
         <template v-else>
           <div
             v-for="tag in displayTags"
             :key="tag.id"
-            class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
+            class="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 group/tag"
           >
-            <div class="flex items-center gap-2 flex-1">
-              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-500 dark:text-gray-400 flex-shrink-0" />
-              <input
-                v-if="editingId === tag.id"
-                v-model="editingName"
-                type="text"
-                class="flex-1 px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                @keyup.enter="handleUpdateTag"
-                @keyup.escape="cancelEdit"
-              />
-              <span v-else class="text-sm font-medium">{{ tag.name }}</span>
-            </div>
-            <div class="flex gap-1">
-              <UButton
-                v-if="editingId === tag.id"
-                size="xs"
-                color="green"
-                variant="ghost"
-                icon="lucide:check"
-                @click="handleUpdateTag"
-              />
-              <UButton
+            <!-- Name / inline edit -->
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <template v-if="editingId === tag.id">
+                <input
+                  ref="editInputRef"
+                  v-model="editingName"
+                  type="text"
+                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
+                  @keyup.enter="handleUpdateTag"
+                  @keyup.escape="cancelEdit"
+                />
+              </template>
+              <span
                 v-else
-                size="xs"
-                color="blue"
-                variant="ghost"
-                icon="lucide:edit-2"
+                class="text-sm font-medium truncate cursor-text select-none"
+                title="Double-click to rename"
+                @dblclick="startEdit(tag)"
+              >{{ tag.name }}</span>
+              <!-- Pencil hint — visible on row hover when not editing -->
+              <UIcon
+                v-if="editingId !== tag.id && confirmDeleteId !== tag.id"
+                name="lucide:pencil"
+                class="w-3 h-3 text-gray-300 dark:text-gray-600 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer hover:text-blue-500"
+                title="Double-click to rename"
                 @click="startEdit(tag)"
               />
-              <UButton
-                v-if="editingId === tag.id"
-                size="xs"
-                color="gray"
-                variant="ghost"
-                icon="lucide:x"
-                @click="cancelEdit"
-              />
-              <UButton
-                v-else
-                size="xs"
-                color="red"
-                variant="ghost"
-                icon="lucide:trash-2"
-                @click="handleDeleteTag(tag.id)"
-              />
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-1 ml-2 flex-shrink-0">
+              <template v-if="editingId === tag.id">
+                <UButton size="xs" color="green" variant="ghost" icon="lucide:check" @click="handleUpdateTag" />
+                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelEdit" />
+              </template>
+              <template v-else-if="confirmDeleteId === tag.id">
+                <span class="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">Уверен?</span>
+                <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click="handleDeleteTag(tag.id)" />
+                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelDeleteTag()" />
+              </template>
+              <template v-else>
+                <UButton size="xs" color="red" variant="ghost" icon="lucide:trash-2" @click="requestDeleteTag(tag.id)" />
+              </template>
             </div>
           </div>
         </template>

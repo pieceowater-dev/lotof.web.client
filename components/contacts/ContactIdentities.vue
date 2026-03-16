@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
+import { useI18n } from '@/composables/useI18n';
 import type { ClientIdentity } from '@/api/contacts/identities';
 
 interface Props {

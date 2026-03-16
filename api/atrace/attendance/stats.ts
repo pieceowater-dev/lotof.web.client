@@ -1,6 +1,5 @@
 import { atraceClient, setAtraceAppToken } from '@/api/clients';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { getDeviceHeaders } from '@/utils/device';
@@ -113,19 +112,26 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
   }
 }
 
+function resolveNsSlug(nsSlug?: string): string {
+  if (nsSlug) return nsSlug;
+
+  try {
+    const routeNs = useRoute().params.namespace;
+    if (typeof routeNs === 'string' && routeNs) {
+      return routeNs;
+    }
+  } catch {}
+
+  throw new Error('Namespace slug is required');
+}
+
 export async function atraceGetAllUsersStats(
   startDate: string,
   endDate: string,
   postId?: string | null,
   nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
-  // nsSlug required for token refresh
-  if (!nsSlug) {
-    // Try to get from route if not provided
-    try {
-      nsSlug = useRoute().params.namespace as string;
-    } catch {}
-  }
+  const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -140,13 +146,13 @@ export async function atraceGetAllUsersStats(
       }>;
     }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
       headers: {
-        Namespace: nsSlug,
+        Namespace: namespace,
         ...devHeaders,
       },
     });
 
     return response.getAllUsersStats;
-  }, nsSlug!);
+  }, namespace);
 }
 
 export async function atraceExportDailyAttendance(
@@ -164,11 +170,7 @@ export async function atraceExportDailyAttendance(
   legitimate: boolean;
   reason?: string;
 }>> {
-  if (!nsSlug) {
-    try {
-      nsSlug = useRoute().params.namespace as string;
-    } catch {}
-  }
+  const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -185,12 +187,12 @@ export async function atraceExportDailyAttendance(
       }>
     }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
       headers: {
-        Namespace: nsSlug,
+        Namespace: namespace,
         ...devHeaders,
       },
     });
     return response.exportDailyAttendance;
-  }, nsSlug!);
+  }, namespace);
 }
 
 export async function atraceGetAttendanceReport(
@@ -209,13 +211,7 @@ export async function atraceGetAttendanceReport(
   legitimate: boolean;
   reason?: string;
 }>> {
-  // nsSlug required for token refresh
-  if (!nsSlug) {
-    // Try to get from route if not provided
-    try {
-      nsSlug = useRoute().params.namespace as string;
-    } catch {}
-  }
+  const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -242,13 +238,13 @@ export async function atraceGetAttendanceReport(
       };
     }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate }, {
       headers: {
-        Namespace: nsSlug,
+        Namespace: namespace,
         ...devHeaders,
       },
     });
 
     return response.getAttendanceReport.attendances;
-  }, nsSlug!);
+  }, namespace);
 }
 
 const MARK_DAY_LEGITIMATE = `
@@ -270,21 +266,15 @@ export async function atraceMarkDayLegitimate(
   reason: string,
   nsSlug?: string
 ): Promise<boolean> {
-  // nsSlug required for token refresh
-  if (!nsSlug) {
-    // Try to get from route if not provided
-    try {
-      nsSlug = useRoute().params.namespace as string;
-    } catch {}
-  }
+  const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason }, {
       headers: {
-        Namespace: nsSlug,
+        Namespace: namespace,
         ...devHeaders,
       },
     });
     return true;
-  }, nsSlug!);
+  }, namespace);
 }

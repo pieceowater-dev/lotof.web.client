@@ -660,7 +660,12 @@ function handleWhatsappAction(phone: string) {
 }
 
 function handleBack() {
-  router.back();
+  const nsSlug = route.params.namespace as string;
+  if (window.history.length > 1) {
+    router.back();
+  } else {
+    router.push(`/${nsSlug}/contacts/all/1-20`);
+  }
 }
 
 // Edit mode functions

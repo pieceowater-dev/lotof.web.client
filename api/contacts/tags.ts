@@ -72,6 +72,14 @@ const DELETE_TAG_MUTATION = gql`
   }
 `;
 
+const RESTORE_TAG_MUTATION = gql`
+  mutation RestoreTag($id: ID!) {
+    restoreTag(id: $id) {
+      success
+    }
+  }
+`;
+
 const ADD_TAG_TO_CLIENT_MUTATION = gql`
   mutation AddTagToClient($input: AddTagToClientInput!) {
     addTagToClient(input: $input) {
@@ -132,6 +140,16 @@ export async function deleteTag(token: string, namespaceSlug: string, id: string
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
   return contactsClient.request<{ deleteTag: { success: boolean } }>(DELETE_TAG_MUTATION, {
+    id,
+  }, {
+    headers: { Namespace: namespaceSlug },
+  });
+}
+
+export async function restoreTag(token: string, namespaceSlug: string, id: string) {
+  if (!token) throw new Error('Token is required');
+  setContactsAppToken(token);
+  return contactsClient.request<{ restoreTag: { success: boolean } }>(RESTORE_TAG_MUTATION, {
     id,
   }, {
     headers: { Namespace: namespaceSlug },

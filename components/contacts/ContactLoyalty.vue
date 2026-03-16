@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useI18n } from '@/composables/useI18n';
 import {
   addStamp,
   addBonusTransaction,
@@ -134,6 +135,10 @@ function formatLoyaltyError(message: string): string {
 
   if (lower.includes('invalid pin')) {
     return t('contacts.invalidPin') || 'Неверный PIN-код';
+  }
+
+  if (lower.includes('pin is not configured') || lower.includes('pin not configured')) {
+    return t('contacts.pinNotConfigured') || 'PIN не задан в настройках';
   }
 
   if (lower.includes('pin required') || lower.includes('pin is required')) {
@@ -649,7 +654,7 @@ async function submitStampFromModal() {
           </div>
 
           <UInput
-            v-model.number="amountInput"
+            v-model.number="(amountInput as any)"
             type="number"
             min="1"
             step="1"
