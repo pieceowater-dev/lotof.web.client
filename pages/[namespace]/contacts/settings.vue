@@ -128,6 +128,13 @@ function roleTone(role: StaticAccessRole): string {
   return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 }
 
+function roleLabel(role: StaticAccessRole): string {
+  if (role === 'OWNER') return 'Владелец';
+  if (role === 'ADMIN') return 'Админ';
+  if (role === 'OPERATOR') return 'Оператор';
+  return 'Наблюдатель';
+}
+
 function planLimitLabel(key: 'max_clients' | 'max_custom_fields' | 'max_loyalty_programs'): string {
   if (key === 'max_clients') {
     return t('app.limitActiveUsers') || 'Активные клиенты';
@@ -914,7 +921,7 @@ onMounted(async () => {
                     <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ member.email }}</td>
                     <td class="px-4 py-3">
                       <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="roleTone(memberRoles[member.id] || 'VIEWER')">
-                        {{ staticRoleOptions.find((opt) => opt.value === (memberRoles[member.id] || 'VIEWER'))?.label || 'Наблюдатель' }}
+                        {{ roleLabel(memberRoles[member.id] || 'VIEWER') }}
                       </span>
                     </td>
                     <td class="px-4 py-3">
