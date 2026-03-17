@@ -681,6 +681,8 @@
     "copyFailed": "Failed to copy",
     "clientDataUpdated": "Client data updated",
     "contactDataUpdated": "Contact data updated",
+    "refreshUpdates": "Refresh",
+    "staleClientBanner": "Client data changed in another window.",
     "copy": "Copy",
     "phones": "Phones",
     "emails": "Email addresses",

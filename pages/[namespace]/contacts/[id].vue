@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
@@ -12,6 +12,7 @@ import { getClientTags } from '@/api/contacts/tags';
 import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
 import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
 import { getClientPageData } from '@/api/contacts/clientPage';
+import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import ContactHeader from '@/components/contacts/ContactHeader.vue';
@@ -46,6 +47,9 @@ const stampProgress = ref<ClientStampProgress[]>([]);
 const loading = ref(true);
 const statusChangeLoading = ref(false);
 const isTagsModalOpen = ref(false);
+const isClientDataStale = ref(false);
+
+let stopClientSubscription: (() => void) | null = null;
 
 // Mock data for preview
 const useMockData = ref(false);
@@ -192,7 +196,59 @@ useHead(() => ({
 
 onMounted(async () => {
   await loadClient();
+  await initClientSubscription();
 });
+
+onBeforeUnmount(() => {
+  if (stopClientSubscription) {
+    stopClientSubscription();
+    stopClientSubscription = null;
+  }
+});
+
+watch([() => token.value, () => selectedNS.value, () => client.value?.client.id], async () => {
+  await initClientSubscription();
+});
+
+function markLocalMutation() {
+  isClientDataStale.value = false;
+}
+
+async function initClientSubscription() {
+  if (!token.value || !selectedNS.value || !client.value?.client.id) return;
+
+  const { ensure } = useContactsToken();
+  const contactsToken = await ensure(selectedNS.value, token.value);
+  if (!contactsToken) return;
+
+  if (stopClientSubscription) {
+    stopClientSubscription();
+    stopClientSubscription = null;
+  }
+
+  stopClientSubscription = subscribeClientChanged(
+    contactsToken,
+    selectedNS.value,
+    (event) => {
+      // Only handle events for this specific client
+      if (event.clientId !== client.value?.client.id) return;
+      
+      // Don't show stale banner for our own changes
+      const currentUserId = user.value?.id || '';
+      if (event.changedBy === currentUserId) return;
+      
+      isClientDataStale.value = true;
+    },
+    () => {
+      // Fallback is manual reload; no hard failure for the page.
+    },
+  );
+}
+
+async function refreshStaleClientData() {
+  await loadClient();
+  isClientDataStale.value = false;
+}
 
 async function loadClient() {
   // Use mock data for preview
@@ -648,6 +704,7 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
     statusChangeLoading.value = true;
     await contactsUpdateClientStatus(token.value, selectedNS.value, clientId.value, newStatus);
     client.value.client.status = newStatus;
+    markLocalMutation();
     toast.add({
       title: t('common.success'),
       description: t('contacts.statusUpdated'),
@@ -815,6 +872,7 @@ async function savePersonalInfo() {
     }
 
     editMode.value.personalInfo = false;
+    markLocalMutation();
     await loadClient();
     toast.add({
       title: t('common.success'),
@@ -1022,6 +1080,7 @@ async function saveIdentities() {
     );
 
     editMode.value.identities = false;
+    markLocalMutation();
     await loadClient();
     toast.add({
       title: t('common.success'),
@@ -1106,6 +1165,20 @@ function removeWhatsappField(index: number) {
 
     <!-- Main Content -->
     <div v-else-if="client" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div
+        v-if="isClientDataStale"
+        class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
+      >
+        <div class="flex items-center justify-between gap-3">
+          <div class="text-sm text-amber-900 dark:text-amber-200">
+            {{ t('contacts.staleClientBanner') || 'Данные клиента изменились в другом окне.' }}
+          </div>
+          <UButton size="xs" color="amber" variant="soft" icon="lucide:refresh-cw" @click="refreshStaleClientData">
+            {{ t('contacts.refreshUpdates') || 'Обновить' }}
+          </UButton>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">

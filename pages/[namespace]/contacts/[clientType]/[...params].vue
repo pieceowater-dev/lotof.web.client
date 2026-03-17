@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useRouter, useRoute } from 'vue-router';
@@ -9,6 +9,7 @@ import { contactsListClients } from '@/api/contacts/listClients';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { listTags } from '@/api/contacts/tags';
+import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import SegmentsModal from '@/components/contacts/SegmentsModal.vue';
@@ -20,7 +21,7 @@ const router = useRouter();
 const route = useRoute();
 const toast = useToast();
 const { t } = useI18n();
-const { token } = useAuth();
+const { token, user } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
 
 const clients = ref<ClientRow[]>([]);
@@ -37,6 +38,9 @@ const isInitializingFromUrl = ref(false);
 const useMockData = ref(false);
 const sortField = ref('createdAt');
 const sortDirection = ref<'ASC' | 'DESC'>('DESC');
+const hasRemoteChanges = ref(false);
+
+let stopClientsSubscription: (() => void) | null = null;
 
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -173,7 +177,41 @@ onMounted(async () => {
     }
   }
   await loadClients();
+  await initClientsSubscription();
 });
+
+onBeforeUnmount(() => {
+  if (stopClientsSubscription) {
+    stopClientsSubscription();
+    stopClientsSubscription = null;
+  }
+});
+
+async function initClientsSubscription() {
+  if (!token.value || !selectedNS.value) return;
+
+  const { ensure } = useContactsToken();
+  const contactsToken = await ensure(selectedNS.value, token.value);
+  if (!contactsToken) return;
+
+  if (stopClientsSubscription) {
+    stopClientsSubscription();
+    stopClientsSubscription = null;
+  }
+
+  stopClientsSubscription = subscribeClientsUpdated(
+    contactsToken,
+    selectedNS.value,
+    (signal) => {
+      const currentUserId = user.value?.id || '';
+      if (signal.changedBy && currentUserId && signal.changedBy === currentUserId) return;
+      hasRemoteChanges.value = true;
+    },
+    () => {
+      // Keep page functional even if WS is temporarily unavailable.
+    },
+  );
+}
 
 // Watch for invalid pagination and redirect to valid URL
 watch([isValidPagination, isPageOutOfBounds], ([invalidPagination, outOfBounds]) => {
@@ -218,6 +256,10 @@ watch(searchQuery, async (newQuery) => {
 watch(() => route.params, async () => {
   await loadClients();
 }, { deep: true });
+
+watch([() => token.value, () => selectedNS.value], async () => {
+  await initClientsSubscription();
+});
 
 // Watch for selected tags changes - update URL and reload
 watch(selectedTags, async () => {
@@ -336,6 +378,7 @@ async function handleInlineSaveName(payload: {
     }
 
     await loadClients();
+    hasRemoteChanges.value = false;
     toast.add({ title: t('common.success'), description: t('contacts.clientDataUpdated'), color: 'green' });
   } catch (error) {
     logError('Failed to inline save name:', error);
@@ -368,6 +411,7 @@ async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: 
     }
 
     await loadClients();
+    hasRemoteChanges.value = false;
     toast.add({ title: t('common.success'), description: t('contacts.contactDataUpdated'), color: 'green' });
   } catch (error) {
     logError('Failed to inline save primary phone:', error);
@@ -437,11 +481,17 @@ function handleRowClick(row: ClientRow) {
 
 async function handleClientCreated() {
   await loadClients();
+  hasRemoteChanges.value = false;
   toast.add({
     title: t('common.success'),
     description: t('contacts.clientCreated'),
     color: 'green',
   });
+}
+
+async function handleRefreshFromRemote() {
+  await loadClients();
+  hasRemoteChanges.value = false;
 }
 </script>
 
@@ -508,15 +558,27 @@ async function handleClientCreated() {
             }}
           </button>
         </div>
-        <UButton
-          icon="lucide:plus"
-          size="sm"
-          color="primary"
-          variant="soft"
-          :to="`/${nsSlug}/contacts/new`"
-        >
-          {{ t('contacts.createClient') }}
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UButton
+            v-if="hasRemoteChanges"
+            icon="lucide:refresh-cw"
+            size="sm"
+            color="amber"
+            variant="soft"
+            @click="handleRefreshFromRemote"
+          >
+            {{ t('contacts.refreshUpdates') || 'Обновить' }}
+          </UButton>
+          <UButton
+            icon="lucide:plus"
+            size="sm"
+            color="primary"
+            variant="soft"
+            :to="`/${nsSlug}/contacts/new`"
+          >
+            {{ t('contacts.createClient') }}
+          </UButton>
+        </div>
       </div>
     </div>
 

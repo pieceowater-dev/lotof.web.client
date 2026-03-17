@@ -667,6 +667,8 @@
     "copyFailed": "Не удалось скопировать",
     "clientDataUpdated": "Данные клиента обновлены",
     "contactDataUpdated": "Контактные данные обновлены",
+    "refreshUpdates": "Обновить",
+    "staleClientBanner": "Данные клиента изменились в другом окне.",
     "copy": "Копировать",
     "phones": "Телефоны",
     "emails": "Email адреса",
