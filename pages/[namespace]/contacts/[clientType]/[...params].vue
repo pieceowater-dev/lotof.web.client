@@ -6,6 +6,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
+import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
+import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { listTags } from '@/api/contacts/tags';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
@@ -297,6 +299,82 @@ async function loadClients() {
   }
 }
 
+async function handleInlineSaveName(payload: {
+  clientId: string;
+  clientType: 'INDIVIDUAL' | 'LEGAL';
+  firstName?: string;
+  lastName?: string;
+  middleName?: string;
+  legalName?: string;
+}) {
+  if (!token.value || !selectedNS.value) return;
+
+  const row = clients.value.find((item) => item.client.id === payload.clientId);
+  if (!row) return;
+
+  try {
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    if (payload.clientType === 'INDIVIDUAL') {
+      await contactsUpdateIndividualClient(contactsToken, selectedNS.value, payload.clientId, {
+        firstName: payload.firstName?.trim() || row.individual?.firstName || '',
+        lastName: payload.lastName?.trim() || row.individual?.lastName || '',
+        middleName: payload.middleName?.trim() || undefined,
+        birthDate: row.individual?.birthDate || undefined,
+        gender: row.individual?.gender ?? undefined,
+      });
+    } else {
+      await contactsUpdateLegalEntityClient(contactsToken, selectedNS.value, payload.clientId, {
+        legalName: payload.legalName?.trim() || row.legalEntity?.legalName || '',
+        brandName: row.legalEntity?.brandName || undefined,
+        binIin: row.legalEntity?.binIin || undefined,
+        registrationCountry: row.legalEntity?.registrationCountry || undefined,
+        registrationDate: row.legalEntity?.registrationDate || undefined,
+      });
+    }
+
+    await loadClients();
+    toast.add({ title: t('common.success'), description: t('contacts.clientDataUpdated'), color: 'green' });
+  } catch (error) {
+    logError('Failed to inline save name:', error);
+    toast.add({ title: t('common.error'), description: t('contacts.updateError'), color: 'red' });
+  }
+}
+
+async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: string }) {
+  if (!token.value || !selectedNS.value) return;
+
+  const normalized = payload.phone.replace(/\D/g, '');
+  if (normalized.length < 8) {
+    toast.add({ title: t('common.error'), description: t('contacts.invalidPhone'), color: 'red' });
+    return;
+  }
+
+  try {
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(selectedNS.value, token.value);
+    if (!contactsToken) return;
+
+    const row = clients.value.find((item) => item.client.id === payload.clientId);
+    const identities = row?.contacts || [];
+    const primaryPhone = identities.find((item) => item.type === 'phone' && item.isPrimary) || identities.find((item) => item.type === 'phone');
+
+    if (primaryPhone) {
+      await updateIdentity(contactsToken, selectedNS.value, primaryPhone.id, normalized, primaryPhone.comments);
+    } else {
+      await createIdentity(contactsToken, selectedNS.value, payload.clientId, 'phone', normalized, true);
+    }
+
+    await loadClients();
+    toast.add({ title: t('common.success'), description: t('contacts.contactDataUpdated'), color: 'green' });
+  } catch (error) {
+    logError('Failed to inline save primary phone:', error);
+    toast.add({ title: t('common.error'), description: t('contacts.updateError'), color: 'red' });
+  }
+}
+
 async function handleSortUpdate(payload: { field: string; direction: 'asc' | 'desc' }) {
   sortField.value = payload.field;
   sortDirection.value = payload.direction === 'asc' ? 'ASC' : 'DESC';
@@ -499,6 +577,8 @@ async function handleClientCreated() {
         @update:sort="handleSortUpdate"
         @row-click="handleRowClick"
         @open-tags-modal="handleOpenTagsModal"
+        @save-name="handleInlineSaveName"
+        @save-primary-phone="handleInlineSavePrimaryPhone"
       />
     </div>
 

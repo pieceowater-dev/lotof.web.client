@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import FinderStyleSearch from './FinderStyleSearch.vue';
 
 const { t } = useI18n();
@@ -28,6 +29,15 @@ const emit = defineEmits<{
   (e: 'update:pageSize', value: number): void;
   (e: 'update:sort', value: { field: string; direction: 'asc' | 'desc' }): void;
   (e: 'openTagsModal', clientId: string): void;
+  (e: 'saveName', payload: {
+    clientId: string;
+    clientType: 'INDIVIDUAL' | 'LEGAL';
+    firstName?: string;
+    lastName?: string;
+    middleName?: string;
+    legalName?: string;
+  }): void;
+  (e: 'savePrimaryPhone', payload: { clientId: string; phone: string }): void;
 }>();
 
 // Local state for pagination that syncs with props
@@ -107,7 +117,8 @@ const STORAGE_KEY = 'contacts-table-columns';
 const defaultColumns: ColumnDef[] = [
   { key: 'type', label: 'Type', width: 50, minWidth: 50, sortable: false },
   { key: 'createdAt', label: 'Created', width: 160, minWidth: 140, sortable: true },
-  { key: 'name', label: 'Name', width: 240, minWidth: 150, sortable: true },
+  { key: 'name', label: 'Name', width: 280, minWidth: 220, sortable: true },
+  { key: 'contacts', label: 'Contacts', width: 340, minWidth: 260, sortable: false },
   { key: 'identifier', label: 'BIN/IIN', width: 140, minWidth: 120, sortable: false },
   { key: 'additionalInfo', label: 'Info', width: 180, minWidth: 140, sortable: false },
   { key: 'status', label: 'Status', width: 110, minWidth: 90, sortable: false },
@@ -268,6 +279,93 @@ function getClientIdentifier(client: ClientRow): string {
     return client.legalEntity.binIin;
   }
   return '—';
+}
+
+const editingNameClientId = ref<string | null>(null);
+const editingPhoneClientId = ref<string | null>(null);
+const editFirstName = ref('');
+const editLastName = ref('');
+const editMiddleName = ref('');
+const editLegalName = ref('');
+const editPhone = ref('');
+
+function getIdentities(client: ClientRow) {
+  return client.contacts || [];
+}
+
+function getPrimaryPhone(client: ClientRow) {
+  const identities = getIdentities(client);
+  return identities.find((item) => item.type === 'phone' && item.isPrimary) || identities.find((item) => item.type === 'phone');
+}
+
+function getPrimaryPhoneDisplay(client: ClientRow): string {
+  const value = getPrimaryPhone(client)?.value || '';
+  return value ? formatDisplayPhoneUniversal(value) : '—';
+}
+
+function getOtherContacts(client: ClientRow): Array<{ type: string; value: string }> {
+  return getIdentities(client)
+    .filter((item) => item.type !== 'phone')
+    .map((item) => ({ type: item.type, value: item.value }))
+    .slice(0, 4);
+}
+
+function startEditName(client: ClientRow) {
+  editingNameClientId.value = client.client.id;
+  if (client.client.clientType === 'INDIVIDUAL') {
+    editFirstName.value = client.individual?.firstName || '';
+    editLastName.value = client.individual?.lastName || '';
+    editMiddleName.value = client.individual?.middleName || '';
+    return;
+  }
+  editLegalName.value = client.legalEntity?.legalName || '';
+}
+
+function cancelEditName() {
+  editingNameClientId.value = null;
+}
+
+function saveEditName(client: ClientRow) {
+  if (client.client.clientType === 'INDIVIDUAL') {
+    emit('saveName', {
+      clientId: client.client.id,
+      clientType: 'INDIVIDUAL',
+      firstName: editFirstName.value,
+      lastName: editLastName.value,
+      middleName: editMiddleName.value,
+    });
+  } else {
+    emit('saveName', {
+      clientId: client.client.id,
+      clientType: 'LEGAL',
+      legalName: editLegalName.value,
+    });
+  }
+  editingNameClientId.value = null;
+}
+
+function startEditPrimaryPhone(clientId: string) {
+  const client = props.clients.find((item) => item.client.id === clientId);
+  editingPhoneClientId.value = clientId;
+  editPhone.value = client ? getPrimaryPhone(client)?.value || '' : '';
+}
+
+function cancelEditPrimaryPhone() {
+  editingPhoneClientId.value = null;
+  editPhone.value = '';
+}
+
+function saveEditPrimaryPhone(clientId: string) {
+  emit('savePrimaryPhone', { clientId, phone: editPhone.value });
+  editingPhoneClientId.value = null;
+}
+
+function contactTypeLabel(type: string): string {
+  if (type === 'email') return t('contacts.email');
+  if (type === 'telegram') return t('contacts.telegram');
+  if (type === 'whatsapp') return t('contacts.whatsapp');
+  if (type === 'website') return t('contacts.website');
+  return type;
 }
 
 function getAdditionalInfo(client: ClientRow): string {
@@ -475,19 +573,84 @@ function addTagToFilter(tagId: string, tagName: string) {
             <td
               :style="{ width: `${columns[2].width}px` }"
               class="px-4 py-3 text-sm font-medium"
+              @click.stop
             >
-              <NuxtLink
-                :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
-                class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
-                :title="getClientName(client)"
-              >
-                {{ getClientName(client) }}
-              </NuxtLink>
+              <div v-if="editingNameClientId === client.client.id" class="space-y-2">
+                <template v-if="client.client.clientType === 'INDIVIDUAL'">
+                  <UInput v-model="editLastName" size="xs" :placeholder="t('contacts.lastName')" @click.stop />
+                  <UInput v-model="editFirstName" size="xs" :placeholder="t('contacts.firstName')" @click.stop />
+                  <UInput v-model="editMiddleName" size="xs" :placeholder="t('contacts.middleName')" @click.stop />
+                </template>
+                <template v-else>
+                  <UInput v-model="editLegalName" size="xs" :placeholder="t('contacts.legalName')" @click.stop />
+                </template>
+                <div class="flex items-center gap-2">
+                  <UButton size="xs" color="primary" variant="soft" @click.stop="saveEditName(client)">{{ t('common.save') }}</UButton>
+                  <UButton size="xs" color="gray" variant="ghost" @click.stop="cancelEditName">{{ t('common.cancel') }}</UButton>
+                </div>
+              </div>
+              <div v-else class="flex items-center gap-2">
+                <NuxtLink
+                  :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
+                  class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
+                  :title="getClientName(client)"
+                >
+                  {{ getClientName(client) }}
+                </NuxtLink>
+                <UButton
+                  icon="lucide:pencil"
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  @click.stop="startEditName(client)"
+                />
+              </div>
+            </td>
+
+            <!-- Contacts -->
+            <td
+              :style="{ width: `${columns[3].width}px` }"
+              class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
+              @click.stop
+            >
+              <div class="space-y-1">
+                <div v-if="editingPhoneClientId === client.client.id" class="space-y-2">
+                  <UInput v-model="editPhone" size="xs" :placeholder="t('contacts.enterPhone')" @click.stop />
+                  <p v-if="editPhone.trim()" class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('contacts.phonePreview') }}: {{ formatDisplayPhoneUniversal(editPhone) }}
+                  </p>
+                  <div class="flex items-center gap-2">
+                    <UButton size="xs" color="primary" variant="soft" @click.stop="saveEditPrimaryPhone(client.client.id)">{{ t('common.save') }}</UButton>
+                    <UButton size="xs" color="gray" variant="ghost" @click.stop="cancelEditPrimaryPhone">{{ t('common.cancel') }}</UButton>
+                  </div>
+                </div>
+                <div v-else class="flex items-center gap-2">
+                  <span class="font-medium">{{ getPrimaryPhoneDisplay(client) }}</span>
+                  <UButton
+                    icon="lucide:pencil"
+                    size="xs"
+                    color="gray"
+                    variant="ghost"
+                    @click.stop="startEditPrimaryPhone(client.client.id)"
+                  />
+                </div>
+
+                <div class="flex flex-wrap gap-1" v-if="getOtherContacts(client).length > 0">
+                  <span
+                    v-for="contact in getOtherContacts(client)"
+                    :key="`${client.client.id}-${contact.type}-${contact.value}`"
+                    class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                    :title="contact.value"
+                  >
+                    {{ contactTypeLabel(contact.type) }}: {{ contact.value }}
+                  </span>
+                </div>
+              </div>
             </td>
 
             <!-- Identifier (BIN/IIN) -->
             <td
-              :style="{ width: `${columns[3].width}px` }"
+              :style="{ width: `${columns[4].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate font-mono">{{ getClientIdentifier(client) }}</div>
@@ -495,7 +658,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Additional Info -->
             <td
-              :style="{ width: `${columns[4].width}px` }"
+              :style="{ width: `${columns[5].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">{{ getAdditionalInfo(client) }}</div>
@@ -503,7 +666,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Status -->
             <td
-              :style="{ width: `${columns[5].width}px` }"
+              :style="{ width: `${columns[6].width}px` }"
               class="px-4 py-3 text-sm"
             >
               <span :class="getStatusBadgeClass(client.client.status)">
@@ -513,7 +676,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Tags -->
             <td
-              :style="{ width: `${columns[6].width}px` }"
+              :style="{ width: `${columns[7].width}px` }"
               class="px-3 py-2 text-sm group/tags"
               @click.stop
             >
@@ -552,7 +715,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Updated At -->
             <td
-              :style="{ width: `${columns[7].width}px` }"
+              :style="{ width: `${columns[8].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">

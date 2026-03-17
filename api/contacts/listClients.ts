@@ -15,6 +15,15 @@ export interface ClientRow {
     updatedAt: string;
   };
   additionalInfo?: string;
+  contacts?: Array<{
+    id: string;
+    clientId: string;
+    type: string;
+    value: string;
+    isPrimary: boolean;
+    comments?: string;
+    verifiedAt?: string;
+  }>;
   individual?: {
     firstName: string;
     lastName: string;
@@ -68,6 +77,15 @@ const LIST_CLIENTS_QUERY = /* GraphQL */ `
           registrationDate
         }
         additionalInfo
+        contacts {
+          id
+          clientId
+          type
+          value
+          isPrimary
+          comments
+          verifiedAt
+        }
         tags {
           id
           name

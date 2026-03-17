@@ -583,6 +583,7 @@
     "statusUpdated": "Status updated successfully",
     "type": "Type",
     "name": "Name",
+    "contacts": "Contacts",
     "identifier": "BIN/IIN",
     "additionalInfo": "Info",
     "individual": "Individual",

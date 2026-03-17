@@ -569,6 +569,7 @@
     "statusUpdated": "Статус успешно обновлен",
     "type": "Тип",
     "name": "Имя",
+    "contacts": "Контакты",
     "identifier": "БИН/ИИН",
     "additionalInfo": "Инфо",
     "individual": "Физическое лицо",
