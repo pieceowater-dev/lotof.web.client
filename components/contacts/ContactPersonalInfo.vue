@@ -16,6 +16,8 @@ interface Props {
   editingBinIin?: string;
   editingRegistrationCountry?: string;
   editingRegistrationDate?: string;
+  additionalInfo?: string;
+  editingAdditionalInfo?: string;
 }
 
 interface Emits {
@@ -36,6 +38,8 @@ const props = withDefaults(defineProps<Props>(), {
   editingBinIin: '',
   editingRegistrationCountry: '',
   editingRegistrationDate: '',
+  additionalInfo: '',
+  editingAdditionalInfo: '',
 });
 
 const emit = defineEmits<Emits>();
@@ -160,6 +164,11 @@ function formatGender(gender?: boolean | null): string {
             </div>
           </div>
         </div>
+
+        <div class="mt-4">
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.additionalInfo') }}</p>
+          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ additionalInfo || '—' }}</p>
+        </div>
       </template>
 
       <!-- Edit Mode -->
@@ -256,6 +265,16 @@ function formatGender(gender?: boolean | null): string {
             </div>
           </div>
         </form>
+
+        <div class="mt-4">
+          <UFormGroup :label="t('contacts.additionalInfo')">
+            <UTextarea
+              :model-value="editingAdditionalInfo"
+              :rows="3"
+              @update:model-value="$emit('updateField', 'additionalInfo', $event)"
+            />
+          </UFormGroup>
+        </div>
       </template>
     </div>
   </div>

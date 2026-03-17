@@ -14,6 +14,7 @@ export interface ClientRow {
     createdAt: string;
     updatedAt: string;
   };
+  additionalInfo?: string;
   individual?: {
     firstName: string;
     lastName: string;
@@ -66,6 +67,7 @@ const LIST_CLIENTS_QUERY = /* GraphQL */ `
           registrationCountry
           registrationDate
         }
+        additionalInfo
         tags {
           id
           name

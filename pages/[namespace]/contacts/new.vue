@@ -377,7 +377,15 @@ async function handleSubmit() {
       const validPhonesToCreate = phones.value.filter(p => p.trim() && isPhoneValid(p)).slice(0, 5);
       for (let i = 0; i < validPhonesToCreate.length; i++) {
         const phone = validPhonesToCreate[i].trim();
-        await createIdentity(contactsToken, selectedNS.value, clientId, 'phone', phone.replace(/\D/g, ''), i === 0);
+        await createIdentity(
+          contactsToken,
+          selectedNS.value,
+          clientId,
+          'phone',
+          phone.replace(/\D/g, ''),
+          i === 0,
+          i === 0 ? comments.value.trim() || undefined : undefined,
+        );
       }
 
       // Create email identities (max 5)

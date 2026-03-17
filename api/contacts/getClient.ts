@@ -32,6 +32,7 @@ const GET_CLIENT_QUERY = gql`
         registrationCountry
         registrationDate
       }
+      additionalInfo
     }
   }
 `;
@@ -61,6 +62,7 @@ const GET_CLIENT_BY_SHORT_ID_QUERY = gql`
         registrationCountry
         registrationDate
       }
+      additionalInfo
     }
   }
 `;

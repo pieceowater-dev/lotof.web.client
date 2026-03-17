@@ -65,6 +65,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
         registrationCountry
         registrationDate
       }
+      additionalInfo
       tags {
         id
         name
@@ -94,6 +95,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
         registrationCountry
         registrationDate
       }
+      additionalInfo
       tags {
         id
         name

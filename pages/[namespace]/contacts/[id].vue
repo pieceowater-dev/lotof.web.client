@@ -71,6 +71,7 @@ const editingBrandName = ref('');
 const editingBinIin = ref('');
 const editingRegistrationCountry = ref('');
 const editingRegistrationDate = ref('');
+const editingAdditionalInfo = ref('');
 
 // Edit form data - Identities
 const editingPhones = ref<string[]>([]);
@@ -78,6 +79,14 @@ const editingEmails = ref<string[]>([]);
 const editingTelegrams = ref<string[]>([]);
 const editingWhatsapps = ref<string[]>([]);
 const identityDisplayValues = ref<Record<string, string>>({});
+
+function getPrimaryPhoneIdentity(): ClientIdentity | undefined {
+  return identities.value.find((item) => item.type === 'phone' && item.isPrimary) || identities.value.find((item) => item.type === 'phone');
+}
+
+function getAdditionalInfoValue(): string {
+  return getPrimaryPhoneIdentity()?.comments?.trim() || client.value?.additionalInfo?.trim() || '';
+}
 
 const displayName = computed(() => {
   if (!client.value) return '';
@@ -728,6 +737,7 @@ function startEditPersonalInfo() {
     editingRegistrationCountry.value = client.value.legalEntity.registrationCountry || '';
     editingRegistrationDate.value = client.value.legalEntity.registrationDate ? new Date(client.value.legalEntity.registrationDate).toISOString().split('T')[0] : '';
   }
+  editingAdditionalInfo.value = getAdditionalInfoValue();
   
   editMode.value.personalInfo = true;
 }
@@ -787,6 +797,21 @@ async function savePersonalInfo() {
         registrationCountry: editingRegistrationCountry.value.trim() || undefined,
         registrationDate: editingRegistrationDate.value || undefined,
       });
+    }
+
+    const additionalInfo = editingAdditionalInfo.value.trim();
+    const primaryPhone = getPrimaryPhoneIdentity();
+    if (primaryPhone) {
+      const currentComments = primaryPhone.comments?.trim() || '';
+      if (currentComments !== additionalInfo) {
+        await updateIdentity(
+          contactsToken,
+          selectedNS.value,
+          primaryPhone.id,
+          primaryPhone.value,
+          additionalInfo || undefined,
+        );
+      }
     }
 
     editMode.value.personalInfo = false;
@@ -1098,6 +1123,8 @@ function removeWhatsappField(index: number) {
             :editing-bin-iin="editingBinIin"
             :editing-registration-country="editingRegistrationCountry"
             :editing-registration-date="editingRegistrationDate"
+            :additional-info="getAdditionalInfoValue()"
+            :editing-additional-info="editingAdditionalInfo"
             @start-edit="startEditPersonalInfo"
             @save-edit="savePersonalInfo"
             @cancel-edit="cancelEditPersonalInfo"
@@ -1112,6 +1139,7 @@ function removeWhatsappField(index: number) {
               if (field === 'binIin') editingBinIin = value as string;
               if (field === 'registrationCountry') editingRegistrationCountry = value as string;
               if (field === 'registrationDate') editingRegistrationDate = value as string;
+              if (field === 'additionalInfo') editingAdditionalInfo = value as string;
             }"
           />
 

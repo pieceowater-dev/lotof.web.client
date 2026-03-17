@@ -271,6 +271,10 @@ function getClientIdentifier(client: ClientRow): string {
 }
 
 function getAdditionalInfo(client: ClientRow): string {
+  const fromProfile = client.additionalInfo?.trim();
+  if (fromProfile) {
+    return fromProfile;
+  }
   if (client.client.clientType === 'INDIVIDUAL' && client.individual?.birthDate) {
     return new Date(client.individual.birthDate).toLocaleDateString('ru-RU', {
       year: 'numeric',
