@@ -857,15 +857,15 @@ async function savePersonalInfo() {
     }
 
     const additionalInfo = editingAdditionalInfo.value.trim();
-    const primaryPhone = getPrimaryPhoneIdentity();
-    if (primaryPhone) {
-      const currentComments = primaryPhone.comments?.trim() || '';
+    const phoneIdentity = getPrimaryPhoneIdentity();
+    if (phoneIdentity) {
+      const currentComments = phoneIdentity.comments?.trim() || '';
       if (currentComments !== additionalInfo) {
         await updateIdentity(
           contactsToken,
           selectedNS.value,
-          primaryPhone.id,
-          primaryPhone.value,
+          phoneIdentity.id,
+          phoneIdentity.value,
           additionalInfo || undefined,
         );
       }

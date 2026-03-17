@@ -39,6 +39,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
     $shortId: String!
     $isUuid: Boolean!
     $clientIdForRelated: ID!
+    $loadRelated: Boolean!
     $eventsLimit: Int!
     $eventsOffset: Int!
   ) {
@@ -102,7 +103,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
       }
     }
 
-    clientIdentities(clientId: $clientIdForRelated) {
+    clientIdentities(clientId: $clientIdForRelated) @include(if: $loadRelated) {
       rows {
         id
         clientId
@@ -114,14 +115,14 @@ const CLIENT_PAGE_DATA_QUERY = gql`
       }
     }
 
-    clientTags(clientId: $clientIdForRelated) {
+    clientTags(clientId: $clientIdForRelated) @include(if: $loadRelated) {
       tags {
         id
         name
       }
     }
 
-    clientEvents(clientId: $clientIdForRelated, limit: $eventsLimit, offset: $eventsOffset) {
+    clientEvents(clientId: $clientIdForRelated, limit: $eventsLimit, offset: $eventsOffset) @include(if: $loadRelated) {
       rows {
         id
         clientId
@@ -131,7 +132,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
       }
     }
 
-    bonusBalance(clientId: $clientIdForRelated) {
+    bonusBalance(clientId: $clientIdForRelated) @include(if: $loadRelated) {
       clientId
       totalBonuses
       availableBonuses
@@ -174,6 +175,7 @@ export async function getClientPageData(
 
   const isUuid = isUUID(idOrShortId);
   const clientIdForRelated = isUuid ? idOrShortId : '00000000-0000-0000-0000-000000000000';
+  const loadRelated = isUuid;
 
   const data = await contactsClient.request<ClientPageDataResponse>(
     CLIENT_PAGE_DATA_QUERY,
@@ -182,6 +184,7 @@ export async function getClientPageData(
       shortId: idOrShortId,
       isUuid,
       clientIdForRelated,
+      loadRelated,
       eventsLimit,
       eventsOffset,
     },
@@ -206,6 +209,7 @@ export async function getClientPageData(
         shortId: resolvedId,
         isUuid: true,
         clientIdForRelated: resolvedId,
+        loadRelated: true,
         eventsLimit,
         eventsOffset,
       },
