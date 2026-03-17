@@ -653,6 +653,7 @@
     "required": "Required",
     "optional": "Optional",
     "enterPhone": "Enter phone number",
+    "phonePreview": "Preview",
     "enterEmail": "Enter email",
     "invalidPhone": "Invalid phone format",
     "invalidEmail": "Invalid email format",

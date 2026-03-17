@@ -639,6 +639,7 @@
     "required": "Обязательно",
     "optional": "Опционально",
     "enterPhone": "Введите номер телефона",
+    "phonePreview": "Предпросмотр",
     "enterEmail": "Введите email",
     "invalidPhone": "Неверный формат телефона",
     "invalidEmail": "Неверный формат email",

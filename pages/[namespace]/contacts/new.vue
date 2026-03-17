@@ -13,6 +13,7 @@ import { contactsListClients, type ClientRow } from '@/api/contacts/listClients'
 import { createIdentity } from '@/api/contacts/identities';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
 
 const router = useRouter();
 const route = useRoute();
@@ -101,6 +102,12 @@ function updatePhoneValue(index: number, value: string) {
 
 function updateWhatsappValue(value: string) {
   whatsapp.value = sanitizePhoneInput(value);
+}
+
+function getPhonePreview(phone: string): string {
+  const trimmed = phone.trim();
+  if (!trimmed) return '';
+  return formatDisplayPhoneUniversal(trimmed);
 }
 
 // BIN/IIN mask: XXX XXX XXX XX
@@ -669,6 +676,9 @@ useHead(() => ({
                   data-phone-input
                 />
               </UFormGroup>
+              <p v-if="phones[0].trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('contacts.phonePreview') }}: {{ getPhonePreview(phones[0]) }}
+              </p>
             </div>
 
             <!-- Additional Phones -->
@@ -691,6 +701,9 @@ useHead(() => ({
                       data-phone-input
                     />
                   </UFormGroup>
+                  <p v-if="phones[idx + 1].trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('contacts.phonePreview') }}: {{ getPhonePreview(phones[idx + 1]) }}
+                  </p>
                 </div>
                 <UButton
                   icon="i-heroicons-trash-20-solid"
