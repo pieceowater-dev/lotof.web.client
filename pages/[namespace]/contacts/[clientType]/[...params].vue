@@ -96,13 +96,9 @@ const isValidPagination = computed(() => {
   return true;
 });
 
-const page = computed<number>({
-  get: () => pageParts.value.page,
-});
+const page = computed<number>(() => pageParts.value.page);
 
-const pageSize = computed<number>({
-  get: () => pageParts.value.pageSize,
-});
+const pageSize = computed<number>(() => pageParts.value.pageSize);
 
 const clientTypeFilter = computed({
   get: () => currentClientType.value,
@@ -199,7 +195,7 @@ async function initClientsSubscription() {
     stopClientsSubscription = null;
   }
 
-  stopClientsSubscription = subscribeClientsUpdated(
+  stopClientsSubscription = subscribeClientChanged(
     contactsToken,
     selectedNS.value,
     (signal) => {
