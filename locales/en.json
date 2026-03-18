@@ -752,6 +752,40 @@
     "stampCards": "Stamp cards",
     "rounds": "rounds",
     "noStampCards": "No active stamp cards",
+    "importModal": {
+      "title": "Import from Excel",
+      "subtitle": "Upload .xlsx and map columns",
+      "importingTitle": "Import in progress...",
+      "importingProgress": "Batch {current} / {total}; Success: {imported}; Failed: {failed}",
+      "imported": "Imported",
+      "failed": "Failed",
+      "failedRowsTitle": "Failed rows",
+      "name": "Name",
+      "reason": "Reason",
+      "replaceFile": "Click to replace file",
+      "chooseFile": "Choose file",
+      "chooseFileHint": "Select or drop .xlsx file here",
+      "columnMapping": "Column mapping",
+      "sourceColumn": "Source column",
+      "systemField": "System field",
+      "unmappedHint": "Unmapped columns will be saved into client comment as key: value lines",
+      "headerReadError": "Could not read header row. Make sure the first row contains column names.",
+      "done": "Done",
+      "import": "Import",
+      "notSelected": "Not selected",
+      "fields": {
+        "name": "Full Name (space-separated)",
+        "phone": "Phone",
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "telegram": "Telegram",
+        "iin": "IIN / BIN"
+      },
+      "errors": {
+        "token": "Failed to obtain contacts token",
+        "noData": "No data rows found in file"
+      }
+    },
     "loyalty": {
       "title": "Loyalty",
       "stampCardsDescription": "Active stamp cards for your clients",

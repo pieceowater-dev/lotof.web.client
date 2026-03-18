@@ -738,6 +738,40 @@
     "stampCards": "Карты штампов",
     "rounds": "раундов",
     "noStampCards": "Нет активных карт штампов",
+    "importModal": {
+      "title": "Импорт из Excel",
+      "subtitle": "Загрузите .xlsx файл и сопоставьте колонки",
+      "importingTitle": "Идет импорт...",
+      "importingProgress": "Пакет {current} / {total}; Успешно: {imported}; Ошибок: {failed}",
+      "imported": "Импортировано",
+      "failed": "С ошибкой",
+      "failedRowsTitle": "Строки с ошибками",
+      "name": "Имя",
+      "reason": "Причина",
+      "replaceFile": "Нажмите, чтобы заменить файл",
+      "chooseFile": "Выбрать файл",
+      "chooseFileHint": "Выберите или перетащите .xlsx файл сюда",
+      "columnMapping": "Сопоставление колонок",
+      "sourceColumn": "Колонка источника",
+      "systemField": "Поле системы",
+      "unmappedHint": "Несопоставленные колонки будут сохранены в комментарий клиента как строки key: value",
+      "headerReadError": "Не удалось прочитать строку заголовков. Убедитесь, что в первой строке есть названия колонок.",
+      "done": "Готово",
+      "import": "Импортировать",
+      "notSelected": "Не выбрано",
+      "fields": {
+        "name": "ФИО (через пробел)",
+        "phone": "Телефон",
+        "email": "Email",
+        "whatsapp": "WhatsApp",
+        "telegram": "Telegram",
+        "iin": "ИИН / БИН"
+      },
+      "errors": {
+        "token": "Не удалось получить токен контактов",
+        "noData": "В файле не найдено строк данных"
+      }
+    },
     "loyalty": {
       "title": "Лояльность",
       "stampCardsDescription": "Активные карты штампов для ваших клиентов",

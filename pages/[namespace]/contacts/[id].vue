@@ -84,12 +84,15 @@ const editingTelegrams = ref<string[]>([]);
 const editingWhatsapps = ref<string[]>([]);
 const identityDisplayValues = ref<Record<string, string>>({});
 
-function getPrimaryPhoneIdentity(): ClientIdentity | undefined {
-  return identities.value.find((item) => item.type === 'phone' && item.isPrimary) || identities.value.find((item) => item.type === 'phone');
+function getPreferredIdentityForAdditionalInfo(): ClientIdentity | undefined {
+  return identities.value.find((item) => item.type === 'phone' && item.isPrimary)
+    || identities.value.find((item) => item.type === 'phone')
+    || identities.value.find((item) => item.isPrimary)
+    || identities.value[0];
 }
 
 function getAdditionalInfoValue(): string {
-  return getPrimaryPhoneIdentity()?.comments?.trim() || client.value?.additionalInfo?.trim() || '';
+  return getPreferredIdentityForAdditionalInfo()?.comments?.trim() || client.value?.additionalInfo?.trim() || '';
 }
 
 const displayName = computed(() => {
@@ -857,16 +860,16 @@ async function savePersonalInfo() {
     }
 
     const additionalInfo = editingAdditionalInfo.value.trim();
-    const phoneIdentity = getPrimaryPhoneIdentity();
-    if (phoneIdentity) {
-      const currentComments = phoneIdentity.comments?.trim() || '';
+    const identityForInfo = getPreferredIdentityForAdditionalInfo();
+    if (identityForInfo) {
+      const currentComments = identityForInfo.comments?.trim() || '';
       if (currentComments !== additionalInfo) {
         await updateIdentity(
           contactsToken,
           selectedNS.value,
-          phoneIdentity.id,
-          phoneIdentity.value,
-          additionalInfo || undefined,
+          identityForInfo.id,
+          identityForInfo.value,
+          additionalInfo,
         );
       }
     }

@@ -10,6 +10,7 @@ import { getContactsPlanLimits } from '@/api/contacts/plans/getLimits';
 import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
 import { hubMembersList } from '@/api/hub/members/list';
 import BonusPinManager from '@/components/contacts/BonusPinManager.vue';
+import ImportModal from '@/components/contacts/ImportModal.vue';
 import {
   createStampCard,
   deleteStampCard,
@@ -62,6 +63,7 @@ const stampCardsError = ref<string | null>(null);
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteConfirmModal = ref(false);
+const showImportModal = ref(false);
 const createFormLoading = ref(false);
 const editFormLoading = ref(false);
 const createFormError = ref<string | null>(null);
@@ -745,6 +747,25 @@ onMounted(async () => {
           </div>
         </div>
 
+        <!-- Import -->
+        <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100">Импорт клиентов</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Загрузите список клиентов из Excel-файла</p>
+            </div>
+            <UButton
+              icon="lucide:upload"
+              size="sm"
+              color="primary"
+              variant="soft"
+              @click="showImportModal = true"
+            >
+              Импорт
+            </UButton>
+          </div>
+        </div>
+
         <!-- Stamp Cards -->
         <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <div class="mb-4 flex items-center justify-between">
@@ -967,6 +988,8 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <ImportModal v-model="showImportModal" :namespace="nsSlug" />
 
     <UModal v-model="showRoleModal" @close="closeRoleModal">
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
