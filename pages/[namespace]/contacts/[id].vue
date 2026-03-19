@@ -398,8 +398,9 @@ function getClientDisplayName(row: ClientRow | null | undefined): string {
     if (row.legalEntity.brandName?.trim()) return row.legalEntity.brandName;
   }
 
-  // Fallback to empty (will use comments or label)
-  return '';
+  // Fallback: additionalInfo first line, then shortId
+  if (row.additionalInfo?.trim()) return row.additionalInfo.split('\n')[0].trim();
+  return row.client.shortId || '';
 }
 
 async function tryEnrichClient(contactsToken: string, namespace: string) {

@@ -6,6 +6,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
+import { getClient } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { listTags } from '@/api/contacts/tags';
@@ -27,6 +28,7 @@ const { selected: selectedNS, titleBySlug } = useNamespace();
 const clients = ref<ClientRow[]>([]);
 const totalCount = ref(0);
 const loading = ref(false);
+const resolvedNames = ref<Record<string, string>>({});
 const isTagsModalOpen = ref(false);
 const isSegmentsModalOpen = ref(false);
 const isIdentitiesModalOpen = ref(false);
@@ -275,6 +277,45 @@ watch(selectedTags, async () => {
   await loadClients();
 }, { deep: true });
 
+function getClientDisplayName(row: ClientRow): string {
+  if (row.client.clientType === 'INDIVIDUAL' && row.individual) {
+    return [row.individual.lastName, row.individual.firstName, row.individual.middleName]
+      .filter(Boolean).join(' ').trim();
+  }
+  return (
+    row.legalEntity?.legalName ||
+    row.legalEntity?.brandName ||
+    row.additionalInfo?.split('\n')[0]?.trim() ||
+    row.client.shortId ||
+    ''
+  );
+}
+
+async function resolveRelatedClientNames(contactsToken: string, namespace: string, rows: ClientRow[]) {
+  const uuids = Array.from(new Set(
+    rows.flatMap((row) =>
+      (row.contacts || [])
+        .filter((c) => (c.type === 'company' || c.type === 'contact_person') && !c.comments?.trim() && c.value)
+        .map((c) => c.value),
+    ),
+  ));
+  if (uuids.length === 0) return;
+
+  const next: Record<string, string> = { ...resolvedNames.value };
+  await Promise.all(
+    uuids.filter((uuid) => !next[uuid]).map(async (uuid) => {
+      try {
+        const related = await getClient(contactsToken, namespace, uuid);
+        const name = getClientDisplayName(related as ClientRow);
+        if (name) next[uuid] = name;
+      } catch {
+        // ignore
+      }
+    }),
+  );
+  resolvedNames.value = next;
+}
+
 async function loadClients() {
   if (useMockData.value) {
     clients.value = mockClients;
@@ -325,6 +366,9 @@ async function loadClients() {
     const data = await contactsListClients(contactsToken, selectedNS.value, filter);
     clients.value = data.rows;
     totalCount.value = data.info?.count || 0;
+
+    // Resolve UUIDs for company/contact_person identities (fire-and-forget)
+    resolveRelatedClientNames(contactsToken, selectedNS.value, data.rows);
   } catch (error) {
     logError('Failed to load clients:', error);
     toast.add({
@@ -628,6 +672,7 @@ async function handleRefreshFromRemote() {
         :sort-field="sortField"
         :sort-direction="sortDirection === 'ASC' ? 'asc' : 'desc'"
         :ns-slug="nsSlug"
+        :resolved-names="resolvedNames"
         v-model:search-query="searchQuery"
         v-model:selected-tags="selectedTags"
         @update:page="(newPage) => updateRoute(newPage, pageSize)"

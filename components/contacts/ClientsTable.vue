@@ -19,6 +19,7 @@ const props = defineProps<{
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
   nsSlug?: string;
+  resolvedNames?: Record<string, string>;
 }>();
 
 const emit = defineEmits<{
@@ -306,7 +307,12 @@ function getPrimaryPhoneDisplay(client: ClientRow): string {
 function getOtherContacts(client: ClientRow): Array<{ type: string; value: string }> {
   return getIdentities(client)
     .filter((item) => item.type !== 'phone')
-    .map((item) => ({ type: item.type, value: item.value }))
+    .map((item) => {
+      const displayValue = (item.type === 'company' || item.type === 'contact_person')
+        ? (item.comments?.trim() || props.resolvedNames?.[item.value] || item.value)
+        : item.value;
+      return { type: item.type, value: displayValue };
+    })
     .slice(0, 4);
 }
 
@@ -642,7 +648,8 @@ function addTagToFilter(tagId: string, tagName: string) {
                     class="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
                     :title="contact.value"
                   >
-                    {{ contactTypeLabel(contact.type) }}: {{ contact.value }}
+                    <template v-if="contact.type === 'company' || contact.type === 'contact_person'">{{ contact.value }}</template>
+                    <template v-else>{{ contactTypeLabel(contact.type) }}: {{ contact.value }}</template>
                   </span>
                 </div>
               </div>
