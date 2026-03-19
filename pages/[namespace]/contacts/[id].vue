@@ -12,6 +12,14 @@ import { getClientTags } from '@/api/contacts/tags';
 import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
 import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
 import { getClientPageData } from '@/api/contacts/clientPage';
+import {
+  listDynamicFields,
+  listDynamicFieldValues,
+  setDynamicFieldValue,
+  deleteDynamicFieldValue,
+  type DynamicField,
+  type DynamicFieldValue,
+} from '@/api/contacts/dynamicFields';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
@@ -44,6 +52,12 @@ const events = ref<ClientEvent[]>([]);
 const bonusBalance = ref<BonusBalance | null>(null);
 const stampCards = ref<StampCard[]>([]);
 const stampProgress = ref<ClientStampProgress[]>([]);
+const dynamicFields = ref<DynamicField[]>([]);
+const dynamicFieldValues = ref<Record<string, DynamicFieldValue>>({});
+const dynamicFieldDrafts = ref<Record<string, string | number | boolean | string[]>>({});
+const dynamicFieldsLoading = ref(false);
+const dynamicFieldsError = ref<string | null>(null);
+const dynamicFieldsSaving = ref(false);
 const loading = ref(true);
 const statusChangeLoading = ref(false);
 const isTagsModalOpen = ref(false);
@@ -110,6 +124,231 @@ const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 const pageTitle = computed(() => {
   return displayName.value ? `${displayName.value} — ${nsTitle.value}` : t('common.loading');
 });
+
+function applyDynamicFieldValueToDraft(field: DynamicField, value?: DynamicFieldValue) {
+  if (!value) {
+    if (field.dataType === 'BOOLEAN') {
+      dynamicFieldDrafts.value[field.id] = false;
+      return;
+    }
+    if (field.dataType === 'MULTI_SELECT') {
+      dynamicFieldDrafts.value[field.id] = [];
+      return;
+    }
+    dynamicFieldDrafts.value[field.id] = '';
+    return;
+  }
+
+  if (field.dataType === 'NUMBER') {
+    dynamicFieldDrafts.value[field.id] = value.valueNumber ?? '';
+    return;
+  }
+  if (field.dataType === 'BOOLEAN') {
+    dynamicFieldDrafts.value[field.id] = !!value.valueBool;
+    return;
+  }
+  if (field.dataType === 'DATE') {
+    dynamicFieldDrafts.value[field.id] = value.valueDate || '';
+    return;
+  }
+
+  if (field.dataType === 'MULTI_SELECT') {
+    if (value.valueJson) {
+      try {
+        const parsed = JSON.parse(value.valueJson);
+        dynamicFieldDrafts.value[field.id] = Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+      } catch {
+        dynamicFieldDrafts.value[field.id] = [];
+      }
+      return;
+    }
+    dynamicFieldDrafts.value[field.id] = [];
+    return;
+  }
+
+  dynamicFieldDrafts.value[field.id] = value.valueString || '';
+}
+
+async function loadDynamicFieldsForClient(contactsToken: string, namespace: string, entityId: string) {
+  dynamicFieldsLoading.value = true;
+  dynamicFieldsError.value = null;
+
+  try {
+    const fieldsResp = await listDynamicFields(contactsToken, namespace, { includeDeleted: false });
+    const rawFields = fieldsResp.dynamicFields?.rows || [];
+    const isIndividual = client.value?.client.clientType === 'INDIVIDUAL';
+
+    const filteredFields = rawFields
+      .filter((field) => {
+        if (field.clientTypeScope === 'ALL') return true;
+        if (field.clientTypeScope === 'INDIVIDUAL') return isIndividual;
+        if (field.clientTypeScope === 'LEGAL') return !isIndividual;
+        return true;
+      })
+      .slice()
+      .sort((a, b) => a.viewOrder - b.viewOrder);
+
+    dynamicFields.value = filteredFields;
+
+    if (filteredFields.length === 0) {
+      dynamicFieldValues.value = {};
+      dynamicFieldDrafts.value = {};
+      return;
+    }
+
+    const valuesResp = await listDynamicFieldValues(contactsToken, namespace, entityId);
+    const valueRows = valuesResp.dynamicFieldValues?.rows || [];
+    const nextValues: Record<string, DynamicFieldValue> = {};
+
+    for (const value of valueRows) {
+      nextValues[value.fieldId] = value;
+    }
+
+    dynamicFieldValues.value = nextValues;
+
+    const nextDrafts: Record<string, string | number | boolean | string[]> = {};
+    for (const field of filteredFields) {
+      const existingValue = nextValues[field.id];
+      if (!existingValue) {
+        if (field.dataType === 'BOOLEAN') {
+          nextDrafts[field.id] = false;
+        } else if (field.dataType === 'MULTI_SELECT') {
+          nextDrafts[field.id] = [];
+        } else {
+          nextDrafts[field.id] = '';
+        }
+        continue;
+      }
+
+      if (field.dataType === 'NUMBER') {
+        nextDrafts[field.id] = existingValue.valueNumber ?? '';
+      } else if (field.dataType === 'BOOLEAN') {
+        nextDrafts[field.id] = !!existingValue.valueBool;
+      } else if (field.dataType === 'DATE') {
+        nextDrafts[field.id] = existingValue.valueDate || '';
+      } else if (field.dataType === 'MULTI_SELECT') {
+        if (existingValue.valueJson) {
+          try {
+            const parsed = JSON.parse(existingValue.valueJson);
+            nextDrafts[field.id] = Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
+          } catch {
+            nextDrafts[field.id] = [];
+          }
+        } else {
+          nextDrafts[field.id] = [];
+        }
+      } else {
+        nextDrafts[field.id] = existingValue.valueString || '';
+      }
+    }
+
+    dynamicFieldDrafts.value = nextDrafts;
+  } catch (error) {
+    logError('Failed to load dynamic fields for client:', error);
+    dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load data';
+  } finally {
+    dynamicFieldsLoading.value = false;
+  }
+}
+
+function hasDynamicFieldInputValue(field: DynamicField): boolean {
+  const rawValue = dynamicFieldDrafts.value[field.id];
+
+  if (field.dataType === 'MULTI_SELECT') {
+    return Array.isArray(rawValue) && rawValue.length > 0;
+  }
+
+  if (field.dataType === 'BOOLEAN') {
+    return typeof rawValue === 'boolean';
+  }
+
+  if (field.dataType === 'NUMBER') {
+    if (rawValue === '' || rawValue === null || rawValue === undefined) return false;
+    const parsed = Number(rawValue);
+    return Number.isFinite(parsed);
+  }
+
+  const text = String(rawValue ?? '').trim();
+  return text.length > 0;
+}
+
+function dynamicFieldOptionChoices(field: DynamicField) {
+  const options = Array.isArray(field.options) ? field.options : [];
+  return options.map((option) => ({ label: option, value: option }));
+}
+
+function dynamicFieldMultiSelectValues(field: DynamicField): string[] {
+  const rawValue = dynamicFieldDrafts.value[field.id];
+  const selected = Array.isArray(rawValue) ? rawValue.map((item) => String(item).trim()).filter(Boolean) : [];
+  return selected;
+}
+
+function dynamicFieldMultiSelectControlLabel(field: DynamicField): string {
+  const count = dynamicFieldMultiSelectValues(field).length;
+  if (count === 0) {
+    return t('contacts.selectOptions') || 'Выберите варианты';
+  }
+  return `${count} ${t('contacts.selectedCountSuffix') || 'выбрано'}`;
+}
+
+async function saveDynamicFields() {
+  if (!contactsAppToken.value || !selectedNS.value || !client.value?.client.id) return;
+
+  try {
+    dynamicFieldsSaving.value = true;
+
+    for (const field of dynamicFields.value) {
+      const rawValue = dynamicFieldDrafts.value[field.id];
+      const existing = dynamicFieldValues.value[field.id];
+      const hasValue = hasDynamicFieldInputValue(field);
+
+      if (!hasValue) {
+        if (existing) {
+          await deleteDynamicFieldValue(contactsAppToken.value, selectedNS.value, existing.id);
+          delete dynamicFieldValues.value[field.id];
+        }
+        applyDynamicFieldValueToDraft(field, undefined);
+        continue;
+      }
+
+      const input: {
+        fieldId: string;
+        entityId: string;
+        valueString?: string;
+        valueNumber?: number;
+        valueBool?: boolean;
+        valueDate?: string;
+        valueJson?: string;
+      } = {
+        fieldId: field.id,
+        entityId: client.value.client.id,
+      };
+
+      if (field.dataType === 'NUMBER') {
+        input.valueNumber = Number(rawValue);
+      } else if (field.dataType === 'BOOLEAN') {
+        input.valueBool = !!rawValue;
+      } else if (field.dataType === 'DATE') {
+        input.valueDate = String(rawValue || '');
+      } else if (field.dataType === 'MULTI_SELECT') {
+        input.valueJson = JSON.stringify(Array.isArray(rawValue) ? rawValue : []);
+      } else {
+        input.valueString = String(rawValue || '');
+      }
+
+      const result = await setDynamicFieldValue(contactsAppToken.value, selectedNS.value, input);
+      dynamicFieldValues.value[field.id] = result.setDynamicFieldValue;
+      applyDynamicFieldValueToDraft(field, result.setDynamicFieldValue);
+    }
+
+    toast.add({ title: t('common.success') || 'Success', description: t('common.save') || 'Saved', color: 'green' });
+  } catch (error) {
+    logError('Failed to save dynamic field value:', error);
+    toast.add({ title: t('common.error') || 'Error', description: t('contacts.updateError') || 'Update failed', color: 'red' });
+  } finally {
+    dynamicFieldsSaving.value = false;
+  }
+}
 
 function isUnimplementedError(error: unknown): boolean {
   const message = String((error as any)?.message || error || '');
@@ -540,6 +779,10 @@ async function loadClient() {
         stampCard: stampCards.value[1],
       },
     ];
+
+    dynamicFields.value = [];
+    dynamicFieldValues.value = {};
+    dynamicFieldDrafts.value = {};
     
     loading.value = false;
     return;
@@ -687,6 +930,14 @@ async function loadClient() {
       }
     } else {
       stampProgress.value = [];
+    }
+
+    if (fullClientId) {
+      await loadDynamicFieldsForClient(contactsToken, selectedNS.value, fullClientId);
+    } else {
+      dynamicFields.value = [];
+      dynamicFieldValues.value = {};
+      dynamicFieldDrafts.value = {};
     }
   } catch (error) {
     logError('Failed to load client:', error);
@@ -1270,6 +1521,108 @@ function removeWhatsappField(index: number) {
             @tag-added="loadClient"
             @tag-removed="loadClient"
           />
+
+          <UCard>
+            <template #header>
+              <div class="flex items-center justify-between gap-3">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Дополнительные поля</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Значения динамических полей клиента</p>
+                </div>
+                <UButton
+                  color="primary"
+                  size="xs"
+                  :loading="dynamicFieldsSaving"
+                  :disabled="dynamicFieldsLoading"
+                  @click="saveDynamicFields"
+                >
+                  Сохранить все
+                </UButton>
+              </div>
+            </template>
+
+            <div v-if="dynamicFieldsLoading" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              {{ t('common.loading') }}
+            </div>
+
+            <div v-else-if="dynamicFieldsError" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+              {{ dynamicFieldsError }}
+            </div>
+
+            <div v-else-if="dynamicFields.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+              Поля не настроены
+            </div>
+
+            <div v-else class="space-y-3">
+              <div
+                v-for="field in dynamicFields"
+                :key="field.id"
+                class="py-2"
+              >
+                <div class="mb-2 flex items-center justify-between gap-3">
+                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ field.label }}
+                    <span v-if="field.isRequired" class="text-red-500">*</span>
+                  </div>
+                </div>
+
+                <div class="flex flex-col gap-3">
+                  <template v-if="field.dataType === 'BOOLEAN'">
+                    <div class="flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
+                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ dynamicFieldDrafts[field.id] ? 'Да' : 'Нет' }}</span>
+                      <UToggle v-model="dynamicFieldDrafts[field.id]" :disabled="dynamicFieldsSaving" />
+                    </div>
+                  </template>
+
+                  <template v-else-if="field.dataType === 'SELECT'">
+                    <USelectMenu
+                      v-model="dynamicFieldDrafts[field.id]"
+                      :options="dynamicFieldOptionChoices(field)"
+                      value-attribute="value"
+                      option-attribute="label"
+                      :disabled="dynamicFieldsSaving"
+                    />
+                  </template>
+
+                  <template v-else-if="field.dataType === 'MULTI_SELECT'">
+                    <USelectMenu
+                      v-model="dynamicFieldDrafts[field.id]"
+                      :options="dynamicFieldOptionChoices(field)"
+                      value-attribute="value"
+                      option-attribute="label"
+                      :disabled="dynamicFieldsSaving"
+                      multiple
+                    >
+                      <template #label>
+                        {{ dynamicFieldMultiSelectControlLabel(field) }}
+                      </template>
+                    </USelectMenu>
+                    <div v-if="dynamicFieldMultiSelectValues(field).length > 0" class="flex flex-wrap gap-1.5 pt-1">
+                      <UBadge
+                        v-for="selectedValue in dynamicFieldMultiSelectValues(field)"
+                        :key="`${field.id}-${selectedValue}`"
+                        color="primary"
+                        variant="soft"
+                        size="xs"
+                      >
+                        {{ selectedValue }}
+                      </UBadge>
+                    </div>
+                    <p v-else class="text-xs text-gray-500 dark:text-gray-400">Ничего не выбрано</p>
+                  </template>
+
+                  <template v-else>
+                    <UInput
+                      v-model="dynamicFieldDrafts[field.id]"
+                      class="w-full"
+                      :type="field.dataType === 'NUMBER' ? 'number' : field.dataType === 'DATE' ? 'date' : 'text'"
+                      :disabled="dynamicFieldsSaving"
+                    />
+                  </template>
+                </div>
+              </div>
+            </div>
+          </UCard>
         </div>
 
         <!-- Right Column - Timeline -->

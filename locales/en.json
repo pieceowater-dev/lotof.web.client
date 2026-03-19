@@ -552,6 +552,12 @@
   "loading": "Loading...",
   "back": "Back",
   "error": "Error",
+  "search": "Search",
+  "restore": "Restore",
+  "deleted": "Deleted",
+  "required": "Required",
+  "createdAt": "Created",
+  "showDeleted": "Show deleted",
   "notAuthenticated": "Not authenticated",
   "success": "Success",
   "pinChanged": "PIN changed",
@@ -566,6 +572,9 @@
   "until": "Until",
   "settingsAccessDenied": "You do not have permission to access settings. Only administrators can manage members.",
   "namespaceMissing": "Namespace is not selected. Please select a namespace.",
+  "errorDetails": {
+    "loadFailed": "Failed to load data"
+  },
   "settings": {
     "title": "Settings",
     "general": "General settings"
@@ -653,6 +662,12 @@
     "additionalInformation": "Additional information",
     "required": "Required",
     "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "selectOption": "Select option",
+    "selectOptions": "Select options",
+    "selectedCountSuffix": "selected",
+    "noneSelected": "Nothing selected",
     "enterPhone": "Enter phone number",
     "phonePreview": "Preview",
     "enterEmail": "Enter email",
@@ -796,6 +811,10 @@
       "bonusPinInfo2": "Required for spending bonuses and redemptions",
       "bonusPinInfo3": "Keep it secure and change regularly",
       "pinFormat": "Must be exactly 4 digits (0000-9999)"
+    },
+    "dynamicFields": {
+      "title": "Custom fields",
+      "description": "Additional fields for the client card."
     }
   }
 }

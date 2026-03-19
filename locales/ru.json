@@ -507,6 +507,12 @@
     "loading": "Загрузка...",
     "back": "Назад",
     "error": "Ошибка",
+    "search": "Поиск",
+    "restore": "Восстановить",
+    "deleted": "Удалено",
+    "required": "Обязательное",
+    "createdAt": "Создано",
+    "showDeleted": "Показывать удаленные",
     "errorTitle": "Произошла ошибка",
     "notAuthenticated": "Вы не авторизованы",
     "success": "Успешно",
@@ -639,6 +645,12 @@
     "additionalInformation": "Дополнительные данные",
     "required": "Обязательно",
     "optional": "Опционально",
+    "yes": "Да",
+    "no": "Нет",
+    "selectOption": "Выберите вариант",
+    "selectOptions": "Выберите варианты",
+    "selectedCountSuffix": "выбрано",
+    "noneSelected": "Ничего не выбрано",
     "enterPhone": "Введите номер телефона",
     "phonePreview": "Предпросмотр",
     "enterEmail": "Введите email",
@@ -782,6 +794,10 @@
       "bonusPinInfo2": "Требуется для списания бонусов и погашения",
       "bonusPinInfo3": "Храните его в безопасности и регулярно меняйте",
       "pinFormat": "Должно быть ровно 4 цифры (0000-9999)"
+    },
+    "dynamicFields": {
+      "title": "Пользовательские поля",
+      "description": "Дополнительные поля для карточки клиента."
     }
   }
 }

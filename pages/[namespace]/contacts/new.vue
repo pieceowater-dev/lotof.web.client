@@ -11,6 +11,11 @@ import {
 } from '@/api/contacts/mutations';
 import { contactsListClients, type ClientRow } from '@/api/contacts/listClients';
 import { createIdentity } from '@/api/contacts/identities';
+import {
+  listDynamicFields,
+  setDynamicFieldValue,
+  type DynamicField,
+} from '@/api/contacts/dynamicFields';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
@@ -43,6 +48,15 @@ const clientTypeOptions = [
 const loading = ref(false);
 const hasChanges = ref(false);
 const showConfirmDialog = ref(false);
+const dynamicFieldsLoading = ref(false);
+const dynamicFieldsError = ref<string | null>(null);
+const rawDynamicFields = ref<DynamicField[]>([]);
+const dynamicFieldDrafts = ref<Record<string, string | number | boolean | string[]>>({});
+
+function tr(path: string, fallback: string): string {
+  const value = t(path);
+  return value === path ? fallback : value;
+}
 
 // Phone input ref for autofocus
 const phoneInputRef = ref<any>(null);
@@ -145,6 +159,17 @@ watch(clientType, (newType) => {
     selectedExistingLegalEntity.value = null;
     legalEntityOptions.value = [];
   }
+});
+
+watch([token, selectedNS], async ([nextToken, nextNamespace]) => {
+  if (!nextToken || !nextNamespace) {
+    rawDynamicFields.value = [];
+    dynamicFieldDrafts.value = {};
+    dynamicFieldsError.value = null;
+    return;
+  }
+
+  await loadDynamicFields(nextToken, nextNamespace);
 });
 
 watch(() => legalEntityForm.value.legalName, (value) => {
@@ -257,6 +282,25 @@ const hasValidPrimaryPhone = computed(() => {
   return primaryPhone && isPhoneValid(primaryPhone);
 });
 
+const dynamicFields = computed(() => {
+  return rawDynamicFields.value
+    .filter((field) => {
+      if (field.clientTypeScope === 'ALL') return true;
+      if (field.clientTypeScope === 'INDIVIDUAL') return clientType.value === 'INDIVIDUAL';
+      if (field.clientTypeScope === 'LEGAL') return clientType.value === 'LEGAL';
+      return true;
+    })
+    .slice()
+    .sort((a, b) => a.viewOrder - b.viewOrder);
+});
+
+const areDynamicFieldsValid = computed(() => {
+  return dynamicFields.value.every((field) => {
+    if (!field.isRequired) return true;
+    return hasDynamicFieldInputValue(field);
+  });
+});
+
 const isFormValid = computed(() => {
   // Must have at least primary phone
   if (!hasValidPrimaryPhone.value) return false;
@@ -276,11 +320,128 @@ const isFormValid = computed(() => {
   }
   
   if (clientType.value === 'INDIVIDUAL') {
-    return individualFirstName.value.trim().length > 0;
+    return individualFirstName.value.trim().length > 0 && areDynamicFieldsValid.value;
   } else {
-    return legalEntityForm.value.legalName.trim().length > 0;
+    return legalEntityForm.value.legalName.trim().length > 0 && areDynamicFieldsValid.value;
   }
 });
+
+function dynamicFieldOptionChoices(field: DynamicField) {
+  return field.options.map((option) => ({ label: option, value: option }));
+}
+
+function dynamicFieldMultiSelectValues(field: DynamicField): string[] {
+  const rawValue = dynamicFieldDrafts.value[field.id];
+  return Array.isArray(rawValue)
+    ? rawValue.map((item) => String(item).trim()).filter(Boolean)
+    : [];
+}
+
+function dynamicFieldMultiSelectControlLabel(field: DynamicField): string {
+  const count = dynamicFieldMultiSelectValues(field).length;
+  if (count === 0) {
+    return tr('contacts.selectOptions', 'Выберите варианты');
+  }
+  return `${count} ${tr('contacts.selectedCountSuffix', 'выбрано')}`;
+}
+
+function initializeDynamicFieldDrafts(fields: DynamicField[]) {
+  const nextDrafts: Record<string, string | number | boolean | string[]> = { ...dynamicFieldDrafts.value };
+
+  for (const field of fields) {
+    if (nextDrafts[field.id] !== undefined) continue;
+    if (field.dataType === 'BOOLEAN') {
+      nextDrafts[field.id] = false;
+      continue;
+    }
+    if (field.dataType === 'MULTI_SELECT') {
+      nextDrafts[field.id] = [];
+      continue;
+    }
+    nextDrafts[field.id] = '';
+  }
+
+  for (const fieldId of Object.keys(nextDrafts)) {
+    if (!fields.some((field) => field.id === fieldId)) {
+      delete nextDrafts[fieldId];
+    }
+  }
+
+  dynamicFieldDrafts.value = nextDrafts;
+}
+
+async function loadDynamicFields(appToken: string, namespace: string) {
+  dynamicFieldsLoading.value = true;
+  dynamicFieldsError.value = null;
+
+  try {
+    const { ensure } = useContactsToken();
+    const contactsToken = await ensure(namespace, appToken);
+    if (!contactsToken) return;
+
+    const fieldsResp = await listDynamicFields(contactsToken, namespace, { includeDeleted: false });
+    rawDynamicFields.value = fieldsResp.dynamicFields?.rows || [];
+    initializeDynamicFieldDrafts(rawDynamicFields.value);
+  } catch (error) {
+    logError('Failed to load dynamic fields for create page:', error);
+    dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load data';
+  } finally {
+    dynamicFieldsLoading.value = false;
+  }
+}
+
+function hasDynamicFieldInputValue(field: DynamicField): boolean {
+  const rawValue = dynamicFieldDrafts.value[field.id];
+
+  if (field.dataType === 'MULTI_SELECT') {
+    return Array.isArray(rawValue) && rawValue.length > 0;
+  }
+
+  if (field.dataType === 'BOOLEAN') {
+    return typeof rawValue === 'boolean';
+  }
+
+  if (field.dataType === 'NUMBER') {
+    if (rawValue === '' || rawValue === null || rawValue === undefined) return false;
+    return Number.isFinite(Number(rawValue));
+  }
+
+  return String(rawValue ?? '').trim().length > 0;
+}
+
+async function saveDynamicFieldValues(contactsToken: string, namespace: string, clientId: string) {
+  for (const field of dynamicFields.value) {
+    if (!hasDynamicFieldInputValue(field)) continue;
+
+    const rawValue = dynamicFieldDrafts.value[field.id];
+    const input: {
+      fieldId: string;
+      entityId: string;
+      valueString?: string;
+      valueNumber?: number;
+      valueBool?: boolean;
+      valueDate?: string;
+      valueJson?: string;
+    } = {
+      fieldId: field.id,
+      entityId: clientId,
+    };
+
+    if (field.dataType === 'NUMBER') {
+      input.valueNumber = Number(rawValue);
+    } else if (field.dataType === 'BOOLEAN') {
+      input.valueBool = !!rawValue;
+    } else if (field.dataType === 'DATE') {
+      input.valueDate = String(rawValue || '');
+    } else if (field.dataType === 'MULTI_SELECT') {
+      input.valueJson = JSON.stringify(Array.isArray(rawValue) ? rawValue : []);
+    } else {
+      input.valueString = String(rawValue || '');
+    }
+
+    await setDynamicFieldValue(contactsToken, namespace, input);
+  }
+}
 
 function addPhone() {
   if (phones.value.length >= 5) return;
@@ -444,6 +605,8 @@ async function handleSubmit() {
           personName,
         );
       }
+
+      await saveDynamicFieldValues(contactsToken, selectedNS.value, clientId);
     }
 
     hasChanges.value = false;
@@ -564,6 +727,10 @@ onMounted(() => {
   const storedType = localStorage.getItem(CLIENT_TYPE_STORAGE_KEY);
   if (storedType === 'INDIVIDUAL' || storedType === 'LEGAL') {
     clientType.value = storedType;
+  }
+
+  if (token.value && selectedNS.value) {
+    loadDynamicFields(token.value, selectedNS.value);
   }
 });
 
@@ -801,7 +968,7 @@ useHead(() => ({
                 <UInput
                   v-model="legalCompanySearch"
                   type="text"
-                  :placeholder="t('contacts.searchLegalEntityPlaceholder')"
+                  :placeholder="tr('contacts.searchLegalEntityPlaceholder', 'Введите название юрлица или БИН')"
                   size="md"
                 />
 
@@ -1020,6 +1187,79 @@ useHead(() => ({
             >
               <template #additional>
                 <div class="space-y-4 px-4 pb-3">
+                  <div v-if="dynamicFieldsLoading" class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ t('common.loading') }}
+                  </div>
+
+                  <div v-else-if="dynamicFieldsError" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+                    {{ dynamicFieldsError }}
+                  </div>
+
+                  <div v-else-if="dynamicFields.length > 0" class="space-y-4">
+                    <div
+                      v-for="field in dynamicFields"
+                      :key="field.id"
+                      class="space-y-2"
+                    >
+                      <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {{ field.label }}
+                        <span v-if="field.isRequired" class="text-red-500">*</span>
+                      </label>
+
+                      <template v-if="field.dataType === 'BOOLEAN'">
+                        <div class="flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
+                          <span class="text-sm text-gray-700 dark:text-gray-300">{{ dynamicFieldDrafts[field.id] ? tr('contacts.yes', 'Да') : tr('contacts.no', 'Нет') }}</span>
+                          <UToggle v-model="dynamicFieldDrafts[field.id]" />
+                        </div>
+                      </template>
+
+                      <template v-else-if="field.dataType === 'SELECT'">
+                        <USelectMenu
+                          v-model="dynamicFieldDrafts[field.id]"
+                          :options="dynamicFieldOptionChoices(field)"
+                          value-attribute="value"
+                          option-attribute="label"
+                          :placeholder="tr('contacts.selectOption', 'Выберите вариант')"
+                        />
+                      </template>
+
+                      <template v-else-if="field.dataType === 'MULTI_SELECT'">
+                        <USelectMenu
+                          v-model="dynamicFieldDrafts[field.id]"
+                          :options="dynamicFieldOptionChoices(field)"
+                          value-attribute="value"
+                          option-attribute="label"
+                          :placeholder="tr('contacts.selectOptions', 'Выберите варианты')"
+                          multiple
+                        >
+                          <template #label>
+                            {{ dynamicFieldMultiSelectControlLabel(field) }}
+                          </template>
+                        </USelectMenu>
+                        <div v-if="dynamicFieldMultiSelectValues(field).length > 0" class="flex flex-wrap gap-1.5 pt-1">
+                          <UBadge
+                            v-for="selectedValue in dynamicFieldMultiSelectValues(field)"
+                            :key="`${field.id}-${selectedValue}`"
+                            color="primary"
+                            variant="soft"
+                            size="xs"
+                          >
+                            {{ selectedValue }}
+                          </UBadge>
+                        </div>
+                        <p v-else class="text-xs text-gray-500 dark:text-gray-400">{{ tr('contacts.noneSelected', 'Ничего не выбрано') }}</p>
+                      </template>
+
+                      <template v-else>
+                        <UInput
+                          v-model="dynamicFieldDrafts[field.id]"
+                          :type="field.dataType === 'NUMBER' ? 'number' : field.dataType === 'DATE' ? 'date' : 'text'"
+                          :placeholder="field.label"
+                        />
+                      </template>
+                    </div>
+                  </div>
+
                   <!-- Emails -->
                   <div class="space-y-2">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1113,10 +1353,7 @@ useHead(() => ({
       </div>
 
       <!-- Action Buttons -->
-      <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p class="text-xs text-gray-500 dark:text-gray-500">
-          * = {{ t('contacts.required') }}
-        </p>
+      <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
         <div class="flex gap-2">
           <UButton
             color="primary"
