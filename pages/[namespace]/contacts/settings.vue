@@ -414,8 +414,13 @@ async function loadDynamicFieldsData(token: string) {
 }
 
 function isDynamicFieldsEmptyStateError(error: unknown): boolean {
+  const graphQLErrorMessages = Array.isArray((error as any)?.response?.errors)
+    ? (error as any).response.errors.map((item: any) => String(item?.message || '')).join(' | ')
+    : '';
+
   const message = String(
-    (error as any)?.response?.errors?.[0]?.message
+    graphQLErrorMessages
+    || (error as any)?.response?.errors?.[0]?.message
     || (error as any)?.message
     || error
     || '',
@@ -427,12 +432,16 @@ function isDynamicFieldsEmptyStateError(error: unknown): boolean {
     || message.includes('listdynamicfields')
     || message.includes('contactsdynamicfieldservice');
 
+  const isGenericEmptyState =
+    message.includes('record not found')
+    || message.includes('not found')
+    || message.includes('no rows')
+    || message.includes('no data');
+
   return message.includes('no dynamic fields')
     || message.includes('no dynamic field values')
-    || (mentionsDynamicFields && message.includes('record not found'))
-    || (mentionsDynamicFields && message.includes('no rows'))
-    || (mentionsDynamicFields && message.includes('not found'))
-    || (mentionsDynamicFields && message.includes('no data'));
+    || (mentionsDynamicFields && isGenericEmptyState)
+    || isGenericEmptyState;
 }
 
 async function handleCreateDynamicField() {
