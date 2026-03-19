@@ -277,7 +277,9 @@ watch(selectedTags, async () => {
   await loadClients();
 }, { deep: true });
 
-function getClientDisplayName(row: ClientRow): string {
+function getClientDisplayName(row: ClientRow | null | undefined): string {
+  if (!row) return '';
+
   if (row.client.clientType === 'INDIVIDUAL' && row.individual) {
     return [row.individual.lastName, row.individual.firstName, row.individual.middleName]
       .filter(Boolean).join(' ').trim();
@@ -285,8 +287,6 @@ function getClientDisplayName(row: ClientRow): string {
   return (
     row.legalEntity?.legalName ||
     row.legalEntity?.brandName ||
-    row.additionalInfo?.split('\n')[0]?.trim() ||
-    row.client.shortId ||
     ''
   );
 }
@@ -306,7 +306,18 @@ async function resolveRelatedClientNames(contactsToken: string, namespace: strin
     uuids.filter((uuid) => !next[uuid]).map(async (uuid) => {
       try {
         const related = await getClient(contactsToken, namespace, uuid);
-        const name = getClientDisplayName(related as ClientRow);
+        let name = getClientDisplayName(related);
+
+        // Fallback: list search often returns richer fields than direct client query
+        if (!name) {
+          const list = await contactsListClients(contactsToken, namespace, {
+            search: uuid,
+            pagination: { page: 1, length: 'TEN' },
+          });
+          const matched = (list.rows || []).find((row) => row.client.id === uuid || row.client.shortId === uuid);
+          name = getClientDisplayName(matched);
+        }
+
         if (name) next[uuid] = name;
       } catch {
         // ignore

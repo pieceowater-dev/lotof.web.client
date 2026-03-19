@@ -398,9 +398,8 @@ function getClientDisplayName(row: ClientRow | null | undefined): string {
     if (row.legalEntity.brandName?.trim()) return row.legalEntity.brandName;
   }
 
-  // Fallback: additionalInfo first line, then shortId
-  if (row.additionalInfo?.trim()) return row.additionalInfo.split('\n')[0].trim();
-  return row.client.shortId || '';
+  // No synthetic fallback here: identities should show only real person/company names
+  return '';
 }
 
 async function tryEnrichClient(contactsToken: string, namespace: string) {
