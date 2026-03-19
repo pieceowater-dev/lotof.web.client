@@ -301,6 +301,19 @@ const areDynamicFieldsValid = computed(() => {
   });
 });
 
+const hasRequiredAdditionalFields = computed(() => {
+  return dynamicFields.value.some((field) => field.isRequired);
+});
+
+const additionalAccordionItems = computed(() => ([
+  {
+    slot: 'additional',
+    label: t('contacts.additionalInformation'),
+    icon: 'i-heroicons-envelope',
+    defaultOpen: hasRequiredAdditionalFields.value,
+  },
+]));
+
 const isFormValid = computed(() => {
   // Must have at least primary phone
   if (!hasValidPrimaryPhone.value) return false;
@@ -370,6 +383,16 @@ function initializeDynamicFieldDrafts(fields: DynamicField[]) {
   dynamicFieldDrafts.value = nextDrafts;
 }
 
+function isDynamicFieldsEmptyStateError(error: unknown): boolean {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  const mentionsDynamicField = message.includes('dynamic field') || message.includes('dynamicfield');
+  return (message.includes('not found') && mentionsDynamicField)
+    || (message.includes('no rows') && mentionsDynamicField)
+    || (message.includes('no data') && mentionsDynamicField)
+    || message.includes('no dynamic fields')
+    || message.includes('no dynamic field values');
+}
+
 async function loadDynamicFields(appToken: string, namespace: string) {
   dynamicFieldsLoading.value = true;
   dynamicFieldsError.value = null;
@@ -383,6 +406,13 @@ async function loadDynamicFields(appToken: string, namespace: string) {
     rawDynamicFields.value = fieldsResp.dynamicFields?.rows || [];
     initializeDynamicFieldDrafts(rawDynamicFields.value);
   } catch (error) {
+    if (isDynamicFieldsEmptyStateError(error)) {
+      rawDynamicFields.value = [];
+      dynamicFieldDrafts.value = {};
+      dynamicFieldsError.value = null;
+      return;
+    }
+
     logError('Failed to load dynamic fields for create page:', error);
     dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load data';
   } finally {
@@ -499,6 +529,7 @@ async function handleSubmit() {
     }
 
     let clientId: string;
+    let createdContactPersonId: string | null = null;
 
     // Create client - always with ACTIVE status
     if (clientType.value === 'INDIVIDUAL') {
@@ -526,20 +557,28 @@ async function handleSubmit() {
             registrationCountry: legalEntityForm.value.registrationCountry || undefined,
             registrationDate: legalEntityForm.value.registrationDate || undefined,
           },
-          contactPerson: contactPersonForm.value.firstName ? {
-            firstName: contactPersonForm.value.firstName,
-            lastName: contactPersonForm.value.lastName || undefined,
-            middleName: contactPersonForm.value.middleName || undefined,
-            birthDate: contactPersonForm.value.birthDate || undefined,
-            gender: contactPersonForm.value.gender !== null ? contactPersonForm.value.gender : undefined,
-          } : undefined,
           status: 'ACTIVE',
         };
         const result = await contactsCreateLegalEntityClient(contactsToken, selectedNS.value, input);
         clientId = result.client.id;
+
+        if (contactPersonForm.value.firstName.trim()) {
+          const contactInput: CreateIndividualClientInput = {
+            individual: {
+              firstName: contactPersonForm.value.firstName.trim(),
+              lastName: contactPersonForm.value.lastName.trim() || undefined,
+              middleName: contactPersonForm.value.middleName.trim() || undefined,
+              birthDate: contactPersonForm.value.birthDate || undefined,
+              gender: contactPersonForm.value.gender !== null ? contactPersonForm.value.gender : undefined,
+            },
+            status: 'ACTIVE',
+          };
+          const contactResult = await contactsCreateIndividualClient(contactsToken, selectedNS.value, contactInput);
+          createdContactPersonId = contactResult.client.id;
+        }
       }
     }
-    
+
     if (contactsToken) {
       // Create phone identities (max 5)
       const validPhonesToCreate = phones.value.filter(p => p.trim() && isPhoneValid(p)).slice(0, 5);
@@ -606,7 +645,50 @@ async function handleSubmit() {
         );
       }
 
-      await saveDynamicFieldValues(contactsToken, selectedNS.value, clientId);
+      // Link newly created legal entity with newly created contact person.
+      if (clientType.value === 'LEGAL' && createdContactPersonId) {
+        const legalCompanyName = legalEntityForm.value.legalName.trim();
+        const personName = [
+          contactPersonForm.value.lastName,
+          contactPersonForm.value.firstName,
+          contactPersonForm.value.middleName,
+        ]
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .join(' ')
+          .trim();
+
+        await createIdentity(
+          contactsToken,
+          selectedNS.value,
+          createdContactPersonId,
+          'company',
+          clientId,
+          false,
+          legalCompanyName,
+        );
+
+        await createIdentity(
+          contactsToken,
+          selectedNS.value,
+          clientId,
+          'contact_person',
+          createdContactPersonId,
+          false,
+          personName,
+        );
+      }
+
+      try {
+        await saveDynamicFieldValues(contactsToken, selectedNS.value, clientId);
+      } catch (dynamicFieldError) {
+        logError('Dynamic fields were not saved during client creation:', dynamicFieldError);
+        toast.add({
+          title: t('common.warning') || 'Warning',
+          description: tr('contacts.dynamicFieldsSaveWarning', 'Клиент создан, но дополнительные поля не сохранены'),
+          color: 'amber',
+        });
+      }
     }
 
     hasChanges.value = false;
@@ -1168,14 +1250,8 @@ useHead(() => ({
           <div class="space-y-3">
             <!-- Additional Information Accordion -->
             <UAccordion
-              :items="[
-                {
-                  slot: 'additional',
-                  label: t('contacts.additionalInformation'),
-                  icon: 'i-heroicons-envelope',
-                  defaultOpen: false
-                }
-              ]"
+              :key="hasRequiredAdditionalFields ? 'required-fields' : 'optional-fields'"
+              :items="additionalAccordionItems"
               :ui="{ 
                 base: 'divide-y divide-gray-200 dark:divide-gray-700 border border-gray-200 dark:border-gray-700 rounded-lg',
                 item: { base: '' },

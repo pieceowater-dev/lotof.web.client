@@ -97,6 +97,11 @@ const editingEmails = ref<string[]>([]);
 const editingTelegrams = ref<string[]>([]);
 const editingWhatsapps = ref<string[]>([]);
 const identityDisplayValues = ref<Record<string, string>>({});
+const relatedClientTargets = ref<Record<string, string>>({});
+
+const contactPersonIdentities = computed(() =>
+  identities.value.filter((i) => i.type === 'contact_person'),
+);
 
 function getPreferredIdentityForAdditionalInfo(): ClientIdentity | undefined {
   return identities.value.find((item) => item.type === 'phone' && item.isPrimary)
@@ -167,6 +172,16 @@ function applyDynamicFieldValueToDraft(field: DynamicField, value?: DynamicField
   }
 
   dynamicFieldDrafts.value[field.id] = value.valueString || '';
+}
+
+function isDynamicFieldsEmptyStateError(error: unknown): boolean {
+  const message = String((error as any)?.message || error || '').toLowerCase();
+  const mentionsDynamicField = message.includes('dynamic field') || message.includes('dynamicfield');
+  return (message.includes('not found') && mentionsDynamicField)
+    || (message.includes('no rows') && mentionsDynamicField)
+    || (message.includes('no data') && mentionsDynamicField)
+    || message.includes('no dynamic fields')
+    || message.includes('no dynamic field values');
 }
 
 async function loadDynamicFieldsForClient(contactsToken: string, namespace: string, entityId: string) {
@@ -244,6 +259,14 @@ async function loadDynamicFieldsForClient(contactsToken: string, namespace: stri
 
     dynamicFieldDrafts.value = nextDrafts;
   } catch (error) {
+    if (isDynamicFieldsEmptyStateError(error)) {
+      dynamicFields.value = [];
+      dynamicFieldValues.value = {};
+      dynamicFieldDrafts.value = {};
+      dynamicFieldsError.value = null;
+      return;
+    }
+
     logError('Failed to load dynamic fields for client:', error);
     dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load data';
   } finally {
@@ -394,6 +417,7 @@ async function tryEnrichClient(contactsToken: string, namespace: string) {
 
 async function resolveIdentityDisplayValues(contactsToken: string, namespace: string) {
   const displayMap: Record<string, string> = {};
+  const targetMap: Record<string, string> = {};
   const identityRows = identities.value || [];
 
   const relatedUUIDs = Array.from(
@@ -411,6 +435,9 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
       const relatedName = getClientDisplayName(related as ClientRow);
       if (relatedName) {
         relatedNames[uuid] = relatedName;
+      }
+      if (related?.client?.shortId) {
+        targetMap[uuid] = related.client.shortId;
       }
     } catch {
       // ignore unresolved related clients
@@ -430,6 +457,16 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   }
 
   identityDisplayValues.value = displayMap;
+  relatedClientTargets.value = Object.fromEntries(
+    identityRows
+      .filter((item) => item.type === 'company' || item.type === 'contact_person')
+      .map((item) => [item.id, targetMap[item.value] || item.value]),
+  );
+}
+
+function openRelatedClient(identity: ClientIdentity) {
+  const target = relatedClientTargets.value[identity.id] || identity.value;
+  router.push(`/${nsSlug.value}/contacts/${target}`);
 }
 
 useHead(() => ({
@@ -866,6 +903,7 @@ async function loadClient() {
           logError('Failed to process identities:', error);
           identities.value = [];
           identityDisplayValues.value = {};
+          relatedClientTargets.value = {};
         }
       } else {
         if (!isUnimplementedError(identitiesResult.reason)) {
@@ -873,6 +911,7 @@ async function loadClient() {
         }
         identities.value = [];
         identityDisplayValues.value = {};
+        relatedClientTargets.value = {};
       }
 
       if (tagsResult.status === 'fulfilled') {
@@ -1474,6 +1513,7 @@ function removeWhatsappField(index: number) {
           <ContactIdentities
             :identities="identities"
             :identity-display-values="identityDisplayValues"
+            :related-client-targets="relatedClientTargets"
             :edit-mode="editMode.identities"
             :editing-phones="editingPhones"
             :editing-emails="editingEmails"
@@ -1499,7 +1539,38 @@ function removeWhatsappField(index: number) {
             @telegram-action="handleTelegramAction"
             @whatsapp-action="handleWhatsappAction"
             @copy-to-clipboard="copyToClipboard"
+            @navigate-related-client="openRelatedClient"
           />
+
+          <!-- Contact Persons Section (Legal Entities only) -->
+          <div
+            v-if="client.client.clientType === 'LEGAL'"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden"
+          >
+            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
+              <UIcon name="i-heroicons-users" class="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Контактные лица</h2>
+            </div>
+            <div class="px-5 py-5">
+              <div v-if="contactPersonIdentities.length > 0" class="space-y-2">
+                <div
+                  v-for="person in contactPersonIdentities"
+                  :key="person.id"
+                  class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  @click="openRelatedClient(person)"
+                >
+                  <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
+                    <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-500 dark:text-gray-300" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-900 dark:text-white flex-1">
+                    {{ identityDisplayValues[person.id] || person.comments || person.value }}
+                  </span>
+                  <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+              <p v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">Контактные лица не назначены</p>
+            </div>
+          </div>
 
           <!-- Loyalty Section -->
           <ContactLoyalty

@@ -17,7 +17,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 
 type Phase = 'upload' | 'importing' | 'done';
-type MappingKey = 'name' | 'phone' | 'email' | 'whatsapp' | 'telegram' | 'iin';
+type MappingKey = 'name' | 'company' | 'phone' | 'email' | 'whatsapp' | 'telegram' | 'iin';
 
 const file = ref<File | null>(null);
 const isDragOver = ref(false);
@@ -30,6 +30,7 @@ const importError = ref<string | null>(null);
 
 const mapping = ref<Record<MappingKey, string>>({
   name: '',
+  company: '',
   phone: '',
   email: '',
   whatsapp: '',
@@ -38,7 +39,8 @@ const mapping = ref<Record<MappingKey, string>>({
 });
 
 const systemFields = computed<Array<{ key: MappingKey; label: string; required?: boolean }>>(() => [
-  { key: 'name', label: t('contacts.importModal.fields.name') || 'Full Name (space-separated)', required: true },
+  { key: 'company', label: t('contacts.importModal.fields.company') || 'Company (for legal entities)' },
+  { key: 'name', label: t('contacts.importModal.fields.name') || 'Full Name (for individuals)' },
   { key: 'phone', label: t('contacts.importModal.fields.phone') || 'Phone' },
   { key: 'email', label: t('contacts.importModal.fields.email') || 'Email' },
   { key: 'whatsapp', label: t('contacts.importModal.fields.whatsapp') || 'WhatsApp' },
@@ -51,7 +53,10 @@ const columnOptions = computed<Array<{ label: string; value: string }>>(() => [
   { label: t('contacts.importModal.notSelected') || 'Not selected', value: '' },
   ...headers.value.map((h) => ({ label: h, value: h })),
 ]);
-const isImportDisabled = computed(() => !hasFile.value || !mapping.value.name || phase.value !== 'upload');
+const isImportDisabled = computed(() => {
+  if (!hasFile.value || phase.value !== 'upload') return true;
+  return !mapping.value.company && !mapping.value.name;
+});
 const failedRows = computed(() => importResult.value?.rows.filter((r) => !r.success) ?? []);
 
 function close() {
@@ -66,7 +71,7 @@ function resetState() {
   progress.value = null;
   importResult.value = null;
   importError.value = null;
-  mapping.value = { name: '', phone: '', email: '', whatsapp: '', telegram: '', iin: '' };
+  mapping.value = { name: '', company: '', phone: '', email: '', whatsapp: '', telegram: '', iin: '' };
 }
 
 watch(
@@ -79,7 +84,7 @@ watch(
 async function parseFileHeader(f: File) {
   file.value = f;
   headers.value = [];
-  mapping.value = { name: '', phone: '', email: '', whatsapp: '', telegram: '', iin: '' };
+  mapping.value = { name: '', company: '', phone: '', email: '', whatsapp: '', telegram: '', iin: '' };
 
   try {
     const buffer = await f.arrayBuffer();
@@ -151,6 +156,9 @@ async function buildRows(): Promise<ImportRow[]> {
           (entry as unknown as Record<string, string>)[field.key] = String(row[colIndex[col]] ?? '').trim();
         }
       }
+
+      // Import mode is inferred per-row: company -> LEGAL, otherwise INDIVIDUAL.
+      entry.client_type = entry.company ? 'LEGAL' : 'INDIVIDUAL';
 
       const extras: string[] = [];
       headerRow.forEach((colName, i) => {
@@ -339,6 +347,7 @@ async function handleImport() {
                     <tr class="bg-gray-50/50 dark:bg-gray-800/30">
                       <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 italic text-xs" colspan="2">
                         {{ t('contacts.importModal.unmappedHint') || 'Unmapped columns will be saved into client comment as key: value lines' }}
+                        {{ t('contacts.importModal.autoModeHint') || ' Rows with Company are imported as legal entities, other rows as individuals.' }}
                       </td>
                     </tr>
                   </tbody>

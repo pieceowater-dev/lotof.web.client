@@ -784,11 +784,13 @@
       "sourceColumn": "Source column",
       "systemField": "System field",
       "unmappedHint": "Unmapped columns will be saved into client comment as key: value lines",
+      "autoModeHint": " Rows with Company are imported as legal entities, other rows as individuals.",
       "headerReadError": "Could not read header row. Make sure the first row contains column names.",
       "done": "Done",
       "import": "Import",
       "notSelected": "Not selected",
       "fields": {
+        "company": "Company (for legal entities)",
         "name": "Full Name (space-separated)",
         "phone": "Phone",
         "email": "Email",

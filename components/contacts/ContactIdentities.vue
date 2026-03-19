@@ -6,6 +6,7 @@ import type { ClientIdentity } from '@/api/contacts/identities';
 interface Props {
   identities: ClientIdentity[];
   identityDisplayValues?: Record<string, string>;
+  relatedClientTargets?: Record<string, string>;
   editMode?: boolean;
   editingPhones?: string[];
   editingEmails?: string[];
@@ -35,6 +36,7 @@ interface Emits {
   telegramAction: [handle: string];
   whatsappAction: [phone: string];
   copyToClipboard: [text: string];
+  navigateRelatedClient: [identity: ClientIdentity];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,6 +67,14 @@ function handleCopy(identity: ClientIdentity) {
   }, 1500);
 }
 
+function hasRelatedClientTarget(identity: ClientIdentity): boolean {
+  return !!props.relatedClientTargets?.[identity.id];
+}
+
+function isRelatedClientIdentity(identity: ClientIdentity): boolean {
+  return identity.type === 'company' || identity.type === 'contact_person';
+}
+
 onBeforeUnmount(() => {
   if (copiedTimeout) clearTimeout(copiedTimeout);
 });
@@ -76,6 +86,8 @@ function getIdentityIcon(type: string): string {
     telegram: 'i-heroicons-paper-airplane',
     whatsapp: 'i-heroicons-chat-bubble-left-right',
     website: 'i-heroicons-globe-alt',
+    company: 'i-heroicons-building-office-2',
+    contact_person: 'i-heroicons-user',
   };
   return iconMap[type] || 'i-heroicons-link';
 }
@@ -88,8 +100,13 @@ function getIdentityTypeLabel(type: string): string {
     whatsapp: 'contacts.whatsapp',
     website: 'contacts.website',
   };
+  const staticLabelMap: Record<string, string> = {
+    company: 'Компания',
+    contact_person: 'Контактное лицо',
+  };
   const key = keyMap[type];
-  return key ? (t(key) || type) : type;
+  if (key) return t(key) || type;
+  return staticLabelMap[type] || type;
 }
 </script>
 
@@ -132,7 +149,18 @@ function getIdentityTypeLabel(type: string): string {
               </div>
               <div class="min-w-0">
                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ getIdentityTypeLabel(identity.type) }}</p>
-                <p :class="['text-sm text-gray-900 dark:text-white truncate', identity.isPrimary ? 'font-bold' : 'font-medium']">
+                <button
+                  v-if="isRelatedClientIdentity(identity) && hasRelatedClientTarget(identity)"
+                  type="button"
+                  :class="['text-sm text-left text-blue-600 dark:text-blue-400 hover:underline truncate', identity.isPrimary ? 'font-bold' : 'font-medium']"
+                  @click="() => emit('navigateRelatedClient', identity)"
+                >
+                  {{ getDisplayValue(identity) }}
+                </button>
+                <p
+                  v-else
+                  :class="['text-sm text-gray-900 dark:text-white truncate', identity.isPrimary ? 'font-bold' : 'font-medium']"
+                >
                   {{ getDisplayValue(identity) }}
                 </p>
               </div>
@@ -176,6 +204,16 @@ function getIdentityTypeLabel(type: string): string {
                 variant="soft"
                 :title="t('contacts.openWhatsApp') || 'Открыть WhatsApp'"
                 @click="() => emit('whatsappAction', identity.value)"
+                class="h-8 w-8 p-0 justify-center"
+              />
+              <UButton
+                v-else-if="isRelatedClientIdentity(identity) && hasRelatedClientTarget(identity)"
+                icon="i-heroicons-arrow-top-right-on-square"
+                size="xs"
+                color="blue"
+                variant="soft"
+                :title="getDisplayValue(identity)"
+                @click="() => emit('navigateRelatedClient', identity)"
                 class="h-8 w-8 p-0 justify-center"
               />
               <UButton

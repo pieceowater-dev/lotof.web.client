@@ -2,6 +2,8 @@ const BATCH_SIZE = 500;
 
 export interface ImportRow {
   name: string;
+  client_type?: 'INDIVIDUAL' | 'LEGAL';
+  company?: string;
   phone?: string;
   email?: string;
   whatsapp?: string;
