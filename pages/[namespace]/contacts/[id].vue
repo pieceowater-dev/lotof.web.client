@@ -378,19 +378,28 @@ function isUnimplementedError(error: unknown): boolean {
   return message.includes('Unimplemented') || message.includes('not implemented');
 }
 
-function isUUID(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
-}
-
 function getClientDisplayName(row: ClientRow | null | undefined): string {
   if (!row) return '';
-  if (row.client.clientType === 'INDIVIDUAL' && row.individual) {
-    return [row.individual.lastName, row.individual.firstName, row.individual.middleName]
-      .filter(Boolean)
-      .join(' ')
-      .trim();
+
+  // INDIVIDUAL: try to build FIO from provided data
+  if (row.client.clientType === 'INDIVIDUAL') {
+    if (row.individual) {
+      const fullName = [row.individual.lastName, row.individual.firstName, row.individual.middleName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      if (fullName) return fullName;
+    }
   }
-  return row.legalEntity?.legalName || '';
+
+  // LEGAL: try to get name from legal entity
+  if (row.legalEntity) {
+    if (row.legalEntity.legalName?.trim()) return row.legalEntity.legalName;
+    if (row.legalEntity.brandName?.trim()) return row.legalEntity.brandName;
+  }
+
+  // Fallback to empty (will use comments or label)
+  return '';
 }
 
 async function tryEnrichClient(contactsToken: string, namespace: string) {
@@ -420,24 +429,54 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   const targetMap: Record<string, string> = {};
   const identityRows = identities.value || [];
 
-  const relatedUUIDs = Array.from(
+  const relatedClientRefs = Array.from(
     new Set(
       identityRows
-        .filter((item) => (item.type === 'contact_person' || item.type === 'company') && isUUID(item.value))
-        .map((item) => item.value),
+        .filter((item) => (item.type === 'contact_person' || item.type === 'company') && item.value?.trim())
+        .map((item) => item.value.trim()),
     ),
   );
 
   const relatedNames: Record<string, string> = {};
-  await Promise.all(relatedUUIDs.map(async (uuid) => {
+  await Promise.all(relatedClientRefs.map(async (clientRef) => {
     try {
-      const related = await getClient(contactsToken, namespace, uuid);
+      const related = await getClient(contactsToken, namespace, clientRef);
       const relatedName = getClientDisplayName(related as ClientRow);
+
       if (relatedName) {
-        relatedNames[uuid] = relatedName;
+        relatedNames[clientRef] = relatedName;
       }
+
       if (related?.client?.shortId) {
-        targetMap[uuid] = related.client.shortId;
+        targetMap[clientRef] = related.client.shortId;
+      }
+
+      if (related?.client?.id) {
+        targetMap[related.client.id] = related.client.shortId || related.client.id;
+      }
+    } catch {
+      // ignore unresolved related clients
+    }
+  }));
+
+  const unresolvedRefs = relatedClientRefs.filter((ref) => !relatedNames[ref]);
+  await Promise.all(unresolvedRefs.map(async (clientRef) => {
+    try {
+      const list = await contactsListClients(contactsToken, namespace, {
+        search: clientRef,
+        pagination: { page: 1, length: 'TEN' },
+      });
+      const matched = (list.rows || []).find((row) => row.client.id === clientRef || row.client.shortId === clientRef);
+      if (!matched) return;
+
+      const relatedName = getClientDisplayName(matched);
+      if (relatedName) {
+        relatedNames[clientRef] = relatedName;
+      }
+
+      targetMap[clientRef] = matched.client.shortId || matched.client.id;
+      if (matched.client.id) {
+        targetMap[matched.client.id] = matched.client.shortId || matched.client.id;
       }
     } catch {
       // ignore unresolved related clients
@@ -445,14 +484,24 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   }));
 
   for (const item of identityRows) {
+    const identityRef = item.value?.trim() || '';
+
     if (item.type === 'company' || item.type === 'contact_person') {
-      displayMap[item.id] = item.comments?.trim() || relatedNames[item.value] || t('contacts.relatedClient');
+      const resolvedName = relatedNames[identityRef] || '';
+      const comments = item.comments?.trim() || '';
+      // Prefer resolved name, then comments, then label (but avoid shortId-like values)
+      const displayName = resolvedName
+        || (comments && !comments.match(/^[a-z0-9]{8}$/) ? comments : '') // Avoid shortId-like pattern
+        || t('contacts.relatedClient');
+      displayMap[item.id] = displayName;
       continue;
     }
+
     if (item.type === 'phone' || item.type === 'whatsapp') {
       displayMap[item.id] = formatDisplayPhoneUniversal(item.value);
       continue;
     }
+
     displayMap[item.id] = item.value;
   }
 
@@ -460,7 +509,10 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   relatedClientTargets.value = Object.fromEntries(
     identityRows
       .filter((item) => item.type === 'company' || item.type === 'contact_person')
-      .map((item) => [item.id, targetMap[item.value] || item.value]),
+      .map((item) => {
+        const identityRef = item.value?.trim() || '';
+        return [item.id, targetMap[identityRef] || identityRef];
+      }),
   );
 }
 
@@ -1541,36 +1593,6 @@ function removeWhatsappField(index: number) {
             @copy-to-clipboard="copyToClipboard"
             @navigate-related-client="openRelatedClient"
           />
-
-          <!-- Contact Persons Section (Legal Entities only) -->
-          <div
-            v-if="client.client.clientType === 'LEGAL'"
-            class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden"
-          >
-            <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-              <UIcon name="i-heroicons-users" class="w-5 h-5 text-violet-600 dark:text-violet-400" />
-              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">Контактные лица</h2>
-            </div>
-            <div class="px-5 py-5">
-              <div v-if="contactPersonIdentities.length > 0" class="space-y-2">
-                <div
-                  v-for="person in contactPersonIdentities"
-                  :key="person.id"
-                  class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                  @click="openRelatedClient(person)"
-                >
-                  <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
-                    <UIcon name="i-heroicons-user" class="w-4 h-4 text-gray-500 dark:text-gray-300" />
-                  </div>
-                  <span class="text-sm font-medium text-gray-900 dark:text-white flex-1">
-                    {{ identityDisplayValues[person.id] || person.comments || person.value }}
-                  </span>
-                  <UIcon name="i-heroicons-chevron-right" class="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-              <p v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">Контактные лица не назначены</p>
-            </div>
-          </div>
 
           <!-- Loyalty Section -->
           <ContactLoyalty
