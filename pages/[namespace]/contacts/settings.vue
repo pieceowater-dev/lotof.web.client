@@ -400,11 +400,39 @@ async function loadDynamicFieldsData(token: string) {
     });
     dynamicFields.value = response.dynamicFields?.rows || [];
   } catch (e) {
+    if (isDynamicFieldsEmptyStateError(e)) {
+      dynamicFields.value = [];
+      dynamicFieldsError.value = null;
+      return;
+    }
+
     logError('Failed to load dynamic fields:', e);
     dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load dynamic fields';
   } finally {
     dynamicFieldsLoading.value = false;
   }
+}
+
+function isDynamicFieldsEmptyStateError(error: unknown): boolean {
+  const message = String(
+    (error as any)?.response?.errors?.[0]?.message
+    || (error as any)?.message
+    || error
+    || '',
+  ).toLowerCase();
+
+  const mentionsDynamicFields =
+    message.includes('dynamic field')
+    || message.includes('dynamicfield')
+    || message.includes('listdynamicfields')
+    || message.includes('contactsdynamicfieldservice');
+
+  return message.includes('no dynamic fields')
+    || message.includes('no dynamic field values')
+    || (mentionsDynamicFields && message.includes('record not found'))
+    || (mentionsDynamicFields && message.includes('no rows'))
+    || (mentionsDynamicFields && message.includes('not found'))
+    || (mentionsDynamicFields && message.includes('no data'));
 }
 
 async function handleCreateDynamicField() {
