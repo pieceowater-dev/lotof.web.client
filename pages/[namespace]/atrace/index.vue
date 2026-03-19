@@ -92,6 +92,18 @@ const routes = ref<Route[]>([]);
 const routesLoading = ref(false);
 const routesError = ref<string | null>(null);
 const activeTab = ref<string>('attendance');
+
+function isAtracePermissionError(error: unknown, permission?: string): boolean {
+    const message = getErrorMessage(error).toLowerCase();
+    if (permission && message.includes(`missing permission ${permission}`.toLowerCase())) {
+        return true;
+    }
+    return message.includes('missing permission') || message.includes('access denied');
+}
+
+function getRouteAccessDeniedMessage(): string {
+    return t('app.route.accessDenied') || 'Маршруты недоступны для вашей роли.';
+}
 const activeRouteId = computed(() => (activeTab.value.startsWith('route:') ? activeTab.value.slice(6) : null));
 const activeRoute = computed(() => routes.value.find((r) => r.id === activeRouteId.value) || null);
 const isRouteTab = computed(() => activeRouteId.value !== null);
@@ -415,7 +427,9 @@ async function loadRoutes() {
             activeTab.value = 'attendance';
         }
     } catch (e) {
-        routesError.value = getErrorMessage(e) || (t('app.route.loadFailed') || 'Failed to load routes');
+        routesError.value = isAtracePermissionError(e, 'tracker.route.view')
+            ? getRouteAccessDeniedMessage()
+            : (getErrorMessage(e) || (t('app.route.loadFailed') || 'Failed to load routes'));
         routes.value = [];
     } finally {
         routesLoading.value = false;
@@ -627,7 +641,9 @@ async function loadRouteAtraceBundle(includeValidation: boolean) {
             routePass.value = result.validation;
         }
     } catch (e) {
-        const errorMsg = getErrorMessage(e) || 'Failed to load route data';
+        const errorMsg = isAtracePermissionError(e, 'tracker.route.view')
+            ? getRouteAccessDeniedMessage()
+            : (getErrorMessage(e) || 'Failed to load route data');
         if (shouldSetRoutesLoading) {
             routesError.value = errorMsg;
             routes.value = [];
@@ -635,7 +651,7 @@ async function loadRouteAtraceBundle(includeValidation: boolean) {
         routePassesError.value = errorMsg;
         routePasses.value = [];
         if (includeValidation) {
-            routePassError.value = getErrorMessage(e) || (t('app.route.validateFailed') || 'Failed to validate route');
+            routePassError.value = errorMsg || (t('app.route.validateFailed') || 'Failed to validate route');
             routePass.value = null;
         }
     } finally {

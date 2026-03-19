@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import type { AtraceRecord } from '@/api/atrace/record/records';
 import { logError } from '@/utils/logger';
 import { GEO_CONFIRM_RADIUS_M } from '@/utils/geolocation';
+import { useRoute } from 'vue-router';
 
 const { t, locale } = useI18n();
 
@@ -14,6 +15,9 @@ const props = defineProps<{
   lateArrivalTime: string;
   earlyLeaveTime: string;
 }>();
+
+const route = useRoute();
+const namespaceSlug = computed(() => route.params.namespace as string | undefined);
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -89,7 +93,7 @@ async function loadData() {
 
     // Load daily attendance
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
-    const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate);
+    const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate, namespaceSlug.value);
     dailyAttendance.value = result;
   } catch (e: unknown) {
     logError('[UserDayRecordsAccordion] failed to load:', e);

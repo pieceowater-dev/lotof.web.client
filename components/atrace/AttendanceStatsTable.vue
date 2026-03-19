@@ -14,6 +14,15 @@ const props = defineProps<{
 const route = useRoute();
 const namespaceSlug = computed(() => route.params.namespace as string | undefined);
 
+function hasAtracePermissionError(error: any, permission?: string): boolean {
+  return Boolean(error?.response?.errors?.some((err: any) => {
+    const message = String(err?.message || '').toLowerCase();
+    if (!message) return false;
+    if (permission && message.includes(`missing permission ${permission}`.toLowerCase())) return true;
+    return message.includes('missing permission') || message.includes('access denied');
+  }));
+}
+
 type UserStats = {
   userId: string;
   username?: string;
@@ -221,11 +230,7 @@ async function loadStats() {
     );
     stats.value = result;
   } catch (e: any) {
-    // Permission error handling
-    const permissionError =
-      e?.response?.errors?.some((err: any) =>
-        String(err?.message || '').includes('missing permission tracker.attendance.view')
-      );
+    const permissionError = hasAtracePermissionError(e, 'tracker.attendance.view');
     const unauthorizedError =
       e?.response?.errors?.some((err: any) =>
         String(err?.message || '').includes('unauthorized: token is missing for key "AtraceAuthorization"')

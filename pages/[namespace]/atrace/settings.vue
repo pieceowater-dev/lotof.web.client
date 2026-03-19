@@ -66,6 +66,7 @@ const members = ref<Member[]>([]);
 const roles = ref<Role[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const accessDenied = ref(false);
 const atraceRoutes = ref<Route[]>([]);
 const routesLoading = ref(false);
 const routesError = ref<string | null>(null);
@@ -137,6 +138,18 @@ const isValidInviteEmail = computed(() => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 });
 const inviteCanSubmit = computed(() => isValidInviteEmail.value && !inviteSubmitting.value);
+
+function isAtracePermissionError(error: unknown, permission?: string): boolean {
+    const message = getErrorMessage(error).toLowerCase();
+    if (permission && message.includes(`missing permission ${permission}`.toLowerCase())) {
+        return true;
+    }
+    return message.includes('missing permission') || message.includes('access denied') || message.includes('unauthorized');
+}
+
+function getRouteAccessDeniedMessage(): string {
+    return t('app.route.accessDenied') || 'Маршруты недоступны для вашей роли.';
+}
 
 function buildPostLabel(post: Post): string {
     const parts: string[] = [];
@@ -213,7 +226,9 @@ async function loadRoutes() {
         const res = await atraceGetRoutes(atraceToken, nsSlug.value, { page: 1, length: 'ONE_HUNDRED' });
         atraceRoutes.value = [...res.routes].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
     } catch (e) {
-        routesError.value = localizeErrorMessage(e) || (t('app_routes_load_failed') || 'Failed to load routes');
+        routesError.value = isAtracePermissionError(e, 'tracker.route.view')
+            ? getRouteAccessDeniedMessage()
+            : (localizeErrorMessage(e) || (t('app_routes_load_failed') || 'Failed to load routes'));
         atraceRoutes.value = [];
     } finally {
         routesLoading.value = false;
@@ -718,11 +733,9 @@ onMounted(async () => {
             // For now, allow loading and let the API handle the permission check
         }
     } catch (e: any) {
-        const message = getErrorMessage(e);
-        if (message.includes('access denied') || message.includes('permission') || message.includes('unauthorized')) {
-            error.value = t('app.settingsAccessDenied') || 'You do not have permission to access settings. Only administrators can manage members.';
-            // Redirect after showing error
-            setTimeout(() => router.push(`/${nsSlug.value}/atrace`), 2000);
+        if (isAtracePermissionError(e)) {
+            accessDenied.value = true;
+            error.value = t('app.settingsAccessDenied') || 'У вас нет доступа к настройкам ATrace. Обратитесь к администратору пространства.';
             return;
         }
     }
@@ -780,6 +793,26 @@ onUnmounted(() => {
             </div>
         </div>
 
+        <div v-if="accessDenied" class="flex-1 flex items-center justify-center">
+            <div class="w-full max-w-xl rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-8 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/30">
+                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">
+                    <UIcon name="i-heroicons-lock-closed" class="h-7 w-7" />
+                </div>
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+                    {{ t('app.settingsAccessDenied') || 'Доступ к настройкам ограничен' }}
+                </h2>
+                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                    {{ error || (t('app.attendancePermissionErrorHint') || 'Для этого раздела нужна роль с правами управления ATrace.') }}
+                </p>
+                <div class="mt-5 flex justify-center">
+                    <UButton color="primary" variant="soft" icon="lucide:arrow-left" @click="goBack">
+                        {{ t('app.back') || 'Назад' }}
+                    </UButton>
+                </div>
+            </div>
+        </div>
+
+        <template v-else>
         <div v-if="planLimits !== null && !planLimitsLoading" class="mb-4">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-blue-100 dark:border-gray-700 bg-blue-50/60 dark:bg-gray-900/40 px-4 py-3">
                 <div class="text-sm text-gray-700 dark:text-gray-200">
@@ -1159,6 +1192,7 @@ onUnmounted(() => {
                 </template>
             </UCard>
         </UModal>
+        </template>
     </div>
 </template>
 

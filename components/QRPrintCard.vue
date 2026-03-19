@@ -28,7 +28,7 @@ const hasContent = computed(() => !!props.title || !!props.address);
 <template>
   <Teleport to="body">
     <div class="fixed inset-0 bg-black/50 dark:bg-black/70 z-[9999] flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-xl w-full p-8 relative">
       <!-- Close button -->
       <button
         @click="$emit('close')"
@@ -61,8 +61,8 @@ const hasContent = computed(() => !!props.title || !!props.address);
             <img
               :src="props.qrImage"
               alt="QR Code"
-              class="qr-image w-full max-w-xs h-auto aspect-square object-contain"
-              style="max-width: 200px; min-width: 160px;"
+              class="qr-image w-full max-w-md h-auto aspect-square object-contain"
+              style="max-width: 320px; min-width: 220px;"
             />
             <!-- Post ID всегда показываем -->
             <div class="post-id mt-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
@@ -188,8 +188,8 @@ const hasContent = computed(() => !!props.title || !!props.address);
   
   /* QR код - фиксированный размер для печати */
   .qr-image {
-    max-width: 50mm !important;
-    width: 50mm !important;
+    max-width: 80mm !important;
+    width: 80mm !important;
     height: auto !important;
     filter: none !important;
   }

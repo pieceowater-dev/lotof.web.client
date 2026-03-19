@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
+import { useRoute } from 'vue-router';
 const { t } = useI18n();
 
 const props = defineProps<{
@@ -9,6 +10,9 @@ const props = defineProps<{
   startDate: string;
   endDate: string;
 }>();
+
+const route = useRoute();
+const namespaceSlug = computed(() => route.params.namespace as string | undefined);
 
 type DailyAttendance = {
   id: string;
@@ -51,7 +55,8 @@ async function loadAttendanceDetails() {
     const result = await atraceGetAttendanceReport(
       props.userId,
       props.startDate,
-      props.endDate
+      props.endDate,
+      namespaceSlug.value
     );
     log('[UserAttendanceDetails] Loaded', result.length, 'records:', result);
     attendanceRecords.value = result;

@@ -153,8 +153,8 @@ async function handlePrint() {
                                 margin: 20px 0;
                             }
                             .qr-image {
-                                width: 280px;
-                                height: 280px;
+                                width: 360px;
+                                height: 360px;
                                 object-fit: contain;
                             }
                             .post-id {
@@ -175,8 +175,8 @@ async function handlePrint() {
                                     max-width: 100%;
                                 }
                                 .qr-image {
-                                    width: 200px;
-                                    height: 200px;
+                                    width: 300px;
+                                    height: 300px;
                                 }
                                 .post-id {
                                     font-size: 14pt;
