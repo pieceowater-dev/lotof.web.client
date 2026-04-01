@@ -6,7 +6,7 @@ import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
-import { getClient } from '@/api/contacts/getClient';
+import { getClientsBatch } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { listTags } from '@/api/contacts/tags';
@@ -150,23 +150,26 @@ function buildUrlQuery(): Record<string, string | string[]> {
 }
 
 onMounted(async () => {
+  const { ensure } = useContactsToken();
+
+  // Get token once and reuse across all init steps
+  const contactsToken = (token.value && selectedNS.value)
+    ? await ensure(selectedNS.value, token.value)
+    : null;
+
   // Initialize selectedTags from ?t= URL params
   const t = route.query.t;
-  if (t && token.value && selectedNS.value) {
+  if (t && contactsToken && selectedNS.value) {
     const tagNames = (Array.isArray(t) ? t : [t]) as string[];
     if (tagNames.length > 0) {
       isInitializingFromUrl.value = true;
       try {
-        const { ensure } = useContactsToken();
-        const contactsToken = await ensure(selectedNS.value, token.value);
-        if (contactsToken) {
-          const data = await listTags(contactsToken, selectedNS.value);
-          const allTags = data.tags.rows;
-          const matched = tagNames
-            .map(name => allTags.find(tag => tag.name === name))
-            .filter(Boolean) as Array<{ id: string; name: string }>;
-          if (matched.length > 0) selectedTags.value = matched;
-        }
+        const data = await listTags(contactsToken, selectedNS.value);
+        const allTags = data.tags.rows;
+        const matched = tagNames
+          .map(name => allTags.find(tag => tag.name === name))
+          .filter(Boolean) as Array<{ id: string; name: string }>;
+        if (matched.length > 0) selectedTags.value = matched;
       } catch {
         // ignore tag init errors
       } finally {
@@ -174,6 +177,7 @@ onMounted(async () => {
       }
     }
   }
+
   await loadClients();
   await initClientsSubscription();
 });
@@ -301,30 +305,20 @@ async function resolveRelatedClientNames(contactsToken: string, namespace: strin
   ));
   if (uuids.length === 0) return;
 
-  const next: Record<string, string> = { ...resolvedNames.value };
-  await Promise.all(
-    uuids.filter((uuid) => !next[uuid]).map(async (uuid) => {
-      try {
-        const related = await getClient(contactsToken, namespace, uuid);
-        let name = getClientDisplayName(related);
+  const uncached = uuids.filter((uuid) => !resolvedNames.value[uuid]);
+  if (uncached.length === 0) return;
 
-        // Fallback: list search often returns richer fields than direct client query
-        if (!name) {
-          const list = await contactsListClients(contactsToken, namespace, {
-            search: uuid,
-            pagination: { page: 1, length: 'TEN' },
-          });
-          const matched = (list.rows || []).find((row) => row.client.id === uuid || row.client.shortId === uuid);
-          name = getClientDisplayName(matched);
-        }
-
-        if (name) next[uuid] = name;
-      } catch {
-        // ignore
-      }
-    }),
-  );
-  resolvedNames.value = next;
+  try {
+    const results = await getClientsBatch(contactsToken, namespace, uncached);
+    const next: Record<string, string> = { ...resolvedNames.value };
+    for (const [uuid, related] of Object.entries(results)) {
+      const name = getClientDisplayName(related);
+      if (name) next[uuid] = name;
+    }
+    resolvedNames.value = next;
+  } catch {
+    // ignore
+  }
 }
 
 async function loadClients() {

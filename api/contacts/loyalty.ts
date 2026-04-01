@@ -401,6 +401,39 @@ export async function deleteStampCard(
   }
 }
 
+export async function getClientStampProgressBatch(
+  token: string,
+  clientId: string,
+  stampCardIds: string[],
+): Promise<ClientStampProgress[]> {
+  if (stampCardIds.length === 0) return [];
+  setContactsAppToken(token);
+
+  const progressFields = `
+    id clientId stampCardId currentStamps completedRounds lastStampAt
+    stampCard {
+      id name description type status totalStamps rewardDescription validFrom validUntil
+    }
+  `;
+
+  const varDecls = stampCardIds.map((_, i) => `$cid${i}: ID!, $sid${i}: ID!`).join(', ');
+  const aliases = stampCardIds.map((_, i) =>
+    `p${i}: clientStampProgress(clientId: $cid${i}, stampCardId: $sid${i}) { ${progressFields} }`,
+  ).join('\n');
+  const query = `query BatchStampProgress(${varDecls}) { ${aliases} }`;
+
+  const variables = Object.fromEntries(
+    stampCardIds.flatMap((id, i) => [[`cid${i}`, clientId], [`sid${i}`, id]]),
+  );
+
+  try {
+    const data = await contactsClient.request<Record<string, ClientStampProgress>>(query as any, variables);
+    return stampCardIds.map((_, i) => data[`p${i}`]).filter(Boolean) as ClientStampProgress[];
+  } catch {
+    return [];
+  }
+}
+
 export async function getClientStampProgress(
   token: string,
   clientId: string,

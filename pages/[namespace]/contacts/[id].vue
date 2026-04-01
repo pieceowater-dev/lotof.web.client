@@ -5,16 +5,14 @@ import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { logError } from '@/utils/logger';
 import { contactsUpdateClientStatus, contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
-import { contactsListClients, type ClientRow } from '@/api/contacts/listClients';
-import { getClient } from '@/api/contacts/getClient';
-import { createIdentity, deleteIdentity, getClientIdentities, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
-import { getClientTags } from '@/api/contacts/tags';
-import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
-import { getBonusBalance, getStampCards, getClientStampProgress, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
+import { type ClientRow } from '@/api/contacts/listClients';
+import { getClientsBatch } from '@/api/contacts/getClient';
+import { createIdentity, deleteIdentity, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
+import { type ClientEvent } from '@/api/contacts/events';
+import { getClientStampProgressBatch, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
 import { getClientPageData } from '@/api/contacts/clientPage';
 import {
-  listDynamicFields,
-  listDynamicFieldValues,
+  listDynamicFieldsWithValues,
   setDynamicFieldValue,
   deleteDynamicFieldValue,
   type DynamicField,
@@ -189,8 +187,10 @@ async function loadDynamicFieldsForClient(contactsToken: string, namespace: stri
   dynamicFieldsError.value = null;
 
   try {
-    const fieldsResp = await listDynamicFields(contactsToken, namespace, { includeDeleted: false });
-    const rawFields = fieldsResp.dynamicFields?.rows || [];
+    const { dynamicFields: fieldsResp, dynamicFieldValues: valuesResp } =
+      await listDynamicFieldsWithValues(contactsToken, namespace, entityId, { includeDeleted: false });
+
+    const rawFields = fieldsResp?.rows || [];
     const isIndividual = client.value?.client.clientType === 'INDIVIDUAL';
 
     const filteredFields = rawFields
@@ -211,14 +211,11 @@ async function loadDynamicFieldsForClient(contactsToken: string, namespace: stri
       return;
     }
 
-    const valuesResp = await listDynamicFieldValues(contactsToken, namespace, entityId);
-    const valueRows = valuesResp.dynamicFieldValues?.rows || [];
+    const valueRows = valuesResp?.rows || [];
     const nextValues: Record<string, DynamicFieldValue> = {};
-
     for (const value of valueRows) {
       nextValues[value.fieldId] = value;
     }
-
     dynamicFieldValues.value = nextValues;
 
     const nextDrafts: Record<string, string | number | boolean | string[]> = {};
@@ -256,7 +253,6 @@ async function loadDynamicFieldsForClient(contactsToken: string, namespace: stri
         nextDrafts[field.id] = existingValue.valueString || '';
       }
     }
-
     dynamicFieldDrafts.value = nextDrafts;
   } catch (error) {
     if (isDynamicFieldsEmptyStateError(error)) {
@@ -373,11 +369,6 @@ async function saveDynamicFields() {
   }
 }
 
-function isUnimplementedError(error: unknown): boolean {
-  const message = String((error as any)?.message || error || '');
-  return message.includes('Unimplemented') || message.includes('not implemented');
-}
-
 function getClientDisplayName(row: ClientRow | null | undefined): string {
   if (!row) return '';
 
@@ -402,34 +393,12 @@ function getClientDisplayName(row: ClientRow | null | undefined): string {
   return '';
 }
 
-async function tryEnrichClient(contactsToken: string, namespace: string) {
-  if (!client.value) return;
-  if (client.value.individual || client.value.legalEntity) return;
-
-  try {
-    const list = await contactsListClients(contactsToken, namespace, {
-      search: client.value.client.id,
-      pagination: { page: 1, length: 'TEN' },
-    });
-    const matched = (list.rows || []).find((row) => row.client.id === client.value?.client.id);
-    if (!matched || !client.value) return;
-
-    client.value = {
-      ...client.value,
-      individual: matched.individual,
-      legalEntity: matched.legalEntity,
-    };
-  } catch (error) {
-    logError('Failed to enrich client with list fallback:', error);
-  }
-}
-
 async function resolveIdentityDisplayValues(contactsToken: string, namespace: string) {
   const displayMap: Record<string, string> = {};
   const targetMap: Record<string, string> = {};
   const identityRows = identities.value || [];
 
-  const relatedClientRefs = Array.from(
+  const relatedRefs = Array.from(
     new Set(
       identityRows
         .filter((item) => (item.type === 'contact_person' || item.type === 'company') && item.value?.trim())
@@ -438,50 +407,17 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   );
 
   const relatedNames: Record<string, string> = {};
-  await Promise.all(relatedClientRefs.map(async (clientRef) => {
-    try {
-      const related = await getClient(contactsToken, namespace, clientRef);
-      const relatedName = getClientDisplayName(related as ClientRow);
 
-      if (relatedName) {
-        relatedNames[clientRef] = relatedName;
-      }
-
-      if (related?.client?.shortId) {
-        targetMap[clientRef] = related.client.shortId;
-      }
-
-      if (related?.client?.id) {
-        targetMap[related.client.id] = related.client.shortId || related.client.id;
-      }
-    } catch {
-      // ignore unresolved related clients
+  if (relatedRefs.length > 0) {
+    const results = await getClientsBatch(contactsToken, namespace, relatedRefs);
+    for (const [ref, related] of Object.entries(results)) {
+      if (!related) continue;
+      const name = getClientDisplayName(related as ClientRow);
+      if (name) relatedNames[ref] = name;
+      if (related.client?.shortId) targetMap[ref] = related.client.shortId;
+      if (related.client?.id) targetMap[related.client.id] = related.client.shortId || related.client.id;
     }
-  }));
-
-  const unresolvedRefs = relatedClientRefs.filter((ref) => !relatedNames[ref]);
-  await Promise.all(unresolvedRefs.map(async (clientRef) => {
-    try {
-      const list = await contactsListClients(contactsToken, namespace, {
-        search: clientRef,
-        pagination: { page: 1, length: 'TEN' },
-      });
-      const matched = (list.rows || []).find((row) => row.client.id === clientRef || row.client.shortId === clientRef);
-      if (!matched) return;
-
-      const relatedName = getClientDisplayName(matched);
-      if (relatedName) {
-        relatedNames[clientRef] = relatedName;
-      }
-
-      targetMap[clientRef] = matched.client.shortId || matched.client.id;
-      if (matched.client.id) {
-        targetMap[matched.client.id] = matched.client.shortId || matched.client.id;
-      }
-    } catch {
-      // ignore unresolved related clients
-    }
-  }));
+  }
 
   for (const item of identityRows) {
     const identityRef = item.value?.trim() || '';
@@ -489,11 +425,10 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
     if (item.type === 'company' || item.type === 'contact_person') {
       const resolvedName = relatedNames[identityRef] || '';
       const comments = item.comments?.trim() || '';
-      // Prefer resolved name, then comments, then label (but avoid shortId-like values)
-      const displayName = resolvedName
-        || (comments && !comments.match(/^[a-z0-9]{8}$/) ? comments : '') // Avoid shortId-like pattern
+      const name = resolvedName
+        || (comments && !comments.match(/^[a-z0-9]{8}$/) ? comments : '')
         || t('contacts.relatedClient');
-      displayMap[item.id] = displayName;
+      displayMap[item.id] = name;
       continue;
     }
 
@@ -917,104 +852,26 @@ async function loadClient() {
       stampCardsList = pageData.stampCards || [];
       stampCards.value = stampCardsList;
 
-      await tryEnrichClient(contactsToken, selectedNS.value);
       await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
     } catch (aggregatedError) {
-      logError('Failed to load aggregated client page data, falling back:', aggregatedError);
-
-      const clientData = await getClient(contactsToken, selectedNS.value, clientId.value);
-      if (!clientData) {
-        toast.add({
-          title: t('common.error'),
-          description: t('contacts.loadError'),
-          color: 'red',
-        });
-        router.push(`/${selectedNS.value}/contacts`);
-        return;
-      }
-
-      client.value = clientData;
-      await tryEnrichClient(contactsToken, selectedNS.value);
-
-      fullClientId = client.value.client.id;
-
-      const [identitiesResult, tagsResult, eventsResult, bonusBalanceResult, stampCardsResult] =
-        await Promise.allSettled([
-          getClientIdentities(contactsToken, fullClientId, selectedNS.value),
-          getClientTags(contactsToken, selectedNS.value, fullClientId),
-          getClientEvents(contactsToken, fullClientId),
-          getBonusBalance(contactsToken, fullClientId),
-          getStampCards(contactsToken),
-        ]);
-
-      if (identitiesResult.status === 'fulfilled') {
-        try {
-          identities.value = identitiesResult.value.clientIdentities.rows;
-          await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
-        } catch (error) {
-          logError('Failed to process identities:', error);
-          identities.value = [];
-          identityDisplayValues.value = {};
-          relatedClientTargets.value = {};
-        }
-      } else {
-        if (!isUnimplementedError(identitiesResult.reason)) {
-          logError('Failed to load identities:', identitiesResult.reason);
-        }
-        identities.value = [];
-        identityDisplayValues.value = {};
-        relatedClientTargets.value = {};
-      }
-
-      if (tagsResult.status === 'fulfilled') {
-        tags.value = tagsResult.value.clientTags?.tags || (tagsResult.value as any).tags || [];
-      } else {
-        if (!isUnimplementedError(tagsResult.reason)) {
-          logError('Failed to load tags:', tagsResult.reason);
-        }
-        tags.value = [];
-      }
-
-      if (eventsResult.status === 'fulfilled') {
-        events.value = eventsResult.value.rows.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-      } else {
-        if (!isUnimplementedError(eventsResult.reason)) {
-          logError('Failed to load events:', eventsResult.reason);
-        }
-        events.value = [];
-      }
-
-      if (bonusBalanceResult.status === 'fulfilled') {
-        bonusBalance.value = bonusBalanceResult.value;
-      } else {
-        if (!isUnimplementedError(bonusBalanceResult.reason)) {
-          logError('Failed to load bonus balance:', bonusBalanceResult.reason);
-        }
-        bonusBalance.value = null;
-      }
-
-      if (stampCardsResult.status === 'fulfilled' && stampCardsResult.value) {
-        stampCardsList = stampCardsResult.value;
-        stampCards.value = stampCardsList;
-      } else {
-        if (stampCardsResult.status === 'rejected' && !isUnimplementedError(stampCardsResult.reason)) {
-          logError('Failed to load stamp cards:', stampCardsResult.reason);
-        }
-        stampCardsList = [];
-        stampCards.value = [];
-      }
+      logError('Failed to load client page data:', aggregatedError);
+      toast.add({
+        title: t('common.error'),
+        description: t('contacts.loadError'),
+        color: 'red',
+      });
+      router.push(`/${selectedNS.value}/contacts`);
+      return;
     }
 
-    // Process stamp cards and progress (separate round-trip per card is still required by API)
+    // Fetch stamp progress for all cards in one batched request
     if (stampCardsList.length > 0 && fullClientId) {
       try {
-        const progressPromises = stampCardsList.map(card =>
-          getClientStampProgress(contactsToken, fullClientId, card.id),
+        stampProgress.value = await getClientStampProgressBatch(
+          contactsToken,
+          fullClientId,
+          stampCardsList.map((c) => c.id),
         );
-        const progressResults = await Promise.all(progressPromises);
-        stampProgress.value = progressResults.filter(p => p !== null) as ClientStampProgress[];
       } catch (error) {
         logError('Failed to load stamp progress:', error);
         stampProgress.value = [];

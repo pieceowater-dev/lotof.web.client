@@ -208,6 +208,59 @@ const DELETE_DYNAMIC_FIELD_VALUE_MUTATION = gql`
   }
 `;
 
+const DYNAMIC_FIELDS_WITH_VALUES_QUERY = gql`
+  query DynamicFieldsWithValues($filter: DynamicFieldFilterInput, $entityId: ID!) {
+    dynamicFields(filter: $filter) {
+      rows {
+        id
+        key
+        label
+        viewOrder
+        options
+        dataType
+        isRequired
+        searchable
+        clientTypeScope
+        createdBy
+        createdAt
+        deletedAt
+        deletedBy
+      }
+    }
+    dynamicFieldValues(entityId: $entityId) {
+      rows {
+        id
+        fieldId
+        entityId
+        valueString
+        valueNumber
+        valueBool
+        valueDate
+        valueJson
+        updatedAt
+      }
+    }
+  }
+`;
+
+export async function listDynamicFieldsWithValues(
+  token: string,
+  namespaceSlug: string,
+  entityId: string,
+  filter?: DynamicFieldFilterInput,
+) {
+  if (!token) throw new Error('Token is required');
+  setContactsAppToken(token);
+  return contactsClient.request<{
+    dynamicFields: { rows: DynamicField[] };
+    dynamicFieldValues: { rows: DynamicFieldValue[] };
+  }>(
+    DYNAMIC_FIELDS_WITH_VALUES_QUERY,
+    { filter: filter || {}, entityId },
+    { headers: { Namespace: namespaceSlug } },
+  );
+}
+
 export async function listDynamicFields(token: string, namespaceSlug: string, filter?: DynamicFieldFilterInput) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);

@@ -37,13 +37,15 @@ const CLIENT_PAGE_DATA_QUERY = gql`
   query ClientPageData(
     $id: ID!
     $shortId: String!
-    $isUuid: Boolean!
+    $loadById: Boolean!
+    $loadByShortId: Boolean!
     $clientIdForRelated: ID!
     $loadRelated: Boolean!
+    $loadStampCards: Boolean!
     $eventsLimit: Int!
     $eventsOffset: Int!
   ) {
-    client(id: $id) @include(if: $isUuid) {
+    client(id: $id) @include(if: $loadById) {
       client {
         id
         shortId
@@ -73,7 +75,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
       }
     }
 
-    clientByShortId(shortId: $shortId) @skip(if: $isUuid) {
+    clientByShortId(shortId: $shortId) @include(if: $loadByShortId) {
       client {
         id
         shortId
@@ -140,7 +142,7 @@ const CLIENT_PAGE_DATA_QUERY = gql`
       updatedAt
     }
 
-    stampCards {
+    stampCards @include(if: $loadStampCards) {
       rows {
         id
         name
@@ -153,6 +155,17 @@ const CLIENT_PAGE_DATA_QUERY = gql`
         validUntil
         createdAt
         updatedAt
+      }
+    }
+  }
+`;
+
+const RESOLVE_CLIENT_BY_SHORT_ID_QUERY = gql`
+  query ResolveClientByShortId($shortId: String!) {
+    clientByShortId(shortId: $shortId) {
+      client {
+        id
+        shortId
       }
     }
   }
@@ -174,17 +187,41 @@ export async function getClientPageData(
   setContactsAppToken(token);
 
   const isUuid = isUUID(idOrShortId);
-  const clientIdForRelated = isUuid ? idOrShortId : '00000000-0000-0000-0000-000000000000';
-  const loadRelated = isUuid;
+  let resolvedId = idOrShortId;
+
+  if (!isUuid) {
+    const resolveData = await contactsClient.request<{
+      clientByShortId?: { client?: { id: string; shortId?: string } };
+    }>(
+      RESOLVE_CLIENT_BY_SHORT_ID_QUERY,
+      { shortId: idOrShortId },
+      { headers: { Namespace: namespaceSlug } },
+    );
+
+    const resolved = resolveData.clientByShortId?.client?.id;
+    if (!resolved) {
+      return {
+        client: null,
+        identities: [],
+        tags: [],
+        events: [],
+        bonusBalance: null,
+        stampCards: [],
+      };
+    }
+    resolvedId = resolved;
+  }
 
   const data = await contactsClient.request<ClientPageDataResponse>(
     CLIENT_PAGE_DATA_QUERY,
     {
-      id: idOrShortId,
-      shortId: idOrShortId,
-      isUuid,
-      clientIdForRelated,
-      loadRelated,
+      id: resolvedId,
+      shortId: resolvedId,
+      loadById: true,
+      loadByShortId: false,
+      clientIdForRelated: resolvedId,
+      loadRelated: true,
+      loadStampCards: true,
       eventsLimit,
       eventsOffset,
     },
@@ -199,32 +236,6 @@ export async function getClientPageData(
   let events = data.clientEvents?.rows || [];
   let bonusBalance = data.bonusBalance || null;
   let stampCards = data.stampCards?.rows || [];
-
-  if (!isUuid && resolvedClient?.client.id) {
-    const resolvedId = resolvedClient.client.id;
-    const fullData = await contactsClient.request<ClientPageDataResponse>(
-      CLIENT_PAGE_DATA_QUERY,
-      {
-        id: resolvedId,
-        shortId: resolvedId,
-        isUuid: true,
-        clientIdForRelated: resolvedId,
-        loadRelated: true,
-        eventsLimit,
-        eventsOffset,
-      },
-      {
-        headers: { Namespace: namespaceSlug },
-      },
-    );
-
-    resolvedClient = fullData.client || resolvedClient;
-    identities = fullData.clientIdentities?.rows || [];
-    tags = fullData.clientTags?.tags || resolvedClient?.tags || [];
-    events = fullData.clientEvents?.rows || [];
-    bonusBalance = fullData.bonusBalance || null;
-    stampCards = fullData.stampCards?.rows || [];
-  }
 
   const resolvedClientId = resolvedClient?.client.id || '';
 
