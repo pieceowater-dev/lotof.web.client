@@ -6,7 +6,6 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { logError } from '@/utils/logger';
 import { contactsUpdateClientStatus, contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { type ClientRow } from '@/api/contacts/listClients';
-import { getClientsBatch } from '@/api/contacts/getClient';
 import { createIdentity, deleteIdentity, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
 import { type ClientEvent } from '@/api/contacts/events';
 import { getClientStampProgressBatch, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
@@ -369,66 +368,20 @@ async function saveDynamicFields() {
   }
 }
 
-function getClientDisplayName(row: ClientRow | null | undefined): string {
-  if (!row) return '';
-
-  // INDIVIDUAL: try to build FIO from provided data
-  if (row.client.clientType === 'INDIVIDUAL') {
-    if (row.individual) {
-      const fullName = [row.individual.lastName, row.individual.firstName, row.individual.middleName]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-      if (fullName) return fullName;
-    }
-  }
-
-  // LEGAL: try to get name from legal entity
-  if (row.legalEntity) {
-    if (row.legalEntity.legalName?.trim()) return row.legalEntity.legalName;
-    if (row.legalEntity.brandName?.trim()) return row.legalEntity.brandName;
-  }
-
-  // No synthetic fallback here: identities should show only real person/company names
-  return '';
-}
-
-async function resolveIdentityDisplayValues(contactsToken: string, namespace: string) {
+async function resolveIdentityDisplayValues() {
   const displayMap: Record<string, string> = {};
   const targetMap: Record<string, string> = {};
   const identityRows = identities.value || [];
-
-  const relatedRefs = Array.from(
-    new Set(
-      identityRows
-        .filter((item) => (item.type === 'contact_person' || item.type === 'company') && item.value?.trim())
-        .map((item) => item.value.trim()),
-    ),
-  );
-
-  const relatedNames: Record<string, string> = {};
-
-  if (relatedRefs.length > 0) {
-    const results = await getClientsBatch(contactsToken, namespace, relatedRefs);
-    for (const [ref, related] of Object.entries(results)) {
-      if (!related) continue;
-      const name = getClientDisplayName(related as ClientRow);
-      if (name) relatedNames[ref] = name;
-      if (related.client?.shortId) targetMap[ref] = related.client.shortId;
-      if (related.client?.id) targetMap[related.client.id] = related.client.shortId || related.client.id;
-    }
-  }
 
   for (const item of identityRows) {
     const identityRef = item.value?.trim() || '';
 
     if (item.type === 'company' || item.type === 'contact_person') {
-      const resolvedName = relatedNames[identityRef] || '';
       const comments = item.comments?.trim() || '';
-      const name = resolvedName
-        || (comments && !comments.match(/^[a-z0-9]{8}$/) ? comments : '')
+      const name = (comments && !comments.match(/^[a-z0-9]{8}$/i) ? comments : '')
         || t('contacts.relatedClient');
       displayMap[item.id] = name;
+      targetMap[item.id] = identityRef;
       continue;
     }
 
@@ -441,14 +394,7 @@ async function resolveIdentityDisplayValues(contactsToken: string, namespace: st
   }
 
   identityDisplayValues.value = displayMap;
-  relatedClientTargets.value = Object.fromEntries(
-    identityRows
-      .filter((item) => item.type === 'company' || item.type === 'contact_person')
-      .map((item) => {
-        const identityRef = item.value?.trim() || '';
-        return [item.id, targetMap[identityRef] || identityRef];
-      }),
-  );
+  relatedClientTargets.value = targetMap;
 }
 
 function openRelatedClient(identity: ClientIdentity) {
@@ -852,7 +798,7 @@ async function loadClient() {
       stampCardsList = pageData.stampCards || [];
       stampCards.value = stampCardsList;
 
-      await resolveIdentityDisplayValues(contactsToken, selectedNS.value);
+      await resolveIdentityDisplayValues();
     } catch (aggregatedError) {
       logError('Failed to load client page data:', aggregatedError);
       toast.add({
