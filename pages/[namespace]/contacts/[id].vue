@@ -19,6 +19,7 @@ import {
   type DynamicFieldValue,
 } from '@/api/contacts/dynamicFields';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
+import { getClientsBatch } from '@/api/contacts/getClient';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import ContactHeader from '@/components/contacts/ContactHeader.vue';
@@ -116,6 +117,7 @@ const editingTelegrams = ref<string[]>([]);
 const editingWhatsapps = ref<string[]>([]);
 const identityDisplayValues = ref<Record<string, string>>({});
 const relatedClientTargets = ref<Record<string, string>>({});
+const relatedClientNames = ref<Record<string, string>>({});
 
 const contactPersonIdentities = computed(() =>
   identities.value.filter((i) => i.type === 'contact_person'),
@@ -370,6 +372,47 @@ async function saveDynamicFields() {
   }
 }
 
+async function loadRelatedClientNames() {
+  if (!contactsAppToken.value || !selectedNS.value) return;
+  
+  const identityRows = identities.value || [];
+  const relatedClientIds: string[] = [];
+  
+  for (const item of identityRows) {
+    if ((item.type === 'company' || item.type === 'contact_person') && item.value?.trim()) {
+      relatedClientIds.push(item.value.trim());
+    }
+  }
+  
+  if (relatedClientIds.length === 0) return;
+  
+  try {
+    const clientsMap = await getClientsBatch(contactsAppToken.value, selectedNS.value, relatedClientIds);
+    const namesMap: Record<string, string> = {};
+    
+    for (const id of relatedClientIds) {
+      const clientData = clientsMap[id];
+      if (!clientData) continue;
+      
+      let name = '';
+      if (clientData.client.clientType === 'INDIVIDUAL' && clientData.individual) {
+        const parts = [clientData.individual.lastName, clientData.individual.firstName].filter(Boolean);
+        name = parts.join(' ');
+      } else if (clientData.legalEntity?.legalName) {
+        name = clientData.legalEntity.legalName;
+      }
+      
+      if (name) {
+        namesMap[id] = name;
+      }
+    }
+    
+    relatedClientNames.value = namesMap;
+  } catch (error) {
+    logError('Failed to load related client names:', error);
+  }
+}
+
 async function resolveIdentityDisplayValues() {
   const displayMap: Record<string, string> = {};
   const targetMap: Record<string, string> = {};
@@ -379,9 +422,13 @@ async function resolveIdentityDisplayValues() {
     const identityRef = item.value?.trim() || '';
 
     if (item.type === 'company' || item.type === 'contact_person') {
+      // First try to use the loaded client name
+      const clientName = relatedClientNames.value[identityRef];
+      // Fall back to comments if it looks like a custom name (not a short ID)
       const comments = item.comments?.trim() || '';
-      const name = (comments && !comments.match(/^[a-z0-9]{8}$/i) ? comments : '')
-        || t('contacts.relatedClient');
+      const customName = comments && !comments.match(/^[a-z0-9]{8}$/i) ? comments : '';
+      // Use: clientName > customName > default text
+      const name = clientName || customName || t('contacts.relatedClient');
       displayMap[item.id] = name;
       targetMap[item.id] = identityRef;
       continue;
@@ -860,6 +907,7 @@ async function loadClient() {
       stampCardsList = pageData.stampCards || [];
       stampCards.value = stampCardsList;
 
+      await loadRelatedClientNames();
       await resolveIdentityDisplayValues();
 
       // Always load timeline by full UUID to ensure all related client events are returned.
