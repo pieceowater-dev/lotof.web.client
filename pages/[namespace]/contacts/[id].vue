@@ -7,9 +7,10 @@ import { logError } from '@/utils/logger';
 import { contactsUpdateClientStatus, contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { type ClientRow } from '@/api/contacts/listClients';
 import { createIdentity, deleteIdentity, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
-import { type ClientEvent } from '@/api/contacts/events';
+import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
 import { getClientStampProgressBatch, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
 import { getClientPageData } from '@/api/contacts/clientPage';
+import { listTags } from '@/api/contacts/tags';
 import {
   listDynamicFieldsWithValues,
   setDynamicFieldValue,
@@ -46,7 +47,11 @@ const createdByUserId = computed(() => user.value?.id || '00000000-0000-0000-000
 const client = ref<ClientRow | null>(null);
 const identities = ref<ClientIdentity[]>([]);
 const tags = ref<any[]>([]);
+const tagNameById = ref<Record<string, string>>({});
 const events = ref<ClientEvent[]>([]);
+const eventsTotal = ref(0);
+const eventsLoadingMore = ref(false);
+const fullClientIdForEvents = ref('');
 const bonusBalance = ref<BonusBalance | null>(null);
 const stampCards = ref<StampCard[]>([]);
 const stampProgress = ref<ClientStampProgress[]>([]);
@@ -60,6 +65,21 @@ const loading = ref(true);
 const statusChangeLoading = ref(false);
 const isTagsModalOpen = ref(false);
 const isClientDataStale = ref(false);
+const EVENTS_PAGE_SIZE = 30;
+
+const hasMoreEvents = computed(() => {
+  return events.value.length < eventsTotal.value;
+});
+
+const dynamicFieldNameById = computed<Record<string, string>>(() => {
+  const map: Record<string, string> = {};
+  for (const field of dynamicFields.value) {
+    if (field.id && field.label) {
+      map[field.id] = field.label;
+    }
+  }
+  return map;
+});
 
 let stopClientSubscription: (() => void) | null = null;
 
@@ -444,6 +464,48 @@ async function refreshStaleClientData() {
   isClientDataStale.value = false;
 }
 
+function sortEventsByDateDesc(rows: ClientEvent[]): ClientEvent[] {
+  return rows.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+function mergeUniqueEvents(existingRows: ClientEvent[], incomingRows: ClientEvent[]): ClientEvent[] {
+  const byId = new Map<string, ClientEvent>();
+  for (const row of existingRows) {
+    byId.set(row.id, row);
+  }
+  for (const row of incomingRows) {
+    byId.set(row.id, row);
+  }
+  return sortEventsByDateDesc(Array.from(byId.values()));
+}
+
+async function loadMoreEvents() {
+  if (!contactsAppToken.value || !fullClientIdForEvents.value || eventsLoadingMore.value) {
+    return;
+  }
+  if (eventsTotal.value > 0 && events.value.length >= eventsTotal.value) {
+    return;
+  }
+
+  try {
+    eventsLoadingMore.value = true;
+    const eventsData = await getClientEvents(
+      contactsAppToken.value,
+      fullClientIdForEvents.value,
+      EVENTS_PAGE_SIZE,
+      events.value.length,
+    );
+
+    const nextRows = sortEventsByDateDesc(eventsData.rows || []);
+    events.value = mergeUniqueEvents(events.value, nextRows);
+    eventsTotal.value = Number(eventsData.info?.count || 0);
+  } catch (eventsError) {
+    logError('Failed to load more client events by full client id:', eventsError);
+  } finally {
+    eventsLoadingMore.value = false;
+  }
+}
+
 async function loadClient() {
   // Use mock data for preview
   if (useMockData.value) {
@@ -773,14 +835,46 @@ async function loadClient() {
       fullClientId = pageData.client.client.id;
       identities.value = pageData.identities;
       tags.value = pageData.tags;
-      events.value = (pageData.events || []).sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
+      tagNameById.value = {};
+
+      try {
+        const allTagsData = await listTags(contactsToken, selectedNS.value);
+        const nextTagNameById: Record<string, string> = {};
+        for (const tag of (allTagsData?.tags?.rows || [])) {
+          if (tag.id && tag.name) {
+            nextTagNameById[tag.id] = tag.name;
+          }
+        }
+        for (const tag of (pageData.tags || [])) {
+          if (tag.id && tag.name) {
+            nextTagNameById[tag.id] = tag.name;
+          }
+        }
+        tagNameById.value = nextTagNameById;
+      } catch (tagsError) {
+        logError('Failed to load tags for timeline tag-name mapping:', tagsError);
+      }
+
+      events.value = [];
       bonusBalance.value = pageData.bonusBalance;
       stampCardsList = pageData.stampCards || [];
       stampCards.value = stampCardsList;
 
       await resolveIdentityDisplayValues();
+
+      // Always load timeline by full UUID to ensure all related client events are returned.
+      fullClientIdForEvents.value = fullClientId;
+      events.value = [];
+      eventsTotal.value = 0;
+      try {
+        const eventsData = await getClientEvents(contactsToken, fullClientId, EVENTS_PAGE_SIZE, 0);
+        events.value = sortEventsByDateDesc(eventsData.rows || []);
+        eventsTotal.value = Number(eventsData.info?.count || events.value.length);
+      } catch (eventsError) {
+        logError('Failed to load client events by full client id:', eventsError);
+        events.value = sortEventsByDateDesc(pageData.events || []);
+        eventsTotal.value = events.value.length;
+      }
     } catch (aggregatedError) {
       logError('Failed to load client page data:', aggregatedError);
       toast.add({
@@ -999,6 +1093,17 @@ async function savePersonalInfo() {
           additionalInfo,
         );
       }
+    } else if (additionalInfo) {
+      // Persist additional info even when client has no existing identities.
+      await createIdentity(
+        contactsToken,
+        selectedNS.value,
+        client.value.client.id,
+        'company',
+        client.value.client.shortId || client.value.client.id,
+        false,
+        additionalInfo,
+      );
     }
 
     editMode.value.personalInfo = false;
@@ -1497,7 +1602,15 @@ function removeWhatsappField(index: number) {
 
         <!-- Right Column - Timeline -->
         <div class="lg:col-span-1">
-          <ContactTimeline :events="events" />
+          <ContactTimeline
+            :events="events"
+            :tag-name-by-id="tagNameById"
+            :dynamic-field-name-by-id="dynamicFieldNameById"
+            :loading="loading"
+            :has-more="hasMoreEvents"
+            :loading-more="eventsLoadingMore"
+            @load-more="loadMoreEvents"
+          />
         </div>
       </div>
     </div>

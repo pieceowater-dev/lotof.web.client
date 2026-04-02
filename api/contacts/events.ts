@@ -73,7 +73,8 @@ export function parseEventPayload(payload: string): Record<string, any> {
 }
 
 // Get human-readable event type description
-export function getEventDescription(eventType: string, payload?: Record<string, any>): string {
+export function getEventDescription(eventType: string, _payload?: Record<string, any>): string {
+  const normalized = String(eventType || '').toLowerCase();
   const descriptions: Record<string, string> = {
     'CLIENT_CREATED': 'Клиент создан',
     'CLIENT_UPDATED': 'Клиент обновлен',
@@ -83,12 +84,25 @@ export function getEventDescription(eventType: string, payload?: Record<string, 
     'IDENTITY_VERIFIED': 'Контакт верифицирован',
     'TAG_ADDED': 'Добавлен тег',
     'TAG_REMOVED': 'Тег удален',
+    'client_created': 'Клиент создан',
+    'client_updated': 'Клиент обновлен',
+    'client_status_changed': 'Статус клиента изменен',
+    'identity_created': 'Добавлен контакт',
+    'identity_updated': 'Контакт обновлен',
+    'identity_deleted': 'Контакт удален',
+    'tag_created': 'Добавлен тег',
+    'tag_updated': 'Тег обновлен',
+    'tag_deleted': 'Тег удален',
+    'segment_created': 'Добавлен сегмент',
+    'segment_updated': 'Сегмент обновлен',
+    'segment_deleted': 'Сегмент удален',
   };
-  return descriptions[eventType] || eventType;
+  return descriptions[eventType] || descriptions[normalized] || eventType;
 }
 
 // Get icon for event type
 export function getEventIcon(eventType: string): string {
+  const normalized = String(eventType || '').toLowerCase();
   const icons: Record<string, string> = {
     'CLIENT_CREATED': 'lucide:user-plus',
     'CLIENT_UPDATED': 'lucide:edit',
@@ -98,6 +112,18 @@ export function getEventIcon(eventType: string): string {
     'IDENTITY_VERIFIED': 'lucide:check-circle',
     'TAG_ADDED': 'lucide:tag',
     'TAG_REMOVED': 'lucide:x-circle',
+    'client_created': 'lucide:user-plus',
+    'client_updated': 'lucide:edit',
+    'client_status_changed': 'lucide:toggle-right',
+    'identity_created': 'lucide:plus-circle',
+    'identity_updated': 'lucide:edit-3',
+    'identity_deleted': 'lucide:minus-circle',
+    'tag_created': 'lucide:tag',
+    'tag_updated': 'lucide:tag',
+    'tag_deleted': 'lucide:x-circle',
+    'segment_created': 'lucide:layers',
+    'segment_updated': 'lucide:layers',
+    'segment_deleted': 'lucide:layers-3',
   };
-  return icons[eventType] || 'lucide:activity';
+  return icons[eventType] || icons[normalized] || 'lucide:activity';
 }
