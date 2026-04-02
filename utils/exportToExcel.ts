@@ -149,7 +149,7 @@ function generateDateRange(startDate: string, endDate: string, locale: string): 
     dates.push(iso);
     const ddmmyyyy = d
       .toLocaleDateString(localeId, { day: '2-digit', month: '2-digit', year: 'numeric' })
-      .replace(/[\/]/g, '.');
+      .replace(/[/]/g, '.');
     displayDates.push(ddmmyyyy);
   }
   

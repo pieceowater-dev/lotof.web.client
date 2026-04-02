@@ -18,7 +18,7 @@ export default defineNuxtPlugin(() => {
     /**
      * Check if error message indicates subscription expiration
      */
-    function isSubscriptionExpiredError(errorMessage: string): boolean {
+    const isSubscriptionExpiredError = (errorMessage: string): boolean => {
       return (
         errorMessage.includes('subscription_expired') ||
         errorMessage.includes('subscription has expired') ||
@@ -26,20 +26,20 @@ export default defineNuxtPlugin(() => {
       );
     }
 
-    function extractSubscriptionKey(errorMessage: string): string {
+    const extractSubscriptionKey = (errorMessage: string): string => {
       const marker = 'subscription_expired:';
       if (errorMessage.includes(marker)) {
         const raw = errorMessage.split(marker)[1]?.trim();
         if (raw) return raw;
       }
       return 'billing.subscriptionExpired';
-    }
+    };
 
     /**
      * Handle GraphQL errors globally
      * This is called from API error handlers
      */
-    function handleGraphQLError(error: any) {
+    const handleGraphQLError = (error: any) => {
       if (!error) return;
 
       const errorMessages: string[] = [];
@@ -91,17 +91,17 @@ export default defineNuxtPlugin(() => {
     /**
      * Clear subscription error state
      */
-    function clearSubscriptionError() {
+    const clearSubscriptionError = () => {
       subscriptionError.value = null;
       subscriptionErrorShown.value = false;
-    }
+    };
 
     /**
      * Mark subscription error as shown (to prevent multiple modals)
      */
-    function markSubscriptionErrorShown() {
+    const markSubscriptionErrorShown = () => {
       subscriptionErrorShown.value = true;
-    }
+    };
 
     // Provide globally
     return {

@@ -180,13 +180,14 @@ const dateRange = computed(() => {
       // From 1st of current month to today
       startDate = new Date(today.getFullYear(), today.getMonth(), 1);
       break;
-    case 'week':
+    case 'week': {
       // From Monday of current week to today
       const dayOfWeek = today.getDay();
       const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Monday is 1
       startDate = new Date(today);
       startDate.setDate(today.getDate() + diff);
       break;
+    }
     case '3months':
       // 3 months ago to today
       startDate = new Date(today);
@@ -479,16 +480,16 @@ function formatNumber(val: number, fractionDigits = 0) {
         <UButton 
           :color="selectedPeriod === 'week' ? 'primary' : 'gray'" 
           size="sm"
-          @click="selectedPeriod = 'week'"
           class="hidden md:inline-flex"
+          @click="selectedPeriod = 'week'"
         >
           {{ t('app.thisWeek') }}
         </UButton>
         <UButton 
           :color="selectedPeriod === '3months' ? 'primary' : 'gray'" 
           size="sm"
-          @click="selectedPeriod = '3months'"
           class="hidden md:inline-flex"
+          @click="selectedPeriod = '3months'"
         >
           {{ t('app.last3Months') }}
         </UButton>
@@ -512,7 +513,12 @@ function formatNumber(val: number, fractionDigits = 0) {
         >
           {{ t('app.exportToExcel') || 'Export' }}
         </UButton>
-        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="openSettings">
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="i-heroicons-cog-6-tooth"
+          @click="openSettings"
+        >
           {{ t('app.configureTime') }}
         </UButton>
       </div>
@@ -520,15 +526,15 @@ function formatNumber(val: number, fractionDigits = 0) {
       <!-- Legend - full on desktop -->
       <div class="hidden md:flex items-center gap-2 text-xs ml-auto">
         <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+          <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" />
           <span>{{ t('app.violationDay') }}</span>
         </div>
         <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+          <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
           <span>{{ t('app.legitimateDay') }}</span>
         </div>
         <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+          <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700" />
           <span>{{ t('app.timeViolation') }}</span>
         </div>
       </div>
@@ -545,18 +551,34 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Export Error -->
-    <div v-if="exportError" class="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200">
+    <div
+      v-if="exportError"
+      class="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200"
+    >
       {{ exportError }}
     </div>
 
     <!-- Settings Panel -->
-    <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex-shrink-0 space-y-3">
+    <div
+      v-if="showSettings"
+      class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex-shrink-0 space-y-3"
+    >
       <div class="flex items-center justify-between gap-2">
         <div>
-          <div class="text-sm font-semibold leading-tight">{{ t('app.timeThresholds') }}</div>
-          <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.timeThresholdsHint') || 'Используется для подсветки опозданий/ранних уходов' }}</div>
+          <div class="text-sm font-semibold leading-tight">
+            {{ t('app.timeThresholds') }}
+          </div>
+          <div class="text-xs text-gray-500 dark:text-gray-400">
+            {{ t('app.timeThresholdsHint') || 'Используется для подсветки опозданий/ранних уходов' }}
+          </div>
         </div>
-        <UButton size="xs" color="primary" variant="solid" icon="i-heroicons-check" @click="applyTimeSettings">
+        <UButton
+          size="xs"
+          color="primary"
+          variant="solid"
+          icon="i-heroicons-check"
+          @click="applyTimeSettings"
+        >
           {{ t('common.apply') || 'Применить' }}
         </UButton>
       </div>
@@ -580,38 +602,84 @@ function formatNumber(val: number, fractionDigits = 0) {
           />
         </UFormGroup>
       </div>
-      <div v-if="timeSettingsError" class="text-xs text-red-500">{{ timeSettingsError }}</div>
+      <div
+        v-if="timeSettingsError"
+        class="text-xs text-red-500"
+      >
+        {{ timeSettingsError }}
+      </div>
     </div>
 
     <!-- Stats Table -->
     <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
-
-      <div v-if="loading" class="flex flex-col items-center justify-center py-6">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300" />
-  <div class="text-sm">{{ t('app.loading') }}</div>
+      <div
+        v-if="loading"
+        class="flex flex-col items-center justify-center py-6"
+      >
+        <UIcon
+          name="i-heroicons-arrow-path"
+          class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300"
+        />
+        <div class="text-sm">
+          {{ t('app.loading') }}
+        </div>
       </div>
-      <div v-else-if="error" class="flex flex-col items-center justify-center py-6 text-red-500">
-        <UIcon name="i-heroicons-lock-closed" class="w-10 h-10 mb-1.5 text-red-400 dark:text-red-300" />
-        <div class="text-base font-semibold mb-1.5">{{ error }}</div>
-  <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.attendancePermissionErrorHint') }}</div>
+      <div
+        v-else-if="error"
+        class="flex flex-col items-center justify-center py-6 text-red-500"
+      >
+        <UIcon
+          name="i-heroicons-lock-closed"
+          class="w-10 h-10 mb-1.5 text-red-400 dark:text-red-300"
+        />
+        <div class="text-base font-semibold mb-1.5">
+          {{ error }}
+        </div>
+        <div class="text-xs text-gray-500 dark:text-gray-400">
+          {{ t('app.attendancePermissionErrorHint') }}
+        </div>
       </div>
-      <div v-else-if="stats.length === 0" class="text-gray-500 py-6 text-center flex flex-col items-center justify-center">
-        <UIcon name="i-heroicons-information-circle" class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300" />
-  <div class="text-sm">{{ t('app.noData') }}</div>
+      <div
+        v-else-if="stats.length === 0"
+        class="text-gray-500 py-6 text-center flex flex-col items-center justify-center"
+      >
+        <UIcon
+          name="i-heroicons-information-circle"
+          class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300"
+        />
+        <div class="text-sm">
+          {{ t('app.noData') }}
+        </div>
       </div>
-      <table v-else class="w-full text-sm">
+      <table
+        v-else
+        class="w-full text-sm"
+      >
         <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
           <tr>
-            <th class="px-3 py-2 text-left font-medium w-7"></th>
-            <th class="px-3 py-2 text-left font-medium">{{ t('app.user') }}</th>
-            <th class="px-3 py-2 text-center font-medium">{{ t('app.workDays') }}</th>
-            <th class="px-3 py-2 text-center font-medium">{{ t('app.attended') }}</th>
-            <th class="px-3 py-2 text-center font-medium">{{ t('app.violations') }}</th>
-            <th class="px-3 py-2 text-center font-medium">{{ t('app.exceptions') }}</th>
+            <th class="px-3 py-2 text-left font-medium w-7" />
+            <th class="px-3 py-2 text-left font-medium">
+              {{ t('app.user') }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.workDays') }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.attended') }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.violations') }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.exceptions') }}
+            </th>
           </tr>
         </thead>
         <tbody>
-          <template v-for="(user, index) in sortedStats" :key="user.userId">
+          <template
+            v-for="(user, index) in sortedStats"
+            :key="user.userId"
+          >
             <!-- Main row -->
             <tr 
               :class="[
@@ -639,10 +707,19 @@ function formatNumber(val: number, fractionDigits = 0) {
                 />
               </td>
               <td class="px-3 py-2">
-                <div class="font-medium leading-tight">{{ user.username || user.email || user.userId }}</div>
-                <div v-if="user.username && user.email" class="text-xs text-gray-500 leading-tight">{{ user.email }}</div>
+                <div class="font-medium leading-tight">
+                  {{ user.username || user.email || user.userId }}
+                </div>
+                <div
+                  v-if="user.username && user.email"
+                  class="text-xs text-gray-500 leading-tight"
+                >
+                  {{ user.email }}
+                </div>
               </td>
-              <td class="px-3 py-2 text-center">{{ user.workDays }}</td>
+              <td class="px-3 py-2 text-center">
+                {{ user.workDays }}
+              </td>
               <td class="px-3 py-2 text-center">
                 <span class="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
                   {{ user.attendedDays }}
@@ -655,7 +732,10 @@ function formatNumber(val: number, fractionDigits = 0) {
                 >
                   {{ user.violationDays }}
                 </span>
-                <span v-else class="text-gray-400">0</span>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >0</span>
               </td>
               <td class="px-3 py-2 text-center">
                 <span 
@@ -664,15 +744,26 @@ function formatNumber(val: number, fractionDigits = 0) {
                 >
                   {{ user.legitimateAbsences }}
                 </span>
-                <span v-else class="text-gray-400">0</span>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >0</span>
               </td>
             </tr>
 
             <!-- Expanded details row -->
-            <tr v-if="postId && isExpanded(user.userId)" class="bg-gray-50 dark:bg-gray-900">
-              <td :colspan="6" class="px-3 py-3">
+            <tr
+              v-if="postId && isExpanded(user.userId)"
+              class="bg-gray-50 dark:bg-gray-900"
+            >
+              <td
+                :colspan="6"
+                class="px-3 py-3"
+              >
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
-                  <h4 class="text-sm font-semibold mb-2">{{ t('app.attendanceDetails') }}</h4>
+                  <h4 class="text-sm font-semibold mb-2">
+                    {{ t('app.attendanceDetails') }}
+                  </h4>
                   <UserDayRecordsAccordion 
                     v-if="postId"
                     :post-id="postId"
@@ -691,26 +782,81 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Custom Date Range Modal -->
-    <UModal v-model="showDateModal" :ui="{ container: 'items-center', width: 'w-full max-w-2xl sm:max-w-3xl' }">
+    <UModal
+      v-model="showDateModal"
+      :ui="{ container: 'items-center', width: 'w-full max-w-2xl sm:max-w-3xl' }"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { padding: 'px-4 py-4 sm:px-6 sm:py-5' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <UIcon name="i-heroicons-calendar-days" class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
-              <h3 class="text-sm sm:text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.customRangeTitle') }}</h3>
+              <UIcon
+                name="i-heroicons-calendar-days"
+                class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500"
+              />
+              <h3 class="text-sm sm:text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                {{ t('app.customRangeTitle') }}
+              </h3>
             </div>
-            <UButton color="primary" variant="ghost" icon="lucide:x" size="sm" class="-my-1" @click="showDateModal = false" />
+            <UButton
+              color="primary"
+              variant="ghost"
+              icon="lucide:x"
+              size="sm"
+              class="-my-1"
+              @click="showDateModal = false"
+            />
           </div>
         </template>
 
         <div class="flex flex-col gap-4 overflow-x-hidden">
           <!-- Presets -->
           <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
-            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('today')">{{ t('app.datePresetToday') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('yesterday')">{{ t('app.datePresetYesterday') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('thisWeek')">{{ t('app.datePresetThisWeek') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('last7')">{{ t('app.datePresetLast7') }}</UButton>
-            <UButton size="sm" variant="soft" color="primary" class="text-xs" @click="applyPreset('last30')">{{ t('app.datePresetLast30') }}</UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="text-xs"
+              @click="applyPreset('today')"
+            >
+              {{ t('app.datePresetToday') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="text-xs"
+              @click="applyPreset('yesterday')"
+            >
+              {{ t('app.datePresetYesterday') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="text-xs"
+              @click="applyPreset('thisWeek')"
+            >
+              {{ t('app.datePresetThisWeek') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="text-xs"
+              @click="applyPreset('last7')"
+            >
+              {{ t('app.datePresetLast7') }}
+            </UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="text-xs"
+              @click="applyPreset('last30')"
+            >
+              {{ t('app.datePresetLast30') }}
+            </UButton>
           </div>
 
           <!-- Inputs -->
@@ -718,40 +864,73 @@ function formatNumber(val: number, fractionDigits = 0) {
             <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.startDate') }}</label>
               <div class="relative max-w-full overflow-hidden">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                <UIcon
+                  name="i-heroicons-calendar"
+                  class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
+                />
                 <input
                   v-model="customStartDate"
                   type="date"
                   class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isStartInvalid || hasRangeOrderIssue }"
-                />
+                >
               </div>
             </div>
             <div class="flex flex-col min-w-0">
               <label class="text-sm mb-1">{{ t('app.endDate') }}</label>
               <div class="relative max-w-full overflow-hidden">
-                <UIcon name="i-heroicons-calendar" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" />
+                <UIcon
+                  name="i-heroicons-calendar"
+                  class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
+                />
                 <input
                   v-model="customEndDate"
                   type="date"
                   class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isEndInvalid || hasRangeOrderIssue }"
-                />
+                >
               </div>
             </div>
           </div>
 
-          <div v-if="dateModalError || hasRangeOrderIssue || isStartInvalid || isEndInvalid" class="text-sm text-red-500">
+          <div
+            v-if="dateModalError || hasRangeOrderIssue || isStartInvalid || isEndInvalid"
+            class="text-sm text-red-500"
+          >
             {{ dateModalError || t('app.invalidDateRange') }}
           </div>
         </div>
 
         <template #footer>
           <div class="flex flex-col sm:flex-row justify-between w-full gap-2">
-            <UButton size="sm" variant="soft" color="primary" class="w-full sm:w-auto" @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }">{{ t('common.reset') }}</UButton>
+            <UButton
+              size="sm"
+              variant="soft"
+              color="primary"
+              class="w-full sm:w-auto"
+              @click="() => { customStartDate = ''; customEndDate = ''; dateModalError = null; }"
+            >
+              {{ t('common.reset') }}
+            </UButton>
             <div class="flex gap-2">
-              <UButton size="sm" variant="soft" color="primary" class="flex-1 sm:flex-none" @click="showDateModal = false">{{ t('common.cancel') }}</UButton>
-              <UButton size="sm" color="primary" class="flex-1 sm:flex-none" :disabled="!canApplyRange" @click="applyCustomRange">{{ t('common.apply') }}</UButton>
+              <UButton
+                size="sm"
+                variant="soft"
+                color="primary"
+                class="flex-1 sm:flex-none"
+                @click="showDateModal = false"
+              >
+                {{ t('common.cancel') }}
+              </UButton>
+              <UButton
+                size="sm"
+                color="primary"
+                class="flex-1 sm:flex-none"
+                :disabled="!canApplyRange"
+                @click="applyCustomRange"
+              >
+                {{ t('common.apply') }}
+              </UButton>
             </div>
           </div>
         </template>
@@ -759,15 +938,29 @@ function formatNumber(val: number, fractionDigits = 0) {
     </UModal>
 
     <!-- Salary Calculation Modal -->
-    <UModal v-model="showSalaryModal" :ui="{ container: 'items-center', width: 'w-full sm:max-w-2xl' }">
+    <UModal
+      v-model="showSalaryModal"
+      :ui="{ container: 'items-center', width: 'w-full sm:max-w-2xl' }"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <UIcon name="i-heroicons-calculator" class="w-6 h-6 text-green-500" />
-              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.salaryCalculation') }}</h3>
+              <UIcon
+                name="i-heroicons-calculator"
+                class="w-6 h-6 text-green-500"
+              />
+              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                {{ t('app.salaryCalculation') }}
+              </h3>
             </div>
-            <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="showSalaryModal = false" />
+            <UButton
+              color="primary"
+              variant="ghost"
+              icon="lucide:x"
+              class="-my-1"
+              @click="showSalaryModal = false"
+            />
           </div>
         </template>
 
@@ -780,43 +973,65 @@ function formatNumber(val: number, fractionDigits = 0) {
               type="number"
               class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:border-gray-700"
               :placeholder="t('app.enterSalary')"
-            />
-            <p class="text-xs text-gray-500 mt-1">{{ t('app.salaryStoredLocally') }}</p>
+            >
+            <p class="text-xs text-gray-500 mt-1">
+              {{ t('app.salaryStoredLocally') }}
+            </p>
           </div>
 
           <!-- Calculation Results Grid -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Working Days -->
             <div class="border rounded-lg p-4 dark:border-gray-700">
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ t('app.workingDaysInMonth') }}</p>
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(workingDaysInMonth) }} / 22</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                {{ t('app.workingDaysInMonth') }}
+              </p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {{ formatNumber(workingDaysInMonth) }} / 22
+              </p>
             </div>
 
             <!-- Total Worked Hours -->
             <div class="border rounded-lg p-4 dark:border-gray-700">
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ t('app.totalWorkedHours') }}</p>
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ formatNumber(totalWorkedHours, 2) }} / 176</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                {{ t('app.totalWorkedHours') }}
+              </p>
+              <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                {{ formatNumber(totalWorkedHours, 2) }} / 176
+              </p>
             </div>
           </div>
 
           <!-- Salary by Days -->
           <div class="border rounded-lg p-4 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">{{ t('app.salaryByDays') }}</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+              {{ t('app.salaryByDays') }}
+            </p>
             <div class="flex items-end gap-2">
               <div>
-                <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{{ formatNumber(salaryByDays, 2) }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ t('app.formula') }}: ({{ t('app.salary') }} / 22) × {{ formatNumber(workingDaysInMonth) }}</p>
+                <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {{ formatNumber(salaryByDays, 2) }}
+                </p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {{ t('app.formula') }}: ({{ t('app.salary') }} / 22) × {{ formatNumber(workingDaysInMonth) }}
+                </p>
               </div>
             </div>
           </div>
 
           <!-- Salary by Hours -->
           <div class="border rounded-lg p-4 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
-            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">{{ t('app.salaryByHours') }}</p>
+            <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">
+              {{ t('app.salaryByHours') }}
+            </p>
             <div class="flex items-end gap-2">
               <div>
-                <p class="text-3xl font-bold text-green-600 dark:text-green-400">{{ formatNumber(salaryByHours, 2) }}</p>
-                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ t('app.formula') }}: ({{ t('app.salary') }} / 22 / 8) × {{ formatNumber(totalWorkedHours, 2) }}</p>
+                <p class="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {{ formatNumber(salaryByHours, 2) }}
+                </p>
+                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  {{ t('app.formula') }}: ({{ t('app.salary') }} / 22 / 8) × {{ formatNumber(totalWorkedHours, 2) }}
+                </p>
               </div>
             </div>
           </div>
@@ -825,8 +1040,21 @@ function formatNumber(val: number, fractionDigits = 0) {
         <template #footer>
           <div class="flex justify-end w-full">
             <div class="flex gap-2">
-              <UButton size="sm" variant="soft" color="primary" @click="showSalaryModal = false">{{ t('common.close') }}</UButton>
-              <UButton size="sm" color="primary" @click="saveSalary(); showSalaryModal = false">{{ t('app.save') }}</UButton>
+              <UButton
+                size="sm"
+                variant="soft"
+                color="primary"
+                @click="showSalaryModal = false"
+              >
+                {{ t('common.close') }}
+              </UButton>
+              <UButton
+                size="sm"
+                color="primary"
+                @click="saveSalary(); showSalaryModal = false"
+              >
+                {{ t('app.save') }}
+              </UButton>
             </div>
           </div>
         </template>
@@ -838,29 +1066,43 @@ function formatNumber(val: number, fractionDigits = 0) {
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.legend') || 'Легенда' }}</h3>
-            <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="showLegendModal = false" />
+            <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+              {{ t('app.legend') || 'Легенда' }}
+            </h3>
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="lucide:x"
+              class="-my-1"
+              @click="showLegendModal = false"
+            />
           </div>
         </template>
 
         <div class="space-y-3 py-2">
           <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+            <div class="w-4 h-4 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" />
             <span class="text-sm">{{ t('app.violationDay') }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+            <div class="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
             <span class="text-sm">{{ t('app.legitimateDay') }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+            <div class="w-4 h-4 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700" />
             <span class="text-sm">{{ t('app.timeViolation') }}</span>
           </div>
         </div>
 
         <template #footer>
           <div class="flex justify-end">
-            <UButton size="sm" color="primary" @click="showLegendModal = false">{{ t('common.close') }}</UButton>
+            <UButton
+              size="sm"
+              color="primary"
+              @click="showLegendModal = false"
+            >
+              {{ t('common.close') }}
+            </UButton>
           </div>
         </template>
       </UCard>

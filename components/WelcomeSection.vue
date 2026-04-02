@@ -26,30 +26,45 @@ const items: { label: string; click: () => void }[][] = [
 </script>
 
 <template>
-    <div class="flex flex-col items-center justify-center text-center min-h-[50vh] md:min-h-[65vh] px-2">
-        <span class="text-xl md:text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ username }}</span>!</span>
-        <span class="text-sm md:text-base mb-4">
-                    {{ t('app.currentNamespace') }} —
-            <UDropdown 
-                :items="items" 
-                mode="hover" 
-                :popper="{ offsetDistance: 0, placement: 'bottom-start' }" 
-            >
-                <UButton
-                    icon="i-lucide-chevron-down"
-                    size="md" md:size="lg"
-                    color="primary"
-                    variant="link"
-                    :label="currentNsLabel"
-                    :trailing="true"
-                />
-            </UDropdown>
-        </span>
-        <div class="flex flex-wrap gap-2 md:gap-4 mt-4 justify-center">
-            <UButton @click="emit('edit-people')" icon="i-lucide-user-round-check" color="primary" variant="solid" size="sm" md:size="md">
-                {{ t('app.myPeople') }}
-            </UButton>
-            <UButton variant="soft" size="sm" md:size="md" @click="emit('edit-profile')">{{ t('app.configureProfile') }}</UButton>
-        </div>
+  <div class="flex flex-col items-center justify-center text-center min-h-[50vh] md:min-h-[65vh] px-2">
+    <span class="text-xl md:text-3xl mb-2">{{ greeting }}, <span class="font-semibold">{{ username }}</span>!</span>
+    <span class="text-sm md:text-base mb-4">
+      {{ t('app.currentNamespace') }} —
+      <UDropdown 
+        :items="items" 
+        mode="hover" 
+        :popper="{ offsetDistance: 0, placement: 'bottom-start' }" 
+      >
+        <UButton
+          icon="i-lucide-chevron-down"
+          size="md"
+          md:size="lg"
+          color="primary"
+          variant="link"
+          :label="currentNsLabel"
+          :trailing="true"
+        />
+      </UDropdown>
+    </span>
+    <div class="flex flex-wrap gap-2 md:gap-4 mt-4 justify-center">
+      <UButton
+        icon="i-lucide-user-round-check"
+        color="primary"
+        variant="solid"
+        size="sm"
+        md:size="md"
+        @click="emit('edit-people')"
+      >
+        {{ t('app.myPeople') }}
+      </UButton>
+      <UButton
+        variant="soft"
+        size="sm"
+        md:size="md"
+        @click="emit('edit-profile')"
+      >
+        {{ t('app.configureProfile') }}
+      </UButton>
     </div>
+  </div>
 </template>

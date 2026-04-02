@@ -101,7 +101,7 @@ function fmtMethod(method: string): string {
     <AppTable
       v-model:sort="sort"
       v-model:page="page"
-      v-model:pageCount="pageCount"
+      v-model:page-count="pageCount"
       :total="pageTotal"
       :rows="records || []"
       :columns="columns"

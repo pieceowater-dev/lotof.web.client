@@ -2,11 +2,16 @@
   <div class="members-settings">
     <div class="header">
       <h1>{{ t('atrace.members.title') }}</h1>
-      <p class="subtitle">{{ t('atrace.members.subtitle') }}</p>
+      <p class="subtitle">
+        {{ t('atrace.members.subtitle') }}
+      </p>
     </div>
 
     <!-- Plan Limits Info -->
-    <div v-if="planLimits" class="limits-info card">
+    <div
+      v-if="planLimits"
+      class="limits-info card"
+    >
       <div class="info-item">
         <span class="label">{{ t('atrace.members.activeCount') }}</span>
         <span class="value">{{ activeMembersCount }} / {{ planLimits.max_employees || 'unlimited' }}</span>
@@ -14,29 +19,54 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="loading">
+    <div
+      v-if="loading"
+      class="loading"
+    >
       <p>{{ t('common.loading') }}</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error card">
+    <div
+      v-else-if="error"
+      class="error card"
+    >
       <p>{{ error }}</p>
     </div>
 
     <!-- Members List -->
-    <div v-else class="members-list card">
-      <div v-if="members.length === 0" class="empty-state">
+    <div
+      v-else
+      class="members-list card"
+    >
+      <div
+        v-if="members.length === 0"
+        class="empty-state"
+      >
         <p>{{ t('atrace.members.noMembers') }}</p>
       </div>
 
-      <div v-else class="members-table">
+      <div
+        v-else
+        class="members-table"
+      >
         <div class="table-header">
-          <div class="col-user">{{ t('atrace.members.user') }}</div>
-          <div class="col-status">{{ t('atrace.members.status') }}</div>
-          <div class="col-actions">{{ t('common.actions') }}</div>
+          <div class="col-user">
+            {{ t('atrace.members.user') }}
+          </div>
+          <div class="col-status">
+            {{ t('atrace.members.status') }}
+          </div>
+          <div class="col-actions">
+            {{ t('common.actions') }}
+          </div>
         </div>
 
-        <div v-for="member in members" :key="member.id" class="table-row">
+        <div
+          v-for="member in members"
+          :key="member.id"
+          class="table-row"
+        >
           <div class="col-user">
             <div class="user-info">
               <span class="user-name">{{ member.userId }}</span>
@@ -45,10 +75,16 @@
           </div>
 
           <div class="col-status">
-            <span v-if="member.isActive" class="status-badge active">
+            <span
+              v-if="member.isActive"
+              class="status-badge active"
+            >
               {{ t('atrace.members.active') }}
             </span>
-            <span v-else class="status-badge inactive">
+            <span
+              v-else
+              class="status-badge inactive"
+            >
               {{ t('atrace.members.inactive') }}
             </span>
           </div>
@@ -66,7 +102,10 @@
                 {{ member.isActive ? t('atrace.members.deactivate') : t('atrace.members.activate') }}
               </span>
             </button>
-            <span v-else-if="!member.isActive" class="text-muted">
+            <span
+              v-else-if="!member.isActive"
+              class="text-muted"
+            >
               {{ t('atrace.members.ownerOnly') }}
             </span>
           </div>
@@ -75,7 +114,10 @@
     </div>
 
     <!-- Warning Message -->
-    <div v-if="isOwner && activeMembersCount >= (planLimits?.max_employees || Infinity)" class="warning card">
+    <div
+      v-if="isOwner && activeMembersCount >= (planLimits?.max_employees || Infinity)"
+      class="warning card"
+    >
       <p>{{ t('atrace.members.limitReached') }}</p>
     </div>
   </div>

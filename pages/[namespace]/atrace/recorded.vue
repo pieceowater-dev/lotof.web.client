@@ -131,7 +131,7 @@ onBeforeUnmount(() => {
         <template v-if="!isMounted">
           <div class="flex flex-col items-center gap-4">
             <div class="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse">
-              <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+              <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700" />
             </div>
           </div>
         </template>
@@ -139,12 +139,26 @@ onBeforeUnmount(() => {
           <div class="flex flex-col items-center gap-4">
             <!-- Waiting icon -->
             <div class="h-16 w-16 rounded-full bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
-              <svg class="h-10 w-10 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10" />
+              <svg
+                class="h-10 w-10 text-amber-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
                 <path d="M12 6v6l4 2" />
               </svg>
             </div>
-            <p class="text-xl font-semibold text-amber-600">{{ t('app.atraceRecordedWaiting') }}</p>
+            <p class="text-xl font-semibold text-amber-600">
+              {{ t('app.atraceRecordedWaiting') }}
+            </p>
 
             <!-- Countdown progress -->
             <div class="w-full max-w-md mt-2">
@@ -152,13 +166,23 @@ onBeforeUnmount(() => {
                 <span>{{ t('app.atraceRecordedRetryIn') }} {{ secondsLeft }}s</span>
               </div>
               <div class="h-2 w-full bg-gray-200/70 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div class="h-full bg-amber-500 transition-[width] duration-100 ease-linear" :style="{ width: progress + '%' }" />
+                <div
+                  class="h-full bg-amber-500 transition-[width] duration-100 ease-linear"
+                  :style="{ width: progress + '%' }"
+                />
               </div>
             </div>
 
             <div class="mt-4">
-              <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
-                <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
+              <UButton
+                color="primary"
+                variant="outline"
+                @click="tryCloseTabOrGoHome"
+              >
+                <UIcon
+                  name="i-heroicons-home"
+                  class="h-5 w-5 mr-2"
+                />
                 {{ t('common.close') }}
               </UButton>
             </div>
@@ -168,12 +192,22 @@ onBeforeUnmount(() => {
           <div class="flex flex-col items-center gap-4">
             <!-- Success icon -->
             <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-              <svg class="h-10 w-10 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg
+                class="h-10 w-10 text-emerald-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                 <polyline points="22 4 12 14.01 9 11.01" />
               </svg>
             </div>
-            <p class="text-2xl font-bold text-emerald-600">{{ t('app.atraceRecordedSuccess') }}</p>
+            <p class="text-2xl font-bold text-emerald-600">
+              {{ t('app.atraceRecordedSuccess') }}
+            </p>
 
             <!-- Countdown progress -->
             <div class="w-full max-w-md mt-2">
@@ -182,13 +216,23 @@ onBeforeUnmount(() => {
                 <!-- <span>{{ Math.round(progress) }}%</span> -->
               </div>
               <div class="h-2 w-full bg-gray-200/70 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div class="h-full bg-emerald-500 transition-[width] duration-100 ease-linear" :style="{ width: progress + '%' }" />
+                <div
+                  class="h-full bg-emerald-500 transition-[width] duration-100 ease-linear"
+                  :style="{ width: progress + '%' }"
+                />
               </div>
             </div>
 
             <div class="mt-4">
-              <UButton color="primary" variant="outline" @click="tryCloseTabOrGoHome">
-                <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
+              <UButton
+                color="primary"
+                variant="outline"
+                @click="tryCloseTabOrGoHome"
+              >
+                <UIcon
+                  name="i-heroicons-home"
+                  class="h-5 w-5 mr-2"
+                />
                 {{ t('common.close') }}
               </UButton>
             </div>
@@ -198,16 +242,47 @@ onBeforeUnmount(() => {
           <div class="flex flex-col items-center gap-4">
             <!-- Error icon -->
             <div class="h-16 w-16 rounded-full bg-red-50 dark:bg-red-900/30 flex items-center justify-center">
-              <svg class="h-10 w-10 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
+              <svg
+                class="h-10 w-10 text-red-600"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                />
+                <line
+                  x1="15"
+                  y1="9"
+                  x2="9"
+                  y2="15"
+                />
+                <line
+                  x1="9"
+                  y1="9"
+                  x2="15"
+                  y2="15"
+                />
               </svg>
             </div>
-            <p class="text-xl font-semibold text-red-600">{{ t('app.atraceRecordedFail') }}</p>
+            <p class="text-xl font-semibold text-red-600">
+              {{ t('app.atraceRecordedFail') }}
+            </p>
             <div class="mt-2">
-              <UButton color="primary" variant="outline" @click="goHomeAndBurn">
-                <UIcon name="i-heroicons-home" class="h-5 w-5 mr-2" />
+              <UButton
+                color="primary"
+                variant="outline"
+                @click="goHomeAndBurn"
+              >
+                <UIcon
+                  name="i-heroicons-home"
+                  class="h-5 w-5 mr-2"
+                />
                 {{ t('common.close') }}
               </UButton>
             </div>

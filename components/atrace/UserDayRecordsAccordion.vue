@@ -361,18 +361,35 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
 
 <template>
   <div class="w-full">
-    <div v-if="loading" class="flex items-center justify-center py-6">
-      <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300" />
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-6"
+    >
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+      />
       <span class="ml-2 text-sm">{{ t('app.loading') }}</span>
     </div>
 
-    <div v-else-if="error" class="text-sm text-red-500 py-4">{{ error }}</div>
+    <div
+      v-else-if="error"
+      class="text-sm text-red-500 py-4"
+    >
+      {{ error }}
+    </div>
 
-    <div v-else-if="recordsByDay.length === 0" class="text-sm text-gray-500 py-4 text-center">
+    <div
+      v-else-if="recordsByDay.length === 0"
+      class="text-sm text-gray-500 py-4 text-center"
+    >
       {{ t('app.noAttendanceRecords') }}
     </div>
 
-    <div v-else class="space-y-2">
+    <div
+      v-else
+      class="space-y-2"
+    >
       <!-- Day Accordion -->
       <div
         v-for="{ date, records } in recordsByDay"
@@ -382,7 +399,10 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
       >
         <!-- Day Header -->
         <div class="flex items-center justify-between px-3 py-2">
-          <div class="flex items-center gap-2 cursor-pointer hover:opacity-80 flex-1" @click="toggleDay(date)">
+          <div
+            class="flex items-center gap-2 cursor-pointer hover:opacity-80 flex-1"
+            @click="toggleDay(date)"
+          >
             <UIcon
               :name="isDayExpanded(date) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"
               class="w-4 h-4 transition-transform"
@@ -412,23 +432,39 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
             >
               {{ t('app.markLegitimate') }}
             </UButton>
-            <span v-if="isViolationDay(date)" class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded">
+            <span
+              v-if="isViolationDay(date)"
+              class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
+            >
               {{ t('app.violation') }}
             </span>
-            <span v-else-if="isLegitimateDay(date)" class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded" :title="dailyAttendanceMap.get(date)?.legitimate ? dailyAttendanceMap.get(date)?.reason : ''">
+            <span
+              v-else-if="isLegitimateDay(date)"
+              class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
+              :title="dailyAttendanceMap.get(date)?.legitimate ? dailyAttendanceMap.get(date)?.reason : ''"
+            >
               {{ t('app.excused') }}
             </span>
           </div>
         </div>
 
         <!-- Day Records (expanded) -->
-        <div v-if="isDayExpanded(date)" class="border-t border-inherit">
+        <div
+          v-if="isDayExpanded(date)"
+          class="border-t border-inherit"
+        >
           <table class="w-full text-xs">
             <thead class="bg-gray-50 dark:bg-gray-900/50">
               <tr>
-                <th class="px-2 sm:px-3 py-1.5 text-left font-medium">{{ t('app.date') }}</th>
-                <th class="px-2 sm:px-3 py-1.5 text-center font-medium hidden sm:table-cell">{{ t('common.method') }}</th>
-                <th class="px-2 sm:px-3 py-1.5 text-center font-medium">{{ t('app.status') }}</th>
+                <th class="px-2 sm:px-3 py-1.5 text-left font-medium">
+                  {{ t('app.date') }}
+                </th>
+                <th class="px-2 sm:px-3 py-1.5 text-center font-medium hidden sm:table-cell">
+                  {{ t('common.method') }}
+                </th>
+                <th class="px-2 sm:px-3 py-1.5 text-center font-medium">
+                  {{ t('app.status') }}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -438,21 +474,42 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                 class="border-t border-gray-100 dark:border-gray-700 transition-colors"
                 :class="getRecordHighlight(r, records)"
               >
-                <td class="px-2 sm:px-3 py-1.5" :title="formatTime(r).fullDate">
+                <td
+                  class="px-2 sm:px-3 py-1.5"
+                  :title="formatTime(r).fullDate"
+                >
                   {{ formatTime(r).time }}
-                  <span v-if="getRecordDirection(r, records)" class="ml-1 text-gray-500">
+                  <span
+                    v-if="getRecordDirection(r, records)"
+                    class="ml-1 text-gray-500"
+                  >
                     ({{ getRecordDirection(r, records) }})
                   </span>
                 </td>
-                <td class="px-2 sm:px-3 py-1.5 text-center hidden sm:table-cell">{{ methodLabel(r.method) }}</td>
+                <td class="px-2 sm:px-3 py-1.5 text-center hidden sm:table-cell">
+                  {{ methodLabel(r.method) }}
+                </td>
                 <td class="px-2 sm:px-3 py-1.5 text-center">
                   <div class="flex flex-row flex-wrap items-center justify-center gap-1">
-                    <span v-if="!r.suspicious" class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                      <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-0.5" />
+                    <span
+                      v-if="!r.suspicious"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                    >
+                      <UIcon
+                        name="i-heroicons-check-circle"
+                        class="w-3 h-3 mr-0.5"
+                      />
                       {{ t('common.ok') }}
                     </span>
-                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
-                      <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-0.5" />
+                    <span
+                      v-else
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help"
+                      :title="t('common.suspiciousReasons')"
+                    >
+                      <UIcon
+                        name="i-heroicons-exclamation-triangle"
+                        class="w-3 h-3 mr-0.5"
+                      />
                       {{ t('common.suspicious') }}
                     </span>
                     <span
@@ -460,12 +517,21 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                       class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 cursor-help"
                       :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
                     >
-                      <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
+                      <UIcon
+                        name="i-heroicons-map-pin"
+                        class="w-3 h-3 mr-0.5"
+                      />
                       {{ t('app.geoConfirmed') ?? 'Гео подтверждено' }}
                     </span>
-                    <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
-                      :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })">
-                      <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-0.5" />
+                    <span
+                      v-else
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
+                      :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
+                    >
+                      <UIcon
+                        name="i-heroicons-map-pin"
+                        class="w-3 h-3 mr-0.5"
+                      />
                       {{ t('app.geoNotConfirmed') ?? 'Гео не подтверждено' }}
                     </span>
                   </div>
@@ -478,27 +544,44 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
     </div>
 
     <!-- Load More Button -->
-    <div v-if="hasMoreRecords && !loading" class="flex justify-center py-4">
+    <div
+      v-if="hasMoreRecords && !loading"
+      class="flex justify-center py-4"
+    >
       <UButton 
-        @click="loadMoreRecords"
         :loading="loadingMore"
         variant="soft"
         size="md"
+        @click="loadMoreRecords"
       >
         {{ t('app.loadMore') || 'Load More' }}
       </UButton>
     </div>
 
     <!-- Reason Modal -->
-    <UModal v-model="showReasonModal" :ui="{ container: 'items-center' }">
+    <UModal
+      v-model="showReasonModal"
+      :ui="{ container: 'items-center' }"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <UIcon name="i-heroicons-check-circle" class="w-6 h-6 text-blue-500" />
-              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.markDayLegitimateTitle') }}</h3>
+              <UIcon
+                name="i-heroicons-check-circle"
+                class="w-6 h-6 text-blue-500"
+              />
+              <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+                {{ t('app.markDayLegitimateTitle') }}
+              </h3>
             </div>
-            <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="showReasonModal = false" />
+            <UButton
+              color="primary"
+              variant="ghost"
+              icon="lucide:x"
+              class="-my-1"
+              @click="showReasonModal = false"
+            />
           </div>
         </template>
 
@@ -517,8 +600,22 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
         <template #footer>
           <div class="flex justify-end w-full">
             <div class="flex gap-2">
-              <UButton size="sm" variant="soft" color="primary" @click="showReasonModal = false">{{ t('common.cancel') }}</UButton>
-              <UButton size="sm" color="primary" :disabled="!reason.trim()" @click="markDayAsLegitimate">{{ t('common.apply') }}</UButton>
+              <UButton
+                size="sm"
+                variant="soft"
+                color="primary"
+                @click="showReasonModal = false"
+              >
+                {{ t('common.cancel') }}
+              </UButton>
+              <UButton
+                size="sm"
+                color="primary"
+                :disabled="!reason.trim()"
+                @click="markDayAsLegitimate"
+              >
+                {{ t('common.apply') }}
+              </UButton>
             </div>
           </div>
         </template>

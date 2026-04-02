@@ -1104,555 +1104,775 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <TourGuide />
+  <TourGuide />
 
-    <FilterModal v-model="isFilterOpen" />
+  <FilterModal v-model="isFilterOpen" />
 
-    <div class="flex flex-col">
-        <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
-            <div class="text-left" data-tour="atrace-title">
-                <h1 class="text-2xl font-semibold">{{ t('app.atraceTitle') }}</h1>
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
-            </div>
-            <div data-tour="settings-btn">
-                <UButton 
-                    icon="lucide:settings" 
-                    size="xs" 
-                    color="primary" 
-                    variant="soft"
-                    :to="`/${nsSlug}/atrace/settings`"
-                >
-                    {{ t('common.settings.title') }}
-                </UButton>
-            </div>
-        </div>
-
-        <div class="px-4 flex-shrink-0">
-            <div class="flex items-center gap-2 overflow-x-auto pb-2">
-                <button
-                    class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
-                    :class="activeTab === 'attendance'
-                        ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
-                        : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-                    @click="activeTab = 'attendance'"
-                >
-                    {{ t('app.attendance') || 'Посещаемость' }}
-                </button>
-                <button
-                    v-for="r in routes"
-                    :key="r.id"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-                    :class="activeTab === `route:${r.id}`
-                        ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
-                        : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-                    @click="activeTab = `route:${r.id}`"
-                >
-                    {{ r.title || (t('app.route.label') || 'Маршрут') }}
-                </button>
-                <UButton
-                    icon="lucide:plus"
-                    size="xs"
-                    color="primary"
-                    variant="soft"
-                    class="flex-shrink-0"
-                    @click="openCreateRouteModal"
-                >
-                    {{ t('app.route.add') || 'Добавить маршрут' }}
-                </UButton>
-                <span v-if="routesLoading" class="text-xs text-gray-500">{{ t('app.loading') }}</span>
-                <span v-else-if="routesError" class="text-xs text-red-500">{{ routesError }}</span>
-            </div>
-        </div>
-
-        <div v-if="isRouteTab" class="px-4 mt-2 flex-shrink-0">
-            <!-- Route Statistics Card -->
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6 mb-4">
-                <div class="flex flex-col gap-4">
-                    <!-- Header -->
-                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                        <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <UIcon name="i-heroicons-map" class="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div class="flex-1">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                        {{ t('app.route.label') || 'Маршрут' }}
-                                    </div>
-                                    <button 
-                                        @click="showRouteConceptInfo = !showRouteConceptInfo"
-                                        class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
-                                        :title="t('app.route.concept.title') || 'Как работают маршруты'"
-                                    >
-                                        <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
-                                    </button>
-                                </div>
-                                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ activeRoute?.title || '—' }}</h2>
-                                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
-                                    <UIcon name="i-heroicons-view-columns" class="w-4 h-4" />
-                                    <span>{{ orderedRoutePostIds.length }} {{ t('app.route.posts') || 'постов' }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Info Block: Route Concept Explanation (Collapsible) -->
-                    <Transition
-                        enter-active-class="transition-all duration-300 ease-out"
-                        enter-from-class="opacity-0 max-h-0"
-                        enter-to-class="opacity-100 max-h-[500px]"
-                        leave-active-class="transition-all duration-300 ease-in"
-                        leave-from-class="opacity-100 max-h-[500px]"
-                        leave-to-class="opacity-0 max-h-0"
-                    >
-                        <div v-if="showRouteConceptInfo" class="overflow-hidden">
-                            <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex-shrink-0">
-                                        <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                    </div>
-                                    <div class="flex-1">
-                                        <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                            {{ t('app.route.concept.title') || 'Как работают маршруты' }}
-                                        </h4>
-                                        <div class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
-                                            <p>{{ t('app.route.concept.description') || 'Маршрут — это список постов в заданном порядке. Сотрудник отмечается на постах, а система связывает эти отметки с маршрутом.' }}</p>
-                                            <p>{{ t('app.route.concept.dataCollection') || 'Статистика берется из отметок на постах (records): по каждой дате строится отдельное прохождение маршрута.' }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Transition>
-                    
-                    <!-- Statistics Info Toggle -->
-                    <div v-if="!routePassesLoading && !routePassesError && routePasses.length > 0" class="flex items-center gap-2 mb-2">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('app.route.statistics') || 'Статистика' }}</span>
-                        <button 
-                            @click="showStatInfoTooltip = !showStatInfoTooltip"
-                            class="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            :title="t('app.route.stat.info') || 'Как считаются цифры'"
-                        >
-                            <UIcon name="i-heroicons-information-circle" class="w-4 h-4" />
-                        </button>
-                    </div>
-
-                    <!-- Statistics Info Panel -->
-                    <Transition
-                        enter-active-class="transition-all duration-300 ease-out"
-                        enter-from-class="opacity-0 max-h-0"
-                        enter-to-class="opacity-100 max-h-[200px]"
-                        leave-active-class="transition-all duration-300 ease-in"
-                        leave-from-class="opacity-100 max-h-[200px]"
-                        leave-to-class="opacity-0 max-h-0"
-                    >
-                        <div v-if="showStatInfoTooltip" class="overflow-hidden mb-3">
-                            <div class="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
-                                <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
-                                    <div class="flex items-start gap-2">
-                                        <div class="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                            <UIcon name="i-heroicons-arrow-path" class="w-3 h-3 text-blue-600 dark:text-blue-400" />
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">{{ t('app.route.stat.total') || 'Всего' }}</span> — {{ t('app.route.stat.totalHint') || 'Количество прохождений маршрута за выбранный период (каждая дата = одно прохождение)' }}
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-2">
-                                        <div class="w-5 h-5 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                            <UIcon name="i-heroicons-check-circle" class="w-3 h-3 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">{{ t('app.route.status.ok') || 'Успешно' }}</span> — {{ t('app.route.stat.completedHint') || 'Полные прохождения: есть отметки по всем постам и порядок соблюдён' }}
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-2">
-                                        <div class="w-5 h-5 rounded bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
-                                            <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 text-orange-600 dark:text-orange-400" />
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">{{ t('app.route.status.partial') || 'Частично' }}</span> — {{ t('app.route.stat.partialHint') || 'Есть отметки только по части постов маршрута' }}
-                                        </div>
-                                    </div>
-                                    <div class="flex items-start gap-2">
-                                        <div class="w-5 h-5 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                                            <UIcon name="i-heroicons-x-circle" class="w-3 h-3 text-red-600 dark:text-red-400" />
-                                        </div>
-                                        <div>
-                                            <span class="font-medium">{{ t('app.route.status.violation') || 'Нарушения' }}</span> — {{ t('app.route.stat.violatedHint') || 'Отметки есть, но порядок маршрута нарушен' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Transition>
-
-                    <!-- Statistics Grid -->
-                    <div v-if="!routePassesLoading && !routePassesError && routePasses.length > 0" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2">
-                        <!-- Total passes -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
-                                    <UIcon name="i-heroicons-arrow-path" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">{{ routePasses.length }}</div>
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.stat.total') || 'Всего' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Completed -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                                    <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-600 dark:text-green-400" />
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
-                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'completed').length }}
-                                    </div>
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.ok') || 'Успешно' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Partial -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
-                                    <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
-                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'partial').length }}
-                                    </div>
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.partial') || 'Частично' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Violations -->
-                        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
-                                    <UIcon name="i-heroicons-x-circle" class="w-5 h-5 text-red-600 dark:text-red-400" />
-                                </div>
-                                <div>
-                                    <div class="text-2xl font-bold text-gray-900 dark:text-white">
-                                        {{ routePasses.filter(p => p.status.toLowerCase() === 'violated').length }}
-                                    </div>
-                                    <div class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('app.route.status.violation') || 'Нарушения' }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Route Progress Section -->
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
-                <div class="mb-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                <UIcon name="i-heroicons-users" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                {{ t('app.route.employees') || 'Сотрудники' }}
-                            </h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                {{ t('app.route.employeesHint') || 'Статистика прохождения маршрута по сотрудникам' }}
-                            </p>
-                        </div>
-                        
-                        <!-- Period selector moved here -->
-                        <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
-                            <label class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
-                            <div class="flex items-center gap-2 flex-nowrap">
-                                <UInput v-model="routeProgressStart" type="date" size="sm" class="w-32 sm:w-36" />
-                                <span class="text-xs text-gray-400">—</span>
-                                <UInput v-model="routeProgressEnd" type="date" size="sm" class="w-32 sm:w-36" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="routePassesLoading" class="flex items-center justify-center py-6">
-                    <div class="flex flex-col items-center gap-2">
-                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                        <p class="text-xs text-gray-500">{{ t('app.loading') || 'Loading...' }}</p>
-                    </div>
-                </div>
-                <div v-else-if="routePassesError" class="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3">
-                    <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4 flex-shrink-0" />
-                    <span class="text-sm">{{ routePassesError }}</span>
-                </div>
-                <div v-else-if="routeProgressRows.length === 0" class="text-center py-8">
-                    <UIcon name="i-heroicons-users" class="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p class="text-sm text-gray-500">{{ t('app.route.progress.empty') || 'Нет данных по сотрудникам' }}</p>
-                </div>
-                <div v-else class="space-y-3">
-                        <div 
-                            v-for="row in routeProgressRows" 
-                            :key="row.userId"
-                            class="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200"
-                        >
-                            <div class="p-4">
-                                <!-- User header -->
-                                <div class="flex items-center gap-3 mb-4">
-                                    <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-base font-semibold flex-shrink-0">
-                                        {{ row.username.substring(0, 2).toUpperCase() }}
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ row.username }}</h4>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ row.email || row.userId }}</p>
-                                    </div>
-                                    <div 
-                                        class="px-2.5 py-1 rounded-md text-xs font-medium border flex-shrink-0"
-                                        :class="formatProgressStatus(row.lastStatus).color"
-                                    >
-                                        {{ formatProgressStatus(row.lastStatus).label }}
-                                    </div>
-                                </div>
-
-                                <!-- Meta info -->
-                                <div class="flex items-center gap-4 mb-3 text-xs text-gray-600 dark:text-gray-400">
-                                    <div class="flex items-center gap-1.5">
-                                        <UIcon name="i-heroicons-arrow-path" class="w-3.5 h-3.5" />
-                                        <span class="font-medium">{{ row.completedCount + row.partialCount + row.violatedCount + row.pendingCount }}</span>
-                                        <span>{{ t('app.route.passes') || 'прохождений' }}</span>
-                                    </div>
-                                    <span class="text-gray-300 dark:text-gray-600">•</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <UIcon name="i-heroicons-calendar" class="w-3.5 h-3.5" />
-                                        <span>{{ row.lastDate || (t('app.noData') || 'Нет данных') }}</span>
-                                    </div>
-                                </div>
-                                
-                                <!-- Progress stats -->
-                                <div class="grid grid-cols-4 gap-2">
-                                    <!-- Completed -->
-                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                                        <div class="w-8 h-8 mx-auto rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1.5">
-                                            <UIcon name="i-heroicons-check-circle" class="w-4 h-4 text-green-600 dark:text-green-400" />
-                                        </div>
-                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.completedCount }}</div>
-                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.ok') || 'Успешно' }}</div>
-                                    </div>
-                                    
-                                    <!-- Partial -->
-                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                                        <div class="w-8 h-8 mx-auto rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1.5">
-                                            <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                                        </div>
-                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.partialCount }}</div>
-                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.partial') || 'Частично' }}</div>
-                                    </div>
-                                    
-                                    <!-- Violated -->
-                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                                        <div class="w-8 h-8 mx-auto rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-1.5">
-                                            <UIcon name="i-heroicons-x-circle" class="w-4 h-4 text-red-600 dark:text-red-400" />
-                                        </div>
-                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.violatedCount }}</div>
-                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.violation') || 'Нарушения' }}</div>
-                                    </div>
-                                    
-                                    <!-- Pending -->
-                                    <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                                        <div class="w-8 h-8 mx-auto rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-1.5">
-                                            <UIcon name="i-heroicons-clock" class="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                                        </div>
-                                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ row.pendingCount }}</div>
-                                        <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">{{ t('app.route.status.pending') || 'Не пройдено' }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-            </div>
-        </div>
-
-
-        <!-- Desktop: horizontal card scroll (only show for attendance) -->
-        <div v-if="!isRouteTab" class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0" ref="cardsScrollRef" data-tour="posts-list">
-            <div class="inline-flex space-x-4 items-stretch">
-                <template v-if="showSkeletons">
-                    <div
-                        v-for="i in 5"
-                        :key="`skeleton-${i}`"
-                        class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[100px] self-stretch flex flex-col border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60"
-                    >
-                        <div class="flex items-center gap-2 mb-2">
-                            <USkeleton class="h-5 w-3/4" />
-                            <USkeleton class="h-5 w-16" />
-                        </div>
-                        <USkeleton class="h-4 w-5/6" />
-                        <div class="flex-1"></div>
-                        <div class="mt-1 h-5">
-                            <USkeleton class="h-3 w-1/2" />
-                        </div>
-                    </div>
-                </template>
-                <template v-else>
-                    <!-- "All" card - shows common stats, only if there are posts -->
-                    <Card v-if="!isRouteTab && posts.length > 0" :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }" :selected="selectedPostId === ''" :can-delete="false"
-                          @select="() => (selectedPostId = '')" />
-                    
-                    <div v-for="post in visiblePosts" :key="post.id">
-                        <Card :post="post" :selected="post.id === selectedPostId" :can-delete="false"
-                              @select="() => (selectedPostId = post.id)"
-                              @edit="() => openEdit(post)" />
-                    </div>
-                    <button v-if="!isRouteTab" @click="isCreateOpen = true"
-                        data-tour="create-post-btn"
-                        class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0">
-                        {{ t('app.atraceAddLocation') }}
-                    </button>
-                    <!-- Loading more indicator -->
-                    <div v-if="loadingMore" class="flex items-center justify-center w-20 text-gray-500">…</div>
-                    <!-- Sentinel element to trigger infinite scroll -->
-                    <div ref="cardsSentinelRef" class="w-1 h-1"></div>
-                </template>
-            </div>
-        </div>
-
-        <!-- Mobile: dropdown selector (only show for attendance) -->
-        <div v-if="!isRouteTab" class="md:hidden px-4 py-4 flex-shrink-0" data-tour="posts-list-mobile">
-            <template v-if="showSkeletons">
-                <div class="flex gap-2 items-center">
-                    <USkeleton class="h-4 w-20" />
-                    <USkeleton class="h-9 flex-1" />
-                    <USkeleton class="h-9 w-10" />
-                </div>
-            </template>
-            <template v-else>
-                <div class="flex gap-2 items-center">
-                    <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
-                    <USelectMenu
-                        v-model="selectedPostIdForMenu"
-                        :options="[
-                            ...(!isRouteTab && posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
-                            ...visiblePosts.filter(p => p.title && p.title.trim()).map(p => {
-                              const parts = [p.title.trim()];
-                              if (p.location?.city?.trim()) parts.push(p.location.city);
-                              if (p.location?.address?.trim()) parts.push(p.location.address);
-                              return { value: p.id, label: parts.join(' — ') };
-                            })
-                        ]"
-                        value-attribute="value"
-                        class="flex-1"
-                        :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
-                    />
-                    <UButton 
-                        data-tour="create-post-btn-mobile"
-                        icon="lucide:plus" 
-                        size="sm" 
-                        color="primary" 
-                        variant="soft"
-                        v-if="!isRouteTab"
-                        @click="isCreateOpen = true"
-                    />
-                </div>
-            </template>
-        </div>
-
-        <div v-if="!isRouteTab" class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
-            <div class="text-left">
-                <h2 class="text-lg font-medium">
-                    {{ t('app.attendance') }} —
-                    {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
-                </h2>
-                <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
-            </div>
-
-            <!-- Search and filter buttons removed -->
-        </div>
-
-        <div v-if="selectedPostId !== null && !isRouteTab" class="flex-1 px-4 pb-safe-or-4">
-            <AttendanceStatsTable :post-id="selectedPostId" :ready="!loading && !error" />
-        </div>
-        <div v-else-if="!isRouteTab" class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center">
-            <div class="max-w-sm w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 dark:border-gray-800">
-                <div class="mb-3 flex flex-col items-center">
-                    <UIcon name="i-heroicons-map-pin" class="w-12 h-12 text-blue-400 dark:text-blue-300 mb-2" />
-                    <h2 class="text-xl font-bold text-center mb-1 text-gray-900 dark:text-white">
-                        {{ t('app.noPostsTitle') || 'No locations yet' }}
-                    </h2>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
-                        {{ t('app.noPostsDesc') || 'Add your first location to start tracking attendance.' }}
-                    </p>
-                </div>
-                <UButton
-                    data-tour="create-post-btn-empty"
-                    color="primary"
-                    size="md"
-                    class="w-full"
-                    @click="isCreateOpen = true"
-                >
-                    {{ t('app.atraceAddLocation') || 'Add Location' }}
-                </UButton>
-            </div>
-        </div>
+  <div class="flex flex-col">
+    <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
+      <div
+        class="text-left"
+        data-tour="atrace-title"
+      >
+        <h1 class="text-2xl font-semibold">
+          {{ t('app.atraceTitle') }}
+        </h1>
+        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
+      </div>
+      <div data-tour="settings-btn">
+        <UButton 
+          icon="lucide:settings" 
+          size="xs" 
+          color="primary" 
+          variant="soft"
+          :to="`/${nsSlug}/atrace/settings`"
+        >
+          {{ t('common.settings.title') }}
+        </UButton>
+      </div>
     </div>
 
-    <!-- Create Route Modal -->
-    <RouteModal
-        v-model="isRouteCreateOpen"
-        :title="t('app.route.titleCreate') || 'Create Route'"
-        :show-edit-warning="false"
-        :edit-warning="''"
-        :name-label="t('app.route.form.title') || 'Название'"
-        :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
-        :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
-        :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
-        :select-placeholder="t('app.select.location') || 'Выберите пост'"
-        :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
-        :cancel-label="t('common.cancel') || 'Cancel'"
-        :save-label="t('common.save') || 'Save'"
-        v-model:route-title="routeCreateTitle"
-        v-model:selected-post-id="routeCreatePostId"
-        v-model:selected-post-ids="routeCreatePostIds"
-        :post-options="routeCreatePostOptions"
-        :get-post-label="getRoutePostLabel"
-        :error="routeCreateError"
-        :saving="routeCreateSaving"
-        @save="saveNewRoute"
-    />
+    <div class="px-4 flex-shrink-0">
+      <div class="flex items-center gap-2 overflow-x-auto pb-2">
+        <button
+          class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
+          :class="activeTab === 'attendance'
+            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+            : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+          @click="activeTab = 'attendance'"
+        >
+          {{ t('app.attendance') || 'Посещаемость' }}
+        </button>
+        <button
+          v-for="r in routes"
+          :key="r.id"
+          class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
+          :class="activeTab === `route:${r.id}`
+            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+            : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+          @click="activeTab = `route:${r.id}`"
+        >
+          {{ r.title || (t('app.route.label') || 'Маршрут') }}
+        </button>
+        <UButton
+          icon="lucide:plus"
+          size="xs"
+          color="primary"
+          variant="soft"
+          class="flex-shrink-0"
+          @click="openCreateRouteModal"
+        >
+          {{ t('app.route.add') || 'Добавить маршрут' }}
+        </UButton>
+        <span
+          v-if="routesLoading"
+          class="text-xs text-gray-500"
+        >{{ t('app.loading') }}</span>
+        <span
+          v-else-if="routesError"
+          class="text-xs text-red-500"
+        >{{ routesError }}</span>
+      </div>
+    </div>
 
-    <!-- Create Post Modal -->
-    <CreatePostModal v-model="isCreateOpen" :form="form" @submit="handleCreate" />
-
-    <!-- Edit Post Modal -->
-    <EditPostModal
-      v-model="isEditOpen"
-      :form="editForm"
-      :editingPost="editingPost"
-      @save="handleEditSave"
-      @delete="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: false }) }"
-    />
-
-    <UModal v-model="isLimitModalOpen" :ui="{ width: 'sm:max-w-md' }">
-        <UCard>
-            <template #header>
-                <div class="flex items-center justify-between">
-                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-                        {{ t('app.notification') || 'Notification' }}
-                    </h3>
-                    <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="isLimitModalOpen = false" />
+    <div
+      v-if="isRouteTab"
+      class="px-4 mt-2 flex-shrink-0"
+    >
+      <!-- Route Statistics Card -->
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6 mb-4">
+        <div class="flex flex-col gap-4">
+          <!-- Header -->
+          <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <UIcon
+                  name="i-heroicons-map"
+                  class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                />
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center gap-2 mb-1">
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    {{ t('app.route.label') || 'Маршрут' }}
+                  </div>
+                  <button 
+                    class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                    :title="t('app.route.concept.title') || 'Как работают маршруты'"
+                    @click="showRouteConceptInfo = !showRouteConceptInfo"
+                  >
+                    <UIcon
+                      name="i-heroicons-information-circle"
+                      class="w-4 h-4"
+                    />
+                  </button>
                 </div>
-            </template>
-            <div class="text-sm text-gray-700 dark:text-gray-200">
-                {{ limitErrorMessage || (t('atrace.members.limitReached') || 'Limit reached. Please upgrade your plan.') }}
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+                  {{ activeRoute?.title || '—' }}
+                </h2>
+                <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                  <UIcon
+                    name="i-heroicons-view-columns"
+                    class="w-4 h-4"
+                  />
+                  <span>{{ orderedRoutePostIds.length }} {{ t('app.route.posts') || 'постов' }}</span>
+                </div>
+              </div>
             </div>
-            <template #footer>
-                <div class="flex justify-end gap-2">
-                    <UButton color="primary" variant="soft" @click="isLimitModalOpen = false">{{ t('common.cancel') }}</UButton>
-                    <UButton color="amber" icon="lucide:star" :to="`/${nsSlug}/atrace/plans`">
-                        {{ t('app.upgradePlan') || 'Upgrade Plan' }}
-                    </UButton>
+          </div>
+                    
+          <!-- Info Block: Route Concept Explanation (Collapsible) -->
+          <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 max-h-0"
+            enter-to-class="opacity-100 max-h-[500px]"
+            leave-active-class="transition-all duration-300 ease-in"
+            leave-from-class="opacity-100 max-h-[500px]"
+            leave-to-class="opacity-0 max-h-0"
+          >
+            <div
+              v-if="showRouteConceptInfo"
+              class="overflow-hidden"
+            >
+              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+                <div class="flex items-start gap-3">
+                  <div class="flex-shrink-0">
+                    <UIcon
+                      name="i-heroicons-information-circle"
+                      class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    />
+                  </div>
+                  <div class="flex-1">
+                    <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      {{ t('app.route.concept.title') || 'Как работают маршруты' }}
+                    </h4>
+                    <div class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                      <p>{{ t('app.route.concept.description') || 'Маршрут — это список постов в заданном порядке. Сотрудник отмечается на постах, а система связывает эти отметки с маршрутом.' }}</p>
+                      <p>{{ t('app.route.concept.dataCollection') || 'Статистика берется из отметок на постах (records): по каждой дате строится отдельное прохождение маршрута.' }}</p>
+                    </div>
+                  </div>
                 </div>
-            </template>
-        </UCard>
-    </UModal>
+              </div>
+            </div>
+          </Transition>
+                    
+          <!-- Statistics Info Toggle -->
+          <div
+            v-if="!routePassesLoading && !routePassesError && routePasses.length > 0"
+            class="flex items-center gap-2 mb-2"
+          >
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('app.route.statistics') || 'Статистика' }}</span>
+            <button 
+              class="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              :title="t('app.route.stat.info') || 'Как считаются цифры'"
+              @click="showStatInfoTooltip = !showStatInfoTooltip"
+            >
+              <UIcon
+                name="i-heroicons-information-circle"
+                class="w-4 h-4"
+              />
+            </button>
+          </div>
+
+          <!-- Statistics Info Panel -->
+          <Transition
+            enter-active-class="transition-all duration-300 ease-out"
+            enter-from-class="opacity-0 max-h-0"
+            enter-to-class="opacity-100 max-h-[200px]"
+            leave-active-class="transition-all duration-300 ease-in"
+            leave-from-class="opacity-100 max-h-[200px]"
+            leave-to-class="opacity-0 max-h-0"
+          >
+            <div
+              v-if="showStatInfoTooltip"
+              class="overflow-hidden mb-3"
+            >
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
+                <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
+                  <div class="flex items-start gap-2">
+                    <div class="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                      <UIcon
+                        name="i-heroicons-arrow-path"
+                        class="w-3 h-3 text-blue-600 dark:text-blue-400"
+                      />
+                    </div>
+                    <div>
+                      <span class="font-medium">{{ t('app.route.stat.total') || 'Всего' }}</span> — {{ t('app.route.stat.totalHint') || 'Количество прохождений маршрута за выбранный период (каждая дата = одно прохождение)' }}
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <div class="w-5 h-5 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                      <UIcon
+                        name="i-heroicons-check-circle"
+                        class="w-3 h-3 text-green-600 dark:text-green-400"
+                      />
+                    </div>
+                    <div>
+                      <span class="font-medium">{{ t('app.route.status.ok') || 'Успешно' }}</span> — {{ t('app.route.stat.completedHint') || 'Полные прохождения: есть отметки по всем постам и порядок соблюдён' }}
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <div class="w-5 h-5 rounded bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                      <UIcon
+                        name="i-heroicons-exclamation-triangle"
+                        class="w-3 h-3 text-orange-600 dark:text-orange-400"
+                      />
+                    </div>
+                    <div>
+                      <span class="font-medium">{{ t('app.route.status.partial') || 'Частично' }}</span> — {{ t('app.route.stat.partialHint') || 'Есть отметки только по части постов маршрута' }}
+                    </div>
+                  </div>
+                  <div class="flex items-start gap-2">
+                    <div class="w-5 h-5 rounded bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                      <UIcon
+                        name="i-heroicons-x-circle"
+                        class="w-3 h-3 text-red-600 dark:text-red-400"
+                      />
+                    </div>
+                    <div>
+                      <span class="font-medium">{{ t('app.route.status.violation') || 'Нарушения' }}</span> — {{ t('app.route.stat.violatedHint') || 'Отметки есть, но порядок маршрута нарушен' }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Transition>
+
+          <!-- Statistics Grid -->
+          <div
+            v-if="!routePassesLoading && !routePassesError && routePasses.length > 0"
+            class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2"
+          >
+            <!-- Total passes -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                  <UIcon
+                    name="i-heroicons-arrow-path"
+                    class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                  />
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ routePasses.length }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('app.route.stat.total') || 'Всего' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+                        
+            <!-- Completed -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                  <UIcon
+                    name="i-heroicons-check-circle"
+                    class="w-5 h-5 text-green-600 dark:text-green-400"
+                  />
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ routePasses.filter(p => p.status.toLowerCase() === 'completed').length }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('app.route.status.ok') || 'Успешно' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+                        
+            <!-- Partial -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
+                  <UIcon
+                    name="i-heroicons-exclamation-triangle"
+                    class="w-5 h-5 text-orange-600 dark:text-orange-400"
+                  />
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ routePasses.filter(p => p.status.toLowerCase() === 'partial').length }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('app.route.status.partial') || 'Частично' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+                        
+            <!-- Violations -->
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                  <UIcon
+                    name="i-heroicons-x-circle"
+                    class="w-5 h-5 text-red-600 dark:text-red-400"
+                  />
+                </div>
+                <div>
+                  <div class="text-2xl font-bold text-gray-900 dark:text-white">
+                    {{ routePasses.filter(p => p.status.toLowerCase() === 'violated').length }}
+                  </div>
+                  <div class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                    {{ t('app.route.status.violation') || 'Нарушения' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route Progress Section -->
+      <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
+        <div class="mb-4">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                <UIcon
+                  name="i-heroicons-users"
+                  class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                />
+                {{ t('app.route.employees') || 'Сотрудники' }}
+              </h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                {{ t('app.route.employeesHint') || 'Статистика прохождения маршрута по сотрудникам' }}
+              </p>
+            </div>
+                        
+            <!-- Period selector moved here -->
+            <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
+              <label class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
+              <div class="flex items-center gap-2 flex-nowrap">
+                <UInput
+                  v-model="routeProgressStart"
+                  type="date"
+                  size="sm"
+                  class="w-32 sm:w-36"
+                />
+                <span class="text-xs text-gray-400">—</span>
+                <UInput
+                  v-model="routeProgressEnd"
+                  type="date"
+                  size="sm"
+                  class="w-32 sm:w-36"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="routePassesLoading"
+          class="flex items-center justify-center py-6"
+        >
+          <div class="flex flex-col items-center gap-2">
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+            <p class="text-xs text-gray-500">
+              {{ t('app.loading') || 'Loading...' }}
+            </p>
+          </div>
+        </div>
+        <div
+          v-else-if="routePassesError"
+          class="flex items-center gap-2 text-red-500 bg-red-50 dark:bg-red-900/20 rounded-lg p-3"
+        >
+          <UIcon
+            name="i-heroicons-exclamation-circle"
+            class="w-4 h-4 flex-shrink-0"
+          />
+          <span class="text-sm">{{ routePassesError }}</span>
+        </div>
+        <div
+          v-else-if="routeProgressRows.length === 0"
+          class="text-center py-8"
+        >
+          <UIcon
+            name="i-heroicons-users"
+            class="w-12 h-12 text-gray-400 mx-auto mb-3"
+          />
+          <p class="text-sm text-gray-500">
+            {{ t('app.route.progress.empty') || 'Нет данных по сотрудникам' }}
+          </p>
+        </div>
+        <div
+          v-else
+          class="space-y-3"
+        >
+          <div 
+            v-for="row in routeProgressRows" 
+            :key="row.userId"
+            class="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            <div class="p-4">
+              <!-- User header -->
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-base font-semibold flex-shrink-0">
+                  {{ row.username.substring(0, 2).toUpperCase() }}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h4 class="text-base font-semibold text-gray-900 dark:text-white truncate">
+                    {{ row.username }}
+                  </h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {{ row.email || row.userId }}
+                  </p>
+                </div>
+                <div 
+                  class="px-2.5 py-1 rounded-md text-xs font-medium border flex-shrink-0"
+                  :class="formatProgressStatus(row.lastStatus).color"
+                >
+                  {{ formatProgressStatus(row.lastStatus).label }}
+                </div>
+              </div>
+
+              <!-- Meta info -->
+              <div class="flex items-center gap-4 mb-3 text-xs text-gray-600 dark:text-gray-400">
+                <div class="flex items-center gap-1.5">
+                  <UIcon
+                    name="i-heroicons-arrow-path"
+                    class="w-3.5 h-3.5"
+                  />
+                  <span class="font-medium">{{ row.completedCount + row.partialCount + row.violatedCount + row.pendingCount }}</span>
+                  <span>{{ t('app.route.passes') || 'прохождений' }}</span>
+                </div>
+                <span class="text-gray-300 dark:text-gray-600">•</span>
+                <div class="flex items-center gap-1.5">
+                  <UIcon
+                    name="i-heroicons-calendar"
+                    class="w-3.5 h-3.5"
+                  />
+                  <span>{{ row.lastDate || (t('app.noData') || 'Нет данных') }}</span>
+                </div>
+              </div>
+                                
+              <!-- Progress stats -->
+              <div class="grid grid-cols-4 gap-2">
+                <!-- Completed -->
+                <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div class="w-8 h-8 mx-auto rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1.5">
+                    <UIcon
+                      name="i-heroicons-check-circle"
+                      class="w-4 h-4 text-green-600 dark:text-green-400"
+                    />
+                  </div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ row.completedCount }}
+                  </div>
+                  <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ t('app.route.status.ok') || 'Успешно' }}
+                  </div>
+                </div>
+                                    
+                <!-- Partial -->
+                <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div class="w-8 h-8 mx-auto rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1.5">
+                    <UIcon
+                      name="i-heroicons-exclamation-triangle"
+                      class="w-4 h-4 text-orange-600 dark:text-orange-400"
+                    />
+                  </div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ row.partialCount }}
+                  </div>
+                  <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ t('app.route.status.partial') || 'Частично' }}
+                  </div>
+                </div>
+                                    
+                <!-- Violated -->
+                <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div class="w-8 h-8 mx-auto rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-1.5">
+                    <UIcon
+                      name="i-heroicons-x-circle"
+                      class="w-4 h-4 text-red-600 dark:text-red-400"
+                    />
+                  </div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ row.violatedCount }}
+                  </div>
+                  <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ t('app.route.status.violation') || 'Нарушения' }}
+                  </div>
+                </div>
+                                    
+                <!-- Pending -->
+                <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+                  <div class="w-8 h-8 mx-auto rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-1.5">
+                    <UIcon
+                      name="i-heroicons-clock"
+                      class="w-4 h-4 text-gray-600 dark:text-gray-400"
+                    />
+                  </div>
+                  <div class="text-lg font-bold text-gray-900 dark:text-white">
+                    {{ row.pendingCount }}
+                  </div>
+                  <div class="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    {{ t('app.route.status.pending') || 'Не пройдено' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- Desktop: horizontal card scroll (only show for attendance) -->
+    <div
+      v-if="!isRouteTab"
+      ref="cardsScrollRef"
+      class="hidden md:block overflow-x-auto whitespace-nowrap py-4 px-4 flex-shrink-0"
+      data-tour="posts-list"
+    >
+      <div class="inline-flex space-x-4 items-stretch">
+        <template v-if="showSkeletons">
+          <div
+            v-for="i in 5"
+            :key="`skeleton-${i}`"
+            class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[100px] self-stretch flex flex-col border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60"
+          >
+            <div class="flex items-center gap-2 mb-2">
+              <USkeleton class="h-5 w-3/4" />
+              <USkeleton class="h-5 w-16" />
+            </div>
+            <USkeleton class="h-4 w-5/6" />
+            <div class="flex-1" />
+            <div class="mt-1 h-5">
+              <USkeleton class="h-3 w-1/2" />
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <!-- "All" card - shows common stats, only if there are posts -->
+          <Card
+            v-if="!isRouteTab && posts.length > 0"
+            :post="{ id: '', title: t('app.allLocations') || 'All locations', description: t('app.allLocationsDesc') || 'Employee attendance across all locations' }"
+            :selected="selectedPostId === ''"
+            :can-delete="false"
+            @select="() => (selectedPostId = '')"
+          />
+                    
+          <div
+            v-for="post in visiblePosts"
+            :key="post.id"
+          >
+            <Card
+              :post="post"
+              :selected="post.id === selectedPostId"
+              :can-delete="false"
+              @select="() => (selectedPostId = post.id)"
+              @edit="() => openEdit(post)"
+            />
+          </div>
+          <button
+            v-if="!isRouteTab"
+            data-tour="create-post-btn"
+            class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0"
+            @click="isCreateOpen = true"
+          >
+            {{ t('app.atraceAddLocation') }}
+          </button>
+          <!-- Loading more indicator -->
+          <div
+            v-if="loadingMore"
+            class="flex items-center justify-center w-20 text-gray-500"
+          >
+            …
+          </div>
+          <!-- Sentinel element to trigger infinite scroll -->
+          <div
+            ref="cardsSentinelRef"
+            class="w-1 h-1"
+          />
+        </template>
+      </div>
+    </div>
+
+    <!-- Mobile: dropdown selector (only show for attendance) -->
+    <div
+      v-if="!isRouteTab"
+      class="md:hidden px-4 py-4 flex-shrink-0"
+      data-tour="posts-list-mobile"
+    >
+      <template v-if="showSkeletons">
+        <div class="flex gap-2 items-center">
+          <USkeleton class="h-4 w-20" />
+          <USkeleton class="h-9 flex-1" />
+          <USkeleton class="h-9 w-10" />
+        </div>
+      </template>
+      <template v-else>
+        <div class="flex gap-2 items-center">
+          <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
+          <USelectMenu
+            v-model="selectedPostIdForMenu"
+            :options="[
+              ...(!isRouteTab && posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
+              ...visiblePosts.filter(p => p.title && p.title.trim()).map(p => {
+                const parts = [p.title.trim()];
+                if (p.location?.city?.trim()) parts.push(p.location.city);
+                if (p.location?.address?.trim()) parts.push(p.location.address);
+                return { value: p.id, label: parts.join(' — ') };
+              })
+            ]"
+            value-attribute="value"
+            class="flex-1"
+            :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
+          />
+          <UButton 
+            v-if="!isRouteTab"
+            data-tour="create-post-btn-mobile" 
+            icon="lucide:plus" 
+            size="sm" 
+            color="primary"
+            variant="soft"
+            @click="isCreateOpen = true"
+          />
+        </div>
+      </template>
+    </div>
+
+    <div
+      v-if="!isRouteTab"
+      class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0"
+    >
+      <div class="text-left">
+        <h2 class="text-lg font-medium">
+          {{ t('app.attendance') }} —
+          {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
+        </h2>
+        <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
+      </div>
+
+      <!-- Search and filter buttons removed -->
+    </div>
+
+    <div
+      v-if="selectedPostId !== null && !isRouteTab"
+      class="flex-1 px-4 pb-safe-or-4"
+    >
+      <AttendanceStatsTable
+        :post-id="selectedPostId"
+        :ready="!loading && !error"
+      />
+    </div>
+    <div
+      v-else-if="!isRouteTab"
+      class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center"
+    >
+      <div class="max-w-sm w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 dark:border-gray-800">
+        <div class="mb-3 flex flex-col items-center">
+          <UIcon
+            name="i-heroicons-map-pin"
+            class="w-12 h-12 text-blue-400 dark:text-blue-300 mb-2"
+          />
+          <h2 class="text-xl font-bold text-center mb-1 text-gray-900 dark:text-white">
+            {{ t('app.noPostsTitle') || 'No locations yet' }}
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-3">
+            {{ t('app.noPostsDesc') || 'Add your first location to start tracking attendance.' }}
+          </p>
+        </div>
+        <UButton
+          data-tour="create-post-btn-empty"
+          color="primary"
+          size="md"
+          class="w-full"
+          @click="isCreateOpen = true"
+        >
+          {{ t('app.atraceAddLocation') || 'Add Location' }}
+        </UButton>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Route Modal -->
+  <RouteModal
+    v-model="isRouteCreateOpen"
+    :title="t('app.route.titleCreate') || 'Create Route'"
+    :show-edit-warning="false"
+    v-model:route-title="routeCreateTitle"
+    :edit-warning="''"
+    v-model:selected-post-id="routeCreatePostId"
+    :name-label="t('app.route.form.title') || 'Название'"
+    v-model:selected-post-ids="routeCreatePostIds"
+    :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
+    :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
+    :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
+    :select-placeholder="t('app.select.location') || 'Выберите пост'"
+    :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
+    :cancel-label="t('common.cancel') || 'Cancel'"
+    :save-label="t('common.save') || 'Save'"
+    :post-options="routeCreatePostOptions"
+    :get-post-label="getRoutePostLabel"
+    :error="routeCreateError"
+    :saving="routeCreateSaving"
+    @save="saveNewRoute"
+  />
+
+  <!-- Create Post Modal -->
+  <CreatePostModal
+    v-model="isCreateOpen"
+    v-model:form="form"
+    @submit="handleCreate"
+  />
+
+  <!-- Edit Post Modal -->
+  <EditPostModal
+    v-model="isEditOpen"
+    v-model:form="editForm"
+    :editing-post="editingPost"
+    @save="handleEditSave"
+    @delete="() => { if (editingPost) handleDelete(editingPost, { skipConfirm: false }) }"
+  />
+
+  <UModal
+    v-model="isLimitModalOpen"
+    :ui="{ width: 'sm:max-w-md' }"
+  >
+    <UCard>
+      <template #header>
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+            {{ t('app.notification') || 'Notification' }}
+          </h3>
+          <UButton
+            color="primary"
+            variant="ghost"
+            icon="lucide:x"
+            class="-my-1"
+            @click="isLimitModalOpen = false"
+          />
+        </div>
+      </template>
+      <div class="text-sm text-gray-700 dark:text-gray-200">
+        {{ limitErrorMessage || (t('atrace.members.limitReached') || 'Limit reached. Please upgrade your plan.') }}
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton
+            color="primary"
+            variant="soft"
+            @click="isLimitModalOpen = false"
+          >
+            {{ t('common.cancel') }}
+          </UButton>
+          <UButton
+            color="amber"
+            icon="lucide:star"
+            :to="`/${nsSlug}/atrace/plans`"
+          >
+            {{ t('app.upgradePlan') || 'Upgrade Plan' }}
+          </UButton>
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 </template>
 
 <style scoped>

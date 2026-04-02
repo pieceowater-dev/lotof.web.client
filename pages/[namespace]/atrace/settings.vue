@@ -754,446 +754,585 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-        <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-            <div class="text-left">
-                <h1 class="text-2xl font-semibold">{{ t('common.settings.title') }}</h1>
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
-            </div>
-            <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
-                <UButton 
-                    icon="lucide:star" 
-                    size="xs" 
-                    color="amber" 
-                    variant="soft"
-                    :to="`/${nsSlug}/atrace/plans`"
-                    class="min-w-fit whitespace-nowrap"
-                >
-                    {{ t('app.upgradePlan') || 'Upgrade Plan' }}
-                </UButton>
-                <UButton 
-                    icon="lucide:user-plus" 
-                    size="xs" 
-                    color="primary" 
-                    @click="isInviteOpen = true"
-                    class="min-w-fit whitespace-nowrap"
-                >
-                    {{ t('app.sendInvite') || 'Send Invitation' }}
-                </UButton>
-                <UButton 
-                    icon="lucide:arrow-left" 
-                    size="xs" 
-                    color="primary" 
-                    variant="soft"
-                    @click="goBack"
-                    class="min-w-fit whitespace-nowrap gap-2"
-                >
-                    <span class="hidden sm:inline">{{ t('app.back') }}</span>
-                </UButton>
-            </div>
-        </div>
-
-        <div v-if="accessDenied" class="flex-1 flex items-center justify-center">
-            <div class="w-full max-w-xl rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-8 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/30">
-                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">
-                    <UIcon name="i-heroicons-lock-closed" class="h-7 w-7" />
-                </div>
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    {{ t('app.settingsAccessDenied') || 'Доступ к настройкам ограничен' }}
-                </h2>
-                <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                    {{ error || (t('app.attendancePermissionErrorHint') || 'Для этого раздела нужна роль с правами управления ATrace.') }}
-                </p>
-                <div class="mt-5 flex justify-center">
-                    <UButton color="primary" variant="soft" icon="lucide:arrow-left" @click="goBack">
-                        {{ t('app.back') || 'Назад' }}
-                    </UButton>
-                </div>
-            </div>
-        </div>
-
-        <template v-else>
-        <div v-if="planLimits !== null && !planLimitsLoading" class="mb-4">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-blue-100 dark:border-gray-700 bg-blue-50/60 dark:bg-gray-900/40 px-4 py-3">
-                <div class="text-sm text-gray-700 dark:text-gray-200">
-                    <span class="font-semibold">{{ t('app.subscriptionPlans') || 'Plan' }}:</span>
-                    <span class="ml-1">{{ planName || '—' }}</span>
-                </div>
-                <div class="flex flex-wrap items-center gap-2 text-sm">
-                    <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-                        {{ t('app.locations') || 'Locations' }}:
-                        <strong>{{ planLimits.max_posts ?? '∞' }}</strong>
-                    </span>
-                    <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
-                        {{ t('atrace.members.activeCount') || 'Active members' }}:
-                        <strong>{{ planLimits.max_employees ?? '∞' }}</strong>
-                    </span>
-                </div>
-            </div>
-        </div>
-
-        <div class="mb-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-                <div>
-                    <h2 class="text-base font-medium">{{ t('app.route.list') || 'Маршруты' }}</h2>
-                    <p class="text-xs text-gray-500">{{ t('app.route.listHint') || 'Соберите посты в маршрут и отслеживайте прохождение' }}</p>
-                </div>
-                <UButton icon="lucide:plus" size="xs" color="primary" class="self-start w-auto" @click="openCreateRoute">
-                    {{ t('app.route.create') || 'Создать маршрут' }}
-                </UButton>
-            </div>
-
-            <div v-if="routesLoading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
-            <div v-else-if="routesError" class="text-red-500 text-sm">{{ routesError }}</div>
-            <div v-else-if="atraceRoutes.length === 0" class="text-gray-500 text-sm">
-                {{ t('app.route.empty') || 'Маршрутов пока нет' }}
-            </div>
-            <div v-else class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60">
-                <table class="min-w-full text-sm">
-                    <thead class="bg-gray-50 dark:bg-gray-800">
-                        <tr class="text-left">
-                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">{{ t('app.route.label') || 'Маршрут' }}</th>
-                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 w-[55%] min-w-[320px]">{{ t('app.route.posts') || 'Посты' }}</th>
-                            <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 text-right">{{ t('common.actions') || 'Actions' }}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="routeItem in atraceRoutes" :key="routeItem.id" class="border-t border-gray-100 dark:border-gray-800">
-                            <td class="px-4 py-3 align-top">
-                                <div class="font-semibold text-gray-900 dark:text-white">{{ routeItem.title }}</div>
-                                <div class="text-xs text-gray-500">{{ routeItem.milestones.length }} {{ t('app.locations') || 'постов' }}</div>
-                            </td>
-                            <td class="px-4 py-3 w-[55%] min-w-[320px]">
-                                <div class="space-y-1 whitespace-normal">
-                                    <div
-                                        v-for="milestone in getSortedMilestones(routeItem)"
-                                        :key="`${routeItem.id}-${milestone.postId}-${milestone.priority}`"
-                                        class="text-gray-700 dark:text-gray-200"
-                                    >
-                                        <span class="font-semibold">#{{ milestone.priority }}</span>
-                                        <span class="ml-2">{{ getRoutePostTitle(milestone.postId) }}</span>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <div class="flex justify-end gap-2">
-                                    <UButton size="xs" variant="soft" color="primary" icon="lucide:pencil" @click="openEditRoute(routeItem)">
-                                        {{ t('app.route.edit') || 'Edit' }}
-                                    </UButton>
-                                    <UButton size="xs" variant="soft" color="red" icon="lucide:trash" @click="deleteRoute(routeItem)">
-                                        {{ t('common.delete') || 'Delete' }}
-                                    </UButton>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Members Management Section -->
-    <div class="flex-1 min-h-0 flex flex-col">
-            <h2 class="text-base font-medium mb-3">{{ t('app.members') || 'Members' }}</h2>
-            
-            <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
-            <div v-else-if="error" class="text-red-500">{{ error }}</div>
-            
-            <div v-else-if="members.length === 0" class="text-gray-500 text-center py-8">
-                {{ t('app.noMembers') || 'No members found' }}
-            </div>
-
-                        <div v-else class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table">
-                <AppTable 
-                    :rows="paginatedMembers" 
-                    :columns="columns" 
-                    :loading="loading"
-                    v-model:page="membersPage"
-                    v-model:pageCount="membersPageCount"
-                    :total="members.length"
-                    :pagination="true"
-                >
-                  <template #roleName-data="{ row }">
-                    <span v-if="row.roleName" class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md">
-                      {{ row.roleName }}
-                    </span>
-                    <span v-else class="text-gray-400 dark:text-gray-600 italic">
-                      {{ t('app.noRole') || 'No role' }}
-                    </span>
-                  </template>
-                  <template #isActive-data="{ row }">
-                    <UToggle v-model="row.isActive" @update:model-value="toggleMemberActive(row)" />
-                  </template>
-                  <template #actions-data="{ row }">
-                    <div class="text-right">
-                      <UButton size="xs" color="primary" variant="soft" icon="lucide:pencil" @click="openEditMember(row)">
-                        {{ t('common.edit') || 'Edit' }}
-                      </UButton>
-                    </div>
-                  </template>
-                </AppTable>
-            </div>
-        </div>
-
-        <!-- Create/Edit Route Modal -->
-        <RouteModal
-            v-model="isRouteModalOpen"
-            :title="editingRouteId ? (t('app.route.titleEdit') || 'Edit Route') : (t('app.route.titleCreate') || 'Create Route')"
-            :show-edit-warning="Boolean(editingRouteId)"
-            :edit-warning="t('app.route.editWarning') || 'Изменение маршрута пересоздаст его и сбросит текущую историю прохождений.'"
-            :name-label="t('app.route.form.title') || 'Название'"
-            :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
-            :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
-            :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
-            :select-placeholder="t('app.select.location') || 'Выберите пост'"
-            :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
-            :cancel-label="t('common.cancel') || 'Cancel'"
-            :save-label="t('common.save') || 'Save'"
-            v-model:route-title="routeForm.title"
-            v-model:selected-post-id="routeFormPostId"
-            v-model:selected-post-ids="routeForm.postIds"
-            :post-options="routePostOptions"
-            :get-post-label="getRoutePostTitle"
-            :error="routeFormError"
-            @save="saveRoute"
-        />
-
-        <!-- Edit Member Modal -->
-        <UModal v-model="isEditMemberOpen" :ui="{ container: 'items-center' }">
-            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-                <template #header>
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
-                            {{ t('app.editMember') || 'Edit Member' }}
-                        </h3>
-                        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isEditMemberOpen = false" />
-                    </div>
-                </template>
-
-                <div class="space-y-6" v-if="editingMember">
-                    <!-- Member Info -->
-                    <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-                        <div class="grid grid-cols-1 gap-3">
-                            <div>
-                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                    {{ t('common.username') }}
-                                </span>
-                                <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                                    {{ editingMember.username }}
-                                </p>
-                            </div>
-                            <div>
-                                <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                                    {{ t('common.email') }}
-                                </span>
-                                <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                                    {{ editingMember.email }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Role Selection -->
-                    <UFormGroup :label="t('common.role') || 'Role'" :help="t('app.roleHint') || 'Assign a role to control access permissions'" class="space-y-2">
-                        <USelect 
-                            v-model="editForm.roleId"
-                            size="lg"
-                            :options="[
-                                { label: t('app.noRole') || 'No role', value: '' },
-                                ...roles.map(r => ({ label: r.name, value: r.id }))
-                            ]"
-                            option-attribute="label"
-                            value-attribute="value"
-                        />
-                    </UFormGroup>
-
-                    <!-- Working Requirements -->
-                    <div class="space-y-4">
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ t('app.workingRequirements') || 'Working Requirements' }}
-                        </h4>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <UFormGroup 
-                                :label="t('app.requiredWorkingDays') || 'Required Days/Month'"
-                                :help="t('app.requiredWorkingDaysHint') || 'Number of required working days per month'"
-                            >
-                                <UInput 
-                                    v-model.number="editForm.requiredWorkingDays" 
-                                    type="number"
-                                    size="lg"
-                                    min="0"
-                                    max="31"
-                                    step="1"
-                                    inputmode="numeric"
-                                    :placeholder="'22'"
-                                />
-                            </UFormGroup>
-
-                            <UFormGroup 
-                                :label="t('app.requiredWorkingHours') || 'Required Hours/Day'"
-                                :help="t('app.requiredWorkingHoursHint') || 'Number of required working hours per day'"
-                            >
-                                <UInput 
-                                    v-model.number="editForm.requiredWorkingHours" 
-                                    type="number"
-                                    size="lg"
-                                    min="0"
-                                    max="24"
-                                    step="1"
-                                    inputmode="numeric"
-                                    :placeholder="'8'"
-                                />
-                            </UFormGroup>
-                        </div>
-                    </div>
-                </div>
-
-                <template #footer>
-                    <div class="flex justify-end gap-2">
-                        <UButton 
-                            icon="lucide:x" 
-                            color="primary" 
-                            variant="soft"
-                            @click="isEditMemberOpen = false"
-                        >
-                            {{ t('common.cancel') || 'Cancel' }}
-                        </UButton>
-                        <UButton 
-                            icon="lucide:check" 
-                            color="primary"
-                            @click="handleSaveMember"
-                        >
-                            {{ t('common.save') || 'Save' }}
-                        </UButton>
-                    </div>
-                </template>
-            </UCard>
-        </UModal>
-
-        <!-- Create Invite Modal -->
-        <UModal v-model="isInviteOpen" :ui="{ container: 'items-center justify-center' }">
-            <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', base: 'w-full max-w-2xl', body: { base: 'w-full' } }">
-                <template #header>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
-                                {{ t('app.sendInvite') || 'Send Invitation' }}
-                            </h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                {{ t('app.namespace') || 'Namespace' }}: <span class="font-medium">{{ nsSlug }}</span>
-                            </p>
-                        </div>
-                        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="isInviteOpen = false" />
-                    </div>
-                </template>
-
-                <div class="space-y-6">
-                    <!-- Email -->
-                    <div>
-                        <UFormGroup :label="t('common.email') || 'Email'" :help="t('app.searchEmailPlaceholder')" class="space-y-2">
-                            <UInput 
-                                v-model="inviteEmail" 
-                                type="email" 
-                                size="lg" 
-                                :placeholder="'name@example.com'"
-                                :state="inviteEmail && !isValidInviteEmail ? 'error' : 'success'"
-                            />
-                            <p v-if="inviteEmail && !isValidInviteEmail" class="text-xs text-red-500">
-                                {{ t('app.invalidEmail') || 'Please enter a valid email' }}
-                            </p>
-                        </UFormGroup>
-                    </div>
-
-                    <!-- Role -->
-                    <div>
-                        <UFormGroup :label="t('common.role') || 'Role'" class="space-y-2">
-                            <USelectMenu 
-                                v-model="inviteRoleId"
-                                size="lg"
-                                :options="[
-                                    { label: t('app.noRole') || 'No role', value: '' },
-                                    ...roles.map(r => ({ label: r.name, value: r.id }))
-                                ]"
-                                option-attribute="label"
-                                value-attribute="value"
-                                :placeholder="t('app.selectRole') || 'Select a role'"
-                            />
-                        </UFormGroup>
-                    </div>
-
-                    <!-- Working Requirements -->
-                    <div>
-                        <div style="display: none">
-                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                                {{ t('app.workingRequirements') || 'Working Requirements' }}
-                            </h4>
-                            <div class="grid grid-cols-2 gap-4">
-                                <UFormGroup 
-                                    :label="t('app.requiredWorkingDays') || 'Days per Month'"
-                                    :help="t('app.requiredWorkingDaysHint') || '1–31 days'"
-                                    class="space-y-2"
-                                >
-                                    <UInput 
-                                        v-model.number="inviteDays" 
-                                        type="number" 
-                                        size="lg" 
-                                        min="0" 
-                                        max="31" 
-                                        step="1" 
-                                        inputmode="numeric"
-                                    />
-                                </UFormGroup>
-
-                                <UFormGroup 
-                                    :label="t('app.requiredWorkingHours') || 'Hours per Day'"
-                                    :help="t('app.requiredWorkingHoursHint') || '0–24 hours'"
-                                    class="space-y-2"
-                                >
-                                    <UInput 
-                                        v-model.number="inviteHours" 
-                                        type="number" 
-                                        size="lg" 
-                                        min="0" 
-                                        max="24" 
-                                        step="1" 
-                                        inputmode="numeric"
-                                    />
-                                </UFormGroup>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Error message -->
-                    <div v-if="inviteError" class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                        {{ inviteError }}
-                    </div>
-                </div>
-
-                <template #footer>
-                    <div class="flex justify-end gap-2">
-                        <UButton 
-                            icon="lucide:x" 
-                            color="primary" 
-                            variant="soft" 
-                            @click="isInviteOpen = false"
-                        >
-                            {{ t('common.cancel') || 'Cancel' }}
-                        </UButton>
-                        <UButton 
-                            :disabled="!inviteCanSubmit" 
-                            :loading="inviteSubmitting" 
-                            icon="lucide:send" 
-                            color="primary" 
-                            @click="submitInvite"
-                        >
-                            {{ t('app.sendInvite') || 'Send Invitation' }}
-                        </UButton>
-                    </div>
-                </template>
-            </UCard>
-        </UModal>
-        </template>
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
+      <div class="text-left">
+        <h1 class="text-2xl font-semibold">
+          {{ t('common.settings.title') }}
+        </h1>
+        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
+      </div>
+      <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
+        <UButton 
+          icon="lucide:star" 
+          size="xs" 
+          color="amber" 
+          variant="soft"
+          :to="`/${nsSlug}/atrace/plans`"
+          class="min-w-fit whitespace-nowrap"
+        >
+          {{ t('app.upgradePlan') || 'Upgrade Plan' }}
+        </UButton>
+        <UButton 
+          icon="lucide:user-plus" 
+          size="xs" 
+          color="primary" 
+          class="min-w-fit whitespace-nowrap"
+          @click="isInviteOpen = true"
+        >
+          {{ t('app.sendInvite') || 'Send Invitation' }}
+        </UButton>
+        <UButton 
+          icon="lucide:arrow-left" 
+          size="xs" 
+          color="primary" 
+          variant="soft"
+          class="min-w-fit whitespace-nowrap gap-2"
+          @click="goBack"
+        >
+          <span class="hidden sm:inline">{{ t('app.back') }}</span>
+        </UButton>
+      </div>
     </div>
+
+    <div
+      v-if="accessDenied"
+      class="flex-1 flex items-center justify-center"
+    >
+      <div class="w-full max-w-xl rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-8 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/30">
+        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">
+          <UIcon
+            name="i-heroicons-lock-closed"
+            class="h-7 w-7"
+          />
+        </div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+          {{ t('app.settingsAccessDenied') || 'Доступ к настройкам ограничен' }}
+        </h2>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          {{ error || (t('app.attendancePermissionErrorHint') || 'Для этого раздела нужна роль с правами управления ATrace.') }}
+        </p>
+        <div class="mt-5 flex justify-center">
+          <UButton
+            color="primary"
+            variant="soft"
+            icon="lucide:arrow-left"
+            @click="goBack"
+          >
+            {{ t('app.back') || 'Назад' }}
+          </UButton>
+        </div>
+      </div>
+    </div>
+
+    <template v-else>
+      <div
+        v-if="planLimits !== null && !planLimitsLoading"
+        class="mb-4"
+      >
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-blue-100 dark:border-gray-700 bg-blue-50/60 dark:bg-gray-900/40 px-4 py-3">
+          <div class="text-sm text-gray-700 dark:text-gray-200">
+            <span class="font-semibold">{{ t('app.subscriptionPlans') || 'Plan' }}:</span>
+            <span class="ml-1">{{ planName || '—' }}</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 text-sm">
+            <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+              {{ t('app.locations') || 'Locations' }}:
+              <strong>{{ planLimits.max_posts ?? '∞' }}</strong>
+            </span>
+            <span class="px-2 py-1 rounded-full bg-white/70 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+              {{ t('atrace.members.activeCount') || 'Active members' }}:
+              <strong>{{ planLimits.max_employees ?? '∞' }}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
+          <div>
+            <h2 class="text-base font-medium">
+              {{ t('app.route.list') || 'Маршруты' }}
+            </h2>
+            <p class="text-xs text-gray-500">
+              {{ t('app.route.listHint') || 'Соберите посты в маршрут и отслеживайте прохождение' }}
+            </p>
+          </div>
+          <UButton
+            icon="lucide:plus"
+            size="xs"
+            color="primary"
+            class="self-start w-auto"
+            @click="openCreateRoute"
+          >
+            {{ t('app.route.create') || 'Создать маршрут' }}
+          </UButton>
+        </div>
+
+        <div
+          v-if="routesLoading"
+          class="text-gray-500 text-sm"
+        >
+          {{ t('app.loading') }}
+        </div>
+        <div
+          v-else-if="routesError"
+          class="text-red-500 text-sm"
+        >
+          {{ routesError }}
+        </div>
+        <div
+          v-else-if="atraceRoutes.length === 0"
+          class="text-gray-500 text-sm"
+        >
+          {{ t('app.route.empty') || 'Маршрутов пока нет' }}
+        </div>
+        <div
+          v-else
+          class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60"
+        >
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-800">
+              <tr class="text-left">
+                <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">
+                  {{ t('app.route.label') || 'Маршрут' }}
+                </th>
+                <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 w-[55%] min-w-[320px]">
+                  {{ t('app.route.posts') || 'Посты' }}
+                </th>
+                <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200 text-right">
+                  {{ t('common.actions') || 'Actions' }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="routeItem in atraceRoutes"
+                :key="routeItem.id"
+                class="border-t border-gray-100 dark:border-gray-800"
+              >
+                <td class="px-4 py-3 align-top">
+                  <div class="font-semibold text-gray-900 dark:text-white">
+                    {{ routeItem.title }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {{ routeItem.milestones.length }} {{ t('app.locations') || 'постов' }}
+                  </div>
+                </td>
+                <td class="px-4 py-3 w-[55%] min-w-[320px]">
+                  <div class="space-y-1 whitespace-normal">
+                    <div
+                      v-for="milestone in getSortedMilestones(routeItem)"
+                      :key="`${routeItem.id}-${milestone.postId}-${milestone.priority}`"
+                      class="text-gray-700 dark:text-gray-200"
+                    >
+                      <span class="font-semibold">#{{ milestone.priority }}</span>
+                      <span class="ml-2">{{ getRoutePostTitle(milestone.postId) }}</span>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-4 py-3 text-right">
+                  <div class="flex justify-end gap-2">
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="primary"
+                      icon="lucide:pencil"
+                      @click="openEditRoute(routeItem)"
+                    >
+                      {{ t('app.route.edit') || 'Edit' }}
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      variant="soft"
+                      color="red"
+                      icon="lucide:trash"
+                      @click="deleteRoute(routeItem)"
+                    >
+                      {{ t('common.delete') || 'Delete' }}
+                    </UButton>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Members Management Section -->
+      <div class="flex-1 min-h-0 flex flex-col">
+        <h2 class="text-base font-medium mb-3">
+          {{ t('app.members') || 'Members' }}
+        </h2>
+            
+        <div
+          v-if="loading"
+          class="text-gray-500 text-sm"
+        >
+          {{ t('app.loading') }}
+        </div>
+        <div
+          v-else-if="error"
+          class="text-red-500"
+        >
+          {{ error }}
+        </div>
+            
+        <div
+          v-else-if="members.length === 0"
+          class="text-gray-500 text-center py-8"
+        >
+          {{ t('app.noMembers') || 'No members found' }}
+        </div>
+
+        <div
+          v-else
+          class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table"
+        >
+          <AppTable 
+            v-model:page="membersPage" 
+            v-model:page-count="membersPageCount" 
+            :rows="paginatedMembers"
+            :columns="columns"
+            :loading="loading"
+            :total="members.length"
+            :pagination="true"
+          >
+            <template #roleName-data="{ row }">
+              <span
+                v-if="row.roleName"
+                class="px-2 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-md"
+              >
+                {{ row.roleName }}
+              </span>
+              <span
+                v-else
+                class="text-gray-400 dark:text-gray-600 italic"
+              >
+                {{ t('app.noRole') || 'No role' }}
+              </span>
+            </template>
+            <template #isActive-data="{ row }">
+              <UToggle
+                v-model="row.isActive"
+                @update:model-value="toggleMemberActive(row)"
+              />
+            </template>
+            <template #actions-data="{ row }">
+              <div class="text-right">
+                <UButton
+                  size="xs"
+                  color="primary"
+                  variant="soft"
+                  icon="lucide:pencil"
+                  @click="openEditMember(row)"
+                >
+                  {{ t('common.edit') || 'Edit' }}
+                </UButton>
+              </div>
+            </template>
+          </AppTable>
+        </div>
+      </div>
+
+      <!-- Create/Edit Route Modal -->
+      <RouteModal
+        v-model="isRouteModalOpen"
+        :title="editingRouteId ? (t('app.route.titleEdit') || 'Edit Route') : (t('app.route.titleCreate') || 'Create Route')"
+        :show-edit-warning="Boolean(editingRouteId)"
+        v-model:route-title="routeForm.title"
+        :edit-warning="t('app.route.editWarning') || 'Изменение маршрута пересоздаст его и сбросит текущую историю прохождений.'"
+        v-model:selected-post-id="routeFormPostId"
+        :name-label="t('app.route.form.title') || 'Название'"
+        v-model:selected-post-ids="routeForm.postIds"
+        :name-placeholder="t('app.route.form.titlePlaceholder') || 'Маршрут'"
+        :posts-label="t('app.route.form.posts') || 'Посты маршрута'"
+        :posts-hint="t('app.route.form.postsHint') || 'Добавьте посты в нужном порядке'"
+        :select-placeholder="t('app.select.location') || 'Выберите пост'"
+        :empty-text="t('app.route.form.noPostsSelected') || 'Посты не выбраны'"
+        :cancel-label="t('common.cancel') || 'Cancel'"
+        :save-label="t('common.save') || 'Save'"
+        :post-options="routePostOptions"
+        :get-post-label="getRoutePostTitle"
+        :error="routeFormError"
+        @save="saveRoute"
+      />
+
+      <!-- Edit Member Modal -->
+      <UModal
+        v-model="isEditMemberOpen"
+        :ui="{ container: 'items-center' }"
+      >
+        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+                {{ t('app.editMember') || 'Edit Member' }}
+              </h3>
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="lucide:x"
+                class="-my-1"
+                @click="isEditMemberOpen = false"
+              />
+            </div>
+          </template>
+
+          <div
+            v-if="editingMember"
+            class="space-y-6"
+          >
+            <!-- Member Info -->
+            <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+              <div class="grid grid-cols-1 gap-3">
+                <div>
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {{ t('common.username') }}
+                  </span>
+                  <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                    {{ editingMember.username }}
+                  </p>
+                </div>
+                <div>
+                  <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                    {{ t('common.email') }}
+                  </span>
+                  <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+                    {{ editingMember.email }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Role Selection -->
+            <UFormGroup
+              :label="t('common.role') || 'Role'"
+              :help="t('app.roleHint') || 'Assign a role to control access permissions'"
+              class="space-y-2"
+            >
+              <USelect 
+                v-model="editForm.roleId"
+                size="lg"
+                :options="[
+                  { label: t('app.noRole') || 'No role', value: '' },
+                  ...roles.map(r => ({ label: r.name, value: r.id }))
+                ]"
+                option-attribute="label"
+                value-attribute="value"
+              />
+            </UFormGroup>
+
+            <!-- Working Requirements -->
+            <div class="space-y-4">
+              <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                {{ t('app.workingRequirements') || 'Working Requirements' }}
+              </h4>
+                        
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <UFormGroup 
+                  :label="t('app.requiredWorkingDays') || 'Required Days/Month'"
+                  :help="t('app.requiredWorkingDaysHint') || 'Number of required working days per month'"
+                >
+                  <UInput 
+                    v-model.number="editForm.requiredWorkingDays" 
+                    type="number"
+                    size="lg"
+                    min="0"
+                    max="31"
+                    step="1"
+                    inputmode="numeric"
+                    :placeholder="'22'"
+                  />
+                </UFormGroup>
+
+                <UFormGroup 
+                  :label="t('app.requiredWorkingHours') || 'Required Hours/Day'"
+                  :help="t('app.requiredWorkingHoursHint') || 'Number of required working hours per day'"
+                >
+                  <UInput 
+                    v-model.number="editForm.requiredWorkingHours" 
+                    type="number"
+                    size="lg"
+                    min="0"
+                    max="24"
+                    step="1"
+                    inputmode="numeric"
+                    :placeholder="'8'"
+                  />
+                </UFormGroup>
+              </div>
+            </div>
+          </div>
+
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton 
+                icon="lucide:x" 
+                color="primary" 
+                variant="soft"
+                @click="isEditMemberOpen = false"
+              >
+                {{ t('common.cancel') || 'Cancel' }}
+              </UButton>
+              <UButton 
+                icon="lucide:check" 
+                color="primary"
+                @click="handleSaveMember"
+              >
+                {{ t('common.save') || 'Save' }}
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+
+      <!-- Create Invite Modal -->
+      <UModal
+        v-model="isInviteOpen"
+        :ui="{ container: 'items-center justify-center' }"
+      >
+        <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', base: 'w-full max-w-2xl', body: { base: 'w-full' } }">
+          <template #header>
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+                  {{ t('app.sendInvite') || 'Send Invitation' }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {{ t('app.namespace') || 'Namespace' }}: <span class="font-medium">{{ nsSlug }}</span>
+                </p>
+              </div>
+              <UButton
+                color="gray"
+                variant="ghost"
+                icon="lucide:x"
+                class="-my-1"
+                @click="isInviteOpen = false"
+              />
+            </div>
+          </template>
+
+          <div class="space-y-6">
+            <!-- Email -->
+            <div>
+              <UFormGroup
+                :label="t('common.email') || 'Email'"
+                :help="t('app.searchEmailPlaceholder')"
+                class="space-y-2"
+              >
+                <UInput 
+                  v-model="inviteEmail" 
+                  type="email" 
+                  size="lg" 
+                  :placeholder="'name@example.com'"
+                  :state="inviteEmail && !isValidInviteEmail ? 'error' : 'success'"
+                />
+                <p
+                  v-if="inviteEmail && !isValidInviteEmail"
+                  class="text-xs text-red-500"
+                >
+                  {{ t('app.invalidEmail') || 'Please enter a valid email' }}
+                </p>
+              </UFormGroup>
+            </div>
+
+            <!-- Role -->
+            <div>
+              <UFormGroup
+                :label="t('common.role') || 'Role'"
+                class="space-y-2"
+              >
+                <USelectMenu 
+                  v-model="inviteRoleId"
+                  size="lg"
+                  :options="[
+                    { label: t('app.noRole') || 'No role', value: '' },
+                    ...roles.map(r => ({ label: r.name, value: r.id }))
+                  ]"
+                  option-attribute="label"
+                  value-attribute="value"
+                  :placeholder="t('app.selectRole') || 'Select a role'"
+                />
+              </UFormGroup>
+            </div>
+
+            <!-- Working Requirements -->
+            <div>
+              <div style="display: none">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                  {{ t('app.workingRequirements') || 'Working Requirements' }}
+                </h4>
+                <div class="grid grid-cols-2 gap-4">
+                  <UFormGroup 
+                    :label="t('app.requiredWorkingDays') || 'Days per Month'"
+                    :help="t('app.requiredWorkingDaysHint') || '1–31 days'"
+                    class="space-y-2"
+                  >
+                    <UInput 
+                      v-model.number="inviteDays" 
+                      type="number" 
+                      size="lg" 
+                      min="0" 
+                      max="31" 
+                      step="1" 
+                      inputmode="numeric"
+                    />
+                  </UFormGroup>
+
+                  <UFormGroup 
+                    :label="t('app.requiredWorkingHours') || 'Hours per Day'"
+                    :help="t('app.requiredWorkingHoursHint') || '0–24 hours'"
+                    class="space-y-2"
+                  >
+                    <UInput 
+                      v-model.number="inviteHours" 
+                      type="number" 
+                      size="lg" 
+                      min="0" 
+                      max="24" 
+                      step="1" 
+                      inputmode="numeric"
+                    />
+                  </UFormGroup>
+                </div>
+              </div>
+            </div>
+
+            <!-- Error message -->
+            <div
+              v-if="inviteError"
+              class="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 p-3 rounded-md"
+            >
+              {{ inviteError }}
+            </div>
+          </div>
+
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton 
+                icon="lucide:x" 
+                color="primary" 
+                variant="soft" 
+                @click="isInviteOpen = false"
+              >
+                {{ t('common.cancel') || 'Cancel' }}
+              </UButton>
+              <UButton 
+                :disabled="!inviteCanSubmit" 
+                :loading="inviteSubmitting" 
+                icon="lucide:send" 
+                color="primary" 
+                @click="submitInvite"
+              >
+                {{ t('app.sendInvite') || 'Send Invitation' }}
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+    </template>
+  </div>
 </template>
 
 <style scoped>

@@ -62,7 +62,11 @@ const statusColor = computed(() => {
             {{ clientType }}
           </p>
         </div>
-        <UBadge :color="statusColor" size="xs" class="ml-2 flex-shrink-0">
+        <UBadge
+          :color="statusColor"
+          size="xs"
+          class="ml-2 flex-shrink-0"
+        >
           {{ client.client.status }}
         </UBadge>
       </div>

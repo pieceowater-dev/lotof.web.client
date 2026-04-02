@@ -5,7 +5,11 @@
 <template>
   <div>
     <!-- Skip link anchor -->
-    <a id="skip-to-content" class="sr-only" href="#main-content">
+    <a
+      id="skip-to-content"
+      class="sr-only"
+      href="#main-content"
+    >
       Перейти к основному содержимому
     </a>
 

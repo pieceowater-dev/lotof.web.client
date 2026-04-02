@@ -252,107 +252,171 @@ function handleLogout() {
 
 <template>
   <div class="h-full overflow-y-auto pb-safe-or-4">
-  <ClientOnly>
-    <template #fallback>
-      <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
-        <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-        <USkeleton class="h-4 w-[250px]" />
-        <USkeleton class="h-4 w-[200px]" />
-      </div>
-    </template>
+    <ClientOnly>
+      <template #fallback>
+        <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
+          <USkeleton
+            class="h-12 w-12"
+            :ui="{ rounded: 'rounded-full' }"
+          />
+          <USkeleton class="h-4 w-[250px]" />
+          <USkeleton class="h-4 w-[200px]" />
+        </div>
+      </template>
     
-    <IntroSection v-if="!isLoggedIn" :onAction="login" />
-    <WelcomeSection v-else :greeting="greeting" :username="username" :current-namespace="selectedNS" :all-namespaces="allNamespaces"
-      @edit-profile="isModalOpen = true" @edit-people="handleEditPeople" @switch-namespace="handleSwitchNamespace" />
-  </ClientOnly>
+      <IntroSection
+        v-if="!isLoggedIn"
+        :on-action="login"
+      />
+      <WelcomeSection
+        v-else
+        :greeting="greeting"
+        :username="username"
+        :current-namespace="selectedNS"
+        :all-namespaces="allNamespaces"
+        @edit-profile="isModalOpen = true"
+        @edit-people="handleEditPeople"
+        @switch-namespace="handleSwitchNamespace"
+      />
+    </ClientOnly>
 
-  <div class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
-    <div v-if="activeApps.length">
-      <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
-        <div v-for="(app, index) in activeApps" :key="app.bundle" class="h-full">
-          <AppCard v-bind="toCard(app)" />
+    <div class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
+      <div v-if="activeApps.length">
+        <h3 class="text-lg font-medium mb-4">
+          {{ t('app.installedHead') }}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
+          <div
+            v-for="app in activeApps"
+            :key="app.bundle"
+            class="h-full"
+          >
+            <AppCard v-bind="toCard(app)" />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="possibleApps.length">
+        <h3 class="text-xl font-semibold mb-4">
+          {{ t('app.availableHead') }}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
+          <div
+            v-for="app in possibleApps"
+            :key="app.bundle"
+            class="h-full"
+          >
+            <AppCard v-bind="toCard(app)" />
+          </div>
+        </div>
+      </div>
+
+      <div v-if="comingSoonApps.length">
+        <h3 class="text-xl font-semibold mb-4">
+          {{ t('app.comingSoonHead') }}
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
+          <div
+            v-for="app in comingSoonApps"
+            :key="app.bundle"
+            class="h-full"
+          >
+            <AppCard v-bind="toCard(app)" />
+          </div>
         </div>
       </div>
     </div>
 
-    <div v-if="possibleApps.length">
-      <h3 class="text-xl font-semibold mb-4">{{ t('app.availableHead') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
-        <div v-for="(app, index) in possibleApps" :key="app.bundle" class="h-full">
-          <AppCard v-bind="toCard(app)" />
-        </div>
+    <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
+      <h2 class="text-xl font-semibold flex items-center mb-4">
+        <UIcon
+          name="lucide:briefcase"
+          class="w-5 h-5 mr-2"
+        />
+        {{ t('app.businessAutomation') }}
+      </h2>
+      <p class="mb-4">
+        {{ t('app.businessAutomationLongDesc') }}
+      </p>
+
+      <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
+        <UIcon
+          name="lucide:plus-circle"
+          class="w-5 h-5 mr-2"
+        />
+        {{ t('app.processOptimization') }}
+      </h2>
+      <p class="mb-4">
+        {{ t('app.processOptimizationLongDesc') }}
+      </p>
+
+      <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
+        <UIcon
+          name="lucide:folder-cog"
+          class="w-5 h-5 mr-2"
+        />
+        {{ t('app.flexibility') }}
+      </h2>
+      <p class="mb-4">
+        {{ t('app.flexibilityLongDesc') }}
+      </p>
+
+      <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
+        <UIcon
+          name="lucide:line-chart"
+          class="w-5 h-5 mr-2"
+        />
+        {{ t('app.analytics') }}
+      </h2>
+      <p class="mb-4">
+        {{ t('app.analyticsLongDesc') }}
+      </p>
+    </div>
+
+    <Modal
+      v-model="isModalOpen"
+      :header="t('app.profileEditing')"
+      :disable-autofocus="true"
+      :footer-buttons="[
+        { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
+        { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
+        { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
+      ]"
+    >
+      <div class="space-y-6">
+        <UFormGroup label="Имя пользователя">
+          <UInput v-model="username" />
+        </UFormGroup>
+      
+        <UFormGroup label="Email">
+          <UInput
+            v-model="email"
+            disabled
+            type="email"
+          />
+        </UFormGroup>
+      
+        <UFormGroup :label="t('app.language')">
+          <USelect
+            v-model="locale"
+            :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]"
+          />
+        </UFormGroup>
+      
+        <UFormGroup :label="t('app.theme') || 'Theme'">
+          <div class="flex items-center gap-3">
+            <UToggle v-model="isDarkMode" />
+            <span class="text-sm text-gray-700 dark:text-gray-200">
+              {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
+            </span>
+          </div>
+        </UFormGroup>
       </div>
+    </Modal>
+
+    <div class="m-4">
+      <AppFooter />
     </div>
-
-    <div v-if="comingSoonApps.length">
-      <h3 class="text-xl font-semibold mb-4">{{ t('app.comingSoonHead') }}</h3>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
-        <div v-for="(app, index) in comingSoonApps" :key="app.bundle" class="h-full">
-          <AppCard v-bind="toCard(app)" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
-    <h2 class="text-xl font-semibold flex items-center mb-4">
-  <UIcon name="lucide:briefcase" class="w-5 h-5 mr-2" />
-      {{ t('app.businessAutomation') }}
-    </h2>
-    <p class="mb-4">{{ t('app.businessAutomationLongDesc') }}</p>
-
-    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
-  <UIcon name="lucide:plus-circle" class="w-5 h-5 mr-2" />
-      {{ t('app.processOptimization') }}
-    </h2>
-    <p class="mb-4">{{ t('app.processOptimizationLongDesc') }}</p>
-
-    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
-  <UIcon name="lucide:folder-cog" class="w-5 h-5 mr-2" />
-      {{ t('app.flexibility') }}
-    </h2>
-    <p class="mb-4">{{ t('app.flexibilityLongDesc') }}</p>
-
-    <h2 class="text-xl font-semibold flex items-center mt-8 mb-4">
-  <UIcon name="lucide:line-chart" class="w-5 h-5 mr-2" />
-      {{ t('app.analytics') }}
-    </h2>
-    <p class="mb-4">{{ t('app.analyticsLongDesc') }}</p>
-  </div>
-
-  <Modal v-model="isModalOpen" :header="t('app.profileEditing')" :disable-autofocus="true" :footerButtons="[
-  { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
-    { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
-    { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
-  ]">
-    <div class="space-y-6">
-      <UFormGroup label="Имя пользователя">
-        <UInput v-model="username" />
-      </UFormGroup>
-      
-      <UFormGroup label="Email">
-        <UInput disabled v-model="email" type="email" />
-      </UFormGroup>
-      
-      <UFormGroup :label="t('app.language')">
-        <USelect :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]" v-model="locale" />
-      </UFormGroup>
-      
-      <UFormGroup :label="t('app.theme') || 'Theme'">
-        <div class="flex items-center gap-3">
-          <UToggle v-model="isDarkMode" />
-          <span class="text-sm text-gray-700 dark:text-gray-200">
-            {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
-          </span>
-        </div>
-      </UFormGroup>
-    </div>
-  </Modal>
-
-  <div class="m-4">
-    <AppFooter />
-  </div>
   </div>
 </template>
 

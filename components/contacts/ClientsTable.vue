@@ -95,14 +95,10 @@ watch(localPageSize, (newPageSize) => {
   emit('update:pageSize', numValue);
 });
 
-const page = computed<number>(() => localPage.value);
-
-const pageSize = computed<number>(() => localPageSize.value);
-
 const totalItems = computed<number>(() => props.totalItems ?? props.clients.length);
 const resolvedTotalPages = computed<number>(() => {
   if (props.totalPages && props.totalPages > 0) return props.totalPages;
-  return Math.max(1, Math.ceil(totalItems.value / pageSize.value));
+  return Math.max(1, Math.ceil(totalItems.value / localPageSize.value));
 });
 
 interface ColumnDef {
@@ -157,7 +153,7 @@ const paginatedClients = computed(() => sortedClients.value);
 
 const pageFrom = computed(() => {
   if (props.clients.length === 0) return 0;
-  return (page.value - 1) * pageSize.value + 1;
+  return (localPage.value - 1) * localPageSize.value + 1;
 });
 
 const pageTo = computed(() => {
@@ -499,9 +495,9 @@ function addTagToFilter(tagId: string, tagName: string) {
               <div
                 v-if="index < columns.length - 1"
                 class="absolute top-0 -right-[1.5px] w-[3px] h-full cursor-col-resize bg-gray-400 dark:bg-gray-500 hover:bg-blue-500 active:bg-blue-600 transition-colors z-20"
+                :title="t('contacts.resizeColumns') || 'Drag to resize'"
                 @mousedown="startResize(index, $event)"
                 @click.stop
-                :title="t('contacts.resizeColumns') || 'Drag to resize'"
               />
             </th>
           </tr>
@@ -512,7 +508,7 @@ function addTagToFilter(tagId: string, tagName: string) {
           <!-- Loading skeleton -->
           <template v-if="loading">
             <tr
-              v-for="i in pageSize"
+              v-for="i in localPageSize"
               :key="`skeleton-${i}`"
               class="animate-pulse"
             >
@@ -522,16 +518,25 @@ function addTagToFilter(tagId: string, tagName: string) {
                 :style="{ width: `${col.width}px` }"
                 class="px-4 py-3"
               >
-                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded" :class="colIndex === 0 ? 'w-6' : colIndex === 2 ? 'w-32' : 'w-24'"></div>
+                <div
+                  class="h-4 bg-gray-200 dark:bg-gray-700 rounded"
+                  :class="colIndex === 0 ? 'w-6' : colIndex === 2 ? 'w-32' : 'w-24'"
+                />
               </td>
             </tr>
           </template>
 
           <!-- Empty state -->
           <tr v-else-if="paginatedClients.length === 0">
-            <td :colspan="columns.length" class="px-4 py-12 text-center">
+            <td
+              :colspan="columns.length"
+              class="px-4 py-12 text-center"
+            >
               <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
-                <UIcon name="lucide:inbox" class="w-12 h-12 mb-2 opacity-50" />
+                <UIcon
+                  name="lucide:inbox"
+                  class="w-12 h-12 mb-2 opacity-50"
+                />
                 <p>{{ t('contacts.noClients') }}</p>
               </div>
             </td>
@@ -539,8 +544,8 @@ function addTagToFilter(tagId: string, tagName: string) {
 
           <!-- Data rows -->
           <tr
-            v-else
             v-for="client in paginatedClients"
+            v-else
             :key="client.client.id"
             class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
             @click="emit('rowClick', client)"
@@ -581,21 +586,61 @@ function addTagToFilter(tagId: string, tagName: string) {
               class="px-4 py-3 text-sm font-medium"
               @click.stop
             >
-              <div v-if="editingNameClientId === client.client.id" class="space-y-2">
+              <div
+                v-if="editingNameClientId === client.client.id"
+                class="space-y-2"
+              >
                 <template v-if="client.client.clientType === 'INDIVIDUAL'">
-                  <UInput v-model="editLastName" size="xs" :placeholder="t('contacts.lastName')" @click.stop />
-                  <UInput v-model="editFirstName" size="xs" :placeholder="t('contacts.firstName')" @click.stop />
-                  <UInput v-model="editMiddleName" size="xs" :placeholder="t('contacts.middleName')" @click.stop />
+                  <UInput
+                    v-model="editLastName"
+                    size="xs"
+                    :placeholder="t('contacts.lastName')"
+                    @click.stop
+                  />
+                  <UInput
+                    v-model="editFirstName"
+                    size="xs"
+                    :placeholder="t('contacts.firstName')"
+                    @click.stop
+                  />
+                  <UInput
+                    v-model="editMiddleName"
+                    size="xs"
+                    :placeholder="t('contacts.middleName')"
+                    @click.stop
+                  />
                 </template>
                 <template v-else>
-                  <UInput v-model="editLegalName" size="xs" :placeholder="t('contacts.legalName')" @click.stop />
+                  <UInput
+                    v-model="editLegalName"
+                    size="xs"
+                    :placeholder="t('contacts.legalName')"
+                    @click.stop
+                  />
                 </template>
                 <div class="flex items-center gap-2">
-                  <UButton size="xs" color="primary" variant="soft" @click.stop="saveEditName(client)">{{ t('common.save') }}</UButton>
-                  <UButton size="xs" color="gray" variant="ghost" @click.stop="cancelEditName">{{ t('common.cancel') }}</UButton>
+                  <UButton
+                    size="xs"
+                    color="primary"
+                    variant="soft"
+                    @click.stop="saveEditName(client)"
+                  >
+                    {{ t('common.save') }}
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    color="gray"
+                    variant="ghost"
+                    @click.stop="cancelEditName"
+                  >
+                    {{ t('common.cancel') }}
+                  </UButton>
                 </div>
               </div>
-              <div v-else class="flex items-center gap-2">
+              <div
+                v-else
+                class="flex items-center gap-2"
+              >
                 <NuxtLink
                   :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
                   class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
@@ -620,17 +665,45 @@ function addTagToFilter(tagId: string, tagName: string) {
               @click.stop
             >
               <div class="space-y-1">
-                <div v-if="editingPhoneClientId === client.client.id" class="space-y-2">
-                  <UInput v-model="editPhone" size="xs" :placeholder="t('contacts.enterPhone')" @click.stop />
-                  <p v-if="editPhone.trim()" class="text-xs text-gray-500 dark:text-gray-400">
+                <div
+                  v-if="editingPhoneClientId === client.client.id"
+                  class="space-y-2"
+                >
+                  <UInput
+                    v-model="editPhone"
+                    size="xs"
+                    :placeholder="t('contacts.enterPhone')"
+                    @click.stop
+                  />
+                  <p
+                    v-if="editPhone.trim()"
+                    class="text-xs text-gray-500 dark:text-gray-400"
+                  >
                     {{ t('contacts.phonePreview') }}: {{ formatDisplayPhoneUniversal(editPhone) }}
                   </p>
                   <div class="flex items-center gap-2">
-                    <UButton size="xs" color="primary" variant="soft" @click.stop="saveEditPrimaryPhone(client.client.id)">{{ t('common.save') }}</UButton>
-                    <UButton size="xs" color="gray" variant="ghost" @click.stop="cancelEditPrimaryPhone">{{ t('common.cancel') }}</UButton>
+                    <UButton
+                      size="xs"
+                      color="primary"
+                      variant="soft"
+                      @click.stop="saveEditPrimaryPhone(client.client.id)"
+                    >
+                      {{ t('common.save') }}
+                    </UButton>
+                    <UButton
+                      size="xs"
+                      color="gray"
+                      variant="ghost"
+                      @click.stop="cancelEditPrimaryPhone"
+                    >
+                      {{ t('common.cancel') }}
+                    </UButton>
                   </div>
                 </div>
-                <div v-else class="flex items-center gap-2">
+                <div
+                  v-else
+                  class="flex items-center gap-2"
+                >
                   <span class="font-medium">{{ getPrimaryPhoneDisplay(client) }}</span>
                   <UButton
                     icon="lucide:pencil"
@@ -641,7 +714,10 @@ function addTagToFilter(tagId: string, tagName: string) {
                   />
                 </div>
 
-                <div class="flex flex-wrap gap-1" v-if="getOtherContacts(client).length > 0">
+                <div
+                  v-if="getOtherContacts(client).length > 0"
+                  class="flex flex-wrap gap-1"
+                >
                   <span
                     v-for="contact in getOtherContacts(client)"
                     :key="`${client.client.id}-${contact.type}-${contact.value}`"
@@ -660,7 +736,9 @@ function addTagToFilter(tagId: string, tagName: string) {
               :style="{ width: `${columns[4].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
-              <div class="truncate font-mono">{{ getClientIdentifier(client) }}</div>
+              <div class="truncate font-mono">
+                {{ getClientIdentifier(client) }}
+              </div>
             </td>
 
             <!-- Additional Info -->
@@ -668,7 +746,9 @@ function addTagToFilter(tagId: string, tagName: string) {
               :style="{ width: `${columns[5].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
-              <div class="truncate">{{ getAdditionalInfo(client) }}</div>
+              <div class="truncate">
+                {{ getAdditionalInfo(client) }}
+              </div>
             </td>
 
             <!-- Status -->
@@ -693,8 +773,8 @@ function addTagToFilter(tagId: string, tagName: string) {
                   v-for="tag in getClientTags(client)"
                   :key="tag.id"
                   class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer max-w-[110px]"
-                  @click.stop="addTagToFilter(tag.id, tag.name)"
                   :title="`Filter by: ${tag.name}`"
+                  @click.stop="addTagToFilter(tag.id, tag.name)"
                 >
                   <span class="truncate">{{ tag.name }}</span>
                 </button>
@@ -702,20 +782,26 @@ function addTagToFilter(tagId: string, tagName: string) {
                 <!-- Add tag button: no tags → text pill; has tags → icon on hover -->
                 <button
                   v-if="getClientTags(client).length === 0"
-                  @click.stop="openTagsModal(client.client.id)"
                   class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors"
                   title="Add tag"
+                  @click.stop="openTagsModal(client.client.id)"
                 >
-                  <UIcon name="lucide:plus" class="w-3 h-3" />
+                  <UIcon
+                    name="lucide:plus"
+                    class="w-3 h-3"
+                  />
                   <span>tag</span>
                 </button>
                 <button
                   v-else
-                  @click.stop="openTagsModal(client.client.id)"
                   class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors opacity-0 group-hover/tags:opacity-100"
                   title="Add tag"
+                  @click.stop="openTagsModal(client.client.id)"
                 >
-                  <UIcon name="lucide:plus" class="w-3 h-3" />
+                  <UIcon
+                    name="lucide:plus"
+                    class="w-3 h-3"
+                  />
                 </button>
               </div>
             </td>
@@ -763,12 +849,12 @@ function addTagToFilter(tagId: string, tagName: string) {
             <span class="text-xs text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</span>
             <USelect 
               :model-value="localPageSize" 
-              @update:model-value="(val) => localPageSize = typeof val === 'number' ? val : parseInt(String(val), 10)"
-              :options="pageSizeOptions" 
-              option-attribute="label"
+              :options="pageSizeOptions"
+              option-attribute="label" 
               value-attribute="value"
               size="xs"
               class="w-20"
+              @update:model-value="(val) => localPageSize = typeof val === 'number' ? val : parseInt(String(val), 10)"
             />
           </div>
 

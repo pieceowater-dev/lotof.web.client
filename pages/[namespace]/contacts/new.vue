@@ -19,6 +19,7 @@ import {
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -339,25 +340,6 @@ const isFormValid = computed(() => {
   }
 });
 
-function dynamicFieldOptionChoices(field: DynamicField) {
-  return field.options.map((option) => ({ label: option, value: option }));
-}
-
-function dynamicFieldMultiSelectValues(field: DynamicField): string[] {
-  const rawValue = dynamicFieldDrafts.value[field.id];
-  return Array.isArray(rawValue)
-    ? rawValue.map((item) => String(item).trim()).filter(Boolean)
-    : [];
-}
-
-function dynamicFieldMultiSelectControlLabel(field: DynamicField): string {
-  const count = dynamicFieldMultiSelectValues(field).length;
-  if (count === 0) {
-    return tr('contacts.selectOptions', 'Выберите варианты');
-  }
-  return `${count} ${tr('contacts.selectedCountSuffix', 'выбрано')}`;
-}
-
 function initializeDynamicFieldDrafts(fields: DynamicField[]) {
   const nextDrafts: Record<string, string | number | boolean | string[]> = { ...dynamicFieldDrafts.value };
 
@@ -566,7 +548,7 @@ async function handleSubmit() {
           const contactInput: CreateIndividualClientInput = {
             individual: {
               firstName: contactPersonForm.value.firstName.trim(),
-              lastName: contactPersonForm.value.lastName.trim() || undefined,
+              lastName: contactPersonForm.value.lastName.trim(),
               middleName: contactPersonForm.value.middleName.trim() || undefined,
               birthDate: contactPersonForm.value.birthDate || undefined,
               gender: contactPersonForm.value.gender !== null ? contactPersonForm.value.gender : undefined,
@@ -845,8 +827,8 @@ useHead(() => ({
             size="xs"
             color="primary"
             variant="soft"
-            @click="handleBack"
             class="min-w-fit gap-2"
+            @click="handleBack"
           >
             <span class="hidden sm:inline">{{ t('app.back') }}</span>
           </UButton>
@@ -877,9 +859,9 @@ useHead(() => ({
                   type="radio"
                   class="peer sr-only"
                   :value="option.value"
-                />
+                >
                 <span class="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
-                  <span class="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100"></span>
+                  <span class="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100" />
                 </span>
                 <span class="flex-1 font-medium">
                   <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
@@ -898,7 +880,10 @@ useHead(() => ({
           <!-- 1. Phones Section -->
           <div class="space-y-3">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-phone" class="w-4 h-4 text-blue-600" />
+              <UIcon
+                name="i-heroicons-phone"
+                class="w-4 h-4 text-blue-600"
+              />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.contactInformation') }}
               </h2>
@@ -915,7 +900,6 @@ useHead(() => ({
                 <UInput
                   ref="phoneInputRef"
                   :model-value="phones[0]"
-                  @update:model-value="value => updatePhoneValue(0, value)"
                   type="tel"
                   inputmode="tel"
                   pattern="[0-9+()\s-]*"
@@ -923,15 +907,23 @@ useHead(() => ({
                   size="md"
                   autofocus
                   data-phone-input
+                  @update:model-value="value => updatePhoneValue(0, value)"
                 />
               </UFormGroup>
-              <p v-if="phones[0].trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p
+                v-if="phones[0].trim()"
+                class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+              >
                 {{ t('contacts.phonePreview') }}: {{ getPhonePreview(phones[0]) }}
               </p>
             </div>
 
             <!-- Additional Phones -->
-            <div v-for="(phone, idx) in phones.slice(1)" :key="'phone-' + idx" class="space-y-1">
+            <div
+              v-for="(phone, idx) in phones.slice(1)"
+              :key="'phone-' + idx"
+              class="space-y-1"
+            >
               <div class="flex gap-2">
                 <div class="flex-1">
                   <UFormGroup 
@@ -941,16 +933,19 @@ useHead(() => ({
                   >
                     <UInput
                       :model-value="phones[idx + 1]"
-                      @update:model-value="value => updatePhoneValue(idx + 1, value)"
                       type="tel"
                       inputmode="tel"
                       pattern="[0-9+()\s-]*"
                       :placeholder="t('contacts.enterPhone')"
                       size="md"
                       data-phone-input
+                      @update:model-value="value => updatePhoneValue(idx + 1, value)"
                     />
                   </UFormGroup>
-                  <p v-if="phones[idx + 1].trim()" class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <p
+                    v-if="phones[idx + 1].trim()"
+                    class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                  >
                     {{ t('contacts.phonePreview') }}: {{ getPhonePreview(phones[idx + 1]) }}
                   </p>
                 </div>
@@ -959,8 +954,8 @@ useHead(() => ({
                   color="red"
                   variant="ghost"
                   size="sm"
-                  @click="removePhone(idx + 1)"
                   :style="{ marginTop: idx === 0 ? '24px' : '0' }"
+                  @click="removePhone(idx + 1)"
                 />
               </div>
             </div>
@@ -981,9 +976,15 @@ useHead(() => ({
           <UDivider class="my-4" />
 
           <!-- 2. Name Section -->
-          <div v-if="clientType === 'INDIVIDUAL'" class="space-y-3">
+          <div
+            v-if="clientType === 'INDIVIDUAL'"
+            class="space-y-3"
+          >
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
+              <UIcon
+                name="i-heroicons-user"
+                class="w-4 h-4 text-blue-600"
+              />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.personalInformation') }}
               </h2>
@@ -1045,7 +1046,10 @@ useHead(() => ({
               </UFormGroup>
             </div>
 
-            <UFormGroup :label="t('contacts.legalEntity')" :description="t('contacts.attachLegalEntityDescription')">
+            <UFormGroup
+              :label="t('contacts.legalEntity')"
+              :description="t('contacts.attachLegalEntityDescription')"
+            >
               <div class="space-y-2">
                 <UInput
                   v-model="legalCompanySearch"
@@ -1054,7 +1058,10 @@ useHead(() => ({
                   size="md"
                 />
 
-                <div v-if="legalCompanyLoading" class="text-xs text-gray-500 dark:text-gray-400">
+                <div
+                  v-if="legalCompanyLoading"
+                  class="text-xs text-gray-500 dark:text-gray-400"
+                >
                   {{ t('contacts.searchingCompanies') }}
                 </div>
 
@@ -1073,7 +1080,10 @@ useHead(() => ({
                   </button>
                 </div>
 
-                <div v-if="selectedLegalCompany" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
+                <div
+                  v-if="selectedLegalCompany"
+                  class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm"
+                >
                   <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
                   <UButton
                     type="button"
@@ -1088,15 +1098,24 @@ useHead(() => ({
             </UFormGroup>
           </div>
 
-          <div v-if="clientType === 'LEGAL'" class="space-y-3">
+          <div
+            v-if="clientType === 'LEGAL'"
+            class="space-y-3"
+          >
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-blue-600" />
+              <UIcon
+                name="i-heroicons-building-office-2"
+                class="w-4 h-4 text-blue-600"
+              />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.companyInformation') }}
               </h2>
             </div>
             
-            <UFormGroup :label="t('contacts.legalName') + ' *'" :description="t('contacts.searchToAvoidDuplicates')">
+            <UFormGroup
+              :label="t('contacts.legalName') + ' *'"
+              :description="t('contacts.searchToAvoidDuplicates')"
+            >
               <div class="space-y-2">
                 <UInput
                   v-model="legalEntityForm.legalName"
@@ -1105,7 +1124,10 @@ useHead(() => ({
                   size="md"
                 />
 
-                <div v-if="legalEntityLoading" class="text-xs text-gray-500 dark:text-gray-400">
+                <div
+                  v-if="legalEntityLoading"
+                  class="text-xs text-gray-500 dark:text-gray-400"
+                >
                   {{ t('contacts.searchingSimilarCompanies') }}
                 </div>
 
@@ -1124,7 +1146,10 @@ useHead(() => ({
                   </button>
                 </div>
 
-                <div v-if="selectedExistingLegalEntity" class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm">
+                <div
+                  v-if="selectedExistingLegalEntity"
+                  class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm"
+                >
                   <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
                   <UButton
                     type="button"
@@ -1263,15 +1288,24 @@ useHead(() => ({
             >
               <template #additional>
                 <div class="space-y-4 px-4 pb-3">
-                  <div v-if="dynamicFieldsLoading" class="text-sm text-gray-500 dark:text-gray-400">
+                  <div
+                    v-if="dynamicFieldsLoading"
+                    class="text-sm text-gray-500 dark:text-gray-400"
+                  >
                     {{ t('common.loading') }}
                   </div>
 
-                  <div v-else-if="dynamicFieldsError" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+                  <div
+                    v-else-if="dynamicFieldsError"
+                    class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
+                  >
                     {{ dynamicFieldsError }}
                   </div>
 
-                  <div v-else-if="dynamicFields.length > 0" class="space-y-4">
+                  <div
+                    v-else-if="dynamicFields.length > 0"
+                    class="space-y-4"
+                  >
                     <div
                       v-for="field in dynamicFields"
                       :key="field.id"
@@ -1279,60 +1313,21 @@ useHead(() => ({
                     >
                       <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                         {{ field.label }}
-                        <span v-if="field.isRequired" class="text-red-500">*</span>
+                        <span
+                          v-if="field.isRequired"
+                          class="text-red-500"
+                        >*</span>
                       </label>
 
-                      <template v-if="field.dataType === 'BOOLEAN'">
-                        <div class="flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
-                          <span class="text-sm text-gray-700 dark:text-gray-300">{{ dynamicFieldDrafts[field.id] ? tr('contacts.yes', 'Да') : tr('contacts.no', 'Нет') }}</span>
-                          <UToggle v-model="dynamicFieldDrafts[field.id]" />
-                        </div>
-                      </template>
-
-                      <template v-else-if="field.dataType === 'SELECT'">
-                        <USelectMenu
-                          v-model="dynamicFieldDrafts[field.id]"
-                          :options="dynamicFieldOptionChoices(field)"
-                          value-attribute="value"
-                          option-attribute="label"
-                          :placeholder="tr('contacts.selectOption', 'Выберите вариант')"
-                        />
-                      </template>
-
-                      <template v-else-if="field.dataType === 'MULTI_SELECT'">
-                        <USelectMenu
-                          v-model="dynamicFieldDrafts[field.id]"
-                          :options="dynamicFieldOptionChoices(field)"
-                          value-attribute="value"
-                          option-attribute="label"
-                          :placeholder="tr('contacts.selectOptions', 'Выберите варианты')"
-                          multiple
-                        >
-                          <template #label>
-                            {{ dynamicFieldMultiSelectControlLabel(field) }}
-                          </template>
-                        </USelectMenu>
-                        <div v-if="dynamicFieldMultiSelectValues(field).length > 0" class="flex flex-wrap gap-1.5 pt-1">
-                          <UBadge
-                            v-for="selectedValue in dynamicFieldMultiSelectValues(field)"
-                            :key="`${field.id}-${selectedValue}`"
-                            color="primary"
-                            variant="soft"
-                            size="xs"
-                          >
-                            {{ selectedValue }}
-                          </UBadge>
-                        </div>
-                        <p v-else class="text-xs text-gray-500 dark:text-gray-400">{{ tr('contacts.noneSelected', 'Ничего не выбрано') }}</p>
-                      </template>
-
-                      <template v-else>
-                        <UInput
-                          v-model="dynamicFieldDrafts[field.id]"
-                          :type="field.dataType === 'NUMBER' ? 'number' : field.dataType === 'DATE' ? 'date' : 'text'"
-                          :placeholder="field.label"
-                        />
-                      </template>
+                      <DynamicFieldInput
+                        v-model="dynamicFieldDrafts[field.id]"
+                        :field="field"
+                        :yes-label="tr('contacts.yes', 'Да')"
+                        :no-label="tr('contacts.no', 'Нет')"
+                        :none-selected-label="tr('contacts.noneSelected', 'Ничего не выбрано')"
+                        :select-options-label="tr('contacts.selectOptions', 'Выберите варианты')"
+                        :selected-count-suffix="tr('contacts.selectedCountSuffix', 'выбрано')"
+                      />
                     </div>
                   </div>
 
@@ -1342,7 +1337,11 @@ useHead(() => ({
                       {{ t('contacts.email') }}
                     </label>
                     
-                    <div v-for="(email, index) in emails" :key="'email-' + index" class="flex gap-2">
+                    <div
+                      v-for="(email, index) in emails"
+                      :key="'email-' + index"
+                      class="flex gap-2"
+                    >
                       <UFormGroup 
                         class="flex-1"
                         :help="email && !isEmailValid(email) ? t('contacts.invalidEmail') : ''"
@@ -1362,8 +1361,8 @@ useHead(() => ({
                         color="red"
                         variant="ghost"
                         size="sm"
-                        @click="removeEmail(index)"
                         style="margin-top: 24px"
+                        @click="removeEmail(index)"
                       />
                     </div>
 
@@ -1393,12 +1392,12 @@ useHead(() => ({
                   <UFormGroup :label="t('contacts.whatsapp')">
                     <UInput
                       :model-value="whatsapp"
-                      @update:model-value="updateWhatsappValue"
                       type="tel"
                       inputmode="tel"
                       pattern="[0-9+()\s-]*"
                       :placeholder="t('contacts.enterPhone')"
                       size="md"
+                      @update:model-value="updateWhatsappValue"
                     />
                   </UFormGroup>
 
@@ -1420,7 +1419,6 @@ useHead(() => ({
                       size="md"
                     />
                   </UFormGroup>
-
                 </div>
               </template>
             </UAccordion>
@@ -1444,8 +1442,8 @@ useHead(() => ({
             size="md"
             :loading="loading"
             :disabled="!isFormValid || loading"
-            @click="handleSubmit"
             icon="i-heroicons-check-circle"
+            @click="handleSubmit"
           >
             {{ loading ? t('app.loading') : t('app.create') }}
           </UButton>
@@ -1461,7 +1459,10 @@ useHead(() => ({
       <UCard :ui="{ ring: '' }">
         <template #header>
           <div class="flex items-center gap-3">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6 text-amber-500" />
+            <UIcon
+              name="i-heroicons-exclamation-triangle"
+              class="w-6 h-6 text-amber-500"
+            />
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
               {{ t('contacts.confirmLeave') }}
             </h3>

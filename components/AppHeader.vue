@@ -68,9 +68,17 @@ const goHome = () => {
 
 <template>
   <header
-    class="fixed top-0 left-0 w-full flex items-center justify-between p-2 md:p-3 px-2 md:px-4 bg-white dark:bg-gray-800 shadow-md z-50">
-    <div class="flex items-center space-x-1 cursor-pointer" @click="goHome">
-      <img src="/assets/logo.png" alt="Logo" class="h-5 w-5" />
+    class="fixed top-0 left-0 w-full flex items-center justify-between p-2 md:p-3 px-2 md:px-4 bg-white dark:bg-gray-800 shadow-md z-50"
+  >
+    <div
+      class="flex items-center space-x-1 cursor-pointer"
+      @click="goHome"
+    >
+      <img
+        src="/assets/logo.png"
+        alt="Logo"
+        class="h-5 w-5"
+      >
       <span class="text-base md:text-lg">lota</span>
     </div>
 
@@ -83,22 +91,38 @@ const goHome = () => {
       <UButton
         v-if="showHelpButton"
         data-tour="help-button"
-        @click="handleHelpClick"
         variant="ghost"
         size="md"
         :title="t('app.startTour') || 'Start interactive tutorial'"
+        @click="handleHelpClick"
       >
         <UIcon name="i-lucide-life-buoy" />
       </UButton>
 
       <!-- Mobile burger -->
-      <UButton class="md:hidden" @click="isMobileMenuOpen = true" variant="ghost" size="md">
+      <UButton
+        class="md:hidden"
+        variant="ghost"
+        size="md"
+        @click="isMobileMenuOpen = true"
+      >
         <UIcon name="i-lucide-menu" />
       </UButton>
 
       <!-- Desktop menu -->
-      <UPopover v-model="isMenuOpen" class="hidden md:block" :popper="{ placement: 'bottom-end' }" mode="hover" :open-delay="0" :close-delay="200">
-        <UButton variant="ghost" size="md" md:size="lg">
+      <UPopover
+        v-model="isMenuOpen"
+        class="hidden md:block"
+        :popper="{ placement: 'bottom-end' }"
+        mode="hover"
+        :open-delay="0"
+        :close-delay="200"
+      >
+        <UButton
+          variant="ghost"
+          size="md"
+          md:size="lg"
+        >
           <UIcon name="i-lucide-menu" />
         </UButton>
         <template #panel>
@@ -110,20 +134,26 @@ const goHome = () => {
                 class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                 @click="handleHomeClick('desktop')"
               >
-                <UIcon name="i-lucide-home" class="w-5 h-5 text-primary flex-shrink-0" />
+                <UIcon
+                  name="i-lucide-home"
+                  class="w-5 h-5 text-primary flex-shrink-0"
+                />
                 <span class="text-sm font-medium truncate">{{ homeText }}</span>
               </button>
 
               <button
                 v-for="app in ALL_APPS"
-                :key="app.bundle"
                 v-show="!route.path.includes('/' + app.address)"
+                :key="app.bundle"
                 type="button"
                 class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                 :class="{ 'opacity-60': !app.canAdd, 'cursor-not-allowed': !app.canAdd }"
                 @click="handleMenuSelect(app, 'desktop')"
               >
-                <UIcon :name="app.icon" class="w-5 h-5 text-primary flex-shrink-0" />
+                <UIcon
+                  :name="app.icon"
+                  class="w-5 h-5 text-primary flex-shrink-0"
+                />
                 <span class="text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
               </button>
             </div>
@@ -144,8 +174,14 @@ const goHome = () => {
   >
     <div class="p-4 max-h-[80vh] overflow-auto">
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-semibold">{{ t('app.apps') }}</h3>
-        <UButton variant="ghost" icon="lucide:x" @click="isMobileMenuOpen = false" />
+        <h3 class="text-base font-semibold">
+          {{ t('app.apps') }}
+        </h3>
+        <UButton
+          variant="ghost"
+          icon="lucide:x"
+          @click="isMobileMenuOpen = false"
+        />
       </div>
 
       <div class="space-y-2">
@@ -155,20 +191,26 @@ const goHome = () => {
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
           @click="handleHomeClick('mobile')"
         >
-          <UIcon name="i-lucide-home" class="w-5 h-5 text-primary flex-shrink-0" />
+          <UIcon
+            name="i-lucide-home"
+            class="w-5 h-5 text-primary flex-shrink-0"
+          />
           <span class="text-sm font-medium truncate">{{ homeText }}</span>
         </button>
 
         <button
           v-for="app in ALL_APPS"
-          :key="app.bundle"
           v-show="!route.path.includes('/' + app.address)"
+          :key="app.bundle"
           type="button"
           class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
           :class="{ 'opacity-60': !app.canAdd, 'cursor-not-allowed': !app.canAdd }"
           @click="handleMenuSelect(app, 'mobile')"
         >
-          <UIcon :name="app.icon" class="w-5 h-5 text-primary flex-shrink-0" />
+          <UIcon
+            :name="app.icon"
+            class="w-5 h-5 text-primary flex-shrink-0"
+          />
           <span class="text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
         </button>
       </div>

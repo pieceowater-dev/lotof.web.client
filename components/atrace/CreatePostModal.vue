@@ -11,10 +11,12 @@ const TIMEZONES_FORMATTED = computed(() =>
   }))
 );
 
+type PostForm = { title: string; description?: string; location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string }; pin: string };
+
 const props = defineProps<{
-  modelValue: boolean,
-  form: { title: string; description?: string; location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string }; pin: string }
+  modelValue: boolean
 }>();
+const form = defineModel<PostForm>('form', { required: true });
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void,
   (e: 'submit'): void
@@ -28,7 +30,7 @@ const open = computed({
 const { t } = useI18n();
 
 function generatePin() {
-  (props.form as any).pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
+  form.value.pin = String(Math.floor(100000 + Math.random() * 900000)).slice(0, 6);
 }
 
 // Leaflet Map
@@ -77,8 +79,8 @@ async function requestGeolocation() {
     });
     
     if (coords.latitude && coords.longitude) {
-      props.form.location.latitude = coords.latitude;
-      props.form.location.longitude = coords.longitude;
+      form.value.location.latitude = coords.latitude;
+      form.value.location.longitude = coords.longitude;
       
       // Update map view
       if (map && marker) {
@@ -149,16 +151,16 @@ async function initMap() {
       if (coords.latitude !== undefined && coords.longitude !== undefined) {
         center = [coords.latitude, coords.longitude];
         zoom = 12;
-        if (!props.form.location.latitude && !props.form.location.longitude) {
-          props.form.location.latitude = coords.latitude;
-          props.form.location.longitude = coords.longitude;
+        if (!form.value.location.latitude && !form.value.location.longitude) {
+          form.value.location.latitude = coords.latitude;
+          form.value.location.longitude = coords.longitude;
         }
-      } else if (props.form.location.latitude && props.form.location.longitude) {
-        center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+      } else if (form.value.location.latitude && form.value.location.longitude) {
+        center = [Number(form.value.location.latitude), Number(form.value.location.longitude)];
         zoom = 12;
       }
-    } else if (props.form.location.latitude && props.form.location.longitude) {
-      center = [Number(props.form.location.latitude), Number(props.form.location.longitude)];
+    } else if (form.value.location.latitude && form.value.location.longitude) {
+      center = [Number(form.value.location.latitude), Number(form.value.location.longitude)];
       zoom = 12;
     }
 
@@ -181,16 +183,16 @@ async function initMap() {
     marker.on('dragend', () => {
       if (!marker) return;
       const pos = marker.getLatLng();
-      props.form.location.latitude = pos.lat;
-      props.form.location.longitude = pos.lng;
+      form.value.location.latitude = pos.lat;
+      form.value.location.longitude = pos.lng;
     });
 
     // Set marker on map click
     map.on('click', (e: any) => {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
-      props.form.location.latitude = lat;
-      props.form.location.longitude = lng;
+      form.value.location.latitude = lat;
+      form.value.location.longitude = lng;
       if (marker) {
         marker.setLatLng(e.latlng);
       }
@@ -215,8 +217,8 @@ function disableGeolocation() {
   }
   mapError.value = null;
   mapLoading.value = false;
-  props.form.location.latitude = '';
-  props.form.location.longitude = '';
+  form.value.location.latitude = '';
+  form.value.location.longitude = '';
 }
 
 watch(geoEnabled, async (enabled) => {
@@ -232,8 +234,8 @@ watch(geoEnabled, async (enabled) => {
 watch(() => props.modelValue, (isOpen) => {
   if (isOpen && process.client) {
     // Initialize timezone with browser timezone if not already set
-    if (!props.form.location.timezone) {
-      props.form.location.timezone = getBrowserTimezone();
+    if (!form.value.location.timezone) {
+      form.value.location.timezone = getBrowserTimezone();
     }
     geoEnabled.value = true;
     nextTick(() => {
@@ -253,38 +255,58 @@ watch(() => props.modelValue, (isOpen) => {
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
             {{ t('app.atraceAddLocation') }}
           </h3>
-          <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
+          <UButton
+            color="primary"
+            variant="ghost"
+            icon="lucide:x"
+            class="-my-1"
+            @click="open = false"
+          />
         </div>
       </template>
 
       <div class="space-y-3">
         <UFormGroup :label="t('common.title')">
-          <UInput v-model="props.form.title" :placeholder="t('common.title')" />
+          <UInput
+            v-model="form.title"
+            :placeholder="t('common.title')"
+          />
         </UFormGroup>
         <UFormGroup :label="t('common.description')">
-          <UTextarea v-model="props.form.description" :placeholder="t('common.description')" />
+          <UTextarea
+            v-model="form.description"
+            :placeholder="t('common.description')"
+          />
         </UFormGroup>
-        <div class="h-px bg-gray-100 dark:bg-gray-800"></div>
+        <div class="h-px bg-gray-100 dark:bg-gray-800" />
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
           <UFormGroup :label="t('common.address')">
-            <UInput v-model="props.form.location.address" :placeholder="t('common.address')" />
+            <UInput
+              v-model="form.location.address"
+              :placeholder="t('common.address')"
+            />
           </UFormGroup>
           <UFormGroup :label="t('common.city')">
-            <UInput v-model="props.form.location.city" :placeholder="t('common.city')" />
+            <UInput
+              v-model="form.location.city"
+              :placeholder="t('common.city')"
+            />
           </UFormGroup>
         </div>
         
         <UFormGroup :label="t('app.timezone')">
           <USelectMenu 
-            v-model="props.form.location.timezone" 
+            v-model="form.location.timezone" 
             :options="TIMEZONES_FORMATTED" 
             option-attribute="label"
             value-attribute="value"
             searchable
-            :placeholder="props.form.location.timezone || t('app.timezone')"
+            :placeholder="form.location.timezone || t('app.timezone')"
             :popper="{ placement: 'top' }"
           />
-          <div class="text-xs text-gray-500 mt-1">{{ t('app.timezoneHint') }}</div>
+          <div class="text-xs text-gray-500 mt-1">
+            {{ t('app.timezoneHint') }}
+          </div>
         </UFormGroup>
         
         <!-- Google Map -->
@@ -296,13 +318,25 @@ watch(() => props.modelValue, (isOpen) => {
             </span>
           </div>
           <div v-if="geoEnabled">
-            <div ref="mapContainer" class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center">
-              <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
-              <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
+            <div
+              ref="mapContainer"
+              class="w-full h-64 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center"
+            >
+              <span
+                v-if="mapLoading"
+                class="text-sm text-gray-500"
+              >{{ t('common.loading') }}</span>
+              <span
+                v-else-if="mapError"
+                class="text-sm text-red-500"
+              >{{ mapError }}</span>
             </div>
             <div class="flex items-center justify-between mt-1">
-              <div v-if="props.form.location.latitude && props.form.location.longitude" class="text-xs text-gray-500">
-                {{ Number(props.form.location.latitude).toFixed(6) }}, {{ Number(props.form.location.longitude).toFixed(6) }}
+              <div
+                v-if="form.location.latitude && form.location.longitude"
+                class="text-xs text-gray-500"
+              >
+                {{ Number(form.location.latitude).toFixed(6) }}, {{ Number(form.location.longitude).toFixed(6) }}
               </div>
               <UButton 
                 size="xs" 
@@ -318,20 +352,48 @@ watch(() => props.modelValue, (isOpen) => {
           </div>
         </UFormGroup>
         
-        <div class="h-px bg-gray-100 dark:bg-gray-800"></div>
+        <div class="h-px bg-gray-100 dark:bg-gray-800" />
         <UFormGroup :label="t('app.pin6digits')">
           <div class="flex gap-2 items-center">
-            <UInput v-model="props.form.pin" maxlength="6" placeholder="******" class="w-32" />
-            <UButton size="xs" color="primary" @click="generatePin">{{ t('common.generate') }}</UButton>
+            <UInput
+              v-model="form.pin"
+              maxlength="6"
+              placeholder="******"
+              class="w-32"
+            />
+            <UButton
+              size="xs"
+              color="primary"
+              @click="generatePin"
+            >
+              {{ t('common.generate') }}
+            </UButton>
           </div>
-          <div class="text-xs text-yellow-600 mt-1" v-html="t('app.pinSecurityNote')"></div>
+          <div
+            class="text-xs text-yellow-600 mt-1"
+            v-html="t('app.pinSecurityNote')"
+          />
         </UFormGroup>
       </div>
 
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton icon="lucide:x" color="primary" variant="soft" @click="open = false">{{ t('common.cancel') }}</UButton>
-          <UButton icon="lucide:check" color="primary" :disabled="!props.form.title || String(props.form.pin).length !== 6" @click="emit('submit')">{{ t('common.create') }}</UButton>
+          <UButton
+            icon="lucide:x"
+            color="primary"
+            variant="soft"
+            @click="open = false"
+          >
+            {{ t('common.cancel') }}
+          </UButton>
+          <UButton
+            icon="lucide:check"
+            color="primary"
+            :disabled="!form.title || String(form.pin).length !== 6"
+            @click="emit('submit')"
+          >
+            {{ t('common.create') }}
+          </UButton>
         </div>
       </template>
     </UCard>

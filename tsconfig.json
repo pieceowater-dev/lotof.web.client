@@ -2,6 +2,7 @@
   // https://nuxt.com/docs/guide/concepts/typescript
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "baseUrl": "./",
     "paths": {
       // Re-add Nuxt internal aliases lost when overriding paths (TS does not merge 'paths' from extended configs)

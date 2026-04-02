@@ -115,8 +115,13 @@ function getIdentityTypeLabel(type: string): string {
     <!-- Header -->
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <UIcon name="i-heroicons-phone" class="w-5 h-5 text-violet-600 dark:text-violet-400" />
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('contacts.identities') }}</h2>
+        <UIcon
+          name="i-heroicons-phone"
+          class="w-5 h-5 text-violet-600 dark:text-violet-400"
+        />
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{ t('contacts.identities') }}
+        </h2>
       </div>
       <div class="flex gap-2">
         <UButton
@@ -128,8 +133,22 @@ function getIdentityTypeLabel(type: string): string {
           @click="() => emit('startEdit')"
         />
         <template v-else>
-          <UButton size="xs" color="primary" variant="soft" @click="() => emit('saveEdit')">{{ t('common.save') }}</UButton>
-          <UButton size="xs" color="gray" variant="ghost" @click="() => emit('cancelEdit')">{{ t('common.cancel') }}</UButton>
+          <UButton
+            size="xs"
+            color="primary"
+            variant="soft"
+            @click="() => emit('saveEdit')"
+          >
+            {{ t('common.save') }}
+          </UButton>
+          <UButton
+            size="xs"
+            color="gray"
+            variant="ghost"
+            @click="() => emit('cancelEdit')"
+          >
+            {{ t('common.cancel') }}
+          </UButton>
         </template>
       </div>
     </div>
@@ -137,7 +156,10 @@ function getIdentityTypeLabel(type: string): string {
     <!-- Content -->
     <div class="px-5 py-5">
       <template v-if="!editMode">
-        <div class="space-y-2" v-if="identities.length > 0">
+        <div
+          v-if="identities.length > 0"
+          class="space-y-2"
+        >
           <div
             v-for="identity in identities"
             :key="identity.id"
@@ -145,10 +167,15 @@ function getIdentityTypeLabel(type: string): string {
           >
             <div class="flex items-center gap-3 flex-1 min-w-0">
               <div class="h-8 w-8 rounded-md bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center flex-shrink-0">
-                <UIcon :name="getIdentityIcon(identity.type)" class="w-4 h-4 text-gray-500 dark:text-gray-300" />
+                <UIcon
+                  :name="getIdentityIcon(identity.type)"
+                  class="w-4 h-4 text-gray-500 dark:text-gray-300"
+                />
               </div>
               <div class="min-w-0">
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ getIdentityTypeLabel(identity.type) }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ getIdentityTypeLabel(identity.type) }}
+                </p>
                 <button
                   v-if="isRelatedClientIdentity(identity) && hasRelatedClientTarget(identity)"
                   type="button"
@@ -173,8 +200,8 @@ function getIdentityTypeLabel(type: string): string {
                 color="blue"
                 variant="soft"
                 :title="t('contacts.call') || 'Позвонить'"
-                @click="() => emit('phoneAction', identity.value)"
                 class="h-8 w-8 p-0 justify-center"
+                @click="() => emit('phoneAction', identity.value)"
               />
               <UButton
                 v-else-if="identity.type === 'email'"
@@ -183,8 +210,8 @@ function getIdentityTypeLabel(type: string): string {
                 color="blue"
                 variant="soft"
                 :title="t('contacts.sendEmail') || 'Написать email'"
-                @click="() => emit('emailAction', identity.value)"
                 class="h-8 w-8 p-0 justify-center"
+                @click="() => emit('emailAction', identity.value)"
               />
               <UButton
                 v-else-if="identity.type === 'telegram'"
@@ -193,8 +220,8 @@ function getIdentityTypeLabel(type: string): string {
                 color="blue"
                 variant="soft"
                 :title="t('contacts.openTelegram') || 'Открыть Telegram'"
-                @click="() => emit('telegramAction', identity.value.replace(/^@/, ''))"
                 class="h-8 w-8 p-0 justify-center"
+                @click="() => emit('telegramAction', identity.value.replace(/^@/, ''))"
               />
               <UButton
                 v-else-if="identity.type === 'whatsapp'"
@@ -203,8 +230,8 @@ function getIdentityTypeLabel(type: string): string {
                 color="green"
                 variant="soft"
                 :title="t('contacts.openWhatsApp') || 'Открыть WhatsApp'"
-                @click="() => emit('whatsappAction', identity.value)"
                 class="h-8 w-8 p-0 justify-center"
+                @click="() => emit('whatsappAction', identity.value)"
               />
               <UButton
                 v-else-if="isRelatedClientIdentity(identity) && hasRelatedClientTarget(identity)"
@@ -213,22 +240,25 @@ function getIdentityTypeLabel(type: string): string {
                 color="blue"
                 variant="soft"
                 :title="getDisplayValue(identity)"
-                @click="() => emit('navigateRelatedClient', identity)"
                 class="h-8 w-8 p-0 justify-center"
+                @click="() => emit('navigateRelatedClient', identity)"
               />
               <UButton
                 :icon="copiedIdentityId === identity.id ? 'i-heroicons-check' : 'i-heroicons-clipboard-document'"
                 size="xs"
                 color="gray"
                 :variant="copiedIdentityId === identity.id ? 'soft' : 'ghost'"
-                @click="() => handleCopy(identity)"
                 class="h-8 w-8 p-0 justify-center"
                 :title="copiedIdentityId === identity.id ? t('contacts.copied') : t('contacts.copy')"
+                @click="() => handleCopy(identity)"
               />
             </div>
           </div>
         </div>
-        <div v-else class="text-sm text-gray-500 dark:text-gray-400 py-2">
+        <div
+          v-else
+          class="text-sm text-gray-500 dark:text-gray-400 py-2"
+        >
           {{ t('contacts.noIdentities') }}
         </div>
       </template>
@@ -238,12 +268,22 @@ function getIdentityTypeLabel(type: string): string {
           <!-- Phones -->
           <div class="space-y-2">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-phone" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <UIcon
+                name="i-heroicons-phone"
+                class="w-4 h-4 text-blue-600 dark:text-blue-400"
+              />
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.phones') }}</label>
             </div>
             
-            <div v-for="(phone, idx) in editingPhones" :key="`phone-${idx}`" class="flex gap-2">
-              <UFormGroup :label="''" class="flex-1">
+            <div
+              v-for="(phone, idx) in editingPhones"
+              :key="`phone-${idx}`"
+              class="flex gap-2"
+            >
+              <UFormGroup
+                :label="''"
+                class="flex-1"
+              >
                 <UInput
                   :model-value="phone"
                   type="tel"
@@ -257,9 +297,9 @@ function getIdentityTypeLabel(type: string): string {
                 color="red"
                 variant="ghost"
                 size="md"
-                @click="() => $emit('removePhone', idx)"
                 :disabled="editingPhones.length === 1"
                 style="margin-top: 0"
+                @click="() => $emit('removePhone', idx)"
               />
             </div>
 
@@ -278,12 +318,22 @@ function getIdentityTypeLabel(type: string): string {
           <!-- Emails -->
           <div class="space-y-2 pt-4">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-envelope" class="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <UIcon
+                name="i-heroicons-envelope"
+                class="w-4 h-4 text-purple-600 dark:text-purple-400"
+              />
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.emails') }}</label>
             </div>
             
-            <div v-for="(email, idx) in editingEmails" :key="`email-${idx}`" class="flex gap-2">
-              <UFormGroup :label="''" class="flex-1">
+            <div
+              v-for="(email, idx) in editingEmails"
+              :key="`email-${idx}`"
+              class="flex gap-2"
+            >
+              <UFormGroup
+                :label="''"
+                class="flex-1"
+              >
                 <UInput
                   :model-value="email"
                   type="email"
@@ -298,8 +348,8 @@ function getIdentityTypeLabel(type: string): string {
                 color="red"
                 variant="ghost"
                 size="md"
-                @click="() => $emit('removeEmail', idx)"
                 style="margin-top: 0"
+                @click="() => $emit('removeEmail', idx)"
               />
             </div>
 
@@ -318,12 +368,22 @@ function getIdentityTypeLabel(type: string): string {
           <!-- Telegram -->
           <div class="space-y-2 pt-4">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              <UIcon
+                name="i-heroicons-paper-airplane"
+                class="w-4 h-4 text-sky-600 dark:text-sky-400"
+              />
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.telegram') || 'Telegram' }}</label>
             </div>
 
-            <div v-for="(telegram, idx) in editingTelegrams" :key="`telegram-${idx}`" class="flex gap-2">
-              <UFormGroup :label="''" class="flex-1">
+            <div
+              v-for="(telegram, idx) in editingTelegrams"
+              :key="`telegram-${idx}`"
+              class="flex gap-2"
+            >
+              <UFormGroup
+                :label="''"
+                class="flex-1"
+              >
                 <UInput
                   :model-value="telegram"
                   type="text"
@@ -337,9 +397,9 @@ function getIdentityTypeLabel(type: string): string {
                 color="red"
                 variant="ghost"
                 size="md"
-                @click="() => $emit('removeTelegram', idx)"
                 :disabled="editingTelegrams.length === 1"
                 style="margin-top: 0"
+                @click="() => $emit('removeTelegram', idx)"
               />
             </div>
 
@@ -358,12 +418,22 @@ function getIdentityTypeLabel(type: string): string {
           <!-- WhatsApp -->
           <div class="space-y-2 pt-4">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-chat-bubble-left-right" class="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <UIcon
+                name="i-heroicons-chat-bubble-left-right"
+                class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+              />
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.whatsapp') || 'WhatsApp' }}</label>
             </div>
 
-            <div v-for="(whatsapp, idx) in editingWhatsapps" :key="`whatsapp-${idx}`" class="flex gap-2">
-              <UFormGroup :label="''" class="flex-1">
+            <div
+              v-for="(whatsapp, idx) in editingWhatsapps"
+              :key="`whatsapp-${idx}`"
+              class="flex gap-2"
+            >
+              <UFormGroup
+                :label="''"
+                class="flex-1"
+              >
                 <UInput
                   :model-value="whatsapp"
                   type="tel"
@@ -377,9 +447,9 @@ function getIdentityTypeLabel(type: string): string {
                 color="red"
                 variant="ghost"
                 size="md"
-                @click="() => $emit('removeWhatsapp', idx)"
                 :disabled="editingWhatsapps.length === 1"
                 style="margin-top: 0"
+                @click="() => $emit('removeWhatsapp', idx)"
               />
             </div>
 

@@ -11,8 +11,16 @@ const { t } = useI18n();
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">{{ t('app.atraceFilter') }}</h3>
-          <UButton color="primary" variant="ghost" icon="lucide:x" class="-my-1" @click="open = false" />
+          <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+            {{ t('app.atraceFilter') }}
+          </h3>
+          <UButton
+            color="primary"
+            variant="ghost"
+            icon="lucide:x"
+            class="-my-1"
+            @click="open = false"
+          />
         </div>
       </template>
 
@@ -22,8 +30,19 @@ const { t } = useI18n();
 
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton icon="lucide:x" color="primary" variant="soft">{{ t('common.cancel') }}</UButton>
-          <UButton icon="lucide:check" color="primary">{{ t('common.apply') }}</UButton>
+          <UButton
+            icon="lucide:x"
+            color="primary"
+            variant="soft"
+          >
+            {{ t('common.cancel') }}
+          </UButton>
+          <UButton
+            icon="lucide:check"
+            color="primary"
+          >
+            {{ t('common.apply') }}
+          </UButton>
         </div>
       </template>
     </UCard>

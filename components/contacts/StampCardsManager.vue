@@ -143,8 +143,8 @@ function getStatusColor(status: string) {
         icon="lucide:plus" 
         size="xs" 
         color="primary"
-        @click="openCreateModal"
         :disabled="loading"
+        @click="openCreateModal"
       >
         {{ t('app.add') || 'Add' }}
       </UButton>
@@ -159,7 +159,10 @@ function getStatusColor(status: string) {
     </div>
 
     <!-- Cards Grid -->
-    <div v-if="stampCards.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+    <div
+      v-if="stampCards.length > 0"
+      class="grid grid-cols-1 md:grid-cols-2 gap-3"
+    >
       <div
         v-for="card in stampCards"
         :key="card.id"
@@ -183,16 +186,16 @@ function getStatusColor(status: string) {
               icon="lucide:edit-2" 
               size="xs" 
               variant="ghost"
-              @click="openEditModal(card)"
               :disabled="loading"
+              @click="openEditModal(card)"
             />
             <UButton 
               icon="lucide:trash-2" 
               size="xs" 
               variant="ghost"
               color="red"
-              @click="deleteCard(card)"
               :disabled="loading"
+              @click="deleteCard(card)"
             />
           </div>
         </div>
@@ -217,9 +220,17 @@ function getStatusColor(status: string) {
     </div>
 
     <!-- Empty State -->
-    <div v-else class="p-8 text-center text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700">
-      <UIcon name="lucide:stamp" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-      <p class="text-sm">{{ t('app.noStampCards') || 'No stamp cards created yet' }}</p>
+    <div
+      v-else
+      class="p-8 text-center text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700"
+    >
+      <UIcon
+        name="lucide:stamp"
+        class="w-8 h-8 mx-auto mb-2 opacity-50"
+      />
+      <p class="text-sm">
+        {{ t('app.noStampCards') || 'No stamp cards created yet' }}
+      </p>
     </div>
 
     <!-- Modal -->
@@ -248,7 +259,7 @@ function getStatusColor(status: string) {
             type="text"
             placeholder="e.g., Coffee Loyalty, Bakery Card..."
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
         </div>
 
         <!-- Description -->
@@ -275,7 +286,7 @@ function getStatusColor(status: string) {
             min="1"
             placeholder="e.g., 10"
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
         </div>
 
         <!-- Reward Description -->
@@ -288,7 +299,7 @@ function getStatusColor(status: string) {
             type="text"
             placeholder="e.g., Free coffee, 50% discount..."
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
         </div>
 
         <!-- Validity Dates -->
@@ -301,7 +312,7 @@ function getStatusColor(status: string) {
               v-model="formData.validFrom"
               type="date"
               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -311,7 +322,7 @@ function getStatusColor(status: string) {
               v-model="formData.validUntil"
               type="date"
               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
         </div>
 
@@ -344,8 +355,8 @@ function getStatusColor(status: string) {
             {{ t('app.cancel') || 'Cancel' }}
           </UButton>
           <UButton 
-            @click="saveCard"
             :loading="loading"
+            @click="saveCard"
           >
             {{ t('app.save') || 'Save' }}
           </UButton>

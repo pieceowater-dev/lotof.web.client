@@ -208,29 +208,51 @@ async function handleImport() {
 </script>
 
 <template>
-  <UModal :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)" @close="close">
+  <UModal
+    :model-value="modelValue"
+    @update:model-value="emit('update:modelValue', $event)"
+    @close="close"
+  >
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
             <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center flex-shrink-0">
-              <UIcon name="lucide:file-spreadsheet" class="w-5 h-5" />
+              <UIcon
+                name="lucide:file-spreadsheet"
+                class="w-5 h-5"
+              />
             </div>
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ t('contacts.importModal.title') || 'Import from Excel' }}</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('contacts.importModal.subtitle') || 'Upload .xlsx and map columns' }}</p>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                {{ t('contacts.importModal.title') || 'Import from Excel' }}
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {{ t('contacts.importModal.subtitle') || 'Upload .xlsx and map columns' }}
+              </p>
             </div>
           </div>
-          <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="close" />
+          <UButton
+            icon="lucide:x"
+            size="xs"
+            color="gray"
+            variant="ghost"
+            @click="close"
+          />
         </div>
       </template>
 
       <div class="space-y-5">
         <template v-if="phase === 'importing' && progress">
           <div class="flex flex-col items-center gap-4 py-8">
-            <UIcon name="lucide:loader-circle" class="w-10 h-10 text-primary-500 animate-spin" />
+            <UIcon
+              name="lucide:loader-circle"
+              class="w-10 h-10 text-primary-500 animate-spin"
+            />
             <div class="text-center">
-              <p class="font-semibold text-gray-800 dark:text-gray-100">{{ t('contacts.importModal.importingTitle') || 'Import in progress...' }}</p>
+              <p class="font-semibold text-gray-800 dark:text-gray-100">
+                {{ t('contacts.importModal.importingTitle') || 'Import in progress...' }}
+              </p>
               <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {{ t('contacts.importModal.importingProgress', {
                   current: progress.batchIndex,
@@ -252,32 +274,61 @@ async function handleImport() {
         <template v-else-if="phase === 'done' && importResult">
           <div class="flex gap-3">
             <div class="flex-1 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-3 text-center">
-              <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ importResult.imported }}</p>
-              <p class="text-xs text-green-700 dark:text-green-300 mt-0.5">{{ t('contacts.importModal.imported') || 'Imported' }}</p>
+              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                {{ importResult.imported }}
+              </p>
+              <p class="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                {{ t('contacts.importModal.imported') || 'Imported' }}
+              </p>
             </div>
-            <div v-if="importResult.failed > 0" class="flex-1 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-center">
-              <p class="text-2xl font-bold text-red-600 dark:text-red-400">{{ importResult.failed }}</p>
-              <p class="text-xs text-red-700 dark:text-red-300 mt-0.5">{{ t('contacts.importModal.failed') || 'Failed' }}</p>
+            <div
+              v-if="importResult.failed > 0"
+              class="flex-1 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-center"
+            >
+              <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                {{ importResult.failed }}
+              </p>
+              <p class="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                {{ t('contacts.importModal.failed') || 'Failed' }}
+              </p>
             </div>
           </div>
 
           <template v-if="failedRows.length > 0">
             <div>
-              <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">{{ t('contacts.importModal.failedRowsTitle') || 'Failed rows' }}</h4>
+              <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-2">
+                {{ t('contacts.importModal.failedRowsTitle') || 'Failed rows' }}
+              </h4>
               <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden max-h-60 overflow-y-auto">
                 <table class="min-w-full text-xs">
                   <thead class="bg-gray-50 dark:bg-gray-800 sticky top-0">
                     <tr>
-                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 w-8">#</th>
-                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">{{ t('contacts.importModal.name') || 'Name' }}</th>
-                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">{{ t('contacts.importModal.reason') || 'Reason' }}</th>
+                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400 w-8">
+                        #
+                      </th>
+                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
+                        {{ t('contacts.importModal.name') || 'Name' }}
+                      </th>
+                      <th class="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
+                        {{ t('contacts.importModal.reason') || 'Reason' }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <tr v-for="row in failedRows" :key="row.row_index" class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40">
-                      <td class="px-3 py-2 text-gray-400 dark:text-gray-500">{{ row.row_index + 2 }}</td>
-                      <td class="px-3 py-2 text-gray-700 dark:text-gray-300">{{ row.name || '-' }}</td>
-                      <td class="px-3 py-2 text-red-600 dark:text-red-400">{{ row.error }}</td>
+                    <tr
+                      v-for="row in failedRows"
+                      :key="row.row_index"
+                      class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40"
+                    >
+                      <td class="px-3 py-2 text-gray-400 dark:text-gray-500">
+                        {{ row.row_index + 2 }}
+                      </td>
+                      <td class="px-3 py-2 text-gray-700 dark:text-gray-300">
+                        {{ row.name || '-' }}
+                      </td>
+                      <td class="px-3 py-2 text-red-600 dark:text-red-400">
+                        {{ row.error }}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
@@ -287,7 +338,10 @@ async function handleImport() {
         </template>
 
         <template v-else>
-          <div v-if="importError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm">
+          <div
+            v-if="importError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm"
+          >
             {{ importError }}
           </div>
 
@@ -301,35 +355,61 @@ async function handleImport() {
             @dragover="onDragOver"
             @dragleave="onDragLeave"
           >
-            <input ref="fileInputRef" type="file" accept=".xlsx,.xls" class="hidden" @change="onFileChange" />
+            <input
+              ref="fileInputRef"
+              type="file"
+              accept=".xlsx,.xls"
+              class="hidden"
+              @change="onFileChange"
+            >
             <div class="flex flex-col items-center justify-center py-8 px-4 text-center gap-2">
-              <UIcon :name="hasFile ? 'lucide:file-check-2' : 'lucide:upload-cloud'" class="w-10 h-10" :class="hasFile ? 'text-green-500' : 'text-gray-400'" />
+              <UIcon
+                :name="hasFile ? 'lucide:file-check-2' : 'lucide:upload-cloud'"
+                class="w-10 h-10"
+                :class="hasFile ? 'text-green-500' : 'text-gray-400'"
+              />
               <template v-if="hasFile">
-                <p class="font-medium text-gray-800 dark:text-gray-100">{{ file!.name }}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('contacts.importModal.replaceFile') || 'Click to replace file' }}</p>
+                <p class="font-medium text-gray-800 dark:text-gray-100">
+                  {{ file!.name }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ t('contacts.importModal.replaceFile') || 'Click to replace file' }}
+                </p>
               </template>
               <template v-else>
                 <p class="font-medium text-gray-700 dark:text-gray-200">
                   <span class="text-primary-600 dark:text-primary-400">{{ t('contacts.importModal.chooseFile') || 'Choose file' }}</span>
                 </p>
-                <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('contacts.importModal.chooseFileHint') || 'Select or drop .xlsx file here' }}</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  {{ t('contacts.importModal.chooseFileHint') || 'Select or drop .xlsx file here' }}
+                </p>
               </template>
             </div>
           </div>
 
           <template v-if="hasFile && headers.length > 0">
             <div>
-              <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">{{ t('contacts.importModal.columnMapping') || 'Column mapping' }}</h4>
+              <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-3">
+                {{ t('contacts.importModal.columnMapping') || 'Column mapping' }}
+              </h4>
               <div class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <table class="min-w-full text-sm">
                   <thead class="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th class="px-4 py-2.5 text-left font-semibold text-gray-700 dark:text-gray-300 w-1/2">{{ t('contacts.importModal.sourceColumn') || 'Source column' }}</th>
-                      <th class="px-4 py-2.5 text-left font-semibold text-gray-700 dark:text-gray-300 w-1/2">{{ t('contacts.importModal.systemField') || 'System field' }}</th>
+                      <th class="px-4 py-2.5 text-left font-semibold text-gray-700 dark:text-gray-300 w-1/2">
+                        {{ t('contacts.importModal.sourceColumn') || 'Source column' }}
+                      </th>
+                      <th class="px-4 py-2.5 text-left font-semibold text-gray-700 dark:text-gray-300 w-1/2">
+                        {{ t('contacts.importModal.systemField') || 'System field' }}
+                      </th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                    <tr v-for="field in systemFields" :key="field.key" class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40">
+                    <tr
+                      v-for="field in systemFields"
+                      :key="field.key"
+                      class="hover:bg-gray-50/60 dark:hover:bg-gray-800/40"
+                    >
                       <td class="px-4 py-2.5">
                         <USelectMenu
                           v-model="mapping[field.key]"
@@ -341,11 +421,17 @@ async function handleImport() {
                       </td>
                       <td class="px-4 py-2.5 text-gray-700 dark:text-gray-300">
                         {{ field.label }}
-                        <span v-if="field.required" class="text-red-500 ml-0.5">*</span>
+                        <span
+                          v-if="field.required"
+                          class="text-red-500 ml-0.5"
+                        >*</span>
                       </td>
                     </tr>
                     <tr class="bg-gray-50/50 dark:bg-gray-800/30">
-                      <td class="px-4 py-2.5 text-gray-400 dark:text-gray-500 italic text-xs" colspan="2">
+                      <td
+                        class="px-4 py-2.5 text-gray-400 dark:text-gray-500 italic text-xs"
+                        colspan="2"
+                      >
                         {{ t('contacts.importModal.unmappedHint') || 'Unmapped columns will be saved into client comment as key: value lines' }}
                         {{ t('contacts.importModal.autoModeHint') || ' Rows with Company are imported as legal entities, other rows as individuals.' }}
                       </td>
@@ -366,7 +452,13 @@ async function handleImport() {
 
       <template #footer>
         <div class="flex items-center justify-end">
-          <UButton v-if="phase === 'done'" color="primary" variant="soft" icon="lucide:check" @click="close">
+          <UButton
+            v-if="phase === 'done'"
+            color="primary"
+            variant="soft"
+            icon="lucide:check"
+            @click="close"
+          >
             {{ t('contacts.importModal.done') || 'Done' }}
           </UButton>
           <UButton

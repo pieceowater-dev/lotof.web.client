@@ -157,8 +157,8 @@ function deleteTier(tier: Tier) {
         icon="lucide:plus" 
         size="xs" 
         color="primary"
-        @click="openCreateModal"
         :disabled="loading"
+        @click="openCreateModal"
       >
         {{ t('app.add') || 'Add' }}
       </UButton>
@@ -173,7 +173,10 @@ function deleteTier(tier: Tier) {
     </div>
 
     <!-- Tiers Grid -->
-    <div v-if="sortedTiers.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+    <div
+      v-if="sortedTiers.length > 0"
+      class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+    >
       <div
         v-for="tier in sortedTiers"
         :key="tier.id"
@@ -199,16 +202,16 @@ function deleteTier(tier: Tier) {
               icon="lucide:edit-2" 
               size="xs" 
               variant="ghost"
-              @click="openEditModal(tier)"
               :disabled="loading"
+              @click="openEditModal(tier)"
             />
             <UButton 
               icon="lucide:trash-2" 
               size="xs" 
               variant="ghost"
               color="red"
-              @click="deleteTier(tier)"
               :disabled="loading"
+              @click="deleteTier(tier)"
             />
           </div>
         </div>
@@ -226,7 +229,10 @@ function deleteTier(tier: Tier) {
           </div>
         </div>
 
-        <div v-if="tier.benefits.length > 0" class="flex flex-wrap gap-1">
+        <div
+          v-if="tier.benefits.length > 0"
+          class="flex flex-wrap gap-1"
+        >
           <span
             v-for="(benefit, idx) in tier.benefits"
             :key="idx"
@@ -239,9 +245,17 @@ function deleteTier(tier: Tier) {
     </div>
 
     <!-- Empty State -->
-    <div v-else class="p-8 text-center text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700">
-      <UIcon name="lucide:gift" class="w-8 h-8 mx-auto mb-2 opacity-50" />
-      <p class="text-sm">{{ t('app.noTiers') || 'No tiers created yet' }}</p>
+    <div
+      v-else
+      class="p-8 text-center text-gray-500 dark:text-gray-400 rounded-lg border border-gray-200 dark:border-gray-700"
+    >
+      <UIcon
+        name="lucide:gift"
+        class="w-8 h-8 mx-auto mb-2 opacity-50"
+      />
+      <p class="text-sm">
+        {{ t('app.noTiers') || 'No tiers created yet' }}
+      </p>
     </div>
 
     <!-- Modal -->
@@ -270,7 +284,7 @@ function deleteTier(tier: Tier) {
             type="text"
             placeholder="Gold, Silver, Platinum..."
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
         </div>
 
         <!-- Level -->
@@ -284,7 +298,7 @@ function deleteTier(tier: Tier) {
               type="number"
               min="1"
               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -296,7 +310,7 @@ function deleteTier(tier: Tier) {
               min="1"
               step="0.1"
               class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
           </div>
         </div>
 
@@ -324,7 +338,7 @@ function deleteTier(tier: Tier) {
             min="0"
             placeholder="e.g., 1000"
             class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+          >
         </div>
 
         <!-- Color -->
@@ -336,7 +350,6 @@ function deleteTier(tier: Tier) {
             <button
               v-for="color in availableColors"
               :key="color"
-              @click="formData.colorHex = color"
               :style="{ backgroundColor: color }"
               :class="[
                 'w-8 h-8 rounded-lg border-2 transition-all',
@@ -344,6 +357,7 @@ function deleteTier(tier: Tier) {
                   ? 'border-gray-900 dark:border-gray-100' 
                   : 'border-transparent hover:border-gray-400 dark:hover:border-gray-600'
               ]"
+              @click="formData.colorHex = color"
             />
           </div>
         </div>
@@ -358,16 +372,19 @@ function deleteTier(tier: Tier) {
               v-model="benefitsInput"
               type="text"
               placeholder="e.g., Free shipping"
-              @keydown.enter="addBenefit"
               class="flex-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+              @keydown.enter="addBenefit"
+            >
             <UButton 
               icon="lucide:plus" 
               size="xs"
               @click="addBenefit"
             />
           </div>
-          <div v-if="formData.benefits.length > 0" class="flex flex-wrap gap-2">
+          <div
+            v-if="formData.benefits.length > 0"
+            class="flex flex-wrap gap-2"
+          >
             <span
               v-for="(benefit, idx) in formData.benefits"
               :key="idx"
@@ -375,10 +392,13 @@ function deleteTier(tier: Tier) {
             >
               <span>{{ benefit }}</span>
               <button 
-                @click="removeBenefit(idx)"
                 class="hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors"
+                @click="removeBenefit(idx)"
               >
-                <UIcon name="lucide:x" class="w-3 h-3" />
+                <UIcon
+                  name="lucide:x"
+                  class="w-3 h-3"
+                />
               </button>
             </span>
           </div>
@@ -394,8 +414,8 @@ function deleteTier(tier: Tier) {
             {{ t('app.cancel') || 'Cancel' }}
           </UButton>
           <UButton 
-            @click="saveTier"
             :loading="loading"
+            @click="saveTier"
           >
             {{ t('app.save') || 'Save' }}
           </UButton>

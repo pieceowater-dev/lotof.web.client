@@ -11,6 +11,8 @@ import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
 import { hubMembersList } from '@/api/hub/members/list';
 import BonusPinManager from '@/components/contacts/BonusPinManager.vue';
 import ImportModal from '@/components/contacts/ImportModal.vue';
+import DynamicFieldPreviewControl from '@/components/contacts/DynamicFieldPreviewControl.vue';
+import DynamicFieldOptionsEditor from '@/components/contacts/DynamicFieldOptionsEditor.vue';
 import {
   createStampCard,
   deleteStampCard,
@@ -49,6 +51,8 @@ type NamespaceMember = {
   username: string;
   email: string;
 };
+
+type DynamicFieldPreviewValue = string | number | boolean | string[];
 
 // State
 const loading = ref(true);
@@ -100,12 +104,7 @@ const createDynamicFieldForm = ref({
   searchable: false,
 });
 const createDynamicFieldOptions = ref<string[]>(['']);
-const previewStringValue = ref('');
-const previewNumberValue = ref<number | null>(null);
-const previewDateValue = ref('');
-const previewBooleanValue = ref(false);
-const previewSelectValue = ref<string | null>(null);
-const previewMultiSelectValue = ref<string[]>([]);
+const createPreviewValue = ref<DynamicFieldPreviewValue>('');
 const editDynamicFieldForm = ref({
   id: '',
   key: '',
@@ -118,8 +117,7 @@ const editDynamicFieldForm = ref({
   deletedAt: '' as string | null,
 });
 const editDynamicFieldOptions = ref<string[]>(['']);
-const editPreviewSelectValue = ref<string | null>(null);
-const editPreviewMultiSelectValue = ref<string[]>([]);
+const editPreviewValue = ref<DynamicFieldPreviewValue>('');
 const showStampPin = ref(false);
 const showConfirmStampPin = ref(false);
 const showEditStampPin = ref(false);
@@ -286,6 +284,12 @@ function dynamicFieldScopeLabel(scope: DynamicFieldClientScope): string {
   return dynamicFieldScopeOptions.find((option) => option.value === scope)?.label || scope;
 }
 
+function defaultPreviewValue(dataType: DynamicFieldDataType): DynamicFieldPreviewValue {
+  if (dataType === 'BOOLEAN') return false;
+  if (dataType === 'MULTI_SELECT') return [];
+  return '';
+}
+
 const resetCreateDynamicFieldForm = () => {
   createDynamicFieldForm.value = {
     key: '',
@@ -296,34 +300,16 @@ const resetCreateDynamicFieldForm = () => {
     searchable: false,
   };
   createDynamicFieldOptions.value = [''];
-  previewStringValue.value = '';
-  previewNumberValue.value = null;
-  previewDateValue.value = '';
-  previewBooleanValue.value = false;
-  previewSelectValue.value = null;
-  previewMultiSelectValue.value = [];
+  createPreviewValue.value = defaultPreviewValue(createDynamicFieldForm.value.dataType);
   createDynamicFieldError.value = null;
 };
 
-function addCreateDynamicFieldOption() {
-  createDynamicFieldOptions.value.push('');
-}
-
-function removeCreateDynamicFieldOption(index: number) {
-  if (createDynamicFieldOptions.value.length === 1) {
-    createDynamicFieldOptions.value[0] = '';
-    return;
-  }
-  createDynamicFieldOptions.value.splice(index, 1);
-}
-
 function onCreateDynamicFieldDataTypeChange(value: DynamicFieldDataType) {
   createDynamicFieldForm.value.dataType = value;
+  createPreviewValue.value = defaultPreviewValue(value);
   if (value === 'BOOLEAN') {
     createDynamicFieldForm.value.isRequired = false;
   }
-  previewSelectValue.value = null;
-  previewMultiSelectValue.value = [];
   if (value !== 'SELECT' && value !== 'MULTI_SELECT') {
     createDynamicFieldOptions.value = [''];
   }
@@ -355,8 +341,7 @@ const openEditDynamicFieldModal = (field: DynamicField) => {
     field.dataType === 'SELECT' || field.dataType === 'MULTI_SELECT'
       ? ((field.options && field.options.length > 0 ? field.options : ['']).map((option) => String(option)))
       : [''];
-  editPreviewSelectValue.value = null;
-  editPreviewMultiSelectValue.value = [];
+  editPreviewValue.value = defaultPreviewValue(field.dataType);
   editDynamicFieldError.value = null;
   showEditDynamicFieldModal.value = true;
 };
@@ -365,21 +350,8 @@ const closeEditDynamicFieldModal = () => {
   showEditDynamicFieldModal.value = false;
   editDynamicFieldError.value = null;
   editDynamicFieldOptions.value = [''];
-  editPreviewSelectValue.value = null;
-  editPreviewMultiSelectValue.value = [];
+  editPreviewValue.value = defaultPreviewValue(editDynamicFieldForm.value.dataType);
 };
-
-function addEditDynamicFieldOption() {
-  editDynamicFieldOptions.value.push('');
-}
-
-function removeEditDynamicFieldOption(index: number) {
-  if (editDynamicFieldOptions.value.length === 1) {
-    editDynamicFieldOptions.value[0] = '';
-    return;
-  }
-  editDynamicFieldOptions.value.splice(index, 1);
-}
 
 const openDeleteDynamicFieldModal = (id: string) => {
   pendingDeleteDynamicFieldId.value = id;
@@ -1006,14 +978,12 @@ async function loadMembersAndRoles() {
 
     const members: NamespaceMember[] = [];
     let page = 1;
-    while (true) {
-      // Use FIFTY like atrace/settings to match backend-supported enum values.
-      const batch = await hubMembersList(hubToken.value, namespace.id, page, 'FIFTY');
-      if (!batch.length) break;
+    let batch: NamespaceMember[];
+    do {
+      batch = await hubMembersList(hubToken.value, namespace.id, page, 'FIFTY');
       members.push(...batch);
-      if (batch.length < 50) break;
       page += 1;
-    }
+    } while (batch.length >= 50);
 
     namespaceMembers.value = members;
     rolesPage.value = 1;
@@ -1125,7 +1095,9 @@ onMounted(async () => {
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-2xl font-semibold">{{ t('common.settings.title') }}</h1>
+        <h1 class="text-2xl font-semibold">
+          {{ t('common.settings.title') }}
+        </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">
           {{ nsTitle }}
         </span>
@@ -1145,8 +1117,8 @@ onMounted(async () => {
           size="xs"
           color="primary"
           variant="soft"
-          @click="goBack"
           class="self-start min-w-fit whitespace-nowrap gap-2"
+          @click="goBack"
         >
           <span class="hidden sm:inline">{{ t('app.back') }}</span>
         </UButton>
@@ -1154,20 +1126,35 @@ onMounted(async () => {
     </div>
 
     <!-- Error State -->
-    <div v-if="error && !loading" class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200">
+    <div
+      v-if="error && !loading"
+      class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200"
+    >
       {{ error }}
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center flex-1">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin text-gray-400" />
+    <div
+      v-if="loading"
+      class="flex items-center justify-center flex-1"
+    >
+      <UIcon
+        name="lucide:loader-2"
+        class="w-6 h-6 animate-spin text-gray-400"
+      />
     </div>
 
     <!-- Settings Content -->
-    <div v-else class="flex-1 flex flex-col min-h-0">
+    <div
+      v-else
+      class="flex-1 flex flex-col min-h-0"
+    >
       <div class="flex-1 flex flex-col min-h-0 gap-4 overflow-y-auto">
         <!-- Current Plan -->
-        <div v-if="planLimits !== null && !planLimitsLoading" class="rounded-lg border border-blue-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-900/40 p-4">
+        <div
+          v-if="planLimits !== null && !planLimitsLoading"
+          class="rounded-lg border border-blue-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-900/40 p-4"
+        >
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <h3 class="font-semibold text-gray-900 dark:text-gray-100">
@@ -1215,27 +1202,45 @@ onMounted(async () => {
                 color="primary"
                 variant="soft"
                 :disabled="stampCardsLoading"
-                @click="openCreateModal"
                 class="flex-shrink-0"
+                @click="openCreateModal"
               >
                 {{ t('common.add') || t('app.add') || 'Add' }}
               </UButton>
             </div>
             
-            <div v-if="stampCardsLoading" class="flex items-center justify-center py-8">
-              <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+            <div
+              v-if="stampCardsLoading"
+              class="flex items-center justify-center py-8"
+            >
+              <UIcon
+                name="lucide:loader-2"
+                class="w-5 h-5 animate-spin text-gray-400"
+              />
             </div>
             
-            <div v-else-if="stampCardsError" class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+            <div
+              v-else-if="stampCardsError"
+              class="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+            >
               {{ stampCardsError }}
             </div>
 
-            <div v-else-if="stampCards.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-              <UIcon name="lucide:inbox" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+            <div
+              v-else-if="stampCards.length === 0"
+              class="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              <UIcon
+                name="lucide:inbox"
+                class="w-8 h-8 mx-auto mb-2 opacity-50"
+              />
               <p>{{ t('common.noData') || 'No stamp cards found' }}</p>
             </div>
 
-            <div v-else class="grid gap-3">
+            <div
+              v-else
+              class="grid gap-3"
+            >
               <div 
                 v-for="card in stampCards"
                 :key="card.id"
@@ -1243,8 +1248,13 @@ onMounted(async () => {
               >
                 <div class="flex items-start justify-between mb-2">
                   <div>
-                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ card.name }}</h4>
-                    <p v-if="card.description" class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100">
+                      {{ card.name }}
+                    </h4>
+                    <p
+                      v-if="card.description"
+                      class="text-sm text-gray-600 dark:text-gray-400 mt-1"
+                    >
                       {{ card.description }}
                     </p>
                   </div>
@@ -1281,16 +1291,26 @@ onMounted(async () => {
                 <div class="grid grid-cols-2 gap-3 text-sm">
                   <div>
                     <span class="text-gray-600 dark:text-gray-400">{{ t('app.totalStamps') || 'Total Stamps' }}</span>
-                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ card.totalStamps }}</p>
+                    <p class="font-medium text-gray-900 dark:text-gray-100">
+                      {{ card.totalStamps }}
+                    </p>
                   </div>
                   <div>
                     <span class="text-gray-600 dark:text-gray-400">{{ t('app.reward') || 'Reward' }}</span>
-                    <p class="font-medium text-gray-900 dark:text-gray-100">{{ card.rewardDescription }}</p>
+                    <p class="font-medium text-gray-900 dark:text-gray-100">
+                      {{ card.rewardDescription }}
+                    </p>
                   </div>
-                  <div v-if="card.validFrom" class="text-xs text-gray-500 dark:text-gray-500">
+                  <div
+                    v-if="card.validFrom"
+                    class="text-xs text-gray-500 dark:text-gray-500"
+                  >
                     {{ t('app.from') || 'From' }}: {{ new Date(card.validFrom).toLocaleDateString() }}
                   </div>
-                  <div v-if="card.validUntil" class="text-xs text-gray-500 dark:text-gray-500">
+                  <div
+                    v-if="card.validUntil"
+                    class="text-xs text-gray-500 dark:text-gray-500"
+                  >
                     {{ t('app.until') || 'Until' }}: {{ new Date(card.validUntil).toLocaleDateString() }}
                   </div>
                 </div>
@@ -1304,8 +1324,12 @@ onMounted(async () => {
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <div class="flex items-center justify-between">
                 <div>
-                  <h3 class="font-semibold text-gray-900 dark:text-gray-100">Импорт клиентов</h3>
-                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Загрузите список клиентов из Excel-файла</p>
+                  <h3 class="font-semibold text-gray-900 dark:text-gray-100">
+                    Импорт клиентов
+                  </h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    Загрузите список клиентов из Excel-файла
+                  </p>
                 </div>
                 <UButton
                   icon="lucide:upload"
@@ -1360,25 +1384,46 @@ onMounted(async () => {
               {{ t('common.showing') || 'Показано' }}: <strong>{{ filteredDynamicFields.length }}</strong>
             </span>
             <div class="inline-flex items-center gap-2">
-              <UToggle v-model="includeDeletedDynamicFields" @update:model-value="contactsToken && loadDynamicFieldsData(contactsToken)" />
+              <UToggle
+                v-model="includeDeletedDynamicFields"
+                @update:model-value="contactsToken && loadDynamicFieldsData(contactsToken)"
+              />
               <span class="text-gray-600 dark:text-gray-400">{{ t('common.showDeleted') || 'Показывать удаленные' }}</span>
             </div>
           </div>
 
-          <div v-if="dynamicFieldsLoading" class="flex items-center justify-center py-8">
-            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+          <div
+            v-if="dynamicFieldsLoading"
+            class="flex items-center justify-center py-8"
+          >
+            <UIcon
+              name="lucide:loader-2"
+              class="w-5 h-5 animate-spin text-gray-400"
+            />
           </div>
 
-          <div v-else-if="dynamicFieldsError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+          <div
+            v-else-if="dynamicFieldsError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+          >
             {{ dynamicFieldsError }}
           </div>
 
-          <div v-else-if="filteredDynamicFields.length === 0" class="text-center py-8 text-gray-500 dark:text-gray-400">
-            <UIcon name="lucide:table-properties" class="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <div
+            v-else-if="filteredDynamicFields.length === 0"
+            class="text-center py-8 text-gray-500 dark:text-gray-400"
+          >
+            <UIcon
+              name="lucide:table-properties"
+              class="w-8 h-8 mx-auto mb-2 opacity-50"
+            />
             <p>{{ t('common.noData') || 'Нет данных' }}</p>
           </div>
 
-          <div v-else class="grid gap-3">
+          <div
+            v-else
+            class="grid gap-3"
+          >
             <div
               v-for="(field, index) in filteredDynamicFields"
               :key="field.id"
@@ -1388,11 +1433,35 @@ onMounted(async () => {
               <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
                   <div class="flex flex-wrap items-center gap-2">
-                    <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ field.label }}</h4>
-                    <UBadge color="gray" variant="soft">{{ dynamicFieldTypeLabel(field.dataType) }}</UBadge>
-                    <UBadge color="gray" variant="soft">{{ dynamicFieldScopeLabel(field.clientTypeScope) }}</UBadge>
-                    <UBadge v-if="field.searchable" color="gray" variant="soft">{{ t('common.search') || 'Поиск' }}</UBadge>
-                    <UBadge v-if="field.deletedAt" color="gray" variant="soft">{{ t('common.deleted') || 'Удалено' }}</UBadge>
+                    <h4 class="font-medium text-gray-900 dark:text-gray-100">
+                      {{ field.label }}
+                    </h4>
+                    <UBadge
+                      color="gray"
+                      variant="soft"
+                    >
+                      {{ dynamicFieldTypeLabel(field.dataType) }}
+                    </UBadge>
+                    <UBadge
+                      color="gray"
+                      variant="soft"
+                    >
+                      {{ dynamicFieldScopeLabel(field.clientTypeScope) }}
+                    </UBadge>
+                    <UBadge
+                      v-if="field.searchable"
+                      color="gray"
+                      variant="soft"
+                    >
+                      {{ t('common.search') || 'Поиск' }}
+                    </UBadge>
+                    <UBadge
+                      v-if="field.deletedAt"
+                      color="gray"
+                      variant="soft"
+                    >
+                      {{ t('common.deleted') || 'Удалено' }}
+                    </UBadge>
                   </div>
                   <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     {{ t('common.createdAt') || 'Создано' }}: {{ new Date(field.createdAt).toLocaleString() }}
@@ -1455,7 +1524,9 @@ onMounted(async () => {
         <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white/70 dark:bg-gray-900/40 p-4 shadow-sm">
           <div class="flex flex-col gap-3 mb-4">
             <div class="flex items-start justify-between gap-3">
-              <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-lg">Роли участников</h3>
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100 text-lg">
+                Роли участников
+              </h3>
               <UButton
                 size="xs"
                 color="gray"
@@ -1469,43 +1540,82 @@ onMounted(async () => {
             <p class="text-sm text-gray-600 dark:text-gray-400">
               Управление ролями участников неймспейса.
             </p>
-            <div v-if="showRolesLegend" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2">
+            <div
+              v-if="showRolesLegend"
+              class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2"
+            >
               <div class="rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-900/10 p-3">
-                <div class="text-sm font-semibold text-red-700 dark:text-red-300">Владелец</div>
-                <p class="text-xs text-red-600/80 dark:text-red-200/80 mt-1">Полный контроль над неймспейсом и приложением.</p>
+                <div class="text-sm font-semibold text-red-700 dark:text-red-300">
+                  Владелец
+                </div>
+                <p class="text-xs text-red-600/80 dark:text-red-200/80 mt-1">
+                  Полный контроль над неймспейсом и приложением.
+                </p>
               </div>
               <div class="rounded-lg border border-amber-200 dark:border-amber-900/40 bg-amber-50/70 dark:bg-amber-900/10 p-3">
-                <div class="text-sm font-semibold text-amber-700 dark:text-amber-300">Админ</div>
-                <p class="text-xs text-amber-600/80 dark:text-amber-200/80 mt-1">Расширенные полномочия: больше прав, чем у оператора.</p>
+                <div class="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                  Админ
+                </div>
+                <p class="text-xs text-amber-600/80 dark:text-amber-200/80 mt-1">
+                  Расширенные полномочия: больше прав, чем у оператора.
+                </p>
               </div>
               <div class="rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-900/10 p-3">
-                <div class="text-sm font-semibold text-blue-700 dark:text-blue-300">Оператор</div>
-                <p class="text-xs text-blue-600/80 dark:text-blue-200/80 mt-1">Операционная работа с клиентами и кампаниями.</p>
+                <div class="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                  Оператор
+                </div>
+                <p class="text-xs text-blue-600/80 dark:text-blue-200/80 mt-1">
+                  Операционная работа с клиентами и кампаниями.
+                </p>
               </div>
               <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-3">
-                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">Наблюдатель</div>
-                <p class="text-xs text-gray-600/80 dark:text-gray-300/80 mt-1">Доступ на просмотр без изменений.</p>
+                <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Наблюдатель
+                </div>
+                <p class="text-xs text-gray-600/80 dark:text-gray-300/80 mt-1">
+                  Доступ на просмотр без изменений.
+                </p>
               </div>
             </div>
           </div>
 
-          <div v-if="rolesLoading" class="py-8 flex justify-center">
-            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+          <div
+            v-if="rolesLoading"
+            class="py-8 flex justify-center"
+          >
+            <UIcon
+              name="lucide:loader-2"
+              class="w-5 h-5 animate-spin text-gray-400"
+            />
           </div>
 
-          <div v-else-if="namespaceMembers.length === 0" class="text-sm text-gray-500 dark:text-gray-400 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+          <div
+            v-else-if="namespaceMembers.length === 0"
+            class="text-sm text-gray-500 dark:text-gray-400 p-3 rounded-lg border border-dashed border-gray-300 dark:border-gray-700"
+          >
             Участники не найдены в текущем неймспейсе.
           </div>
 
-          <div v-else class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div
+            v-else
+            class="rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          >
             <div class="overflow-x-auto">
               <table class="min-w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-800">
                   <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Участник</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Email</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">Текущая роль</th>
-                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 w-56">Действие</th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                      Участник
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                      Email
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200">
+                      Текущая роль
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold text-gray-700 dark:text-gray-200 w-56">
+                      Действие
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1514,10 +1624,17 @@ onMounted(async () => {
                     :key="member.id"
                     class="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors"
                   >
-                    <td class="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium">{{ member.username }}</td>
-                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ member.email }}</td>
+                    <td class="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium">
+                      {{ member.username }}
+                    </td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
+                      {{ member.email }}
+                    </td>
                     <td class="px-4 py-3">
-                      <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold" :class="roleTone(memberRoles[member.id] || 'VIEWER')">
+                      <span
+                        class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold"
+                        :class="roleTone(memberRoles[member.id] || 'VIEWER')"
+                      >
                         {{ roleLabel(memberRoles[member.id] || 'VIEWER') }}
                       </span>
                     </td>
@@ -1565,19 +1682,36 @@ onMounted(async () => {
       </div>
     </div>
 
-    <ImportModal v-model="showImportModal" :namespace="nsSlug" />
+    <ImportModal
+      v-model="showImportModal"
+      :namespace="nsSlug"
+    />
 
-    <UModal v-model="showRoleModal" @close="closeRoleModal">
+    <UModal
+      v-model="showRoleModal"
+      @close="closeRoleModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Назначение роли</h3>
-              <p v-if="roleModalMember" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Назначение роли
+              </h3>
+              <p
+                v-if="roleModalMember"
+                class="text-sm text-gray-500 dark:text-gray-400 mt-1"
+              >
                 {{ roleModalMember.username }} · {{ roleModalMember.email }}
               </p>
             </div>
-            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeRoleModal" />
+            <UButton
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeRoleModal"
+            />
           </div>
         </template>
 
@@ -1594,37 +1728,73 @@ onMounted(async () => {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" @click="closeRoleModal">Отмена</UButton>
-            <UButton color="primary" :loading="!!roleSavingMemberId" @click="confirmRoleModal">Сохранить</UButton>
+            <UButton
+              color="gray"
+              variant="soft"
+              @click="closeRoleModal"
+            >
+              Отмена
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="!!roleSavingMemberId"
+              @click="confirmRoleModal"
+            >
+              Сохранить
+            </UButton>
           </div>
         </template>
       </UCard>
     </UModal>
 
-    <UModal v-model="showCreateDynamicFieldModal" @close="closeCreateDynamicFieldModal">
+    <UModal
+      v-model="showCreateDynamicFieldModal"
+      @close="closeCreateDynamicFieldModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Создать поле</h3>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Создать поле
+              </h3>
             </div>
-            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeCreateDynamicFieldModal" />
+            <UButton
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeCreateDynamicFieldModal"
+            />
           </div>
         </template>
 
         <div class="space-y-4">
-          <div v-if="createDynamicFieldError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+          <div
+            v-if="createDynamicFieldError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+          >
             {{ createDynamicFieldError }}
           </div>
 
           <div class="grid grid-cols-1 gap-4">
-            <UFormGroup label="Название" required>
-              <UInput v-model="createDynamicFieldForm.label" placeholder="День рождения" :disabled="createDynamicFieldLoading" />
+            <UFormGroup
+              label="Название"
+              required
+            >
+              <UInput
+                v-model="createDynamicFieldForm.label"
+                placeholder="День рождения"
+                :disabled="createDynamicFieldLoading"
+              />
             </UFormGroup>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup label="Тип данных" required>
+            <UFormGroup
+              label="Тип данных"
+              required
+            >
               <USelectMenu
                 :model-value="createDynamicFieldForm.dataType"
                 :options="dynamicFieldDataTypeOptions"
@@ -1634,7 +1804,10 @@ onMounted(async () => {
                 @update:model-value="(value) => onCreateDynamicFieldDataTypeChange(value as DynamicFieldDataType)"
               />
             </UFormGroup>
-            <UFormGroup label="Область применения" required>
+            <UFormGroup
+              label="Область применения"
+              required
+            >
               <USelectMenu
                 v-model="createDynamicFieldForm.clientTypeScope"
                 :options="dynamicFieldScopeOptions"
@@ -1648,102 +1821,51 @@ onMounted(async () => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
               <span class="text-sm text-gray-700 dark:text-gray-300">Показывать звездочку</span>
-              <UToggle v-model="createDynamicFieldForm.isRequired" :disabled="createDynamicFieldLoading || createDynamicFieldForm.dataType === 'BOOLEAN'" />
+              <UToggle
+                v-model="createDynamicFieldForm.isRequired"
+                :disabled="createDynamicFieldLoading || createDynamicFieldForm.dataType === 'BOOLEAN'"
+              />
             </div>
             <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
               <span class="text-sm text-gray-700 dark:text-gray-300">Участвует в поиске</span>
-              <UToggle v-model="createDynamicFieldForm.searchable" :disabled="createDynamicFieldLoading" />
+              <UToggle
+                v-model="createDynamicFieldForm.searchable"
+                :disabled="createDynamicFieldLoading"
+              />
             </div>
           </div>
 
-          <div v-if="createDynamicFieldForm.dataType === 'SELECT' || createDynamicFieldForm.dataType === 'MULTI_SELECT'" class="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3">
-            <div class="text-sm text-amber-800 dark:text-amber-200 font-medium">Варианты выбора</div>
-            <div class="space-y-2">
-              <div v-for="(option, idx) in createDynamicFieldOptions" :key="`option-${idx}`" class="flex items-center gap-2">
-                <UInput
-                  v-model="createDynamicFieldOptions[idx]"
-                  :placeholder="`Вариант ${idx + 1}`"
-                  :disabled="createDynamicFieldLoading"
-                />
-                <UButton
-                  icon="lucide:trash-2"
-                  color="red"
-                  variant="ghost"
-                  size="xs"
-                  :disabled="createDynamicFieldLoading"
-                  @click="removeCreateDynamicFieldOption(idx)"
-                />
-              </div>
-            </div>
-            <UButton
-              icon="lucide:plus"
-              color="amber"
-              variant="soft"
-              size="xs"
+          <div
+            v-if="createDynamicFieldForm.dataType === 'SELECT' || createDynamicFieldForm.dataType === 'MULTI_SELECT'"
+            class="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3"
+          >
+            <DynamicFieldOptionsEditor
+              v-model="createDynamicFieldOptions"
               :disabled="createDynamicFieldLoading"
-              @click="addCreateDynamicFieldOption"
-            >
-              Добавить вариант
-            </UButton>
-            <p class="text-xs text-amber-700/90 dark:text-amber-200/90">
-              Минимум один вариант обязателен для сохранения поля списка.
-            </p>
+            />
           </div>
 
           <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-3">
-            <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Превью поля</div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              Превью поля
+            </div>
             <div class="space-y-2">
               <label class="text-sm font-medium text-slate-800 dark:text-slate-200">
                 {{ createDynamicFieldForm.label.trim() || 'Название поля' }}
-                <span v-if="createDynamicFieldForm.isRequired" class="text-red-500">*</span>
+                <span
+                  v-if="createDynamicFieldForm.isRequired"
+                  class="text-red-500"
+                >*</span>
               </label>
 
-              <UInput
-                v-if="createDynamicFieldForm.dataType === 'STRING'"
-                v-model="previewStringValue"
-                placeholder="Текстовое значение"
-                :disabled="createDynamicFieldLoading"
-              />
-
-              <UInput
-                v-else-if="createDynamicFieldForm.dataType === 'NUMBER'"
-                v-model.number="previewNumberValue"
-                type="number"
-                placeholder="0"
-                :disabled="createDynamicFieldLoading"
-              />
-
-              <div v-else-if="createDynamicFieldForm.dataType === 'BOOLEAN'" class="flex items-center gap-2">
-                <UToggle v-model="previewBooleanValue" :disabled="createDynamicFieldLoading" />
-                <span class="text-sm text-slate-600 dark:text-slate-300">{{ previewBooleanValue ? 'Да' : 'Нет' }}</span>
-              </div>
-
-              <UInput
-                v-else-if="createDynamicFieldForm.dataType === 'DATE'"
-                v-model="previewDateValue"
-                type="date"
-                :disabled="createDynamicFieldLoading"
-              />
-
-              <USelectMenu
-                v-else-if="createDynamicFieldForm.dataType === 'SELECT'"
-                v-model="previewSelectValue"
+              <DynamicFieldPreviewControl
+                v-model="createPreviewValue"
+                :data-type="createDynamicFieldForm.dataType"
                 :options="createDynamicFieldOptionChoices"
-                value-attribute="value"
-                option-attribute="label"
-                :disabled="createDynamicFieldLoading || createDynamicFieldOptionChoices.length === 0"
-                placeholder="Выберите вариант"
-              />
-
-              <USelectMenu
-                v-else-if="createDynamicFieldForm.dataType === 'MULTI_SELECT'"
-                v-model="previewMultiSelectValue"
-                :options="createDynamicFieldOptionChoices"
-                value-attribute="value"
-                option-attribute="label"
-                multiple
-                :disabled="createDynamicFieldLoading || createDynamicFieldOptionChoices.length === 0"
-                placeholder="Выберите варианты"
+                :disabled="createDynamicFieldLoading"
+                string-placeholder="Текстовое значение"
+                number-placeholder="0"
+                select-placeholder="Выберите вариант"
               />
             </div>
           </div>
@@ -1751,56 +1873,106 @@ onMounted(async () => {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" :disabled="createDynamicFieldLoading" @click="closeCreateDynamicFieldModal">{{ t('common.cancel') || 'Отмена' }}</UButton>
-            <UButton color="primary" :loading="createDynamicFieldLoading" :disabled="!isCreateDynamicFieldValid" @click="handleCreateDynamicField">{{ t('common.create') || 'Создать' }}</UButton>
+            <UButton
+              color="gray"
+              variant="soft"
+              :disabled="createDynamicFieldLoading"
+              @click="closeCreateDynamicFieldModal"
+            >
+              {{ t('common.cancel') || 'Отмена' }}
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="createDynamicFieldLoading"
+              :disabled="!isCreateDynamicFieldValid"
+              @click="handleCreateDynamicField"
+            >
+              {{ t('common.create') || 'Создать' }}
+            </UButton>
           </div>
         </template>
       </UCard>
     </UModal>
 
-    <UModal v-model="showEditDynamicFieldModal" @close="closeEditDynamicFieldModal">
+    <UModal
+      v-model="showEditDynamicFieldModal"
+      @close="closeEditDynamicFieldModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between gap-3">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Редактирование поля</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400">Обновите название, параметры и варианты выбора</p>
+              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                Редактирование поля
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Обновите название, параметры и варианты выбора
+              </p>
             </div>
-            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeEditDynamicFieldModal" />
+            <UButton
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeEditDynamicFieldModal"
+            />
           </div>
         </template>
 
         <div class="space-y-4">
-          <div v-if="editDynamicFieldError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+          <div
+            v-if="editDynamicFieldError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+          >
             {{ editDynamicFieldError }}
           </div>
 
           <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-900/60 p-3">
-            <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Основное</div>
+            <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+              Основное
+            </div>
             <div class="grid grid-cols-1 gap-4">
-              <UFormGroup label="Название" required>
-                <UInput v-model="editDynamicFieldForm.label" :disabled="editDynamicFieldLoading" />
+              <UFormGroup
+                label="Название"
+                required
+              >
+                <UInput
+                  v-model="editDynamicFieldForm.label"
+                  :disabled="editDynamicFieldLoading"
+                />
               </UFormGroup>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <UFormGroup label="Тип данных">
-              <UInput :model-value="dynamicFieldTypeLabel(editDynamicFieldForm.dataType)" disabled />
+              <UInput
+                :model-value="dynamicFieldTypeLabel(editDynamicFieldForm.dataType)"
+                disabled
+              />
             </UFormGroup>
             <UFormGroup label="Область применения">
-              <UInput :model-value="dynamicFieldScopeLabel(editDynamicFieldForm.clientTypeScope)" disabled />
+              <UInput
+                :model-value="dynamicFieldScopeLabel(editDynamicFieldForm.clientTypeScope)"
+                disabled
+              />
             </UFormGroup>
           </div>
 
           <div class="flex flex-wrap gap-4">
             <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 flex-1 min-w-[220px]">
               <span class="text-sm text-gray-700 dark:text-gray-300">Показывать звездочку</span>
-              <UToggle v-model="editDynamicFieldForm.isRequired" :disabled="editDynamicFieldLoading || editDynamicFieldForm.dataType === 'BOOLEAN'" />
+              <UToggle
+                v-model="editDynamicFieldForm.isRequired"
+                :disabled="editDynamicFieldLoading || editDynamicFieldForm.dataType === 'BOOLEAN'"
+              />
             </div>
             <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 flex-1 min-w-[220px]">
               <span class="text-sm text-gray-700 dark:text-gray-300">Участвует в поиске</span>
-              <UToggle v-model="editDynamicFieldForm.searchable" :disabled="editDynamicFieldLoading" />
+              <UToggle
+                v-model="editDynamicFieldForm.searchable"
+                :disabled="editDynamicFieldLoading"
+              />
             </div>
           </div>
 
@@ -1808,57 +1980,21 @@ onMounted(async () => {
             v-if="editDynamicFieldForm.dataType === 'SELECT' || editDynamicFieldForm.dataType === 'MULTI_SELECT'"
             class="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3"
           >
-            <div class="text-sm text-amber-800 dark:text-amber-200 font-medium">Варианты выбора</div>
-
-            <div class="space-y-2">
-              <div v-for="(option, idx) in editDynamicFieldOptions" :key="`edit-option-${idx}`" class="flex items-center gap-2">
-                <UInput
-                  v-model="editDynamicFieldOptions[idx]"
-                  :placeholder="`Вариант ${idx + 1}`"
-                  :disabled="editDynamicFieldLoading"
-                />
-                <UButton
-                  icon="lucide:trash-2"
-                  color="red"
-                  variant="ghost"
-                  size="xs"
-                  :disabled="editDynamicFieldLoading"
-                  @click="removeEditDynamicFieldOption(idx)"
-                />
-              </div>
-            </div>
-
-            <UButton
-              icon="lucide:plus"
-              color="amber"
-              variant="soft"
-              size="xs"
+            <DynamicFieldOptionsEditor
+              v-model="editDynamicFieldOptions"
               :disabled="editDynamicFieldLoading"
-              @click="addEditDynamicFieldOption"
-            >
-              Добавить вариант
-            </UButton>
+            />
 
             <div class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white/70 dark:bg-slate-900/60 p-3">
-              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">Превью выбора</div>
-              <USelectMenu
-                v-if="editDynamicFieldForm.dataType === 'SELECT'"
-                v-model="editPreviewSelectValue"
+              <div class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                Превью выбора
+              </div>
+              <DynamicFieldPreviewControl
+                v-model="editPreviewValue"
+                :data-type="editDynamicFieldForm.dataType"
                 :options="editDynamicFieldOptionChoices"
-                value-attribute="value"
-                option-attribute="label"
-                :disabled="editDynamicFieldLoading || editDynamicFieldOptionChoices.length === 0"
-                placeholder="Выберите вариант"
-              />
-              <USelectMenu
-                v-else
-                v-model="editPreviewMultiSelectValue"
-                :options="editDynamicFieldOptionChoices"
-                value-attribute="value"
-                option-attribute="label"
-                multiple
-                :disabled="editDynamicFieldLoading || editDynamicFieldOptionChoices.length === 0"
-                placeholder="Выберите варианты"
+                :disabled="editDynamicFieldLoading"
+                select-placeholder="Выберите вариант"
               />
             </div>
           </div>
@@ -1866,19 +2002,44 @@ onMounted(async () => {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" :disabled="editDynamicFieldLoading" @click="closeEditDynamicFieldModal">{{ t('common.cancel') || 'Отмена' }}</UButton>
-            <UButton color="primary" :loading="editDynamicFieldLoading" :disabled="!isEditDynamicFieldValid" @click="handleEditDynamicField">{{ t('common.save') || 'Сохранить' }}</UButton>
+            <UButton
+              color="gray"
+              variant="soft"
+              :disabled="editDynamicFieldLoading"
+              @click="closeEditDynamicFieldModal"
+            >
+              {{ t('common.cancel') || 'Отмена' }}
+            </UButton>
+            <UButton
+              color="primary"
+              :loading="editDynamicFieldLoading"
+              :disabled="!isEditDynamicFieldValid"
+              @click="handleEditDynamicField"
+            >
+              {{ t('common.save') || 'Сохранить' }}
+            </UButton>
           </div>
         </template>
       </UCard>
     </UModal>
 
-    <UModal v-model="showDeleteDynamicFieldConfirmModal" @close="closeDeleteDynamicFieldModal">
+    <UModal
+      v-model="showDeleteDynamicFieldConfirmModal"
+      @close="closeDeleteDynamicFieldModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Удалить поле</h3>
-            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeDeleteDynamicFieldModal" />
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              Удалить поле
+            </h3>
+            <UButton
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeDeleteDynamicFieldModal"
+            />
           </div>
         </template>
 
@@ -1888,21 +2049,39 @@ onMounted(async () => {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" @click="closeDeleteDynamicFieldModal">{{ t('common.cancel') || 'Отмена' }}</UButton>
-            <UButton color="red" :loading="deleteDynamicFieldLoading" @click="confirmDeleteDynamicField">{{ t('common.delete') || 'Удалить' }}</UButton>
+            <UButton
+              color="gray"
+              variant="soft"
+              @click="closeDeleteDynamicFieldModal"
+            >
+              {{ t('common.cancel') || 'Отмена' }}
+            </UButton>
+            <UButton
+              color="red"
+              :loading="deleteDynamicFieldLoading"
+              @click="confirmDeleteDynamicField"
+            >
+              {{ t('common.delete') || 'Удалить' }}
+            </UButton>
           </div>
         </template>
       </UCard>
     </UModal>
 
     <!-- Create Stamp Card Modal -->
-    <UModal v-model="showCreateModal" @close="closeCreateModal">
+    <UModal
+      v-model="showCreateModal"
+      @close="closeCreateModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                <UIcon name="lucide:ticket" class="w-5 h-5" />
+                <UIcon
+                  name="lucide:ticket"
+                  class="w-5 h-5"
+                />
               </div>
               <div>
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
@@ -1925,12 +2104,18 @@ onMounted(async () => {
         </template>
 
         <div class="space-y-4">
-          <div v-if="createFormError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+          <div
+            v-if="createFormError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+          >
             {{ createFormError }}
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('common.name') || 'Name'" required>
+            <UFormGroup
+              :label="t('common.name') || 'Name'"
+              required
+            >
               <UInput
                 v-model="createFormData.name"
                 :placeholder="t('common.name') || 'Card name'"
@@ -1939,7 +2124,10 @@ onMounted(async () => {
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('app.totalStamps') || 'Total stamps'" required>
+            <UFormGroup
+              :label="t('app.totalStamps') || 'Total stamps'"
+              required
+            >
               <UInput
                 v-model.number="createFormData.totalStamps"
                 type="number"
@@ -1960,7 +2148,10 @@ onMounted(async () => {
             />
           </UFormGroup>
 
-          <UFormGroup :label="t('app.reward') || 'Reward'" required>
+          <UFormGroup
+            :label="t('app.reward') || 'Reward'"
+            required
+          >
             <UInput
               v-model="createFormData.rewardDescription"
               :placeholder="rewardPlaceholder"
@@ -1988,7 +2179,10 @@ onMounted(async () => {
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('common.newPin') || 'PIN'" required>
+            <UFormGroup
+              :label="t('common.newPin') || 'PIN'"
+              required
+            >
               <div class="relative">
                 <input
                   :value="createFormData.stampPin"
@@ -2011,19 +2205,25 @@ onMounted(async () => {
                   @keydown.enter.prevent="handleCreateStampCard"
                   @input="onStampPinInput"
                   @paste="(e) => onStampPinPaste(e, 'stampPin')"
-                />
+                >
                 <button
                   type="button"
                   class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   :disabled="createFormLoading"
                   @click="showStampPin = !showStampPin"
                 >
-                  <UIcon :name="showStampPin ? 'lucide:eye-off' : 'lucide:eye'" class="w-4 h-4" />
+                  <UIcon
+                    :name="showStampPin ? 'lucide:eye-off' : 'lucide:eye'"
+                    class="w-4 h-4"
+                  />
                 </button>
               </div>
             </UFormGroup>
 
-            <UFormGroup :label="t('common.confirmPin') || 'Confirm PIN'" required>
+            <UFormGroup
+              :label="t('common.confirmPin') || 'Confirm PIN'"
+              required
+            >
               <div class="relative">
                 <input
                   :value="createFormData.confirmStampPin"
@@ -2046,14 +2246,17 @@ onMounted(async () => {
                   @keydown.enter.prevent="handleCreateStampCard"
                   @input="onConfirmStampPinInput"
                   @paste="(e) => onStampPinPaste(e, 'confirmStampPin')"
-                />
+                >
                 <button
                   type="button"
                   class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   :disabled="createFormLoading"
                   @click="showConfirmStampPin = !showConfirmStampPin"
                 >
-                  <UIcon :name="showConfirmStampPin ? 'lucide:eye-off' : 'lucide:eye'" class="w-4 h-4" />
+                  <UIcon
+                    :name="showConfirmStampPin ? 'lucide:eye-off' : 'lucide:eye'"
+                    class="w-4 h-4"
+                  />
                 </button>
               </div>
             </UFormGroup>
@@ -2088,25 +2291,44 @@ onMounted(async () => {
       </UCard>
     </UModal>
 
-    <UModal v-model="showEditModal" @close="closeEditModal">
+    <UModal
+      v-model="showEditModal"
+      @close="closeEditModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ t('contacts.editStampCard') || 'Редактировать карту штампов' }}
             </h3>
-            <UButton type="button" icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeEditModal" />
+            <UButton
+              type="button"
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeEditModal"
+            />
           </div>
         </template>
 
         <div class="space-y-4">
-          <div v-if="editFormError" class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm">
+          <div
+            v-if="editFormError"
+            class="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200 text-sm"
+          >
             {{ editFormError }}
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <UFormGroup :label="t('common.name') || 'Name'" required>
-              <UInput v-model="editFormData.name" :disabled="editFormLoading" />
+            <UFormGroup
+              :label="t('common.name') || 'Name'"
+              required
+            >
+              <UInput
+                v-model="editFormData.name"
+                :disabled="editFormLoading"
+              />
             </UFormGroup>
 
             <UFormGroup :label="t('contacts.status') || 'Status'">
@@ -2125,15 +2347,29 @@ onMounted(async () => {
           </div>
 
           <UFormGroup :label="t('common.description') || 'Description'">
-            <UTextarea v-model="editFormData.description" :rows="3" :disabled="editFormLoading" />
+            <UTextarea
+              v-model="editFormData.description"
+              :rows="3"
+              :disabled="editFormLoading"
+            />
           </UFormGroup>
 
-          <UFormGroup :label="t('app.reward') || 'Reward'" required>
-            <UInput v-model="editFormData.rewardDescription" :disabled="editFormLoading" />
+          <UFormGroup
+            :label="t('app.reward') || 'Reward'"
+            required
+          >
+            <UInput
+              v-model="editFormData.rewardDescription"
+              :disabled="editFormLoading"
+            />
           </UFormGroup>
 
           <UFormGroup :label="t('common.until') || t('app.until') || 'Until'">
-            <UInput v-model="editFormData.validUntil" type="date" :disabled="editFormLoading" />
+            <UInput
+              v-model="editFormData.validUntil"
+              type="date"
+              :disabled="editFormLoading"
+            />
           </UFormGroup>
 
           <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-3">
@@ -2167,14 +2403,17 @@ onMounted(async () => {
                     @keydown.enter.prevent="handleUpdateStampCard"
                     @input="onEditStampPinInput"
                     @paste="(e) => onEditStampPinPaste(e, 'stampPin')"
-                  />
+                  >
                   <button
                     type="button"
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     :disabled="editFormLoading"
                     @click="showEditStampPin = !showEditStampPin"
                   >
-                    <UIcon :name="showEditStampPin ? 'lucide:eye-off' : 'lucide:eye'" class="w-4 h-4" />
+                    <UIcon
+                      :name="showEditStampPin ? 'lucide:eye-off' : 'lucide:eye'"
+                      class="w-4 h-4"
+                    />
                   </button>
                 </div>
               </UFormGroup>
@@ -2204,14 +2443,17 @@ onMounted(async () => {
                     @keydown.enter.prevent="handleUpdateStampCard"
                     @input="onEditConfirmStampPinInput"
                     @paste="(e) => onEditStampPinPaste(e, 'confirmStampPin')"
-                  />
+                  >
                   <button
                     type="button"
                     class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     :disabled="editFormLoading"
                     @click="showEditConfirmStampPin = !showEditConfirmStampPin"
                   >
-                    <UIcon :name="showEditConfirmStampPin ? 'lucide:eye-off' : 'lucide:eye'" class="w-4 h-4" />
+                    <UIcon
+                      :name="showEditConfirmStampPin ? 'lucide:eye-off' : 'lucide:eye'"
+                      class="w-4 h-4"
+                    />
                   </button>
                 </div>
               </UFormGroup>
@@ -2246,14 +2488,23 @@ onMounted(async () => {
       </UCard>
     </UModal>
 
-    <UModal v-model="showDeleteConfirmModal" @close="closeDeleteConfirmModal">
+    <UModal
+      v-model="showDeleteConfirmModal"
+      @close="closeDeleteConfirmModal"
+    >
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {{ t('common.confirmDelete') || 'Confirm deletion' }}
             </h3>
-            <UButton icon="lucide:x" size="xs" color="gray" variant="ghost" @click="closeDeleteConfirmModal" />
+            <UButton
+              icon="lucide:x"
+              size="xs"
+              color="gray"
+              variant="ghost"
+              @click="closeDeleteConfirmModal"
+            />
           </div>
         </template>
 
@@ -2263,10 +2514,20 @@ onMounted(async () => {
 
         <template #footer>
           <div class="flex items-center justify-end gap-2">
-            <UButton color="gray" variant="outline" icon="lucide:x" @click="closeDeleteConfirmModal">
+            <UButton
+              color="gray"
+              variant="outline"
+              icon="lucide:x"
+              @click="closeDeleteConfirmModal"
+            >
               {{ t('common.cancel') || 'Cancel' }}
             </UButton>
-            <UButton color="red" icon="lucide:trash-2" :loading="stampCardsLoading" @click="confirmDeleteStampCard">
+            <UButton
+              color="red"
+              icon="lucide:trash-2"
+              :loading="stampCardsLoading"
+              @click="confirmDeleteStampCard"
+            >
               {{ t('common.delete') || 'Delete' }}
             </UButton>
           </div>

@@ -67,10 +67,16 @@ useHead(() => ({
       <div class="flex items-center justify-between">
         <!-- Name & Type -->
         <div class="flex-1 min-w-0">
-          <h1 v-if="displayName" class="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1
+            v-if="displayName"
+            class="text-2xl font-bold text-gray-900 dark:text-white"
+          >
             {{ displayName }}
           </h1>
-          <div v-if="client" class="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+          <div
+            v-if="client"
+            class="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+          >
             <span>{{ client.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}</span>
             <span>•</span>
             <span :class="statusBadgeClass">
@@ -84,8 +90,8 @@ useHead(() => ({
           size="xs"
           color="primary"
           variant="soft"
-          @click="emit('back')"
           class="min-w-fit gap-2"
+          @click="emit('back')"
         >
           <span class="hidden sm:inline">{{ t('app.back') || t('common.back') }}</span>
         </UButton>

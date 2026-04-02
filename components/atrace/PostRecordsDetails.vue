@@ -273,16 +273,28 @@ watch(itemsPerPage, () => {
 
 <template>
   <div class="w-full">
-    <div v-if="loading" class="flex items-center justify-center py-8">
-      <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300" />
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-8"
+    >
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+      />
       <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</span>
     </div>
 
-    <div v-else-if="error" class="text-sm text-red-500 py-4">
+    <div
+      v-else-if="error"
+      class="text-sm text-red-500 py-4"
+    >
       {{ error }}
     </div>
 
-    <div v-else-if="filteredRecords.length === 0" class="text-sm text-gray-500 py-4 text-center">
+    <div
+      v-else-if="filteredRecords.length === 0"
+      class="text-sm text-gray-500 py-4 text-center"
+    >
       {{ t('app.noAttendanceRecords') }}
     </div>
 
@@ -291,38 +303,56 @@ watch(itemsPerPage, () => {
       <div class="mb-3 flex items-start justify-between gap-3">
         <div class="flex flex-wrap gap-2 text-xs">
           <div class="flex items-center gap-1">
-            <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700"></div>
+            <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" />
             <span>{{ t('app.violationDay') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700"></div>
+            <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
             <span>{{ t('app.legitimateDay') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700"></div>
+            <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700" />
             <span>{{ t('app.timeViolation') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700"></div>
+            <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700" />
             <span>{{ t('common.suspicious') }}</span>
           </div>
         </div>
-        <UButton size="xs" variant="ghost" icon="i-heroicons-cog-6-tooth" @click="showSettings = !showSettings">
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="i-heroicons-cog-6-tooth"
+          @click="showSettings = !showSettings"
+        >
           {{ t('app.settings') }}
         </UButton>
       </div>
 
       <!-- Settings Panel -->
-      <div v-if="showSettings" class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
-        <div class="text-sm font-medium mb-2">{{ t('app.timeThresholds') }}</div>
+      <div
+        v-if="showSettings"
+        class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
+      >
+        <div class="text-sm font-medium mb-2">
+          {{ t('app.timeThresholds') }}
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
             <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.lateArrivalAfter') }}</label>
-            <input v-model="lateArrivalTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+            <input
+              v-model="lateArrivalTime"
+              type="time"
+              class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+            >
           </div>
           <div>
             <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.earlyLeaveBefore') }}</label>
-            <input v-model="earlyLeaveTime" type="time" class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600" />
+            <input
+              v-model="earlyLeaveTime"
+              type="time"
+              class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
+            >
           </div>
         </div>
       </div>
@@ -331,9 +361,15 @@ watch(itemsPerPage, () => {
         <table class="w-full text-sm">
           <thead class="bg-gray-100 dark:bg-gray-700">
             <tr>
-              <th class="px-3 py-2 text-left font-medium">{{ t('app.date') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('common.method') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('app.status') }}</th>
+              <th class="px-3 py-2 text-left font-medium">
+                {{ t('app.date') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('common.method') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('app.status') }}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -343,16 +379,33 @@ watch(itemsPerPage, () => {
               class="border-b dark:border-gray-700 transition-colors"
               :class="getRecordStyle(r)"
             >
-              <td class="px-3 py-2">{{ formatTime(r) }}</td>
-              <td class="px-3 py-2 text-center">{{ methodLabel(r.method) }}</td>
+              <td class="px-3 py-2">
+                {{ formatTime(r) }}
+              </td>
+              <td class="px-3 py-2 text-center">
+                {{ methodLabel(r.method) }}
+              </td>
               <td class="px-3 py-2 text-center">
                 <div class="flex flex-row flex-wrap items-center justify-center gap-1">
-                  <span v-if="!r.suspicious" class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100">
-                    <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
+                  <span
+                    v-if="!r.suspicious"
+                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                  >
+                    <UIcon
+                      name="i-heroicons-check-circle"
+                      class="w-3 h-3 mr-1"
+                    />
                     {{ t('common.ok') }}
                   </span>
-                  <span v-else class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help" :title="t('common.suspiciousReasons')">
-                    <UIcon name="i-heroicons-exclamation-triangle" class="w-3 h-3 mr-1" />
+                  <span
+                    v-else
+                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100 cursor-help"
+                    :title="t('common.suspiciousReasons')"
+                  >
+                    <UIcon
+                      name="i-heroicons-exclamation-triangle"
+                      class="w-3 h-3 mr-1"
+                    />
                     {{ t('common.suspicious') }}
                   </span>
                   <span
@@ -360,12 +413,21 @@ watch(itemsPerPage, () => {
                     class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 cursor-help"
                     :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
                   >
-                    <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-1" />
+                    <UIcon
+                      name="i-heroicons-map-pin"
+                      class="w-3 h-3 mr-1"
+                    />
                     {{ t('app.geoConfirmed') ?? 'Гео подтверждено' }}
                   </span>
-                  <span v-else class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
-                    :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })">
-                    <UIcon name="i-heroicons-map-pin" class="w-3 h-3 mr-1" />
+                  <span
+                    v-else
+                    class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-200 cursor-help"
+                    :title="t('app.geoNotConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
+                  >
+                    <UIcon
+                      name="i-heroicons-map-pin"
+                      class="w-3 h-3 mr-1"
+                    />
                     {{ t('app.geoNotConfirmed') ?? 'Гео не подтверждено' }}
                   </span>
                 </div>
@@ -382,23 +444,52 @@ watch(itemsPerPage, () => {
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <label class="text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</label>
-            <select v-model="itemsPerPage" class="border rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-700">
-              <option value="TEN">10</option>
-              <option value="FIFTEEN">15</option>
-              <option value="TWENTY">20</option>
-              <option value="TWENTY_FIVE">25</option>
-              <option value="THIRTY">30</option>
+            <select
+              v-model="itemsPerPage"
+              class="border rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-700"
+            >
+              <option value="TEN">
+                10
+              </option>
+              <option value="FIFTEEN">
+                15
+              </option>
+              <option value="TWENTY">
+                20
+              </option>
+              <option value="TWENTY_FIVE">
+                25
+              </option>
+              <option value="THIRTY">
+                30
+              </option>
             </select>
           </div>
           <div class="flex gap-2">
-            <UButton size="xs" variant="soft" :disabled="currentPage === 1" @click="prevPage">
-              <UIcon name="i-heroicons-chevron-left" class="w-4 h-4" />
+            <UButton
+              size="xs"
+              variant="soft"
+              :disabled="currentPage === 1"
+              @click="prevPage"
+            >
+              <UIcon
+                name="i-heroicons-chevron-left"
+                class="w-4 h-4"
+              />
             </UButton>
             <div class="flex items-center px-2">
               {{ currentPage }} / {{ totalPages }}
             </div>
-            <UButton size="xs" variant="soft" :disabled="currentPage === totalPages" @click="nextPage">
-              <UIcon name="i-heroicons-chevron-right" class="w-4 h-4" />
+            <UButton
+              size="xs"
+              variant="soft"
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+            >
+              <UIcon
+                name="i-heroicons-chevron-right"
+                class="w-4 h-4"
+              />
             </UButton>
           </div>
         </div>

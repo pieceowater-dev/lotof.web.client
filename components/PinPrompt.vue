@@ -1,11 +1,19 @@
 <template>
-  <UModal :model-value="modelValue" @update:modelValue="val => emit('update:modelValue', val)" :ui="{ width: 'sm:max-w-md' }">
+  <UModal
+    :model-value="modelValue"
+    :ui="{ width: 'sm:max-w-md' }"
+    @update:model-value="val => emit('update:modelValue', val)"
+  >
     <UCard>
       <template #header>
-        <h3 class="text-lg font-semibold">{{ title }}</h3>
+        <h3 class="text-lg font-semibold">
+          {{ title }}
+        </h3>
       </template>
       <div class="space-y-2">
-        <p class="text-gray-600 text-sm">{{ description }}</p>
+        <p class="text-gray-600 text-sm">
+          {{ description }}
+        </p>
         <UInput
           v-model="pinInput"
           maxlength="6"
@@ -14,12 +22,28 @@
           class="w-full"
           @keyup.enter="submitPin"
         />
-        <div v-if="error" class="text-red-500 text-xs">{{ error }}</div>
+        <div
+          v-if="error"
+          class="text-red-500 text-xs"
+        >
+          {{ error }}
+        </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton color="primary" variant="soft" @click="close">{{ t('common.cancel') }}</UButton>
-          <UButton color="primary" @click="submitPin">{{ t('common.ok') }}</UButton>
+          <UButton
+            color="primary"
+            variant="soft"
+            @click="close"
+          >
+            {{ t('common.cancel') }}
+          </UButton>
+          <UButton
+            color="primary"
+            @click="submitPin"
+          >
+            {{ t('common.ok') }}
+          </UButton>
         </div>
       </template>
     </UCard>

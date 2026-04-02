@@ -212,13 +212,25 @@ const stepContent = computed(() => {
 
 <template>
   <Teleport to="body">
-    <div v-if="isRunning && currentStep" class="tour-guide-overlay">
+    <div
+      v-if="isRunning && currentStep"
+      class="tour-guide-overlay"
+    >
       <!-- Dark backdrop with cutout for highlighted element -->
-      <div class="fixed inset-0 z-[9998]" @click="skipTour">
+      <div
+        class="fixed inset-0 z-[9998]"
+        @click="skipTour"
+      >
         <svg class="w-full h-full">
           <defs>
             <mask id="tour-spotlight">
-              <rect x="0" y="0" width="100%" height="100%" fill="white" />
+              <rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="white"
+              />
               <rect
                 v-if="highlightRect"
                 :x="highlightRect.left - highlightRect.padding"
@@ -292,8 +304,8 @@ const stepContent = computed(() => {
           <UButton
             variant="ghost"
             size="sm"
-            @click="skipTour"
             class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            @click="skipTour"
           >
             {{ t('app.skip') || 'Skip' }}
           </UButton>
@@ -315,8 +327,14 @@ const stepContent = computed(() => {
             >
               <span v-if="canGoNext">{{ t('app.next') || 'Next' }}</span>
               <span v-else>{{ t('app.finish') || 'Finish' }}</span>
-              <UIcon v-if="canGoNext" name="i-lucide-chevron-right" />
-              <UIcon v-else name="i-lucide-check" />
+              <UIcon
+                v-if="canGoNext"
+                name="i-lucide-chevron-right"
+              />
+              <UIcon
+                v-else
+                name="i-lucide-check"
+              />
             </UButton>
           </div>
         </div>

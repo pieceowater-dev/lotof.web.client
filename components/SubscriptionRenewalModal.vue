@@ -70,11 +70,10 @@ function handleClose() {
 
 <template>
   <Modal
-    :modelValue="modelValue"
-    @update:modelValue="handleClose"
+    :model-value="modelValue"
     :header="t('billing.renewalModalTitle') || 'Subscription Renewal Required'"
     :content="statusMessage"
-    :footerButtons="[
+    :footer-buttons="[
       {
         label: t('billing.dismiss') || 'Dismiss',
         variant: 'outline',
@@ -87,6 +86,7 @@ function handleClose() {
         onClick: handleRenew,
       },
     ]"
+    @update:model-value="handleClose"
   >
     <template #header>
       <div class="flex items-center gap-2">
@@ -102,9 +102,14 @@ function handleClose() {
     </template>
 
     <div class="space-y-4">
-      <p class="text-gray-700 dark:text-gray-300">{{ statusMessage }}</p>
+      <p class="text-gray-700 dark:text-gray-300">
+        {{ statusMessage }}
+      </p>
 
-      <div v-if="currentPeriodEnd" class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3">
+      <div
+        v-if="currentPeriodEnd"
+        class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3"
+      >
         <p class="text-sm text-gray-600 dark:text-gray-400">
           <span class="font-semibold">{{ t('billing.periodEnd') || 'Current Period Ends:' }}</span>
           {{ formatDate(currentPeriodEnd) }}
@@ -114,7 +119,7 @@ function handleClose() {
       <p class="text-xs text-gray-500 dark:text-gray-400">
         {{
           t('billing.renewalInfo') ||
-          'Without an active subscription, you can only view records and generate QR codes. All other features will be unavailable.'
+            'Without an active subscription, you can only view records and generate QR codes. All other features will be unavailable.'
         }}
       </p>
     </div>

@@ -27,6 +27,7 @@ import ContactLoyalty from '@/components/contacts/ContactLoyalty.vue';
 import ContactTimeline from '@/components/contacts/ContactTimeline.vue';
 import ContactTags from '@/components/contacts/ContactTags.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
+import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
 definePageMeta({
   viewTransition: false,
@@ -288,25 +289,6 @@ function hasDynamicFieldInputValue(field: DynamicField): boolean {
 
   const text = String(rawValue ?? '').trim();
   return text.length > 0;
-}
-
-function dynamicFieldOptionChoices(field: DynamicField) {
-  const options = Array.isArray(field.options) ? field.options : [];
-  return options.map((option) => ({ label: option, value: option }));
-}
-
-function dynamicFieldMultiSelectValues(field: DynamicField): string[] {
-  const rawValue = dynamicFieldDrafts.value[field.id];
-  const selected = Array.isArray(rawValue) ? rawValue.map((item) => String(item).trim()).filter(Boolean) : [];
-  return selected;
-}
-
-function dynamicFieldMultiSelectControlLabel(field: DynamicField): string {
-  const count = dynamicFieldMultiSelectValues(field).length;
-  if (count === 0) {
-    return t('contacts.selectOptions') || 'Выберите варианты';
-  }
-  return `${count} ${t('contacts.selectedCountSuffix') || 'выбрано'}`;
 }
 
 async function saveDynamicFields() {
@@ -1304,15 +1286,26 @@ function removeWhatsappField(index: number) {
     />
 
     <!-- Loading State -->
-    <div v-if="loading" class="flex items-center justify-center py-20">
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-20"
+    >
       <div class="text-center">
-        <UIcon name="lucide:loader" class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4" />
-        <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
+        <UIcon
+          name="lucide:loader"
+          class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4"
+        />
+        <p class="text-gray-600 dark:text-gray-400">
+          {{ t('common.loading') }}
+        </p>
       </div>
     </div>
 
     <!-- Main Content -->
-    <div v-else-if="client" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div
+      v-else-if="client"
+      class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6"
+    >
       <div
         v-if="isClientDataStale"
         class="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/60 dark:bg-amber-950/30"
@@ -1321,7 +1314,13 @@ function removeWhatsappField(index: number) {
           <div class="text-sm text-amber-900 dark:text-amber-200">
             {{ t('contacts.staleClientBanner') || 'Данные клиента изменились в другом окне.' }}
           </div>
-          <UButton size="xs" color="amber" variant="soft" icon="lucide:refresh-cw" @click="refreshStaleClientData">
+          <UButton
+            size="xs"
+            color="amber"
+            variant="soft"
+            icon="lucide:refresh-cw"
+            @click="refreshStaleClientData"
+          >
             {{ t('contacts.refreshUpdates') || 'Обновить' }}
           </UButton>
         </div>
@@ -1422,8 +1421,12 @@ function removeWhatsappField(index: number) {
             <template #header>
               <div class="flex items-center justify-between gap-3">
                 <div>
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Дополнительные поля</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">Значения динамических полей клиента</p>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Дополнительные поля
+                  </h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">
+                    Значения динамических полей клиента
+                  </p>
                 </div>
                 <UButton
                   color="primary"
@@ -1437,19 +1440,31 @@ function removeWhatsappField(index: number) {
               </div>
             </template>
 
-            <div v-if="dynamicFieldsLoading" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div
+              v-if="dynamicFieldsLoading"
+              class="py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+            >
               {{ t('common.loading') }}
             </div>
 
-            <div v-else-if="dynamicFieldsError" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
+            <div
+              v-else-if="dynamicFieldsError"
+              class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
+            >
               {{ dynamicFieldsError }}
             </div>
 
-            <div v-else-if="dynamicFields.length === 0" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">
+            <div
+              v-else-if="dynamicFields.length === 0"
+              class="py-6 text-center text-sm text-gray-500 dark:text-gray-400"
+            >
               Поля не настроены
             </div>
 
-            <div v-else class="space-y-3">
+            <div
+              v-else
+              class="space-y-3"
+            >
               <div
                 v-for="field in dynamicFields"
                 :key="field.id"
@@ -1458,64 +1473,23 @@ function removeWhatsappField(index: number) {
                 <div class="mb-2 flex items-center justify-between gap-3">
                   <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
                     {{ field.label }}
-                    <span v-if="field.isRequired" class="text-red-500">*</span>
+                    <span
+                      v-if="field.isRequired"
+                      class="text-red-500"
+                    >*</span>
                   </div>
                 </div>
 
-                <div class="flex flex-col gap-3">
-                  <template v-if="field.dataType === 'BOOLEAN'">
-                    <div class="flex items-center justify-between rounded-md bg-gray-50 dark:bg-gray-900 px-3 py-2">
-                      <span class="text-sm text-gray-700 dark:text-gray-300">{{ dynamicFieldDrafts[field.id] ? 'Да' : 'Нет' }}</span>
-                      <UToggle v-model="dynamicFieldDrafts[field.id]" :disabled="dynamicFieldsSaving" />
-                    </div>
-                  </template>
-
-                  <template v-else-if="field.dataType === 'SELECT'">
-                    <USelectMenu
-                      v-model="dynamicFieldDrafts[field.id]"
-                      :options="dynamicFieldOptionChoices(field)"
-                      value-attribute="value"
-                      option-attribute="label"
-                      :disabled="dynamicFieldsSaving"
-                    />
-                  </template>
-
-                  <template v-else-if="field.dataType === 'MULTI_SELECT'">
-                    <USelectMenu
-                      v-model="dynamicFieldDrafts[field.id]"
-                      :options="dynamicFieldOptionChoices(field)"
-                      value-attribute="value"
-                      option-attribute="label"
-                      :disabled="dynamicFieldsSaving"
-                      multiple
-                    >
-                      <template #label>
-                        {{ dynamicFieldMultiSelectControlLabel(field) }}
-                      </template>
-                    </USelectMenu>
-                    <div v-if="dynamicFieldMultiSelectValues(field).length > 0" class="flex flex-wrap gap-1.5 pt-1">
-                      <UBadge
-                        v-for="selectedValue in dynamicFieldMultiSelectValues(field)"
-                        :key="`${field.id}-${selectedValue}`"
-                        color="primary"
-                        variant="soft"
-                        size="xs"
-                      >
-                        {{ selectedValue }}
-                      </UBadge>
-                    </div>
-                    <p v-else class="text-xs text-gray-500 dark:text-gray-400">Ничего не выбрано</p>
-                  </template>
-
-                  <template v-else>
-                    <UInput
-                      v-model="dynamicFieldDrafts[field.id]"
-                      class="w-full"
-                      :type="field.dataType === 'NUMBER' ? 'number' : field.dataType === 'DATE' ? 'date' : 'text'"
-                      :disabled="dynamicFieldsSaving"
-                    />
-                  </template>
-                </div>
+                <DynamicFieldInput
+                  v-model="dynamicFieldDrafts[field.id]"
+                  :field="field"
+                  :disabled="dynamicFieldsSaving"
+                  :yes-label="t('contacts.yes') || 'Да'"
+                  :no-label="t('contacts.no') || 'Нет'"
+                  :none-selected-label="t('contacts.noneSelected') || 'Ничего не выбрано'"
+                  :select-options-label="t('contacts.selectOptions') || 'Выберите варианты'"
+                  :selected-count-suffix="t('contacts.selectedCountSuffix') || 'выбрано'"
+                />
               </div>
             </div>
           </UCard>

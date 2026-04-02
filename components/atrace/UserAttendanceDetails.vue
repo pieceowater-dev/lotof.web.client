@@ -123,16 +123,28 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
 
 <template>
   <div class="w-full">
-    <div v-if="loading" class="flex items-center justify-center py-8">
-      <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300" />
+    <div
+      v-if="loading"
+      class="flex items-center justify-center py-8"
+    >
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+      />
       <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</span>
     </div>
 
-    <div v-else-if="error" class="text-sm text-red-500 py-4">
+    <div
+      v-else-if="error"
+      class="text-sm text-red-500 py-4"
+    >
       {{ error }}
     </div>
 
-    <div v-else-if="attendanceRecords.length === 0" class="text-sm text-gray-500 py-4 text-center">
+    <div
+      v-else-if="attendanceRecords.length === 0"
+      class="text-sm text-gray-500 py-4 text-center"
+    >
       {{ t('app.noAttendanceRecords') }}
     </div>
 
@@ -142,12 +154,24 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
         <table class="w-full text-sm">
           <thead class="bg-gray-100 dark:bg-gray-700">
             <tr>
-              <th class="px-3 py-2 text-left font-medium">{{ t('app.date') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('app.checkIn') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('app.checkOut') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('app.hoursWorked') }}</th>
-              <th class="px-3 py-2 text-center font-medium">{{ t('app.status') }}</th>
-              <th class="px-3 py-2 text-left font-medium">{{ t('app.reason') }}</th>
+              <th class="px-3 py-2 text-left font-medium">
+                {{ t('app.date') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('app.checkIn') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('app.checkOut') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('app.hoursWorked') }}
+              </th>
+              <th class="px-3 py-2 text-center font-medium">
+                {{ t('app.status') }}
+              </th>
+              <th class="px-3 py-2 text-left font-medium">
+                {{ t('app.reason') }}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -156,9 +180,15 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
               :key="record.id"
               class="border-b dark:border-gray-700"
             >
-              <td class="px-3 py-2">{{ formatDate(record.date) }}</td>
-              <td class="px-3 py-2 text-center">{{ formatTime(record.firstCheckIn) }}</td>
-              <td class="px-3 py-2 text-center">{{ formatTime(record.lastCheckOut) }}</td>
+              <td class="px-3 py-2">
+                {{ formatDate(record.date) }}
+              </td>
+              <td class="px-3 py-2 text-center">
+                {{ formatTime(record.firstCheckIn) }}
+              </td>
+              <td class="px-3 py-2 text-center">
+                {{ formatTime(record.lastCheckOut) }}
+              </td>
               <td class="px-3 py-2 text-center">
                 <span class="font-medium">{{ record.workedHours.toFixed(1) }}{{ t('app.hoursShort') }}</span>
               </td>
@@ -167,29 +197,44 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                   v-if="record.attended"
                   class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
                 >
-                  <UIcon name="i-heroicons-check-circle" class="w-3 h-3 mr-1" />
+                  <UIcon
+                    name="i-heroicons-check-circle"
+                    class="w-3 h-3 mr-1"
+                  />
                   {{ t('app.attended') }}
                 </span>
                 <span 
                   v-else-if="record.legitimate"
                   class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
                 >
-                  <UIcon name="i-heroicons-information-circle" class="w-3 h-3 mr-1" />
+                  <UIcon
+                    name="i-heroicons-information-circle"
+                    class="w-3 h-3 mr-1"
+                  />
                   {{ t('app.excused') }}
                 </span>
                 <span 
                   v-else
                   class="inline-flex items-center px-2 py-1 rounded text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100"
                 >
-                  <UIcon name="i-heroicons-x-circle" class="w-3 h-3 mr-1" />
+                  <UIcon
+                    name="i-heroicons-x-circle"
+                    class="w-3 h-3 mr-1"
+                  />
                   {{ t('app.violation') }}
                 </span>
               </td>
               <td class="px-3 py-2 text-sm">
-                <span v-if="record.legitimate && record.reason" class="text-gray-700 dark:text-gray-300">
+                <span
+                  v-if="record.legitimate && record.reason"
+                  class="text-gray-700 dark:text-gray-300"
+                >
                   {{ record.reason }}
                 </span>
-                <span v-else class="text-gray-400 dark:text-gray-500">-</span>
+                <span
+                  v-else
+                  class="text-gray-400 dark:text-gray-500"
+                >-</span>
               </td>
             </tr>
           </tbody>
@@ -197,7 +242,10 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
       </div>
 
       <!-- Pagination -->
-      <div v-if="totalPages > 1" class="flex items-center justify-between mt-4 text-sm">
+      <div
+        v-if="totalPages > 1"
+        class="flex items-center justify-between mt-4 text-sm"
+      >
         <div class="text-gray-600 dark:text-gray-400">
           {{ t('app.showing') }} {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, totalRecords) }} {{ t('app.of') }} {{ totalRecords }}
         </div>
@@ -208,7 +256,10 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
             :disabled="currentPage === 1"
             @click="prevPage"
           >
-            <UIcon name="i-heroicons-chevron-left" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-chevron-left"
+              class="w-4 h-4"
+            />
           </UButton>
           <div class="flex items-center px-2">
             {{ currentPage }} / {{ totalPages }}
@@ -219,7 +270,10 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
             :disabled="currentPage === totalPages"
             @click="nextPage"
           >
-            <UIcon name="i-heroicons-chevron-right" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-chevron-right"
+              class="w-4 h-4"
+            />
           </UButton>
         </div>
       </div>

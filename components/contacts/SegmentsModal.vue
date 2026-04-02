@@ -126,7 +126,11 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('close')" title="Manage Segments">
+  <UModal
+    :model-value="isOpen"
+    title="Manage Segments"
+    @update:model-value="$emit('close')"
+  >
     <div class="p-4 space-y-4">
       <!-- Create new segment -->
       <div class="flex gap-2">
@@ -138,8 +142,8 @@ watch(() => props.isOpen, (newVal) => {
         />
         <UButton
           :loading="isCreating"
-          @click="handleCreateSegment"
           size="sm"
+          @click="handleCreateSegment"
         >
           {{ t('common.add') }}
         </UButton>
@@ -148,11 +152,22 @@ watch(() => props.isOpen, (newVal) => {
       <div class="grid grid-cols-2 gap-4 min-h-[400px]">
         <!-- Segments list -->
         <div class="space-y-2">
-          <h3 class="text-sm font-semibold">Segments</h3>
-          <div v-if="loading" class="flex justify-center py-8">
-            <UIcon name="lucide:loader" class="w-6 h-6 animate-spin text-gray-400" />
+          <h3 class="text-sm font-semibold">
+            Segments
+          </h3>
+          <div
+            v-if="loading"
+            class="flex justify-center py-8"
+          >
+            <UIcon
+              name="lucide:loader"
+              class="w-6 h-6 animate-spin text-gray-400"
+            />
           </div>
-          <div v-else class="space-y-1 max-h-[350px] overflow-y-auto">
+          <div
+            v-else
+            class="space-y-1 max-h-[350px] overflow-y-auto"
+          >
             <div
               v-for="segment in segments"
               :key="segment.id"
@@ -176,7 +191,10 @@ watch(() => props.isOpen, (newVal) => {
               </div>
             </div>
 
-            <div v-if="!loading && segments.length === 0" class="text-center py-8 text-gray-500 text-sm">
+            <div
+              v-if="!loading && segments.length === 0"
+              class="text-center py-8 text-gray-500 text-sm"
+            >
               No segments yet
             </div>
           </div>
@@ -184,8 +202,13 @@ watch(() => props.isOpen, (newVal) => {
 
         <!-- Segment rules -->
         <div class="space-y-2">
-          <h3 class="text-sm font-semibold">Rules</h3>
-          <div v-if="selectedSegment" class="space-y-2 max-h-[350px] overflow-y-auto">
+          <h3 class="text-sm font-semibold">
+            Rules
+          </h3>
+          <div
+            v-if="selectedSegment"
+            class="space-y-2 max-h-[350px] overflow-y-auto"
+          >
             <div
               v-for="rule in segmentRules"
               :key="rule.id"
@@ -193,8 +216,12 @@ watch(() => props.isOpen, (newVal) => {
             >
               <div class="flex items-center justify-between">
                 <div>
-                  <div class="font-medium">{{ rule.fieldKey }}</div>
-                  <div class="text-gray-600 dark:text-gray-400">{{ rule.operator }} {{ rule.value }}</div>
+                  <div class="font-medium">
+                    {{ rule.fieldKey }}
+                  </div>
+                  <div class="text-gray-600 dark:text-gray-400">
+                    {{ rule.operator }} {{ rule.value }}
+                  </div>
                 </div>
                 <UButton
                   size="xs"
@@ -206,11 +233,17 @@ watch(() => props.isOpen, (newVal) => {
               </div>
             </div>
 
-            <div v-if="segmentRules.length === 0" class="text-center py-8 text-gray-500 text-sm">
+            <div
+              v-if="segmentRules.length === 0"
+              class="text-center py-8 text-gray-500 text-sm"
+            >
               No rules for this segment
             </div>
           </div>
-          <div v-else class="text-center py-8 text-gray-500 text-sm">
+          <div
+            v-else
+            class="text-center py-8 text-gray-500 text-sm"
+          >
             Select a segment to view rules
           </div>
         </div>

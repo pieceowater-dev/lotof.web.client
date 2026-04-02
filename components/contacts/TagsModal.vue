@@ -84,7 +84,7 @@ async function handleCreateTag() {
     emit('tagCreated', newTag);
     
     // If in select mode, immediately select and add the new tag
-    if (isSelectMode && props.clientId) {
+    if (isSelectMode.value && props.clientId) {
       selectedTagId.value = newTag.id;
       await handleAddTag(newTag.id);
     }
@@ -230,11 +230,22 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('close')">
+  <UModal
+    :model-value="isOpen"
+    @update:model-value="$emit('close')"
+  >
     <div class="p-4 space-y-4">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ isSelectMode ? t('contacts.addTagToClient') : t('contacts.manageTags') }}</h2>
-        <UButton color="gray" variant="ghost" icon="lucide:x" class="-my-1" @click="$emit('close')" />
+        <h2 class="text-lg font-semibold">
+          {{ isSelectMode ? t('contacts.addTagToClient') : t('contacts.manageTags') }}
+        </h2>
+        <UButton
+          color="gray"
+          variant="ghost"
+          icon="lucide:x"
+          class="-my-1"
+          @click="$emit('close')"
+        />
       </div>
 
       <!-- Create new tag -->
@@ -247,19 +258,28 @@ watch(() => props.isOpen, (newVal) => {
         />
         <UButton
           :loading="isCreating"
-          @click="handleCreateTag"
           size="sm"
+          @click="handleCreateTag"
         >
           {{ isSelectMode ? t('common.create') : t('common.add') }}
         </UButton>
       </div>
 
       <!-- Tags list -->
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="lucide:loader" class="w-6 h-6 animate-spin text-gray-400" />
+      <div
+        v-if="loading"
+        class="flex justify-center py-8"
+      >
+        <UIcon
+          name="lucide:loader"
+          class="w-6 h-6 animate-spin text-gray-400"
+        />
       </div>
 
-      <div v-else class="space-y-2 max-h-[400px] overflow-y-auto">
+      <div
+        v-else
+        class="space-y-2 max-h-[400px] overflow-y-auto"
+      >
         <!-- Select mode -->
         <template v-if="isSelectMode">
           <div
@@ -270,7 +290,10 @@ watch(() => props.isOpen, (newVal) => {
           >
             <!-- Name / inline edit -->
             <div class="flex items-center gap-2 flex-1 min-w-0">
-              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <UIcon
+                name="lucide:tag"
+                class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0"
+              />
               <template v-if="editingId === tag.id">
                 <input
                   ref="editInputRef"
@@ -279,7 +302,7 @@ watch(() => props.isOpen, (newVal) => {
                   class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
                   @keyup.enter="handleUpdateTag"
                   @keyup.escape="cancelEdit"
-                />
+                >
               </template>
               <span
                 v-else
@@ -294,26 +317,56 @@ watch(() => props.isOpen, (newVal) => {
             <div class="flex items-center gap-1 ml-2 flex-shrink-0">
               <!-- Save/cancel edit -->
               <template v-if="editingId === tag.id">
-                <UButton size="xs" color="green" variant="ghost" icon="lucide:check" @click.stop="handleUpdateTag" />
-                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click.stop="cancelEdit" />
+                <UButton
+                  size="xs"
+                  color="green"
+                  variant="ghost"
+                  icon="lucide:check"
+                  @click.stop="handleUpdateTag"
+                />
+                <UButton
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:x"
+                  @click.stop="cancelEdit"
+                />
               </template>
               <!-- Confirm delete -->
               <template v-else-if="confirmDeleteId === tag.id">
                 <span class="text-xs text-gray-500 dark:text-gray-400 mr-1">{{ t('contacts.areYouSure') }}</span>
-                <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click.stop="handleDeleteTag(tag.id)" />
-                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click.stop="cancelDeleteTag()" />
+                <UButton
+                  size="xs"
+                  color="red"
+                  variant="solid"
+                  icon="lucide:trash-2"
+                  @click.stop="handleDeleteTag(tag.id)"
+                />
+                <UButton
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:x"
+                  @click.stop="cancelDeleteTag()"
+                />
               </template>
               <!-- Normal -->
               <template v-else>
                 <UButton
-                  size="xs" color="gray" variant="ghost" icon="lucide:pencil"
-                  @click.stop="startEdit(tag)"
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:pencil"
                   :title="t('contacts.renameTag')"
+                  @click.stop="startEdit(tag)"
                 />
                 <UButton
-                  size="xs" color="gray" variant="ghost" icon="lucide:trash-2"
-                  @click.stop="requestDeleteTag(tag.id)"
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:trash-2"
                   :title="t('common.delete')"
+                  @click.stop="requestDeleteTag(tag.id)"
                 />
                 <UButton
                   size="xs"
@@ -321,8 +374,8 @@ watch(() => props.isOpen, (newVal) => {
                   variant="soft"
                   icon="lucide:plus"
                   :loading="isAddingTag && selectedTagId === tag.id"
-                  @click.stop="handleAddTag(tag.id)"
                   :title="t('contacts.addTagToClient')"
+                  @click.stop="handleAddTag(tag.id)"
                 />
               </template>
             </div>
@@ -338,7 +391,10 @@ watch(() => props.isOpen, (newVal) => {
           >
             <!-- Name / inline edit -->
             <div class="flex items-center gap-2 flex-1 min-w-0">
-              <UIcon name="lucide:tag" class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0" />
+              <UIcon
+                name="lucide:tag"
+                class="w-4 h-4 text-gray-400 dark:text-gray-500 flex-shrink-0"
+              />
               <template v-if="editingId === tag.id">
                 <input
                   ref="editInputRef"
@@ -347,7 +403,7 @@ watch(() => props.isOpen, (newVal) => {
                   class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
                   @keyup.enter="handleUpdateTag"
                   @keyup.escape="cancelEdit"
-                />
+                >
               </template>
               <span
                 v-else
@@ -368,22 +424,55 @@ watch(() => props.isOpen, (newVal) => {
             <!-- Actions -->
             <div class="flex items-center gap-1 ml-2 flex-shrink-0">
               <template v-if="editingId === tag.id">
-                <UButton size="xs" color="green" variant="ghost" icon="lucide:check" @click="handleUpdateTag" />
-                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelEdit" />
+                <UButton
+                  size="xs"
+                  color="green"
+                  variant="ghost"
+                  icon="lucide:check"
+                  @click="handleUpdateTag"
+                />
+                <UButton
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:x"
+                  @click="cancelEdit"
+                />
               </template>
               <template v-else-if="confirmDeleteId === tag.id">
                 <span class="text-xs text-gray-500 dark:text-gray-400 self-center mr-1">{{ t('contacts.areYouSure') }}</span>
-                <UButton size="xs" color="red" variant="solid" icon="lucide:trash-2" @click="handleDeleteTag(tag.id)" />
-                <UButton size="xs" color="gray" variant="ghost" icon="lucide:x" @click="cancelDeleteTag()" />
+                <UButton
+                  size="xs"
+                  color="red"
+                  variant="solid"
+                  icon="lucide:trash-2"
+                  @click="handleDeleteTag(tag.id)"
+                />
+                <UButton
+                  size="xs"
+                  color="gray"
+                  variant="ghost"
+                  icon="lucide:x"
+                  @click="cancelDeleteTag()"
+                />
               </template>
               <template v-else>
-                <UButton size="xs" color="red" variant="ghost" icon="lucide:trash-2" @click="requestDeleteTag(tag.id)" />
+                <UButton
+                  size="xs"
+                  color="red"
+                  variant="ghost"
+                  icon="lucide:trash-2"
+                  @click="requestDeleteTag(tag.id)"
+                />
               </template>
             </div>
           </div>
         </template>
 
-        <div v-if="!loading && tags.length === 0" class="text-center py-8 text-gray-500 text-sm">
+        <div
+          v-if="!loading && tags.length === 0"
+          class="text-center py-8 text-gray-500 text-sm"
+        >
           {{ isSelectMode ? t('contacts.noTagsAvailable') : t('contacts.noTagsYet') }}
         </div>
       </div>

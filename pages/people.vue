@@ -357,30 +357,40 @@ async function removeMember(userId: string) {
   <div class="p-4 md:p-6 lg:p-8 min-h-screen">
     <!-- Header with Search -->
     <div class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold mb-4">{{ t('app.myPeopleHeading') }}</h1>
+      <h1 class="text-2xl md:text-3xl font-bold mb-4">
+        {{ t('app.myPeopleHeading') }}
+      </h1>
       <UCard class="shadow-sm">
         <div class="flex flex-row gap-3 items-center">
           <UInput 
-            class="flex-1 md:max-w-lg" 
             v-model="search" 
+            class="flex-1 md:max-w-lg" 
             :placeholder="t('app.searchEmailPlaceholder')" 
             icon="lucide:search" 
             size="md" 
-            @update:modelValue="searchUser" 
+            @update:model-value="searchUser" 
           />
           <UButton 
             v-if="buttonText" 
-            @click="sendAction" 
             size="md" 
-            class="flex-shrink-0"
+            class="flex-shrink-0" 
+            @click="sendAction"
           >
             {{ buttonText }}
           </UButton>
         </div>
-        <div v-if="!isValidEmail && search" class="mt-2">
-          <p class="text-sm text-red-500">{{ t('app.invalidEmail') }}</p>
+        <div
+          v-if="!isValidEmail && search"
+          class="mt-2"
+        >
+          <p class="text-sm text-red-500">
+            {{ t('app.invalidEmail') }}
+          </p>
         </div>
-        <div v-if="userFound !== null" class="mt-2">
+        <div
+          v-if="userFound !== null"
+          class="mt-2"
+        >
           <p class="text-sm text-gray-600 dark:text-gray-400">
             {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
           </p>
@@ -394,16 +404,22 @@ async function removeMember(userId: string) {
       <UCard class="shadow-sm">
         <template #header>
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold">{{ t('app.contacts') }}</h2>
+            <h2 class="text-lg font-semibold">
+              {{ t('app.contacts') }}
+            </h2>
           </div>
         </template>
         
         <div>
-          <UTabs v-model="selectedTab" :items="tabs" class="mb-4" />
+          <UTabs
+            v-model="selectedTab"
+            :items="tabs"
+            class="mb-4"
+          />
           <div>
             <AppTable
               v-model:page="friendsPage"
-              v-model:pageCount="friendsPageCount"
+              v-model:page-count="friendsPageCount"
               :total="friends.length"
               :rows="paginatedFriends"
               :columns="columns"
@@ -420,7 +436,11 @@ async function removeMember(userId: string) {
 
               <template #actions-data="{ row }">
                 <UDropdown :items="items(row)">
-                  <UButton color="gray" variant="ghost" icon="lucide:ellipsis" />
+                  <UButton
+                    color="gray"
+                    variant="ghost"
+                    icon="lucide:ellipsis"
+                  />
                 </UDropdown>
               </template>
             </AppTable>
@@ -432,10 +452,12 @@ async function removeMember(userId: string) {
       <UCard class="shadow-sm">
         <template #header>
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <h2 class="text-lg font-semibold">{{ t('app.namespaceMembers') }}</h2>
+            <h2 class="text-lg font-semibold">
+              {{ t('app.namespaceMembers') }}
+            </h2>
             <USelect
-              :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
               v-model="selectedNS"
+              :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
               size="md"
               class="w-full md:w-auto md:min-w-[250px]"
             />
@@ -445,21 +467,24 @@ async function removeMember(userId: string) {
         <div>
           <div class="mb-4">
             <USelectMenu
-              searchable
               v-model="friendToAdd"
+              searchable
               :options="friendOptions"
               :searchable-placeholder="t('app.search')"
               :search-value="friendSearch"
-              @update:search-value="(val: string) => friendSearch = val as any"
-              @scroll-bottom="() => loadMoreFriends(false)"
               :loading="friendLoading"
               :placeholder="t('app.selectFriend')"
               size="md"
               class="w-full md:max-w-lg"
+              @update:search-value="(val: string) => friendSearch = val as any"
+              @scroll-bottom="() => loadMoreFriends(false)"
               @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
             >
               <template #leading>
-                <UIcon name="lucide:user-plus" class="w-5 h-5" />
+                <UIcon
+                  name="lucide:user-plus"
+                  class="w-5 h-5"
+                />
               </template>
             </USelectMenu>
           </div>
@@ -467,7 +492,7 @@ async function removeMember(userId: string) {
           <div>
             <AppTable
               v-model:page="membersPage"
-              v-model:pageCount="membersPageCount"
+              v-model:page-count="membersPageCount"
               :total="nsMembers.length"
               :rows="paginatedMembers"
               :columns="[
@@ -485,7 +510,12 @@ async function removeMember(userId: string) {
                 <span class="text-gray-600 dark:text-gray-400 truncate">{{ row.email }}</span>
               </template>
               <template #actions-data="{ row }">
-                <UButton color="red" variant="ghost" icon="lucide:trash-2" @click="removeMember(row.userId)" />
+                <UButton
+                  color="red"
+                  variant="ghost"
+                  icon="lucide:trash-2"
+                  @click="removeMember(row.userId)"
+                />
               </template>
             </AppTable>
           </div>

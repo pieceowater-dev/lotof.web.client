@@ -1,11 +1,14 @@
 import { WebSocket } from 'ws'
 
+type ServerSideWebSocket = WebSocket & {
+  setSocket: (socket: any, head: Buffer, maxPayload: number) => void;
+}
+
 export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
     const req = event.node.req
     const socket = event.node.req.socket
-    const res = event.node.res
 
     const namespaceSlug = String(query.namespace || '')
     const postId = String(query.postId || '')
@@ -36,7 +39,7 @@ export default defineEventHandler(async (event) => {
     const backendWs = new WebSocket(gatewayWsUrl)
 
     // Create WebSocket server for client
-    const clientWs = new WebSocket(null as any)
+    const clientWs = new WebSocket(null as any) as ServerSideWebSocket
     clientWs.setSocket(socket as any, Buffer.alloc(0), 100 * 1024 * 1024)
 
     // Pipe messages from backend to client

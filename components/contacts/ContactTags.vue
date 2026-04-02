@@ -75,8 +75,13 @@ function openTagsModal() {
 <template>
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-      <UIcon name="i-heroicons-tag" class="w-5 h-5 text-rose-500 dark:text-rose-400" />
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('contacts.tags') }}</h2>
+      <UIcon
+        name="i-heroicons-tag"
+        class="w-5 h-5 text-rose-500 dark:text-rose-400"
+      />
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+        {{ t('contacts.tags') }}
+      </h2>
     </div>
     <div class="px-5 py-5">
       <div class="flex flex-wrap gap-2">
@@ -85,14 +90,17 @@ function openTagsModal() {
           :key="tag.id"
           class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 shadow-sm"
         >
-          <UIcon name="lucide:tag" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+          <UIcon
+            name="lucide:tag"
+            class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
+          />
           <span>{{ tag.name }}</span>
           <button
             v-if="clientId"
             :disabled="isRemoving === tag.id"
-            @click="handleRemoveTag(tag.id)"
             class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-0.5"
             :title="isRemoving === tag.id ? 'Removing...' : 'Remove tag'"
+            @click="handleRemoveTag(tag.id)"
           >
             <UIcon 
               :name="isRemoving === tag.id ? 'i-lucide-loader-2' : 'lucide:x'" 
@@ -103,14 +111,20 @@ function openTagsModal() {
         
         <button
           v-if="clientId"
-          @click="openTagsModal"
           class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 text-sm font-medium transition-colors"
+          @click="openTagsModal"
         >
-          <UIcon name="lucide:plus" class="w-4 h-4" />
+          <UIcon
+            name="lucide:plus"
+            class="w-4 h-4"
+          />
           <span>Add tag</span>
         </button>
         
-        <span v-if="localTags.length === 0 && !clientId" class="text-gray-400 text-sm">—</span>
+        <span
+          v-if="localTags.length === 0 && !clientId"
+          class="text-gray-400 text-sm"
+        >—</span>
       </div>
     </div>
   </div>

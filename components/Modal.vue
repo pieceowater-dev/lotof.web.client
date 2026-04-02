@@ -24,11 +24,20 @@ watch(() => props.modelValue, async (open) => {
 </script>
 
 <template>
-  <UModal :model-value="props.modelValue" @update:model-value="emit('update:modelValue', $event)">
+  <UModal
+    :model-value="props.modelValue"
+    @update:model-value="emit('update:modelValue', $event)"
+  >
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-      <div ref="initialFocusEl" tabindex="-1" class="sr-only" />
+      <div
+        ref="initialFocusEl"
+        tabindex="-1"
+        class="sr-only"
+      />
       <template #header>
-        <slot name="header">{{ props.header }}</slot>
+        <slot name="header">
+          {{ props.header }}
+        </slot>
       </template>
 
       <slot>{{ props.content }}</slot>
@@ -36,10 +45,14 @@ watch(() => props.modelValue, async (open) => {
       <template #footer>
         <div class="flex justify-end gap-2">
           <slot name="footer">
-            <UButton v-for="(btn, index) in props.footerButtons" :key="index" :label="btn.label"
+            <UButton
+              v-for="(btn, index) in props.footerButtons"
+              :key="index"
+              :label="btn.label"
               :color="(btn.color || (btn.variant === 'link' ? 'gray' : 'primary')) as any"
               :variant="btn.variant || 'solid'"
-              @click="btn.onClick ? btn.onClick() : emit('update:modelValue', false)" />
+              @click="btn.onClick ? btn.onClick() : emit('update:modelValue', false)"
+            />
           </slot>
         </div>
       </template>

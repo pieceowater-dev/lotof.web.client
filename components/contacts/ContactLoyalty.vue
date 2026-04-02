@@ -463,7 +463,10 @@ async function submitStampFromModal() {
   <div class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
       <div class="flex items-center gap-2">
-        <UIcon name="i-heroicons-gift" class="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        <UIcon
+          name="i-heroicons-gift"
+          class="w-5 h-5 text-amber-600 dark:text-amber-400"
+        />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ t('contacts.bonuses') }}
         </h2>
@@ -473,24 +476,37 @@ async function submitStampFromModal() {
       <!-- Bonus Balance -->
       <div v-if="bonusBalance">
         <div class="flex items-center gap-2 mb-3">
-          <UIcon name="i-heroicons-wallet" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <UIcon
+            name="i-heroicons-wallet"
+            class="w-4 h-4 text-blue-600 dark:text-blue-400"
+          />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
             {{ t('contacts.balance') }}
           </h3>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-lg p-4">
-            <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">{{ t('contacts.total') }}</p>
-            <p class="text-2xl font-bold text-blue-700 dark:text-blue-300">{{ bonusBalance.totalBonuses }}</p>
+            <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">
+              {{ t('contacts.total') }}
+            </p>
+            <p class="text-2xl font-bold text-blue-700 dark:text-blue-300">
+              {{ bonusBalance.totalBonuses }}
+            </p>
           </div>
           <div class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900/30 dark:to-slate-800/20 rounded-lg p-4">
-            <p class="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">{{ t('contacts.updatedAt') || 'Обновлено' }}</p>
-            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">{{ formatBonusUpdatedAt(bonusBalance.updatedAt) }}</p>
+            <p class="text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-1">
+              {{ t('contacts.updatedAt') || 'Обновлено' }}
+            </p>
+            <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">
+              {{ formatBonusUpdatedAt(bonusBalance.updatedAt) }}
+            </p>
           </div>
         </div>
       </div>
       <div v-else>
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('contacts.noBonusData') }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t('contacts.noBonusData') }}
+        </p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -528,18 +544,28 @@ async function submitStampFromModal() {
       <!-- Stamp Cards -->
       <div v-if="stampProgress.length > 0">
         <div class="flex items-center gap-2 mb-3">
-          <UIcon name="i-heroicons-ticket" class="w-4 h-4 text-pink-600 dark:text-pink-400" />
+          <UIcon
+            name="i-heroicons-ticket"
+            class="w-4 h-4 text-pink-600 dark:text-pink-400"
+          />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
             {{ t('contacts.stampCards') }}
           </h3>
         </div>
         <div class="space-y-3">
-          <div v-for="progress in stampProgress" :key="progress.id"
-            class="rounded-xl border border-sky-200/70 dark:border-sky-800/40 bg-gradient-to-r from-slate-50 to-sky-50 dark:from-slate-900/30 dark:to-sky-900/20 p-4 shadow-sm">
+          <div
+            v-for="progress in stampProgress"
+            :key="progress.id"
+            class="rounded-xl border border-sky-200/70 dark:border-sky-800/40 bg-gradient-to-r from-slate-50 to-sky-50 dark:from-slate-900/30 dark:to-sky-900/20 p-4 shadow-sm"
+          >
             <div class="flex items-start justify-between mb-2">
               <div>
-                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">{{ progress.stampCard?.name }}</p>
-                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">{{ progress.stampCard?.description }}</p>
+                <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                  {{ progress.stampCard?.name }}
+                </p>
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
+                  {{ progress.stampCard?.description }}
+                </p>
               </div>
             </div>
             <div class="mt-3 space-y-2">
@@ -548,7 +574,10 @@ async function submitStampFromModal() {
                 <span>{{ progress.completedRounds }} {{ t('contacts.rounds') }}</span>
               </div>
 
-              <div v-if="useStampDots(progress.stampCard?.totalStamps)" class="flex flex-wrap gap-2">
+              <div
+                v-if="useStampDots(progress.stampCard?.totalStamps)"
+                class="flex flex-wrap gap-2"
+              >
                 <template
                   v-for="stampIndex in toStampCount(progress.stampCard?.totalStamps)"
                   :key="`${progress.id}-stamp-${stampIndex}`"
@@ -584,23 +613,31 @@ async function submitStampFromModal() {
                 </template>
               </div>
 
-              <div v-else class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-2.5">
+              <div
+                v-else
+                class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-2.5"
+              >
                 <div
                   class="bg-sky-600 dark:bg-sky-400 h-2.5 rounded-full transition-all duration-300"
                   :style="{ width: `${getProgressPercentage(progress.currentStamps, progress.stampCard?.totalStamps)}%` }"
-                ></div>
+                />
               </div>
-                </div>
+            </div>
           </div>
         </div>
       </div>
       <div v-else-if="stampCards.length === 0">
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('contacts.noStampCards') }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t('contacts.noStampCards') }}
+        </p>
       </div>
     </div>
   </div>
 
-  <UModal v-model="isEarnModalOpen" :ui="{ width: 'sm:max-w-md' }">
+  <UModal
+    v-model="isEarnModalOpen"
+    :ui="{ width: 'sm:max-w-md' }"
+  >
     <UCard>
       <template #header>
         <div class="flex items-center gap-3">
@@ -610,13 +647,16 @@ async function submitStampFromModal() {
               ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300'
               : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'"
           >
-            <UIcon :name="bonusAction === 'spend' ? 'i-heroicons-minus' : 'i-heroicons-plus'" class="w-5 h-5" />
+            <UIcon
+              :name="bonusAction === 'spend' ? 'i-heroicons-minus' : 'i-heroicons-plus'"
+              class="w-5 h-5"
+            />
           </div>
           <div>
             <h3 class="text-base font-semibold text-gray-900 dark:text-white">
-            {{ bonusAction === 'spend'
-              ? (t('contacts.spendBonuses') || 'Списать бонусы')
-              : (t('contacts.accrueBonuses') || 'Начислить бонусы') }}
+              {{ bonusAction === 'spend'
+                ? (t('contacts.spendBonuses') || 'Списать бонусы')
+                : (t('contacts.accrueBonuses') || 'Начислить бонусы') }}
             </h3>
             <p class="text-xs text-gray-500 dark:text-gray-400">
               {{ earnStep === 'pin' ? 'Шаг 1 из 2' : 'Шаг 2 из 2' }}
@@ -629,7 +669,10 @@ async function submitStampFromModal() {
         class="space-y-4"
         @submit.prevent="earnStep === 'pin' ? confirmPinStep() : submitEarnBonus()"
       >
-        <div v-if="earnStep === 'pin'" class="space-y-3">
+        <div
+          v-if="earnStep === 'pin'"
+          class="space-y-3"
+        >
           <p class="text-sm text-gray-600 dark:text-gray-300">
             {{ bonusAction === 'spend'
               ? (t('contacts.enterGlobalPinFirstSpend') || 'Введите глобальный PIN для списания')
@@ -644,12 +687,20 @@ async function submitStampFromModal() {
             :placeholder="t('contacts.pin') || 'PIN'"
             @update:model-value="(v) => pinInput = sanitizePin(String(v || ''))"
           />
-          <UButton type="submit" block color="primary" :disabled="pinInput.length !== 4">
+          <UButton
+            type="submit"
+            block
+            color="primary"
+            :disabled="pinInput.length !== 4"
+          >
             {{ t('common.continue') || 'Продолжить' }}
           </UButton>
         </div>
 
-        <div v-else class="space-y-3">
+        <div
+          v-else
+          class="space-y-3"
+        >
           <p class="text-sm text-gray-600 dark:text-gray-300">
             {{ bonusAction === 'spend'
               ? (t('contacts.enterSpendAmount') || 'Укажите сумму списания')
@@ -671,7 +722,10 @@ async function submitStampFromModal() {
             :placeholder="t('contacts.amount') || 'Сумма'"
           />
 
-          <div v-if="quickAmountOptions.length > 0" class="grid grid-cols-3 gap-2">
+          <div
+            v-if="quickAmountOptions.length > 0"
+            class="grid grid-cols-3 gap-2"
+          >
             <UButton
               v-for="quick in quickAmountOptions"
               :key="`${bonusAction}-${quick}`"
@@ -686,10 +740,20 @@ async function submitStampFromModal() {
           </div>
 
           <div class="flex gap-2">
-            <UButton type="button" color="gray" variant="soft" @click="resetStoredPin">
+            <UButton
+              type="button"
+              color="gray"
+              variant="soft"
+              @click="resetStoredPin"
+            >
               {{ t('contacts.changePin') || 'Изменить PIN' }}
             </UButton>
-            <UButton type="submit" color="primary" :loading="submitLoading" :disabled="!canSubmitAmountStep">
+            <UButton
+              type="submit"
+              color="primary"
+              :loading="submitLoading"
+              :disabled="!canSubmitAmountStep"
+            >
               {{ bonusAction === 'spend'
                 ? (t('contacts.spend') || 'Списать')
                 : (t('contacts.accrue') || 'Начислить') }}
@@ -697,14 +761,20 @@ async function submitStampFromModal() {
           </div>
         </div>
 
-        <p v-if="submitError" class="text-sm text-red-600 dark:text-red-400">
+        <p
+          v-if="submitError"
+          class="text-sm text-red-600 dark:text-red-400"
+        >
           {{ submitError }}
         </p>
       </form>
     </UCard>
   </UModal>
 
-  <UModal v-model="isStampPinModalOpen" :ui="{ width: 'sm:max-w-md' }">
+  <UModal
+    v-model="isStampPinModalOpen"
+    :ui="{ width: 'sm:max-w-md' }"
+  >
     <UCard>
       <template #header>
         <div class="flex items-center justify-between">
@@ -714,7 +784,10 @@ async function submitStampFromModal() {
         </div>
       </template>
 
-      <form class="space-y-4" @submit.prevent="submitStampFromModal">
+      <form
+        class="space-y-4"
+        @submit.prevent="submitStampFromModal"
+      >
         <p class="text-sm text-gray-600 dark:text-gray-300">
           {{ t('contacts.enterCardPinFirst') || 'Введите PIN карточки штампов для начисления' }}
         </p>
@@ -730,7 +803,12 @@ async function submitStampFromModal() {
         />
 
         <div class="flex gap-2">
-          <UButton type="button" color="gray" variant="soft" @click="closeStampPinModal">
+          <UButton
+            type="button"
+            color="gray"
+            variant="soft"
+            @click="closeStampPinModal"
+          >
             {{ t('common.cancel') || 'Отмена' }}
           </UButton>
           <UButton
@@ -742,7 +820,10 @@ async function submitStampFromModal() {
           </UButton>
         </div>
 
-        <p v-if="stampSubmitError" class="text-sm text-red-600 dark:text-red-400">
+        <p
+          v-if="stampSubmitError"
+          class="text-sm text-red-600 dark:text-red-400"
+        >
           {{ stampSubmitError }}
         </p>
       </form>

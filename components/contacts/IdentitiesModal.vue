@@ -166,7 +166,11 @@ watch(() => props.isOpen, (newVal) => {
 </script>
 
 <template>
-  <UModal :model-value="isOpen" @update:model-value="$emit('close')" title="Manage Contact Information">
+  <UModal
+    :model-value="isOpen"
+    title="Manage Contact Information"
+    @update:model-value="$emit('close')"
+  >
     <div class="p-4 space-y-4">
       <!-- Add new identity -->
       <div class="flex gap-2">
@@ -183,19 +187,28 @@ watch(() => props.isOpen, (newVal) => {
         />
         <UButton
           :loading="isCreating"
-          @click="handleCreateIdentity"
           size="sm"
+          @click="handleCreateIdentity"
         >
           {{ t('common.add') }}
         </UButton>
       </div>
 
       <!-- Identities list -->
-      <div v-if="loading" class="flex justify-center py-8">
-        <UIcon name="lucide:loader" class="w-6 h-6 animate-spin text-gray-400" />
+      <div
+        v-if="loading"
+        class="flex justify-center py-8"
+      >
+        <UIcon
+          name="lucide:loader"
+          class="w-6 h-6 animate-spin text-gray-400"
+        />
       </div>
 
-      <div v-else class="space-y-2 max-h-[400px] overflow-y-auto">
+      <div
+        v-else
+        class="space-y-2 max-h-[400px] overflow-y-auto"
+      >
         <div
           v-for="identity in identities"
           :key="identity.id"
@@ -208,11 +221,19 @@ watch(() => props.isOpen, (newVal) => {
                 class="w-4 h-4"
               />
               <div>
-                <div class="text-sm font-medium">{{ identity.value }}</div>
+                <div class="text-sm font-medium">
+                  {{ identity.value }}
+                </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
                   {{ identity.type }}
-                  <span v-if="identity.isPrimary" class="ml-2 text-blue-600 dark:text-blue-400">• Primary</span>
-                  <span v-if="identity.verifiedAt" class="ml-2 text-green-600 dark:text-green-400">✓ Verified</span>
+                  <span
+                    v-if="identity.isPrimary"
+                    class="ml-2 text-blue-600 dark:text-blue-400"
+                  >• Primary</span>
+                  <span
+                    v-if="identity.verifiedAt"
+                    class="ml-2 text-green-600 dark:text-green-400"
+                  >✓ Verified</span>
                 </div>
               </div>
             </div>
@@ -224,8 +245,8 @@ watch(() => props.isOpen, (newVal) => {
               color="blue"
               variant="ghost"
               icon="lucide:star"
-              @click="handleSetPrimary(identity.id)"
               title="Set as primary"
+              @click="handleSetPrimary(identity.id)"
             />
             <UButton
               v-if="!identity.verifiedAt"
@@ -233,8 +254,8 @@ watch(() => props.isOpen, (newVal) => {
               color="green"
               variant="ghost"
               icon="lucide:check-circle-2"
-              @click="handleVerifyIdentity(identity.id)"
               title="Verify identity"
+              @click="handleVerifyIdentity(identity.id)"
             />
             <UButton
               size="xs"
@@ -246,7 +267,10 @@ watch(() => props.isOpen, (newVal) => {
           </div>
         </div>
 
-        <div v-if="!loading && identities.length === 0" class="text-center py-8 text-gray-500 text-sm">
+        <div
+          v-if="!loading && identities.length === 0"
+          class="text-center py-8 text-gray-500 text-sm"
+        >
           No contact information yet. Add one to get started.
         </div>
       </div>

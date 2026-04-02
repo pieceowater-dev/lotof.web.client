@@ -65,13 +65,28 @@ onMounted(() => {
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen dark:bg-gray-900 dark:text-white text-center">
     <div class="max-w-lg p-8 rounded-xl bg-gray-50 dark:bg-gray-800 shadow-lg">
-      <h1 class="text-6xl font-bold text-red-500">{{ props.error?.statusCode ?? 500 }}</h1>
-      <p class="text-xl font-semibold mt-3">{{ randomMessage }}</p>
-      <p class="text-lg mt-2 opacity-80">{{ randomSubtitle }}</p>
+      <h1 class="text-6xl font-bold text-red-500">
+        {{ props.error?.statusCode ?? 500 }}
+      </h1>
+      <p class="text-xl font-semibold mt-3">
+        {{ randomMessage }}
+      </p>
+      <p class="text-lg mt-2 opacity-80">
+        {{ randomSubtitle }}
+      </p>
 
-      <UButton @click="handleError" class="mt-5" :label="t('app.errorBack')" color="primary" variant="outline">
+      <UButton
+        class="mt-5"
+        :label="t('app.errorBack')"
+        color="primary"
+        variant="outline"
+        @click="handleError"
+      >
         <template #leading>
-          <UIcon name="i-lucide-arrow-left" class="w-5 h-5" />
+          <UIcon
+            name="i-lucide-arrow-left"
+            class="w-5 h-5"
+          />
         </template>
       </UButton>
     </div>

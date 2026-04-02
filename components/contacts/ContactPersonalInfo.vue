@@ -60,11 +60,17 @@ function formatGender(gender?: boolean | null): string {
 </script>
 
 <template>
-  <div v-if="client" class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden">
+  <div
+    v-if="client"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden"
+  >
     <!-- Header -->
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <UIcon name="i-heroicons-information-circle" class="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <UIcon
+          name="i-heroicons-information-circle"
+          class="w-5 h-5 text-blue-600 dark:text-blue-400"
+        />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ t('contacts.information') || 'Информация' }}
         </h2>
@@ -105,82 +111,146 @@ function formatGender(gender?: boolean | null): string {
       <template v-if="!editMode">
         <div v-if="client.individual">
           <div class="flex items-center gap-2 mb-3">
-            <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <UIcon
+              name="i-heroicons-user"
+              class="w-4 h-4 text-blue-600 dark:text-blue-400"
+            />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {{ t('contacts.personalInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.lastName') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.lastName }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.lastName') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.individual.lastName }}
+              </p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.firstName') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.firstName }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.firstName') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.individual.firstName }}
+              </p>
             </div>
             <div v-if="client.individual.middleName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.middleName') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.individual.middleName }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.middleName') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.individual.middleName }}
+              </p>
             </div>
             <div v-if="client.individual.birthDate">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.birthDate') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.birthDate') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}
+              </p>
             </div>
             <div>
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.gender') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ formatGender(client.individual.gender) }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.gender') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ formatGender(client.individual.gender) }}
+              </p>
             </div>
           </div>
         </div>
 
         <div v-if="client.legalEntity">
           <div class="flex items-center gap-2 mb-3">
-            <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
+            <UIcon
+              name="i-heroicons-building-office-2"
+              class="w-4 h-4 text-green-600 dark:text-green-400"
+            />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {{ t('contacts.companyInformation') }}
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div class="col-span-2" v-if="client.legalEntity.legalName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.legalName') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.legalName }}</p>
+            <div
+              v-if="client.legalEntity.legalName"
+              class="col-span-2"
+            >
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.legalName') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.legalEntity.legalName }}
+              </p>
             </div>
             <div v-if="client.legalEntity.brandName">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.brandName') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.brandName }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.brandName') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.legalEntity.brandName }}
+              </p>
             </div>
             <div v-if="client.legalEntity.binIin">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.binIin') }}</p>
-              <p class="text-sm font-mono text-gray-900 dark:text-white">{{ client.legalEntity.binIin }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.binIin') }}
+              </p>
+              <p class="text-sm font-mono text-gray-900 dark:text-white">
+                {{ client.legalEntity.binIin }}
+              </p>
             </div>
             <div v-if="client.legalEntity.registrationCountry">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.registrationCountry') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ client.legalEntity.registrationCountry }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.registrationCountry') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ client.legalEntity.registrationCountry }}
+              </p>
             </div>
             <div v-if="client.legalEntity.registrationDate">
-              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.registrationDate') }}</p>
-              <p class="text-sm text-gray-900 dark:text-white">{{ new Date(client.legalEntity.registrationDate).toLocaleDateString('ru-RU') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+                {{ t('contacts.registrationDate') }}
+              </p>
+              <p class="text-sm text-gray-900 dark:text-white">
+                {{ new Date(client.legalEntity.registrationDate).toLocaleDateString('ru-RU') }}
+              </p>
             </div>
           </div>
         </div>
 
         <div class="mt-4">
-          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{{ t('contacts.additionalInfo') }}</p>
-          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{{ additionalInfo || '—' }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
+            {{ t('contacts.additionalInfo') }}
+          </p>
+          <p class="text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
+            {{ additionalInfo || '—' }}
+          </p>
         </div>
       </template>
 
       <!-- Edit Mode -->
       <template v-else>
-        <form v-if="client.individual" class="space-y-6">
+        <form
+          v-if="client.individual"
+          class="space-y-6"
+        >
           <div class="space-y-3">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-user" class="w-4 h-4 text-blue-600" />
-              <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('contacts.personalInformation') }}</h3>
+              <UIcon
+                name="i-heroicons-user"
+                class="w-4 h-4 text-blue-600"
+              />
+              <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ t('contacts.personalInformation') }}
+              </h3>
             </div>
             
-            <UFormGroup :label="t('contacts.lastName')" required>
+            <UFormGroup
+              :label="t('contacts.lastName')"
+              required
+            >
               <UInput
                 :model-value="editingLastName"
                 type="text"
@@ -189,7 +259,10 @@ function formatGender(gender?: boolean | null): string {
               />
             </UFormGroup>
 
-            <UFormGroup :label="t('contacts.firstName')" required>
+            <UFormGroup
+              :label="t('contacts.firstName')"
+              required
+            >
               <UInput
                 :model-value="editingFirstName"
                 type="text"
@@ -235,32 +308,68 @@ function formatGender(gender?: boolean | null): string {
           </div>
         </form>
 
-        <form v-else-if="client.legalEntity" class="space-y-6">
+        <form
+          v-else-if="client.legalEntity"
+          class="space-y-6"
+        >
           <div class="space-y-3">
             <div class="flex items-center gap-2">
-              <UIcon name="i-heroicons-building-office-2" class="w-4 h-4 text-green-600 dark:text-green-400" />
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('contacts.companyInformation') }}</h2>
+              <UIcon
+                name="i-heroicons-building-office-2"
+                class="w-4 h-4 text-green-600 dark:text-green-400"
+              />
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white">
+                {{ t('contacts.companyInformation') }}
+              </h2>
             </div>
             
-            <UFormGroup :label="t('contacts.legalName')" required>
-              <UInput :model-value="editingLegalName" type="text" size="md" @update:model-value="$emit('updateField', 'legalName', $event)" />
+            <UFormGroup
+              :label="t('contacts.legalName')"
+              required
+            >
+              <UInput
+                :model-value="editingLegalName"
+                type="text"
+                size="md"
+                @update:model-value="$emit('updateField', 'legalName', $event)"
+              />
             </UFormGroup>
 
             <UFormGroup :label="t('contacts.brandName')">
-              <UInput :model-value="editingBrandName" type="text" size="md" @update:model-value="$emit('updateField', 'brandName', $event)" />
+              <UInput
+                :model-value="editingBrandName"
+                type="text"
+                size="md"
+                @update:model-value="$emit('updateField', 'brandName', $event)"
+              />
             </UFormGroup>
 
             <UFormGroup :label="t('contacts.binIin')">
-              <UInput :model-value="editingBinIin" type="text" size="md" @update:model-value="$emit('updateField', 'binIin', $event)" />
+              <UInput
+                :model-value="editingBinIin"
+                type="text"
+                size="md"
+                @update:model-value="$emit('updateField', 'binIin', $event)"
+              />
             </UFormGroup>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
               <UFormGroup :label="t('contacts.registrationCountry')">
-                <UInput :model-value="editingRegistrationCountry" type="text" size="md" @update:model-value="$emit('updateField', 'registrationCountry', $event)" />
+                <UInput
+                  :model-value="editingRegistrationCountry"
+                  type="text"
+                  size="md"
+                  @update:model-value="$emit('updateField', 'registrationCountry', $event)"
+                />
               </UFormGroup>
 
               <UFormGroup :label="t('contacts.registrationDate')">
-                <UInput :model-value="editingRegistrationDate" type="date" size="md" @update:model-value="$emit('updateField', 'registrationDate', $event)" />
+                <UInput
+                  :model-value="editingRegistrationDate"
+                  type="date"
+                  size="md"
+                  @update:model-value="$emit('updateField', 'registrationDate', $event)"
+                />
               </UFormGroup>
             </div>
           </div>

@@ -341,15 +341,28 @@ onBeforeUnmount(() => {
     <div class="w-full max-w-md bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 flex flex-col items-center">
       <h1 class="text-xl font-semibold mb-2 text-blue-900 dark:text-white flex flex-col items-center justify-center w-full">
         <span class="flex items-center justify-center w-full gap-2">
-          <UIcon name="i-lucide-qr-code" class="w-7 h-7 text-blue-500 dark:text-blue-300" />
+          <UIcon
+            name="i-lucide-qr-code"
+            class="w-7 h-7 text-blue-500 dark:text-blue-300"
+          />
           <span>{{ t('app.atraceTitle') }}</span>
         </span>
       </h1>
       <p class="text-base text-gray-700 dark:text-gray-200 text-center mb-4">
         {{ t('app.publicPostInstruction') || 'Сканируй QR ниже, чтобы отметить свое посещение!' }}
       </p>
-      <div v-if="!pin" class="w-full flex flex-col items-center">
-        <UButton color="primary" icon="i-lucide-key" class="w-full" @click="askPin">{{ t('app.enterPin') || 'Enter PIN' }}</UButton>
+      <div
+        v-if="!pin"
+        class="w-full flex flex-col items-center"
+      >
+        <UButton
+          color="primary"
+          icon="i-lucide-key"
+          class="w-full"
+          @click="askPin"
+        >
+          {{ t('app.enterPin') || 'Enter PIN' }}
+        </UButton>
       </div>
       <PinPrompt
         v-model="showPinPrompt"
@@ -358,36 +371,94 @@ onBeforeUnmount(() => {
         :error-text="t('app.pinMustBe6Digits') || 'PIN must be 6 digits'"
         @submit="handlePinSubmit"
       />
-      <div v-if="pin" class="w-full flex flex-col items-center">
+      <div
+        v-if="pin"
+        class="w-full flex flex-col items-center"
+      >
         <div class="flex flex-col items-center justify-center w-full my-6">
-          <div v-if="qrBase64" class="flex flex-col items-center justify-center w-full">
+          <div
+            v-if="qrBase64"
+            class="flex flex-col items-center justify-center w-full"
+          >
             <div class="mb-2 text-center">
-              <div v-if="qrPostTitle" class="font-semibold text-lg">{{ qrPostTitle }}</div>
-              <div v-if="qrPostAddress" class="text-sm text-gray-500">{{ qrPostAddress }}</div>
+              <div
+                v-if="qrPostTitle"
+                class="font-semibold text-lg"
+              >
+                {{ qrPostTitle }}
+              </div>
+              <div
+                v-if="qrPostAddress"
+                class="text-sm text-gray-500"
+              >
+                {{ qrPostAddress }}
+              </div>
             </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center" style="min-width:180px; min-height:180px;">
-              <img :src="`data:image/png;base64,${qrBase64}`" alt="QR" class="qr-image w-full max-w-xs h-auto aspect-square object-contain" style="max-width:320px; min-width:120px;" />
+            <div
+              class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center"
+              style="min-width:180px; min-height:180px;"
+            >
+              <img
+                :src="`data:image/png;base64,${qrBase64}`"
+                alt="QR"
+                class="qr-image w-full max-w-xs h-auto aspect-square object-contain"
+                style="max-width:320px; min-width:120px;"
+              >
             </div>
           </div>
-          <div v-else-if="polling" class="text-blue-500 dark:text-blue-300 mt-4 flex items-center gap-2">
-            <i class="i-lucide-loader animate-spin"></i>
+          <div
+            v-else-if="polling"
+            class="text-blue-500 dark:text-blue-300 mt-4 flex items-center gap-2"
+          >
+            <i class="i-lucide-loader animate-spin" />
             {{ t('app.loading') || 'Loading...' }}
           </div>
-          <div v-else-if="qrError" class="text-red-500 mt-4">{{ qrError }}</div>
+          <div
+            v-else-if="qrError"
+            class="text-red-500 mt-4"
+          >
+            {{ qrError }}
+          </div>
           <ClientOnly>
-            <div class="text-xs text-gray-500 mt-2 text-center">QR обновится через {{ qrRefreshCountdown }}с.</div>
+            <div class="text-xs text-gray-500 mt-2 text-center">
+              QR обновится через {{ qrRefreshCountdown }}с.
+            </div>
             <div class="text-xs text-gray-500 mt-1 text-center flex items-center justify-center gap-2">
-              <i class="i-lucide-clock"></i>
+              <i class="i-lucide-clock" />
               <span>{{ nowTime }}</span>
             </div>
-            <div v-if="wakeLockSupported" class="text-xs mt-2 text-center">
-              <span v-if="wakeLockActive" class="text-emerald-600">Экран не будет гаснуть</span>
-              <span v-else class="text-amber-600">Экран может гаснуть</span>
+            <div
+              v-if="wakeLockSupported"
+              class="text-xs mt-2 text-center"
+            >
+              <span
+                v-if="wakeLockActive"
+                class="text-emerald-600"
+              >Экран не будет гаснуть</span>
+              <span
+                v-else
+                class="text-amber-600"
+              >Экран может гаснуть</span>
             </div>
-            <div v-if="wakeLockSupported && !wakeLockActive" class="mt-2">
-              <UButton size="xs" variant="soft" color="primary" @click="requestWakeLock">Включить удержание экрана</UButton>
+            <div
+              v-if="wakeLockSupported && !wakeLockActive"
+              class="mt-2"
+            >
+              <UButton
+                size="xs"
+                variant="soft"
+                color="primary"
+                @click="requestWakeLock"
+              >
+                Включить удержание экрана
+              </UButton>
             </div>
-            <div v-if="wakeLockError" class="text-xs text-red-500 mt-1 text-center">{{ wakeLockError }}</div>
+            <div
+              v-if="wakeLockError"
+              class="text-xs text-red-500 mt-1 text-center"
+            >
+              {{ wakeLockError }}
+            </div>
           </ClientOnly>
         </div>
       </div>

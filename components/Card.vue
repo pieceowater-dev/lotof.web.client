@@ -252,43 +252,82 @@ const dropdownItems = [
 </script>
 
 <template>
-    <div @click="emit('select', post)"
-        :class="selected ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-400 dark:to-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md hover:shadow-sm'"
-        class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs cursor-pointer flex-shrink-0 min-h-[100px] self-stretch flex flex-col relative transition-shadow duration-200">
-        <div class="flex items-center gap-2 mb-2">
-            <h3 class="text-lg font-semibold truncate min-w-0 flex-1" :title="post.title">{{ post.title }}</h3>
-                                <div class="flex-none flex gap-1 items-center">
-                                                    <UDropdown :items="dropdownItems" :popper="{ placement: 'bottom-end', modifiers: [{ name: 'hide', enabled: false }] }" :ui="{ menu: { popper: { base: 'z-[9999]' } } }" :class="!post.id ? 'invisible pointer-events-none' : ''">
-                                                        <UButton icon="i-lucide-qr-code" size="xs" color="primary" :variant="selected ? 'solid' : 'ghost'" aria-label="QR actions" />
-                                                    </UDropdown>
-                                        <UButton @click="onEdit" icon="i-lucide-pencil" size="xs" color="primary" :variant="selected ? 'solid' : 'ghost'" :class="!post.id ? 'invisible pointer-events-none' : ''" />
-                                        <UButton v-if="canDelete" @click="onDelete" icon="i-lucide-trash-2" size="xs" color="red" :variant="selected ? 'solid' : 'ghost'" :class="!post.id ? 'invisible pointer-events-none' : ''" />
-                                </div>
-
-        </div>
-        <p v-if="locationText" class="text-sm truncate" :class="selected ? 'text-white' : 'text-gray-600 dark:text-gray-100'"
-           :title="locationText">
-            {{ locationText }}
-        </p>
-        <!-- Flexible spacer to push bottom section down when there is little content -->
-        <div class="flex-1"></div>
-        <!-- Reserve space for one description line to keep cards equal height -->
-        <div class="mt-1 h-5">
-            <p v-if="hasDescription" class="text-xs truncate"
-               :class="selected ? 'text-white/90' : 'text-gray-500 dark:text-gray-300'"
-               :title="post.description || ''">
-                {{ post.description }}
-            </p>
-        </div>
+  <div
+    :class="selected ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-400 dark:to-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md hover:shadow-sm'"
+    class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs cursor-pointer flex-shrink-0 min-h-[100px] self-stretch flex flex-col relative transition-shadow duration-200"
+    @click="emit('select', post)"
+  >
+    <div class="flex items-center gap-2 mb-2">
+      <h3
+        class="text-lg font-semibold truncate min-w-0 flex-1"
+        :title="post.title"
+      >
+        {{ post.title }}
+      </h3>
+      <div class="flex-none flex gap-1 items-center">
+        <UDropdown
+          :items="dropdownItems"
+          :popper="{ placement: 'bottom-end', modifiers: [{ name: 'hide', enabled: false }] }"
+          :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
+          :class="!post.id ? 'invisible pointer-events-none' : ''"
+        >
+          <UButton
+            icon="i-lucide-qr-code"
+            size="xs"
+            color="primary"
+            :variant="selected ? 'solid' : 'ghost'"
+            aria-label="QR actions"
+          />
+        </UDropdown>
+        <UButton
+          icon="i-lucide-pencil"
+          size="xs"
+          color="primary"
+          :variant="selected ? 'solid' : 'ghost'"
+          :class="!post.id ? 'invisible pointer-events-none' : ''"
+          @click="onEdit"
+        />
+        <UButton
+          v-if="canDelete"
+          icon="i-lucide-trash-2"
+          size="xs"
+          color="red"
+          :variant="selected ? 'solid' : 'ghost'"
+          :class="!post.id ? 'invisible pointer-events-none' : ''"
+          @click="onDelete"
+        />
+      </div>
     </div>
-<PinPrompt
+    <p
+      v-if="locationText"
+      class="text-sm truncate"
+      :class="selected ? 'text-white' : 'text-gray-600 dark:text-gray-100'"
+      :title="locationText"
+    >
+      {{ locationText }}
+    </p>
+    <!-- Flexible spacer to push bottom section down when there is little content -->
+    <div class="flex-1" />
+    <!-- Reserve space for one description line to keep cards equal height -->
+    <div class="mt-1 h-5">
+      <p
+        v-if="hasDescription"
+        class="text-xs truncate"
+        :class="selected ? 'text-white/90' : 'text-gray-500 dark:text-gray-300'"
+        :title="post.description || ''"
+      >
+        {{ post.description }}
+      </p>
+    </div>
+  </div>
+  <PinPrompt
     v-model="showPrintPinPrompt"
     :title="t('app.enterPin') || 'Enter PIN'"
     :description="t('app.pinPromptDesc') || 'Enter the 6-digit PIN for this post. The PIN was shown to the post creator and is required to print the QR.'"
     :error-text="t('app.pinMustBe6Digits') || 'PIN must be 6 digits'"
     @submit="handlePrintPinSubmit"
-/>
-<QRPrintCard
+  />
+  <QRPrintCard
     v-if="showQRPrintCard"
     :title="qrPrintCardTitle"
     :address="qrPrintCardAddress"
@@ -297,5 +336,5 @@ const dropdownItems = [
     :post-id="props.post.id"
     @close="closePrintCard"
     @print="openPrintDialog"
-/>
+  />
 </template>

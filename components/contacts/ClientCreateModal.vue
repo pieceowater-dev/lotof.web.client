@@ -253,7 +253,11 @@ function handleKeyDown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose" @keydown="handleKeyDown">
+  <UModal
+    v-model="isOpen"
+    @close="handleClose"
+    @keydown="handleKeyDown"
+  >
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
       <template #header>
         <div class="flex items-center justify-between">
@@ -286,9 +290,9 @@ function handleKeyDown(event: KeyboardEvent) {
                 type="radio"
                 class="peer sr-only"
                 :value="option.value"
-              />
+              >
               <span class="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
-                <span class="h-2 w-2 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100"></span>
+                <span class="h-2 w-2 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100" />
               </span>
               <span class="flex-1 font-medium">
                 <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
@@ -305,7 +309,10 @@ function handleKeyDown(event: KeyboardEvent) {
         <!-- Contact Information Section (Most Important) -->
         <div class="space-y-4">
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
-            <UIcon name="i-heroicons-phone" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-phone"
+              class="w-4 h-4"
+            />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('contacts.contactInformation') || 'Contact Information' }}
             </h3>
@@ -320,18 +327,22 @@ function handleKeyDown(event: KeyboardEvent) {
             <UInput
               ref="phoneInputRef"
               :model-value="phones[0]"
-              @update:model-value="value => updatePhoneValue(0, value)"
               type="tel"
               inputmode="tel"
               pattern="[0-9+()\s-]*"
               :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
               size="lg"
               autofocus
+              @update:model-value="value => updatePhoneValue(0, value)"
             />
           </UFormGroup>
 
           <!-- Additional Phones -->
-          <div v-for="(phone, index) in phones.slice(1)" :key="'phone-' + index" class="flex gap-2">
+          <div
+            v-for="(phone, index) in phones.slice(1)"
+            :key="'phone-' + index"
+            class="flex gap-2"
+          >
             <UFormGroup 
               :label="index === 0 ? (t('contacts.additionalPhone') || 'Additional Phone') : ''"
               class="flex-1"
@@ -340,12 +351,12 @@ function handleKeyDown(event: KeyboardEvent) {
             >
               <UInput
                 :model-value="phones[index + 1]"
-                @update:model-value="value => updatePhoneValue(index + 1, value)"
                 type="tel"
                 inputmode="tel"
                 pattern="[0-9+()\s-]*"
                 :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
                 size="lg"
+                @update:model-value="value => updatePhoneValue(index + 1, value)"
               />
             </UFormGroup>
             <UButton
@@ -353,8 +364,8 @@ function handleKeyDown(event: KeyboardEvent) {
               color="red"
               variant="ghost"
               size="lg"
-              @click="removePhone(index + 1)"
               :style="{ marginTop: index === 0 ? '28px' : '0' }"
+              @click="removePhone(index + 1)"
             />
           </div>
 
@@ -363,8 +374,8 @@ function handleKeyDown(event: KeyboardEvent) {
             icon="i-heroicons-plus"
             variant="outline"
             size="sm"
-            @click="addPhone"
             class="w-full"
+            @click="addPhone"
           >
             {{ t('contacts.addPhone') || 'Add phone' }}
           </UButton>
@@ -384,7 +395,11 @@ function handleKeyDown(event: KeyboardEvent) {
           </UFormGroup>
 
           <!-- Additional Emails -->
-          <div v-for="(email, index) in emails.slice(1)" :key="'email-' + index" class="flex gap-2">
+          <div
+            v-for="(email, index) in emails.slice(1)"
+            :key="'email-' + index"
+            class="flex gap-2"
+          >
             <UFormGroup 
               :label="index === 0 ? (t('contacts.additionalEmail') || 'Additional Email') : ''"
               class="flex-1"
@@ -403,8 +418,8 @@ function handleKeyDown(event: KeyboardEvent) {
               color="red"
               variant="ghost"
               size="lg"
-              @click="removeEmail(index + 1)"
               :style="{ marginTop: index === 0 ? '28px' : '0' }"
+              @click="removeEmail(index + 1)"
             />
           </div>
 
@@ -413,17 +428,23 @@ function handleKeyDown(event: KeyboardEvent) {
             icon="i-heroicons-plus"
             variant="outline"
             size="sm"
-            @click="addEmail"
             class="w-full"
+            @click="addEmail"
           >
             {{ t('contacts.addEmail') || 'Add email' }}
           </UButton>
         </div>
 
         <!-- Individual Personal Information -->
-        <div v-if="clientType === 'INDIVIDUAL'" class="space-y-4">
+        <div
+          v-if="clientType === 'INDIVIDUAL'"
+          class="space-y-4"
+        >
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
-            <UIcon name="i-heroicons-user" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-user"
+              class="w-4 h-4"
+            />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('contacts.personalInformation') || 'Personal Information' }}
             </h3>
@@ -483,9 +504,15 @@ function handleKeyDown(event: KeyboardEvent) {
         </div>
 
         <!-- Legal Entity Company Information -->
-        <div v-if="clientType === 'LEGAL'" class="space-y-4">
+        <div
+          v-if="clientType === 'LEGAL'"
+          class="space-y-4"
+        >
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
-            <UIcon name="i-heroicons-building-office-2" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-building-office-2"
+              class="w-4 h-4"
+            />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('contacts.companyInformation') || 'Company Information' }}
             </h3>
@@ -542,7 +569,10 @@ function handleKeyDown(event: KeyboardEvent) {
             <!-- Contact Person -->
             <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
               <div class="flex items-center gap-2 mb-3">
-                <UIcon name="i-heroicons-user" class="w-4 h-4" />
+                <UIcon
+                  name="i-heroicons-user"
+                  class="w-4 h-4"
+                />
                 <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
                   {{ t('contacts.contactPersonOptional') }}
                 </h4>
@@ -606,7 +636,10 @@ function handleKeyDown(event: KeyboardEvent) {
         <!-- Client Status -->
         <div>
           <div class="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 pb-2 mb-4">
-            <UIcon name="i-heroicons-cog-8-tooth" class="w-4 h-4" />
+            <UIcon
+              name="i-heroicons-cog-8-tooth"
+              class="w-4 h-4"
+            />
             <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
               {{ t('contacts.clientStatus') || 'Client Status' }}
             </h3>

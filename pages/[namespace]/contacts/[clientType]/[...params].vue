@@ -542,10 +542,11 @@ async function handleRefreshFromRemote() {
 
 <template>
   <div class="flex flex-col">
-  
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div class="text-left">
-        <h1 class="text-2xl font-semibold">{{ t('app.contacts') }}</h1>
+        <h1 class="text-2xl font-semibold">
+          {{ t('app.contacts') }}
+        </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.contactsSubtitle') }}</span>
       </div>
       <div>
@@ -588,11 +589,11 @@ async function handleRefreshFromRemote() {
           <button
             v-for="type in ['ALL', 'INDIVIDUAL', 'LEGAL']"
             :key="type"
-            @click="clientTypeFilter = type as any"
             class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
             :class="clientTypeFilter === type
               ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
               : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+            @click="clientTypeFilter = type as any"
           >
             {{
               type === 'ALL'
@@ -628,19 +629,33 @@ async function handleRefreshFromRemote() {
     </div>
 
     <!-- Loading State (only on initial load, not while having search) -->
-    <div v-if="loading && clients.length === 0 && searchQuery === ''" class="flex items-center justify-center py-16 px-4">
+    <div
+      v-if="loading && clients.length === 0 && searchQuery === ''"
+      class="flex items-center justify-center py-16 px-4"
+    >
       <div class="text-center">
-        <UIcon name="lucide:loader" class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4" />
-        <p class="text-gray-600 dark:text-gray-400">{{ t('common.loading') }}</p>
+        <UIcon
+          name="lucide:loader"
+          class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4"
+        />
+        <p class="text-gray-600 dark:text-gray-400">
+          {{ t('common.loading') }}
+        </p>
       </div>
     </div>
 
     <!-- Empty State (only when no clients exist AND no search) -->
-    <div v-else-if="totalCount === 0 && searchQuery === '' && !loading" class="flex-1 flex items-center justify-center px-4 py-12 sm:py-16">
+    <div
+      v-else-if="totalCount === 0 && searchQuery === '' && !loading"
+      class="flex-1 flex items-center justify-center px-4 py-12 sm:py-16"
+    >
       <div class="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
         <div class="px-6 py-8 sm:px-10 sm:py-10 text-center">
           <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700">
-            <UIcon name="lucide:users" class="w-7 h-7 text-gray-600 dark:text-gray-300" />
+            <UIcon
+              name="lucide:users"
+              class="w-7 h-7 text-gray-600 dark:text-gray-300"
+            />
           </div>
 
           <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
@@ -666,9 +681,14 @@ async function handleRefreshFromRemote() {
     </div>
 
     <!-- Table (always shown when there's data or active search) -->
-    <div v-else class="px-4 pb-safe-or-4">
+    <div
+      v-else
+      class="px-4 pb-safe-or-4"
+    >
       <ClientsTable 
-        :clients="filteredClients" 
+        v-model:search-query="searchQuery" 
+        :clients="filteredClients"
+        v-model:selected-tags="selectedTags"
         :loading="loading"
         :page="page"
         :page-size="pageSize"
@@ -678,8 +698,6 @@ async function handleRefreshFromRemote() {
         :sort-direction="sortDirection === 'ASC' ? 'asc' : 'desc'"
         :ns-slug="nsSlug"
         :resolved-names="resolvedNames"
-        v-model:search-query="searchQuery"
-        v-model:selected-tags="selectedTags"
         @update:page="(newPage) => updateRoute(newPage, pageSize)"
         @update:page-size="(newPageSize) => updateRoute(1, newPageSize)"
         @update:sort="handleSortUpdate"

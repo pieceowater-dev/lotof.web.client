@@ -43,14 +43,23 @@ const clientType = computed(() => {
 </script>
 
 <template>
-  <div v-if="!client" class="flex items-center justify-center h-full">
+  <div
+    v-if="!client"
+    class="flex items-center justify-center h-full"
+  >
     <div class="text-center text-gray-500 dark:text-gray-400">
-      <UIcon name="lucide:users" class="w-16 h-16 mx-auto mb-4 opacity-50" />
+      <UIcon
+        name="lucide:users"
+        class="w-16 h-16 mx-auto mb-4 opacity-50"
+      />
       <p>{{ t('contacts.selectClient') }}</p>
     </div>
   </div>
 
-  <div v-else class="space-y-6">
+  <div
+    v-else
+    class="space-y-6"
+  >
     <!-- Header Card -->
     <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-800">
       <div class="flex items-start justify-between">
@@ -59,7 +68,10 @@ const clientType = computed(() => {
             <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
               {{ clientName }}
             </h2>
-            <UBadge :color="statusColor" size="md">
+            <UBadge
+              :color="statusColor"
+              size="md"
+            >
               {{ client.client.status }}
             </UBadge>
           </div>
@@ -85,7 +97,10 @@ const clientType = computed(() => {
         {{ t('contacts.details') }}
       </h3>
 
-      <div v-if="client.client.clientType === 'INDIVIDUAL' && client.individual" class="space-y-3">
+      <div
+        v-if="client.client.clientType === 'INDIVIDUAL' && client.individual"
+        class="space-y-3"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">
@@ -122,7 +137,10 @@ const clientType = computed(() => {
         </div>
       </div>
 
-      <div v-else-if="client.legalEntity" class="space-y-3">
+      <div
+        v-else-if="client.legalEntity"
+        class="space-y-3"
+      >
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1">

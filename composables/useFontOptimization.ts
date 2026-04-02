@@ -9,7 +9,7 @@ export const useFontOptimization = () => {
     // Use Font Loading API if available
     if ('fonts' in document) {
       // Wait for fonts to load
-      ;(document as any).fonts.ready.then(() => {
+      (document as any).fonts.ready.then(() => {
         // Fonts are loaded, add loaded class to html
         document.documentElement.classList.add('fonts-loaded')
       })

@@ -1,8 +1,24 @@
 <template>
   <div id="preloader">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="120" height="120" class="animate-spin">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      width="120"
+      height="120"
+      class="animate-spin"
+    >
       <g data-idx="1">
-        <circle stroke-dasharray="141.37166941154067 49.12388980384689" r="30" stroke-width="4" stroke="rgb(59 130 246)" fill="none" cy="50" cx="50" data-idx="2" transform="matrix(0.684547261237544,-0.7289684815766575,0.7289684815766575,0.684547261237544,-20.67578714071007,52.22106101695567)"></circle>
+        <circle
+          stroke-dasharray="141.37166941154067 49.12388980384689"
+          r="30"
+          stroke-width="4"
+          stroke="rgb(59 130 246)"
+          fill="none"
+          cy="50"
+          cx="50"
+          data-idx="2"
+          transform="matrix(0.684547261237544,-0.7289684815766575,0.7289684815766575,0.684547261237544,-20.67578714071007,52.22106101695567)"
+        />
       </g>
     </svg>
   </div>
@@ -14,13 +30,13 @@
   <ClientOnly>
     <SubscriptionRenewalModal
       v-if="showSubscriptionModal"
-      :modelValue="showSubscriptionModal"
-      :subscriptionStatus="null"
-      :isExpired="true"
-      :isPastDue="false"
-      :isTrialing="false"
-      :trialEndsAt="null"
-      :currentPeriodEnd="null"
+      :model-value="showSubscriptionModal"
+      :subscription-status="null"
+      :is-expired="true"
+      :is-past-due="false"
+      :is-trialing="false"
+      :trial-ends-at="null"
+      :current-period-end="null"
       @renew="handleSubscriptionRenew"
       @close="handleSubscriptionClose"
     />
