@@ -6,6 +6,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
+import { getErrorMessage } from '@/utils/types/errors';
 import { getContactsPlanLimits } from '@/api/contacts/plans/getLimits';
 import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
 import { hubMembersList } from '@/api/hub/members/list';
@@ -451,8 +452,13 @@ async function handleCreateDynamicField() {
     });
   } catch (e) {
     logError('Failed to create dynamic field:', e);
-    createDynamicFieldError.value = t('common.error') || 'Failed to create dynamic field';
-  } finally {
+    const errorToast = getCreateDynamicFieldErrorToast(e);
+    createDynamicFieldError.value = errorToast.description;
+    toast.add({
+      title: errorToast.title,
+      description: errorToast.description,
+      color: 'red'
+    });
     createDynamicFieldLoading.value = false;
   }
 }
@@ -892,10 +898,11 @@ const handleCreateStampCard = async () => {
     await loadLoyaltyData(contactsToken.value);
   } catch (e) {
     logError('Failed to create stamp card:', e);
-    createFormError.value = t('common.error') || 'Failed to create stamp card';
+    const errorToast = getCreateStampCardErrorToast(e);
+    createFormError.value = errorToast.description;
     toast.add({ 
-      title: t('common.error') || 'Error',
-      description: t('common.error') || 'Failed to create stamp card',
+      title: errorToast.title,
+      description: errorToast.description,
       color: 'red' 
     });
   } finally {
@@ -928,6 +935,90 @@ function parseLimitsJson(raw?: string | null): { max_clients?: number; max_custo
     return {};
   }
   return {};
+}
+
+function getCreateStampCardErrorToast(error: unknown): { title: string; description: string } {
+  const rawMessage = getErrorMessage(error);
+  const compactMessage = rawMessage.replace(/^rpc error:\s*code\s*=\s*\w+\s*desc\s*=\s*/i, '').trim();
+
+  const loyaltyLimitMatch = compactMessage.match(/Loyalty programs limit reached\.\s*You have\s+(\d+)\s+program[s]?,\s*maximum allowed is\s+(\d+)/i);
+  if (/ResourceExhausted/i.test(rawMessage) && loyaltyLimitMatch) {
+    const current = loyaltyLimitMatch[1];
+    const max = loyaltyLimitMatch[2];
+    return {
+      title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
+      description: t(
+        'contacts.loyaltyProgramsLimitReached',
+        `Достигнут лимит программ лояльности: ${current} из ${max}. Обновите тариф, чтобы создать новую программу.`,
+      )
+        .replace('{current}', current)
+        .replace('{max}', max),
+    };
+  }
+
+  if (/ResourceExhausted/i.test(rawMessage)) {
+    return {
+      title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
+      description: compactMessage || t('common.error') || 'Ошибка создания программы лояльности',
+    };
+  }
+
+  if (/FailedPrecondition/i.test(rawMessage)) {
+    return {
+      title: t('common.warning') || 'Предупреждение',
+      description: t(
+        'contacts.planValidationError',
+        'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
+      ),
+    };
+  }
+
+  return {
+    title: t('common.error') || 'Error',
+    description: t('common.error') || 'Failed to create stamp card',
+  };
+}
+
+function getCreateDynamicFieldErrorToast(error: unknown): { title: string; description: string } {
+  const rawMessage = getErrorMessage(error);
+  const compactMessage = rawMessage.replace(/^rpc error:\s*code\s*=\s*\w+\s*desc\s*=\s*/i, '').trim();
+
+  const customFieldsLimitMatch = compactMessage.match(/Custom fields limit reached\.\s*You have\s+(\d+)\s+fields?,\s*maximum allowed is\s+(\d+)/i);
+  if (/ResourceExhausted/i.test(rawMessage) && customFieldsLimitMatch) {
+    const current = customFieldsLimitMatch[1];
+    const max = customFieldsLimitMatch[2];
+    return {
+      title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
+      description: t(
+        'contacts.customFieldsLimitReached',
+        `Достигнут лимит пользовательских полей: ${current} из ${max}. Обновите тариф, чтобы создать новое поле.`,
+      )
+        .replace('{current}', current)
+        .replace('{max}', max),
+    };
+  }
+
+  if (/ResourceExhausted/i.test(rawMessage)) {
+    return {
+      title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
+      description: compactMessage || t('common.error') || 'Ошибка создания поля',
+    };
+  }
+
+  if (/FailedPrecondition/i.test(rawMessage)) {
+    return {
+      title: t('common.warning') || 'Предупреждение',
+      description: t(
+        'contacts.planValidationError',
+        'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
+      ),
+    };
+  }
+
+  return {
+    title: t('common.error') || 'Error',
+    description: t('common.error') || 'Failed to create dynamic field',
+  };
 }
 
 async function loadPlanLimits() {

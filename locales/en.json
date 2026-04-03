@@ -547,6 +547,8 @@
     "createError": "Failed to create client",
     "limitReachedTitle": "Plan limit reached",
     "activeClientsLimitReached": "Active clients limit reached: {current} of {max}. Upgrade your plan to create a new client.",
+    "customFieldsLimitReached": "Custom fields limit reached: {current} of {max}. Upgrade your plan to create a new field.",
+    "loyaltyProgramsLimitReached": "Loyalty programs limit reached: {current} of {max}. Upgrade your plan to create a new program.",
     "planValidationError": "Failed to validate current plan limits. Please try again in a few seconds.",
     "updateError": "Failed to update client",
     "authError": "Failed to access contacts service",
