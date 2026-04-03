@@ -19,6 +19,7 @@ import {
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { getErrorMessage } from '@/utils/types/errors';
 import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
 const router = useRouter();
@@ -57,6 +58,48 @@ const dynamicFieldDrafts = ref<Record<string, string | number | boolean | string
 function tr(path: string, fallback: string): string {
   const value = t(path);
   return value === path ? fallback : value;
+}
+
+function getCreateClientErrorToast(error: unknown): { title: string; description: string } {
+  const rawMessage = getErrorMessage(error);
+  const compactMessage = rawMessage.replace(/^rpc error:\s*code\s*=\s*\w+\s*desc\s*=\s*/i, '').trim();
+
+  const activeClientsLimitMatch = compactMessage.match(/You have\s+(\d+)\s+active clients,\s+maximum allowed is\s+(\d+)/i);
+  if (/ResourceExhausted/i.test(rawMessage) && activeClientsLimitMatch) {
+    const current = activeClientsLimitMatch[1];
+    const max = activeClientsLimitMatch[2];
+    return {
+      title: tr('contacts.limitReachedTitle', 'Лимит тарифа достигнут'),
+      description: tr(
+        'contacts.activeClientsLimitReached',
+        `Достигнут лимит активных клиентов: ${current} из ${max}. Обновите тариф, чтобы создать нового клиента.`,
+      )
+        .replace('{current}', current)
+        .replace('{max}', max),
+    };
+  }
+
+  if (/ResourceExhausted/i.test(rawMessage)) {
+    return {
+      title: tr('contacts.limitReachedTitle', 'Лимит тарифа достигнут'),
+      description: compactMessage || tr('contacts.createError', 'Не удалось создать клиента'),
+    };
+  }
+
+  if (/FailedPrecondition/i.test(rawMessage)) {
+    return {
+      title: tr('common.warning', 'Предупреждение'),
+      description: tr(
+        'contacts.planValidationError',
+        'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
+      ),
+    };
+  }
+
+  return {
+    title: t('common.error'),
+    description: t('contacts.createError'),
+  };
 }
 
 // Phone input ref for autofocus
@@ -421,7 +464,10 @@ function hasDynamicFieldInputValue(field: DynamicField): boolean {
   return String(rawValue ?? '').trim().length > 0;
 }
 
-async function saveDynamicFieldValues(contactsToken: string, namespace: string, clientId: string) {
+async function saveDynamicFieldValues(contactsToken: string, namespace: string, clientId: string): Promise<{ saved: number; failed: number }> {
+  let saved = 0;
+  let failed = 0;
+
   for (const field of dynamicFields.value) {
     if (!hasDynamicFieldInputValue(field)) continue;
 
@@ -451,8 +497,16 @@ async function saveDynamicFieldValues(contactsToken: string, namespace: string, 
       input.valueString = String(rawValue || '');
     }
 
-    await setDynamicFieldValue(contactsToken, namespace, input);
+    try {
+      await setDynamicFieldValue(contactsToken, namespace, input);
+      saved += 1;
+    } catch (error) {
+      failed += 1;
+      logError(`Failed to save dynamic field value for ${field.id}:`, error);
+    }
   }
+
+  return { saved, failed };
 }
 
 function addPhone() {
@@ -661,13 +715,14 @@ async function handleSubmit() {
         );
       }
 
-      try {
-        await saveDynamicFieldValues(contactsToken, selectedNS.value, clientId);
-      } catch (dynamicFieldError) {
-        logError('Dynamic fields were not saved during client creation:', dynamicFieldError);
+      const dynamicFieldSaveResult = await saveDynamicFieldValues(contactsToken, selectedNS.value, clientId);
+      if (dynamicFieldSaveResult.failed > 0) {
         toast.add({
           title: t('common.warning') || 'Warning',
-          description: tr('contacts.dynamicFieldsSaveWarning', 'Клиент создан, но дополнительные поля не сохранены'),
+          description: tr(
+            'contacts.dynamicFieldsSaveWarning',
+            `Клиент создан, но часть дополнительных полей не сохранена (${dynamicFieldSaveResult.saved} сохранено, ${dynamicFieldSaveResult.failed} с ошибкой)`,
+          ),
           color: 'amber',
         });
       }
@@ -684,9 +739,10 @@ async function handleSubmit() {
     await router.push(`/${nsSlug.value}/contacts/all/1-20`);
   } catch (error) {
     logError('Failed to create client:', error);
+    const errorToast = getCreateClientErrorToast(error);
     toast.add({
-      title: t('common.error'),
-      description: t('contacts.createError'),
+      title: errorToast.title,
+      description: errorToast.description,
       color: 'red',
     });
   } finally {

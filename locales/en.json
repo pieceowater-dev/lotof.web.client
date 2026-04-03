@@ -469,48 +469,7 @@
       "limitReached": "You have reached the maximum number of active members for your plan. Upgrade your plan to add more members."
     }
   },
-  "pieceowater": {
-    "atrace": {
-      "mini": {
-        "description": "Perfect for small teams. Get started with essential features to track attendance and manage tasks.",
-        "feature": {
-          "max_employees": "Up to 5 employees",
-          "max_posts": "1 entry point"
-        }
-      },
-      "start": {
-        "description": "Ideal for growing teams. Everything in Mini plus advanced analytics, custom reports, and priority support.",
-        "feature": {
-          "max_employees": "Up to 30 employees",
-          "max_posts": "Up to 3 entry points"
-        }
-      },
-      "free": {
-        "description": "Free plan to get started. Basic limits for trying A-Trace.",
-        "feature": {
-          "max_employees": "Up to 1 employee",
-          "max_posts": "Up to 3 entry points"
-        }
-      }
-    },
-    "monthly": "Monthly",
-    "yearly": "Yearly",
-    "bestPrice": "Best price",
-    "perMonth": "per month",
-    "perYear": "per year",
-    "month": "month",
-    "year": "year",
-    "daysTrial": "days trial",
-    "daysFreeTrial": "days free trial",
-    "includedSeats": "included seats",
-    "includedUnits": "included units",
-    "selectPlan": "Select Plan",
-    "connecting": "Connecting...",
-    "activePlan": "Active!",
-    "subscriptionSuccess": "Plan activated successfully!",
-    "noPlansAvailable": "No plans available"
-},
-"common": {
+  "common": {
   "ok": "OK",
   "title": "Title",
   "description": "Description",
@@ -552,6 +511,7 @@
   "loading": "Loading...",
   "back": "Back",
   "error": "Error",
+  "warning": "Warning",
   "search": "Search",
   "restore": "Restore",
   "deleted": "Deleted",
@@ -585,6 +545,9 @@
     "clientCreated": "Client created successfully",
     "loadError": "Failed to load clients list",
     "createError": "Failed to create client",
+    "limitReachedTitle": "Plan limit reached",
+    "activeClientsLimitReached": "Active clients limit reached: {current} of {max}. Upgrade your plan to create a new client.",
+    "planValidationError": "Failed to validate current plan limits. Please try again in a few seconds.",
     "updateError": "Failed to update client",
     "authError": "Failed to access contacts service",
     "information": "Information",
