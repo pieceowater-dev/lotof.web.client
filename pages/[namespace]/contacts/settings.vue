@@ -1917,13 +1917,6 @@ onMounted(async () => {
                 :disabled="createDynamicFieldLoading || createDynamicFieldForm.dataType === 'BOOLEAN'"
               />
             </div>
-            <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2">
-              <span class="text-sm text-gray-700 dark:text-gray-300">Участвует в поиске</span>
-              <UToggle
-                v-model="createDynamicFieldForm.searchable"
-                :disabled="createDynamicFieldLoading"
-              />
-            </div>
           </div>
 
           <div
@@ -2056,13 +2049,6 @@ onMounted(async () => {
               <UToggle
                 v-model="editDynamicFieldForm.isRequired"
                 :disabled="editDynamicFieldLoading || editDynamicFieldForm.dataType === 'BOOLEAN'"
-              />
-            </div>
-            <div class="flex items-center justify-between rounded-lg border border-slate-200 dark:border-slate-700 px-3 py-2 flex-1 min-w-[220px]">
-              <span class="text-sm text-gray-700 dark:text-gray-300">Участвует в поиске</span>
-              <UToggle
-                v-model="editDynamicFieldForm.searchable"
-                :disabled="editDynamicFieldLoading"
               />
             </div>
           </div>
