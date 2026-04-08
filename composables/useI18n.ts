@@ -22,14 +22,30 @@ export function useI18n() {
   function getDeep(obj: any, keyPath: string): any {
     return keyPath.split('.').reduce((acc: any, k: string) => (acc && typeof acc === 'object') ? acc[k] : undefined, obj);
   }
-  function t(path: string, params?: Record<string, string | number>): string {
+  function resolveFromNamespace(namespace: any, restPath: string): string | undefined {
+    const val = restPath ? getDeep(namespace, restPath) : namespace;
+    return (typeof val === 'string' || typeof val === 'number') ? String(val) : undefined;
+  }
+  function resolveMessage(targetLocale: 'en' | 'ru', path: string): string | undefined {
     const parts = path.split('.');
     const ns = parts.shift();
-    if (!ns) return path;
-    const dictNs = (messages as any)[locale.value]?.[ns] || {};
+    if (!ns) return undefined;
+
     const restPath = parts.join('.');
-    let val = restPath ? getDeep(dictNs, restPath) : dictNs;
-    let result = (typeof val === 'string' || typeof val === 'number') ? String(val) : path;
+    const localeMessages = (messages as any)[targetLocale] || {};
+
+    const direct = resolveFromNamespace(localeMessages[ns], restPath);
+    if (direct !== undefined) {
+      return direct;
+    }
+
+    // Backward-compatible fallback for misplaced sections like en.common.contacts.*
+    return resolveFromNamespace(localeMessages.common?.[ns], restPath);
+  }
+  function t(path: string, params?: Record<string, string | number>): string {
+    const primaryLocale = locale.value;
+    const fallbackLocale = primaryLocale === 'ru' ? 'en' : 'ru';
+    let result = resolveMessage(primaryLocale, path) ?? resolveMessage(fallbackLocale, path) ?? '';
     
     // Interpolate parameters if provided
     if (params) {
