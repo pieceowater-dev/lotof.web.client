@@ -8,7 +8,7 @@
       >
       <span class="text-5xl font-thin text-primary">{{ title || t('app.title') }}</span>
     </div>
-    <span class="text-3xl font-bold mr-2 ml-2">{{ subtitle || t('app.tagline') }}</span>
+    <span class="text-3xl font-bold mr-2 ml-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text">{{ subtitle || t('app.tagline') }}</span>
     <span class="text-xl text-gray-600 dark:text-gray-400 mr-2 ml-2">{{ description || t('app.description') }}</span>
 
     <button
