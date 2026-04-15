@@ -92,7 +92,7 @@ async function handleCreateTag() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.tagCreated'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -122,7 +122,7 @@ async function handleUpdateTag() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.tagUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -153,7 +153,7 @@ async function handleDeleteTag(id: string) {
     toast.add({
       title: t('common.success'),
       description: t('contacts.tagDeleted'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     confirmDeleteId.value = null;
@@ -183,7 +183,7 @@ async function handleAddTag(tagId: string) {
     toast.add({
       title: t('common.success'),
       description: t('contacts.tagAddedToClient'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
@@ -286,7 +286,7 @@ watch(() => props.isOpen, (newVal) => {
             v-for="tag in displayTags"
             :key="tag.id"
             class="flex items-center justify-between p-2.5 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors"
-            :class="{ 'ring-2 ring-blue-500': selectedTagId === tag.id }"
+            :class="{ 'ring-2 ring-emerald-500': selectedTagId === tag.id }"
           >
             <!-- Name / inline edit -->
             <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -299,14 +299,14 @@ watch(() => props.isOpen, (newVal) => {
                   ref="editInputRef"
                   v-model="editingName"
                   type="text"
-                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
+                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-emerald-400 dark:border-emerald-500 outline-none ring-1 ring-emerald-400"
                   @keyup.enter="handleUpdateTag"
                   @keyup.escape="cancelEdit"
                 >
               </template>
               <span
                 v-else
-                class="text-sm font-medium truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+                class="text-sm font-medium truncate cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400"
                 :title="t('contacts.doubleClickToRename')"
                 @dblclick.stop="startEdit(tag)"
                 @click.stop="confirmDeleteId !== tag.id && handleAddTag(tag.id)"
@@ -319,7 +319,7 @@ watch(() => props.isOpen, (newVal) => {
               <template v-if="editingId === tag.id">
                 <UButton
                   size="xs"
-                  color="green"
+                  color="emerald"
                   variant="ghost"
                   icon="lucide:check"
                   @click.stop="handleUpdateTag"
@@ -400,7 +400,7 @@ watch(() => props.isOpen, (newVal) => {
                   ref="editInputRef"
                   v-model="editingName"
                   type="text"
-                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-blue-400 dark:border-blue-500 outline-none ring-1 ring-blue-400"
+                  class="flex-1 min-w-0 px-2 py-0.5 text-sm border rounded bg-white dark:bg-gray-700 border-emerald-400 dark:border-emerald-500 outline-none ring-1 ring-emerald-400"
                   @keyup.enter="handleUpdateTag"
                   @keyup.escape="cancelEdit"
                 >
@@ -415,7 +415,7 @@ watch(() => props.isOpen, (newVal) => {
               <UIcon
                 v-if="editingId !== tag.id && confirmDeleteId !== tag.id"
                 name="lucide:pencil"
-                class="w-3 h-3 text-gray-300 dark:text-gray-600 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer hover:text-blue-500"
+                class="w-3 h-3 text-gray-300 dark:text-gray-600 opacity-0 group-hover/tag:opacity-100 transition-opacity cursor-pointer hover:text-emerald-500"
                 :title="t('contacts.doubleClickToRename')"
                 @click="startEdit(tag)"
               />
@@ -426,7 +426,7 @@ watch(() => props.isOpen, (newVal) => {
               <template v-if="editingId === tag.id">
                 <UButton
                   size="xs"
-                  color="green"
+                  color="emerald"
                   variant="ghost"
                   icon="lucide:check"
                   @click="handleUpdateTag"

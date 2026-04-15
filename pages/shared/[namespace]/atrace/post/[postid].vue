@@ -337,13 +337,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+  <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
     <div class="w-full max-w-md bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 flex flex-col items-center">
-      <h1 class="text-xl font-semibold mb-2 text-blue-900 dark:text-white flex flex-col items-center justify-center w-full">
+      <h1 class="text-xl font-semibold mb-2 text-emerald-900 dark:text-white flex flex-col items-center justify-center w-full">
         <span class="flex items-center justify-center w-full gap-2">
           <UIcon
             name="i-lucide-qr-code"
-            class="w-7 h-7 text-blue-500 dark:text-blue-300"
+            class="w-7 h-7 text-emerald-500 dark:text-emerald-300"
           />
           <span>{{ t('app.atraceTitle') }}</span>
         </span>
@@ -408,7 +408,7 @@ onBeforeUnmount(() => {
           </div>
           <div
             v-else-if="polling"
-            class="text-blue-500 dark:text-blue-300 mt-4 flex items-center gap-2"
+            class="text-emerald-500 dark:text-emerald-300 mt-4 flex items-center gap-2"
           >
             <i class="i-lucide-loader animate-spin" />
             {{ t('app.loading') || 'Loading...' }}

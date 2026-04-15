@@ -36,7 +36,7 @@ const statusBadgeClass = computed(() => {
   const status = props.client?.client.status;
   switch (status) {
     case 'ACTIVE':
-      return 'px-2 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-100 dark:border-green-900/60';
+      return 'px-2 py-1 rounded-full text-xs font-medium border bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60';
     case 'BLOCKED':
       return 'px-2 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-100 dark:border-red-900/60';
     case 'ARCHIVED':

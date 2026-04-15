@@ -204,7 +204,7 @@ function isLegitimateDay(date: string): boolean {
 
 function getDayStyle(date: string): string {
   if (isViolationDay(date)) return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-  if (isLegitimateDay(date)) return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
+  if (isLegitimateDay(date)) return 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800';
   return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
 }
 
@@ -367,7 +367,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
     >
       <UIcon
         name="i-heroicons-arrow-path"
-        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+        class="w-6 h-6 animate-spin text-emerald-400 dark:text-emerald-300"
       />
       <span class="ml-2 text-sm">{{ t('app.loading') }}</span>
     </div>
@@ -440,7 +440,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
             </span>
             <span
               v-else-if="isLegitimateDay(date)"
-              class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
+              class="px-2 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded"
               :title="dailyAttendanceMap.get(date)?.legitimate ? dailyAttendanceMap.get(date)?.reason : ''"
             >
               {{ t('app.excused') }}
@@ -493,7 +493,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                   <div class="flex flex-row flex-wrap items-center justify-center gap-1">
                     <span
                       v-if="!r.suspicious"
-                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100"
                     >
                       <UIcon
                         name="i-heroicons-check-circle"
@@ -514,7 +514,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                     </span>
                     <span
                       v-if="r.geoConfirmed === true"
-                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 cursor-help"
+                      class="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 cursor-help"
                       :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
                     >
                       <UIcon
@@ -569,7 +569,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
             <div class="flex items-center gap-3">
               <UIcon
                 name="i-heroicons-check-circle"
-                class="w-6 h-6 text-blue-500"
+                class="w-6 h-6 text-emerald-500"
               />
               <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                 {{ t('app.markDayLegitimateTitle') }}
@@ -591,7 +591,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
             <textarea
               v-model="reason"
               rows="3"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700"
+              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700"
               :placeholder="t('app.enterReason')"
             />
           </div>

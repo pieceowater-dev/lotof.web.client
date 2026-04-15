@@ -108,7 +108,7 @@ function handleClose() {
 
       <div
         v-if="currentPeriodEnd"
-        class="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3"
+        class="bg-emerald-50 dark:bg-emerald-900/30 rounded-lg p-3"
       >
         <p class="text-sm text-gray-600 dark:text-gray-400">
           <span class="font-semibold">{{ t('billing.periodEnd') || 'Current Period Ends:' }}</span>

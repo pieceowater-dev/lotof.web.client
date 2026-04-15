@@ -49,7 +49,7 @@ const items: { label: string; click: () => void }[][] = [
     <div class="flex flex-wrap gap-2 md:gap-4 mt-4 justify-center">
       <UButton
         icon="i-lucide-user-round-check"
-        color="primary"
+        color="emerald"
         variant="solid"
         size="sm"
         md:size="md"

@@ -77,7 +77,7 @@ async function handleCreateSegment() {
     toast.add({
       title: t('common.success'),
       description: 'Segment created successfully',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -102,7 +102,7 @@ async function handleDeleteSegment(id: string) {
     toast.add({
       title: t('common.success'),
       description: 'Segment deleted successfully',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -174,7 +174,7 @@ watch(() => props.isOpen, (newVal) => {
               :class="[
                 'p-2 rounded cursor-pointer text-sm transition-colors',
                 selectedSegment?.id === segment.id
-                  ? 'bg-blue-100 dark:bg-blue-900 border border-blue-300 dark:border-blue-700'
+                  ? 'bg-emerald-100 dark:bg-emerald-900 border border-emerald-300 dark:border-emerald-700'
                   : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
               ]"
               @click="selectSegment(segment)"

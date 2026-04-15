@@ -732,7 +732,7 @@ async function handleSubmit() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.clientCreated'),
-      color: 'green',
+      color: 'emerald',
     });
 
     // Redirect to contacts list
@@ -905,10 +905,10 @@ useHead(() => ({
               <label
                 v-for="option in clientTypeOptions"
                 :key="option.value"
-                class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition focus-within:ring-2 focus-within:ring-blue-500"
+                class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition focus-within:ring-2 focus-within:ring-emerald-500"
                 :class="clientType === option.value
-                  ? 'border-blue-500 bg-blue-50/70 text-gray-900 dark:border-blue-400 dark:bg-blue-950/40 dark:text-white'
-                  : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700'"
+                  ? 'border-emerald-500 bg-emerald-50/70 text-gray-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-white'
+                  : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-700'"
               >
                 <input
                   v-model="clientType"
@@ -917,7 +917,7 @@ useHead(() => ({
                   :value="option.value"
                 >
                 <span class="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
-                  <span class="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100" />
+                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-600 opacity-0 peer-checked:opacity-100" />
                 </span>
                 <span class="flex-1 font-medium">
                   <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
@@ -925,7 +925,7 @@ useHead(() => ({
                 </span>
                 <UIcon
                   :name="option.icon"
-                  class="w-4 h-4 text-gray-400 peer-checked:text-blue-600"
+                  class="w-4 h-4 text-gray-400 peer-checked:text-emerald-600"
                 />
               </label>
             </div>
@@ -938,7 +938,7 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-phone"
-                class="w-4 h-4 text-blue-600"
+                class="w-4 h-4 text-emerald-600"
               />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.contactInformation') }}
@@ -1039,7 +1039,7 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-user"
-                class="w-4 h-4 text-blue-600"
+                class="w-4 h-4 text-emerald-600"
               />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.personalInformation') }}
@@ -1138,9 +1138,9 @@ useHead(() => ({
 
                 <div
                   v-if="selectedLegalCompany"
-                  class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm"
+                  class="flex items-center justify-between rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-sm"
                 >
-                  <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
+                  <span class="text-emerald-800 dark:text-emerald-200">{{ t('contacts.selected') }}: {{ getLegalCompanyLabel(selectedLegalCompany) }}</span>
                   <UButton
                     type="button"
                     icon="i-heroicons-x-mark"
@@ -1161,7 +1161,7 @@ useHead(() => ({
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-building-office-2"
-                class="w-4 h-4 text-blue-600"
+                class="w-4 h-4 text-emerald-600"
               />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.companyInformation') }}
@@ -1204,9 +1204,9 @@ useHead(() => ({
 
                 <div
                   v-if="selectedExistingLegalEntity"
-                  class="flex items-center justify-between rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 px-3 py-2 text-sm"
+                  class="flex items-center justify-between rounded-md border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-sm"
                 >
-                  <span class="text-blue-800 dark:text-blue-200">{{ t('contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
+                  <span class="text-emerald-800 dark:text-emerald-200">{{ t('contacts.selectedExistingLegalEntity') }}: {{ getLegalCompanyLabel(selectedExistingLegalEntity) }}</span>
                   <UButton
                     type="button"
                     icon="i-heroicons-x-mark"

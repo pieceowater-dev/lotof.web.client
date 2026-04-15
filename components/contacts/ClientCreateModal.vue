@@ -280,10 +280,10 @@ function handleKeyDown(event: KeyboardEvent) {
             <label
               v-for="option in clientTypeOptions"
               :key="option.value"
-              class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition focus-within:ring-2 focus-within:ring-blue-500"
+              class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm transition focus-within:ring-2 focus-within:ring-emerald-500"
               :class="clientType === option.value
-                ? 'border-blue-500 bg-blue-50/70 text-gray-900 dark:border-blue-400 dark:bg-blue-950/40 dark:text-white'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-blue-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-blue-700'"
+                ? 'border-emerald-500 bg-emerald-50/70 text-gray-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-white'
+                : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-700'"
             >
               <input
                 v-model="clientType"
@@ -292,7 +292,7 @@ function handleKeyDown(event: KeyboardEvent) {
                 :value="option.value"
               >
               <span class="flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
-                <span class="h-2 w-2 rounded-full bg-blue-600 opacity-0 peer-checked:opacity-100" />
+                <span class="h-2 w-2 rounded-full bg-emerald-600 opacity-0 peer-checked:opacity-100" />
               </span>
               <span class="flex-1 font-medium">
                 <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
@@ -300,7 +300,7 @@ function handleKeyDown(event: KeyboardEvent) {
               </span>
               <UIcon
                 :name="option.icon"
-                class="w-4 h-4 text-gray-400 peer-checked:text-blue-600"
+                class="w-4 h-4 text-gray-400 peer-checked:text-emerald-600"
               />
             </label>
           </div>

@@ -54,7 +54,7 @@ async function handleRemoveTag(tagId: string) {
     toast.add({
       title: t('common.success'),
       description: 'Tag removed',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({

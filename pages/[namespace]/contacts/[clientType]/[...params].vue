@@ -424,7 +424,7 @@ async function handleInlineSaveName(payload: {
 
     await loadClients();
     hasRemoteChanges.value = false;
-    toast.add({ title: t('common.success'), description: t('contacts.clientDataUpdated'), color: 'green' });
+    toast.add({ title: t('common.success'), description: t('contacts.clientDataUpdated'), color: 'emerald' });
   } catch (error) {
     logError('Failed to inline save name:', error);
     toast.add({ title: t('common.error'), description: t('contacts.updateError'), color: 'red' });
@@ -457,7 +457,7 @@ async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: 
 
     await loadClients();
     hasRemoteChanges.value = false;
-    toast.add({ title: t('common.success'), description: t('contacts.contactDataUpdated'), color: 'green' });
+    toast.add({ title: t('common.success'), description: t('contacts.contactDataUpdated'), color: 'emerald' });
   } catch (error) {
     logError('Failed to inline save primary phone:', error);
     toast.add({ title: t('common.error'), description: t('contacts.updateError'), color: 'red' });
@@ -530,7 +530,7 @@ async function handleClientCreated() {
   toast.add({
     title: t('common.success'),
     description: t('contacts.clientCreated'),
-    color: 'green',
+    color: 'emerald',
   });
 }
 
@@ -591,7 +591,7 @@ async function handleRefreshFromRemote() {
             :key="type"
             class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
             :class="clientTypeFilter === type
-              ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+              ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
               : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
             @click="clientTypeFilter = type as any"
           >

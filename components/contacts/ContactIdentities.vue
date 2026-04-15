@@ -179,7 +179,7 @@ function getIdentityTypeLabel(type: string): string {
                 <button
                   v-if="isRelatedClientIdentity(identity) && hasRelatedClientTarget(identity)"
                   type="button"
-                  :class="['text-sm text-left text-blue-600 dark:text-blue-400 hover:underline truncate', identity.isPrimary ? 'font-bold' : 'font-medium']"
+                  :class="['text-sm text-left text-emerald-600 dark:text-emerald-400 hover:underline truncate', identity.isPrimary ? 'font-bold' : 'font-medium']"
                   @click="() => emit('navigateRelatedClient', identity)"
                 >
                   {{ getDisplayValue(identity) }}
@@ -227,7 +227,7 @@ function getIdentityTypeLabel(type: string): string {
                 v-else-if="identity.type === 'whatsapp'"
                 icon="i-heroicons-chat-bubble-left-right"
                 size="xs"
-                color="green"
+                color="emerald"
                 variant="soft"
                 :title="t('contacts.openWhatsApp') || 'Открыть WhatsApp'"
                 class="h-8 w-8 p-0 justify-center"
@@ -270,7 +270,7 @@ function getIdentityTypeLabel(type: string): string {
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-phone"
-                class="w-4 h-4 text-blue-600 dark:text-blue-400"
+                class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
               />
               <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('contacts.phones') }}</label>
             </div>

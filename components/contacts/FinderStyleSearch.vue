@@ -225,7 +225,7 @@ onMounted(() => {
   <div class="relative w-full">
     <!-- Search input container (Finder-style) -->
     <div 
-      class="flex items-center gap-1.5 flex-wrap px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 dark:focus-within:ring-blue-400 focus-within:border-transparent transition-all min-h-[40px]"
+      class="flex items-center gap-1.5 flex-wrap px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg focus-within:ring-2 focus-within:ring-emerald-500 dark:focus-within:ring-emerald-400 focus-within:border-transparent transition-all min-h-[40px]"
       @click="inputRef?.focus()"
     >
       <!-- Search icon -->
@@ -313,7 +313,7 @@ onMounted(() => {
             :class="[
               'inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all cursor-pointer',
               index === highlightedIndex
-                ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700 shadow-sm'
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-700 shadow-sm'
                 : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
             ]"
             @click="selectTag(tag)"

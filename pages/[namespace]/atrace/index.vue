@@ -455,7 +455,7 @@ const visiblePosts = computed(() => posts.value);
 
 function formatRouteStatus(status?: string | null): { label: string; color: string } {
     const normalized = String(status || '').toLowerCase();
-    if (normalized === 'completed') return { label: t('app.route.status.ok') || 'OK', color: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-100' };
+    if (normalized === 'completed') return { label: t('app.route.status.ok') || 'OK', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-100' };
     if (normalized === 'partial') return { label: t('app.route.status.partial') || 'Partial', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-100' };
     if (normalized === 'violated') return { label: t('app.route.status.violation') || 'Violation', color: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-100' };
     return { label: t('app.route.status.pending') || 'Pending', color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100' };
@@ -1137,7 +1137,7 @@ onBeforeUnmount(() => {
         <button
           class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
           :class="activeTab === 'attendance'
-            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
             : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
           @click="activeTab = 'attendance'"
         >
@@ -1148,7 +1148,7 @@ onBeforeUnmount(() => {
           :key="r.id"
           class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
           :class="activeTab === `route:${r.id}`
-            ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-900/60'
+            ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
             : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
           @click="activeTab = `route:${r.id}`"
         >
@@ -1157,7 +1157,7 @@ onBeforeUnmount(() => {
         <UButton
           icon="lucide:plus"
           size="xs"
-          color="primary"
+          color="emerald"
           variant="soft"
           class="flex-shrink-0"
           @click="openCreateRouteModal"
@@ -1185,10 +1185,10 @@ onBeforeUnmount(() => {
           <!-- Header -->
           <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
             <div class="flex items-start gap-3">
-              <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                 <UIcon
                   name="i-heroicons-map"
-                  class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                  class="w-6 h-6 text-emerald-600 dark:text-emerald-400"
                 />
               </div>
               <div class="flex-1">
@@ -1197,7 +1197,7 @@ onBeforeUnmount(() => {
                     {{ t('app.route.label') || 'Маршрут' }}
                   </div>
                   <button 
-                    class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/50 transition-colors"
+                    class="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 transition-colors"
                     :title="t('app.route.concept.title') || 'Как работают маршруты'"
                     @click="showRouteConceptInfo = !showRouteConceptInfo"
                   >
@@ -1234,19 +1234,19 @@ onBeforeUnmount(() => {
               v-if="showRouteConceptInfo"
               class="overflow-hidden"
             >
-              <div class="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+              <div class="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-4">
                 <div class="flex items-start gap-3">
                   <div class="flex-shrink-0">
                     <UIcon
                       name="i-heroicons-information-circle"
-                      class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                      class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                     />
                   </div>
                   <div class="flex-1">
-                    <h4 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                    <h4 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100 mb-2">
                       {{ t('app.route.concept.title') || 'Как работают маршруты' }}
                     </h4>
-                    <div class="text-sm text-blue-800 dark:text-blue-200 space-y-2">
+                    <div class="text-sm text-emerald-800 dark:text-emerald-200 space-y-2">
                       <p>{{ t('app.route.concept.description') || 'Маршрут — это список постов в заданном порядке. Сотрудник отмечается на постах, а система связывает эти отметки с маршрутом.' }}</p>
                       <p>{{ t('app.route.concept.dataCollection') || 'Статистика берется из отметок на постах (records): по каждой дате строится отдельное прохождение маршрута.' }}</p>
                     </div>
@@ -1290,10 +1290,10 @@ onBeforeUnmount(() => {
               <div class="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
                 <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
                   <div class="flex items-start gap-2">
-                    <div class="w-5 h-5 rounded bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                    <div class="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                       <UIcon
                         name="i-heroicons-arrow-path"
-                        class="w-3 h-3 text-blue-600 dark:text-blue-400"
+                        class="w-3 h-3 text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
                     <div>
@@ -1301,10 +1301,10 @@ onBeforeUnmount(() => {
                     </div>
                   </div>
                   <div class="flex items-start gap-2">
-                    <div class="w-5 h-5 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                    <div class="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                       <UIcon
                         name="i-heroicons-check-circle"
-                        class="w-3 h-3 text-green-600 dark:text-green-400"
+                        class="w-3 h-3 text-emerald-600 dark:text-emerald-400"
                       />
                     </div>
                     <div>
@@ -1346,10 +1346,10 @@ onBeforeUnmount(() => {
             <!-- Total passes -->
             <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                   <UIcon
                     name="i-heroicons-arrow-path"
-                    class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                    class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
                 <div>
@@ -1366,10 +1366,10 @@ onBeforeUnmount(() => {
             <!-- Completed -->
             <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
                   <UIcon
                     name="i-heroicons-check-circle"
-                    class="w-5 h-5 text-green-600 dark:text-green-400"
+                    class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                   />
                 </div>
                 <div>
@@ -1434,7 +1434,7 @@ onBeforeUnmount(() => {
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                 <UIcon
                   name="i-heroicons-users"
-                  class="w-5 h-5 text-blue-600 dark:text-blue-400"
+                  class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                 />
                 {{ t('app.route.employees') || 'Сотрудники' }}
               </h3>
@@ -1470,7 +1470,7 @@ onBeforeUnmount(() => {
           class="flex items-center justify-center py-6"
         >
           <div class="flex flex-col items-center gap-2">
-            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600" />
+            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600" />
             <p class="text-xs text-gray-500">
               {{ t('app.loading') || 'Loading...' }}
             </p>
@@ -1510,7 +1510,7 @@ onBeforeUnmount(() => {
             <div class="p-4">
               <!-- User header -->
               <div class="flex items-center gap-3 mb-4">
-                <div class="w-12 h-12 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 text-base font-semibold flex-shrink-0">
+                <div class="w-12 h-12 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-base font-semibold flex-shrink-0">
                   {{ row.username.substring(0, 2).toUpperCase() }}
                 </div>
                 <div class="flex-1 min-w-0">
@@ -1553,10 +1553,10 @@ onBeforeUnmount(() => {
               <div class="grid grid-cols-4 gap-2">
                 <!-- Completed -->
                 <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
-                  <div class="w-8 h-8 mx-auto rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-1.5">
+                  <div class="w-8 h-8 mx-auto rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-1.5">
                     <UIcon
                       name="i-heroicons-check-circle"
-                      class="w-4 h-4 text-green-600 dark:text-green-400"
+                      class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
                     />
                   </div>
                   <div class="text-lg font-bold text-gray-900 dark:text-white">
@@ -1672,7 +1672,7 @@ onBeforeUnmount(() => {
           <button
             v-if="!isRouteTab"
             data-tour="create-post-btn"
-            class="bg-gradient-to-r from-blue-400 to-blue-600 dark:from-blue-900 dark:to-blue-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-blue-500 hover:to-blue-700 dark:hover:from-blue-800 dark:hover:to-blue-600 transition-all duration-200 flex-shrink-0"
+            class="bg-gradient-to-r from-emerald-400 to-emerald-600 dark:from-emerald-900 dark:to-emerald-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-emerald-500 hover:to-emerald-700 dark:hover:from-emerald-800 dark:hover:to-emerald-600 transition-all duration-200 flex-shrink-0"
             @click="isCreateOpen = true"
           >
             {{ t('app.atraceAddLocation') }}
@@ -1769,7 +1769,7 @@ onBeforeUnmount(() => {
         <div class="mb-3 flex flex-col items-center">
           <UIcon
             name="i-heroicons-map-pin"
-            class="w-12 h-12 text-blue-400 dark:text-blue-300 mb-2"
+            class="w-12 h-12 text-emerald-400 dark:text-emerald-300 mb-2"
           />
           <h2 class="text-xl font-bold text-center mb-1 text-gray-900 dark:text-white">
             {{ t('app.noPostsTitle') || 'No locations yet' }}

@@ -33,7 +33,7 @@ const clientType = computed(() => {
 const statusColor = computed(() => {
   switch (props.client.client.status) {
     case 'ACTIVE':
-      return 'green';
+      return 'emerald';
     case 'BLOCKED':
       return 'red';
     default:
@@ -47,7 +47,7 @@ const statusColor = computed(() => {
     class="bg-white dark:bg-gray-900 shadow-lg p-4 rounded-xl w-60 min-h-[120px] cursor-pointer transition-all duration-200 flex-shrink-0 border-2"
     :class="
       selected
-        ? 'border-blue-500 dark:border-blue-400 ring-2 ring-blue-200 dark:ring-blue-900/50'
+        ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900/50'
         : 'border-transparent hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-xl'
     "
     @click="emit('select', client)"

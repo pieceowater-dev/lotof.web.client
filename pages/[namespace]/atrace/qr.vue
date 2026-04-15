@@ -169,9 +169,9 @@ onMounted(() => {
 
       <div class="py-8">
         <div class="flex flex-col items-center text-center gap-4">
-          <div class="h-16 w-16 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+          <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
             <svg
-              class="h-10 w-10 text-blue-600 animate-spin"
+              class="h-10 w-10 text-emerald-600 animate-spin"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"

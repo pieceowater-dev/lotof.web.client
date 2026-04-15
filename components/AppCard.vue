@@ -17,7 +17,7 @@
       </div>
       <UButton
         :disabled="!props.action"
-        :color="props.action ? 'primary' : 'gray'"
+        :color="props.action ? (props.installed ? 'emerald' : 'primary') : 'gray'"
         variant="outline"
         :class="['mt-auto w-fit']"
         :label="props.installed ? t('app.open') : (props.canAdd ? t('app.getApp') : t('app.comingSoon'))"
@@ -26,7 +26,12 @@
     </div>
     <UIcon
       :name="props.icon"
-      class="w-16 h-16 text-primary dark:text-primary-light flex-shrink-0"
+      :class="[
+        'w-16 h-16 flex-shrink-0',
+        props.installed
+          ? 'text-emerald-600 dark:text-emerald-400'
+          : 'text-primary dark:text-primary-light'
+      ]"
     />
   </div>
 </template>

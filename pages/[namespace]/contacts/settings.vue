@@ -190,7 +190,7 @@ function normalizeRole(raw?: string | null): StaticAccessRole {
 function roleTone(role: StaticAccessRole): string {
   if (role === 'OWNER') return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300';
   if (role === 'ADMIN') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300';
-  if (role === 'OPERATOR') return 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300';
+  if (role === 'OPERATOR') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300';
   return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 }
 
@@ -448,7 +448,7 @@ async function handleCreateDynamicField() {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.create') || 'Created',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (e) {
     logError('Failed to create dynamic field:', e);
@@ -493,7 +493,7 @@ async function handleEditDynamicField() {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.save') || 'Saved',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (e) {
     logError('Failed to update dynamic field:', e);
@@ -565,7 +565,7 @@ async function confirmDeleteDynamicField() {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.delete') || 'Deleted',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (e) {
     logError('Failed to delete dynamic field:', e);
@@ -588,7 +588,7 @@ async function handleRestoreDynamicField(id: string) {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.restore') || 'Restored',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (e) {
     logError('Failed to restore dynamic field:', e);
@@ -775,7 +775,7 @@ const handleUpdateStampCard = async () => {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.save') || 'Saved',
-      color: 'green',
+      color: 'emerald',
     });
     closeEditModal();
     await loadLoyaltyData(contactsToken.value);
@@ -805,7 +805,7 @@ const handleDeleteStampCard = async (id: string) => {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.delete') || 'Deleted',
-      color: 'green',
+      color: 'emerald',
     });
     await loadLoyaltyData(contactsToken.value);
   } finally {
@@ -891,7 +891,7 @@ const handleCreateStampCard = async () => {
     toast.add({ 
       title: t('common.success') || 'Success',
       description: t('common.create') || 'Created',
-      color: 'green' 
+      color: 'emerald' 
     });
     closeCreateModal();
 
@@ -1107,7 +1107,7 @@ async function assignStaticRole(memberId: string, role: StaticAccessRole) {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('common.saved') || 'Saved',
-      color: 'green',
+      color: 'emerald',
     });
   } finally {
     roleSavingMemberId.value = null;
@@ -1244,7 +1244,7 @@ onMounted(async () => {
         <!-- Current Plan -->
         <div
           v-if="planLimits !== null && !planLimitsLoading"
-          class="rounded-lg border border-blue-200 dark:border-gray-700 bg-blue-50/50 dark:bg-gray-900/40 p-4"
+          class="rounded-lg border border-emerald-200 dark:border-gray-700 bg-emerald-50/50 dark:bg-gray-900/40 p-4"
         >
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
@@ -1256,15 +1256,15 @@ onMounted(async () => {
               </p>
             </div>
             <div class="flex flex-wrap gap-2 text-sm">
-              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
                 {{ planLimitLabel('max_clients') }}:
                 <strong>{{ planLimits.max_clients ?? '∞' }}</strong>
               </span>
-              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
                 {{ planLimitLabel('max_custom_fields') }}:
                 <strong>{{ planLimits.max_custom_fields ?? '∞' }}</strong>
               </span>
-              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-blue-100 dark:border-gray-700">
+              <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
                 {{ planLimitLabel('max_loyalty_programs') }}:
                 <strong>{{ planLimits.max_loyalty_programs ?? '∞' }}</strong>
               </span>
@@ -1290,7 +1290,7 @@ onMounted(async () => {
               <UButton
                 icon="lucide:plus"
                 size="sm"
-                color="primary"
+                color="emerald"
                 variant="soft"
                 :disabled="stampCardsLoading"
                 class="flex-shrink-0"
@@ -1353,7 +1353,7 @@ onMounted(async () => {
                     <span 
                       :class="[
                         'inline-flex items-center px-2 py-1 rounded text-xs font-medium',
-                        card.status === 'ACTIVE' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' :
+                        card.status === 'ACTIVE' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
                         card.status === 'INACTIVE' ? 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300' :
                         'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                       ]"
@@ -1425,7 +1425,7 @@ onMounted(async () => {
                 <UButton
                   icon="lucide:upload"
                   size="sm"
-                  color="primary"
+                  color="emerald"
                   variant="soft"
                   @click="showImportModal = true"
                 >
@@ -1438,7 +1438,7 @@ onMounted(async () => {
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <BonusPinManager 
                 :token="contactsToken || ''"
-                @success="(msg) => toast.add({ title: msg, color: 'green' })"
+                @success="(msg) => toast.add({ title: msg, color: 'emerald' })"
                 @error="(msg) => toast.add({ title: msg, color: 'red' })"
               />
             </div>
@@ -1460,7 +1460,7 @@ onMounted(async () => {
               <UButton
                 icon="lucide:plus"
                 size="sm"
-                color="primary"
+                color="emerald"
                 variant="soft"
                 :disabled="dynamicFieldsLoading"
                 @click="openCreateDynamicFieldModal"
@@ -1651,11 +1651,11 @@ onMounted(async () => {
                   Расширенные полномочия: больше прав, чем у оператора.
                 </p>
               </div>
-              <div class="rounded-lg border border-blue-200 dark:border-blue-900/40 bg-blue-50/70 dark:bg-blue-900/10 p-3">
-                <div class="text-sm font-semibold text-blue-700 dark:text-blue-300">
+              <div class="rounded-lg border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50/70 dark:bg-emerald-900/10 p-3">
+                <div class="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
                   Оператор
                 </div>
-                <p class="text-xs text-blue-600/80 dark:text-blue-200/80 mt-1">
+                <p class="text-xs text-emerald-600/80 dark:text-emerald-200/80 mt-1">
                   Операционная работа с клиентами и кампаниями.
                 </p>
               </div>
@@ -2154,7 +2154,7 @@ onMounted(async () => {
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center">
+              <div class="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
                 <UIcon
                   name="lucide:ticket"
                   class="w-5 h-5"

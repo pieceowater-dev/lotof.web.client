@@ -388,10 +388,10 @@ function getAdditionalInfo(client: ClientRow): string {
   return '—';
 }
 
-function getStatusColor(status: string): 'green' | 'red' | 'gray' {
+function getStatusColor(status: string): 'emerald' | 'red' | 'gray' {
   switch (status) {
     case 'ACTIVE':
-      return 'green';
+      return 'emerald';
     case 'BLOCKED':
       return 'red';
     case 'ARCHIVED':
@@ -413,7 +413,7 @@ function getStatusLabel(status: string): string {
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case 'ACTIVE':
-      return 'px-2 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-700 border-green-200 dark:bg-green-900/40 dark:text-green-100 dark:border-green-900/60';
+      return 'px-2 py-1 rounded-full text-xs font-medium border bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60';
     case 'BLOCKED':
       return 'px-2 py-1 rounded-full text-xs font-medium border bg-red-100 text-red-700 border-red-200 dark:bg-red-900/40 dark:text-red-100 dark:border-red-900/60';
     case 'ARCHIVED':
@@ -494,7 +494,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               <!-- Resize handle -->
               <div
                 v-if="index < columns.length - 1"
-                class="absolute top-0 -right-[1.5px] w-[3px] h-full cursor-col-resize bg-gray-400 dark:bg-gray-500 hover:bg-blue-500 active:bg-blue-600 transition-colors z-20"
+                class="absolute top-0 -right-[1.5px] w-[3px] h-full cursor-col-resize bg-gray-400 dark:bg-gray-500 hover:bg-emerald-500 active:bg-emerald-600 transition-colors z-20"
                 :title="t('contacts.resizeColumns') || 'Drag to resize'"
                 @mousedown="startResize(index, $event)"
                 @click.stop
@@ -643,7 +643,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               >
                 <NuxtLink
                   :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
-                  class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
+                  class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline truncate block"
                   :title="getClientName(client)"
                 >
                   {{ getClientName(client) }}
@@ -772,7 +772,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 <button
                   v-for="tag in getClientTags(client)"
                   :key="tag.id"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-700/50 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer max-w-[110px]"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer max-w-[110px]"
                   :title="`Filter by: ${tag.name}`"
                   @click.stop="addTagToFilter(tag.id, tag.name)"
                 >
@@ -782,7 +782,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 <!-- Add tag button: no tags → text pill; has tags → icon on hover -->
                 <button
                   v-if="getClientTags(client).length === 0"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors"
                   title="Add tag"
                   @click.stop="openTagsModal(client.client.id)"
                 >
@@ -794,7 +794,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 </button>
                 <button
                   v-else
-                  class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-blue-400 hover:text-blue-500 dark:hover:border-blue-500 dark:hover:text-blue-400 transition-colors opacity-0 group-hover/tags:opacity-100"
+                  class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors opacity-0 group-hover/tags:opacity-100"
                   title="Add tag"
                   @click.stop="openTagsModal(client.client.id)"
                 >

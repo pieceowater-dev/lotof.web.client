@@ -129,7 +129,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
     >
       <UIcon
         name="i-heroicons-arrow-path"
-        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+        class="w-6 h-6 animate-spin text-emerald-400 dark:text-emerald-300"
       />
       <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</span>
     </div>
@@ -195,7 +195,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
               <td class="px-3 py-2 text-center">
                 <span 
                   v-if="record.attended"
-                  class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                  class="inline-flex items-center px-2 py-1 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100"
                 >
                   <UIcon
                     name="i-heroicons-check-circle"
@@ -205,7 +205,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                 </span>
                 <span 
                   v-else-if="record.legitimate"
-                  class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
+                  class="inline-flex items-center px-2 py-1 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100"
                 >
                   <UIcon
                     name="i-heroicons-information-circle"

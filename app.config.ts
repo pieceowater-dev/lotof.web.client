@@ -14,6 +14,7 @@ export default defineAppConfig({
         position: 'top-0 bottom-[unset]'
       },
       primary: 'blue',
+      secondary: 'emerald',
       gray: 'neutral' // Changed from 'cool' to 'neutral' for less blue tint
     }
   })

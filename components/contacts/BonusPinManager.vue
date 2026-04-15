@@ -173,17 +173,17 @@ defineExpose({
     </div>
 
     <!-- Info Box -->
-    <div class="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+    <div class="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
       <div class="flex items-start gap-3">
         <UIcon
           name="lucide:info"
-          class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+          class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5"
         />
-        <div class="text-sm text-blue-800 dark:text-blue-200">
+        <div class="text-sm text-emerald-800 dark:text-emerald-200">
           <p class="font-medium mb-1">
             {{ t('contacts.loyalty.aboutBonusPin') }}
           </p>
-          <ul class="list-disc list-inside space-y-1 text-blue-700 dark:text-blue-300">
+          <ul class="list-disc list-inside space-y-1 text-emerald-700 dark:text-emerald-300">
             <li>{{ t('contacts.loyalty.bonusPinInfo1') }}</li>
             <li>{{ t('contacts.loyalty.bonusPinInfo2') }}</li>
             <li>{{ t('contacts.loyalty.bonusPinInfo3') }}</li>
@@ -229,7 +229,7 @@ defineExpose({
                 :type="showOldPin ? 'text' : 'password'"
                 maxlength="4"
                 placeholder="••••"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="savePin"
               >
@@ -257,7 +257,7 @@ defineExpose({
                 :type="showNewPin ? 'text' : 'password'"
                 maxlength="4"
                 placeholder="••••"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="savePin"
               >
@@ -288,7 +288,7 @@ defineExpose({
                 :type="showConfirmPin ? 'text' : 'password'"
                 maxlength="4"
                 placeholder="••••"
-                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
                 :disabled="isSubmitting"
                 @keydown.enter.prevent="savePin"
               >

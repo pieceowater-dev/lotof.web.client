@@ -6,7 +6,6 @@ import { useRouter } from 'vue-router';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { hubUpdateMe } from '@/api/hub/updateMe';
 import IntroSection from '@/components/IntroSection.vue';
-import WelcomeSection from '@/components/WelcomeSection.vue';
 import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
@@ -14,7 +13,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 
 // Composables
 const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace } = useNamespace();
+const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
 
 const router = useRouter();
 const toast = useToast();
@@ -248,10 +247,41 @@ function handleLogout() {
   logout();
   isModalOpen.value = false;
 }
+
+const dashboardApps = computed(() => [
+  ...activeApps.value,
+  ...possibleApps.value,
+  ...comingSoonApps.value,
+]);
+
+const languageOptions = [
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+  { value: 'ru', label: 'Русский', flag: '🇷🇺' },
+] as const;
+
+const currentLanguage = computed(() => {
+  const current = String(locale.value || 'en');
+  return languageOptions.find((item) => item.value === current) || languageOptions[0];
+});
+
+function setLanguage(lang: 'en' | 'ru') {
+  locale.value = lang;
+}
+
+function handleDashboardApp(app: AppConfig) {
+  if (appInstalled[app.bundle]) {
+    handleAppClick(app.address);
+    return;
+  }
+  if (app.canAdd) {
+    handleGetApp(app);
+  }
+}
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto pb-safe-or-4">
+  <div class="min-h-screen flex flex-col">
+    <div class="pb-safe-or-4">
     <ClientOnly>
       <template #fallback>
         <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
@@ -268,19 +298,232 @@ function handleLogout() {
         v-if="!isLoggedIn"
         :on-action="login"
       />
-      <WelcomeSection
-        v-else
-        :greeting="greeting"
-        :username="username"
-        :current-namespace="selectedNS"
-        :all-namespaces="allNamespaces"
-        @edit-profile="isModalOpen = true"
-        @edit-people="handleEditPeople"
-        @switch-namespace="handleSwitchNamespace"
-      />
     </ClientOnly>
 
-    <div class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
+    <div
+      v-if="isLoggedIn"
+      class="max-w-7xl mx-auto mt-4 md:mt-6 mb-16 px-3 md:px-4"
+    >
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
+        <div class="lg:col-span-4 rounded-3xl p-6 md:p-7 bg-gradient-to-br from-blue-50 to-blue-100/80 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
+          <div class="flex items-start justify-between gap-3">
+            <div class="w-20 h-20 rounded-full bg-white/80 dark:bg-gray-700 flex items-center justify-center text-3xl font-semibold text-gray-900 dark:text-gray-100 shadow-sm">
+              {{ (username || '?').charAt(0).toUpperCase() }}
+            </div>
+            <UButton
+              icon="lucide:door-open"
+              color="gray"
+              variant="ghost"
+              size="xs"
+              class="mt-1"
+              :aria-label="t('app.logout') || 'Logout'"
+              @click="handleLogout"
+            />
+          </div>
+          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            {{ greeting }}
+          </p>
+          <h2 class="mt-1 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            {{ username }}
+          </h2>
+          <p class="mt-2 text-lg text-gray-600 dark:text-gray-300 break-all">
+            {{ email }}
+          </p>
+
+          <div class="mt-6 flex flex-wrap gap-2">
+            <UButton
+              icon="i-lucide-user-round-check"
+              color="emerald"
+              variant="solid"
+              size="sm"
+              @click="handleEditPeople"
+            >
+              {{ t('app.myPeople') }}
+            </UButton>
+            <UButton
+              variant="soft"
+              size="sm"
+              @click="isModalOpen = true"
+            >
+              {{ t('app.configureProfile') }}
+            </UButton>
+          </div>
+        </div>
+
+        <div class="lg:col-span-8 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
+          <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 md:gap-4">
+            <button
+              v-for="app in dashboardApps"
+              :key="app.bundle"
+              :disabled="!appInstalled[app.bundle] && !app.canAdd"
+              class="group rounded-2xl p-3 text-center transition-all disabled:opacity-45 disabled:cursor-not-allowed"
+              :class="appInstalled[app.bundle]
+                ? 'bg-white/85 dark:bg-gray-800 hover:shadow-md border border-emerald-200 dark:border-emerald-800'
+                : 'bg-white/75 dark:bg-gray-800 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800'"
+              @click="handleDashboardApp(app)"
+            >
+              <div
+                class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center"
+                :class="appInstalled[app.bundle]
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'"
+              >
+                <UIcon
+                  :name="app.icon"
+                  class="w-8 h-8"
+                />
+              </div>
+              <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">
+                {{ t(app.titleKey) }}
+              </p>
+              <p class="mt-1 text-[11px] leading-4"
+                 :class="appInstalled[app.bundle]
+                   ? 'text-emerald-700 dark:text-emerald-300'
+                   : (app.canAdd ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500')"
+              >
+                {{ appInstalled[app.bundle] ? (t('app.open') || 'Open') : (app.canAdd ? (t('app.getApp') || 'Get') : (t('app.comingSoon') || 'Soon')) }}
+              </p>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
+            <UIcon
+              name="lucide:building-2"
+              class="w-5 h-5"
+            />
+          </div>
+          <div>
+            <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {{ t('app.currentNamespace') || 'Namespace' }}
+            </h3>
+            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+              {{ t('app.selectNamespace') || 'Select active workspace' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <button
+            v-for="slug in allNamespaces"
+            :key="slug"
+            type="button"
+            class="text-left rounded-2xl p-4 border transition-all duration-200"
+            :class="selectedNS === slug
+              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 shadow-sm'
+              : 'bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700'"
+            @click="handleSwitchNamespace(slug)"
+          >
+            <div class="flex items-start justify-between gap-2">
+              <div class="min-w-0">
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+                  {{ titleBySlug(slug) || slug }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                  {{ slug }}
+                </p>
+              </div>
+              <UIcon
+                v-if="selectedNS === slug"
+                name="lucide:check-circle-2"
+                class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0"
+              />
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
+            <UIcon
+              name="lucide:sliders-horizontal"
+              class="w-5 h-5"
+            />
+          </div>
+          <div>
+            <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {{ t('common.settings.title') || 'Settings' }}
+            </h3>
+            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+              {{ t('app.configureProfile') || 'Configure profile' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          <button
+            type="button"
+            class="rounded-2xl p-5 border text-left transition-all duration-200"
+            :class="isDarkMode
+              ? 'bg-indigo-950/20 border-indigo-300/40 dark:bg-indigo-900/30 dark:border-indigo-700/60'
+              : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/50'"
+            @click="isDarkMode = !isDarkMode"
+          >
+            <div class="flex items-start justify-between gap-3">
+              <div>
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
+                  {{ t('app.theme') || 'Theme' }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
+                </p>
+              </div>
+              <div
+                class="w-14 h-14 rounded-2xl flex items-center justify-center"
+                :class="isDarkMode
+                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'"
+              >
+                <UIcon
+                  :name="isDarkMode ? 'lucide:moon-star' : 'lucide:sun-medium'"
+                  class="w-8 h-8"
+                />
+              </div>
+            </div>
+          </button>
+
+          <div class="rounded-2xl p-5 border bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700">
+            <div class="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
+                  {{ t('app.language') }}
+                </p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {{ currentLanguage.label }}
+                </p>
+              </div>
+              <div class="text-5xl leading-none select-none">
+                {{ currentLanguage.flag }}
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                v-for="lang in languageOptions"
+                :key="lang.value"
+                type="button"
+                class="h-11 rounded-xl border text-sm font-medium transition-all"
+                :class="String(locale) === lang.value
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-300'
+                  : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700'"
+                @click="setLanguage(lang.value)"
+              >
+                <span class="mr-1.5">{{ lang.flag }}</span>{{ lang.label }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-if="!isLoggedIn"
+      class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10"
+    >
       <div v-if="activeApps.length">
         <h3 class="text-lg font-medium mb-4">
           {{ t('app.installedHead') }}
@@ -327,7 +570,10 @@ function handleLogout() {
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
+    <div
+      v-if="!isLoggedIn"
+      class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300"
+    >
       <h2 class="text-xl font-semibold flex items-center mb-4">
         <UIcon
           name="lucide:briefcase"
@@ -378,7 +624,6 @@ function handleLogout() {
       :header="t('app.profileEditing')"
       :disable-autofocus="true"
       :footer-buttons="[
-        { label: t('app.logout'), variant: 'link', onClick: () => { handleLogout(); } },
         { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
         { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
       ]"
@@ -395,26 +640,11 @@ function handleLogout() {
             type="email"
           />
         </UFormGroup>
-      
-        <UFormGroup :label="t('app.language')">
-          <USelect
-            v-model="locale"
-            :options="[{label:'English',value:'en'},{label:'Русский',value:'ru'}]"
-          />
-        </UFormGroup>
-      
-        <UFormGroup :label="t('app.theme') || 'Theme'">
-          <div class="flex items-center gap-3">
-            <UToggle v-model="isDarkMode" />
-            <span class="text-sm text-gray-700 dark:text-gray-200">
-              {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
-            </span>
-          </div>
-        </UFormGroup>
       </div>
     </Modal>
+    </div>
 
-    <div class="m-4">
+    <div class="m-4 mt-auto">
       <AppFooter />
     </div>
   </div>

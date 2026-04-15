@@ -363,7 +363,7 @@ async function saveDynamicFields() {
       applyDynamicFieldValueToDraft(field, result.setDynamicFieldValue);
     }
 
-    toast.add({ title: t('common.success') || 'Success', description: t('common.save') || 'Saved', color: 'green' });
+    toast.add({ title: t('common.success') || 'Success', description: t('common.save') || 'Saved', color: 'emerald' });
   } catch (error) {
     logError('Failed to save dynamic field value:', error);
     toast.add({ title: t('common.error') || 'Error', description: t('contacts.updateError') || 'Update failed', color: 'red' });
@@ -980,7 +980,7 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
     toast.add({
       title: t('common.success'),
       description: t('contacts.statusUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     logError('Failed to update client status:', error);
@@ -1009,7 +1009,7 @@ async function copyToClipboard(text: string) {
     toast.add({
       title: t('contacts.copied'),
       icon: 'i-heroicons-clipboard-document-check',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (err) {
     logError('Failed to copy to clipboard', err);
@@ -1098,7 +1098,7 @@ async function savePersonalInfo() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.clientDataUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
     return;
   }
@@ -1160,7 +1160,7 @@ async function savePersonalInfo() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.clientDataUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     logError('Failed to save personal info:', error);
@@ -1316,7 +1316,7 @@ async function saveIdentities() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.contactDataUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
     return;
   }
@@ -1368,7 +1368,7 @@ async function saveIdentities() {
     toast.add({
       title: t('common.success'),
       description: t('contacts.contactDataUpdated'),
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     logError('Failed to save identities:', error);

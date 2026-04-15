@@ -530,7 +530,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           <span>{{ t('app.violationDay') }}</span>
         </div>
         <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
+          <div class="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700" />
           <span>{{ t('app.legitimateDay') }}</span>
         </div>
         <div class="flex items-center gap-1 whitespace-nowrap">
@@ -618,7 +618,7 @@ function formatNumber(val: number, fractionDigits = 0) {
       >
         <UIcon
           name="i-heroicons-arrow-path"
-          class="w-8 h-8 mb-1.5 animate-spin text-blue-400 dark:text-blue-300"
+          class="w-8 h-8 mb-1.5 animate-spin text-emerald-400 dark:text-emerald-300"
         />
         <div class="text-sm">
           {{ t('app.loading') }}
@@ -645,7 +645,7 @@ function formatNumber(val: number, fractionDigits = 0) {
       >
         <UIcon
           name="i-heroicons-information-circle"
-          class="w-8 h-8 mb-1.5 text-blue-400 dark:text-blue-300"
+          class="w-8 h-8 mb-1.5 text-emerald-400 dark:text-emerald-300"
         />
         <div class="text-sm">
           {{ t('app.noData') }}
@@ -721,7 +721,7 @@ function formatNumber(val: number, fractionDigits = 0) {
                 {{ user.workDays }}
               </td>
               <td class="px-3 py-2 text-center">
-                <span class="px-1.5 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100 rounded">
+                <span class="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded">
                   {{ user.attendedDays }}
                 </span>
               </td>
@@ -740,7 +740,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               <td class="px-3 py-2 text-center">
                 <span 
                   v-if="user.legitimateAbsences > 0"
-                  class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded"
+                  class="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded"
                 >
                   {{ user.legitimateAbsences }}
                 </span>
@@ -792,7 +792,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             <div class="flex items-center gap-3">
               <UIcon
                 name="i-heroicons-calendar-days"
-                class="w-5 h-5 sm:w-6 sm:h-6 text-blue-500"
+                class="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500"
               />
               <h3 class="text-sm sm:text-base font-semibold leading-6 text-gray-900 dark:text-white">
                 {{ t('app.customRangeTitle') }}
@@ -871,7 +871,7 @@ function formatNumber(val: number, fractionDigits = 0) {
                 <input
                   v-model="customStartDate"
                   type="date"
-                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
+                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isStartInvalid || hasRangeOrderIssue }"
                 >
               </div>
@@ -886,7 +886,7 @@ function formatNumber(val: number, fractionDigits = 0) {
                 <input
                   v-model="customEndDate"
                   type="date"
-                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
+                  class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
                   :class="{ 'border-red-500 focus:ring-red-500': isEndInvalid || hasRangeOrderIssue }"
                 >
               </div>
@@ -948,7 +948,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             <div class="flex items-center gap-3">
               <UIcon
                 name="i-heroicons-calculator"
-                class="w-6 h-6 text-green-500"
+                class="w-6 h-6 text-emerald-500"
               />
               <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
                 {{ t('app.salaryCalculation') }}
@@ -971,7 +971,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             <input
               v-model="salaryInput"
               type="number"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-800 dark:border-gray-700"
+              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700"
               :placeholder="t('app.enterSalary')"
             >
             <p class="text-xs text-gray-500 mt-1">
@@ -1003,13 +1003,13 @@ function formatNumber(val: number, fractionDigits = 0) {
           </div>
 
           <!-- Salary by Days -->
-          <div class="border rounded-lg p-4 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20">
+          <div class="border rounded-lg p-4 dark:border-gray-700 bg-emerald-50 dark:bg-emerald-900/20">
             <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">
               {{ t('app.salaryByDays') }}
             </p>
             <div class="flex items-end gap-2">
               <div>
-                <p class="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                   {{ formatNumber(salaryByDays, 2) }}
                 </p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
@@ -1020,13 +1020,13 @@ function formatNumber(val: number, fractionDigits = 0) {
           </div>
 
           <!-- Salary by Hours -->
-          <div class="border rounded-lg p-4 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
+          <div class="border rounded-lg p-4 dark:border-gray-700 bg-emerald-50 dark:bg-emerald-900/20">
             <p class="text-sm font-medium text-gray-900 dark:text-white mb-3">
               {{ t('app.salaryByHours') }}
             </p>
             <div class="flex items-end gap-2">
               <div>
-                <p class="text-3xl font-bold text-green-600 dark:text-green-400">
+                <p class="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
                   {{ formatNumber(salaryByHours, 2) }}
                 </p>
                 <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
@@ -1085,7 +1085,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             <span class="text-sm">{{ t('app.violationDay') }}</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-4 h-4 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
+            <div class="w-4 h-4 rounded bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700" />
             <span class="text-sm">{{ t('app.legitimateDay') }}</span>
           </div>
           <div class="flex items-center gap-2">

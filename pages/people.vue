@@ -67,7 +67,7 @@ const sendAction = async () => {
       // Minimal actions payload with version and empty operations
       const actions = JSON.stringify({ version: 1, 'pieceowater.atrace': [] });
       await hubCreateInvite(token.value, { namespaceSlug: nsSlug, email, actions });
-      toast.add({ title: t('app.notification'), description: t('app.sendInvite') + ' ' + email, color: 'primary' });
+      toast.add({ title: t('app.notification'), description: t('app.sendInvite') + ' ' + email, color: 'emerald' });
       search.value = '';
       userFound.value = null;
       foundUser.value = null;
@@ -80,7 +80,7 @@ const sendAction = async () => {
   try {
     const { hubCreateFriendship } = await import('@/api/hub/friendships/mutations');
     const created = await hubCreateFriendship(token.value, foundUser.value.id);
-    toast.add({ title: t('app.notification'), description: t('app.sendRequest') + ' ' + foundUser.value.email, color: 'primary' });
+    toast.add({ title: t('app.notification'), description: t('app.sendRequest') + ' ' + foundUser.value.email, color: 'emerald' });
     search.value = '';
     userFound.value = null;
     foundUser.value = null;
@@ -178,7 +178,7 @@ const items = (row: FriendRow) => ([
         if (!token.value) return;
         const { hubAcceptFriendship } = await import('@/api/hub/friendships/mutations');
         await hubAcceptFriendship(token.value, row.id);
-        toast.add({ title: t('app.notification'), description: t('app.accepted'), color: 'primary' });
+        toast.add({ title: t('app.notification'), description: t('app.accepted'), color: 'emerald' });
         load(FriendshipStatus.Accepted);
       }
     }] : []),
@@ -330,7 +330,7 @@ async function addMemberFromFriend(friendUserId: string) {
   try {
     const { hubAddMember } = await import('@/api/hub/members/mutations');
     await hubAddMember(tok, nsId, friendUserId);
-    toast.add({ title: t('app.notification'), description: t('app.added'), color: 'primary' });
+    toast.add({ title: t('app.notification'), description: t('app.added'), color: 'emerald' });
     await loadMembers();
   } catch (e: any) {
     toast.add({ title: t('app.notification'), description: e?.message || 'Error', color: 'red' });
@@ -357,10 +357,10 @@ async function removeMember(userId: string) {
   <div class="p-4 md:p-6 lg:p-8 min-h-screen">
     <!-- Header with Search -->
     <div class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold mb-4">
+      <h1 class="text-2xl md:text-3xl font-bold mb-4 text-emerald-700 dark:text-emerald-300">
         {{ t('app.myPeopleHeading') }}
       </h1>
-      <UCard class="shadow-sm">
+      <UCard class="shadow-sm border border-emerald-100 dark:border-emerald-900/40">
         <div class="flex flex-row gap-3 items-center">
           <UInput 
             v-model="search" 
@@ -373,6 +373,7 @@ async function removeMember(userId: string) {
           <UButton 
             v-if="buttonText" 
             size="md" 
+            color="emerald"
             class="flex-shrink-0" 
             @click="sendAction"
           >
@@ -401,7 +402,7 @@ async function removeMember(userId: string) {
     <!-- Main Content -->
     <div class="flex flex-col gap-6">
       <!-- Friends / Requests section -->
-      <UCard class="shadow-sm">
+      <UCard class="shadow-sm border border-emerald-100 dark:border-emerald-900/40">
         <template #header>
           <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold">
@@ -449,7 +450,7 @@ async function removeMember(userId: string) {
       </UCard>
 
       <!-- Namespace members section -->
-      <UCard class="shadow-sm">
+      <UCard class="shadow-sm border border-emerald-100 dark:border-emerald-900/40">
         <template #header>
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <h2 class="text-lg font-semibold">
@@ -483,7 +484,7 @@ async function removeMember(userId: string) {
               <template #leading>
                 <UIcon
                   name="lucide:user-plus"
-                  class="w-5 h-5"
+                  class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                 />
               </template>
             </USelectMenu>

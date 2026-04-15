@@ -139,7 +139,7 @@ async function subscribePlan(plan: Plan) {
     toast.add({
       title: t('common.success') || 'Success',
       description: t('app.subscribedToPlan', { plan: plan.name }) || `Subscribed to ${plan.name}`,
-      color: 'green'
+      color: 'emerald'
     });
 
     // Add app to namespace (trigger real installation)
@@ -253,7 +253,7 @@ watch([plans, activeSubscription], () => {
             @click="selectedInterval = 'yearly'"
           >
             <span>{{ t('app.yearly') || 'Yearly' }}</span>
-            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
               <UIcon
                 name="i-heroicons-sparkles"
                 class="w-3 h-3 mr-0.5"
@@ -301,7 +301,7 @@ watch([plans, activeSubscription], () => {
             v-if="plan.trialDays > 0"
             class="absolute top-0 right-0"
           >
-            <div class="bg-gradient-to-br from-green-500 to-green-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
               <div class="flex items-center gap-1.5">
                 <UIcon
                   name="i-heroicons-gift"
@@ -439,7 +439,7 @@ watch([plans, activeSubscription], () => {
             <!-- Active Plan Badge -->
             <div
               v-else
-              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-green-500 to-green-600 text-white text-center font-bold shadow-lg"
+              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
             >
               <div class="flex items-center justify-center gap-2">
                 <UIcon

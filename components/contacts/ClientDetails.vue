@@ -26,7 +26,7 @@ const statusColor = computed(() => {
   if (!props.client) return 'gray';
   switch (props.client.client.status) {
     case 'ACTIVE':
-      return 'green';
+      return 'emerald';
     case 'BLOCKED':
       return 'red';
     default:

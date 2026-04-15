@@ -184,7 +184,7 @@ function isEarlyLeave(record: AtraceRecord): boolean {
 function getRecordStyle(record: AtraceRecord): string {
   // Priority: violation day > legitimate day > time-based highlights
   if (isViolationDay(record)) return 'bg-red-50 dark:bg-red-900/20';
-  if (isLegitimateDay(record)) return 'bg-blue-50 dark:bg-blue-900/20';
+  if (isLegitimateDay(record)) return 'bg-emerald-50 dark:bg-emerald-900/20';
   // Check if first/last record of the day for time highlighting
   const date = getRecordDate(record);
   const dayRecords = filteredRecords.value.filter(r => getRecordDate(r) === date);
@@ -279,7 +279,7 @@ watch(itemsPerPage, () => {
     >
       <UIcon
         name="i-heroicons-arrow-path"
-        class="w-6 h-6 animate-spin text-blue-400 dark:text-blue-300"
+        class="w-6 h-6 animate-spin text-emerald-400 dark:text-emerald-300"
       />
       <span class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ t('app.loading') }}</span>
     </div>
@@ -307,7 +307,7 @@ watch(itemsPerPage, () => {
             <span>{{ t('app.violationDay') }}</span>
           </div>
           <div class="flex items-center gap-1">
-            <div class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/40 border border-blue-300 dark:border-blue-700" />
+            <div class="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700" />
             <span>{{ t('app.legitimateDay') }}</span>
           </div>
           <div class="flex items-center gap-1">
@@ -389,7 +389,7 @@ watch(itemsPerPage, () => {
                 <div class="flex flex-row flex-wrap items-center justify-center gap-1">
                   <span
                     v-if="!r.suspicious"
-                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100"
+                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100"
                   >
                     <UIcon
                       name="i-heroicons-check-circle"
@@ -410,7 +410,7 @@ watch(itemsPerPage, () => {
                   </span>
                   <span
                     v-if="r.geoConfirmed === true"
-                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 cursor-help"
+                    class="inline-flex items-center px-2 py-1 rounded text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 cursor-help"
                     :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M })"
                   >
                     <UIcon

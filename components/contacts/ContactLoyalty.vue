@@ -268,7 +268,7 @@ async function submitEarnBonus() {
       description: bonusAction.value === 'spend'
         ? (t('contacts.bonusSpent') || 'Бонусы списаны')
         : (t('contacts.bonusAccrued') || 'Бонусы начислены'),
-      color: 'green',
+      color: 'emerald',
     });
     closeEarnModal();
     emit('bonus-earned');
@@ -406,7 +406,7 @@ async function submitAddStamp(progress: ClientStampProgress) {
     toast.add({
       title: t('common.success') || 'Успешно',
       description: 'Штамп начислен',
-      color: 'green',
+      color: 'emerald',
     });
     closeStampPinModal();
     emit('bonus-earned');
@@ -478,18 +478,18 @@ async function submitStampFromModal() {
         <div class="flex items-center gap-2 mb-3">
           <UIcon
             name="i-heroicons-wallet"
-            class="w-4 h-4 text-blue-600 dark:text-blue-400"
+            class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
           />
           <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
             {{ t('contacts.balance') }}
           </h3>
         </div>
         <div class="grid grid-cols-2 gap-4">
-          <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 rounded-lg p-4">
-            <p class="text-xs text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1">
+          <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-lg p-4">
+            <p class="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
               {{ t('contacts.total') }}
             </p>
-            <p class="text-2xl font-bold text-blue-700 dark:text-blue-300">
+            <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
               {{ bonusBalance.totalBonuses }}
             </p>
           </div>

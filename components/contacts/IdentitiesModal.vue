@@ -77,7 +77,7 @@ async function handleCreateIdentity() {
     toast.add({
       title: t('common.success'),
       description: 'Contact added successfully',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -100,7 +100,7 @@ async function handleDeleteIdentity(id: string) {
     toast.add({
       title: t('common.success'),
       description: 'Contact deleted successfully',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -124,7 +124,7 @@ async function handleVerifyIdentity(id: string) {
     toast.add({
       title: t('common.success'),
       description: 'Contact verified',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -147,7 +147,7 @@ async function handleSetPrimary(id: string) {
     toast.add({
       title: t('common.success'),
       description: 'Primary contact set',
-      color: 'green',
+      color: 'emerald',
     });
   } catch (error) {
     toast.add({
@@ -228,11 +228,11 @@ watch(() => props.isOpen, (newVal) => {
                   {{ identity.type }}
                   <span
                     v-if="identity.isPrimary"
-                    class="ml-2 text-blue-600 dark:text-blue-400"
+                    class="ml-2 text-emerald-600 dark:text-emerald-400"
                   >• Primary</span>
                   <span
                     v-if="identity.verifiedAt"
-                    class="ml-2 text-green-600 dark:text-green-400"
+                    class="ml-2 text-emerald-600 dark:text-emerald-400"
                   >✓ Verified</span>
                 </div>
               </div>
@@ -251,7 +251,7 @@ watch(() => props.isOpen, (newVal) => {
             <UButton
               v-if="!identity.verifiedAt"
               size="xs"
-              color="green"
+              color="emerald"
               variant="ghost"
               icon="lucide:check-circle-2"
               title="Verify identity"

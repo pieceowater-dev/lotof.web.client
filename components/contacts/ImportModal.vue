@@ -217,7 +217,7 @@ async function handleImport() {
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 flex items-center justify-center flex-shrink-0">
+            <div class="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 flex items-center justify-center flex-shrink-0">
               <UIcon
                 name="lucide:file-spreadsheet"
                 class="w-5 h-5"
@@ -273,11 +273,11 @@ async function handleImport() {
 
         <template v-else-if="phase === 'done' && importResult">
           <div class="flex gap-3">
-            <div class="flex-1 rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-3 text-center">
-              <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+            <div class="flex-1 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 p-3 text-center">
+              <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 {{ importResult.imported }}
               </p>
-              <p class="text-xs text-green-700 dark:text-green-300 mt-0.5">
+              <p class="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
                 {{ t('contacts.importModal.imported') || 'Imported' }}
               </p>
             </div>
@@ -366,7 +366,7 @@ async function handleImport() {
               <UIcon
                 :name="hasFile ? 'lucide:file-check-2' : 'lucide:upload-cloud'"
                 class="w-10 h-10"
-                :class="hasFile ? 'text-green-500' : 'text-gray-400'"
+                :class="hasFile ? 'text-emerald-500' : 'text-gray-400'"
               />
               <template v-if="hasFile">
                 <p class="font-medium text-gray-800 dark:text-gray-100">

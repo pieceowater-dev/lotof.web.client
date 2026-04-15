@@ -69,7 +69,7 @@ function formatGender(gender?: boolean | null): string {
       <div class="flex items-center gap-2">
         <UIcon
           name="i-heroicons-information-circle"
-          class="w-5 h-5 text-blue-600 dark:text-blue-400"
+          class="w-5 h-5 text-emerald-600 dark:text-emerald-400"
         />
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
           {{ t('contacts.information') || 'Информация' }}
@@ -113,7 +113,7 @@ function formatGender(gender?: boolean | null): string {
           <div class="flex items-center gap-2 mb-3">
             <UIcon
               name="i-heroicons-user"
-              class="w-4 h-4 text-blue-600 dark:text-blue-400"
+              class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
             />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {{ t('contacts.personalInformation') }}
@@ -167,7 +167,7 @@ function formatGender(gender?: boolean | null): string {
           <div class="flex items-center gap-2 mb-3">
             <UIcon
               name="i-heroicons-building-office-2"
-              class="w-4 h-4 text-green-600 dark:text-green-400"
+              class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
             />
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">
               {{ t('contacts.companyInformation') }}
@@ -240,7 +240,7 @@ function formatGender(gender?: boolean | null): string {
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-user"
-                class="w-4 h-4 text-blue-600"
+                class="w-4 h-4 text-emerald-600"
               />
               <h3 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.personalInformation') }}
@@ -316,7 +316,7 @@ function formatGender(gender?: boolean | null): string {
             <div class="flex items-center gap-2">
               <UIcon
                 name="i-heroicons-building-office-2"
-                class="w-4 h-4 text-green-600 dark:text-green-400"
+                class="w-4 h-4 text-emerald-600 dark:text-emerald-400"
               />
               <h2 class="text-base font-semibold text-gray-900 dark:text-white">
                 {{ t('contacts.companyInformation') }}
