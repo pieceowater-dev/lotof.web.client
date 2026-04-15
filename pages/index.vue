@@ -457,10 +457,7 @@ function handleDashboardApp(app: AppConfig) {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
           <button
             type="button"
-            class="rounded-2xl p-5 border text-left transition-all duration-200"
-            :class="isDarkMode
-              ? 'bg-indigo-950/20 border-indigo-300/40 dark:bg-indigo-900/30 dark:border-indigo-700/60'
-              : 'bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-700/50'"
+            class="rounded-2xl p-5 border bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700 text-left transition-all duration-200 hover:border-blue-200 dark:hover:border-blue-700"
             @click="isDarkMode = !isDarkMode"
           >
             <div class="flex items-start justify-between gap-3">
@@ -473,10 +470,7 @@ function handleDashboardApp(app: AppConfig) {
                 </p>
               </div>
               <div
-                class="w-14 h-14 rounded-2xl flex items-center justify-center"
-                :class="isDarkMode
-                  ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'"
+                class="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
               >
                 <UIcon
                   :name="isDarkMode ? 'lucide:moon-star' : 'lucide:sun-medium'"
@@ -495,9 +489,6 @@ function handleDashboardApp(app: AppConfig) {
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   {{ currentLanguage.label }}
                 </p>
-              </div>
-              <div class="text-5xl leading-none select-none">
-                {{ currentLanguage.flag }}
               </div>
             </div>
 
