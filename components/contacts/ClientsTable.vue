@@ -643,7 +643,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               >
                 <NuxtLink
                   :to="`/${props.nsSlug}/contacts/${client.client.shortId || client.client.id}`"
-                  class="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline truncate block"
+                  class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline truncate block"
                   :title="getClientName(client)"
                 >
                   {{ getClientName(client) }}

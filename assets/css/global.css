@@ -128,3 +128,97 @@ table tbody tr:hover td,
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 }
+
+/* Global accent remap: replace emerald/green utilities with blue->emerald gradient */
+:root {
+  --accent-gradient: linear-gradient(90deg, rgb(37 99 235), rgb(16 185 129));
+  --accent-gradient-soft: linear-gradient(135deg, rgb(239 246 255), rgb(236 253 245));
+}
+
+.dark {
+  --accent-gradient-soft: linear-gradient(135deg, rgb(37 99 235 / 0.25), rgb(16 185 129 / 0.2));
+}
+
+/* Textual emerald classes become gradient text */
+:not(.iconify)[class*="text-emerald-"],
+:not(.iconify)[class*="text-green-"] {
+  background-image: var(--accent-gradient) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+}
+
+/* Iconify icons need transparent background-color + gradient background */
+.iconify[class*="text-emerald-"],
+.iconify[class*="text-green-"] {
+  background-image: var(--accent-gradient) !important;
+  background-color: transparent !important;
+}
+
+/* Fix: iconify icons inside emerald-text elements inherit color:transparent and become invisible */
+:not(.iconify)[class*="text-emerald-"] .iconify,
+:not(.iconify)[class*="text-green-"] .iconify {
+  background-image: var(--accent-gradient) !important;
+  background-color: rgb(37 99 235) !important;
+}
+
+/* Emerald/green backgrounds become soft gradient surfaces */
+[class*="bg-emerald-"],
+[class*="bg-green-"] {
+  background-image: var(--accent-gradient-soft) !important;
+}
+
+/* Emerald/green gradient utilities become blue->emerald gradient */
+[class*="from-emerald-"],
+[class*="to-emerald-"],
+[class*="from-green-"],
+[class*="to-green-"] {
+  --tw-gradient-from: rgb(37 99 235) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(16 185 129) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+/* Emerald/green borders and focus rings become blue-accented */
+[class*="border-emerald-"],
+[class*="border-green-"] {
+  border-color: rgb(59 130 246 / 0.5) !important;
+}
+
+[class*="ring-emerald-"],
+[class*="ring-green-"] {
+  --tw-ring-color: rgb(59 130 246 / 0.55) !important;
+}
+
+/* Tables exception: keep accents plain blue (no gradient) */
+table [class*="text-emerald-"],
+table [class*="text-green-"],
+.u-table [class*="text-emerald-"],
+.u-table [class*="text-green-"] {
+  background-image: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  color: rgb(37 99 235) !important;
+}
+
+table .iconify[class*="text-emerald-"],
+table .iconify[class*="text-green-"],
+.u-table .iconify[class*="text-emerald-"],
+.u-table .iconify[class*="text-green-"] {
+  background-image: none !important;
+  background-color: rgb(37 99 235) !important;
+}
+
+table [class*="bg-emerald-"],
+table [class*="bg-green-"],
+.u-table [class*="bg-emerald-"],
+.u-table [class*="bg-green-"] {
+  background-image: none !important;
+  background-color: rgb(239 246 255) !important;
+}
+
+table [class*="border-emerald-"],
+table [class*="border-green-"],
+.u-table [class*="border-emerald-"],
+.u-table [class*="border-green-"] {
+  border-color: rgb(147 197 253) !important;
+}

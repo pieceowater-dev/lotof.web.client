@@ -331,15 +331,13 @@ function handleDashboardApp(app: AppConfig) {
           </p>
 
           <div class="mt-6 flex flex-wrap gap-2">
-            <UButton
-              icon="i-lucide-user-round-check"
-              color="emerald"
-              variant="solid"
-              size="sm"
+            <button
+              class="px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-emerald-500 text-white font-medium text-sm hover:from-blue-600 hover:to-emerald-600 transition-all flex items-center gap-1.5 shadow-sm hover:shadow-md"
               @click="handleEditPeople"
             >
+              <UIcon name="i-lucide-user-round-check" class="w-4 h-4" />
               {{ t('app.myPeople') }}
-            </UButton>
+            </button>
             <UButton
               variant="soft"
               size="sm"
@@ -358,19 +356,22 @@ function handleDashboardApp(app: AppConfig) {
               :disabled="!appInstalled[app.bundle] && !app.canAdd"
               class="group rounded-2xl p-3 text-center transition-all disabled:opacity-45 disabled:cursor-not-allowed"
               :class="appInstalled[app.bundle]
-                ? 'bg-white/85 dark:bg-gray-800 hover:shadow-md border border-emerald-200 dark:border-emerald-800'
+                ? 'bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800'
                 : 'bg-white/75 dark:bg-gray-800 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800'"
               @click="handleDashboardApp(app)"
             >
               <div
                 class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center"
                 :class="appInstalled[app.bundle]
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                  ? ''
                   : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'"
               >
                 <UIcon
                   :name="app.icon"
                   class="w-8 h-8"
+                  :class="appInstalled[app.bundle]
+                    ? 'bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]'
+                    : ''"
                 />
               </div>
               <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">
@@ -378,7 +379,7 @@ function handleDashboardApp(app: AppConfig) {
               </p>
               <p class="mt-1 text-[11px] leading-4"
                  :class="appInstalled[app.bundle]
-                   ? 'text-emerald-700 dark:text-emerald-300'
+                   ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold'
                    : (app.canAdd ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500')"
               >
                 {{ appInstalled[app.bundle] ? (t('app.open') || 'Open') : (app.canAdd ? (t('app.getApp') || 'Get') : (t('app.comingSoon') || 'Soon')) }}
@@ -413,7 +414,7 @@ function handleDashboardApp(app: AppConfig) {
             type="button"
             class="text-left rounded-2xl p-4 border transition-all duration-200"
             :class="selectedNS === slug
-              ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800 shadow-sm'
+              ? 'bg-white border-2 border-blue-500 dark:bg-blue-900/30 dark:border-blue-500 shadow-sm'
               : 'bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700'"
             @click="handleSwitchNamespace(slug)"
           >
@@ -429,7 +430,7 @@ function handleDashboardApp(app: AppConfig) {
               <UIcon
                 v-if="selectedNS === slug"
                 name="lucide:check-circle-2"
-                class="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0"
+                class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
               />
             </div>
           </button>
@@ -499,7 +500,7 @@ function handleDashboardApp(app: AppConfig) {
                 type="button"
                 class="h-11 rounded-xl border text-sm font-medium transition-all"
                 :class="String(locale) === lang.value
-                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-300'
+                  ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
                   : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700'"
                 @click="setLanguage(lang.value)"
               >

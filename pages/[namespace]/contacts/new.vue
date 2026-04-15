@@ -916,8 +916,8 @@ useHead(() => ({
                   class="peer sr-only"
                   :value="option.value"
                 >
-                <span class="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900">
-                  <span class="h-2.5 w-2.5 rounded-full bg-emerald-600 opacity-0 peer-checked:opacity-100" />
+                <span class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900 peer-checked:border-blue-500 peer-checked:bg-blue-500 transition-colors">
+                  <span class="h-2.5 w-2.5 rounded-full bg-white" />
                 </span>
                 <span class="flex-1 font-medium">
                   <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
