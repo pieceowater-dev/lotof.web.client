@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { useContactsToken } from '@/composables/useContactsToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getContactsPlans, type Plan } from '@/api/contacts/plans/plans';
 import { subscribeToContactsPlan, type Subscription } from '@/api/contacts/plans/subscribe';
@@ -204,6 +205,19 @@ async function subscribePlan(plan: Plan) {
 }
 
 onMounted(async () => {
+  const hubToken = useCookie<string | null>('token', { path: '/' }).value;
+  if (!hubToken) {
+    error.value = t('common.notAuthenticated') || 'Not authenticated';
+    return;
+  }
+
+  const { ensure } = useContactsToken();
+  const contactsToken = await ensure(nsSlug.value, hubToken);
+  if (!contactsToken) {
+    error.value = t('common.notAuthenticated') || 'Not authenticated';
+    return;
+  }
+
   await fetchPlans();
   await fetchActiveSubscription();
 });
