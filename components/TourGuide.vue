@@ -20,6 +20,31 @@ const {
 const highlightRect = ref<{ top: number; left: number; width: number; height: number; padding: number } | null>(null);
 const popupRect = ref<{ top: number; left: number; width: number; placement: 'top' | 'bottom' | 'left' | 'right' } | null>(null);
 const missingTargetAttempts = ref(0);
+const lastAutoScrollStepId = ref<string | null>(null);
+let rafUpdateId: number | null = null;
+let listenersBound = false;
+
+function bindWindowListeners() {
+  if (listenersBound) return;
+  window.addEventListener('resize', scheduleUpdateHighlight);
+  window.addEventListener('scroll', scheduleUpdateHighlight, { capture: true, passive: true });
+  listenersBound = true;
+}
+
+function unbindWindowListeners() {
+  if (!listenersBound) return;
+  window.removeEventListener('resize', scheduleUpdateHighlight);
+  window.removeEventListener('scroll', scheduleUpdateHighlight, true);
+  listenersBound = false;
+}
+
+function scheduleUpdateHighlight() {
+  if (rafUpdateId !== null) return;
+  rafUpdateId = window.requestAnimationFrame(() => {
+    rafUpdateId = null;
+    updateHighlight({ allowAutoScroll: false });
+  });
+}
 
 function isElementVisible(el: Element): boolean {
   const rect = el.getBoundingClientRect();
@@ -60,11 +85,14 @@ function resolveTargetElement(target: string | string[]): Element | null {
   return null;
 }
 
-function updateHighlight() {
+function updateHighlight(options?: { allowAutoScroll?: boolean }) {
+  const allowAutoScroll = options?.allowAutoScroll ?? false;
+
   if (!currentStep.value || !isRunning.value) {
     highlightRect.value = null;
     popupRect.value = null;
     missingTargetAttempts.value = 0;
+    lastAutoScrollStepId.value = null;
     return;
   }
 
@@ -72,7 +100,7 @@ function updateHighlight() {
   if (!target) {
     missingTargetAttempts.value += 1;
     if (missingTargetAttempts.value < 4) {
-      setTimeout(updateHighlight, 200);
+      setTimeout(() => updateHighlight({ allowAutoScroll: false }), 200);
       return;
     }
 
@@ -101,9 +129,11 @@ function updateHighlight() {
   const placement = currentStep.value.placement || 'bottom';
   calculatePopupPosition(rect, placement, padding);
 
-  // Scroll target into view - instant on mobile for reliability
-  const isMobile = window.innerWidth < 768;
-  target.scrollIntoView({ behavior: isMobile ? 'instant' : 'smooth', block: 'center' });
+  // Auto-scroll only once per step to avoid scroll-update loops and UI jank.
+  if (allowAutoScroll && lastAutoScrollStepId.value !== currentStep.value.id) {
+    target.scrollIntoView({ behavior: 'instant', block: 'center' });
+    lastAutoScrollStepId.value = currentStep.value.id;
+  }
 }
 
 function calculatePopupPosition(
@@ -174,22 +204,27 @@ function calculatePopupPosition(
 
 watch([isRunning, currentStep], async () => {
   if (isRunning.value && currentStep.value) {
+    bindWindowListeners();
     await nextTick();
-    updateHighlight();
+    updateHighlight({ allowAutoScroll: true });
   } else {
+    unbindWindowListeners();
     highlightRect.value = null;
     popupRect.value = null;
+    lastAutoScrollStepId.value = null;
   }
 });
 
 onMounted(() => {
-  window.addEventListener('resize', updateHighlight);
-  window.addEventListener('scroll', updateHighlight, true);
+  if (isRunning.value) bindWindowListeners();
 });
 
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateHighlight);
-  window.removeEventListener('scroll', updateHighlight, true);
+  unbindWindowListeners();
+  if (rafUpdateId !== null) {
+    window.cancelAnimationFrame(rafUpdateId);
+    rafUpdateId = null;
+  }
 });
 
 const progress = computed(() => {
@@ -208,6 +243,7 @@ const stepContent = computed(() => {
   if (currentStep.value.contentKey) return t(currentStep.value.contentKey);
   return currentStep.value.content || '';
 });
+
 </script>
 
 <template>
@@ -216,47 +252,34 @@ const stepContent = computed(() => {
       v-if="isRunning && currentStep"
       class="tour-guide-overlay"
     >
-      <!-- Dark backdrop with cutout for highlighted element -->
+      <!-- Global click catcher -->
       <div
         class="fixed inset-0 z-[9998]"
         @click="skipTour"
-      >
-        <svg class="w-full h-full">
-          <defs>
-            <mask id="tour-spotlight">
-              <rect
-                x="0"
-                y="0"
-                width="100%"
-                height="100%"
-                fill="white"
-              />
-              <rect
-                v-if="highlightRect"
-                :x="highlightRect.left - highlightRect.padding"
-                :y="highlightRect.top - highlightRect.padding"
-                :width="highlightRect.width + highlightRect.padding * 2"
-                :height="highlightRect.height + highlightRect.padding * 2"
-                rx="12"
-                fill="black"
-              />
-            </mask>
-          </defs>
-          <rect
-            x="0"
-            y="0"
-            width="100%"
-            height="100%"
-            fill="rgba(0, 0, 0, 0.7)"
-            mask="url(#tour-spotlight)"
-          />
-        </svg>
-      </div>
+      />
+
+      <!-- Dark backdrop with rounded cutout around target -->
+      <div
+        v-if="!highlightRect"
+        class="fixed inset-0 z-[9998] bg-black/60 pointer-events-none"
+      />
+      <template v-else>
+        <div
+          class="fixed z-[9998] pointer-events-none tour-spotlight-hole"
+          :style="{
+            top: `${highlightRect.top - highlightRect.padding}px`,
+            left: `${highlightRect.left - highlightRect.padding}px`,
+            width: `${highlightRect.width + highlightRect.padding * 2}px`,
+            height: `${highlightRect.height + highlightRect.padding * 2}px`,
+          }"
+        />
+      </template>
 
       <!-- Highlight border -->
       <div
         v-if="highlightRect"
-        class="fixed z-[9999] border-4 border-primary rounded-xl pointer-events-none transition-all duration-300"
+        class="fixed z-[9999] border-4 border-primary rounded-xl pointer-events-none"
+        :class="'transition-all duration-300'"
         :style="{
           top: `${highlightRect.top - highlightRect.padding}px`,
           left: `${highlightRect.left - highlightRect.padding}px`,
@@ -268,7 +291,8 @@ const stepContent = computed(() => {
       <!-- Popup card -->
       <div
         v-if="popupRect"
-        class="fixed z-[10000] bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 max-w-sm transition-all duration-300"
+        class="fixed z-[10000] bg-white dark:bg-gray-900 rounded-xl p-6 max-w-sm"
+        :class="'shadow-2xl transition-all duration-300'"
         :style="{
           top: `${popupRect.top}px`,
           left: `${popupRect.left}px`,
@@ -348,5 +372,10 @@ const stepContent = computed(() => {
   position: fixed;
   inset: 0;
   z-index: 9998;
+}
+
+.tour-spotlight-hole {
+  border-radius: 12px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
 }
 </style>

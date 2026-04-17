@@ -11,11 +11,14 @@ import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from 
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { listTags } from '@/api/contacts/tags';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
+import TourGuide from '@/components/TourGuide.vue';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import SegmentsModal from '@/components/contacts/SegmentsModal.vue';
 import IdentitiesModal from '@/components/contacts/IdentitiesModal.vue';
 import { useNamespace } from '@/composables/useNamespace';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { contactsTour } from '@/config/tours';
 import { mockClients } from '@/mock/contacts-clients';
 
 const router = useRouter();
@@ -24,6 +27,7 @@ const toast = useToast();
 const { t } = useI18n();
 const { token, user } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
+const { isCompleted, startTour } = useOnboarding();
 
 const clients = ref<ClientRow[]>([]);
 const totalCount = ref(0);
@@ -180,6 +184,12 @@ onMounted(async () => {
 
   await loadClients();
   await initClientsSubscription();
+
+  if (process.client && !isCompleted(contactsTour.id)) {
+    setTimeout(() => {
+      startTour(contactsTour);
+    }, 900);
+  }
 });
 
 onBeforeUnmount(() => {
@@ -541,9 +551,11 @@ async function handleRefreshFromRemote() {
 </script>
 
 <template>
+  <TourGuide />
+
   <div class="flex flex-col">
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
-      <div class="text-left">
+      <div class="text-left" data-tour="contacts-title">
         <h1 class="text-2xl font-semibold">
           {{ t('app.contacts') }}
         </h1>
@@ -574,6 +586,7 @@ async function handleRefreshFromRemote() {
             size="xs" 
             color="primary" 
             variant="soft"
+            data-tour="contacts-settings-btn"
             :to="`/${nsSlug}/contacts/settings`"
           >
             {{ t('common.settings.title') }}
@@ -585,7 +598,7 @@ async function handleRefreshFromRemote() {
     <!-- Filters and Create Button -->
     <div class="px-4 py-4 flex-shrink-0">
       <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-2 overflow-x-auto">
+        <div class="flex items-center gap-2 overflow-x-auto" data-tour="contacts-type-filter">
           <button
             v-for="type in ['ALL', 'INDIVIDUAL', 'LEGAL']"
             :key="type"
@@ -620,6 +633,7 @@ async function handleRefreshFromRemote() {
             size="sm"
             color="primary"
             variant="soft"
+            data-tour="contacts-create-btn"
             :to="`/${nsSlug}/contacts/new`"
           >
             {{ t('contacts.createClient') }}
@@ -647,6 +661,7 @@ async function handleRefreshFromRemote() {
     <!-- Empty State (only when no clients exist AND no search) -->
     <div
       v-else-if="totalCount === 0 && searchQuery === '' && !loading"
+      data-tour="contacts-empty-state"
       class="flex-1 flex items-center justify-center px-4 py-12 sm:py-16"
     >
       <div class="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
@@ -671,6 +686,7 @@ async function handleRefreshFromRemote() {
               size="md"
               color="primary"
               class="w-auto"
+              data-tour="contacts-create-empty"
               :to="`/${nsSlug}/contacts/new`"
             >
               {{ t('contacts.createFirstClient') || t('contacts.createClient') }}
@@ -683,6 +699,7 @@ async function handleRefreshFromRemote() {
     <!-- Table (always shown when there's data or active search) -->
     <div
       v-else
+      data-tour="contacts-table"
       class="px-4 pb-safe-or-4"
     >
       <ClientsTable 

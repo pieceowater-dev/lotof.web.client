@@ -4,7 +4,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useOnboarding } from '@/composables/useOnboarding';
-import { atraceTour } from '@/config/tours';
+import { atraceTour, contactsTour } from '@/config/tours';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -21,17 +21,25 @@ const isMobileMenuOpen = ref(false);
 
 const isWalter = Math.random() < 1 / 21;
 const homeText = computed(() => isWalter ? 'Домой, Уолтер' : t('app.home'));
+const isAtraceRoute = computed(() => route.path.includes('/atrace'));
+const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
 
 // Onboarding
 const { startTour, reset } = useOnboarding();
 const showHelpButton = computed(() => {
-  return route.path.includes('/atrace');
+  return isAtraceRoute.value || isContactsListRoute.value;
 });
 
 function handleHelpClick() {
-  if (route.path.includes('/atrace')) {
+  if (isAtraceRoute.value) {
     reset(atraceTour.id);
     startTour(atraceTour, 0);
+    return;
+  }
+
+  if (isContactsListRoute.value) {
+    reset(contactsTour.id);
+    startTour(contactsTour, 0);
   }
 }
 

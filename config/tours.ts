@@ -68,3 +68,64 @@ export const atraceTour: TourConfig = {
     },
   ],
 };
+
+export const contactsTour: TourConfig = {
+  id: 'contacts-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="contacts-title"]',
+      titleKey: 'app.tourContactsWelcomeTitle',
+      contentKey: 'app.tourContactsWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'type-filter',
+      target: '[data-tour="contacts-type-filter"]',
+      titleKey: 'app.tourContactsFilterTitle',
+      contentKey: 'app.tourContactsFilterContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'create-client',
+      target: [
+        '[data-tour="contacts-create-btn"]',
+        '[data-tour="contacts-create-empty"]',
+      ],
+      titleKey: 'app.tourContactsCreateTitle',
+      contentKey: 'app.tourContactsCreateContent',
+      placement: 'left',
+      highlightPadding: 10,
+    },
+    {
+      id: 'clients-table',
+      target: [
+        '[data-tour="contacts-table-search"]',
+        '[data-tour="contacts-table"]',
+        '[data-tour="contacts-empty-state"]',
+      ],
+      titleKey: 'app.tourContactsTableTitle',
+      contentKey: 'app.tourContactsTableContent',
+      placement: 'top',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="contacts-settings-btn"]',
+      titleKey: 'app.tourContactsSettingsTitle',
+      contentKey: 'app.tourContactsSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourContactsHelpTitle',
+      contentKey: 'app.tourContactsHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};

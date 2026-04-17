@@ -16,46 +16,51 @@ export function useAuth() {
   const initialized = useState<boolean>('auth_initialized', () => false);
 
   async function fetchUser(force = false) {
-    if (!token.value) {
-      console.warn('[auth] No access token found, attempting refresh');
-      // Try to refresh access token using httpOnly refresh_token cookie
-      const refreshed = await refreshAccessToken();
-      if (!refreshed) {
-        console.warn('[auth] Token refresh failed, no valid session');
-        user.value = null;
-        return;
-      }
-      // Re-read the token cookie after refresh (server sets new 'token' cookie)
-      // Force Nuxt to re-read cookies from document.cookie
-      await nextTick();
-      const tokenCookie = useCookie(CookieKeys.TOKEN);
-      if (!tokenCookie.value) {
-        console.warn('[auth] Token still missing after refresh');
-        user.value = null;
-        return;
-      }
-      token.value = tokenCookie.value;
-    }
-    if (user.value && !force) return; // cached
-    loading.value = true;
     try {
-      setGlobalAuthToken(token.value);
-      const data = await hubBootstrap(token.value);
-      if (data?.me) {
-        console.log('[auth] User fetched successfully', { email: data.me.email });
-        user.value = data.me;
+      if (!token.value) {
+        console.warn('[auth] No access token found, attempting refresh');
+        // Try to refresh access token using httpOnly refresh_token cookie
+        const refreshed = await refreshAccessToken();
+        if (!refreshed) {
+          console.warn('[auth] Token refresh failed, no valid session');
+          user.value = null;
+          return;
+        }
+        // Re-read the token cookie after refresh (server sets new 'token' cookie)
+        // Force Nuxt to re-read cookies from document.cookie
+        await nextTick();
+        const tokenCookie = useCookie(CookieKeys.TOKEN);
+        if (!tokenCookie.value) {
+          console.warn('[auth] Token still missing after refresh');
+          user.value = null;
+          return;
+        }
+        token.value = tokenCookie.value;
       }
-      if (data?.namespaces?.rows) {
-        const { applyLoaded } = useNamespace();
-        applyLoaded(data.namespaces.rows, token.value);
+
+      if (user.value && !force) return; // cached
+
+      loading.value = true;
+      try {
+        setGlobalAuthToken(token.value);
+        const data = await hubBootstrap(token.value);
+        if (data?.me) {
+          console.log('[auth] User fetched successfully', { email: data.me.email });
+          user.value = data.me;
+        }
+        if (data?.namespaces?.rows) {
+          const { applyLoaded } = useNamespace();
+          applyLoaded(data.namespaces.rows, token.value);
+        }
+      } catch (e) {
+        // If token invalid → logout silently
+        console.warn('[auth] fetchUser failed, clearing token', { error: String(e) });
+        logWarn('[auth] fetchUser failed, clearing token');
+        logout();
+      } finally {
+        loading.value = false;
       }
-    } catch (e) {
-      // If token invalid → logout silently
-      console.warn('[auth] fetchUser failed, clearing token', { error: String(e) });
-      logWarn('[auth] fetchUser failed, clearing token');
-      logout();
     } finally {
-      loading.value = false;
       initialized.value = true;
     }
   }
