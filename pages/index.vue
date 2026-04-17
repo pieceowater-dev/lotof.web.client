@@ -12,7 +12,7 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 
 // Composables
-const { user, isLoggedIn, fetchUser, login, logout } = useAuth();
+const { user, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
 
 const router = useRouter();
@@ -294,15 +294,24 @@ function handleDashboardApp(app: AppConfig) {
           <USkeleton class="h-4 w-[200px]" />
         </div>
       </template>
+
+      <div v-if="!initialized" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
+        <USkeleton
+          class="h-12 w-12"
+          :ui="{ rounded: 'rounded-full' }"
+        />
+        <USkeleton class="h-4 w-[250px]" />
+        <USkeleton class="h-4 w-[200px]" />
+      </div>
     
       <IntroSection
-        v-if="!isLoggedIn"
+        v-else-if="!isLoggedIn"
         :on-action="login"
       />
     </ClientOnly>
 
     <div
-      v-if="isLoggedIn"
+      v-if="initialized && isLoggedIn"
       class="max-w-7xl mx-auto mt-4 md:mt-6 mb-16 px-3 md:px-4"
     >
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
@@ -514,7 +523,7 @@ function handleDashboardApp(app: AppConfig) {
     </div>
 
     <div
-      v-if="!isLoggedIn"
+      v-if="initialized && !isLoggedIn"
       class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10"
     >
       <div v-if="activeApps.length">
@@ -564,7 +573,7 @@ function handleDashboardApp(app: AppConfig) {
     </div>
 
     <div
-      v-if="!isLoggedIn"
+      v-if="initialized && !isLoggedIn"
       class="max-w-6xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300"
     >
       <h2 class="text-xl font-semibold flex items-center mb-4">
