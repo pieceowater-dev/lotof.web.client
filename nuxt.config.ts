@@ -20,7 +20,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: {
-        lang: 'ru'
+        lang: 'ru',
+        translate: 'no',
+        class: 'notranslate'
       },
       title: "lota",
       titleTemplate: "%s | lota",
@@ -29,6 +31,7 @@ export default defineNuxtConfig({
         { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
         { name: "description", content: "Платформа автоматизации для современного бизнеса. Управляйте посещаемостью, трекингом и рабочими процессами эффективно." },
         { name: "keywords", content: "автоматизация, учет рабочего времени, бизнес услуги, управление процессами, командная работа" },
+        { name: "google", content: "notranslate" },
         
         // Robots
         { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
