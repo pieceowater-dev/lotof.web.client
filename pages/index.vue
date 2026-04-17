@@ -257,6 +257,7 @@ const dashboardApps = computed(() => [
 const languageOptions = [
   { value: 'en', label: 'English', flag: '🇺🇸' },
   { value: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { value: 'kk', label: 'Қазақша', flag: '🇰🇿' },
 ] as const;
 
 const currentLanguage = computed(() => {
@@ -264,7 +265,7 @@ const currentLanguage = computed(() => {
   return languageOptions.find((item) => item.value === current) || languageOptions[0];
 });
 
-function setLanguage(lang: 'en' | 'ru') {
+function setLanguage(lang: 'en' | 'ru' | 'kk') {
   locale.value = lang;
 }
 
@@ -447,10 +448,10 @@ function handleDashboardApp(app: AppConfig) {
           </div>
           <div>
             <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {{ t('common.settings.title') || 'Settings' }}
+              {{ t('app.preferences') || 'Preferences' }}
             </h3>
             <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-              {{ t('app.configureProfile') || 'Configure profile' }}
+              {{ t('app.preferencesSubtitle') || 'Language, theme & display' }}
             </p>
           </div>
         </div>

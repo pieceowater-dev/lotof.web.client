@@ -1,19 +1,28 @@
 import { ref, computed, watch } from 'vue';
 import { LSKeys } from '@/utils/storageKeys';
 import en from '@/locales/en.json';
+import kk from '@/locales/kk.json';
 import ru from '@/locales/ru.json';
 
 // Simple i18n implementation (client-side only for now)
-const detected = (typeof navigator !== 'undefined' && navigator.language.startsWith('ru')) ? 'ru' : 'en';
-const currentLocale = ref<'en' | 'ru'>(detected);
+type Locale = 'en' | 'ru' | 'kk';
+
+const detected: Locale = (() => {
+  if (typeof navigator === 'undefined') return 'en';
+  if (navigator.language.startsWith('ru')) return 'ru';
+  if (navigator.language.startsWith('kk')) return 'kk';
+  return 'en';
+})();
+const currentLocale = ref<Locale>(detected);
 // Load persisted locale
 if (typeof window !== 'undefined') {
   const stored = localStorage.getItem(LSKeys.LANGUAGE);
-  if (stored === 'en' || stored === 'ru') currentLocale.value = stored;
+  if (stored === 'en' || stored === 'ru' || stored === 'kk') currentLocale.value = stored;
 }
 
-const messages: Record<'en'|'ru', Record<string, any>> = {
+const messages: Record<Locale, Record<string, any>> = {
   en: en as any,
+  kk: kk as any,
   ru: ru as any
 };
 
@@ -26,7 +35,7 @@ export function useI18n() {
     const val = restPath ? getDeep(namespace, restPath) : namespace;
     return (typeof val === 'string' || typeof val === 'number') ? String(val) : undefined;
   }
-  function resolveMessage(targetLocale: 'en' | 'ru', path: string): string | undefined {
+  function resolveMessage(targetLocale: Locale, path: string): string | undefined {
     const parts = path.split('.');
     const ns = parts.shift();
     if (!ns) return undefined;
@@ -44,8 +53,17 @@ export function useI18n() {
   }
   function t(path: string, params?: Record<string, string | number>): string {
     const primaryLocale = locale.value;
-    const fallbackLocale = primaryLocale === 'ru' ? 'en' : 'ru';
-    let result = resolveMessage(primaryLocale, path) ?? resolveMessage(fallbackLocale, path) ?? '';
+    const fallbackLocales: Locale[] = primaryLocale === 'en'
+      ? ['ru', 'kk']
+      : primaryLocale === 'ru'
+        ? ['en', 'kk']
+        : ['ru', 'en'];
+
+    let result = resolveMessage(primaryLocale, path) ?? '';
+    for (const fallbackLocale of fallbackLocales) {
+      if (result) break;
+      result = resolveMessage(fallbackLocale, path) ?? '';
+    }
     
     // Interpolate parameters if provided
     if (params) {
@@ -64,10 +82,10 @@ export function useI18n() {
     const restPath = parts.join('.');
     return restPath ? getDeep(dictNs, restPath) : dictNs;
   }
-  function setLocale(l: 'en' | 'ru') { currentLocale.value = l; }
+  function setLocale(l: Locale) { currentLocale.value = l; }
   // Persist
   if (typeof window !== 'undefined') {
     watch(currentLocale, v => localStorage.setItem(LSKeys.LANGUAGE, v));
   }
-  return { locale, t, tm, setLocale, available: computed(() => ['en','ru']) };
+  return { locale, t, tm, setLocale, available: computed(() => ['en', 'ru', 'kk']) };
 }

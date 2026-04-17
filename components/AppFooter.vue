@@ -1,9 +1,7 @@
 <template>
-  <footer class="w-full bg-gray-200 dark:bg-gray-800 text-white pt-2 pb-safe-or-4 rounded-xl">
-    <div class="container mx-auto flex flex-wrap justify-center items-center px-6">
-      <div class="text-sm text-gray-400">
-        © {{ new Date().getFullYear() }} pieceowater
-      </div>
-    </div>
+  <footer class="w-full flex justify-center py-3">
+    <span class="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-4 py-1.5 rounded-full">
+      © {{ new Date().getFullYear() }} pieceowater
+    </span>
   </footer>
 </template>
