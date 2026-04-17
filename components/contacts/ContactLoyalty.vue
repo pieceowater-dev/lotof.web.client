@@ -486,10 +486,10 @@ async function submitStampFromModal() {
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 rounded-lg p-4">
-            <p class="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-1">
+            <p class="text-xs text-white dark:text-white uppercase tracking-wide mb-1">
               {{ t('contacts.total') }}
             </p>
-            <p class="text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+            <p class="text-2xl font-bold text-white dark:text-white">
               {{ bonusBalance.totalBonuses }}
             </p>
           </div>
