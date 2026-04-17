@@ -22,6 +22,7 @@ const popupRect = ref<{ top: number; left: number; width: number; placement: 'to
 const missingTargetAttempts = ref(0);
 const lastAutoScrollStepId = ref<string | null>(null);
 let rafUpdateId: number | null = null;
+let retryTimeoutId: number | null = null;
 let listenersBound = false;
 
 function bindWindowListeners() {
@@ -89,6 +90,10 @@ function updateHighlight(options?: { allowAutoScroll?: boolean }) {
   const allowAutoScroll = options?.allowAutoScroll ?? false;
 
   if (!currentStep.value || !isRunning.value) {
+    if (retryTimeoutId !== null) {
+      window.clearTimeout(retryTimeoutId);
+      retryTimeoutId = null;
+    }
     highlightRect.value = null;
     popupRect.value = null;
     missingTargetAttempts.value = 0;
@@ -100,7 +105,12 @@ function updateHighlight(options?: { allowAutoScroll?: boolean }) {
   if (!target) {
     missingTargetAttempts.value += 1;
     if (missingTargetAttempts.value < 4) {
-      setTimeout(() => updateHighlight({ allowAutoScroll: false }), 200);
+      if (retryTimeoutId === null) {
+        retryTimeoutId = window.setTimeout(() => {
+          retryTimeoutId = null;
+          updateHighlight({ allowAutoScroll: false });
+        }, 200);
+      }
       return;
     }
 
@@ -149,57 +159,55 @@ function calculatePopupPosition(
   const viewportHeight = viewport.height;
 
   let effectivePlacement = placement;
-
-  // On small screens avoid left/right placement to prevent overlap.
-  if (viewportWidth < 768 && (placement === 'left' || placement === 'right')) {
+  if (viewportWidth < 768 && (effectivePlacement === 'left' || effectivePlacement === 'right')) {
     effectivePlacement = 'bottom';
   }
 
-  if (effectivePlacement === 'left' && targetRect.left < popupWidth + gap) {
-    effectivePlacement = 'bottom';
-  }
-
-  if (effectivePlacement === 'right' && (targetRect.right + popupWidth + gap) > viewportWidth) {
-    effectivePlacement = 'bottom';
-  }
+  const order: Array<'top' | 'bottom' | 'left' | 'right'> = [effectivePlacement, 'bottom', 'top', 'right', 'left']
+    .filter((v, i, a) => a.indexOf(v) === i) as Array<'top' | 'bottom' | 'left' | 'right'>;
 
   let top = 0;
   let left = 0;
+  let picked = order[0];
 
-  switch (effectivePlacement) {
-    case 'bottom':
+  for (const candidate of order) {
+    if (candidate === 'left' && targetRect.left < popupWidth + gap) continue;
+    if (candidate === 'right' && (targetRect.right + popupWidth + gap) > viewportWidth) continue;
+
+    if (candidate === 'bottom') {
       top = targetRect.bottom + viewport.offsetTop + gap;
       left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
-      if (top + estimatedHeight > viewport.offsetTop + viewportHeight) {
-        effectivePlacement = 'top';
-      }
+      if (top + estimatedHeight > viewport.offsetTop + viewportHeight) continue;
+      picked = candidate;
       break;
-    case 'top':
+    }
+
+    if (candidate === 'top') {
       top = targetRect.top + viewport.offsetTop - gap - estimatedHeight;
       left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
-      if (top < viewport.offsetTop + 8) {
-        effectivePlacement = 'bottom';
-      }
+      if (top < viewport.offsetTop + 8) continue;
+      picked = candidate;
       break;
-    case 'left':
+    }
+
+    if (candidate === 'left') {
       top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
       left = targetRect.left + viewport.offsetLeft - popupWidth - gap;
+      picked = candidate;
       break;
-    case 'right':
-      top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
-      left = targetRect.right + viewport.offsetLeft + gap;
-      break;
-  }
+    }
 
-  if (effectivePlacement !== placement) {
-    return calculatePopupPosition(targetRect, effectivePlacement, padding);
+    top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
+    left = targetRect.right + viewport.offsetLeft + gap;
+    picked = candidate;
+    break;
   }
 
   // Constrain to viewport
   const maxLeft = viewport.offsetLeft + viewportWidth - popupWidth - 16;
   left = Math.max(viewport.offsetLeft + 16, Math.min(left, maxLeft));
 
-  popupRect.value = { top, left, width: popupWidth, placement: effectivePlacement };
+  popupRect.value = { top, left, width: popupWidth, placement: picked };
 }
 
 watch([isRunning, currentStep], async () => {
@@ -221,6 +229,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   unbindWindowListeners();
+  if (retryTimeoutId !== null) {
+    window.clearTimeout(retryTimeoutId);
+    retryTimeoutId = null;
+  }
   if (rafUpdateId !== null) {
     window.cancelAnimationFrame(rafUpdateId);
     rafUpdateId = null;
