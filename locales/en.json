@@ -709,6 +709,10 @@
     "timelineIdentityTypeWhatsapp": "WhatsApp",
     "timelineIdentityTypeCompany": "Company",
     "timelineIdentityTypeContactPerson": "Contact person",
+    "timelineBlockClient": "Client",
+    "timelineBlockIndividual": "Individual",
+    "timelineBlockLegalEntity": "Legal entity",
+    "timelineBlockData": "Data",
     "timelineEvents": {
       "client_created": "Client created",
       "client_updated": "Client updated",

@@ -220,6 +220,8 @@ type TimelineItem = {
   changes: Array<{ key: string; label?: string; before?: any; after?: any }>;
 };
 
+type TimelineChange = { key: string; label?: string; before?: any; after?: any };
+
 type TimelineGroup = {
   dayKey: string;
   title: string;
@@ -388,6 +390,79 @@ function formatDate(date: string | Date): string {
   });
 }
 
+function isPlainObject(value: unknown): value is Record<string, any> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function compactTimelineValue(value: any): any {
+  if (Array.isArray(value)) {
+    const normalized = value
+      .map((entry) => compactTimelineValue(entry))
+      .filter((entry) => !isEmptyValue(entry));
+    return normalized.length ? normalized : null;
+  }
+
+  if (!isPlainObject(value)) {
+    return value;
+  }
+
+  const normalized: Record<string, any> = {};
+  for (const [entryKey, entryValue] of Object.entries(value)) {
+    const nextValue = compactTimelineValue(entryValue);
+
+    if (isEmptyValue(nextValue)) {
+      continue;
+    }
+    if (Array.isArray(nextValue) && nextValue.length === 0) {
+      continue;
+    }
+    if (isPlainObject(nextValue) && Object.keys(nextValue).length === 0) {
+      continue;
+    }
+
+    normalized[entryKey] = nextValue;
+  }
+
+  return Object.keys(normalized).length ? normalized : null;
+}
+
+function inferChangeLabelFromValue(value: unknown): string {
+  if (!isPlainObject(value)) {
+    return '';
+  }
+
+  if ('ClientType' in value || 'ShortID' in value || 'Status' in value) {
+    return t('contacts.timelineBlockClient');
+  }
+
+  if ('FirstName' in value || 'LastName' in value || 'FullName' in value) {
+    return t('contacts.timelineBlockIndividual');
+  }
+
+  if ('LegalName' in value || 'BrandName' in value || 'BinIin' in value) {
+    return t('contacts.timelineBlockLegalEntity');
+  }
+
+  return '';
+}
+
+function getChangeLabel(change: TimelineChange): string {
+  const rawLabel = String(change.label || '').trim();
+  const formatted = formatFieldLabel(change.key);
+  const candidate = rawLabel || formatted;
+
+  if (candidate && candidate !== ':') {
+    return candidate;
+  }
+
+  const inferred = inferChangeLabelFromValue(change.after) || inferChangeLabelFromValue(change.before);
+  if (inferred) {
+    return inferred;
+  }
+
+  return t('contacts.timelineBlockData') || t('contacts.timelineField') || 'Поле';
+}
+
 function formatValue(value: any): string {
   if (value === null || value === undefined || value === '') {
     return '—';
@@ -398,8 +473,13 @@ function formatValue(value: any): string {
   }
 
   if (typeof value === 'object') {
+    const compactValue = compactTimelineValue(value);
+    if (compactValue === null || compactValue === undefined) {
+      return '—';
+    }
+
     try {
-      return JSON.stringify(value);
+      return JSON.stringify(compactValue, null, 2);
     } catch {
       return String(value);
     }
@@ -549,14 +629,14 @@ function formatFieldLabel(rawKey: string): string {
                     :key="`${item.id}-${change.key}`"
                     class="rounded px-2 py-1 text-xs text-gray-700 bg-gray-50 dark:bg-gray-900/40 dark:text-gray-300"
                   >
-                    <span class="font-medium">{{ change.label || formatFieldLabel(change.key) }}:</span>
+                    <span class="font-medium">{{ getChangeLabel(change) }}:</span>
                     <div class="mt-1 grid grid-cols-1 gap-1 text-gray-500 dark:text-gray-400">
-                      <span>
+                      <div class="whitespace-pre-wrap break-words">
                         {{ t('contacts.timelineBefore') || 'Было' }}: {{ formatValue(change.before) }}
-                      </span>
-                      <span>
+                      </div>
+                      <div class="whitespace-pre-wrap break-words">
                         {{ t('contacts.timelineAfter') || 'Стало' }}: {{ formatValue(change.after) }}
-                      </span>
+                      </div>
                     </div>
                   </div>
                 </div>

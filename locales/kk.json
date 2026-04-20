@@ -733,6 +733,10 @@
     "timelineIdentityTypeWhatsapp": "WhatsApp",
     "timelineIdentityTypeCompany": "Компания",
     "timelineIdentityTypeContactPerson": "Байланыс тұлғасы",
+    "timelineBlockClient": "Клиент",
+    "timelineBlockIndividual": "Жеке тұлға",
+    "timelineBlockLegalEntity": "Заңды тұлға",
+    "timelineBlockData": "Деректер",
     "timelineEvents": {
       "client_created": "Клиент құрылды",
       "client_updated": "Клиент жаңартылды",
