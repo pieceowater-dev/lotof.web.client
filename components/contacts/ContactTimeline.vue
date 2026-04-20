@@ -239,6 +239,16 @@ const timelineItems = computed<TimelineItem[]>(() => {
         return null;
       }
 
+      if (eventName === 'client_created') {
+        return {
+          id: event.id,
+          createdAt: event.createdAt,
+          icon: getEventIcon(eventName || event.eventType),
+          title: getTimelineEventTitle(eventName || event.eventType),
+          changes: [],
+        };
+      }
+
       const beforeState = (payload.before_state && typeof payload.before_state === 'object') ? payload.before_state : {};
       const afterState = (payload.after_state && typeof payload.after_state === 'object') ? payload.after_state : {};
 

@@ -160,9 +160,22 @@ async function handleGetApp(app: AppConfig) {
 const handleSaveProfile = async () => {
   const token = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!token) return;
-  const updatedUser = await hubUpdateMe(token, username.value);
-  username.value = updatedUser.username;
-  isModalOpen.value = false;
+
+  try {
+    const updatedUser = await hubUpdateMe(token, username.value);
+    isModalOpen.value = false;
+
+    if (updatedUser?.username) {
+      username.value = updatedUser.username;
+    }
+  } catch (error) {
+    logError('[profile] save failed', error);
+    toast.add({
+      title: t('app.error') || 'Ошибка',
+      description: t('app.profileSaveFailed') || 'Не удалось сохранить профиль',
+      color: 'red',
+    });
+  }
 };
 
 const { t, locale } = useI18n();
