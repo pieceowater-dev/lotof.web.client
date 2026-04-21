@@ -191,20 +191,10 @@ onBeforeUnmount(() => {
         <template v-else-if="ok">
           <div class="flex flex-col items-center gap-4">
             <!-- Success icon -->
-            <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-              <svg
-                class="h-10 w-10 text-emerald-600"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                <polyline points="22 4 12 14.01 9 11.01" />
-              </svg>
-            </div>
+            <UIcon
+              name="i-heroicons-check-circle-20-solid"
+              class="h-16 w-16 text-emerald-500"
+            />
             <p class="text-2xl font-bold text-emerald-600">
               {{ t('app.atraceRecordedSuccess') }}
             </p>
