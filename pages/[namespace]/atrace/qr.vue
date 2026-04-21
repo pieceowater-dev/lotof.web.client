@@ -170,26 +170,10 @@ onMounted(() => {
       <div class="py-8">
         <div class="flex flex-col items-center text-center gap-4">
           <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
-            <svg
-              class="h-10 w-10 text-emerald-600 animate-spin"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <circle
-                cx="12"
-                cy="12"
-                r="10"
-                class="opacity-25"
-              />
-              <path
-                d="M22 12a10 10 0 0 1-10 10"
-                class="opacity-75"
-              />
-            </svg>
+            <div
+              class="h-9 w-9 rounded-full border-[3px] border-emerald-200 border-t-emerald-600 animate-spin"
+              aria-hidden="true"
+            />
           </div>
           <p class="text-lg text-gray-700 dark:text-gray-300">
             {{ t('app.atraceCheckingText') }}
