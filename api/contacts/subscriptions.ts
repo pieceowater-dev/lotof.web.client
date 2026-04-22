@@ -1,15 +1,9 @@
 import { createClient, type Client } from 'graphql-ws';
-
-function toWsUrl(httpBase: string): string {
-  if (httpBase.startsWith('https://')) return httpBase.replace('https://', 'wss://') + '/query';
-  if (httpBase.startsWith('http://')) return httpBase.replace('http://', 'ws://') + '/query';
-  return httpBase + '/query';
-}
+import { getApiWsUrl } from '@/utils/api-base';
 
 function createContactsSubscriptionsClient(contactsToken: string, namespace: string): Client {
-  const base = import.meta.env.VITE_API_CONTACTS as string;
   return createClient({
-    url: toWsUrl(base),
+    url: getApiWsUrl('contacts', '/query'),
     lazy: true,
     connectionParams: {
       ContactsAuthorization: `Bearer ${contactsToken}`,

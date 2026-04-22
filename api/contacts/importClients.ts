@@ -1,3 +1,5 @@
+import { getApiBasePath } from '@/utils/api-base';
+
 const BATCH_SIZE = 500;
 
 export interface ImportRow {
@@ -66,7 +68,7 @@ export async function contactsImportClients(
   rows: ImportRow[],
   onProgress?: (p: ImportProgress) => void,
 ): Promise<ImportBatchResult> {
-  const baseUrl = (import.meta.env.VITE_API_CONTACTS as string).replace(/\/$/, '');
+  const baseUrl = getApiBasePath('contacts');
 
   const batches: ImportRow[][] = [];
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {

@@ -5,7 +5,7 @@ export default defineEventHandler(async (event) => {
     const page = parseInt(query.page as string) || 1
     const pageSize = parseInt(query.pageSize as string) || 20
 
-    const atraceUrl = process.env.ATRACE_GTW_URL || 'http://localhost:8080'
+    const atraceUrl = process.env.ATRACE_GTW_URL || 'http://localhost:8081'
     const token = getCookie(event, 'auth_token') || getHeader(event, 'authorization') || ''
 
     const graphqlQuery = `

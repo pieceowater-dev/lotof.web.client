@@ -13,7 +13,11 @@ export default defineNuxtConfig({
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/images/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     // API routes
-    '/api/**': { cors: true, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } }
+    '/api/**': { cors: true, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
+    '/api-hub/**': { proxy: 'http://127.0.0.1:8080/**' },
+    '/api-atrace/**': { proxy: 'http://127.0.0.1:8081/**' },
+    '/api-capital/**': { proxy: 'http://127.0.0.1:8082/**' },
+    '/api-contacts/**': { proxy: 'http://127.0.0.1:8083/**' }
   },
   
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.

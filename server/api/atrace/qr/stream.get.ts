@@ -1,4 +1,5 @@
 import { WebSocket } from 'ws'
+import { toWsUrl } from '@/utils/api-base'
 
 type ServerSideWebSocket = WebSocket & {
   setSocket: (socket: any, head: Buffer, maxPayload: number) => void;
@@ -14,7 +15,7 @@ export default defineEventHandler(async (event) => {
     const postId = String(query.postId || '')
     const method = String(query.method || 'METHOD_QR')
     const secret = String(query.secret || '')
-    const intervalParam = query.interval ? `&interval=${query.interval}` : ''
+    const interval = query.interval ? String(query.interval) : undefined
 
     if (!namespaceSlug || !postId || !secret) {
       throw createError({ statusCode: 400, statusMessage: 'Missing namespace, postId, or secret' })
@@ -25,13 +26,15 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 426, statusMessage: 'Upgrade Required' })
     }
 
-    const atraceGatewayUrlRaw = process.env.VITE_API_ATRACE || 'http://127.0.0.1:8081'
-    const atraceGatewayUrl = atraceGatewayUrlRaw.replace('http://localhost', 'http://127.0.0.1')
-    
-    // Convert HTTP(S) to WS(S) for WebSocket connection
-    const wsProtocol = atraceGatewayUrl.startsWith('https://') ? 'wss://' : 'ws://'
-    const gatewayHost = atraceGatewayUrl.replace(/^https?:\/\//, '')
-    const gatewayWsUrl = `${wsProtocol}${gatewayHost}/api/v1/atrace/qr/stream?namespace=${encodeURIComponent(namespaceSlug)}&postId=${encodeURIComponent(postId)}&method=${encodeURIComponent(method)}&secret=${encodeURIComponent(secret)}${intervalParam}`
+    const atraceGatewayUrl = process.env.ATRACE_GATEWAY_URL || 'http://127.0.0.1:8081'
+
+    const gatewayWsUrl = toWsUrl(atraceGatewayUrl, '/api/v1/atrace/qr/stream', {
+      namespace: namespaceSlug,
+      postId,
+      method,
+      secret,
+      interval,
+    })
 
     console.log('[WS Proxy] Creating WebSocket connection to:', gatewayWsUrl)
 

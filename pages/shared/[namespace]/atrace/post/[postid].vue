@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { log, logWarn } from '@/utils/logger';
+import { getApiWsUrl } from '@/utils/api-base';
 import PinPrompt from '@/components/PinPrompt.vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
@@ -163,12 +164,13 @@ function startWs() {
   polling.value = true;
   qrError.value = '';
   const secret = CryptoJS.MD5(pin.value).toString();
-  
-  // Build WebSocket URL - connect directly to backend gateway
-  const atraceApiUrl = import.meta.env.VITE_API_ATRACE || 'http://localhost:8081';
-  const protocol = atraceApiUrl.startsWith('https') ? 'wss:' : 'ws:';
-  const host = atraceApiUrl.replace(/^https?:\/\//, '');
-  const wsUrl = `${protocol}//${host}/api/v1/atrace/qr/stream?namespace=${encodeURIComponent(nsSlug.value)}&postId=${encodeURIComponent(postId.value)}&method=METHOD_QR&secret=${encodeURIComponent(secret)}`;
+
+  const wsUrl = getApiWsUrl('atrace', '/api/v1/atrace/qr/stream', {
+    namespace: nsSlug.value,
+    postId: postId.value,
+    method: 'METHOD_QR',
+    secret,
+  });
   
   console.log('[WS] Creating new WebSocket:', wsUrl);
   ws = new WebSocket(wsUrl);

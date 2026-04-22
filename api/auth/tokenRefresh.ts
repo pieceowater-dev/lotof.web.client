@@ -1,6 +1,7 @@
 import { logWarn } from '@/utils/logger';
+import { getApiBasePath } from '@/utils/api-base';
 
-const hubApiBase = import.meta.env.VITE_API_HUB || 'http://localhost:8080';
+const hubApiBase = getApiBasePath('hub');
 
 /**
  * Refresh access token using the refresh token stored in httpOnly cookie

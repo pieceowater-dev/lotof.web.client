@@ -3,26 +3,28 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 // Multi-service config. Each service outputs its own typed file to keep bundles smaller
 // and allow optional services (atrace may appear later).
 // Env vars:
-//  VITE_API_HUB    - hub base URL (required)
-//  VITE_API_ATRACE - atrace base URL (optional)
+//  VITE_API_HUB       - optional hub gateway base URL override
+//  VITE_API_ATRACE    - optional atrace gateway base URL override
 
-const hubBase = process.env.VITE_API_HUB || 'http://localhost:8080';
-const atraceBase = process.env.VITE_API_ATRACE; // optional
+const hubBaseUrl = process.env.VITE_API_HUB || 'http://localhost:8080';
+const atraceBaseUrl = process.env.VITE_API_ATRACE; // optional
+
+const withQueryPath = (baseUrl: string) => `${baseUrl.replace(/\/$/, '')}/query`;
 
 const plugins = ['typescript', 'typescript-operations', 'typed-document-node'];
 
 const generates: Record<string, any> = {
   'api/__generated__/hub-types.ts': {
-    schema: hubBase + '/query',
+    schema: withQueryPath(hubBaseUrl),
     documents: ['api/hub/**/*.gql'],
     plugins,
     config: { avoidOptionals: false, useTypeImports: true }
   }
 };
 
-if (atraceBase) {
+if (atraceBaseUrl) {
   generates['api/__generated__/atrace-types.ts'] = {
-    schema: atraceBase + '/query',
+    schema: withQueryPath(atraceBaseUrl),
     documents: ['api/atrace/**/*.gql'],
     plugins,
     config: { avoidOptionals: false }

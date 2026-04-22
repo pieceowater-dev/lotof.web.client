@@ -18,7 +18,7 @@ export default defineEventHandler(async (event) => {
       }
     `
 
-    const atraceUrl = process.env.ATRACE_GTW_URL || 'http://localhost:8080'
+    const atraceUrl = process.env.ATRACE_GTW_URL || 'http://localhost:8081'
     
     // Get token from cookie or Authorization header
     let token = getHeader(event, 'authorization') || ''

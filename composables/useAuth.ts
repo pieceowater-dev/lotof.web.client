@@ -4,8 +4,9 @@ import { logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
+import { getApiBasePath } from '@/utils/api-base';
 
-const hubApiBase = import.meta.env.VITE_API_HUB || 'http://localhost:8080';
+const hubApiBase = getApiBasePath('hub');
 
 // Centralized auth composable: manages token (via cookie), current user, and auth flows
 export function useAuth() {
@@ -67,7 +68,7 @@ export function useAuth() {
 
   function login() {
     // Redirect to hub auth
-    const base = import.meta.env.VITE_API_HUB;
+    const base = getApiBasePath('hub');
     const redirect = encodeURIComponent(window.location.origin);
     window.location.href = `${base}/google/auth?redirect_uri=${redirect}`;
   }
