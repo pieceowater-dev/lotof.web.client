@@ -69,6 +69,39 @@ export function getApiBasePath(service: ApiService): string {
   return API_BASE_PATHS[service];
 }
 
+export function toAbsoluteUrl(urlOrPath: string): string {
+  const normalized = normalizeBase(urlOrPath);
+
+  if (normalized.startsWith('https://') || normalized.startsWith('http://')) {
+    return normalized;
+  }
+
+  if (!normalized.startsWith('/')) {
+    return normalized;
+  }
+
+  if (process.client) {
+    return `${window.location.origin}${normalized}`;
+  }
+
+  try {
+    return `${useRequestURL().origin}${normalized}`;
+  } catch {}
+
+  try {
+    const siteUrl = useRuntimeConfig().public.siteUrl;
+    if (typeof siteUrl === 'string' && siteUrl.trim().length > 0) {
+      return `${normalizeBase(siteUrl.trim())}${normalized}`;
+    }
+  } catch {}
+
+  return `http://127.0.0.1${normalized}`;
+}
+
+export function getApiBaseUrl(service: ApiService): string {
+  return toAbsoluteUrl(getApiBasePath(service));
+}
+
 export function getApiWsBase(service: ApiService): string {
   const base = getApiBasePath(service);
   return toWsUrl(base, '');

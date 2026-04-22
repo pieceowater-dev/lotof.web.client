@@ -3,7 +3,7 @@ import type { Ref } from 'vue';
 import { useToast } from '#imports';
 import { useI18n } from '@/composables/useI18n';
 import { logError, logWarn } from '@/utils/logger';
-import { getApiBasePath } from '@/utils/api-base';
+import { getApiBaseUrl } from '@/utils/api-base';
 
 // Reactive token holder (shared across clients)
 let tokenRef: Ref<string | null> | null = null; // hub token (Authorization)
@@ -161,6 +161,6 @@ export class ApiClient {
   }
 }
 
-export const hubClient = new ApiClient(getApiBasePath('hub'), { authHeader: 'Authorization' });
-export const atraceClient = new ApiClient(getApiBasePath('atrace'), { authHeader: 'AtraceAuthorization' });
-export const contactsClient = new ApiClient(getApiBasePath('contacts'), { authHeader: 'ContactsAuthorization' });
+export const hubClient = new ApiClient(getApiBaseUrl('hub'), { authHeader: 'Authorization' });
+export const atraceClient = new ApiClient(getApiBaseUrl('atrace'), { authHeader: 'AtraceAuthorization' });
+export const contactsClient = new ApiClient(getApiBaseUrl('contacts'), { authHeader: 'ContactsAuthorization' });
