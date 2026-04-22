@@ -54,10 +54,23 @@ export function useAuth() {
           applyLoaded(data.namespaces.rows, token.value);
         }
       } catch (e) {
-        // If token invalid → logout silently
-        console.warn('[auth] fetchUser failed, clearing token', { error: String(e) });
-        logWarn('[auth] fetchUser failed, clearing token');
-        logout();
+        const status = (e as any)?.response?.status ?? (e as any)?.response?.statusCode ?? (e as any)?.status;
+        const rawErrors = (e as any)?.response?.errors;
+        const messages: string[] = Array.isArray(rawErrors)
+          ? rawErrors.map((err: any) => String(err?.message || '').toLowerCase())
+          : [];
+        const isUnauthorized =
+          status === 401 ||
+          messages.some((m) => m.includes('unauthorized') && m.includes('token'));
+
+        if (isUnauthorized) {
+          console.warn('[auth] fetchUser unauthorized, logging out', { error: String(e) });
+          logWarn('[auth] fetchUser unauthorized, logging out');
+          logout();
+        } else {
+          console.warn('[auth] fetchUser failed, keeping session', { error: String(e) });
+          logWarn('[auth] fetchUser failed, keeping session');
+        }
       } finally {
         loading.value = false;
       }
