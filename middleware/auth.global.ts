@@ -26,6 +26,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
   }
 
+  // Restore current user once after full page reload on non-root routes.
+  const { user, initialized, loading, fetchUser } = useAuth();
+  if (token && !user.value && !initialized.value && !loading.value) {
+    await fetchUser();
+  }
+
   if (isAtraceRoute) {
     const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
     // Skip token check for plans page - it doesn't require app token

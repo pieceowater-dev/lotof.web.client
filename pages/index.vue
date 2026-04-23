@@ -267,6 +267,16 @@ const dashboardApps = computed(() => [
   ...comingSoonApps.value,
 ]);
 
+const consoleWhitelist = new Set(['pieceowater@gmail.com', 'farvardmtb@gmail.com']); // TODO: move to backend and fetch dynamically
+const canSeeConsoleCard = computed(() => {
+  const current = String(user.value?.email || email.value || '').trim().toLowerCase();
+  return consoleWhitelist.has(current);
+});
+
+function openConsole() {
+  router.push('/console');
+}
+
 const languageOptions = [
   { value: 'en', label: 'English', flag: '🇺🇸' },
   { value: 'ru', label: 'Русский', flag: '🇷🇺' },
@@ -373,6 +383,25 @@ function handleDashboardApp(app: AppConfig) {
 
         <div class="lg:col-span-8 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
           <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 md:gap-4">
+            <button
+              v-if="canSeeConsoleCard"
+              class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
+              @click="openConsole"
+            >
+              <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
+                <UIcon
+                  name="lucide:terminal-square"
+                  class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
+                />
+              </div>
+              <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">
+                Console
+              </p>
+              <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
+                {{ t('app.open') || 'Open' }}
+              </p>
+            </button>
+
             <button
               v-for="app in dashboardApps"
               :key="app.bundle"

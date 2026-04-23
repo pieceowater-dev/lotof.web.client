@@ -49,7 +49,12 @@ export function useI18n() {
     }
 
     // Backward-compatible fallback for misplaced sections like en.common.contacts.*
-    return resolveFromNamespace(localeMessages.common?.[ns], restPath);
+    const commonScoped = resolveFromNamespace(localeMessages.common?.[ns], restPath);
+    if (commonScoped !== undefined) {
+      return commonScoped;
+    }
+
+    return undefined;
   }
   function t(path: string, params?: Record<string, string | number>): string {
     const primaryLocale = locale.value;
