@@ -344,7 +344,7 @@ type ProcessedMarkdownPost = HomeFeedPost & {
   dateISO: string;
 };
 
-const mdFiles = import.meta.glob('../content/publications/**/*.md', { eager: true, as: 'raw' }) as Record<string, string>;
+const mdFiles = import.meta.glob('../public/content/publications/**/*.md', { eager: true, as: 'raw' }) as Record<string, string>;
 
 function parseFrontMatter(raw: string): { meta: Record<string, string | string[]>; body: string } {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -973,7 +973,10 @@ watch([articlesSearch, selectedArticleTag], () => {
               <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.feed') || 'Feed' }}</h2>
             </div>
 
-            <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
+            <div v-if="localizedVisibleArticleFeedPosts.length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+              <p class="text-gray-600 dark:text-gray-400">{{ t('app.noArticlesYet') || 'Пока пусто' }}</p>
+            </div>
+            <HomePostsFeed v-else :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
 
             <div
               v-if="isMobileFeedViewport && canAutoLoadMoreMobilePosts"
@@ -983,8 +986,8 @@ watch([articlesSearch, selectedArticleTag], () => {
             />
           </section>
 
-          <aside class="hidden lg:block lg:sticky lg:top-0 lg:pt-12 self-start flex flex-col gap-4 h-[calc(100vh-3rem)]">
-            <div class="rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
+          <aside class="hidden lg:block lg:sticky lg:top-0 lg:pt-12 self-start flex flex-col h-[calc(100vh-3rem)]">
+            <div class="mb-6 rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
               <div class="relative">
                 <UIcon
                   name="lucide:search"
