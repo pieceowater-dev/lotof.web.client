@@ -322,8 +322,8 @@ export default defineNuxtConfig({
 
   // Performance optimizations
   experimental: {
-    payloadExtraction: isProduction,
-    renderJsonPayloads: isProduction,
+    payloadExtraction: false,
+    renderJsonPayloads: false,
     viewTransition: true,
     componentIslands: isProduction
   },

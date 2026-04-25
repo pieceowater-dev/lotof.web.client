@@ -650,7 +650,11 @@ onBeforeUnmount(() => {
 
 .article-content :deep(strong) {
   color: inherit;
-  font-weight: 600;
+  font-weight: 700;
+  background-image: none !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  -webkit-text-fill-color: currentColor;
 }
 
 :global(.dark) .article-content {

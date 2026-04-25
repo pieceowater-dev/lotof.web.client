@@ -231,7 +231,7 @@ const handleSaveProfile = async () => {
   }
 };
 
-const { t, locale } = useI18n();
+const { t, locale, setLocale } = useI18n();
 const config = useRuntimeConfig();
 const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
 
@@ -669,7 +669,7 @@ function handleOpenPost(post: HomeFeedPost) {
 }
 
 function setLanguage(lang: 'en' | 'ru' | 'kk') {
-  locale.value = lang;
+  setLocale(lang);
 }
 
 function handleDashboardApp(app: AppConfig) {
@@ -943,13 +943,13 @@ watch([articlesSearch, selectedArticleTag], () => {
                   </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
+                <div class="grid grid-cols-3 gap-2">
                   <button
                     v-for="lang in languageOptions"
                     :key="lang.value"
                     type="button"
                     class="h-11 rounded-xl border text-sm font-medium transition-all"
-                    :class="String(locale) === lang.value
+                    :class="locale === lang.value
                       ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
                       : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700'"
                     @click="setLanguage(lang.value)"

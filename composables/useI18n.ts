@@ -30,16 +30,7 @@ const messages: Record<Locale, Record<string, any>> = {
 };
 
 export function useI18n() {
-  const localeCookie = useCookie<string | null>(LSKeys.LANGUAGE, {
-    path: '/',
-    sameSite: 'lax',
-    maxAge: 60 * 60 * 24 * 365,
-  });
-
   const locale = useState<Locale>('i18n-locale', () => {
-    const cookieLocale = normalizeLocale(localeCookie.value);
-    if (cookieLocale) return cookieLocale;
-
     if (process.server) {
       const acceptLanguage = useRequestHeaders(['accept-language'])['accept-language'];
       return detectFromAcceptLanguage(acceptLanguage) || DEFAULT_LOCALE;
@@ -68,19 +59,16 @@ export function useI18n() {
     });
   }
 
-  const isPersistenceWatchAttached = useState<boolean>('i18n-persistence-watch-attached', () => false);
-  if (!isPersistenceWatchAttached.value) {
-    isPersistenceWatchAttached.value = true;
+  const isClientPersistenceWatchAttached = useState<boolean>('i18n-persistence-watch-attached-client', () => false);
+  if (process.client && !isClientPersistenceWatchAttached.value) {
+    isClientPersistenceWatchAttached.value = true;
     watch(
       locale,
       (value) => {
-        localeCookie.value = value;
-        if (process.client) {
-          try {
-            localStorage.setItem(LSKeys.LANGUAGE, value);
-          } catch {
-            // Ignore localStorage write issues.
-          }
+        try {
+          localStorage.setItem(LSKeys.LANGUAGE, value);
+        } catch {
+          // Ignore localStorage write issues.
         }
       },
       { immediate: true }
