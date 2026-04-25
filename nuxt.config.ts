@@ -110,7 +110,7 @@ export default defineNuxtConfig({
       titleTemplate: "%s | lota",
       meta: [
         { charset: "utf-8" },
-        { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" },
+        { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "description", content: "Платформа автоматизации для современного бизнеса. Управляйте посещаемостью, трекингом и рабочими процессами эффективно." },
         { name: "keywords", content: "автоматизация, учет рабочего времени, бизнес услуги, управление процессами, командная работа" },
         { name: "google", content: "notranslate" },
@@ -159,11 +159,6 @@ export default defineNuxtConfig({
       link: [
         // Canonical URL (will be set dynamically per page)
         { rel: "canonical", href: "" },
-        
-        // DNS Prefetch & Preconnect for external resources
-        { rel: "dns-prefetch", href: "//fonts.googleapis.com" },
-        { rel: "preconnect", href: "https://fonts.googleapis.com", crossorigin: "anonymous" },
-        { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" },
         
         // Standard favicon
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
@@ -266,6 +261,7 @@ export default defineNuxtConfig({
       noExternal: []
     },
     build: {
+      sourcemap: isProduction,
       commonjsOptions: {
         include: [/leaflet/, /xlsx/, /node_modules/]
       },

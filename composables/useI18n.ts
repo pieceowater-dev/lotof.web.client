@@ -47,7 +47,6 @@ export function useI18n() {
   if (process.client && !isClientLocaleSynced.value) {
     onNuxtReady(() => {
       if (isClientLocaleSynced.value) return;
-      isClientLocaleSynced.value = true;
       try {
         const stored = normalizeLocale(localStorage.getItem(LSKeys.LANGUAGE));
         if (stored && stored !== locale.value) {
@@ -55,6 +54,12 @@ export function useI18n() {
         }
       } catch {
         // Ignore localStorage access issues.
+      }
+      isClientLocaleSynced.value = true;
+      try {
+        localStorage.setItem(LSKeys.LANGUAGE, locale.value);
+      } catch {
+        // Ignore localStorage write issues.
       }
     });
   }
@@ -65,13 +70,14 @@ export function useI18n() {
     watch(
       locale,
       (value) => {
+        if (!isClientLocaleSynced.value) return;
         try {
           localStorage.setItem(LSKeys.LANGUAGE, value);
         } catch {
           // Ignore localStorage write issues.
         }
       },
-      { immediate: true }
+      { immediate: false }
     );
   }
 

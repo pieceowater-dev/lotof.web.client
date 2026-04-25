@@ -291,7 +291,7 @@ function markdownToHtml(markdown: string): string {
     if (image) {
       const src = escapeHtml(sanitizeUrl(image[2]));
       const alt = escapeHtml(image[1] || '');
-      html.push(`<figure class="my-6"><img src="${src}" alt="${alt}" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="lazy" /></figure>`);
+      html.push(`<figure class="my-6"><img src="${src}" alt="${alt}" width="1200" height="630" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="lazy" /></figure>`);
       index += 1;
       continue;
     }
@@ -550,6 +550,8 @@ onBeforeUnmount(() => {
             v-if="articleOgImage && !hasImageInBody"
             :src="articleOgImage"
             :alt="articleTitle"
+            width="1200"
+            height="630"
             class="mb-8 w-full rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-gray-700"
             loading="lazy"
           />
@@ -579,6 +581,8 @@ onBeforeUnmount(() => {
                 <img
                   :src="nextArticle.image"
                   :alt="nextArticle.title"
+                  width="480"
+                  height="224"
                   class="h-28 w-full object-cover"
                   loading="lazy"
                 />

@@ -101,6 +101,7 @@ const goHome = () => {
         data-tour="help-button"
         variant="ghost"
         size="md"
+        :aria-label="t('app.startTour') || 'Start interactive tutorial'"
         :title="t('app.startTour') || 'Start interactive tutorial'"
         @click="handleHelpClick"
       >
@@ -112,6 +113,7 @@ const goHome = () => {
         class="md:hidden"
         variant="ghost"
         size="md"
+        :aria-label="t('app.feedMenu') || 'Open menu'"
         @click="isMobileMenuOpen = true"
       >
         <UIcon name="i-lucide-menu" />
@@ -130,6 +132,7 @@ const goHome = () => {
           variant="ghost"
           size="md"
           md:size="lg"
+          :aria-label="t('app.feedMenu') || 'Open menu'"
         >
           <UIcon name="i-lucide-menu" />
         </UButton>
@@ -188,6 +191,7 @@ const goHome = () => {
         <UButton
           variant="ghost"
           icon="lucide:x"
+          :aria-label="t('app.cancel') || 'Close menu'"
           @click="isMobileMenuOpen = false"
         />
       </div>

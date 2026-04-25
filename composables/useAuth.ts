@@ -19,24 +19,10 @@ export function useAuth() {
   async function fetchUser(force = false) {
     try {
       if (!token.value) {
-        console.warn('[auth] No access token found, attempting refresh');
-        // Try to refresh access token using httpOnly refresh_token cookie
-        const refreshed = await refreshAccessToken();
-        if (!refreshed) {
-          console.warn('[auth] Token refresh failed, no valid session');
-          user.value = null;
-          return;
-        }
-        // Re-read the token cookie after refresh (server sets new 'token' cookie)
-        // Force Nuxt to re-read cookies from document.cookie
-        await nextTick();
-        const tokenCookie = useCookie(CookieKeys.TOKEN);
-        if (!tokenCookie.value) {
-          console.warn('[auth] Token still missing after refresh');
-          user.value = null;
-          return;
-        }
-        token.value = tokenCookie.value;
+        // Logged-out state on public pages: do not call refresh endpoint proactively.
+        user.value = null;
+        setGlobalAuthToken(null);
+        return;
       }
 
       if (user.value && !force) return; // cached
