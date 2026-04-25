@@ -649,7 +649,7 @@ onBeforeUnmount(() => {
 }
 
 .article-content :deep(strong) {
-  color: rgb(17 24 39);
+  color: inherit;
   font-weight: 600;
 }
 
@@ -658,6 +658,6 @@ onBeforeUnmount(() => {
 }
 
 :global(.dark) .article-content :deep(strong) {
-  color: rgb(243 244 246);
+  color: inherit;
 }
 </style>

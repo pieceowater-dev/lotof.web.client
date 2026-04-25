@@ -86,7 +86,7 @@ function excerptFromBody(markdown: string): string {
 function readTimeLabel(markdown: string): string {
   const words = markdownToText(markdown).split(' ').filter(Boolean).length;
   const mins = Math.max(1, Math.ceil(words / 220));
-  return `${mins} min read`;
+  return t('app.readTimeMinutes', { minutes: mins }) || `${mins} min read`;
 }
 
 function formatDate(dateISO: string): string {
