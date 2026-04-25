@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
+import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 
 definePageMeta({
   viewTransition: false,
@@ -215,6 +216,97 @@ const suggestedArticles = computed<SuggestedArticle[]>(() => {
     .slice(0, 3);
 });
 
+function estimateReadTime(markdown: string): string {
+  const words = markdown
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`]*`/g, ' ')
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/\[[^\]]*\]\([^)]*\)/g, ' ')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/[>*_~#-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean).length;
+
+  const minutes = Math.max(1, Math.ceil(words / 220));
+  return t('app.readTimeMinutes', { minutes }) || `${minutes} min read`;
+}
+
+const sidebarSearch = ref('');
+const sidebarSelectedTag = ref('');
+const WHATS_NEW_SIDEBAR_LIMIT = 5;
+const isMobileSidebarViewport = ref(false);
+const isArticleInView = ref(true);
+let sidebarMediaQuery: MediaQueryList | null = null;
+
+const sidebarBasePosts = computed<HomeFeedPost[]>(() => {
+  if (!article.value) return [];
+
+  return allArticles.value
+    .filter((item) => item.slug !== article.value?.slug)
+    .filter((item) => normalizeSlug(String(item.meta.category || '')) === 'whatsnew')
+    .map((item) => {
+      const title = String(item.meta.title || item.slug);
+      const description = String(item.meta.description || '').trim();
+      const dateISO = String(item.meta.date || '');
+      const tags = toTags(item.meta.tags);
+      const image = String(item.meta.og_image || '/og-image.png');
+      const author = String(item.meta.author || 'Lota Team');
+
+      return {
+        id: item.slug,
+        href: `/${item.slug}`,
+        category: t('app.whatsNew') || "What's New",
+        title,
+        excerpt: description,
+        author,
+        publishedAt: toDateLabel(dateISO),
+        readTime: estimateReadTime(item.body),
+        image,
+        imageAlt: title,
+        tags,
+      } as HomeFeedPost;
+    });
+});
+
+const sidebarPopularTags = computed(() => {
+  const counts = new Map<string, number>();
+  for (const post of sidebarBasePosts.value) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) || 0) + 1);
+    }
+  }
+
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .slice(0, 10)
+    .map(([tag]) => tag);
+});
+
+const sidebarPosts = computed(() => {
+  const query = sidebarSearch.value.trim().toLowerCase();
+  return sidebarBasePosts.value
+    .filter((post) => {
+      const tagMatches = !sidebarSelectedTag.value || post.tags.includes(sidebarSelectedTag.value);
+      if (!tagMatches) return false;
+      if (!query) return true;
+
+      const haystack = `${post.title} ${post.excerpt} ${post.tags.join(' ')}`.toLowerCase();
+      return haystack.includes(query);
+    })
+    .slice(0, WHATS_NEW_SIDEBAR_LIMIT);
+});
+
+function handleSidebarOpen(post: HomeFeedPost) {
+  if (!post.href || !process.client) return;
+  window.location.assign(post.href);
+}
+
+function onSidebarMediaChange(event: MediaQueryListEvent) {
+  isMobileSidebarViewport.value = event.matches;
+}
+
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -410,6 +502,14 @@ onMounted(() => {
   if (!process.client) return;
   document.documentElement.classList.add('article-slug-page');
   document.body.classList.add('article-slug-page');
+
+  sidebarMediaQuery = window.matchMedia('(max-width: 1023px)');
+  isMobileSidebarViewport.value = sidebarMediaQuery.matches;
+  if (typeof sidebarMediaQuery.addEventListener === 'function') {
+    sidebarMediaQuery.addEventListener('change', onSidebarMediaChange);
+  } else {
+    sidebarMediaQuery.addListener(onSidebarMediaChange);
+  }
 });
 
 watch(
@@ -423,13 +523,23 @@ watch(
 
 onBeforeUnmount(() => {
   if (!process.client) return;
+
+  if (sidebarMediaQuery) {
+    if (typeof sidebarMediaQuery.removeEventListener === 'function') {
+      sidebarMediaQuery.removeEventListener('change', onSidebarMediaChange);
+    } else {
+      sidebarMediaQuery.removeListener(onSidebarMediaChange);
+    }
+    sidebarMediaQuery = null;
+  }
+
   document.documentElement.classList.remove('article-slug-page');
   document.body.classList.remove('article-slug-page');
 });
 </script>
 
 <template>
-  <main class="relative min-h-screen overflow-x-clip bg-gradient-to-b from-white via-emerald-50/45 to-cyan-50/45 px-4 py-7 md:px-6 md:py-10 dark:from-slate-900 dark:via-emerald-950/18 dark:to-blue-950/26">
+  <main class="relative min-h-screen overflow-x-clip bg-gradient-to-b from-white via-emerald-50/45 to-cyan-50/45 px-4 py-7 pb-24 md:px-6 md:py-10 dark:from-slate-900 dark:via-emerald-950/18 dark:to-blue-950/26 lg:pb-10">
     <div
       aria-hidden="true"
       class="pointer-events-none absolute inset-0 -z-0"
@@ -441,9 +551,10 @@ onBeforeUnmount(() => {
       "
     />
 
-    <article class="relative z-10 mx-auto w-full max-w-[980px]">
-      <div class="rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_16px_50px_-28px_rgba(15,23,42,0.35)] backdrop-blur sm:p-7 md:p-10 dark:border-gray-700 dark:bg-gray-900/95 dark:shadow-[0_20px_60px_-30px_rgba(0,0,0,0.7)]">
-        <div class="mx-auto w-full max-w-[720px]">
+    <section class="relative z-10 mx-auto w-full max-w-[1280px] lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
+      <article>
+        <div class="rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_16px_50px_-28px_rgba(15,23,42,0.35)] backdrop-blur sm:p-7 md:p-10 dark:border-gray-700 dark:bg-gray-900/95 dark:shadow-[0_20px_60px_-30px_rgba(0,0,0,0.7)]">
+          <div class="mx-auto w-full max-w-[720px]">
           <NuxtLink
             to="/feed"
             class="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
@@ -492,49 +603,66 @@ onBeforeUnmount(() => {
 
           <div v-html="articleHtml" class="article-content" />
 
-          <section v-if="suggestedArticles.length" class="mt-12 border-t border-slate-200 pt-8 dark:border-gray-800">
-            <div class="mb-5 flex items-center justify-between gap-3">
-              <h2 class="text-xl font-semibold text-slate-900 dark:text-gray-100">
-                {{ t('app.continueReading') || 'Continue reading' }}
-              </h2>
-              <NuxtLink
-                to="/feed"
-                class="text-sm font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
-              >
-                {{ t('app.moreArticles') || 'More articles' }}
-              </NuxtLink>
-            </div>
+            <section v-if="suggestedArticles.length" class="mt-12 border-t border-slate-200 pt-8 dark:border-gray-800">
+              <div class="mb-5 flex items-center justify-between gap-3">
+                <h2 class="text-xl font-semibold text-slate-900 dark:text-gray-100">
+                  {{ t('app.continueReading') || 'Continue reading' }}
+                </h2>
+                <NuxtLink
+                  to="/feed"
+                  class="text-sm font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
+                >
+                  {{ t('app.moreArticles') || 'More articles' }}
+                </NuxtLink>
+              </div>
 
-            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <a
-                v-for="nextArticle in suggestedArticles"
-                :key="nextArticle.slug"
-                :href="`/${nextArticle.slug}`"
-                class="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-blue-500"
-              >
-                <img
-                  :src="nextArticle.image"
-                  :alt="nextArticle.title"
-                  width="480"
-                  height="224"
-                  class="h-28 w-full object-cover"
-                  loading="lazy"
-                />
-                <div class="p-3">
-                  <p class="mb-1 text-xs text-slate-500 dark:text-gray-400">{{ nextArticle.dateLabel }}</p>
-                  <h3 class="line-clamp-2 text-sm font-semibold leading-5 text-slate-900 group-hover:text-blue-700 dark:text-gray-100 dark:group-hover:text-blue-300">
-                    {{ nextArticle.title }}
-                  </h3>
-                  <p v-if="nextArticle.description" class="mt-2 line-clamp-2 text-xs leading-5 text-slate-600 dark:text-gray-300">
-                    {{ nextArticle.description }}
-                  </p>
-                </div>
-              </a>
-            </div>
-          </section>
+              <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <a
+                  v-for="nextArticle in suggestedArticles"
+                  :key="nextArticle.slug"
+                  :href="`/${nextArticle.slug}`"
+                  class="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-blue-500"
+                >
+                  <img
+                    :src="nextArticle.image"
+                    :alt="nextArticle.title"
+                    width="480"
+                    height="224"
+                    class="h-28 w-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="p-3">
+                    <p class="mb-1 text-xs text-slate-500 dark:text-gray-400">{{ nextArticle.dateLabel }}</p>
+                    <h3 class="line-clamp-2 text-sm font-semibold leading-5 text-slate-900 group-hover:text-blue-700 dark:text-gray-100 dark:group-hover:text-blue-300">
+                      {{ nextArticle.title }}
+                    </h3>
+                    <p v-if="nextArticle.description" class="mt-2 line-clamp-2 text-xs leading-5 text-slate-600 dark:text-gray-300">
+                      {{ nextArticle.description }}
+                    </p>
+                  </div>
+                </a>
+              </div>
+            </section>
+          </div>
         </div>
-      </div>
-    </article>
+      </article>
+
+      <FeedSidebarWidget
+        :articles-search="sidebarSearch"
+        :selected-tag="sidebarSelectedTag"
+        :popular-tags="sidebarPopularTags"
+        :whats-new-posts="sidebarPosts"
+        :is-mobile-viewport="isMobileSidebarViewport"
+        :is-feed-section-in-view="isArticleInView"
+        @update:articles-search="sidebarSearch = $event"
+        @update:selected-tag="sidebarSelectedTag = $event"
+        @open="handleSidebarOpen"
+      />
+    </section>
+
+    <div class="relative z-10 mx-auto mt-10 w-full max-w-[1280px]">
+      <AppFooter />
+    </div>
   </main>
 </template>
 

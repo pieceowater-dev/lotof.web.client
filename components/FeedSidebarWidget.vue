@@ -66,8 +66,8 @@ watch(
 
 <template>
   <div class="contents">
-    <aside class="hidden lg:block lg:sticky lg:top-3 self-start flex flex-col h-[calc(100vh-2rem)]">
-      <div class="mb-6 rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
+    <aside class="hidden lg:block lg:sticky lg:top-3 self-start flex flex-col min-h-0">
+      <div class="mb-7 rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
         <div class="relative">
           <UIcon
             name="lucide:search"
@@ -82,7 +82,7 @@ watch(
           />
         </div>
 
-        <div v-if="props.popularTags.length" class="mt-3">
+        <div v-if="props.popularTags.length" class="mt-4">
           <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('app.popularTags') || 'Popular tags' }}</p>
           <div class="flex flex-wrap gap-2">
             <button
@@ -110,7 +110,7 @@ watch(
           </div>
         </div>
 
-        <div class="mt-3 flex justify-end">
+        <div class="mt-4 flex justify-end">
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
@@ -125,15 +125,15 @@ watch(
         </div>
       </div>
 
-      <div class="flex flex-col flex-1 rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white to-blue-50/40 p-5 shadow-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-800/70 overflow-hidden">
-        <div class="mb-4 flex items-center gap-2">
+      <div class="flex h-[clamp(22rem,56vh,36rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white to-blue-50/40 p-5 shadow-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-800/70 overflow-hidden">
+        <div class="mb-5 flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
             <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
           </div>
           <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ t('app.whatsNew') || "What's New" }}</h3>
         </div>
 
-        <div v-if="props.whatsNewPosts.length" class="flex-1 overflow-y-auto space-y-2.5 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600">
+        <div v-if="props.whatsNewPosts.length" class="whats-new-scroll min-h-0 flex-1 overflow-y-auto space-y-2.5 pr-2">
           <button
             v-for="post in props.whatsNewPosts"
             :key="post.id"
@@ -203,7 +203,7 @@ watch(
         </div>
 
         <Transition name="mobile-sheet">
-          <div v-if="mobileMenuOpen" class="space-y-2 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
+          <div v-if="mobileMenuOpen" class="space-y-4 border-t border-gray-200 px-4 py-4 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
             <div class="rounded-2xl border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-700/40">
               <div class="relative">
                 <UIcon
@@ -220,7 +220,7 @@ watch(
               </div>
             </div>
 
-            <div v-if="props.popularTags.length">
+            <div v-if="props.popularTags.length" class="pt-1">
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('app.popularTags') || 'Popular tags' }}
               </p>
@@ -250,12 +250,12 @@ watch(
               </div>
             </div>
 
-            <div class="flex flex-col min-h-0">
+            <div class="flex flex-col min-h-0 max-h-72 pt-1">
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('app.whatsNew') || "What's New" }}
               </p>
 
-              <div v-if="props.whatsNewPosts.length" class="flex-1 overflow-y-auto space-y-1.5 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600">
+              <div v-if="props.whatsNewPosts.length" class="whats-new-scroll flex-1 overflow-y-auto space-y-1.5 pr-2">
                 <button
                   v-for="post in props.whatsNewPosts"
                   :key="`mobile-${post.id}`"
@@ -305,5 +305,36 @@ watch(
 .mobile-sheet-leave-to {
   opacity: 0;
   transform: translateY(6px);
+}
+
+.whats-new-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.whats-new-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.whats-new-scroll:hover {
+  scrollbar-width: thin;
+}
+
+.whats-new-scroll:hover::-webkit-scrollbar {
+  width: 6px;
+}
+
+.whats-new-scroll:hover::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.whats-new-scroll:hover::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgb(209 213 219);
+}
+
+:global(.dark) .whats-new-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgb(75 85 99);
 }
 </style>

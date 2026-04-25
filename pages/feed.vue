@@ -143,7 +143,8 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 const allProcessedPosts = computed(() => processMarkdownPosts());
 const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'articles'));
 const allWhatsNewPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'whatsnew'));
-const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, 3));
+const WHATS_NEW_SIDEBAR_LIMIT = 5;
+const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, WHATS_NEW_SIDEBAR_LIMIT));
 
 const articlesSearch = ref('');
 const selectedArticleTag = ref('');
