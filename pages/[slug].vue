@@ -111,7 +111,14 @@ const articleDate = computed(() => {
   const raw = String(article.value?.meta.date || '');
   const dt = new Date(raw);
   if (Number.isNaN(dt.getTime())) return raw;
-  return dt.toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' });
+
+  const intlLocale = locale.value === 'ru'
+    ? 'ru-RU'
+    : locale.value === 'kk'
+      ? 'kk-KZ'
+      : 'en-GB';
+
+  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'long', year: 'numeric' });
 });
 
 const siteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
@@ -165,7 +172,14 @@ function toTags(value: string | string[] | undefined): string[] {
 function toDateLabel(dateISO: string): string {
   const dt = new Date(dateISO);
   if (Number.isNaN(dt.getTime())) return dateISO;
-  return dt.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const intlLocale = locale.value === 'ru'
+    ? 'ru-RU'
+    : locale.value === 'kk'
+      ? 'kk-KZ'
+      : 'en-GB';
+
+  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 const suggestedArticles = computed<SuggestedArticle[]>(() => {

@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 type ProcessedMarkdownPost = HomeFeedPost & {
   categorySlug: string;
@@ -92,7 +92,14 @@ function readTimeLabel(markdown: string): string {
 function formatDate(dateISO: string): string {
   const dt = new Date(dateISO);
   if (Number.isNaN(dt.getTime())) return dateISO;
-  return dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+
+  const intlLocale = locale.value === 'ru'
+    ? 'ru-RU'
+    : locale.value === 'kk'
+      ? 'kk-KZ'
+      : 'en-GB';
+
+  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function processMarkdownPosts(): ProcessedMarkdownPost[] {
