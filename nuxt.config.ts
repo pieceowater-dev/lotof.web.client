@@ -113,6 +113,7 @@ export default defineNuxtConfig({
         { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
         { name: "description", content: "Платформа автоматизации для современного бизнеса. Управляйте посещаемостью, трекингом и рабочими процессами эффективно." },
         { name: "keywords", content: "автоматизация, учет рабочего времени, бизнес услуги, управление процессами, командная работа" },
+        { name: "google-site-verification", content: "NKkJMmUBFMd8wkgPn0NWB2U1ca2FCL-JzP6RKm1reds" },
         { name: "google", content: "notranslate" },
         
         // Robots
