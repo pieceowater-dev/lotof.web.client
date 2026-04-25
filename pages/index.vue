@@ -473,8 +473,8 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
   return posts.sort((a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime());
 }
 
-const allProcessedPosts = processMarkdownPosts();
-const articleFeedPosts = computed(() => allProcessedPosts.filter((post) => post.categorySlug === 'articles'));
+const allProcessedPosts = computed(() => processMarkdownPosts());
+const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'articles'));
 const articlesSearch = ref('');
 const selectedArticleTag = ref('');
 const popularArticleTags = computed(() => {
@@ -651,7 +651,7 @@ async function ensureMobileFeedObserver() {
   mobileFeedObserver.observe(sentinelEl);
 }
 
-const allWhatsNewPosts = computed(() => allProcessedPosts.filter((post) => post.categorySlug === 'whatsnew'));
+const allWhatsNewPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'whatsnew'));
 const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, 3));
 const brokenWhatsNewSidebarImages = ref<Record<string, boolean>>({});
 
