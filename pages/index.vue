@@ -507,12 +507,14 @@ const filteredArticleFeedPosts = computed(() => {
     return haystack.includes(q);
   });
 });
-const DESKTOP_FEED_LIMIT = 30;
+const DESKTOP_INITIAL_FEED_LIMIT = 12;
+const DESKTOP_FEED_STEP = 8;
 const MOBILE_INITIAL_FEED_LIMIT = 5;
 const MOBILE_FEED_STEP = 5;
 const isMobileFeedViewport = ref(false);
-const mobileFeedVisibleCount = ref(MOBILE_INITIAL_FEED_LIMIT);
+const feedVisibleCount = ref(DESKTOP_INITIAL_FEED_LIMIT);
 let mobileFeedMediaQuery: MediaQueryList | null = null;
+const mainScrollContainer = ref<HTMLElement | null>(null);
 const mobileFeedSentinel = ref<HTMLElement | null>(null);
 let mobileFeedObserver: IntersectionObserver | null = null;
 let mobileFeedAdvanceLocked = false;
@@ -521,28 +523,91 @@ const isFeedSectionInView = ref(false);
 const mobileSidebarMenuOpen = ref(false);
 let feedSectionObserver: IntersectionObserver | null = null;
 
+function resolveScrollContainer(): HTMLElement | null {
+  if (!process.client) return null;
+  if (mainScrollContainer.value && document.contains(mainScrollContainer.value)) {
+    return mainScrollContainer.value;
+  }
+
+  const found = document.querySelector<HTMLElement>('main.main-scroll');
+  if (found) {
+    mainScrollContainer.value = found;
+  }
+  return mainScrollContainer.value;
+}
+
+function scrollToTop() {
+  if (!process.client) return;
+  const container = resolveScrollContainer();
+
+  const forceTop = () => {
+    if (container) {
+      container.scrollTop = 0;
+    }
+    if (document.scrollingElement) {
+      document.scrollingElement.scrollTop = 0;
+    }
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.scrollTo(0, 0);
+  };
+
+  const getCurrentTop = () => {
+    if (container) return container.scrollTop;
+    return document.scrollingElement?.scrollTop
+      || document.documentElement.scrollTop
+      || document.body.scrollTop
+      || window.scrollY
+      || 0;
+  };
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    forceTop();
+    return;
+  }
+
+  const startTop = getCurrentTop();
+
+  try {
+    container?.scrollTo?.({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.scrollingElement?.scrollTo?.({ top: 0, behavior: 'smooth' });
+  } catch {
+    forceTop();
+    return;
+  }
+
+  // Fallback only if smooth scrolling did not start.
+  setTimeout(() => {
+    const currentTop = getCurrentTop();
+    if (Math.abs(currentTop - startTop) < 2 && currentTop > 2) {
+      forceTop();
+    }
+  }, 180);
+}
+
+function handleScrollTopTap(event?: Event) {
+  event?.preventDefault();
+  event?.stopPropagation();
+  scrollToTop();
+}
+
 function applyFeedViewport(matchesMobile: boolean) {
   isMobileFeedViewport.value = matchesMobile;
-  if (matchesMobile) {
-    mobileFeedVisibleCount.value = Math.min(MOBILE_INITIAL_FEED_LIMIT, maxFeedCards.value);
-  }
+  const initialLimit = matchesMobile ? MOBILE_INITIAL_FEED_LIMIT : DESKTOP_INITIAL_FEED_LIMIT;
+  feedVisibleCount.value = Math.min(initialLimit, maxFeedCards.value);
 }
 
 function onMobileFeedMediaChange(event: MediaQueryListEvent) {
   applyFeedViewport(event.matches);
 }
 
-const maxFeedCards = computed(() => Math.min(DESKTOP_FEED_LIMIT, filteredArticleFeedPosts.value.length));
+const maxFeedCards = computed(() => filteredArticleFeedPosts.value.length);
 const maxVisibleFeedCards = computed(() => {
-  if (isMobileFeedViewport.value) return maxFeedCards.value;
   return maxFeedCards.value;
 });
 const visibleArticleFeedPosts = computed(() => {
-  if (!isMobileFeedViewport.value) {
-    return filteredArticleFeedPosts.value.slice(0, maxVisibleFeedCards.value);
-  }
-
-  const limit = Math.min(maxVisibleFeedCards.value, mobileFeedVisibleCount.value);
+  const limit = Math.min(maxVisibleFeedCards.value, feedVisibleCount.value);
   return filteredArticleFeedPosts.value.slice(0, limit);
 });
 const localizedVisibleArticleFeedPosts = computed(() => {
@@ -552,29 +617,38 @@ const localizedVisibleArticleFeedPosts = computed(() => {
     category: articleLabel,
   }));
 });
-const canAutoLoadMoreMobilePosts = computed(() => {
-  if (!isMobileFeedViewport.value) return false;
+const canAutoLoadMoreFeedPosts = computed(() => {
   return visibleArticleFeedPosts.value.length < maxVisibleFeedCards.value;
 });
 
-function loadMoreMobileFeedPosts() {
-  mobileFeedVisibleCount.value = Math.min(maxVisibleFeedCards.value, mobileFeedVisibleCount.value + MOBILE_FEED_STEP);
+function loadMoreFeedPosts() {
+  const step = isMobileFeedViewport.value ? MOBILE_FEED_STEP : DESKTOP_FEED_STEP;
+  feedVisibleCount.value = Math.min(maxVisibleFeedCards.value, feedVisibleCount.value + step);
 }
 
 function maybeLoadMoreMobileFeedByScroll() {
-  if (!process.client || !isMobileFeedViewport.value || mobileFeedAdvanceLocked || !canAutoLoadMoreMobilePosts.value) {
+  if (!process.client || mobileFeedAdvanceLocked || !canAutoLoadMoreFeedPosts.value) {
     return;
   }
 
-  const scrollBottom = window.scrollY + window.innerHeight;
-  const pageBottom = document.documentElement.scrollHeight;
+  const container = resolveScrollContainer();
+  const scrollTop = container ? container.scrollTop : window.scrollY;
+  const viewportHeight = container ? container.clientHeight : window.innerHeight;
+  const scrollHeight = container ? container.scrollHeight : document.documentElement.scrollHeight;
+
+  const scrollBottom = scrollTop + viewportHeight;
+  const pageBottom = scrollHeight;
   if (scrollBottom < pageBottom - 220) return;
 
   mobileFeedAdvanceLocked = true;
-  loadMoreMobileFeedPosts();
+  loadMoreFeedPosts();
   nextTick(() => {
     mobileFeedAdvanceLocked = false;
   });
+}
+
+function handleWindowScroll() {
+  maybeLoadMoreMobileFeedByScroll();
 }
 
 function disconnectMobileFeedObserver() {
@@ -592,7 +666,7 @@ function disconnectFeedSectionObserver() {
 }
 
 async function ensureFeedSectionObserver() {
-  if (!process.client || !isMobileFeedViewport.value) {
+  if (!process.client) {
     isFeedSectionInView.value = false;
     disconnectFeedSectionObserver();
     return;
@@ -625,7 +699,7 @@ async function ensureFeedSectionObserver() {
 }
 
 async function ensureMobileFeedObserver() {
-  if (!process.client || !isMobileFeedViewport.value || !canAutoLoadMoreMobilePosts.value) {
+  if (!process.client || !canAutoLoadMoreFeedPosts.value) {
     disconnectMobileFeedObserver();
     return;
   }
@@ -638,10 +712,10 @@ async function ensureMobileFeedObserver() {
     mobileFeedObserver = new IntersectionObserver(
       (entries) => {
         const first = entries[0];
-        if (!first?.isIntersecting || mobileFeedAdvanceLocked || !canAutoLoadMoreMobilePosts.value) return;
+        if (!first?.isIntersecting || mobileFeedAdvanceLocked || !canAutoLoadMoreFeedPosts.value) return;
 
         mobileFeedAdvanceLocked = true;
-        loadMoreMobileFeedPosts();
+        loadMoreFeedPosts();
         nextTick(() => {
           mobileFeedAdvanceLocked = false;
         });
@@ -691,19 +765,24 @@ function handleDashboardApp(app: AppConfig) {
 
 onMounted(() => {
   if (!process.client) return;
+  mainScrollContainer.value = document.querySelector<HTMLElement>('main.main-scroll');
   mobileFeedMediaQuery = window.matchMedia('(max-width: 767px)');
   applyFeedViewport(mobileFeedMediaQuery.matches);
   mobileFeedMediaQuery.addEventListener('change', onMobileFeedMediaChange);
-  window.addEventListener('scroll', maybeLoadMoreMobileFeedByScroll, { passive: true });
+  window.addEventListener('scroll', handleWindowScroll, { passive: true });
+  mainScrollContainer.value?.addEventListener('scroll', handleWindowScroll, { passive: true });
   ensureMobileFeedObserver();
   ensureFeedSectionObserver();
 });
 
 onBeforeUnmount(() => {
-  if (!mobileFeedMediaQuery) return;
-  mobileFeedMediaQuery.removeEventListener('change', onMobileFeedMediaChange);
-  mobileFeedMediaQuery = null;
-  window.removeEventListener('scroll', maybeLoadMoreMobileFeedByScroll);
+  if (mobileFeedMediaQuery) {
+    mobileFeedMediaQuery.removeEventListener('change', onMobileFeedMediaChange);
+    mobileFeedMediaQuery = null;
+  }
+  window.removeEventListener('scroll', handleWindowScroll);
+  mainScrollContainer.value?.removeEventListener('scroll', handleWindowScroll);
+  mainScrollContainer.value = null;
   disconnectMobileFeedObserver();
   disconnectFeedSectionObserver();
 });
@@ -724,8 +803,8 @@ watch([isMobileFeedViewport, isFeedSectionInView], ([isMobile, inView]) => {
 });
 
 watch([articlesSearch, selectedArticleTag], () => {
-  if (!isMobileFeedViewport.value) return;
-  mobileFeedVisibleCount.value = MOBILE_INITIAL_FEED_LIMIT;
+  const initialLimit = isMobileFeedViewport.value ? MOBILE_INITIAL_FEED_LIMIT : DESKTOP_INITIAL_FEED_LIMIT;
+  feedVisibleCount.value = Math.min(initialLimit, maxVisibleFeedCards.value);
 });
 </script>
 <template>
@@ -1013,7 +1092,7 @@ watch([articlesSearch, selectedArticleTag], () => {
             <HomePostsFeed v-else :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
 
             <div
-              v-if="isMobileFeedViewport && canAutoLoadMoreMobilePosts"
+              v-if="canAutoLoadMoreFeedPosts"
               ref="mobileFeedSentinel"
               class="h-px w-full"
               aria-hidden="true"
@@ -1061,6 +1140,20 @@ watch([articlesSearch, selectedArticleTag], () => {
                     #{{ tag }}
                   </button>
                 </div>
+              </div>
+
+              <div class="mt-3 flex justify-end">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
+                  :aria-label="t('app.scrollToTop') || 'Scroll to top'"
+                  @click="handleScrollTopTap"
+                  @touchstart.prevent.stop="handleScrollTopTap"
+                  @pointerdown.prevent.stop="handleScrollTopTap"
+                >
+                  <UIcon name="lucide:arrow-up" class="h-3.5 w-3.5" />
+                  <span>{{ t('app.scrollToTop') || 'Up' }}</span>
+                </button>
               </div>
             </div>
 
@@ -1121,26 +1214,37 @@ watch([articlesSearch, selectedArticleTag], () => {
         >
           <div class="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
             <!-- Trigger button -->
-            <button
-              type="button"
-              class="w-full flex items-center justify-between gap-3 px-4 py-3 text-left"
-              :aria-expanded="mobileSidebarMenuOpen"
-              @click="mobileSidebarMenuOpen = !mobileSidebarMenuOpen"
-            >
-              <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 px-3 py-2.5">
+              <button
+                type="button"
+                class="min-w-0 inline-flex items-center gap-2 px-1 py-0.5 text-left"
+                :aria-expanded="mobileSidebarMenuOpen"
+                @click="mobileSidebarMenuOpen = !mobileSidebarMenuOpen"
+              >
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
                   <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
                 </div>
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {{ t('app.feedMenu') || 'Feed menu' }}
                 </span>
-              </div>
-              <UIcon
-                name="lucide:chevron-up"
-                class="h-4 w-4 text-gray-400 transition-transform dark:text-gray-500"
-                :class="mobileSidebarMenuOpen ? 'rotate-180' : ''"
-              />
-            </button>
+                <UIcon
+                  name="lucide:chevron-up"
+                  class="h-4 w-4 text-gray-400 transition-transform dark:text-gray-500"
+                  :class="mobileSidebarMenuOpen ? 'rotate-180' : ''"
+                />
+              </button>
+
+              <button
+                type="button"
+                class="ml-auto relative z-10 inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-lg border border-blue-100 bg-blue-50/60 px-2 text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
+                :aria-label="t('app.scrollToTop') || 'Scroll to top'"
+                @click="handleScrollTopTap"
+                @touchstart.prevent.stop="handleScrollTopTap"
+                @pointerdown.prevent.stop="handleScrollTopTap"
+              >
+                <UIcon name="lucide:arrow-up" class="h-4 w-4" />
+              </button>
+            </div>
 
             <!-- Content -->
             <Transition name="mobile-sheet">
@@ -1262,6 +1366,7 @@ watch([articlesSearch, selectedArticleTag], () => {
           </UFormGroup>
         </div>
       </Modal>
+
     </div>
 
     <div class="m-4 mt-auto">
@@ -1292,4 +1397,5 @@ watch([articlesSearch, selectedArticleTag], () => {
   opacity: 1;
   max-height: 600px;
 }
+
 </style>
