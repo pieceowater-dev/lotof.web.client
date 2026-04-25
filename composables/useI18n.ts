@@ -1,23 +1,26 @@
-import { ref, computed, watch } from 'vue';
+import { computed, watch } from 'vue';
 import { LSKeys } from '@/utils/storageKeys';
 import en from '@/locales/en.json';
 import kk from '@/locales/kk.json';
 import ru from '@/locales/ru.json';
 
-// Simple i18n implementation (client-side only for now)
 type Locale = 'en' | 'ru' | 'kk';
+const SUPPORTED_LOCALES: Locale[] = ['en', 'ru', 'kk'];
+const DEFAULT_LOCALE: Locale = 'en';
 
-const detected: Locale = (() => {
-  if (typeof navigator === 'undefined') return 'en';
-  if (navigator.language.startsWith('ru')) return 'ru';
-  if (navigator.language.startsWith('kk')) return 'kk';
-  return 'en';
-})();
-const currentLocale = ref<Locale>(detected);
-// Load persisted locale
-if (typeof window !== 'undefined') {
-  const stored = localStorage.getItem(LSKeys.LANGUAGE);
-  if (stored === 'en' || stored === 'ru' || stored === 'kk') currentLocale.value = stored;
+function normalizeLocale(value?: string | null): Locale | undefined {
+  if (!value) return undefined;
+  const lowered = String(value).toLowerCase();
+  if (lowered.startsWith('ru')) return 'ru';
+  if (lowered.startsWith('kk')) return 'kk';
+  if (lowered.startsWith('en')) return 'en';
+  return undefined;
+}
+
+function detectFromAcceptLanguage(value?: string): Locale | undefined {
+  if (!value) return undefined;
+  const first = value.split(',').map((part) => part.trim()).find(Boolean);
+  return normalizeLocale(first);
 }
 
 const messages: Record<Locale, Record<string, any>> = {
@@ -27,7 +30,63 @@ const messages: Record<Locale, Record<string, any>> = {
 };
 
 export function useI18n() {
-  const locale = currentLocale;
+  const localeCookie = useCookie<string | null>(LSKeys.LANGUAGE, {
+    path: '/',
+    sameSite: 'lax',
+    maxAge: 60 * 60 * 24 * 365,
+  });
+
+  const locale = useState<Locale>('i18n-locale', () => {
+    const cookieLocale = normalizeLocale(localeCookie.value);
+    if (cookieLocale) return cookieLocale;
+
+    if (process.server) {
+      const acceptLanguage = useRequestHeaders(['accept-language'])['accept-language'];
+      return detectFromAcceptLanguage(acceptLanguage) || DEFAULT_LOCALE;
+    }
+
+    if (process.client) {
+      return normalizeLocale(navigator.language) || DEFAULT_LOCALE;
+    }
+
+    return DEFAULT_LOCALE;
+  });
+
+  const isClientLocaleSynced = useState<boolean>('i18n-client-synced', () => false);
+  if (process.client && !isClientLocaleSynced.value) {
+    onNuxtReady(() => {
+      if (isClientLocaleSynced.value) return;
+      isClientLocaleSynced.value = true;
+      try {
+        const stored = normalizeLocale(localStorage.getItem(LSKeys.LANGUAGE));
+        if (stored && stored !== locale.value) {
+          locale.value = stored;
+        }
+      } catch {
+        // Ignore localStorage access issues.
+      }
+    });
+  }
+
+  const isPersistenceWatchAttached = useState<boolean>('i18n-persistence-watch-attached', () => false);
+  if (!isPersistenceWatchAttached.value) {
+    isPersistenceWatchAttached.value = true;
+    watch(
+      locale,
+      (value) => {
+        localeCookie.value = value;
+        if (process.client) {
+          try {
+            localStorage.setItem(LSKeys.LANGUAGE, value);
+          } catch {
+            // Ignore localStorage write issues.
+          }
+        }
+      },
+      { immediate: true }
+    );
+  }
+
   function getDeep(obj: any, keyPath: string): any {
     return keyPath.split('.').reduce((acc: any, k: string) => (acc && typeof acc === 'object') ? acc[k] : undefined, obj);
   }
@@ -87,10 +146,10 @@ export function useI18n() {
     const restPath = parts.join('.');
     return restPath ? getDeep(dictNs, restPath) : dictNs;
   }
-  function setLocale(l: Locale) { currentLocale.value = l; }
-  // Persist
-  if (typeof window !== 'undefined') {
-    watch(currentLocale, v => localStorage.setItem(LSKeys.LANGUAGE, v));
+  function setLocale(l: Locale) {
+    if (!SUPPORTED_LOCALES.includes(l)) return;
+    locale.value = l;
   }
-  return { locale, t, tm, setLocale, available: computed(() => ['en', 'ru', 'kk']) };
+
+  return { locale, t, tm, setLocale, available: computed(() => SUPPORTED_LOCALES) };
 }

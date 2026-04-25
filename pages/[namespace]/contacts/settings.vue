@@ -947,10 +947,8 @@ function getCreateStampCardErrorToast(error: unknown): { title: string; descript
     const max = loyaltyLimitMatch[2];
     return {
       title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
-      description: t(
-        'contacts.loyaltyProgramsLimitReached',
-        `Достигнут лимит программ лояльности: ${current} из ${max}. Обновите тариф, чтобы создать новую программу.`,
-      )
+      description: (t('contacts.loyaltyProgramsLimitReached', { current, max })
+        || `Достигнут лимит программ лояльности: ${current} из ${max}. Обновите тариф, чтобы создать новую программу.`)
         .replace('{current}', current)
         .replace('{max}', max),
     };
@@ -966,10 +964,7 @@ function getCreateStampCardErrorToast(error: unknown): { title: string; descript
   if (/FailedPrecondition/i.test(rawMessage)) {
     return {
       title: t('common.warning') || 'Предупреждение',
-      description: t(
-        'contacts.planValidationError',
-        'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
-      ),
+      description: t('contacts.planValidationError') || 'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
     };
   }
 
@@ -989,10 +984,8 @@ function getCreateDynamicFieldErrorToast(error: unknown): { title: string; descr
     const max = customFieldsLimitMatch[2];
     return {
       title: t('contacts.limitReachedTitle') || 'Лимит тарифа достигнут',
-      description: t(
-        'contacts.customFieldsLimitReached',
-        `Достигнут лимит пользовательских полей: ${current} из ${max}. Обновите тариф, чтобы создать новое поле.`,
-      )
+      description: (t('contacts.customFieldsLimitReached', { current, max })
+        || `Достигнут лимит пользовательских полей: ${current} из ${max}. Обновите тариф, чтобы создать новое поле.`)
         .replace('{current}', current)
         .replace('{max}', max),
     };
@@ -1008,10 +1001,7 @@ function getCreateDynamicFieldErrorToast(error: unknown): { title: string; descr
   if (/FailedPrecondition/i.test(rawMessage)) {
     return {
       title: t('common.warning') || 'Предупреждение',
-      description: t(
-        'contacts.planValidationError',
-        'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
-      ),
+      description: t('contacts.planValidationError') || 'Не удалось проверить лимиты текущего тарифа. Попробуйте снова через несколько секунд.',
     };
   }
 

@@ -132,11 +132,11 @@
             <tbody>
               <tr
                 v-for="ns in namespaces"
-                :key="ns"
+                :key="ns.id"
                 class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
               >
                 <td class="px-6 py-3 font-semibold text-slate-900 dark:text-white">
-                  {{ ns }}
+                  {{ ns.name }}
                 </td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">—</td>
                 <td class="px-6 py-3 text-slate-600 dark:text-slate-400">—</td>
@@ -177,7 +177,15 @@ const mockNamespaces = [
   { id: '3', name: 'testing', users: 8, plan: 'Free', status: 'active' }
 ];
 
-const namespaces = computed(() => allNamespaces.value?.length ? allNamespaces.value : mockNamespaces);
+const namespaces = computed(() => {
+  const source = allNamespaces.value?.length ? allNamespaces.value : mockNamespaces;
+  return source.map((ns, index) => {
+    if (typeof ns === 'string') {
+      return { id: `ns-${index}-${ns}`, name: ns };
+    }
+    return { id: ns.id, name: ns.name };
+  });
+});
 
 const trendDots = [
   { x: 0, y: 31 },

@@ -1,5 +1,82 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import type { PluginOption } from 'vite';
+
+const publicationsRoot = join(process.cwd(), 'public/content/publications');
+const isProduction = process.env.NODE_ENV === 'production';
+
+function stripInspectorPlugins(plugins: PluginOption[]): PluginOption[] {
+  const result: PluginOption[] = [];
+  for (const plugin of plugins) {
+    if (Array.isArray(plugin)) {
+      result.push(stripInspectorPlugins(plugin));
+      continue;
+    }
+
+    const name = String((plugin as any)?.name || '');
+    if (name.includes('vite-plugin-vue-inspector') || name.includes('vue-inspector')) {
+      continue;
+    }
+
+    result.push(plugin);
+  }
+
+  return result;
+}
+
+function collectMarkdownFiles(dirPath: string): string[] {
+  try {
+    const entries = readdirSync(dirPath, { withFileTypes: true });
+    return entries.flatMap((entry) => {
+      const fullPath = join(dirPath, entry.name);
+      if (entry.isDirectory()) return collectMarkdownFiles(fullPath);
+      if (entry.isFile() && entry.name.endsWith('.md')) return [fullPath];
+      return [];
+    });
+  } catch {
+    return [];
+  }
+}
+
+function collectArticleRoutes(): string[] {
+  const markdownFiles = collectMarkdownFiles(publicationsRoot);
+  const routes = new Set<string>();
+
+  for (const filePath of markdownFiles) {
+    try {
+      const raw = readFileSync(filePath, 'utf-8');
+      const frontMatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
+      const frontMatter = frontMatterMatch?.[1] || '';
+      const slugMatch = frontMatter.match(/^slug:\s*"?([^"\n]+)"?\s*$/m);
+      const slug = String(slugMatch?.[1] || '').trim().toLowerCase();
+      if (!slug) continue;
+      routes.add(`/${slug}`);
+    } catch {
+      // Skip invalid files during config-time route discovery.
+    }
+  }
+
+  return Array.from(routes);
+}
+
+const articleRoutes = collectArticleRoutes();
+const articleRouteRules = isProduction
+  ? Object.fromEntries(
+      articleRoutes.map((route) => [
+        route,
+        {
+          ssr: true,
+          prerender: true,
+          headers: {
+            'cache-control': 'public, max-age=900, s-maxage=3600',
+          },
+        },
+      ])
+    )
+  : {};
+
 export default defineNuxtConfig({
   ssr: true, // Enable server-side rendering for Nitro server
   
@@ -17,7 +94,8 @@ export default defineNuxtConfig({
     '/api-hub/**': { proxy: 'http://127.0.0.1:8080/**' },
     '/api-atrace/**': { proxy: 'http://127.0.0.1:8081/**' },
     '/api-capital/**': { proxy: 'http://127.0.0.1:8082/**' },
-    '/api-contacts/**': { proxy: 'http://127.0.0.1:8083/**' }
+    '/api-contacts/**': { proxy: 'http://127.0.0.1:8083/**' },
+    ...articleRouteRules
   },
   
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
@@ -87,9 +165,6 @@ export default defineNuxtConfig({
         { rel: "preconnect", href: "https://fonts.googleapis.com", crossorigin: "anonymous" },
         { rel: "preconnect", href: "https://fonts.gstatic.com", crossorigin: "anonymous" },
         
-        // Preload critical resources
-        { rel: "preload", as: "style", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" },
-        
         // Standard favicon
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -138,7 +213,7 @@ export default defineNuxtConfig({
   },
   components: true,
   compatibilityDate: "2025-03-01",
-  devtools: { enabled: true },
+  devtools: { enabled: false },
   modules: ["@nuxt/ui", "@nuxtjs/color-mode"],
   css: [
     '@/assets/css/fonts.css',
@@ -157,6 +232,33 @@ export default defineNuxtConfig({
     '@gql-atrace': './api/__generated__/atrace-types.ts'
   },
   vite: {
+    plugins: [
+      {
+        name: 'disable-vue-inspector-virtual-modules',
+        enforce: 'pre',
+        resolveId(id) {
+          if (id.startsWith('virtual:vue-inspector-path:') || id === 'virtual:vue-inspector-options') {
+            return `\0disabled-vue-inspector:${id}`;
+          }
+          return null;
+        },
+        load(id) {
+          if (id.startsWith('\0disabled-vue-inspector:')) {
+            return 'export default {}';
+          }
+          return null;
+        }
+      },
+      {
+        name: 'strip-vue-inspector-html-injection',
+        enforce: 'post',
+        transformIndexHtml(html) {
+          return html
+            .replace(/<script[^>]*virtual:vue-inspector-path:load\.js[^>]*><\/script>/gi, '')
+            .replace(/<script[^>]*vite-plugin-vue-inspector\/src\/load\.js[^>]*><\/script>/gi, '');
+        }
+      }
+    ],
     optimizeDeps: {
       include: ['leaflet', 'xlsx']
     },
@@ -199,8 +301,10 @@ export default defineNuxtConfig({
       inline: ['xlsx']
     },
     prerender: {
-      crawlLinks: true,
-      routes: ['/']
+      crawlLinks: isProduction,
+      routes: isProduction
+        ? Array.from(new Set(['/', '/feed', ...articleRoutes]))
+        : ['/', '/feed']
     },
     compressPublicAssets: true,
     routeRules: {
@@ -218,10 +322,10 @@ export default defineNuxtConfig({
 
   // Performance optimizations
   experimental: {
-    payloadExtraction: true,
-    renderJsonPayloads: true,
+    payloadExtraction: isProduction,
+    renderJsonPayloads: isProduction,
     viewTransition: true,
-    componentIslands: true
+    componentIslands: isProduction
   },
 
   // Runtime config for performance
@@ -229,6 +333,13 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://lota.tools'
+    }
+  },
+
+  hooks: {
+    'vite:extendConfig'(config) {
+      if (!Array.isArray(config.plugins)) return;
+      config.plugins = stripInspectorPlugins(config.plugins);
     }
   }
 });

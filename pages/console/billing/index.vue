@@ -213,12 +213,14 @@ definePageMeta({
 
 const { t } = useI18n();
 const activeTab = ref('plans');
-const selectedProject = ref<'atrace' | 'contacts'>('atrace');
 
 const projects = [
   { id: 'atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', title: 'Lota Contacts', icon: 'lucide:users-round' }
-];
+] as const;
+
+type ProjectId = (typeof projects)[number]['id'];
+const selectedProject = ref<ProjectId>('atrace');
 
 const selectedProjectTitle = computed(() => {
   return projects.find(project => project.id === selectedProject.value)?.title || 'Lota A-Trace';

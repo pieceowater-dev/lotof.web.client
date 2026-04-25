@@ -92,12 +92,18 @@ onMounted(async () => {
 
   // 3) Normal init flow
   await fetchUser();
-  await checkInstalledForVisibleApps();
   if (user.value) {
     username.value = user.value.username;
     email.value = user.value.email;
   }
   isLoading.value = false;
+
+  // Run app installation check in background so first paint is not blocked.
+  if (user.value) {
+    checkInstalledForVisibleApps().catch((error) => {
+      logError('[apps] startup install check failed', error);
+    });
+  }
 
   // 2.5) If authenticated and we have a back-to target, redirect back once
   if (isLoggedIn.value && process.client) {
@@ -344,7 +350,11 @@ type ProcessedMarkdownPost = HomeFeedPost & {
   dateISO: string;
 };
 
-const mdFiles = import.meta.glob('../public/content/publications/**/*.md', { eager: true, as: 'raw' }) as Record<string, string>;
+const mdFiles = import.meta.glob('../public/content/publications/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default',
+}) as Record<string, string>;
 
 function parseFrontMatter(raw: string): { meta: Record<string, string | string[]>; body: string } {
   const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
@@ -445,7 +455,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 
     posts.push({
       id: slug,
-      href: categorySlug === 'whatsnew' ? `/whatsnew/${slug}` : `/articles/${slug}`,
+      href: `/${slug}`,
       category: categorySlug === 'whatsnew' ? "What's New" : 'Articles',
       categorySlug,
       title,
@@ -491,9 +501,8 @@ const filteredArticleFeedPosts = computed(() => {
   });
 });
 const DESKTOP_FEED_LIMIT = 30;
-const MOBILE_FEED_LIMIT = 5;
-const MOBILE_INITIAL_FEED_LIMIT = 1;
-const MOBILE_FEED_STEP = 1;
+const MOBILE_INITIAL_FEED_LIMIT = 5;
+const MOBILE_FEED_STEP = 5;
 const isMobileFeedViewport = ref(false);
 const mobileFeedVisibleCount = ref(MOBILE_INITIAL_FEED_LIMIT);
 let mobileFeedMediaQuery: MediaQueryList | null = null;
@@ -508,7 +517,7 @@ let feedSectionObserver: IntersectionObserver | null = null;
 function applyFeedViewport(matchesMobile: boolean) {
   isMobileFeedViewport.value = matchesMobile;
   if (matchesMobile) {
-    mobileFeedVisibleCount.value = MOBILE_INITIAL_FEED_LIMIT;
+    mobileFeedVisibleCount.value = Math.min(MOBILE_INITIAL_FEED_LIMIT, maxFeedCards.value);
   }
 }
 
@@ -518,9 +527,7 @@ function onMobileFeedMediaChange(event: MediaQueryListEvent) {
 
 const maxFeedCards = computed(() => Math.min(DESKTOP_FEED_LIMIT, filteredArticleFeedPosts.value.length));
 const maxVisibleFeedCards = computed(() => {
-  if (isMobileFeedViewport.value) {
-    return Math.min(MOBILE_FEED_LIMIT, maxFeedCards.value);
-  }
+  if (isMobileFeedViewport.value) return maxFeedCards.value;
   return maxFeedCards.value;
 });
 const visibleArticleFeedPosts = computed(() => {
@@ -545,6 +552,22 @@ const canAutoLoadMoreMobilePosts = computed(() => {
 
 function loadMoreMobileFeedPosts() {
   mobileFeedVisibleCount.value = Math.min(maxVisibleFeedCards.value, mobileFeedVisibleCount.value + MOBILE_FEED_STEP);
+}
+
+function maybeLoadMoreMobileFeedByScroll() {
+  if (!process.client || !isMobileFeedViewport.value || mobileFeedAdvanceLocked || !canAutoLoadMoreMobilePosts.value) {
+    return;
+  }
+
+  const scrollBottom = window.scrollY + window.innerHeight;
+  const pageBottom = document.documentElement.scrollHeight;
+  if (scrollBottom < pageBottom - 220) return;
+
+  mobileFeedAdvanceLocked = true;
+  loadMoreMobileFeedPosts();
+  nextTick(() => {
+    mobileFeedAdvanceLocked = false;
+  });
 }
 
 function disconnectMobileFeedObserver() {
@@ -637,11 +660,12 @@ function onWhatsNewSidebarImageError(postId: string) {
 }
 
 function handleOpenPost(post: HomeFeedPost) {
-  toast.add({
-    title: post.title,
-    description: 'Article page will be connected in the next step.',
-    color: 'primary',
-  });
+  if (!post.href) return;
+  if (process.client) {
+    window.location.assign(post.href);
+    return;
+  }
+  router.push(post.href);
 }
 
 function setLanguage(lang: 'en' | 'ru' | 'kk') {
@@ -663,6 +687,7 @@ onMounted(() => {
   mobileFeedMediaQuery = window.matchMedia('(max-width: 767px)');
   applyFeedViewport(mobileFeedMediaQuery.matches);
   mobileFeedMediaQuery.addEventListener('change', onMobileFeedMediaChange);
+  window.addEventListener('scroll', maybeLoadMoreMobileFeedByScroll, { passive: true });
   ensureMobileFeedObserver();
   ensureFeedSectionObserver();
 });
@@ -671,12 +696,14 @@ onBeforeUnmount(() => {
   if (!mobileFeedMediaQuery) return;
   mobileFeedMediaQuery.removeEventListener('change', onMobileFeedMediaChange);
   mobileFeedMediaQuery = null;
+  window.removeEventListener('scroll', maybeLoadMoreMobileFeedByScroll);
   disconnectMobileFeedObserver();
   disconnectFeedSectionObserver();
 });
 
 watch([isMobileFeedViewport, maxVisibleFeedCards, () => visibleArticleFeedPosts.value.length], () => {
   ensureMobileFeedObserver();
+  maybeLoadMoreMobileFeedByScroll();
 });
 
 watch([isMobileFeedViewport, initialized, () => visibleArticleFeedPosts.value.length], () => {

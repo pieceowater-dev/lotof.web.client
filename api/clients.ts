@@ -1,7 +1,5 @@
 import { GraphQLClient } from 'graphql-request';
 import type { Ref } from 'vue';
-import { useToast } from '#imports';
-import { useI18n } from '@/composables/useI18n';
 import { logError, logWarn } from '@/utils/logger';
 import { getApiBaseUrl } from '@/utils/api-base';
 
@@ -67,15 +65,26 @@ type ApiClientOptions = {
 
 function notifyRateLimit() {
   if (!process.client) return;
+  const rawLang = typeof window !== 'undefined' ? String(localStorage.getItem('lang') || '').toLowerCase() : '';
+  const lang = rawLang.startsWith('ru') ? 'ru' : rawLang.startsWith('kk') ? 'kk' : 'en';
+  const labels = {
+    en: { title: 'Too many requests', description: 'Please wait a bit and try again.' },
+    ru: { title: 'Слишком много запросов', description: 'Подождите немного и попробуйте снова.' },
+    kk: { title: 'Сұрау тым көп', description: 'Сәл күтіп, қайтадан көріңіз.' },
+  } as const;
+
+  const text = labels[lang];
   try {
-    const toast = useToast();
-    const { t } = useI18n();
-    toast.add({
-      title: t('app.rateLimitTitle') || 'Too many requests',
-      description: t('app.rateLimitDesc') || 'Please wait a bit and try again.',
-      color: 'red',
+    const nuxtApp = useNuxtApp();
+    nuxtApp.$handleGraphQLError?.({
+      message: text.description,
+      response: { errors: [{ message: text.description }] },
     });
-  } catch {}
+  } catch {
+    // Ignore UI notification errors in utility layer.
+  }
+
+  logWarn(`${text.title}: ${text.description}`);
 }
 
 export class ApiClient {

@@ -4,15 +4,6 @@
 -->
 <template>
   <div>
-    <!-- Skip link anchor -->
-    <a
-      id="skip-to-content"
-      class="sr-only"
-      href="#main-content"
-    >
-      Перейти к основному содержимому
-    </a>
-
     <!-- Main content wrapper with proper ARIA -->
     <main 
       id="main-content" 
@@ -51,26 +42,5 @@ defineProps<{
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border-width: 0;
-}
-
-/* Skip link becomes visible on focus */
-#skip-to-content:focus {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100000;
-  width: auto;
-  height: auto;
-  padding: 1rem 2rem;
-  margin: 0;
-  overflow: visible;
-  clip: auto;
-  white-space: normal;
-  background: #000;
-  color: #fff;
-  text-decoration: none;
-  font-weight: 600;
-  outline: 3px solid #3b82f6;
-  outline-offset: 2px;
 }
 </style>
