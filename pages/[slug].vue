@@ -267,10 +267,23 @@ function renderInline(text: string): string {
   return safe;
 }
 
+function inferImageDimensions(url: string): { width: number; height: number } {
+  const match = url.match(/\/(\d{2,5})\/(\d{2,5})(?:[/?]|$)/);
+  if (match) {
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      return { width, height };
+    }
+  }
+  return { width: 1200, height: 630 };
+}
+
 function markdownToHtml(markdown: string): string {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
   const html: string[] = [];
   let index = 0;
+  let imageIndex = 0;
 
   while (index < lines.length) {
     const line = lines[index].trim();
@@ -303,9 +316,15 @@ function markdownToHtml(markdown: string): string {
 
     const image = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
     if (image) {
-      const src = escapeHtml(sanitizeUrl(image[2]));
+      const rawSrc = sanitizeUrl(image[2]);
+      const src = escapeHtml(rawSrc);
       const alt = escapeHtml(image[1] || '');
-      html.push(`<figure class="my-6"><img src="${src}" alt="${alt}" width="1200" height="630" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="lazy" /></figure>`);
+      const dimensions = inferImageDimensions(rawSrc);
+      const isFirstImage = imageIndex === 0;
+      const loading = isFirstImage ? 'eager' : 'lazy';
+      const fetchpriority = isFirstImage ? 'high' : 'low';
+      html.push(`<figure class="my-6"><img src="${src}" alt="${alt}" width="${dimensions.width}" height="${dimensions.height}" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="${loading}" fetchpriority="${fetchpriority}" decoding="async" /></figure>`);
+      imageIndex += 1;
       index += 1;
       continue;
     }
@@ -353,91 +372,6 @@ function markdownToHtml(markdown: string): string {
 
 const articleHtml = computed(() => markdownToHtml(sanitizedArticleBody.value));
 
-type OverflowOffender = {
-  tag: string;
-  className: string;
-  left: number;
-  right: number;
-  width: number;
-};
-
-let overflowProbeTimer: ReturnType<typeof setTimeout> | null = null;
-let lastOverflowSignature = '';
-
-function collectOverflowOffenders(): OverflowOffender[] {
-  if (!process.client) return [];
-
-  const viewportWidth = document.documentElement.clientWidth;
-  const nodes = Array.from(document.body.querySelectorAll('*')) as HTMLElement[];
-  const offenders: OverflowOffender[] = [];
-
-  for (const node of nodes) {
-    const rect = node.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) continue;
-
-    if (rect.right > viewportWidth + 1 || rect.left < -1) {
-      offenders.push({
-        tag: node.tagName.toLowerCase(),
-        className: (node.className || '').toString().slice(0, 120),
-        left: Number(rect.left.toFixed(1)),
-        right: Number(rect.right.toFixed(1)),
-        width: Number(rect.width.toFixed(1)),
-      });
-    }
-  }
-
-  return offenders.slice(0, 8);
-}
-
-async function reportOverflow(reason: string) {
-  if (!process.client || !process.dev) return;
-
-  const offenders = collectOverflowOffenders();
-  const signature = JSON.stringify(offenders);
-  if (signature === lastOverflowSignature) return;
-  lastOverflowSignature = signature;
-
-  try {
-    await fetch('/api/client-overflow-log', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        route: route.fullPath,
-        reason,
-        viewport: {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        },
-        scroll: {
-          x: window.scrollX,
-          y: window.scrollY,
-        },
-        offenders,
-      }),
-      keepalive: true,
-    });
-  } catch {
-    // Ignore diagnostics transport failures in dev mode.
-  }
-}
-
-function scheduleOverflowProbe(reason: string) {
-  if (!process.client || !process.dev) return;
-  if (overflowProbeTimer) clearTimeout(overflowProbeTimer);
-  overflowProbeTimer = setTimeout(() => {
-    reportOverflow(reason);
-  }, 120);
-}
-
-function onOverflowProbeScroll() {
-  scheduleOverflowProbe('scroll');
-}
-
-function onOverflowProbeResize() {
-  scheduleOverflowProbe('resize');
-}
 
 useSeoMeta({
   title: () => articleTitle.value,
@@ -476,12 +410,6 @@ onMounted(() => {
   if (!process.client) return;
   document.documentElement.classList.add('article-slug-page');
   document.body.classList.add('article-slug-page');
-
-  if (process.dev) {
-    window.addEventListener('scroll', onOverflowProbeScroll, { passive: true });
-    window.addEventListener('resize', onOverflowProbeResize, { passive: true });
-    scheduleOverflowProbe('mounted');
-  }
 });
 
 watch(
@@ -490,7 +418,6 @@ watch(
     if (!process.client) return;
     await nextTick();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    scheduleOverflowProbe('slug-change');
   }
 );
 
@@ -498,15 +425,6 @@ onBeforeUnmount(() => {
   if (!process.client) return;
   document.documentElement.classList.remove('article-slug-page');
   document.body.classList.remove('article-slug-page');
-
-  if (process.dev) {
-    window.removeEventListener('scroll', onOverflowProbeScroll);
-    window.removeEventListener('resize', onOverflowProbeResize);
-    if (overflowProbeTimer) {
-      clearTimeout(overflowProbeTimer);
-      overflowProbeTimer = null;
-    }
-  }
 });
 </script>
 
@@ -567,7 +485,9 @@ onBeforeUnmount(() => {
             width="1200"
             height="630"
             class="mb-8 w-full rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-gray-700"
-            loading="lazy"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
           />
 
           <div v-html="articleHtml" class="article-content" />

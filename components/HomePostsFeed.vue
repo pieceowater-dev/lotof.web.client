@@ -47,7 +47,7 @@ function onImageError(postId: string) {
 <template>
   <section class="space-y-4 md:space-y-5" aria-label="Posts feed">
     <article
-      v-for="post in props.posts"
+      v-for="(post, postIndex) in props.posts"
       :key="post.id"
       class="overflow-hidden rounded-3xl border border-blue-100/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 cursor-pointer"
       role="button"
@@ -60,7 +60,11 @@ function onImageError(postId: string) {
         :src="post.image"
         :alt="post.imageAlt"
         class="h-52 w-full object-cover sm:h-60"
-        loading="lazy"
+        :loading="postIndex === 0 ? 'eager' : 'lazy'"
+        :fetchpriority="postIndex === 0 ? 'high' : 'low'"
+        decoding="async"
+        width="1200"
+        height="630"
         @error="onImageError(post.id)"
       />
       <div

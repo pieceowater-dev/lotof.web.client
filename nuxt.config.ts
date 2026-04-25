@@ -142,6 +142,7 @@ export default defineNuxtConfig({
         { name: "twitter:image", content: "/og-image.png" },
         
         // Apple iOS meta tags
+        { name: "mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-capable", content: "yes" },
         { name: "apple-mobile-web-app-status-bar-style", content: "default" },
         { name: "apple-mobile-web-app-title", content: "lota" },
@@ -262,7 +263,7 @@ export default defineNuxtConfig({
       noExternal: []
     },
     build: {
-      sourcemap: isProduction,
+      sourcemap: true,
       commonjsOptions: {
         include: [/leaflet/, /xlsx/, /node_modules/]
       },

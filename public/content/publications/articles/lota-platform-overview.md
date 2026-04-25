@@ -9,7 +9,7 @@ tags:
   - "lota"
   - "автоматизация бизнеса"
   - "управление процессами"
-canonical: "https://lota.example/articles/lota-platform-overview"
+canonical: "https://lota.tools/lota-platform-overview"
 og_image: "https://picsum.photos/1200/630?random=10"
 robots: "index,follow"
 ---

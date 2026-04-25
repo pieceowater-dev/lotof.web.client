@@ -17,6 +17,7 @@ const { user, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 const colorMode = useColorMode();
 const isDarkMode = computed({
@@ -83,7 +84,7 @@ onMounted(async () => {
   await nextTick();
   
   // 2) Immediate auto-login if redirected with auth-needed flag
-  const q0 = useRoute().query;
+  const q0 = route.query;
   if (!isLoggedIn.value && (q0['auth-needed'] === 'true' || q0['authNeeded'] === 'true')) {
     // Trigger login right away to avoid waiting on other async inits
     login();
@@ -118,14 +119,12 @@ onMounted(async () => {
   }
 
   // 3) If user is already logged in but URL still has the hint, scrub it
-  const r = useRouter();
-  const rInfo = useRoute();
-  const needsScrub = rInfo.query['auth-needed'] === 'true' || rInfo.query['authNeeded'] === 'true';
+  const needsScrub = route.query['auth-needed'] === 'true' || route.query['authNeeded'] === 'true';
   if (isLoggedIn.value && needsScrub) {
-    const cleaned = { ...rInfo.query } as any;
+    const cleaned = { ...route.query } as any;
     delete cleaned['auth-needed'];
     delete cleaned['authNeeded'];
-    r.replace({ path: rInfo.path, query: cleaned });
+    router.replace({ path: route.path, query: cleaned });
   }
 });
 
