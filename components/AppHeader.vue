@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { useRouter, useRoute } from 'vue-router';
-import { ref, computed, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { atraceTour, contactsTour } from '@/config/tours';
 
 const { t } = useI18n();
+const toast = useToast();
 const router = useRouter();
 const route = useRoute();
 
@@ -15,14 +16,20 @@ const { selected: selectedNS } = useNamespace();
 const routeNamespace = computed(() => (route.params.namespace as string) || '');
 const currentNamespace = computed(() => selectedNS.value || routeNamespace.value);
 
-const showMenuButton = computed(() => route.path !== '/');
-const isMenuOpen = ref(false);
-const isMobileMenuOpen = ref(false);
-
 const isWalter = Math.random() < 1 / 21;
 const homeText = computed(() => isWalter ? 'Домой, Уолтер' : t('app.home'));
 const isAtraceRoute = computed(() => route.path.includes('/atrace'));
 const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
+const navApps = computed(() => ALL_APPS);
+const showHomeItem = computed(() => route.path !== '/');
+const isMobileMenuOpen = ref(false);
+const shouldUseBurger = ref(true);
+const headerInnerRef = ref<HTMLElement | null>(null);
+const brandRef = ref<HTMLElement | null>(null);
+const desktopMeasureRef = ref<HTMLElement | null>(null);
+const desktopHelpMeasureRef = ref<HTMLElement | null>(null);
+let headerResizeObserver: ResizeObserver | null = null;
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Onboarding
 const { startTour, reset } = useOnboarding();
@@ -43,31 +50,88 @@ function handleHelpClick() {
   }
 }
 
-function closeMenu(source: 'desktop' | 'mobile') {
-  if (source === 'desktop') isMenuOpen.value = false;
-  else isMobileMenuOpen.value = false;
-}
-
-function handleHomeClick(source: 'desktop' | 'mobile') {
-  closeMenu(source);
+function handleHomeClick() {
+  isMobileMenuOpen.value = false;
   router.push('/');
 }
 
-function handleMenuSelect(app: AppConfig, source: 'desktop' | 'mobile') {
-  closeMenu(source);
-  
-  if (!app.canAdd) return;
+function handleMenuSelect(app: AppConfig) {
+  if (!app.canAdd) {
+    toast.add({
+      title: t('app.comingSoonToast') || 'Скоро станет доступным!',
+      color: 'gray',
+    });
+    return;
+  }
   if (!isLoggedIn.value) return login();
   const ns = currentNamespace.value;
   if (!ns) return;
-  
+
+  isMobileMenuOpen.value = false;
   router.push(`/${ns}/${app.address}`);
 }
 
-watch(() => route.fullPath, () => {
-  isMenuOpen.value = false;
-  isMobileMenuOpen.value = false;
+function isAppActive(app: AppConfig) {
+  return route.path.includes(`/${app.address}`);
+}
+
+function debouncedUpdateMenuMode() {
+  if (resizeTimeout) clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    updateMenuMode();
+    resizeTimeout = null;
+  }, 100);
+}
+
+function updateMenuMode() {
+  const headerInner = headerInnerRef.value;
+  const brand = brandRef.value;
+  const desktopMeasure = desktopMeasureRef.value;
+
+  if (!headerInner || !brand || !desktopMeasure) {
+    shouldUseBurger.value = true;
+    return;
+  }
+
+  const reservedSpacing = showHelpButton.value ? 40 : 24;
+  const availableWidth = headerInner.clientWidth - brand.offsetWidth - reservedSpacing;
+  const helpWidth = showHelpButton.value ? (desktopHelpMeasureRef.value?.offsetWidth ?? 0) + 8 : 0;
+  const requiredWidth = desktopMeasure.scrollWidth + helpWidth;
+
+  shouldUseBurger.value = requiredWidth > Math.max(availableWidth, 0);
+}
+
+async function syncMenuMode() {
+  await nextTick();
+  debouncedUpdateMenuMode();
+}
+
+onMounted(() => {
+  syncMenuMode();
+
+  headerResizeObserver = new ResizeObserver(() => {
+    debouncedUpdateMenuMode();
+  });
+
+  if (headerInnerRef.value) headerResizeObserver.observe(headerInnerRef.value);
+  if (brandRef.value) headerResizeObserver.observe(brandRef.value);
+  if (desktopMeasureRef.value) headerResizeObserver.observe(desktopMeasureRef.value);
+  if (desktopHelpMeasureRef.value) headerResizeObserver.observe(desktopHelpMeasureRef.value);
 });
+
+onBeforeUnmount(() => {
+  headerResizeObserver?.disconnect();
+  headerResizeObserver = null;
+  if (resizeTimeout) clearTimeout(resizeTimeout);
+  resizeTimeout = null;
+});
+
+watch(
+  () => [route.fullPath, showHomeItem.value, showHelpButton.value],
+  () => {
+    syncMenuMode();
+  }
+);
 
 const goHome = () => {
   router.push('/');
@@ -76,115 +140,164 @@ const goHome = () => {
 
 <template>
   <header
-    class="fixed top-0 left-0 w-full flex items-center justify-between p-2 md:p-3 px-2 md:px-4 bg-white dark:bg-gray-800 shadow-md z-50"
+    class="fixed top-0 left-0 z-50 w-full border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95"
   >
     <div
-      class="flex items-center space-x-1 cursor-pointer"
-      @click="goHome"
+      ref="headerInnerRef"
+      class="flex w-full items-center justify-between px-4 py-2 md:px-5 md:py-3 lg:px-6"
     >
-      <img
-        src="/assets/logo.png"
-        alt="Logo"
-        class="h-5 w-5"
+      <div
+        ref="brandRef"
+        class="flex items-center space-x-1 cursor-pointer shrink-0"
+        @click="goHome"
       >
-      <span class="text-base md:text-lg">lota</span>
-    </div>
+        <img
+          src="/assets/logo.png"
+          alt="Logo"
+          class="h-5 w-5"
+        >
+        <span class="text-base md:text-lg">lota</span>
+      </div>
 
-    <div class="flex items-center gap-1">
-      <!-- <UButton v-if="showMenuButton" @click="goHome" variant="ghost" size="md" md:size="lg">
-        <UIcon name="i-lucide-home" />
-      </UButton> -->
-
-      <!-- Help/Tutorial button (life ring) -->
-      <UButton
-        v-if="showHelpButton"
-        data-tour="help-button"
-        variant="ghost"
-        size="md"
-        :aria-label="t('app.startTour') || 'Start interactive tutorial'"
-        :title="t('app.startTour') || 'Start interactive tutorial'"
-        @click="handleHelpClick"
+      <div
+        v-if="!shouldUseBurger"
+        class="flex min-w-0 flex-1 items-center justify-end gap-2 pl-4 md:pl-5 lg:pl-6"
       >
-        <UIcon name="i-lucide-life-buoy" />
-      </UButton>
+        <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
+          <button
+            v-if="showHomeItem"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+            @click="handleHomeClick"
+          >
+            <UIcon
+              name="i-lucide-home"
+              class="h-4 w-4"
+            />
+            <span class="truncate">{{ homeText }}</span>
+          </button>
 
-      <!-- Mobile burger -->
-      <UButton
-        class="md:hidden"
-        variant="ghost"
-        size="md"
-        :aria-label="t('app.feedMenu') || 'Open menu'"
-        @click="isMobileMenuOpen = true"
-      >
-        <UIcon name="i-lucide-menu" />
-      </UButton>
+          <button
+            v-for="app in navApps"
+            :key="app.bundle"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="isAppActive(app)
+              ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary-300'
+              : app.canAdd
+                ? 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'
+                : 'border-transparent bg-transparent text-gray-400 dark:text-gray-500'"
+            :aria-disabled="!app.canAdd"
+            @click="handleMenuSelect(app)"
+          >
+            <UIcon
+              :name="app.icon"
+              class="h-4 w-4"
+            />
+            <span class="truncate">{{ t(app.titleKey) }}</span>
+          </button>
+        </nav>
 
-      <!-- Desktop menu -->
-      <UPopover
-        v-model="isMenuOpen"
-        class="hidden md:block"
-        :popper="{ placement: 'bottom-end' }"
-        mode="hover"
-        :open-delay="0"
-        :close-delay="200"
+        <UButton
+          v-if="showHelpButton"
+          data-tour="help-button"
+          variant="ghost"
+          size="sm"
+          :aria-label="t('app.startTour') || 'Start interactive tutorial'"
+          :title="t('app.startTour') || 'Start interactive tutorial'"
+          @click="handleHelpClick"
+        >
+          <UIcon name="i-lucide-life-buoy" />
+        </UButton>
+      </div>
+
+      <div
+        v-if="shouldUseBurger"
+        class="flex shrink-0 items-center gap-1 pl-4"
       >
         <UButton
+          v-if="showHelpButton"
+          data-tour="help-button"
           variant="ghost"
-          size="md"
-          md:size="lg"
+          size="sm"
+          :aria-label="t('app.startTour') || 'Start interactive tutorial'"
+          :title="t('app.startTour') || 'Start interactive tutorial'"
+          @click="handleHelpClick"
+        >
+          <UIcon name="i-lucide-life-buoy" />
+        </UButton>
+
+        <UButton
+          variant="ghost"
+          size="sm"
           :aria-label="t('app.feedMenu') || 'Open menu'"
+          @click="isMobileMenuOpen = true"
         >
           <UIcon name="i-lucide-menu" />
         </UButton>
-        <template #panel>
-          <div class="w-[520px] max-w-[90vw] p-4">
-            <div class="space-y-2">
-              <button
-                v-if="route.path !== '/'"
-                type="button"
-                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-                @click="handleHomeClick('desktop')"
-              >
-                <UIcon
-                  name="i-lucide-home"
-                  class="w-5 h-5 text-primary flex-shrink-0"
-                />
-                <span class="text-sm font-medium truncate">{{ homeText }}</span>
-              </button>
+      </div>
+    </div>
 
-              <button
-                v-for="app in ALL_APPS"
-                v-show="!route.path.includes('/' + app.address)"
-                :key="app.bundle"
-                type="button"
-                class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-                :class="{ 'opacity-60': !app.canAdd, 'cursor-not-allowed': !app.canAdd }"
-                @click="handleMenuSelect(app, 'desktop')"
-              >
-                <UIcon
-                  :name="app.icon"
-                  class="w-5 h-5 text-primary flex-shrink-0"
-                />
-                <span class="text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
-              </button>
-            </div>
-          </div>
-        </template>
-      </UPopover>
+    <div class="pointer-events-none absolute left-0 top-0 -z-10 opacity-0">
+      <div class="flex items-center gap-2 whitespace-nowrap">
+        <div
+          ref="desktopMeasureRef"
+          class="flex items-center gap-2"
+        >
+          <button
+            v-if="showHomeItem"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+          >
+            <UIcon
+              name="i-lucide-home"
+              class="h-4 w-4"
+            />
+            <span>{{ homeText }}</span>
+          </button>
+
+          <button
+            v-for="app in navApps"
+            :key="`measure-${app.bundle}`"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+          >
+            <UIcon
+              :name="app.icon"
+              class="h-4 w-4"
+            />
+            <span>{{ t(app.titleKey) }}</span>
+          </button>
+        </div>
+
+        <div
+          v-if="showHelpButton"
+          ref="desktopHelpMeasureRef"
+          class="flex shrink-0"
+        >
+          <UButton
+            variant="ghost"
+            size="sm"
+          >
+            <UIcon name="i-lucide-life-buoy" />
+          </UButton>
+        </div>
+      </div>
     </div>
   </header>
 
-  <!-- Mobile bottom-sheet menu -->
   <UModal
     v-model="isMobileMenuOpen"
     class="menu-bottom-sheet"
+    :transition="false"
     :ui="{
       container: 'items-end',
       base: 'w-full rounded-t-2xl'
     }"
   >
     <div class="p-4 max-h-[80vh] overflow-auto">
-      <div class="flex items-center justify-between mb-4">
+      <div class="mb-4 flex items-center justify-between">
         <h3 class="text-base font-semibold">
           {{ t('app.apps') }}
         </h3>
@@ -198,32 +311,32 @@ const goHome = () => {
 
       <div class="space-y-2">
         <button
-          v-if="route.path !== '/'"
+          v-if="showHomeItem"
           type="button"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-          @click="handleHomeClick('mobile')"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          @click="handleHomeClick"
         >
           <UIcon
             name="i-lucide-home"
-            class="w-5 h-5 text-primary flex-shrink-0"
+            class="h-5 w-5 text-primary flex-shrink-0"
           />
           <span class="text-sm font-medium truncate">{{ homeText }}</span>
         </button>
 
         <button
-          v-for="app in ALL_APPS"
-          v-show="!route.path.includes('/' + app.address)"
+          v-for="app in navApps"
           :key="app.bundle"
           type="button"
-          class="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
-          :class="{ 'opacity-60': !app.canAdd, 'cursor-not-allowed': !app.canAdd }"
-          @click="handleMenuSelect(app, 'mobile')"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          :class="{ 'text-gray-400 dark:text-gray-500': !app.canAdd }"
+          :aria-disabled="!app.canAdd"
+          @click="handleMenuSelect(app)"
         >
           <UIcon
             :name="app.icon"
-            class="w-5 h-5 text-primary flex-shrink-0"
+            class="h-5 w-5 text-primary flex-shrink-0"
           />
-          <span class="text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
+          <span class="flex-1 text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
         </button>
       </div>
     </div>

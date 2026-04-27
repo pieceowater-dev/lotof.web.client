@@ -335,7 +335,6 @@ export default defineNuxtConfig({
   experimental: {
     payloadExtraction: false,
     renderJsonPayloads: false,
-    viewTransition: true,
     componentIslands: isProduction
   },
 
