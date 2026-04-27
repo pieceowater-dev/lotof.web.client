@@ -519,7 +519,6 @@ let mobileFeedObserver: IntersectionObserver | null = null;
 let mobileFeedAdvanceLocked = false;
 const feedSectionRef = ref<HTMLElement | null>(null);
 const isFeedSectionInView = ref(false);
-const mobileSidebarMenuOpen = ref(false);
 let feedSectionObserver: IntersectionObserver | null = null;
 
 function resolveScrollContainer(): HTMLElement | null {
@@ -734,11 +733,6 @@ async function ensureMobileFeedObserver() {
 const allWhatsNewPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'whatsnew'));
 const WHATS_NEW_SIDEBAR_LIMIT = 5;
 const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, WHATS_NEW_SIDEBAR_LIMIT));
-const brokenWhatsNewSidebarImages = ref<Record<string, boolean>>({});
-
-function onWhatsNewSidebarImageError(postId: string) {
-  brokenWhatsNewSidebarImages.value[postId] = true;
-}
 
 function handleOpenPost(post: HomeFeedPost) {
   if (!post.href) return;
@@ -794,12 +788,6 @@ watch([isMobileFeedViewport, maxVisibleFeedCards, () => visibleArticleFeedPosts.
 
 watch([isMobileFeedViewport, initialized, () => visibleArticleFeedPosts.value.length], () => {
   ensureFeedSectionObserver();
-});
-
-watch([isMobileFeedViewport, isFeedSectionInView], ([isMobile, inView]) => {
-  if (!isMobile || !inView) {
-    mobileSidebarMenuOpen.value = false;
-  }
 });
 
 watch([articlesSearch, selectedArticleTag], () => {
@@ -1099,251 +1087,17 @@ watch([articlesSearch, selectedArticleTag], () => {
             />
           </section>
 
-          <aside class="hidden lg:block lg:sticky lg:top-0 lg:pt-12 self-start flex flex-col h-[calc(100vh-3rem)]">
-            <div class="mb-6 rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
-              <div class="relative">
-                <UIcon
-                  name="lucide:search"
-                  class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  v-model="articlesSearch"
-                  type="text"
-                  :placeholder="t('app.searchArticles') || 'Search articles'"
-                  class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div v-if="popularArticleTags.length" class="mt-3">
-                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('app.popularTags') || 'Popular tags' }}</p>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="rounded-lg border px-2 py-1 text-xs transition"
-                    :class="selectedArticleTag === ''
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
-                    @click="selectedArticleTag = ''"
-                  >
-                    {{ t('app.all') || 'All' }}
-                  </button>
-                  <button
-                    v-for="tag in popularArticleTags"
-                    :key="tag"
-                    type="button"
-                    class="rounded-lg border px-2 py-1 text-xs transition"
-                    :class="selectedArticleTag === tag
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
-                    @click="selectedArticleTag = tag"
-                  >
-                    #{{ tag }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
-                  :aria-label="t('app.scrollToTop') || 'Scroll to top'"
-                  @click="handleScrollTopTap"
-                  @touchstart.prevent.stop="handleScrollTopTap"
-                  @pointerdown.prevent.stop="handleScrollTopTap"
-                >
-                  <UIcon name="lucide:arrow-up" class="h-3.5 w-3.5" />
-                  <span>{{ t('app.scrollToTop') || 'Up' }}</span>
-                </button>
-              </div>
-            </div>
-
-            <div class="flex flex-col flex-1 rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white to-blue-50/40 p-5 shadow-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-800/70 overflow-hidden">
-              <div class="mb-4 flex items-center gap-2">
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                  <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-                </div>
-                <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ t('app.whatsNew') || "What's New" }}</h3>
-              </div>
-
-              <div v-if="whatsNewSidebarPosts.length" class="flex-1 overflow-y-auto space-y-2.5 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600">
-                <button
-                  v-for="post in whatsNewSidebarPosts"
-                  :key="post.id"
-                  type="button"
-                  class="group w-full text-left rounded-xl border border-gray-150 bg-white p-3 transition-all duration-200 hover:border-emerald-300 hover:shadow-md hover:bg-white dark:border-gray-600 dark:bg-gray-700/40 dark:hover:border-emerald-600 dark:hover:bg-gray-700/60"
-                  @click="handleOpenPost(post)"
-                >
-                  <div class="flex items-start gap-3">
-                    <div class="relative flex-shrink-0">
-                      <img
-                        v-if="post.image && !brokenWhatsNewSidebarImages[post.id]"
-                        :src="post.image"
-                        :alt="post.imageAlt"
-                        class="h-14 w-14 rounded-lg object-cover ring-1 ring-gray-200 dark:ring-gray-600"
-                        loading="lazy"
-                        @error="onWhatsNewSidebarImageError(post.id)"
-                      />
-                      <div
-                        v-else
-                        class="h-14 w-14 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 dark:from-gray-600 dark:to-gray-700 dark:text-gray-400 flex items-center justify-center ring-1 ring-gray-200 dark:ring-gray-600"
-                      >
-                        <UIcon name="lucide:image-off" class="h-5 w-5" />
-                      </div>
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                      <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{{ post.publishedAt }}</p>
-                      <p class="mt-1 text-sm font-semibold leading-5 text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{{ post.title }}</p>
-                      <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ post.readTime }}</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-                {{ t('app.noUpdatesForCurrentFilters') || 'No updates for current filters.' }}
-              </p>
-            </div>
-          </aside>
-        </div>
-
-        <div
-          v-if="isMobileFeedViewport && isFeedSectionInView"
-          class="lg:hidden fixed inset-x-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]"
-          style="bottom: 0;"
-        >
-          <div class="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
-            <!-- Trigger button -->
-            <div class="flex items-center gap-2 px-3 py-2.5">
-              <button
-                type="button"
-                class="min-w-0 inline-flex items-center gap-2 px-1 py-0.5 text-left"
-                :aria-expanded="mobileSidebarMenuOpen"
-                @click="mobileSidebarMenuOpen = !mobileSidebarMenuOpen"
-              >
-                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                  <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-                </div>
-                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ t('app.feedMenu') || 'Feed menu' }}
-                </span>
-                <UIcon
-                  name="lucide:chevron-up"
-                  class="h-4 w-4 text-gray-400 transition-transform dark:text-gray-500"
-                  :class="mobileSidebarMenuOpen ? 'rotate-180' : ''"
-                />
-              </button>
-
-              <button
-                type="button"
-                class="ml-auto relative z-10 inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-lg border border-blue-100 bg-blue-50/60 px-2 text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
-                :aria-label="t('app.scrollToTop') || 'Scroll to top'"
-                @click="handleScrollTopTap"
-                @touchstart.prevent.stop="handleScrollTopTap"
-                @pointerdown.prevent.stop="handleScrollTopTap"
-              >
-                <UIcon name="lucide:arrow-up" class="h-4 w-4" />
-              </button>
-            </div>
-
-            <!-- Content -->
-            <Transition name="mobile-sheet">
-              <div v-if="mobileSidebarMenuOpen" class="space-y-2 border-t border-gray-200 px-4 py-3 dark:border-gray-700">
-                <!-- Search -->
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-700/40">
-                  <div class="relative">
-                    <UIcon
-                      name="lucide:search"
-                      class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400"
-                    />
-                    <input
-                      v-model="articlesSearch"
-                      type="text"
-                      :placeholder="t('app.searchArticles') || 'Search articles'"
-                      class="w-full rounded-xl border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
-                    />
-                  </div>
-                </div>
-
-                <!-- Tags -->
-                <div v-if="popularArticleTags.length">
-                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    {{ t('app.popularTags') || 'Popular tags' }}
-                  </p>
-                  <div class="flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      class="rounded-lg border px-2 py-1 text-xs transition"
-                      :class="selectedArticleTag === ''
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/40 dark:text-gray-200'"
-                      @click="selectedArticleTag = ''"
-                    >
-                      {{ t('app.all') || 'All' }}
-                    </button>
-                    <button
-                      v-for="tag in popularArticleTags"
-                      :key="tag"
-                      type="button"
-                      class="rounded-lg border px-2 py-1 text-xs transition"
-                      :class="selectedArticleTag === tag
-                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                        : 'border-gray-300 bg-white text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/40 dark:text-gray-200'"
-                      @click="selectedArticleTag = tag"
-                    >
-                      #{{ tag }}
-                    </button>
-                  </div>
-                </div>
-
-                <!-- What's New -->
-                <div class="flex flex-col min-h-0">
-                  <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                    {{ t('app.whatsNew') || "What's New" }}
-                  </p>
-                  <div v-if="whatsNewSidebarPosts.length" class="flex-1 overflow-y-auto space-y-1.5 pr-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-gray-300 dark:[&::-webkit-scrollbar-thumb]:bg-gray-600">
-                    <button
-                      v-for="post in whatsNewSidebarPosts"
-                      :key="`mobile-${post.id}`"
-                      type="button"
-                      class="group w-full text-left rounded-lg border border-gray-200 bg-white p-2.5 transition-all hover:border-emerald-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-700/40 dark:hover:border-emerald-600"
-                      @click="handleOpenPost(post)"
-                    >
-                      <div class="flex items-start gap-2.5">
-                        <img
-                          v-if="post.image && !brokenWhatsNewSidebarImages[post.id]"
-                          :src="post.image"
-                          :alt="post.imageAlt"
-                          class="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
-                          loading="lazy"
-                          @error="onWhatsNewSidebarImageError(post.id)"
-                        />
-                        <div
-                          v-else
-                          class="h-12 w-12 flex-shrink-0 rounded-lg bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 dark:from-gray-600 dark:to-gray-700 dark:text-gray-400 flex items-center justify-center"
-                        >
-                          <UIcon name="lucide:image-off" class="h-4 w-4" />
-                        </div>
-
-                        <div class="min-w-0 flex-1">
-                          <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
-                            {{ post.publishedAt }}
-                          </p>
-                          <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                            {{ post.title }}
-                          </p>
-                          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ post.readTime }}</p>
-                        </div>
-                      </div>
-                    </button>
-                    </div>
-                  <p v-else class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('app.noUpdatesForCurrentFilters') || 'No updates for current filters.' }}
-                  </p>
-                </div>
-              </div>
-            </Transition>
-          </div>
+          <FeedSidebarWidget
+            :articles-search="articlesSearch"
+            :selected-tag="selectedArticleTag"
+            :popular-tags="popularArticleTags"
+            :whats-new-posts="whatsNewSidebarPosts"
+            :is-mobile-viewport="isMobileFeedViewport"
+            :is-feed-section-in-view="isFeedSectionInView"
+            @update:articles-search="articlesSearch = $event"
+            @update:selected-tag="selectedArticleTag = $event"
+            @open="handleOpenPost"
+          />
         </div>
       </div>
 

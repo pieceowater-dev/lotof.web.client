@@ -125,7 +125,7 @@ watch(
         </div>
       </div>
 
-      <div class="flex h-[clamp(22rem,56vh,36rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
+      <div class="flex h-[clamp(16rem,38vh,26rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
         <div class="mb-5 flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
             <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
@@ -169,17 +169,19 @@ watch(
       class="lg:hidden fixed inset-x-0 z-40 px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)]"
       style="bottom: 0;"
     >
+      <!-- blur strip below the floating widget -->
+      <div class="fixed bottom-0 left-0 right-0 h-[max(env(safe-area-inset-bottom),0.75rem)] backdrop-blur-sm pointer-events-none" />
       <div class="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
-        <div class="flex items-center gap-2 px-3 py-2.5">
+        <div class="flex h-[42px] items-center gap-2 px-4">
+          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+            <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+          </div>
           <button
             type="button"
-            class="min-w-0 inline-flex items-center gap-2 px-1 py-0.5 text-left"
+            class="min-w-0 inline-flex items-center gap-2 px-1 text-left"
             :aria-expanded="mobileMenuOpen"
             @click="mobileMenuOpen = !mobileMenuOpen"
           >
-            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-              <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
-            </div>
             <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
               {{ t('app.feedMenu') || 'Feed menu' }}
             </span>
@@ -192,7 +194,7 @@ watch(
 
           <button
             type="button"
-            class="ml-auto relative z-10 inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-lg border border-blue-100 bg-blue-50/60 px-2 text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
+            class="ml-auto relative z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-100/70 bg-blue-50/30 text-blue-500 transition hover:bg-blue-50/55 dark:border-gray-600 dark:bg-gray-700/40 dark:text-blue-200"
             :aria-label="t('app.scrollToTop') || 'Scroll to top'"
             @click="handleScrollTopTap"
             @touchstart.prevent.stop="handleScrollTopTap"
