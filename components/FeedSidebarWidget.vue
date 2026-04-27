@@ -67,7 +67,7 @@ watch(
 <template>
   <div class="contents">
     <aside class="hidden lg:block lg:sticky lg:top-3 self-start flex flex-col min-h-0">
-      <div class="mb-7 rounded-3xl border border-blue-100/80 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800 overflow-hidden">
+      <div class="mb-7 rounded-3xl border border-blue-100/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90 overflow-hidden">
         <div class="relative">
           <UIcon
             name="lucide:search"
@@ -125,7 +125,7 @@ watch(
         </div>
       </div>
 
-      <div class="flex h-[clamp(22rem,56vh,36rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white to-blue-50/40 p-5 shadow-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-800/70 overflow-hidden">
+      <div class="flex h-[clamp(22rem,56vh,36rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
         <div class="mb-5 flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
             <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />

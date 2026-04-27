@@ -139,12 +139,14 @@ const goHome = () => {
 </script>
 
 <template>
+  <!-- blur strip covering the top gap above the floating header -->
+  <div class="fixed top-0 left-0 right-0 h-3 z-50 backdrop-blur-sm pointer-events-none" />
   <header
-    class="fixed top-3 left-2 right-2 z-50 rounded-3xl border border-blue-100/80 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
+    class="fixed top-3 left-2 right-2 z-50 rounded-3xl border border-blue-100/80 bg-white/90 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/90"
   >
     <div
       ref="headerInnerRef"
-      class="flex w-full items-center justify-between px-4 py-2 md:px-5 md:py-3 lg:px-6"
+      class="flex w-full items-center justify-between px-4 py-2 md:px-5 md:py-2 lg:px-6"
     >
       <div
         ref="brandRef"
@@ -287,13 +289,19 @@ const goHome = () => {
     </div>
   </header>
 
+  <!-- blur strip covering the bottom gap below the floating sheet -->
+  <div
+    v-if="isMobileMenuOpen"
+    class="fixed bottom-0 left-0 right-0 h-3 z-[60] backdrop-blur-sm pointer-events-none"
+  />
+
   <UModal
     v-model="isMobileMenuOpen"
     class="menu-bottom-sheet"
     :transition="false"
     :ui="{
-      container: 'items-end',
-      base: 'w-full rounded-t-2xl'
+      container: 'items-end pb-3 px-2',
+      base: 'w-full rounded-3xl backdrop-blur-md bg-white/90 dark:bg-gray-800/90 border border-blue-100/80 dark:border-gray-700 shadow-sm'
     }"
   >
     <div class="p-4 max-h-[80vh] overflow-auto">
