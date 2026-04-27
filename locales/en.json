@@ -293,7 +293,6 @@
     "editMember": "Edit Member",
     "noRole": "No role",
     "roleHint": "Assign a role to control access permissions",
-    "back": "Back",
     "timezone": "Timezone",
     "timezoneHint": "Select your timezone or leave as browser default",
     "workingRequirements": "Working Requirements",

@@ -16,7 +16,7 @@ function stripInspectorPlugins(plugins: PluginOption[]): PluginOption[] {
     }
 
     const name = String((plugin as any)?.name || '');
-    if (name.includes('vite-plugin-vue-inspector') || name.includes('vue-inspector')) {
+    if (name === 'vite-plugin-vue-inspector' || name === 'vite-plugin-vue-inspector:post') {
       continue;
     }
 
@@ -234,13 +234,26 @@ export default defineNuxtConfig({
         name: 'disable-vue-inspector-virtual-modules',
         enforce: 'pre',
         resolveId(id) {
-          if (id.startsWith('virtual:vue-inspector-path:') || id === 'virtual:vue-inspector-options') {
+          if (
+            id.startsWith('virtual:vue-inspector-path:')
+            || id === 'virtual:vue-inspector-options'
+            || id.includes('vite-plugin-vue-inspector/src/load.js')
+            || id.includes('vite-plugin-vue-inspector/dist/load.js')
+          ) {
             return `\0disabled-vue-inspector:${id}`;
           }
           return null;
         },
         load(id) {
           if (id.startsWith('\0disabled-vue-inspector:')) {
+            if (id.includes('virtual:vue-inspector-options')) {
+              return 'export default { vue: 3, lazyLoad: false }';
+            }
+
+            if (id.includes('virtual:vue-inspector-path:Overlay.vue')) {
+              return 'export default { name: "DisabledVueInspectorOverlay", render() { return null } }';
+            }
+
             return 'export default {}';
           }
           return null;
