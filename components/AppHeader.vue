@@ -140,7 +140,7 @@ const goHome = () => {
 
 <template>
   <header
-    class="fixed top-0 left-0 z-50 w-full border-b border-gray-200 bg-white/95 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95"
+    class="fixed top-3 left-2 right-2 z-50 rounded-3xl border border-blue-100/80 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800"
   >
     <div
       ref="headerInnerRef"
