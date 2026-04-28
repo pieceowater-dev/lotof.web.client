@@ -251,7 +251,6 @@ useSeoMeta({
 useHead({
   title: 'lota',
   titleTemplate: null,
-  link: [{ rel: 'canonical', href: siteUrl }]
 });
 
 const greeting = computed(() => {

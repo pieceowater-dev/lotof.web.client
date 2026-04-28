@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed } from 'vue';
+import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { setAtraceUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
@@ -56,10 +56,17 @@ import { ALL_APPS } from '@/config/apps';
 import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
 
 const route = useRoute();
-const { t } = useI18n();
+const { t, locale, setLocale } = useI18n();
+const config = useRuntimeConfig();
 const { titleBySlug } = useNamespace();
 const subscriptionError = useState<string | null>('subscription_error', () => null);
 const subscriptionErrorShown = useState<boolean>('subscription_error_shown', () => false);
+const supportedLocales = ['ru', 'en', 'kk'] as const;
+type SupportedLocale = (typeof supportedLocales)[number];
+
+function isSupportedLocale(value: string): value is SupportedLocale {
+  return (supportedLocales as readonly string[]).includes(value);
+}
 
 const showSubscriptionModal = computed(() => Boolean(subscriptionError.value) && !subscriptionErrorShown.value);
 
@@ -105,6 +112,99 @@ const pageTitle = computed(() => {
 useHead(() => ({
   title: pageTitle.value,
 }));
+
+const normalizedSiteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
+
+const routeSegments = computed(() => route.path.split('/').filter(Boolean));
+const isConsoleRoute = computed(() => route.path.startsWith('/console'));
+const isSharedNamespaceRoute = computed(() => /^\/shared\/[^/]+(?:\/|$)/.test(route.path));
+const isNamespacePrivateRoute = computed(() => {
+  const segments = routeSegments.value;
+  if (segments.length < 2) return false;
+  const first = segments[0];
+  return first !== 'console' && first !== 'shared';
+});
+const isPeopleRoute = computed(() => route.path === '/people');
+const isPrivateRoute = computed(() => {
+  return isConsoleRoute.value || isSharedNamespaceRoute.value || isNamespacePrivateRoute.value || isPeopleRoute.value;
+});
+
+const isArticleRoute = computed(() => {
+  const segments = routeSegments.value;
+  if (segments.length !== 1) return false;
+  const first = segments[0];
+  return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'shared';
+});
+
+const queryLang = computed(() => {
+  const raw = route.query.lang;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return String(value || '').toLowerCase();
+});
+
+watch(
+  queryLang,
+  (value) => {
+    if (!value || !isSupportedLocale(value) || locale.value === value) return;
+    setLocale(value);
+  },
+  { immediate: true }
+);
+
+const canonicalUrl = computed(() => {
+  if (isPrivateRoute.value || isArticleRoute.value) return '';
+
+  const base = normalizedSiteUrl.value;
+  const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '');
+  const url = new URL(path, `${base}/`);
+
+  if (isSupportedLocale(queryLang.value)) {
+    url.searchParams.set('lang', queryLang.value);
+  }
+
+  return url.toString();
+});
+
+const hreflangLinks = computed(() => {
+  if (!canonicalUrl.value || isPrivateRoute.value || isArticleRoute.value) return [];
+
+  const base = normalizedSiteUrl.value;
+  const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '');
+  const defaultUrl = new URL(path, `${base}/`).toString();
+  const links = [
+    { rel: 'alternate', hreflang: 'x-default', href: defaultUrl },
+  ];
+
+  for (const lang of supportedLocales) {
+    const localizedUrl = new URL(path, `${base}/`);
+    localizedUrl.searchParams.set('lang', lang);
+    links.push({ rel: 'alternate', hreflang: lang, href: localizedUrl.toString() });
+  }
+
+  return links;
+});
+
+useHead(() => {
+  if (isPrivateRoute.value) {
+    return {
+      meta: [
+        { name: 'robots', content: 'noindex, nofollow, noarchive' },
+        { name: 'googlebot', content: 'noindex, nofollow' },
+      ],
+    };
+  }
+
+  if (!canonicalUrl.value || isArticleRoute.value) {
+    return {};
+  }
+
+  return {
+    link: [
+      { rel: 'canonical', href: canonicalUrl.value },
+      ...hreflangLinks.value,
+    ],
+  };
+});
 
 function handleSubscriptionRenew() {
   const nsSlug = (route.params.namespace as string | undefined) || '';

@@ -129,6 +129,20 @@ const articleCanonical = computed(() => {
   const slug = article.value?.slug || slugParam.value;
   return `${siteUrl.value}/${slug}`;
 });
+const articleHreflangLinks = computed(() => {
+  const normalized = articleCanonical.value.replace(/\?.*$/, '');
+  const links = [
+    { rel: 'alternate', hreflang: 'x-default', href: normalized },
+  ];
+
+  for (const lang of ['ru', 'en', 'kk']) {
+    const url = new URL(normalized);
+    url.searchParams.set('lang', lang);
+    links.push({ rel: 'alternate', hreflang: lang, href: url.toString() });
+  }
+
+  return links;
+});
 const articleRobots = computed(() => String(article.value?.meta.robots || 'index,follow'));
 const articlePublishedIso = computed(() => {
   const raw = String(article.value?.meta.date || '');
@@ -153,6 +167,30 @@ const articleJsonLd = computed(() => ({
     '@id': articleCanonical.value,
   },
   inLanguage: String(locale.value || 'ru'),
+}));
+const breadcrumbJsonLd = computed(() => ({
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: 'lota',
+      item: siteUrl.value,
+    },
+    {
+      '@type': 'ListItem',
+      position: 2,
+      name: t('app.feed') || 'Feed',
+      item: `${siteUrl.value}/feed`,
+    },
+    {
+      '@type': 'ListItem',
+      position: 3,
+      name: articleTitle.value,
+      item: articleCanonical.value,
+    },
+  ],
 }));
 
 type SuggestedArticle = {
@@ -483,17 +521,23 @@ useHead(() => ({
   title: articleTitle.value,
   link: [
     { rel: 'canonical', href: articleCanonical.value },
+    ...articleHreflangLinks.value,
   ],
   meta: [
     { name: 'robots', content: articleRobots.value },
     { property: 'og:url', content: articleCanonical.value },
     { property: 'article:author', content: articleAuthor.value },
     { property: 'article:published_time', content: articlePublishedIso.value },
+    ...articleTags.value.map((tag) => ({ property: 'article:tag', content: tag })),
   ],
   script: [
     {
       type: 'application/ld+json',
       children: JSON.stringify(articleJsonLd.value),
+    },
+    {
+      type: 'application/ld+json',
+      children: JSON.stringify(breadcrumbJsonLd.value),
     },
   ],
 }));
