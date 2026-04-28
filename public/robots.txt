@@ -9,8 +9,6 @@ Disallow: /*/*
 Disallow: /console/
 # /shared/[namespace]/*
 Disallow: /shared/
-# /ns/* (common internal namespace prefix)
-Disallow: /ns/
 
 # Disallow technical endpoints/files
 Disallow: /api/
