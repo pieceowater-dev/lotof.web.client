@@ -2,7 +2,15 @@
 User-agent: *
 Allow: /
 
-# Disallow sensitive areas
+# Disallow authenticated/internal areas
+# /[namespace]/*
+Disallow: /*/*
+# /console/*
+Disallow: /console/
+# /shared/[namespace]/*
+Disallow: /shared/*/
+
+# Disallow technical endpoints/files
 Disallow: /api/
 Disallow: /*.json$
 
