@@ -249,8 +249,8 @@ useSeoMeta({
 });
 
 useHead({
-  title: 'lota',
-  titleTemplate: null,
+  title: 'lota — Платформа автоматизации бизнеса',
+  titleTemplate: (s) => s ?? 'lota',
 });
 
 const greeting = computed(() => {
