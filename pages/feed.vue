@@ -368,6 +368,16 @@ watch([articlesSearch, selectedArticleTag], () => {
 useHead({
   title: 'Feed',
 });
+
+watch(
+  () => articleFeedPosts.value.length,
+  (count) => {
+    if (count === 0 && process.client) {
+      navigateTo('/');
+    }
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -375,16 +385,13 @@ useHead({
     <div class="flex-1">
       <div ref="feedSectionRef" class="mx-auto w-full max-w-[1180px] px-3 md:px-6 py-5 md:py-8 text-gray-700 dark:text-gray-300">
       <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8 items-start">
-        <section>
+        <section v-if="localizedVisibleArticleFeedPosts.length > 0">
           <div class="mb-5 flex items-center gap-2">
             <UIcon name="lucide:newspaper" class="h-5 w-5 text-blue-600 dark:text-blue-300" />
             <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.feed') || 'Feed' }}</h1>
           </div>
 
-          <div v-if="localizedVisibleArticleFeedPosts.length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-            <p class="text-gray-600 dark:text-gray-400">{{ t('app.noArticlesYet') || 'Пока пусто' }}</p>
-          </div>
-          <HomePostsFeed v-else :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
+          <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
 
           <div
             v-if="isMobileFeedViewport && canAutoLoadMoreMobilePosts"

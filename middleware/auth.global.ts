@@ -6,7 +6,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/') return;
   const routeName = typeof to.name === 'string' ? to.name : '';
   // Public content pages
-  if (routeName === 'feed' || routeName === 'slug' || to.path === '/feed') return;
+  if (routeName === 'feed' || routeName === 'slug' || routeName === 'news' || to.path === '/feed' || to.path === '/news') return;
   // Allow public access to public post page
   if (/^\/shared\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
   if (process.server) return;

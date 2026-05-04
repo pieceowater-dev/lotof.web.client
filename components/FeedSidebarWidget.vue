@@ -125,7 +125,7 @@ watch(
         </div>
       </div>
 
-      <div class="flex h-[clamp(16rem,38vh,26rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
+      <div v-if="props.whatsNewPosts.length > 0" class="flex h-[clamp(16rem,38vh,26rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
         <div class="mb-5 flex items-center gap-2">
           <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
             <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
@@ -252,7 +252,7 @@ watch(
               </div>
             </div>
 
-            <div class="flex flex-col min-h-0 max-h-72 pt-1">
+            <div v-if="props.whatsNewPosts.length > 0" class="flex flex-col min-h-0 max-h-72 pt-1">
               <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('app.whatsNew') || "What's New" }}
               </p>

@@ -461,7 +461,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
     posts.push({
       id: slug,
       href: `/${slug}`,
-      category: categorySlug === 'whatsnew' ? "What's New" : 'Articles',
+      category: categorySlug === 'whatsnew' ? "What's New" : categorySlug === 'news' ? 'News' : 'Articles',
       categorySlug,
       title,
       excerpt: excerptFromBody(body),
@@ -480,8 +480,20 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 
 const allProcessedPosts = computed(() => processMarkdownPosts());
 const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'articles'));
+const newsFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'news'));
+const HOME_NEWS_LIMIT = 10;
+const homeNewsPosts = computed(() => {
+  const newsLabel = t('app.news') || 'Новости';
+  return newsFeedPosts.value.slice(0, HOME_NEWS_LIMIT).map((post) => ({ ...post, category: newsLabel }));
+});
 const articlesSearch = ref('');
 const selectedArticleTag = ref('');
+const homeNewsBrokenImages = ref<Record<string, boolean>>({});
+
+function handleHomeNewsImageError(postId: string) {
+  homeNewsBrokenImages.value[postId] = true;
+}
+
 const popularArticleTags = computed(() => {
   const counts = new Map<string, number>();
   for (const post of articleFeedPosts.value) {
@@ -587,6 +599,11 @@ function handleScrollTopTap(event?: Event) {
   event?.preventDefault();
   event?.stopPropagation();
   scrollToTop();
+}
+
+function handleNavigateToNews() {
+  scrollToTop();
+  router.push('/news');
 }
 
 function applyFeedViewport(matchesMobile: boolean) {
@@ -1066,17 +1083,101 @@ watch([articlesSearch, selectedArticleTag], () => {
       </div>
 
       <div v-if="initialized" ref="feedSectionRef" class="max-w-7xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
+        <!-- News section above the article feed -->
+        <div v-if="homeNewsPosts.length > 0" class="mb-8">
+          <div class="mb-4 flex items-center gap-2">
+            <UIcon name="lucide:radio" class="h-5 w-5 text-blue-600 dark:text-blue-300" />
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.news') || 'Новости' }}</h2>
+          </div>
+
+          <!-- empty state -->
+          <div v-if="homeNewsPosts.length === 0" class="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-blue-100 bg-blue-50/40 py-12 text-center dark:border-gray-700 dark:bg-gray-800/40">
+            <UIcon name="lucide:radio" class="h-10 w-10 text-blue-200 dark:text-gray-600" />
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('app.noNewsYet') || 'Новостей пока нет' }}</p>
+          </div>
+
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+            <article
+              v-for="(post, idx) in homeNewsPosts"
+              :key="post.id"
+              class="overflow-hidden rounded-3xl border border-blue-100/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 cursor-pointer flex flex-col"
+              role="button"
+              tabindex="0"
+              @click="handleOpenPost(post)"
+              @keydown.enter="handleOpenPost(post)"
+            >
+              <img
+                v-if="post.image && !homeNewsBrokenImages[post.id]"
+                :src="post.image"
+                :alt="post.imageAlt"
+                class="h-56 w-full object-cover"
+                :loading="idx === 0 ? 'eager' : 'lazy'"
+                decoding="async"
+                width="1200"
+                height="630"
+                @error="handleHomeNewsImageError(post.id)"
+              />
+              <div
+                v-else
+                class="h-56 w-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400 dark:from-gray-700 dark:to-gray-800 dark:text-gray-500 p-4 text-center"
+              >
+                <div class="flex flex-col items-center gap-2">
+                  <UIcon name="lucide:image-off" class="h-8 w-8" />
+                  <p class="text-xs line-clamp-2">{{ post.imageAlt }}</p>
+                </div>
+              </div>
+              <div class="p-5 flex flex-col flex-1">
+                <div class="mb-2 flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                    {{ post.category }}
+                  </span>
+                  <span>{{ post.publishedAt }}</span>
+                </div>
+                <h3 class="text-base font-semibold leading-snug text-gray-900 dark:text-gray-100">{{ post.title }}</h3>
+                <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300 line-clamp-3">{{ post.excerpt }}</p>
+                <UButton
+                  to="`/${post.href}`"
+                  variant="ghost"
+                  size="sm"
+                  class="mt-4 w-fit"
+                >
+                  {{ t('app.read') || 'Читать' }}
+                </UButton>
+              </div>
+            </article>
+
+            <!-- Odd count: compact button filling the empty grid slot -->
+            <button
+              v-if="homeNewsPosts.length % 2 !== 0"
+              type="button"
+              class="overflow-hidden rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 dark:border-gray-600 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center gap-3 min-h-[200px] p-6"
+              @click="handleNavigateToNews"
+            >
+              <UIcon name="lucide:arrow-right" class="h-8 w-8 text-blue-400 dark:text-blue-500" />
+              <span class="text-sm font-medium text-blue-600 dark:text-blue-300">{{ t('app.allNews') || 'Все новости' }}</span>
+            </button>
+          </div>
+
+          <!-- Even count: full-width card below the grid -->
+          <button
+            v-if="homeNewsPosts.length > 0 && homeNewsPosts.length % 2 === 0"
+            type="button"
+            class="mt-4 w-full rounded-3xl border border-dashed border-blue-200 bg-blue-50/50 hover:bg-blue-50 hover:border-blue-300 dark:border-gray-600 dark:bg-gray-800/50 dark:hover:bg-gray-800 transition-all duration-200 cursor-pointer flex items-center justify-center gap-3 py-4 px-6"
+            @click="handleNavigateToNews"
+          >
+            <UIcon name="lucide:arrow-right" class="h-5 w-5 text-blue-400 dark:text-blue-500" />
+            <span class="text-sm font-medium text-blue-600 dark:text-blue-300">{{ t('app.allNews') || 'Все новости' }}</span>
+          </button>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8 items-start">
-          <section>
+          <section v-if="localizedVisibleArticleFeedPosts.length > 0">
             <div class="mb-5 flex items-center gap-2">
               <UIcon name="lucide:newspaper" class="h-5 w-5 text-blue-600 dark:text-blue-300" />
               <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.feed') || 'Feed' }}</h2>
             </div>
 
-            <div v-if="localizedVisibleArticleFeedPosts.length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-              <p class="text-gray-600 dark:text-gray-400">{{ t('app.noArticlesYet') || 'Пока пусто' }}</p>
-            </div>
-            <HomePostsFeed v-else :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
+            <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
 
             <div
               v-if="canAutoLoadMoreFeedPosts"
@@ -1087,6 +1188,7 @@ watch([articlesSearch, selectedArticleTag], () => {
           </section>
 
           <FeedSidebarWidget
+            v-if="popularArticleTags.length > 0 || whatsNewSidebarPosts.length > 0"
             :articles-search="articlesSearch"
             :selected-tag="selectedArticleTag"
             :popular-tags="popularArticleTags"

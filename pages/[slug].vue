@@ -123,6 +123,9 @@ const articleDate = computed(() => {
 });
 
 const siteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
+const articleCategory = computed(() => String(article.value?.meta.category || '').toLowerCase());
+const isNews = computed(() => articleCategory.value === 'news');
+const backHref = computed(() => isNews.value ? '/news' : '/feed');
 const articleCanonical = computed(() => {
   const canonical = String(article.value?.meta.canonical || '').trim();
   if (canonical) return canonical;
@@ -181,8 +184,8 @@ const breadcrumbJsonLd = computed(() => ({
     {
       '@type': 'ListItem',
       position: 2,
-      name: t('app.feed') || 'Feed',
-      item: `${siteUrl.value}/feed`,
+      name: isNews.value ? (t('app.news') || 'News') : (t('app.feed') || 'Feed'),
+      item: isNews.value ? `${siteUrl.value}/news` : `${siteUrl.value}/feed`,
     },
     {
       '@type': 'ListItem',
@@ -600,7 +603,7 @@ onBeforeUnmount(() => {
         <div class="rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_16px_50px_-28px_rgba(15,23,42,0.35)] backdrop-blur sm:p-7 md:p-10 dark:border-gray-700 dark:bg-gray-900/95 dark:shadow-[0_20px_60px_-30px_rgba(0,0,0,0.7)]">
           <div class="mx-auto w-full max-w-[720px]">
           <NuxtLink
-            to="/feed"
+            :to="backHref"
             class="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
           >
             <UIcon name="lucide:arrow-left" class="h-4 w-4" />
@@ -653,10 +656,10 @@ onBeforeUnmount(() => {
                   {{ t('app.continueReading') || 'Continue reading' }}
                 </h2>
                 <NuxtLink
-                  to="/feed"
+                  :to="backHref"
                   class="text-sm font-medium text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
                 >
-                  {{ t('app.moreArticles') || 'More articles' }}
+                  {{ isNews ? (t('app.allNews') || 'Все новости') : (t('app.moreArticles') || 'More articles') }}
                 </NuxtLink>
               </div>
 
