@@ -460,11 +460,12 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 
     posts.push({
       id: slug,
-      href: `/${slug}`,
+      href: `/${categorySlug}/${slug}`,
       category: categorySlug === 'whatsnew' ? "What's New" : categorySlug === 'news' ? 'News' : 'Articles',
       categorySlug,
       title,
-      excerpt: excerptFromBody(body),
+      excerpt: String(meta.description || '').trim() || excerptFromBody(body),
+      preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
       author,
       publishedAt: formatDate(dateISO),
       dateISO,

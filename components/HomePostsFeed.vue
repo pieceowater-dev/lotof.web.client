@@ -9,6 +9,7 @@ export type HomeFeedPost = {
   category: string;
   title: string;
   excerpt: string;
+  preview?: string;
   author: string;
   publishedAt: string;
   readTime: string;
@@ -86,8 +87,11 @@ function onImageError(postId: string) {
           {{ post.title }}
         </h3>
 
-        <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">
+        <p class="mt-2 text-sm font-medium leading-6 text-gray-700 dark:text-gray-200">
           {{ post.excerpt }}
+        </p>
+        <p v-if="post.preview" class="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400 line-clamp-2">
+          {{ post.preview }}
         </p>
 
         <div class="mt-4 flex flex-wrap gap-2">

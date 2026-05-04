@@ -119,11 +119,12 @@ function processNewsPosts(): ProcessedMarkdownPost[] {
 
     posts.push({
       id: slug,
-      href: `/${slug}`,
+      href: `/news/${slug}`,
       category: t('app.news') || 'News',
       categorySlug: 'news',
       title,
-      excerpt: excerptFromBody(body),
+      excerpt: String(meta.description || '').trim() || excerptFromBody(body),
+      preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
       author,
       publishedAt: formatDate(dateISO),
       dateISO,
