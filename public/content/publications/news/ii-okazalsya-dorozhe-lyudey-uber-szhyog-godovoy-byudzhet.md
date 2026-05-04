@@ -4,6 +4,12 @@ description: "Uber потратил годовой ИИ-бюджет за 4 ме
 slug: "ii-okazalsya-dorozhe-lyudey-uber-szhyog-godovoy-byudzhet"
 date: "2026-05-04"
 author: "Редакция Lota"
+author_role: "Редакционная аналитика рынка ИИ и product-экономики"
+author_url: "https://lota.tools"
+reviewed_by: "Редакция Lota"
+reviewed_by_url: "https://lota.tools"
+reviewed_date: "2026-05-05"
+updated_at: "2026-05-05"
 category: "news"
 tags:
   - "ИИ"

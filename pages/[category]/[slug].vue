@@ -115,11 +115,16 @@ if (!article.value) {
 const articleTitle = computed(() => String(article.value?.meta.title || 'Article'));
 const articleDescription = computed(() => String(article.value?.meta.description || ''));
 const articleAuthor = computed(() => String(article.value?.meta.author || 'Lota Team'));
+const articleAuthorRole = computed(() => String(article.value?.meta.author_role || '').trim());
 const articleOgImage = computed(() => String(article.value?.meta.og_image || '/og-image.png'));
 const articleOgImageAlt = computed(() => String(article.value?.meta.og_image_alt || articleTitle.value));
 const articleSourceUrl = computed(() => String(article.value?.meta.source_url || '').trim());
 const articleSourceName = computed(() => String(article.value?.meta.source_name || '').trim());
 const articleAuthorUrl = computed(() => String(article.value?.meta.author_url || '').trim());
+const articleReviewer = computed(() => String(article.value?.meta.reviewed_by || '').trim());
+const articleReviewerUrl = computed(() => String(article.value?.meta.reviewed_by_url || '').trim());
+const articleUpdatedRaw = computed(() => String(article.value?.meta.updated_at || '').trim());
+const articleReviewedRaw = computed(() => String(article.value?.meta.reviewed_date || '').trim());
 
 const articleTags = computed(() => {
   const tags = article.value?.meta.tags;
@@ -133,6 +138,13 @@ const articleDate = computed(() => {
   const intlLocale = locale.value === 'ru' ? 'ru-RU' : locale.value === 'kk' ? 'kk-KZ' : 'en-GB';
   return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'long', year: 'numeric' });
 });
+
+function toLocalizedDate(raw: string): string {
+  const dt = new Date(raw);
+  if (Number.isNaN(dt.getTime())) return raw;
+  const intlLocale = locale.value === 'ru' ? 'ru-RU' : locale.value === 'kk' ? 'kk-KZ' : 'en-GB';
+  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'long', year: 'numeric' });
+}
 
 const siteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
 const isNews = computed(() => article.value?.category === 'news');
@@ -165,15 +177,38 @@ const articlePublishedIso = computed(() => {
   return dt.toISOString();
 });
 
+const articleUpdatedIso = computed(() => {
+  if (!articleUpdatedRaw.value) return '';
+  const dt = new Date(articleUpdatedRaw.value);
+  if (Number.isNaN(dt.getTime())) return '';
+  return dt.toISOString();
+});
+
+const articleReviewedIso = computed(() => {
+  if (!articleReviewedRaw.value) return '';
+  const dt = new Date(articleReviewedRaw.value);
+  if (Number.isNaN(dt.getTime())) return '';
+  return dt.toISOString();
+});
+
+const articleUpdatedLabel = computed(() => articleUpdatedRaw.value ? toLocalizedDate(articleUpdatedRaw.value) : '');
+const articleReviewedLabel = computed(() => articleReviewedRaw.value ? toLocalizedDate(articleReviewedRaw.value) : '');
+const articleSectionLabel = computed(() => isNews.value ? 'News' : 'Articles');
+
 const articleJsonLd = computed(() => {
   const type = isNews.value ? 'NewsArticle' : 'Article';
-  const authorObj: Record<string, string> = articleAuthorUrl.value
-    ? { '@type': 'Person', name: articleAuthor.value, url: articleAuthorUrl.value }
-    : { '@type': 'Organization', name: articleAuthor.value };
+  const authorObj: Record<string, unknown> = {
+    '@type': 'Person',
+    name: articleAuthor.value,
+  };
+
+  if (articleAuthorUrl.value) authorObj.url = articleAuthorUrl.value;
+  if (articleAuthorRole.value) authorObj.jobTitle = articleAuthorRole.value;
 
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': type,
+    url: articleCanonical.value,
     headline: articleTitle.value,
     description: articleDescription.value,
     image: [articleOgImage.value],
@@ -185,9 +220,17 @@ const articleJsonLd = computed(() => {
       logo: { '@type': 'ImageObject', url: `${siteUrl.value}/og-image.png` },
     },
     datePublished: articlePublishedIso.value || undefined,
-    dateModified: articlePublishedIso.value || undefined,
+    dateModified: articleUpdatedIso.value || articlePublishedIso.value || undefined,
     mainEntityOfPage: { '@type': 'WebPage', '@id': articleCanonical.value },
     inLanguage: String(locale.value || 'ru'),
+    articleSection: articleSectionLabel.value,
+    about: articleTags.value.length
+      ? articleTags.value.map((tag) => ({ '@type': 'DefinedTerm', name: tag }))
+      : undefined,
+    keywords: articleTags.value.join(', ') || undefined,
+    citation: articleSourceUrl.value
+      ? [{ '@type': 'CreativeWork', url: articleSourceUrl.value, name: articleSourceName.value || articleSourceUrl.value }]
+      : undefined,
   };
 
   if (isNews.value && articleSourceUrl.value) {
@@ -196,6 +239,15 @@ const articleJsonLd = computed(() => {
       url: articleSourceUrl.value,
       name: articleSourceName.value || articleSourceUrl.value,
     };
+  }
+
+  if (articleReviewer.value) {
+    ld.reviewedBy = {
+      '@type': 'Person',
+      name: articleReviewer.value,
+      url: articleReviewerUrl.value || undefined,
+    };
+    ld.dateReviewed = articleReviewedIso.value || undefined;
   }
 
   return ld;
@@ -451,9 +503,11 @@ useHead(() => ({
   ],
   meta: [
     { name: 'robots', content: articleRobots.value },
+    { name: 'author', content: articleAuthor.value },
     { property: 'og:url', content: articleCanonical.value },
     { property: 'article:author', content: articleAuthor.value },
     { property: 'article:published_time', content: articlePublishedIso.value },
+    { property: 'article:modified_time', content: articleUpdatedIso.value || articlePublishedIso.value },
     ...articleTags.value.map((tag) => ({ property: 'article:tag', content: tag })),
   ],
   script: [
@@ -567,27 +621,92 @@ onBeforeUnmount(() => {
               decoding="async"
             />
 
-            <div v-html="articleHtml" class="article-content" />
+            <div v-html="articleHtml" class="article-content mb-10" />
 
-            <!-- E-E-A-T: source & author footer -->
-            <footer class="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50 px-5 py-4 text-sm text-slate-500 dark:border-gray-700 dark:bg-gray-800/60 dark:text-gray-400">
-              <div class="flex items-center gap-2">
-                <UIcon name="lucide:user" class="h-4 w-4 shrink-0" />
-                <span>{{ articleAuthor }}</span>
-                <span aria-hidden="true">·</span>
-                <span>{{ articleDate }}</span>
+            <aside
+              aria-labelledby="article-trust-heading"
+              class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-cyan-50/40 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:via-gray-900 dark:to-cyan-950/20"
+            >
+              <div class="flex items-center gap-2 border-b border-slate-100/90 px-5 py-3 dark:border-gray-700/80">
+                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  <UIcon name="lucide:shield-check" class="h-4 w-4" />
+                </span>
+                <h2 id="article-trust-heading" class="text-sm font-semibold tracking-[0.04em] text-slate-800 dark:text-gray-100">
+                  Авторство и проверка
+                </h2>
               </div>
-              <a
-                v-if="articleSourceUrl"
-                :href="articleSourceUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-blue-300 hover:text-blue-700 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300 dark:hover:border-blue-500 dark:hover:text-blue-300"
-              >
-                <UIcon name="lucide:external-link" class="h-3.5 w-3.5" />
-                {{ t('app.source') || 'Источник' }}: {{ articleSourceName || articleSourceUrl }}
-              </a>
-            </footer>
+
+              <p class="px-5 pt-4 text-sm leading-6 text-slate-600 dark:text-gray-300">
+                Материал подготовлен и проверен редакцией. Ключевые факты сопоставлены с первоисточником.
+              </p>
+
+              <dl class="grid gap-3 px-5 py-4 text-sm text-slate-700 dark:text-gray-300 sm:grid-cols-2">
+                <div class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                  <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Автор материала</dt>
+                  <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
+                    <a
+                      v-if="articleAuthorUrl"
+                      :href="articleAuthorUrl"
+                      target="_blank"
+                      rel="author noopener noreferrer"
+                      class="underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      {{ articleAuthor }}
+                    </a>
+                    <span v-else>{{ articleAuthor }}</span>
+                    <span v-if="articleAuthorRole" class="font-normal text-slate-600 dark:text-gray-300"> — {{ articleAuthorRole }}</span>
+                  </dd>
+                </div>
+
+                <div class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                  <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Дата публикации</dt>
+                  <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
+                    <time :datetime="articlePublishedIso || undefined">{{ articleDate }}</time>
+                  </dd>
+                </div>
+
+                <div v-if="articleReviewer" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                  <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Проверено</dt>
+                  <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
+                    <a
+                      v-if="articleReviewerUrl"
+                      :href="articleReviewerUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="underline underline-offset-2 hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      {{ articleReviewer }}
+                    </a>
+                    <span v-else>{{ articleReviewer }}</span>
+                    <span v-if="articleReviewedLabel" class="font-normal text-slate-600 dark:text-gray-300">
+                      · <time :datetime="articleReviewedIso || undefined">{{ articleReviewedLabel }}</time>
+                    </span>
+                  </dd>
+                </div>
+
+                <div v-if="articleUpdatedLabel" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                  <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Дата изменения</dt>
+                  <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
+                    <time :datetime="articleUpdatedIso || undefined">{{ articleUpdatedLabel }}</time>
+                  </dd>
+                </div>
+
+                <div v-if="articleSourceUrl" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                  <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Источник</dt>
+                  <dd class="mt-1">
+                    <a
+                      :href="articleSourceUrl"
+                      target="_blank"
+                      rel="nofollow noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition hover:-translate-y-0.5 hover:border-blue-300 hover:bg-blue-100 hover:text-blue-800 dark:border-blue-800/70 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:border-blue-700 dark:hover:bg-blue-900/40 dark:hover:text-blue-200"
+                    >
+                      <span>{{ articleSourceName || articleSourceUrl }}</span>
+                      <UIcon name="lucide:arrow-up-right" class="h-3.5 w-3.5" />
+                    </a>
+                  </dd>
+                </div>
+              </dl>
+            </aside>
 
             <section v-if="suggestedArticles.length" class="mt-12 border-t border-slate-200 pt-8 dark:border-gray-800">
               <div class="mb-5 flex items-center justify-between gap-3">
