@@ -110,7 +110,24 @@ watch(
           </div>
         </div>
 
-        <div class="mt-4 flex justify-end">
+        <div class="mt-4 flex items-center justify-between">
+          <div class="flex items-center gap-0.5">
+            <UTooltip text="Instagram">
+              <UButton to="https://www.instagram.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Instagram">
+                <UIcon name="simple-icons:instagram" class="w-3 h-3" />
+              </UButton>
+            </UTooltip>
+            <UTooltip text="Threads">
+              <UButton to="https://www.threads.com/@lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Threads">
+                <UIcon name="simple-icons:threads" class="w-3 h-3" />
+              </UButton>
+            </UTooltip>
+            <UTooltip text="X">
+              <UButton to="https://x.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="X">
+                <UIcon name="simple-icons:x" class="w-3 h-3" />
+              </UButton>
+            </UTooltip>
+          </div>
           <button
             type="button"
             class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
@@ -161,6 +178,24 @@ watch(
         <p v-else class="text-sm text-gray-500 dark:text-gray-400">
           {{ t('app.noUpdatesForCurrentFilters') || 'No updates for current filters.' }}
         </p>
+
+        <div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 flex items-center gap-0.5">
+          <UTooltip text="Instagram">
+            <UButton to="https://www.instagram.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Instagram">
+              <UIcon name="simple-icons:instagram" class="w-3 h-3" />
+            </UButton>
+          </UTooltip>
+          <UTooltip text="Threads">
+            <UButton to="https://www.threads.com/@lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Threads">
+              <UIcon name="simple-icons:threads" class="w-3 h-3" />
+            </UButton>
+          </UTooltip>
+          <UTooltip text="X">
+            <UButton to="https://x.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="X">
+              <UIcon name="simple-icons:x" class="w-3 h-3" />
+            </UButton>
+          </UTooltip>
+        </div>
       </div>
     </aside>
 
@@ -289,6 +324,24 @@ watch(
               <p v-else class="text-sm text-gray-500 dark:text-gray-400">
                 {{ t('app.noUpdatesForCurrentFilters') || 'No updates for current filters.' }}
               </p>
+            </div>
+
+            <div class="pt-3 border-t border-gray-200 dark:border-gray-700 flex items-center gap-0.5">
+              <UTooltip text="Instagram">
+                <UButton to="https://www.instagram.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Instagram">
+                  <UIcon name="simple-icons:instagram" class="w-3 h-3" />
+                </UButton>
+              </UTooltip>
+              <UTooltip text="Threads">
+                <UButton to="https://www.threads.com/@lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="Threads">
+                  <UIcon name="simple-icons:threads" class="w-3 h-3" />
+                </UButton>
+              </UTooltip>
+              <UTooltip text="X">
+                <UButton to="https://x.com/lota_tools" target="_blank" rel="noopener noreferrer" variant="ghost" color="gray" size="xs" square aria-label="X">
+                  <UIcon name="simple-icons:x" class="w-3 h-3" />
+                </UButton>
+              </UTooltip>
             </div>
           </div>
         </Transition>

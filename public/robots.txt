@@ -1,6 +1,8 @@
 # Allow all crawlers
 User-agent: *
 Allow: /
+Allow: /news
+Allow: /feed
 
 # Disallow authenticated/internal areas
 # /[namespace]/*
