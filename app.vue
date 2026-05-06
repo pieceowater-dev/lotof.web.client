@@ -118,11 +118,12 @@ const normalizedSiteUrl = computed(() => String(config.public.siteUrl || 'https:
 const routeSegments = computed(() => route.path.split('/').filter(Boolean));
 const isConsoleRoute = computed(() => route.path.startsWith('/console'));
 const isSharedNamespaceRoute = computed(() => /^\/shared\/[^/]+(?:\/|$)/.test(route.path));
+const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew']);
 const isNamespacePrivateRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length < 2) return false;
   const first = segments[0];
-  return first !== 'console' && first !== 'shared';
+  return first !== 'console' && first !== 'shared' && !PUBLIC_CATEGORY_PREFIXES.has(first);
 });
 const isPeopleRoute = computed(() => route.path === '/people');
 const isPrivateRoute = computed(() => {
