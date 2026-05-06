@@ -5,8 +5,10 @@ Allow: /news
 Allow: /feed
 
 # Disallow authenticated/internal areas
-# /[namespace]/*
-Disallow: /*/*
+# /[namespace]/atrace/*
+Disallow: /*/atrace/
+# /[namespace]/contacts/*
+Disallow: /*/contacts/
 # /console/*
 Disallow: /console/
 # /shared/[namespace]/*
