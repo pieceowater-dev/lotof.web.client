@@ -6,12 +6,13 @@
       :description="t('admin.publicationsDesc')"
     >
       <template #actions>
-        <button
+        <NuxtLink
+          to="/console/publications/new"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>{{ t('admin.newPublication') }}</span>
-        </button>
+        </NuxtLink>
       </template>
     </AdminHeader>
 

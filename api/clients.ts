@@ -110,6 +110,15 @@ export class ApiClient {
     variables?: Record<string, any>,
     options?: { headers?: Record<string, string> }
   ): Promise<T> {
+    return this.requestWithRetry<T>(query, variables, options, 0);
+  }
+
+  private async requestWithRetry<T>(
+    query: any,
+    variables?: Record<string, any>,
+    options?: { headers?: Record<string, string> },
+    retryCount: number = 0
+  ): Promise<T> {
     // Merge headers each call to always use latest token + any provided headers
     const t = getTokenRef().value;
     const headers: Record<string, string> = {};
@@ -150,10 +159,34 @@ export class ApiClient {
         notifyRateLimit();
       } else if (isAtraceUnauthorized) {
         logWarn('Atrace unauthorized detected, invoking atrace handler');
-        atraceUnauthorizedHandler?.();
+        if (retryCount === 0) {
+          // Try refresh once before giving up
+          atraceUnauthorizedHandler?.();
+          // Wait a tiny bit for handler to complete token refresh
+          await new Promise(r => setTimeout(r, 100));
+          // Retry request once with new token
+          try {
+            return await this.requestWithRetry<T>(query, variables, options, 1);
+          } catch (retryError) {
+            // If retry still fails, throw original error
+            throw error;
+          }
+        }
       } else if (isHubUnauthorized) {
         logWarn('Hub unauthorized detected, invoking handler');
-        unauthorizedHandler?.();
+        if (retryCount === 0) {
+          // Try refresh once before giving up
+          unauthorizedHandler?.();
+          // Wait a tiny bit for handler to complete token refresh
+          await new Promise(r => setTimeout(r, 100));
+          // Retry request once with new token
+          try {
+            return await this.requestWithRetry<T>(query, variables, options, 1);
+          } catch (retryError) {
+            // If retry still fails, throw original error
+            throw error;
+          }
+        }
       } else {
         if (process.client) {
           try {
