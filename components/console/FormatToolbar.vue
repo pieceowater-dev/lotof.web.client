@@ -45,28 +45,28 @@ function insertLink() {
       @mousedown.prevent
     >
       <!-- Bold -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:bold"
         :label="t('admin.editor.bold')"
         cmd="bold"
       />
 
       <!-- Italic -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:italic"
         :label="t('admin.editor.italic')"
         cmd="italic"
       />
 
       <!-- Underline -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:underline"
         :label="t('admin.editor.underline')"
         cmd="underline"
       />
 
       <!-- Strikethrough -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:strikethrough"
         :label="t('admin.editor.strike')"
         cmd="strikethrough"
@@ -75,7 +75,7 @@ function insertLink() {
       <div class="h-5 w-px bg-slate-700" />
 
       <!-- H2 -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:heading-2"
         :label="t('admin.editor.heading2')"
         cmd="formatBlock"
@@ -83,7 +83,7 @@ function insertLink() {
       />
 
       <!-- H3 -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:heading-3"
         :label="t('admin.editor.heading3')"
         cmd="formatBlock"
@@ -102,7 +102,7 @@ function insertLink() {
       <div class="h-5 w-px bg-slate-700" />
 
       <!-- Clear formatting -->
-      <PublicationEditorFormatButton
+      <ConsoleFormatButton
         icon="lucide:eraser"
         :label="t('admin.editor.clearFormatting')"
         cmd="removeFormat"

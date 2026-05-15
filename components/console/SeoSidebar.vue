@@ -57,9 +57,6 @@ const seoChecks = [
   { id: 'desc-filled', ok: computed(() => !!props.article.metaDescription), label: t('admin.editor.seoCheckMetaDescFilled') },
   { id: 'desc-length', ok: computed(() => props.article.metaDescription.length >= 120 && props.article.metaDescription.length <= 160), label: t('admin.editor.seoCheckMetaDescLength') },
   { id: 'slug', ok: computed(() => !!props.article.slug), label: t('admin.editor.seoCheckSlug') },
-  { id: 'keyword', ok: computed(() => !!props.article.focusKeyword), label: t('admin.editor.seoCheckKeyword') },
-  { id: 'keyword-title', ok: computed(() => props.article.focusKeyword ? props.article.metaTitle.toLowerCase().includes(props.article.focusKeyword.toLowerCase()) : false), label: t('admin.editor.seoCheckKeywordTitle') },
-  { id: 'keyword-desc', ok: computed(() => props.article.focusKeyword ? props.article.metaDescription.toLowerCase().includes(props.article.focusKeyword.toLowerCase()) : false), label: t('admin.editor.seoCheckKeywordDesc') },
   { id: 'image-alt', ok: computed(() => props.blocks.some(b => b.type === 'image' && b.attrs.alt)), label: t('admin.editor.seoCheckImageAlt') }
 ]
 </script>
@@ -102,7 +99,7 @@ const seoChecks = [
       <!-- Checklist -->
       <div class="p-4 border-b border-slate-100 dark:border-slate-800 space-y-2">
         <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-3">{{ t('admin.editor.checklist') }}</p>
-        <PublicationEditorSeoCheckItem
+        <ConsoleSeoCheckItem
           v-for="check in seoChecks"
           :key="check.id"
           :ok="check.ok.value"
@@ -113,18 +110,6 @@ const seoChecks = [
       <!-- Meta fields -->
       <div class="p-4 space-y-4">
         <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{{ t('admin.editor.metaData') }}</p>
-
-        <!-- Focus keyword -->
-        <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.focusKeyword') }}</label>
-          <input
-            :value="article.focusKeyword"
-            @input="$emit('update:article', { focusKeyword: ($event.target as HTMLInputElement).value })"
-            type="text"
-            class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-            :placeholder="t('admin.editor.focusKeywordPlaceholder')"
-          />
-        </div>
 
         <!-- Slug -->
         <div>
