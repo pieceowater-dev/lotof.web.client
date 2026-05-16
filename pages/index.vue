@@ -265,13 +265,21 @@ const activeApps = computed(() => ALL_APPS.filter(a => appInstalled[a.bundle]));
 const possibleApps = computed(() => ALL_APPS.filter(a => !appInstalled[a.bundle] && a.canAdd));
 const comingSoonApps = computed(() => ALL_APPS.filter(a => !a.canAdd));
 
+function appRoutePath(app: AppConfig): string | null {
+  const ns = selectedNS.value;
+  if (!ns) return null;
+  return app.address === 'atrace' ? `/${ns}/atrace/attendance/all` : `/${ns}/${app.address}`;
+}
+
 function toCard(app: AppConfig) {
+  const routePath = appRoutePath(app);
   return {
     key: app.bundle,
     icon: app.icon,
     title: t(app.titleKey),
     name: app.name,
     description: t(app.descriptionKey),
+    to: appInstalled[app.bundle] ? (routePath || undefined) : undefined,
     action: appInstalled[app.bundle]
       ? () => handleAppClick(app.address)
       : (app.canAdd ? () => handleGetApp(app) : undefined),
@@ -884,40 +892,42 @@ watch([articlesSearch, selectedArticleTag], () => {
                 </p>
               </button>
 
-              <button
-                v-for="app in dashboardApps"
-                :key="app.bundle"
-                :disabled="!appInstalled[app.bundle] && !app.canAdd"
-                class="group rounded-2xl p-3 text-center transition-all disabled:opacity-45 disabled:cursor-not-allowed"
-                :class="appInstalled[app.bundle]
-                  ? 'bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800'
-                  : 'bg-white/75 dark:bg-gray-800 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800'"
-                @click="handleDashboardApp(app)"
-              >
-                <div
-                  class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center"
-                  :class="appInstalled[app.bundle]
-                    ? ''
-                    : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'"
+              <template v-for="app in dashboardApps" :key="app.bundle">
+                <NuxtLink
+                  v-if="appInstalled[app.bundle] && appRoutePath(app)"
+                  :to="appRoutePath(app) || '/'"
+                  class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
                 >
-                  <UIcon
-                    :name="app.icon"
-                    class="w-8 h-8"
-                    :class="appInstalled[app.bundle]
-                      ? 'bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]'
-                      : ''"
-                  />
-                </div>
-                <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
-                <p
-                  class="mt-1 text-[11px] leading-4"
-                  :class="appInstalled[app.bundle]
-                    ? 'bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold'
-                    : (app.canAdd ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500')"
+                  <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
+                    <UIcon
+                      :name="app.icon"
+                      class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
+                    />
+                  </div>
+                  <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
+                  <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
+                    {{ t('app.open') || 'Open' }}
+                  </p>
+                </NuxtLink>
+
+                <button
+                  v-else
+                  :disabled="!app.canAdd"
+                  class="group rounded-2xl p-3 text-center transition-all disabled:opacity-45 disabled:cursor-not-allowed bg-white/75 dark:bg-gray-800 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
+                  @click="handleDashboardApp(app)"
                 >
-                  {{ appInstalled[app.bundle] ? (t('app.open') || 'Open') : (app.canAdd ? (t('app.getApp') || 'Get') : (t('app.comingSoon') || 'Soon')) }}
-                </p>
-              </button>
+                  <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                    <UIcon :name="app.icon" class="w-8 h-8" />
+                  </div>
+                  <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
+                  <p
+                    class="mt-1 text-[11px] leading-4"
+                    :class="app.canAdd ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500'"
+                  >
+                    {{ app.canAdd ? (t('app.getApp') || 'Get') : (t('app.comingSoon') || 'Soon') }}
+                  </p>
+                </button>
+              </template>
             </div>
           </div>
         </div>

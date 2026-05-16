@@ -51,14 +51,14 @@ const seoScore = computed(() => {
   return score
 })
 
-const seoChecks = [
-  { id: 'title-filled', ok: computed(() => !!props.article.metaTitle), label: t('admin.editor.seoCheckMetaTitleFilled') },
-  { id: 'title-length', ok: computed(() => props.article.metaTitle.length >= 30 && props.article.metaTitle.length <= 60), label: t('admin.editor.seoCheckMetaTitleLength') },
-  { id: 'desc-filled', ok: computed(() => !!props.article.metaDescription), label: t('admin.editor.seoCheckMetaDescFilled') },
-  { id: 'desc-length', ok: computed(() => props.article.metaDescription.length >= 120 && props.article.metaDescription.length <= 160), label: t('admin.editor.seoCheckMetaDescLength') },
-  { id: 'slug', ok: computed(() => !!props.article.slug), label: t('admin.editor.seoCheckSlug') },
-  { id: 'image-alt', ok: computed(() => props.blocks.some(b => b.type === 'image' && b.attrs.alt)), label: t('admin.editor.seoCheckImageAlt') }
-]
+const seoChecks = computed(() => [
+  { id: 'title-filled', ok: !!props.article.metaTitle, label: t('admin.editor.seoCheckMetaTitleFilled') },
+  { id: 'title-length', ok: props.article.metaTitle.length >= 30 && props.article.metaTitle.length <= 60, label: t('admin.editor.seoCheckMetaTitleLength') },
+  { id: 'desc-filled', ok: !!props.article.metaDescription, label: t('admin.editor.seoCheckMetaDescFilled') },
+  { id: 'desc-length', ok: props.article.metaDescription.length >= 120 && props.article.metaDescription.length <= 160, label: t('admin.editor.seoCheckMetaDescLength') },
+  { id: 'slug', ok: !!props.article.slug, label: t('admin.editor.seoCheckSlug') },
+  { id: 'image-alt', ok: props.blocks.some(b => b.type === 'image' && b.attrs.alt), label: t('admin.editor.seoCheckImageAlt') }
+])
 </script>
 
 <template>
@@ -102,7 +102,7 @@ const seoChecks = [
         <ConsoleSeoCheckItem
           v-for="check in seoChecks"
           :key="check.id"
-          :ok="check.ok.value"
+          :ok="check.ok"
           :label="check.label"
         />
       </div>

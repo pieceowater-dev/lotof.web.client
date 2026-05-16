@@ -994,6 +994,7 @@
     "learning": "Learning materials",
     "learningDesc": "Private learning content for authenticated users",
     "newPublication": "New publication",
+    "newPublicationPageTitle": "New page",
     "allPublications": "All publications",
     "noPublications": "No publications yet. Create your first one!",
     "cmsIntegration": "CMS integration",

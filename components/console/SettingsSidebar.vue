@@ -90,18 +90,6 @@ function removeTag(index: number) {
         </div>
       </div>
 
-      <!-- Author -->
-      <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.author') }}</label>
-        <input
-          :value="article.author"
-          @input="$emit('update:article', { author: ($event.target as HTMLInputElement).value })"
-          type="text"
-          class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
-          :placeholder="t('admin.editor.authorPlaceholder')"
-        />
-      </div>
-
       <!-- Publish date -->
       <div>
         <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.publishDate') }}</label>
@@ -154,6 +142,18 @@ function removeTag(index: number) {
           type="url"
           class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           :placeholder="t('admin.editor.featuredImagePlaceholder')"
+        />
+      </div>
+
+      <!-- Author (grouped with schema-related metadata) -->
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.author') }}</label>
+        <input
+          :value="article.author"
+          @input="$emit('update:article', { author: ($event.target as HTMLInputElement).value })"
+          type="text"
+          class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          :placeholder="t('admin.editor.authorPlaceholder')"
         />
       </div>
 

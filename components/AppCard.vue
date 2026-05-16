@@ -66,18 +66,19 @@
 
       <div class="mt-auto pt-1">
         <UButton
-          :disabled="!props.action"
-          :color="props.action ? 'primary' : 'gray'"
-          :variant="props.action ? 'solid' : 'soft'"
+          :to="props.to"
+          :disabled="!props.action && !props.to"
+          :color="(props.action || props.to) ? 'primary' : 'gray'"
+          :variant="(props.action || props.to) ? 'solid' : 'soft'"
           :class="[
             'w-fit px-4',
-            props.action ? 'shadow-sm group-hover:shadow' : '',
+            (props.action || props.to) ? 'shadow-sm group-hover:shadow' : '',
             isAvailable
               ? '!border-0 !text-white !bg-gradient-to-r !from-blue-600 !to-emerald-500 hover:!from-blue-700 hover:!to-emerald-600'
               : ''
           ]"
           :label="props.installed ? t('app.open') : (props.canAdd ? t('app.getApp') : t('app.comingSoon'))"
-          @click="props.action?.()"
+          @click="props.to ? undefined : props.action?.()"
         />
       </div>
     </div>
@@ -94,6 +95,7 @@ const props = defineProps<{
     title: string
     name?: string
     description: string
+    to?: string
     action?: () => void | Promise<void>
     installed?: boolean // if false -> show "Get App"
     canAdd?: boolean

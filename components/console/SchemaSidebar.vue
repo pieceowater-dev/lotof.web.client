@@ -40,11 +40,30 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const schemaTypeOptions: Array<{ value: Article['schemaType']; label: string }> = [
+const schemaTypeOptions = computed<Array<{ value: Article['schemaType']; label: string }>>(() => [
   { value: 'Article', label: t('admin.editor.schemaTypeArticle') },
   { value: 'NewsArticle', label: t('admin.editor.schemaTypeNewsArticle') },
   { value: 'BlogPosting', label: t('admin.editor.schemaTypeBlogPosting') },
-]
+])
+
+function onSchemaTypeChange(payload: unknown) {
+  const allowed: Article['schemaType'][] = ['Article', 'NewsArticle', 'BlogPosting']
+
+  if (typeof payload === 'string' && allowed.includes(payload as Article['schemaType'])) {
+    emit('update:article', { schemaType: payload as Article['schemaType'] })
+    return
+  }
+
+  if (payload && typeof payload === 'object' && 'value' in payload) {
+    const value = (payload as { value?: unknown }).value
+    if (typeof value === 'string' && allowed.includes(value as Article['schemaType'])) {
+      emit('update:article', { schemaType: value as Article['schemaType'] })
+      return
+    }
+  }
+
+  emit('update:article', { schemaType: 'Article' })
+}
 
 const prettyJson = computed(() => {
   const authorObj: Record<string, unknown> = {
@@ -106,22 +125,16 @@ const prettyJson = computed(() => {
   <div :class="props.embedded ? 'space-y-4' : 'flex flex-col h-full'">
     <div :class="props.embedded ? '' : 'p-4 border-b border-slate-100 dark:border-slate-800'">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">{{ t('admin.editor.schemaType') }}</p>
-      <div class="grid grid-cols-1 gap-2">
-        <button
-          v-for="option in schemaTypeOptions"
-          :key="option.value"
-          type="button"
-          @click="emit('update:article', { schemaType: option.value })"
-          :class="[
-            'px-3 py-2 rounded-lg border text-left text-xs font-semibold transition-all',
-            article.schemaType === option.value
-              ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/25 dark:text-blue-300'
-              : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'
-          ]"
-        >
-          {{ option.label }}
-        </button>
-      </div>
+      <USelect
+        :model-value="article.schemaType"
+          :options="schemaTypeOptions"
+        option-attribute="label"
+        value-attribute="value"
+        size="md"
+        class="w-full min-w-0 max-w-full"
+        :ui="{ base: 'rounded-lg border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100' }"
+        @update:model-value="onSchemaTypeChange"
+      />
     </div>
 
     <div :class="props.embedded ? 'space-y-4' : 'flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4'">
