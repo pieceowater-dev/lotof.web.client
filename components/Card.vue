@@ -298,14 +298,17 @@ const dropdownItems = [
         />
       </div>
     </div>
-    <p
-      v-if="locationText"
-      class="text-sm truncate"
-      :class="selected ? 'text-white' : 'text-gray-600 dark:text-gray-100'"
-      :title="locationText"
-    >
-      {{ locationText }}
-    </p>
+    <!-- Reserve space for one location line to keep cards equal height -->
+    <div class="h-5">
+      <p
+        v-if="locationText"
+        class="text-sm truncate"
+        :class="selected ? 'text-white' : 'text-gray-600 dark:text-gray-100'"
+        :title="locationText"
+      >
+        {{ locationText }}
+      </p>
+    </div>
     <!-- Flexible spacer to push bottom section down when there is little content -->
     <div class="flex-1" />
     <!-- Reserve space for one description line to keep cards equal height -->
