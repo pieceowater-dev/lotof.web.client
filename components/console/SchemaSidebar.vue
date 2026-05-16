@@ -124,7 +124,7 @@ const prettyJson = computed(() => {
       </div>
     </div>
 
-    <div :class="props.embedded ? 'space-y-4' : 'flex-1 overflow-y-auto p-4 space-y-4'">
+    <div :class="props.embedded ? 'space-y-4' : 'flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4'">
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{{ t('admin.editor.schemaFields') }}</p>
 
       <div>
@@ -167,7 +167,7 @@ const prettyJson = computed(() => {
             :value="article.updatedAt"
             @input="emit('update:article', { updatedAt: ($event.target as HTMLInputElement).value })"
             type="datetime-local"
-            class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            class="w-full min-w-0 max-w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -226,7 +226,7 @@ const prettyJson = computed(() => {
           :value="article.reviewedDate"
           @input="emit('update:article', { reviewedDate: ($event.target as HTMLInputElement).value })"
           type="datetime-local"
-          class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+          class="w-full min-w-0 max-w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
