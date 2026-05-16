@@ -173,16 +173,6 @@ export default defineNuxtConfig({
         { rel: "apple-touch-icon", sizes: "120x120", href: "/apple-touch-icon-120x120.png" },
         { rel: "apple-touch-icon", sizes: "76x76", href: "/apple-touch-icon-76x76.png" },
         
-        // Splash screens for iOS (optional but recommended)
-        { rel: "apple-touch-startup-image", href: "/apple-splash-2048x2732.png", media: "(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-1668x2388.png", media: "(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-1536x2048.png", media: "(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-1242x2688.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-1125x2436.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" },
-        { rel: "apple-touch-startup-image", href: "/apple-splash-640x1136.png", media: "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" },
-        
         // Android icons
         { rel: "icon", type: "image/png", sizes: "192x192", href: "/android-chrome-192x192.png" },
         { rel: "icon", type: "image/png", sizes: "512x512", href: "/android-chrome-512x512.png" },

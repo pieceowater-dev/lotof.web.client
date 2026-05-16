@@ -30,7 +30,7 @@
               :style="{ width: seoScore + '%' }"
             />
             <!-- Text label (on top) -->
-            <span class="relative z-10">SEO</span>
+            <span class="relative z-10">{{ t('admin.editor.seoTab') }}</span>
           </button>
         </div>
         <button

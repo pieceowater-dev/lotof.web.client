@@ -6,9 +6,26 @@ interface Article {
   status: 'draft' | 'published'
   category: string
   author: string
+  authorUrl?: string
+  authorRole?: string
   publishedAt: string
+  updatedAt?: string
   featuredImage: string
   tags: string[]
+  focusKeyword?: string
+  canonicalUrl?: string
+  schemaType?: 'Article' | 'NewsArticle' | 'BlogPosting'
+  sourceUrl?: string
+  sourceName?: string
+  reviewedBy?: string
+  reviewedByUrl?: string
+  reviewedDate?: string
+  publisherName?: string
+  publisherUrl?: string
+  publisherLogo?: string
+  metaDescription?: string
+  ogImage?: string
+  title?: string
 }
 
 const props = defineProps<{
@@ -42,30 +59,7 @@ function removeTag(index: number) {
 
 <template>
   <!-- Settings tab content -->
-  <div v-if="true" class="flex flex-col h-full">
-    <!-- Status selector -->
-    <div class="p-4 border-b border-slate-100 dark:border-slate-800">
-      <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-2">{{ t('admin.editor.status') }}</p>
-      <div class="grid grid-cols-2 gap-2 min-w-0">
-        <button
-          v-for="s in ['draft', 'published']"
-          :key="s"
-          disabled
-          :class="[
-            'min-w-0 px-3 py-2 rounded-xl text-xs leading-none font-semibold text-center transition-all whitespace-nowrap cursor-not-allowed',
-            article.status === s
-              ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 opacity-60'
-              : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 opacity-40'
-          ]"
-        >
-          {{ {
-            draft: t('admin.editor.statusDraft'),
-            published: t('admin.editor.statusPublished')
-          }[s] }}
-        </button>
-      </div>
-    </div>
-
+  <div class="flex flex-col h-full">
     <!-- Fields -->
     <div class="flex-1 overflow-y-auto p-4 space-y-4">
       <!-- Category -->
@@ -157,9 +151,17 @@ function removeTag(index: number) {
         <input
           :value="article.featuredImage"
           @input="$emit('update:article', { featuredImage: ($event.target as HTMLInputElement).value })"
-          type="text"
+          type="url"
           class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
           :placeholder="t('admin.editor.featuredImagePlaceholder')"
+        />
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+        <ConsoleSchemaSidebar
+          :article="article"
+          embedded
+          @update:article="$emit('update:article', $event)"
         />
       </div>
     </div>

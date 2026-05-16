@@ -33,7 +33,6 @@
         @block-keydown="onBlockKeydown"
         @show-format-bar-event="(e) => showFormatBar(e.target.getBoundingClientRect())"
         @click-self="activeBlockId = null"
-        @show-seo-tab="() => { isMobileSidebarOpen = true }"
       />
 
       <!-- Desktop Sidebar -->
@@ -116,12 +115,26 @@ interface ArticleState {
   status: 'draft' | 'published'
   category: string
   author: string
+  authorUrl: string
+  authorRole: string
   publishedAt: string
+  updatedAt: string
   featuredImage: string
   tags: string[]
+  focusKeyword: string
   metaTitle: string
   metaDescription: string
+  canonicalUrl: string
   ogImage: string
+  schemaType: 'Article' | 'NewsArticle' | 'BlogPosting'
+  sourceUrl: string
+  sourceName: string
+  reviewedBy: string
+  reviewedByUrl: string
+  reviewedDate: string
+  publisherName: string
+  publisherUrl: string
+  publisherLogo: string
   robots: string
 }
 
@@ -145,12 +158,26 @@ const article = reactive<ArticleState>({
   status: (props.initialArticle.status as any) || 'draft',
   category: props.initialArticle.category || '',
   author: props.initialArticle.author || '',
+  authorUrl: (props.initialArticle as any).authorUrl || '',
+  authorRole: (props.initialArticle as any).authorRole || '',
   publishedAt: props.initialArticle.publishedAt || new Date().toISOString().split('T')[0],
+  updatedAt: (props.initialArticle as any).updatedAt || '',
   featuredImage: props.initialArticle.featuredImage || '',
   tags: props.initialArticle.tags || [],
+  focusKeyword: (props.initialArticle as any).focusKeyword || '',
   metaTitle: props.initialArticle.metaTitle || '',
   metaDescription: props.initialArticle.metaDescription || '',
+  canonicalUrl: (props.initialArticle as any).canonicalUrl || '',
   ogImage: props.initialArticle.ogImage || '',
+  schemaType: ((props.initialArticle as any).schemaType as any) || 'Article',
+  sourceUrl: (props.initialArticle as any).sourceUrl || '',
+  sourceName: (props.initialArticle as any).sourceName || '',
+  reviewedBy: (props.initialArticle as any).reviewedBy || '',
+  reviewedByUrl: (props.initialArticle as any).reviewedByUrl || '',
+  reviewedDate: (props.initialArticle as any).reviewedDate || '',
+  publisherName: (props.initialArticle as any).publisherName || 'Lota',
+  publisherUrl: (props.initialArticle as any).publisherUrl || '',
+  publisherLogo: (props.initialArticle as any).publisherLogo || '',
   robots: props.initialArticle.robots || 'index',
 })
 
@@ -663,11 +690,26 @@ function performClearAll() {
   blocks.value = [createBlock('paragraph')]
   article.title = ''
   article.slug = ''
+  article.focusKeyword = ''
   article.metaTitle = ''
   article.metaDescription = ''
+  article.canonicalUrl = ''
   article.ogImage = ''
   article.tags = []
   article.category = 'news'
+  article.author = ''
+  article.authorUrl = ''
+  article.authorRole = ''
+  article.sourceUrl = ''
+  article.sourceName = ''
+  article.reviewedBy = ''
+  article.reviewedByUrl = ''
+  article.reviewedDate = ''
+  article.updatedAt = ''
+  article.schemaType = 'Article'
+  article.publisherName = 'Lota'
+  article.publisherUrl = ''
+  article.publisherLogo = ''
   article.status = 'draft'
   isSlugManuallyEdited.value = false
   localStorage.removeItem(STORAGE_KEY)

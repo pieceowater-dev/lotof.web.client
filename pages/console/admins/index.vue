@@ -212,7 +212,7 @@ const admins = ref([
   {
     id: '1',
     name: user.value?.username || 'Иван Петров',
-    email: user.value?.email || 'ivan@example.com',
+    email: user.value?.email || 'ivan@lota.tools',
     roleKey: 'superAdmin',
     status: 'active',
     joined: '2026-01-15'
@@ -220,7 +220,7 @@ const admins = ref([
   {
     id: '2',
     name: 'Мария Сидорова',
-    email: 'maria@example.com',
+    email: 'maria@lota.tools',
     roleKey: 'admin',
     status: 'active',
     joined: '2026-02-20'
@@ -228,7 +228,7 @@ const admins = ref([
   {
     id: '3',
     name: 'Алексей Иванов',
-    email: 'alexey@example.com',
+    email: 'alexey@lota.tools',
     roleKey: 'cmsEditor',
     status: 'active',
     joined: '2026-03-10'

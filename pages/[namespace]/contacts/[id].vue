@@ -597,7 +597,7 @@ async function loadClient() {
         id: '2',
         clientId: mockClientId,
         type: 'email',
-        value: 'a.petrov@example.com',
+        value: 'a.petrov@lota.tools',
         isPrimary: true,
         verifiedAt: '2024-01-16T11:20:00Z',
       },
@@ -639,9 +639,9 @@ async function loadClient() {
         id: '3',
         clientId: mockClientId,
         eventType: 'IDENTITY_ADDED',
-        payload: JSON.stringify({ type: 'email', value: 'a.petrov@example.com' }),
+        payload: JSON.stringify({ type: 'email', value: 'a.petrov@lota.tools' }),
         createdAt: '2024-01-16T11:20:00Z',
-        createdBy: 'admin@example.com',
+        createdBy: 'admin@lota.tools',
       },
       {
         id: '4',
@@ -649,7 +649,7 @@ async function loadClient() {
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'VIP' }),
         createdAt: '2024-01-20T09:15:00Z',
-        createdBy: 'manager@example.com',
+        createdBy: 'manager@lota.tools',
       },
       {
         id: '5',
@@ -657,7 +657,7 @@ async function loadClient() {
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'Постоянный клиент' }),
         createdAt: '2024-01-22T14:30:00Z',
-        createdBy: 'manager@example.com',
+        createdBy: 'manager@lota.tools',
       },
       {
         id: '6',
@@ -681,7 +681,7 @@ async function loadClient() {
         eventType: 'TAG_ADDED',
         payload: JSON.stringify({ tagName: 'Оптовик' }),
         createdAt: '2024-02-08T10:20:00Z',
-        createdBy: 'admin@example.com',
+        createdBy: 'admin@lota.tools',
       },
       {
         id: '9',
@@ -727,7 +727,7 @@ async function loadClient() {
         id: '14',
         clientId: mockClientId,
         eventType: 'IDENTITY_VERIFIED',
-        payload: JSON.stringify({ type: 'email', value: 'a.petrov@example.com' }),
+        payload: JSON.stringify({ type: 'email', value: 'a.petrov@lota.tools' }),
         createdAt: '2024-02-26T15:45:00Z',
         createdBy: 'system',
       },
@@ -737,7 +737,7 @@ async function loadClient() {
         eventType: 'COMMENT_ADDED',
         payload: JSON.stringify({ text: 'Звоним только с 10:00 до 12:00' }),
         createdAt: '2024-02-28T09:00:00Z',
-        createdBy: 'manager@example.com',
+        createdBy: 'manager@lota.tools',
       },
       {
         id: '16',
@@ -753,7 +753,7 @@ async function loadClient() {
         eventType: 'STATUS_CHANGED',
         payload: JSON.stringify({ from: 'ACTIVE', to: 'ACTIVE' }),
         createdAt: '2024-03-01T14:22:00Z',
-        createdBy: 'admin@example.com',
+        createdBy: 'admin@lota.tools',
       },
       {
         id: '18',
@@ -769,7 +769,7 @@ async function loadClient() {
         eventType: 'RECORD_UPDATED',
         payload: JSON.stringify({ field: 'birthDate', oldValue: '1990-05-15', newValue: '1990-05-15' }),
         createdAt: '2024-03-02T11:00:00Z',
-        createdBy: 'admin@example.com',
+        createdBy: 'admin@lota.tools',
       },
       {
         id: '20',

@@ -42,7 +42,7 @@ export function setContactsAppToken(token: string | null) {
   getContactsTokenRef().value = token;
 }
 
-type UnauthorizedHandler = () => void;
+type UnauthorizedHandler = () => void | Promise<void>;
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 let atraceUnauthorizedHandler: UnauthorizedHandler | null = null;
 let contactsUnauthorizedHandler: UnauthorizedHandler | null = null;
@@ -161,9 +161,7 @@ export class ApiClient {
         logWarn('Atrace unauthorized detected, invoking atrace handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          atraceUnauthorizedHandler?.();
-          // Wait a tiny bit for handler to complete token refresh
-          await new Promise(r => setTimeout(r, 100));
+          await atraceUnauthorizedHandler?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -176,9 +174,7 @@ export class ApiClient {
         logWarn('Hub unauthorized detected, invoking handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          unauthorizedHandler?.();
-          // Wait a tiny bit for handler to complete token refresh
-          await new Promise(r => setTimeout(r, 100));
+          await unauthorizedHandler?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);

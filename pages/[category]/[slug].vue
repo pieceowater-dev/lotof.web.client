@@ -125,6 +125,14 @@ const articleReviewer = computed(() => String(article.value?.meta.reviewed_by ||
 const articleReviewerUrl = computed(() => String(article.value?.meta.reviewed_by_url || '').trim());
 const articleUpdatedRaw = computed(() => String(article.value?.meta.updated_at || '').trim());
 const articleReviewedRaw = computed(() => String(article.value?.meta.reviewed_date || '').trim());
+const articleSchemaType = computed(() => {
+  const raw = String(article.value?.meta.schema_type || '').trim();
+  if (raw === 'NewsArticle' || raw === 'BlogPosting' || raw === 'Article') return raw;
+  return isNews.value ? 'NewsArticle' : 'Article';
+});
+const articlePublisherName = computed(() => String(article.value?.meta.publisher_name || 'Lota').trim() || 'Lota');
+const articlePublisherUrl = computed(() => String(article.value?.meta.publisher_url || siteUrl.value).trim() || siteUrl.value);
+const articlePublisherLogo = computed(() => String(article.value?.meta.publisher_logo || `${siteUrl.value}/og-image.png`).trim() || `${siteUrl.value}/og-image.png`);
 
 const articleTags = computed(() => {
   const tags = article.value?.meta.tags;
@@ -196,7 +204,6 @@ const articleReviewedLabel = computed(() => articleReviewedRaw.value ? toLocaliz
 const articleSectionLabel = computed(() => isNews.value ? 'News' : 'Articles');
 
 const articleJsonLd = computed(() => {
-  const type = isNews.value ? 'NewsArticle' : 'Article';
   const authorObj: Record<string, unknown> = {
     '@type': 'Person',
     name: articleAuthor.value,
@@ -207,7 +214,7 @@ const articleJsonLd = computed(() => {
 
   const ld: Record<string, unknown> = {
     '@context': 'https://schema.org',
-    '@type': type,
+    '@type': articleSchemaType.value,
     url: articleCanonical.value,
     headline: articleTitle.value,
     description: articleDescription.value,
@@ -215,9 +222,9 @@ const articleJsonLd = computed(() => {
     author: authorObj,
     publisher: {
       '@type': 'Organization',
-      name: 'Lota',
-      url: siteUrl.value,
-      logo: { '@type': 'ImageObject', url: `${siteUrl.value}/og-image.png` },
+      name: articlePublisherName.value,
+      url: articlePublisherUrl.value,
+      logo: { '@type': 'ImageObject', url: articlePublisherLogo.value },
     },
     datePublished: articlePublishedIso.value || undefined,
     dateModified: articleUpdatedIso.value || articlePublishedIso.value || undefined,

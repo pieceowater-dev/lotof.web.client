@@ -15,14 +15,28 @@ export function useAuth() {
   const user = useState<{ id: string; username: string; email: string } | null>('auth_user', () => null);
   const loading = useState<boolean>('auth_loading', () => false);
   const initialized = useState<boolean>('auth_initialized', () => false);
+  const silentRefreshAttempted = useState<boolean>('auth_silent_refresh_attempted', () => false);
 
   async function fetchUser(force = false) {
     try {
       if (!token.value) {
-        // Logged-out state on public pages: do not call refresh endpoint proactively.
-        user.value = null;
-        setGlobalAuthToken(null);
-        return;
+        // On hard reload we may only have refresh_token (httpOnly). Try one silent refresh.
+        if (process.client && !silentRefreshAttempted.value) {
+          silentRefreshAttempted.value = true;
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            const refreshedToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+            if (refreshedToken) {
+              token.value = refreshedToken;
+            }
+          }
+        }
+
+        if (!token.value) {
+          user.value = null;
+          setGlobalAuthToken(null);
+          return;
+        }
       }
 
       if (user.value && !force) return; // cached

@@ -389,7 +389,7 @@ function handleKeyDown(event: KeyboardEvent) {
             <UInput
               v-model="emails[0]"
               type="email"
-              :placeholder="t('contacts.enterEmail') || 'email@example.com'"
+              :placeholder="t('contacts.enterEmail') || 'email@lota.tools'"
               size="lg"
             />
           </UFormGroup>
@@ -409,7 +409,7 @@ function handleKeyDown(event: KeyboardEvent) {
               <UInput
                 v-model="emails[index + 1]"
                 type="email"
-                :placeholder="t('contacts.enterEmail') || 'email@example.com'"
+                :placeholder="t('contacts.enterEmail') || 'email@lota.tools'"
                 size="lg"
               />
             </UFormGroup>

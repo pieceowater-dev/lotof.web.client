@@ -4,10 +4,10 @@
     <div class="flex items-center gap-2 min-w-0 flex-1">
       <NuxtLink
         to="/console/publications"
-        class="flex-shrink-0 p-1 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-        title="Back"
+        class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-blue-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:text-blue-400 dark:hover:bg-slate-800"
+        :aria-label="t('app.back') || 'Back'"
       >
-        <Icon name="lucide:arrow-left" class="h-5 w-5" />
+        <Icon name="lucide:arrow-left" class="h-6 w-6" />
       </NuxtLink>
       <span class="text-sm md:text-base font-semibold text-slate-900 dark:text-white truncate">
         {{ t('admin.newPublicationPageTitle') }}

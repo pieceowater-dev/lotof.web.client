@@ -15,12 +15,16 @@
           />
           <!-- Slug preview -->
           <button
-            class="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 transition-colors group/slug"
-            @click="$emit('show-seo-tab')"
+            type="button"
+            class="mt-3 inline-flex items-center gap-1.5 text-xs transition-colors"
+            :class="hasSlug
+              ? 'text-slate-400 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 cursor-pointer'
+              : 'text-slate-400 dark:text-slate-600 cursor-default'"
+            @click="openPublicSlug"
           >
             <Icon name="lucide:globe" class="h-3 w-3" />
-            <span class="group-hover/slug:underline">{{ article.slug ? '/' + article.slug : t('admin.editor.setUrl') }}</span>
-            <Icon name="lucide:pen-line" class="h-3 w-3 opacity-0 group-hover/slug:opacity-100 transition-opacity" />
+            <span>{{ previewDomain }}/{{ article.slug || t('admin.editor.urlSlugPlaceholder') }}</span>
+            <Icon v-if="hasSlug" name="lucide:external-link" class="h-3 w-3" />
           </button>
         </div>
 
@@ -33,36 +37,24 @@
             <!-- Block container with drag/drop and toolbar -->
             <div
               class="group/block relative py-2.5"
-              :class="dragState.over === i ? 'bg-blue-50/40 dark:bg-blue-950/20 rounded-lg' : ''"
-              draggable="true"
-              @dragstart="$emit('start-drag', i, $event)"
-              @dragover.prevent="$emit('drag-over', i)"
-              @drop.prevent="$emit('drop', i)"
-              @dragend="$emit('end-drag')"
             >
-              <!-- Block toolbar (left side) -->
-              <div class="absolute -left-16 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 opacity-0 group-hover/block:opacity-100 transition-opacity">
-                <button
-                  class="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Duplicate"
-                  @click="$emit('duplicate-block', i)"
-                ><Icon name="lucide:copy" class="h-3.5 w-3.5" /></button>
+              <!-- Block toolbar -->
+              <div class="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg border border-slate-200/80 bg-white/90 p-1 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-slate-700 dark:bg-slate-900/90">
                 <button
                   v-if="i > 0"
-                  class="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Up"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  title="Вверх"
                   @click="$emit('move-block', i, -1)"
                 ><Icon name="lucide:chevron-up" class="h-3.5 w-3.5" /></button>
                 <button
                   v-if="i < blocks.length - 1"
-                  class="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                  title="Down"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  title="Вниз"
                   @click="$emit('move-block', i, 1)"
                 ><Icon name="lucide:chevron-down" class="h-3.5 w-3.5" /></button>
-                <div class="w-px h-3.5 bg-slate-200 dark:bg-slate-700" />
                 <button
-                  class="p-1 rounded text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                  title="Delete"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  title="Удалить"
                   @click="$emit('delete-block', i)"
                 ><Icon name="lucide:trash-2" class="h-3.5 w-3.5" /></button>
               </div>
@@ -204,7 +196,7 @@
                       class="w-full max-w-xs mx-auto block px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700
                              bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none
                              focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition-shadow"
-                      placeholder="https://example.com/image.jpg"
+                      placeholder="https://lota.tools/image.jpg"
                       @change="block.attrs.src = ($event.target as HTMLInputElement).value"
                     />
                   </div>
@@ -289,7 +281,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
 interface Block {
@@ -309,6 +301,31 @@ interface Props {
 const props = defineProps<Props>()
 
 const { t } = useI18n()
+const config = useRuntimeConfig()
+
+const previewDomain = computed(() => {
+  const raw = String(config.public.siteUrl || 'https://lota.tools').trim()
+  try {
+    return new URL(raw).host
+  } catch {
+    return raw.replace(/^https?:\/\//, '').replace(/\/+$/, '') || 'lota.tools'
+  }
+})
+
+const hasSlug = computed(() => String(props.article?.slug || '').trim().length > 0)
+
+const publicSlugUrl = computed(() => {
+  const rawSiteUrl = String(config.public.siteUrl || 'https://lota.tools').trim()
+  const siteUrl = /^https?:\/\//i.test(rawSiteUrl) ? rawSiteUrl : `https://${rawSiteUrl}`
+  const slug = String(props.article?.slug || '').trim().replace(/^\/+/, '')
+  if (!slug) return ''
+
+  try {
+    return new URL(slug, siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`).toString()
+  } catch {
+    return ''
+  }
+})
 
 const titleEl = ref<HTMLElement | null>(null)
 const blockRefs = new Map<string, HTMLElement>()
@@ -333,7 +350,6 @@ const emit = defineEmits<{
   'block-keydown': [Block, number, KeyboardEvent]
   'show-format-bar-event': [MouseEvent]
   'click-self': []
-  'show-seo-tab': []
 }>()
 
 function setBlockRef(id: string, el: HTMLElement | null) {
@@ -344,6 +360,11 @@ function setBlockRef(id: string, el: HTMLElement | null) {
 function onTitleInput(e: Event) {
   const title = (e.target as HTMLElement).innerText
   emit('update:article', { title })
+}
+
+function openPublicSlug() {
+  if (!hasSlug.value || !publicSlugUrl.value || typeof window === 'undefined') return
+  window.open(publicSlugUrl.value, '_blank', 'noopener,noreferrer')
 }
 
 // ─── Block styling helpers ───────────────────────────────────────────────

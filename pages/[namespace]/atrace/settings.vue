@@ -1225,7 +1225,7 @@ onUnmounted(() => {
                   v-model="inviteEmail" 
                   type="email" 
                   size="lg" 
-                  :placeholder="'name@example.com'"
+                  :placeholder="'name@lota.tools'"
                   :state="inviteEmail && !isValidInviteEmail ? 'error' : 'success'"
                 />
                 <p

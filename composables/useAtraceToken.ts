@@ -6,6 +6,18 @@ const ATRACE_TOKEN_TTL_MS = 12 * 60 * 60 * 1000 // 12h
 const ATRACE_TOKEN_NS_KEY = LSKeys.ATRACE_TOKEN_NS
 
 export function useAtraceToken() {
+  function canUseStorage(): boolean {
+    if (typeof window === 'undefined') return false
+    try {
+      const key = '__atrace_storage_probe__'
+      localStorage.setItem(key, '1')
+      localStorage.removeItem(key)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   function sleep(ms: number) {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }
@@ -42,9 +54,10 @@ export function useAtraceToken() {
 
   async function ensure(nsSlug: string, hubToken?: string | null): Promise<string | null> {
     const cookie = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' })
+    const storageAvailable = canUseStorage()
     const storedNs = readStoredNamespace()
     const hasNsMismatch = !!storedNs && storedNs !== nsSlug
-    const shouldForceByNs = !storedNs && !!cookie.value && !!hubToken && !!nsSlug
+    const shouldForceByNs = storageAvailable && !storedNs && !!cookie.value && !!hubToken && !!nsSlug
 
     if (cookie.value && (hasNsMismatch || shouldForceByNs)) {
       try { cookie.value = null as any } catch {}

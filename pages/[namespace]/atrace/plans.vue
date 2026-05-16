@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
 import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';
@@ -31,6 +32,7 @@ const error = ref<string | null>(null);
 const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 const subscribingPlanCode = ref<string | null>(null);
 const activeSubscription = ref<Subscription | null>(null);
+const redirectingAfterReturn = ref(false);
 
 const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
 const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
@@ -108,6 +110,26 @@ async function fetchActiveSubscription() {
   }
 }
 
+async function redirectIfAlreadySubscribed() {
+  if (redirectingAfterReturn.value) return;
+  if (!activeSubscription.value) return;
+
+  const returnTo = resolveReturnTo();
+  if (returnTo === route.path) return;
+
+  const token = useCookie<string | null>('token', { path: '/' }).value;
+  if (!token) return;
+
+  redirectingAfterReturn.value = true;
+  try {
+    const { ensure } = useAtraceToken();
+    await ensure(nsSlug.value, token);
+    await navigateTo(returnTo, { replace: true });
+  } finally {
+    redirectingAfterReturn.value = false;
+  }
+}
+
 function formatPrice(amountCents: number, currency: string): string {
   const amount = amountCents / 100;
   if (currency === 'KZT') {
@@ -118,6 +140,15 @@ function formatPrice(amountCents: number, currency: string): string {
 
 function formatInterval(interval: string): string {
   return interval === 'MONTH' ? t('app.perMonth') || 'per month' : t('app.perYear') || 'per year';
+}
+
+function resolveReturnTo(): string {
+  const raw = route.query.returnTo;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')) {
+    return value;
+  }
+  return `/${nsSlug.value}/atrace`;
 }
 
 async function subscribePlan(plan: Plan) {
@@ -153,9 +184,13 @@ async function subscribePlan(plan: Plan) {
       }
     }
 
+    // Ensure app token is ready before entering protected atrace routes.
+    const { ensure } = useAtraceToken();
+    await ensure(nsSlug.value, token);
+
     // Navigate to app
-    const returnTo = route.query.returnTo as string || `/${nsSlug.value}/atrace`;
-    await router.push(returnTo);
+    const returnTo = resolveReturnTo();
+    await navigateTo(returnTo, { replace: true });
   } catch (err) {
     console.error('Failed to subscribe:', err);
     const errorMsg = getErrorMessage(err);
@@ -186,6 +221,7 @@ async function subscribePlan(plan: Plan) {
 onMounted(async () => {
   await fetchPlans();
   await fetchActiveSubscription();
+  await redirectIfAlreadySubscribed();
 });
 
 // Watch for plans changes to re-check active subscription interval

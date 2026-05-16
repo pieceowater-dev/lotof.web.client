@@ -1137,7 +1137,7 @@ watch([articlesSearch, selectedArticleTag], () => {
                 <h3 class="text-base font-semibold leading-snug text-gray-900 dark:text-gray-100">{{ post.title }}</h3>
                 <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300 line-clamp-3">{{ post.excerpt }}</p>
                 <UButton
-                  to="`/${post.href}`"
+                  :to="post.href?.startsWith('/') ? post.href : `/${post.href}`"
                   variant="ghost"
                   size="sm"
                   class="mt-4 w-fit"

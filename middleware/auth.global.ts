@@ -1,6 +1,7 @@
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
+import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/') return;
@@ -13,10 +14,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   const isAtraceRoute = /\/atrace(\/|$)/.test(to.path);
   const isContactsRoute = /\/contacts(\/|$)/.test(to.path);
-  const token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+  let token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) {
-    await Promise.resolve();
-    if (!useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value) {
+    // Try one refresh before redirecting to root when access token is expired.
+    const refreshed = await refreshAccessToken();
+    token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    if (!refreshed || !token) {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;

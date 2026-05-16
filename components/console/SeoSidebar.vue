@@ -111,9 +111,21 @@ const seoChecks = [
       <div class="p-4 space-y-4">
         <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{{ t('admin.editor.metaData') }}</p>
 
+        <!-- Focus keyword -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.focusKeyword') }}</label>
+          <input
+            :value="article.focusKeyword"
+            @input="$emit('update:article', { focusKeyword: ($event.target as HTMLInputElement).value })"
+            type="text"
+            class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            :placeholder="t('admin.editor.focusKeywordPlaceholder')"
+          />
+        </div>
+
         <!-- Slug -->
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">URL Slug</label>
+          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.urlSlug') }}</label>
           <div class="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 bg-white dark:bg-slate-950">
             <span class="px-2.5 text-xs text-slate-400 border-r border-slate-200 dark:border-slate-700 py-2 bg-slate-50 dark:bg-slate-800 font-mono">/</span>
             <input
@@ -121,7 +133,7 @@ const seoChecks = [
               @input="$emit('update:article', { slug: ($event.target as HTMLInputElement).value })"
               type="text"
               class="flex-1 px-2.5 py-2 text-sm bg-transparent outline-none text-slate-900 dark:text-white font-mono"
-              placeholder="url-slug"
+              :placeholder="t('admin.editor.urlSlugPlaceholder')"
             />
           </div>
         </div>
@@ -129,7 +141,7 @@ const seoChecks = [
         <!-- Meta title -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Meta Title</label>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.editor.metaTitle') }}</label>
             <span
               class="text-[11px] font-semibold px-1.5 py-0.5 rounded-md"
               :class="article.metaTitle.length > 60
@@ -152,7 +164,7 @@ const seoChecks = [
         <!-- Meta description -->
         <div>
           <div class="flex items-center justify-between mb-1.5">
-            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">Meta Description</label>
+            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.editor.metaDescription') }}</label>
             <span
               class="text-[11px] font-semibold px-1.5 py-0.5 rounded-md"
               :class="article.metaDescription.length > 160
@@ -185,7 +197,7 @@ const seoChecks = [
               {{ article.metaTitle || article.title || t('admin.editor.pageTitleFallback') }}
             </p>
             <p class="text-xs text-green-700 dark:text-green-500 truncate">
-              {{ previewDomain }}/{{ article.slug || 'url-slug' }}
+              {{ previewDomain }}/{{ article.slug || t('admin.editor.urlSlugPlaceholder') }}
             </p>
             <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
               {{ article.metaDescription || t('admin.editor.serpDescriptionFallback') }}
@@ -199,7 +211,7 @@ const seoChecks = [
           <input
             :value="article.ogImage"
             @input="$emit('update:article', { ogImage: ($event.target as HTMLInputElement).value })"
-            type="text"
+            type="url"
             class="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm outline-none focus:ring-2 focus:ring-blue-500"
             :placeholder="t('admin.editor.ogImagePlaceholder')"
           />
