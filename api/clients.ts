@@ -202,3 +202,4 @@ export class ApiClient {
 export const hubClient = new ApiClient(getApiBaseUrl('hub'), { authHeader: 'Authorization' });
 export const atraceClient = new ApiClient(getApiBaseUrl('atrace'), { authHeader: 'AtraceAuthorization' });
 export const contactsClient = new ApiClient(getApiBaseUrl('contacts'), { authHeader: 'ContactsAuthorization' });
+export const capitalClient = new ApiClient(getApiBaseUrl('capital'), { authHeader: 'Authorization' });

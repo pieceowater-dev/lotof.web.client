@@ -13,7 +13,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 
 // Composables
-const { user, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
+const { user, token, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
 
 const router = useRouter();
@@ -330,11 +330,30 @@ const dashboardApps = computed(() => [
   ...comingSoonApps.value,
 ]);
 
-const consoleWhitelist = new Set(['pieceowater@gmail.com', 'farvardmtb@gmail.com']); // TODO: move to backend and fetch dynamically
-const canSeeConsoleCard = computed(() => {
-  const current = String(user.value?.email || email.value || '').trim().toLowerCase();
-  return consoleWhitelist.has(current);
-});
+const canSeeConsoleCard = ref(false);
+
+async function refreshConsoleCardAccess() {
+  if (!isLoggedIn.value || !token.value || !user.value?.id) {
+    canSeeConsoleCard.value = false;
+    return;
+  }
+
+  try {
+    const { capitalGetAdminByUserId } = await import('@/api/capital/admin');
+    const admin = await capitalGetAdminByUserId(token.value, user.value.id);
+    canSeeConsoleCard.value = !!admin;
+  } catch {
+    canSeeConsoleCard.value = false;
+  }
+}
+
+watch(
+  () => [isLoggedIn.value, token.value, user.value?.id],
+  () => {
+    refreshConsoleCardAccess();
+  },
+  { immediate: true }
+);
 
 function openConsole() {
   router.push('/console');

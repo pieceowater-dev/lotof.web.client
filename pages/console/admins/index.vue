@@ -7,6 +7,7 @@
     >
       <template #actions>
         <button
+          @click="showInvite = !showInvite"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
@@ -32,7 +33,7 @@
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
             {{ t('admin.superAdminDesc') }}
           </p>
-          <div class="text-3xl font-bold text-slate-900 dark:text-white">1</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ superAdminCount }}</div>
         </div>
 
         <!-- Admin -->
@@ -48,7 +49,7 @@
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
             {{ t('admin.adminDesc') }}
           </p>
-          <div class="text-3xl font-bold text-slate-900 dark:text-white">0</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ adminCount }}</div>
         </div>
 
         <!-- CMS Editor -->
@@ -64,8 +65,38 @@
           <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
             {{ t('admin.cmsEditorDesc') }}
           </p>
-          <div class="text-3xl font-bold text-slate-900 dark:text-white">0</div>
+          <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ editorCount }}</div>
         </div>
+      </div>
+
+      <div v-if="showInvite" class="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div class="grid gap-3 md:grid-cols-[1fr_180px_auto]">
+          <input
+            v-model="inviteUserId"
+            type="text"
+            placeholder="user UUID"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          />
+          <select
+            v-model.number="inviteRole"
+            class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+          >
+            <option :value="0">{{ t('admin.superAdmin') }}</option>
+            <option :value="1">{{ t('admin.admin') }}</option>
+            <option :value="2">{{ t('admin.cmsEditor') }}</option>
+          </select>
+          <button
+            @click="invite"
+            :disabled="inviteLoading"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ inviteLoading ? '...' : t('admin.inviteAdmin') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="errorMessage" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+        {{ errorMessage }}
       </div>
 
       <!-- Team Members List -->
@@ -86,6 +117,9 @@
               </tr>
             </thead>
             <tbody>
+              <tr v-if="loading">
+                <td colspan="6" class="px-6 py-4 text-slate-500 dark:text-slate-400">Loading...</td>
+              </tr>
               <tr
                 v-for="admin in admins"
                 :key="admin.id"
@@ -121,12 +155,28 @@
                   {{ admin.joined }}
                 </td>
                 <td class="px-6 py-4">
-                  <button
-                    v-if="admin.id !== currentUserId"
-                    class="text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
-                  >
-                    <Icon name="lucide:trash-2" class="h-4 w-4" />
-                  </button>
+                  <div v-if="admin.id !== currentUserId" class="flex items-center gap-2">
+                    <select
+                      v-model.number="admin.role"
+                      class="rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-950"
+                    >
+                      <option :value="0">{{ t('admin.superAdmin') }}</option>
+                      <option :value="1">{{ t('admin.admin') }}</option>
+                      <option :value="2">{{ t('admin.cmsEditor') }}</option>
+                    </select>
+                    <button
+                      @click="changeRole(admin)"
+                      class="rounded bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100"
+                    >
+                      Save
+                    </button>
+                    <button
+                      @click="removeAdmin(admin.id)"
+                      class="text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                    >
+                      <Icon name="lucide:trash-2" class="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -194,44 +244,121 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
+import {
+  capitalListAdmins,
+  capitalInviteAdmin,
+  capitalChangeAdminRole,
+  capitalRemoveAdmin,
+  type CapitalAdmin,
+} from '@/api/capital/admin';
 
 definePageMeta({
   middleware: 'admin',
 });
 
 const { t } = useI18n();
-const { user } = useAuth();
+const { user, token, fetchUser } = useAuth();
 
 const currentUserId = computed(() => user.value?.id || '');
 
-const admins = ref([
-  {
-    id: '1',
-    name: user.value?.username || 'Иван Петров',
-    email: user.value?.email || 'ivan@lota.tools',
-    roleKey: 'superAdmin',
+type AdminRow = CapitalAdmin & {
+  name: string;
+  email: string;
+  roleKey: 'superAdmin' | 'admin' | 'cmsEditor';
+  status: 'active';
+  joined: string;
+};
+
+const admins = ref<AdminRow[]>([]);
+const loading = ref(false);
+const inviteLoading = ref(false);
+const showInvite = ref(false);
+const inviteUserId = ref('');
+const inviteRole = ref(2);
+const errorMessage = ref('');
+
+const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
+const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
+const editorCount = computed(() => admins.value.filter((a) => a.role === 2).length);
+
+function toRoleKey(role: number): AdminRow['roleKey'] {
+  if (role === 0) return 'superAdmin';
+  if (role === 1) return 'admin';
+  return 'cmsEditor';
+}
+
+function mapRow(a: CapitalAdmin): AdminRow {
+  const isMe = !!currentUserId.value && a.userId === currentUserId.value;
+  return {
+    ...a,
+    name: isMe ? (user.value?.username || a.userId) : a.userId,
+    email: isMe ? (user.value?.email || '-') : '-',
+    roleKey: toRoleKey(a.role),
     status: 'active',
-    joined: '2026-01-15'
-  },
-  {
-    id: '2',
-    name: 'Мария Сидорова',
-    email: 'maria@lota.tools',
-    roleKey: 'admin',
-    status: 'active',
-    joined: '2026-02-20'
-  },
-  {
-    id: '3',
-    name: 'Алексей Иванов',
-    email: 'alexey@lota.tools',
-    roleKey: 'cmsEditor',
-    status: 'active',
-    joined: '2026-03-10'
+    joined: a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '-',
+  };
+}
+
+async function loadAdmins() {
+  if (!token.value) return;
+  loading.value = true;
+  errorMessage.value = '';
+  try {
+    const list = await capitalListAdmins(token.value);
+    admins.value = list.map(mapRow);
+  } catch (e: any) {
+    errorMessage.value = e?.message || 'Failed to load admins';
+  } finally {
+    loading.value = false;
   }
-]);
+}
+
+async function invite() {
+  if (!token.value || !inviteUserId.value.trim()) return;
+  inviteLoading.value = true;
+  errorMessage.value = '';
+  try {
+    await capitalInviteAdmin(token.value, inviteUserId.value.trim(), inviteRole.value);
+    inviteUserId.value = '';
+    await loadAdmins();
+  } catch (e: any) {
+    errorMessage.value = e?.message || 'Failed to invite admin';
+  } finally {
+    inviteLoading.value = false;
+  }
+}
+
+async function changeRole(row: AdminRow) {
+  if (!token.value) return;
+  errorMessage.value = '';
+  try {
+    await capitalChangeAdminRole(token.value, row.id, row.role);
+    row.roleKey = toRoleKey(row.role);
+    await loadAdmins();
+  } catch (e: any) {
+    errorMessage.value = e?.message || 'Failed to change role';
+  }
+}
+
+async function removeAdmin(id: string) {
+  if (!token.value) return;
+  errorMessage.value = '';
+  try {
+    await capitalRemoveAdmin(token.value, id);
+    await loadAdmins();
+  } catch (e: any) {
+    errorMessage.value = e?.message || 'Failed to remove admin';
+  }
+}
+
+onMounted(async () => {
+  if (!user.value?.id) {
+    await fetchUser();
+  }
+  await loadAdmins();
+});
 </script>

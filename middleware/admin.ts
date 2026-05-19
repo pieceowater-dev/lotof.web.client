@@ -19,12 +19,23 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo('/?auth-needed=true');
   }
 
-  // TODO: Add actual admin role check when backend is ready
-  // For now, all authenticated users can access admin panel
-  // In the future, this should verify user has admin role from Hub service
-  
-  // const { user } = useAuth();
-  // if (!user.value?.isAdmin) {
-  //   return navigateTo('/');
-  // }
+  const { user, fetchUser } = useAuth();
+  if (!user.value?.id) {
+    await fetchUser();
+  }
+
+  const currentUserId = user.value?.id;
+  if (!currentUserId) {
+    return navigateTo('/?auth-needed=true');
+  }
+
+  try {
+    const { capitalGetAdminByUserId } = await import('@/api/capital/admin');
+    const admin = await capitalGetAdminByUserId(token, currentUserId);
+    if (!admin) {
+      return navigateTo('/');
+    }
+  } catch {
+    return navigateTo('/');
+  }
 });
