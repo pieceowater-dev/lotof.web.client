@@ -3,6 +3,7 @@ import { capitalClient, setGlobalAuthToken } from '@/api/clients';
 export type CapitalAdmin = {
   id: string;
   userId: string;
+  email?: string | null;
   role: number;
   invitedBy?: string | null;
   createdAt: string;
@@ -14,6 +15,7 @@ const CAPITAL_ADMINS_QUERY = /* GraphQL */ `
     capitalAdmins {
       id
       userId
+      email
       role
       invitedBy
       createdAt
@@ -27,6 +29,7 @@ const CAPITAL_ADMIN_BY_USER_ID_QUERY = /* GraphQL */ `
     capitalAdminByUserId(userId: $userId) {
       id
       userId
+      email
       role
       invitedBy
       createdAt
@@ -36,10 +39,11 @@ const CAPITAL_ADMIN_BY_USER_ID_QUERY = /* GraphQL */ `
 `;
 
 const INVITE_CAPITAL_ADMIN_MUTATION = /* GraphQL */ `
-  mutation InviteCapitalAdmin($userId: String!, $role: Int!) {
-    inviteCapitalAdmin(userId: $userId, role: $role) {
+  mutation InviteCapitalAdmin($email: String!, $role: Int!) {
+    inviteCapitalAdmin(email: $email, role: $role) {
       id
       userId
+      email
       role
       invitedBy
       createdAt
@@ -53,6 +57,7 @@ const CHANGE_CAPITAL_ADMIN_ROLE_MUTATION = /* GraphQL */ `
     changeCapitalAdminRole(id: $id, role: $role) {
       id
       userId
+      email
       role
       invitedBy
       createdAt
@@ -79,9 +84,9 @@ export async function capitalGetAdminByUserId(token: string, userId: string): Pr
   return res.capitalAdminByUserId ?? null;
 }
 
-export async function capitalInviteAdmin(token: string, userId: string, role: number): Promise<CapitalAdmin> {
+export async function capitalInviteAdmin(token: string, email: string, role: number): Promise<CapitalAdmin> {
   setGlobalAuthToken(token);
-  const res = await capitalClient.request<{ inviteCapitalAdmin: CapitalAdmin }>(INVITE_CAPITAL_ADMIN_MUTATION, { userId, role });
+  const res = await capitalClient.request<{ inviteCapitalAdmin: CapitalAdmin }>(INVITE_CAPITAL_ADMIN_MUTATION, { email, role });
   return res.inviteCapitalAdmin;
 }
 

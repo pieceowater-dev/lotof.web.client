@@ -7,7 +7,7 @@
     >
       <template #actions>
         <button
-          @click="showInvite = !showInvite"
+          @click="showInviteModal = true"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
@@ -66,32 +66,6 @@
             {{ t('admin.cmsEditorDesc') }}
           </p>
           <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ editorCount }}</div>
-        </div>
-      </div>
-
-      <div v-if="showInvite" class="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
-        <div class="grid gap-3 md:grid-cols-[1fr_180px_auto]">
-          <input
-            v-model="inviteUserId"
-            type="text"
-            placeholder="user UUID"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          />
-          <select
-            v-model.number="inviteRole"
-            class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-          >
-            <option :value="0">{{ t('admin.superAdmin') }}</option>
-            <option :value="1">{{ t('admin.admin') }}</option>
-            <option :value="2">{{ t('admin.cmsEditor') }}</option>
-          </select>
-          <button
-            @click="invite"
-            :disabled="inviteLoading"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {{ inviteLoading ? '...' : t('admin.inviteAdmin') }}
-          </button>
         </div>
       </div>
 
@@ -155,28 +129,25 @@
                   {{ admin.joined }}
                 </td>
                 <td class="px-6 py-4">
-                  <div v-if="admin.id !== currentUserId" class="flex items-center gap-2">
-                    <select
-                      v-model.number="admin.role"
-                      class="rounded border border-slate-300 px-2 py-1 text-xs dark:border-slate-700 dark:bg-slate-950"
-                    >
-                      <option :value="0">{{ t('admin.superAdmin') }}</option>
-                      <option :value="1">{{ t('admin.admin') }}</option>
-                      <option :value="2">{{ t('admin.cmsEditor') }}</option>
-                    </select>
+                  <div v-if="canManageAdmins && !admin.isCurrent && !admin.isOwner" class="flex items-center gap-2">
                     <button
-                      @click="changeRole(admin)"
-                      class="rounded bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-100"
+                      @click="openRoleModal(admin)"
+                      class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
                     >
-                      Save
+                      <Icon name="lucide:settings-2" class="h-4 w-4" />
+                      <span>{{ t('admin.changeRoleAction') }}</span>
                     </button>
                     <button
                       @click="removeAdmin(admin.id)"
-                      class="text-slate-600 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+                      class="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/40 dark:text-red-400 dark:hover:bg-red-950/40"
                     >
                       <Icon name="lucide:trash-2" class="h-4 w-4" />
+                      <span>{{ t('admin.deleteAction') }}</span>
                     </button>
                   </div>
+                  <span v-else-if="admin.isOwner" class="text-xs font-semibold text-slate-400 dark:text-slate-500">{{ t('admin.ownerLabel') }}</span>
+                  <span v-else-if="admin.isCurrent" class="text-xs font-semibold text-slate-400 dark:text-slate-500">{{ t('admin.youLabel') }}</span>
+                  <span v-else class="text-xs font-semibold text-slate-400 dark:text-slate-500">-</span>
                 </td>
               </tr>
             </tbody>
@@ -240,6 +211,106 @@
         </div>
       </div>
     </div>
+
+    <!-- Invite Modal -->
+    <div v-if="showInviteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-slate-900">
+        <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
+          {{ t('admin.inviteAdmin') }}
+        </h2>
+
+        <div class="space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+              Email
+            </label>
+            <input
+              v-model="inviteEmail"
+              type="email"
+              placeholder="admin@example.com"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+          </div>
+
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+              {{ t('admin.role') }}
+            </label>
+            <select
+              v-model.number="inviteRole"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            >
+              <option :value="0">{{ t('admin.superAdmin') }}</option>
+              <option :value="1">{{ t('admin.admin') }}</option>
+              <option :value="2">{{ t('admin.cmsEditor') }}</option>
+            </select>
+          </div>
+
+          <div v-if="errorMessage" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+            {{ errorMessage }}
+          </div>
+        </div>
+
+        <div class="mt-6 flex gap-2">
+          <button
+            @click="invite"
+            :disabled="inviteLoading || !inviteEmail.trim()"
+            class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ inviteLoading ? '...' : t('admin.inviteAdmin') }}
+          </button>
+          <button
+            @click="showInviteModal = false"
+            :disabled="inviteLoading"
+            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+          >
+            {{ t('admin.cancel') || 'Cancel' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showRoleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-slate-900">
+        <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">{{ t('admin.changeRoleTitle') }}</h2>
+        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+          {{ selectedAdminName }}
+        </p>
+
+        <div class="space-y-4">
+          <div>
+            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+              {{ t('admin.role') }}
+            </label>
+            <select
+              v-model.number="selectedRole"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            >
+              <option :value="0">{{ t('admin.superAdmin') }}</option>
+              <option :value="1">{{ t('admin.admin') }}</option>
+              <option :value="2">{{ t('admin.cmsEditor') }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mt-6 flex gap-2">
+          <button
+            @click="saveRoleChange"
+            :disabled="actionLoading"
+            class="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ actionLoading ? '...' : t('admin.saveRoleAction') }}
+          </button>
+          <button
+            @click="closeRoleModal"
+            :disabled="actionLoading"
+            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+          >
+            {{ t('admin.cancel') || 'Cancel' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -264,6 +335,7 @@ const { t } = useI18n();
 const { user, token, fetchUser } = useAuth();
 
 const currentUserId = computed(() => user.value?.id || '');
+const currentUserEmail = computed(() => (user.value?.email || getEmailFromToken(token.value) || '').trim().toLowerCase());
 
 type AdminRow = CapitalAdmin & {
   name: string;
@@ -271,19 +343,27 @@ type AdminRow = CapitalAdmin & {
   roleKey: 'superAdmin' | 'admin' | 'cmsEditor';
   status: 'active';
   joined: string;
+  isCurrent: boolean;
+  isOwner: boolean;
 };
 
 const admins = ref<AdminRow[]>([]);
 const loading = ref(false);
 const inviteLoading = ref(false);
-const showInvite = ref(false);
-const inviteUserId = ref('');
+const actionLoading = ref(false);
+const showInviteModal = ref(false);
+const showRoleModal = ref(false);
+const inviteEmail = ref('');
 const inviteRole = ref(2);
+const selectedRole = ref(2);
+const selectedAdminId = ref('');
+const selectedAdminName = ref('');
 const errorMessage = ref('');
 
 const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
 const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
 const editorCount = computed(() => admins.value.filter((a) => a.role === 2).length);
+const canManageAdmins = computed(() => admins.value.some((admin) => admin.isCurrent && admin.isOwner));
 
 function toRoleKey(role: number): AdminRow['roleKey'] {
   if (role === 0) return 'superAdmin';
@@ -291,15 +371,53 @@ function toRoleKey(role: number): AdminRow['roleKey'] {
   return 'cmsEditor';
 }
 
+function ownerNameFromEmail(email?: string | null): string {
+  const value = (email || '').trim();
+  if (!value) return '-';
+
+  const at = value.indexOf('@');
+  if (at <= 0) return value;
+  return value.slice(0, at);
+}
+
+function getEmailFromToken(jwt?: string | null): string {
+  const raw = (jwt || '').trim();
+  if (!raw) return '';
+
+  try {
+    const parts = raw.split('.');
+    if (parts.length < 2) return '';
+    if (!process.client || typeof atob !== 'function') return '';
+
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const json = atob(padded);
+    const payload = JSON.parse(json) as { email?: string };
+    return (payload.email || '').trim();
+  } catch {
+    return '';
+  }
+}
+
 function mapRow(a: CapitalAdmin): AdminRow {
   const isMe = !!currentUserId.value && a.userId === currentUserId.value;
+  const isOwner = a.role === 0;
+  const email = (a.email || '').trim();
+  const currentEmail = (user.value?.email || getEmailFromToken(token.value) || '').trim();
+  const ownerEmail = email || (isOwner ? currentEmail : '');
+  const resolvedEmail = isMe ? (user.value?.email || ownerEmail || '-') : (ownerEmail || '-');
+  const isCurrent = isMe || (!!currentUserEmail.value && resolvedEmail.trim().toLowerCase() === currentUserEmail.value);
   return {
     ...a,
-    name: isMe ? (user.value?.username || a.userId) : a.userId,
-    email: isMe ? (user.value?.email || '-') : '-',
+    name: isMe
+      ? (user.value?.username || ownerNameFromEmail(user.value?.email) || a.userId)
+      : (isOwner ? ownerNameFromEmail(ownerEmail) : (a.userId || '-')),
+    email: resolvedEmail,
     roleKey: toRoleKey(a.role),
     status: 'active',
     joined: a.createdAt ? new Date(a.createdAt).toISOString().slice(0, 10) : '-',
+    isCurrent,
+    isOwner,
   };
 }
 
@@ -311,47 +429,70 @@ async function loadAdmins() {
     const list = await capitalListAdmins(token.value);
     admins.value = list.map(mapRow);
   } catch (e: any) {
-    errorMessage.value = e?.message || 'Failed to load admins';
+    errorMessage.value = e?.message || t('admin.loadAdminsFailed');
   } finally {
     loading.value = false;
   }
 }
 
 async function invite() {
-  if (!token.value || !inviteUserId.value.trim()) return;
+  if (!token.value || !inviteEmail.value.trim()) return;
   inviteLoading.value = true;
   errorMessage.value = '';
   try {
-    await capitalInviteAdmin(token.value, inviteUserId.value.trim(), inviteRole.value);
-    inviteUserId.value = '';
+    await capitalInviteAdmin(token.value, inviteEmail.value.trim(), inviteRole.value);
+    inviteEmail.value = '';
+    inviteRole.value = 2;
+    showInviteModal.value = false;
     await loadAdmins();
   } catch (e: any) {
-    errorMessage.value = e?.message || 'Failed to invite admin';
+    errorMessage.value = e?.message || t('admin.inviteAdminFailed');
   } finally {
     inviteLoading.value = false;
   }
 }
 
-async function changeRole(row: AdminRow) {
-  if (!token.value) return;
+function openRoleModal(row: AdminRow) {
+  selectedAdminId.value = row.id;
+  selectedAdminName.value = row.email || row.name || row.id;
+  selectedRole.value = row.role;
+  showRoleModal.value = true;
+}
+
+function closeRoleModal() {
+  if (actionLoading.value) return;
+  showRoleModal.value = false;
+  selectedAdminId.value = '';
+  selectedAdminName.value = '';
+}
+
+async function saveRoleChange() {
+  if (!token.value || !selectedAdminId.value) return;
+  actionLoading.value = true;
   errorMessage.value = '';
   try {
-    await capitalChangeAdminRole(token.value, row.id, row.role);
-    row.roleKey = toRoleKey(row.role);
+    await capitalChangeAdminRole(token.value, selectedAdminId.value, selectedRole.value);
+    closeRoleModal();
     await loadAdmins();
   } catch (e: any) {
-    errorMessage.value = e?.message || 'Failed to change role';
+    errorMessage.value = e?.message || t('admin.changeRoleFailed');
+  } finally {
+    actionLoading.value = false;
   }
 }
 
 async function removeAdmin(id: string) {
   if (!token.value) return;
+  if (process.client && !window.confirm(t('admin.deleteAdminConfirm'))) return;
+  actionLoading.value = true;
   errorMessage.value = '';
   try {
     await capitalRemoveAdmin(token.value, id);
     await loadAdmins();
   } catch (e: any) {
-    errorMessage.value = e?.message || 'Failed to remove admin';
+    errorMessage.value = e?.message || t('admin.removeAdminFailed');
+  } finally {
+    actionLoading.value = false;
   }
 }
 
