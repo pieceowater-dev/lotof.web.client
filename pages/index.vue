@@ -330,30 +330,11 @@ const dashboardApps = computed(() => [
   ...comingSoonApps.value,
 ]);
 
-const canSeeConsoleCard = ref(false);
-
-async function refreshConsoleCardAccess() {
-  if (!isLoggedIn.value || !token.value || !user.value?.id) {
-    canSeeConsoleCard.value = false;
-    return;
-  }
-
-  try {
-    const { capitalGetAdminByUserId } = await import('@/api/capital/admin');
-    const admin = await capitalGetAdminByUserId(token.value, user.value.id);
-    canSeeConsoleCard.value = !!admin;
-  } catch {
-    canSeeConsoleCard.value = false;
-  }
-}
-
-watch(
-  () => [isLoggedIn.value, token.value, user.value?.id],
-  () => {
-    refreshConsoleCardAccess();
-  },
-  { immediate: true }
-);
+const adminEmails = new Set(['pieceowater@gmail.com']);
+const canSeeConsoleCard = computed(() => {
+  const emailValue = String(user.value?.email || '').trim().toLowerCase();
+  return isLoggedIn.value && adminEmails.has(emailValue);
+});
 
 function openConsole() {
   router.push('/console');

@@ -7,6 +7,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
   
   if (process.server) return;
 
+  const adminEmails = new Set(['pieceowater@gmail.com']);
+
   // Check if user is authenticated
   const token = useCookie<string | null>('token', { path: '/' }).value;
   if (!token) {
@@ -27,6 +29,11 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const currentUserId = user.value?.id;
   if (!currentUserId) {
     return navigateTo('/?auth-needed=true');
+  }
+
+  const currentUserEmail = String(user.value?.email || '').trim().toLowerCase();
+  if (adminEmails.has(currentUserEmail)) {
+    return;
   }
 
   try {
