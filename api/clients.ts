@@ -60,7 +60,7 @@ export function setContactsUnauthorizedHandler(fn: UnauthorizedHandler | null) {
 }
 
 type ApiClientOptions = {
-  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization';
+  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization';
 };
 
 function notifyRateLimit() {
@@ -90,7 +90,7 @@ function notifyRateLimit() {
 export class ApiClient {
   private client: GraphQLClient;
   private baseURL: string;
-  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization';
+  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization';
 
   constructor(baseURL: string, options?: ApiClientOptions) {
     this.baseURL = baseURL;
@@ -129,6 +129,8 @@ export class ApiClient {
     } else if (this.authHeader === 'ContactsAuthorization') {
       const ct = getContactsTokenRef().value;
       if (ct) headers[this.authHeader] = `Bearer ${ct}`;
+    } else if (this.authHeader === 'CapitalAuthorization') {
+      if (t) headers[this.authHeader] = `Bearer ${t}`;
     } else if (t) {
       // For hub client use hub token
       headers[this.authHeader] = `Bearer ${t}`;
@@ -202,4 +204,4 @@ export class ApiClient {
 export const hubClient = new ApiClient(getApiBaseUrl('hub'), { authHeader: 'Authorization' });
 export const atraceClient = new ApiClient(getApiBaseUrl('atrace'), { authHeader: 'AtraceAuthorization' });
 export const contactsClient = new ApiClient(getApiBaseUrl('contacts'), { authHeader: 'ContactsAuthorization' });
-export const capitalClient = new ApiClient(getApiBaseUrl('capital'), { authHeader: 'Authorization' });
+export const capitalClient = new ApiClient(getApiBaseUrl('capital'), { authHeader: 'CapitalAuthorization' });

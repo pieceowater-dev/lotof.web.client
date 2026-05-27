@@ -97,6 +97,7 @@ onMounted(async () => {
     username.value = user.value.username;
     email.value = user.value.email;
   }
+  await refreshConsoleAccess();
   isLoading.value = false;
 
   // Run app installation check in background so first paint is not blocked.
@@ -330,15 +331,51 @@ const dashboardApps = computed(() => [
   ...comingSoonApps.value,
 ]);
 
-const adminEmails = new Set(['pieceowater@gmail.com']);
-const canSeeConsoleCard = computed(() => {
-  const emailValue = String(user.value?.email || '').trim().toLowerCase();
-  return isLoggedIn.value && adminEmails.has(emailValue);
-});
+const canSeeConsoleCard = ref(false);
+
+async function refreshConsoleAccess() {
+  if (process.server || !isLoggedIn.value) {
+    canSeeConsoleCard.value = false;
+    return;
+  }
+
+  const authToken = token.value || useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+  if (!authToken) {
+    canSeeConsoleCard.value = false;
+    return;
+  }
+
+  let currentUserId = user.value?.id;
+  if (!currentUserId) {
+    await fetchUser();
+    currentUserId = user.value?.id;
+  }
+
+  if (!currentUserId) {
+    canSeeConsoleCard.value = false;
+    return;
+  }
+
+  try {
+    const { capitalGetAdminByUserId } = await import('@/api/capital/admin');
+    const admin = await capitalGetAdminByUserId(authToken, currentUserId);
+    const role = Number(admin?.role ?? -1);
+    canSeeConsoleCard.value = !!admin && (role === 0 || role === 1);
+  } catch {
+    canSeeConsoleCard.value = false;
+  }
+}
 
 function openConsole() {
   router.push('/console');
 }
+
+watch(
+  () => [isLoggedIn.value, user.value?.id, token.value],
+  () => {
+    refreshConsoleAccess();
+  }
+);
 
 const languageOptions = [
   { value: 'en', label: 'English', flag: '🇺🇸' },
