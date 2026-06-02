@@ -10,50 +10,17 @@ type ProcessedMarkdownPost = HomeFeedPost & {
   dateISO: string;
 };
 
-const mdFiles = import.meta.glob('../public/content/publications/**/*.md', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>;
+type PublicationApiDoc = {
+  slug?: string;
+  category?: string;
+  meta?: Record<string, string | string[] | undefined>;
+  body?: string;
+};
 
-function parseFrontMatter(raw: string): { meta: Record<string, string | string[]>; body: string } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match) return { meta: {}, body: raw };
-
-  const metaLines = match[1].split('\n');
-  const body = match[2] || '';
-  const meta: Record<string, string | string[]> = {};
-
-  let currentArrayKey = '';
-  for (const line of metaLines) {
-    if (!line.trim()) continue;
-
-    const keyMatch = line.match(/^([a-zA-Z0-9_]+):\s*(.*)$/);
-    if (keyMatch) {
-      currentArrayKey = '';
-      const key = keyMatch[1];
-      const value = keyMatch[2]?.trim() || '';
-
-      if (!value) {
-        currentArrayKey = key;
-        meta[key] = [];
-        continue;
-      }
-
-      meta[key] = value.replace(/^"|"$/g, '');
-      continue;
-    }
-
-    const arrayMatch = line.match(/^\s*-\s*(.*)$/);
-    if (arrayMatch && currentArrayKey) {
-      const arr = Array.isArray(meta[currentArrayKey]) ? (meta[currentArrayKey] as string[]) : [];
-      arr.push((arrayMatch[1] || '').replace(/^"|"$/g, ''));
-      meta[currentArrayKey] = arr;
-    }
-  }
-
-  return { meta, body };
-}
+const { data: publicationDocsData } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
+  query: { includeDraft: 'false' },
+  default: () => ({ items: [] }),
+});
 
 function markdownToText(markdown: string): string {
   return markdown
@@ -105,32 +72,38 @@ function formatDate(dateISO: string): string {
 function processMarkdownPosts(): ProcessedMarkdownPost[] {
   const posts: ProcessedMarkdownPost[] = [];
 
-  for (const [, raw] of Object.entries(mdFiles)) {
-    const { meta, body } = parseFrontMatter(raw);
-    const categorySlug = String(meta.category || '').toLowerCase();
-    const slug = String(meta.slug || '').trim();
+  for (const doc of publicationDocsData.value?.items || []) {
+    const meta = doc.meta || {};
+    const body = String(doc.body || '');
+    const categorySlug = String(doc.category || meta.category || '').toLowerCase();
+    const slug = String(doc.slug || meta.slug || '').trim();
     const title = String(meta.title || '').trim();
     const dateISO = String(meta.date || '').trim();
 
-    if (!slug || !title || !dateISO) continue;
+    if (!slug || !title || !categorySlug) continue;
 
     const imgFromBody = firstImage(body);
     const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
     const imageAlt = imgFromBody?.alt || title;
-    const tags = Array.isArray(meta.tags) ? meta.tags : [];
+    const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');
+    const resolvedDate = dateISO || new Date().toISOString();
 
     posts.push({
-      id: slug,
+      id: `${categorySlug}:${slug}`,
       href: `/${categorySlug}/${slug}`,
-      category: categorySlug === 'whatsnew' ? "What's New" : 'Articles',
+      category: categorySlug === 'whatsnew'
+        ? "What's New"
+        : categorySlug === 'news'
+          ? (t('app.news') || 'News')
+          : 'Articles',
       categorySlug,
       title,
       excerpt: String(meta.description || '').trim() || excerptFromBody(body),
       preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
       author,
-      publishedAt: formatDate(dateISO),
-      dateISO,
+      publishedAt: formatDate(resolvedDate),
+      dateISO: resolvedDate,
       readTime: readTimeLabel(body),
       image,
       imageAlt,
@@ -370,15 +343,6 @@ useHead({
   title: 'Feed',
 });
 
-watch(
-  () => articleFeedPosts.value.length,
-  (count) => {
-    if (count === 0 && process.client) {
-      navigateTo('/');
-    }
-  },
-  { immediate: true }
-);
 </script>
 
 <template>

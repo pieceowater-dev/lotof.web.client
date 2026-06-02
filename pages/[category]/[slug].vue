@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import { capitalGetPublicPublicationByRoute } from '@/api/publications';
 
 definePageMeta({
   viewTransition: false,
@@ -17,9 +18,24 @@ type ArticleDoc = {
   body: string;
 };
 
+type PublicationArticleDoc = {
+  slug: string;
+  category: string;
+  meta: ArticleMeta;
+  body: string;
+};
+
+type PublicationsAllResponse = {
+  items?: PublicationArticleDoc[];
+};
+
 const { t, locale } = useI18n();
 const route = useRoute();
 const config = useRuntimeConfig();
+const authToken = useCookie<string | null>('auth_token');
+const legacyToken = useCookie<string | null>('token');
+
+const SUPPORTED_PUBLICATION_CATEGORIES = new Set(['blog', 'whatsnew', 'articles', 'learning', 'news']);
 
 const mdFiles = import.meta.glob('../../public/content/publications/**/*.md', {
   eager: true,
@@ -93,24 +109,85 @@ const allArticles = computed<ArticleDoc[]>(() => {
 const categoryParam = computed(() => normalizeSlug(String(route.params.category || '')));
 const slugParam = computed(() => normalizeSlug(String(route.params.slug || '')));
 
-// Map category URL segment → actual category value in frontmatter
-const CATEGORY_MAP: Record<string, string> = {
-  news: 'news',
-  articles: 'articles',
-  whatsnew: 'whatsnew',
-  blog: 'articles',
-};
+function normalizeSiteUrl(raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return 'https://lota.tools';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/$/, '');
+  return `https://${trimmed.replace(/^\/+/, '').replace(/\/$/, '')}`;
+}
 
-const article = computed(() => {
-  const mappedCategory = CATEGORY_MAP[categoryParam.value] || categoryParam.value;
-  return allArticles.value.find(
-    (item) => item.slug === slugParam.value && item.category === mappedCategory
-  ) || null;
-});
+const routeAsyncKey = `public-publication-route:${categoryParam.value}:${slugParam.value}`;
 
-if (!article.value) {
+const { data: routePublication } = await useAsyncData<PublicationArticleDoc | null>(
+  routeAsyncKey,
+  async () => {
+    if (!categoryParam.value || !slugParam.value) return null;
+    if (!SUPPORTED_PUBLICATION_CATEGORIES.has(categoryParam.value)) return null;
+
+    try {
+      const viewerToken = String(authToken.value || legacyToken.value || '').trim();
+      const publication = await capitalGetPublicPublicationByRoute(viewerToken, categoryParam.value, slugParam.value);
+      if (publication) return publication;
+    } catch (error: any) {
+      const message = String(error?.message || '');
+      if (!message.includes('code = NotFound') && !message.includes('not found')) {
+        throw error;
+      }
+    }
+
+    const localExact = allArticles.value.find((item) => {
+      return item.slug === slugParam.value && item.category === categoryParam.value;
+    });
+    if (localExact) {
+      return {
+        slug: localExact.slug,
+        category: localExact.category,
+        meta: localExact.meta,
+        body: localExact.body,
+      };
+    }
+
+    // Fallback for legacy/aliased links where category in URL may not match actual article category.
+    const localBySlug = allArticles.value.find((item) => item.slug === slugParam.value);
+    if (localBySlug) {
+      return {
+        slug: localBySlug.slug,
+        category: localBySlug.category,
+        meta: localBySlug.meta,
+        body: localBySlug.body,
+      };
+    }
+
+    // Final fallback: resolve by slug via aggregated publications endpoint.
+    try {
+      const all = await $fetch<PublicationsAllResponse>('/api/publications/all', {
+        query: { includeDraft: 'false' },
+      });
+      const bySlug = Array.isArray(all?.items)
+        ? all.items.find((item) => normalizeSlug(String(item?.slug || '')) === slugParam.value)
+        : null;
+      if (bySlug) {
+        return {
+          slug: normalizeSlug(String(bySlug.slug || '')),
+          category: normalizeSlug(String(bySlug.category || 'news')),
+          meta: bySlug.meta || {},
+          body: String(bySlug.body || ''),
+        };
+      }
+    } catch {
+      // Keep null; final 404 below will handle it.
+    }
+
+    return null;
+  },
+  { watch: [categoryParam, slugParam] }
+);
+
+if (!routePublication.value) {
   throw createError({ statusCode: 404, statusMessage: 'Article not found' });
 }
+
+const article = computed<PublicationArticleDoc | null>(() => routePublication.value);
 
 const articleTitle = computed(() => String(article.value?.meta.title || 'Article'));
 const articleDescription = computed(() => String(article.value?.meta.description || ''));
@@ -154,7 +231,7 @@ function toLocalizedDate(raw: string): string {
   return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-const siteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
+const siteUrl = computed(() => normalizeSiteUrl(String(config.public.siteUrl || 'https://lota.tools')));
 const isNews = computed(() => article.value?.category === 'news');
 const isWhatsNew = computed(() => article.value?.category === 'whatsnew');
 const backHref = computed(() => isNews.value ? '/news' : '/feed');
@@ -167,9 +244,10 @@ const articleCanonical = computed(() => {
 
 const articleHreflangLinks = computed(() => {
   const normalized = articleCanonical.value.replace(/\?.*$/, '');
-  const links = [{ rel: 'alternate', hreflang: 'x-default', href: normalized }];
+  const absolute = /^https?:\/\//i.test(normalized) ? normalized : `${siteUrl.value}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
+  const links = [{ rel: 'alternate', hreflang: 'x-default', href: absolute }];
   for (const lang of ['ru', 'en', 'kk']) {
-    const url = new URL(normalized);
+    const url = new URL(absolute);
     url.searchParams.set('lang', lang);
     links.push({ rel: 'alternate', hreflang: lang, href: url.toString() });
   }
@@ -391,7 +469,7 @@ function stripDuplicatedLead(markdown: string, title: string): string {
 }
 
 const sanitizedArticleBody = computed(() => stripDuplicatedLead(article.value?.body || '', articleTitle.value));
-const hasImageInBody = computed(() => /!\[[^\]]*\]\([^)]+\)/.test(sanitizedArticleBody.value));
+const hasImageInBody = computed(() => /<img\b/i.test(sanitizedArticleBody.value));
 
 function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -486,7 +564,7 @@ function markdownToHtml(markdown: string): string {
   return html.join('');
 }
 
-const articleHtml = computed(() => markdownToHtml(sanitizedArticleBody.value));
+const articleHtml = computed(() => sanitizedArticleBody.value);
 
 useSeoMeta({
   title: () => articleTitle.value,

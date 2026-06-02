@@ -1015,6 +1015,7 @@
     "whatsnew": "Что нового",
     "whatsnewDesc": "Новые возможности и улучшения",
     "learning": "Обучающие материалы",
+    "news": "Новости",
     "learningDesc": "Приватные материалы только для авторизованных пользователей",
     "newPublication": "Создать",
     "newPublicationPageTitle": "Редактор страниц",
@@ -1115,7 +1116,7 @@
       "schemaSourceUrl": "URL источника",
       "schemaSourceUrlPlaceholder": "https://lota.tools/news/source",
       "schemaSourceName": "Название источника",
-      "schemaSourceNamePlaceholder": "Reuters",
+      "schemaSourceNamePlaceholder": "Название источника",
       "schemaReviewedBy": "Проверил",
       "schemaReviewedByPlaceholder": "Иван Иванов",
       "schemaReviewedByUrl": "URL проверяющего",
@@ -1170,6 +1171,9 @@
         "orderedList": "Нумерованный",
         "image": "Изображение",
         "callout": "Блок уведомления",
+        "spoiler": "Спойлер (по авторизации)",
+        "spoilerOpen": "Спойлер: открыть раздел",
+        "spoilerClose": "Спойлер: закрыть раздел",
         "divider": "Разделитель",
         "html": "HTML код"
       }

@@ -40,6 +40,9 @@ const blockGroups = [
     label: 'elements',
     types: [
       { type: 'callout', label: 'callout', icon: 'lucide:info', iconBg: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600 dark:text-amber-400' },
+      { type: 'spoiler', label: 'spoiler', icon: 'lucide:eye-off', iconBg: 'bg-slate-100 dark:bg-slate-800', iconColor: 'text-slate-700 dark:text-slate-300' },
+      { type: 'spoiler_open', label: 'spoilerOpen', icon: 'lucide:between-vertical-start', iconBg: 'bg-slate-100 dark:bg-slate-800', iconColor: 'text-slate-700 dark:text-slate-300' },
+      { type: 'spoiler_close', label: 'spoilerClose', icon: 'lucide:between-vertical-end', iconBg: 'bg-slate-100 dark:bg-slate-800', iconColor: 'text-slate-700 dark:text-slate-300' },
       { type: 'divider', label: 'divider', icon: 'lucide:minus', iconBg: 'bg-violet-100 dark:bg-violet-900/30', iconColor: 'text-violet-600 dark:text-violet-400' },
       { type: 'html', label: 'html', icon: 'lucide:code-2', iconBg: 'bg-violet-100 dark:bg-violet-900/30', iconColor: 'text-violet-600 dark:text-violet-400' }
     ]

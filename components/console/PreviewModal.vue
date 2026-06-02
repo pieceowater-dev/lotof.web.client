@@ -180,6 +180,26 @@ function calloutClass(type: string): string {
               </div>
             </div>
 
+            <!-- Spoiler -->
+            <details v-else-if="block.type === 'spoiler'" class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+              <summary class="cursor-pointer list-none font-semibold text-slate-800 dark:text-slate-100">
+                Защищенный текст
+              </summary>
+              <div class="mt-3 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                {{ block.content }}
+              </div>
+            </details>
+
+            <!-- Spoiler Open -->
+            <div v-else-if="block.type === 'spoiler_open'" class="my-4 rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-800 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100">
+              [Spoiler Open] Защищенный текст
+            </div>
+
+            <!-- Spoiler Close -->
+            <div v-else-if="block.type === 'spoiler_close'" class="my-4 rounded-lg border border-slate-300 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+              [Spoiler Close]
+            </div>
+
             <!-- Divider -->
             <div v-else-if="block.type === 'divider'" class="flex items-center justify-center gap-2 py-6 text-slate-300 dark:text-slate-700">
               <span>·</span><span>·</span><span>·</span>

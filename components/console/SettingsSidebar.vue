@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
 interface Article {
+  title: string
+  slug: string
   status: 'draft' | 'published'
   category: string
   author: string
@@ -14,7 +16,7 @@ interface Article {
   tags: string[]
   focusKeyword?: string
   canonicalUrl?: string
-  schemaType?: 'Article' | 'NewsArticle' | 'BlogPosting'
+  schemaType: 'Article' | 'NewsArticle' | 'BlogPosting'
   sourceUrl?: string
   sourceName?: string
   reviewedBy?: string
@@ -25,7 +27,6 @@ interface Article {
   publisherLogo?: string
   metaDescription?: string
   ogImage?: string
-  title?: string
 }
 
 const props = defineProps<{
@@ -64,14 +65,16 @@ function removeTag(index: number) {
     <div class="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4">
       <!-- Category -->
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.category') }}</label>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+          {{ t('admin.editor.category') }} <span class="text-red-500">*</span>
+        </label>
         <div class="grid grid-cols-2 gap-1.5">
           <button
             v-for="cat in [
-              { value: '', label: t('admin.editor.categoryNone'), icon: 'lucide:circle' },
               { value: 'blog', label: t('admin.blog'), icon: 'lucide:notebook-pen' },
               { value: 'whatsnew', label: t('admin.whatsnew'), icon: 'lucide:sparkles' },
               { value: 'articles', label: t('admin.articles'), icon: 'lucide:file-text' },
+              { value: 'news', label: t('app.news') || 'Новости', icon: 'lucide:newspaper' },
               { value: 'learning', label: t('admin.learning'), icon: 'lucide:graduation-cap' }
             ]"
             :key="cat.value || 'none'"
@@ -92,7 +95,9 @@ function removeTag(index: number) {
 
       <!-- Publish date -->
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.publishDate') }}</label>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+          {{ t('admin.editor.publishDate') }} <span class="text-red-500">*</span>
+        </label>
         <input
           :value="article.publishedAt"
           @input="$emit('update:article', { publishedAt: ($event.target as HTMLInputElement).value })"
@@ -147,7 +152,9 @@ function removeTag(index: number) {
 
       <!-- Author (grouped with schema-related metadata) -->
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.author') }}</label>
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+          {{ t('admin.editor.author') }} <span class="text-red-500">*</span>
+        </label>
         <input
           :value="article.author"
           @input="$emit('update:article', { author: ($event.target as HTMLInputElement).value })"

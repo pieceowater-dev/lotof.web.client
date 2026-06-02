@@ -152,6 +152,9 @@ export class ApiClient {
       const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
       );
+      const isCapitalUnauthorized = this.authHeader === 'CapitalAuthorization' && (
+        status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
+      );
       const isHubUnauthorized = this.authHeader === 'Authorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
       );
@@ -174,6 +177,19 @@ export class ApiClient {
         }
       } else if (isHubUnauthorized) {
         logWarn('Hub unauthorized detected, invoking handler');
+        if (retryCount === 0) {
+          // Try refresh once before giving up
+          await unauthorizedHandler?.();
+          // Retry request once with new token
+          try {
+            return await this.requestWithRetry<T>(query, variables, options, 1);
+          } catch (retryError) {
+            // If retry still fails, throw original error
+            throw error;
+          }
+        }
+      } else if (isCapitalUnauthorized) {
+        logWarn('Capital unauthorized detected, invoking handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
           await unauthorizedHandler?.();

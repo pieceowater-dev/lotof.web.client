@@ -966,6 +966,7 @@
     "whatsnew": "Жаңалықтар",
     "articles": "Мақалалар",
     "learning": "Оқу материалдары",
+    "news": "Жаңалықтар",
     "editor": {
       "settings": "Жариялау",
       "seoTab": "SEO",
@@ -1014,7 +1015,7 @@
       "schemaSourceUrl": "Дереккөз URL",
       "schemaSourceUrlPlaceholder": "https://lota.tools/news/source",
       "schemaSourceName": "Дереккөз атауы",
-      "schemaSourceNamePlaceholder": "Reuters",
+      "schemaSourceNamePlaceholder": "Дереккөз атауы",
       "schemaReviewedBy": "Тексерген",
       "schemaReviewedByPlaceholder": "Жан Доу",
       "schemaReviewedByUrl": "Тексеруші URL",
@@ -1069,6 +1070,9 @@
         "orderedList": "Нөмірленген тізім",
         "image": "Сурет",
         "callout": "Ескерту блогы",
+        "spoiler": "Спойлер (авторизация керек)",
+        "spoilerOpen": "Спойлер: бөлімді ашу",
+        "spoilerClose": "Спойлер: бөлімді жабу",
         "divider": "Бөлгіш",
         "html": "HTML код"
       }

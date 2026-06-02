@@ -23,7 +23,7 @@
             @click="openPublicSlug"
           >
             <Icon name="lucide:globe" class="h-3 w-3" />
-            <span>{{ previewDomain }}/{{ article.slug || t('admin.editor.urlSlugPlaceholder') }}</span>
+            <span>{{ previewDomain }}/{{ article.category || 'news' }}/{{ article.slug || t('admin.editor.urlSlugPlaceholder') }}</span>
             <Icon v-if="hasSlug" name="lucide:external-link" class="h-3 w-3" />
           </button>
         </div>
@@ -180,6 +180,51 @@
                   </div>
                 </div>
 
+                <!-- SPOILER (auth-required on public page) -->
+                <div
+                  v-else-if="block.type === 'spoiler'"
+                  class="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-700 dark:bg-slate-800/30"
+                >
+                  <div class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">
+                    <Icon name="lucide:lock" class="h-3.5 w-3.5" />
+                    Защищенный спойлер
+                  </div>
+
+                  <div
+                    :ref="(el: any) => setBlockRef(block.id, el)"
+                    contenteditable="true"
+                    data-placeholder="Текст внутри спойлера. Он будет доступен только авторизованным пользователям..."
+                    class="min-h-[88px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-500
+                           empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:empty:before:text-slate-600"
+                    @input="block.content = ($event.target as HTMLElement).innerHTML"
+                    @keydown="$emit('block-keydown', block, i, $event)"
+                    @focus="$emit('set-active-block', block.id)"
+                    @mouseup="$emit('show-format-bar-event', $event)"
+                  />
+                </div>
+
+                <!-- SPOILER OPEN SEPARATOR -->
+                <div
+                  v-else-if="block.type === 'spoiler_open'"
+                  class="rounded-xl border border-slate-300 bg-slate-100 p-3 dark:border-slate-600 dark:bg-slate-800/70"
+                >
+                  <div class="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                    <Icon name="lucide:lock-keyhole-open" class="h-3.5 w-3.5" />
+                    Spoiler Open
+                  </div>
+                </div>
+
+                <!-- SPOILER CLOSE SEPARATOR -->
+                <div
+                  v-else-if="block.type === 'spoiler_close'"
+                  class="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 dark:border-slate-600 dark:bg-slate-800/70"
+                >
+                  <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">
+                    <Icon name="lucide:lock-keyhole" class="h-3.5 w-3.5" />
+                    Spoiler Close
+                  </div>
+                </div>
+
                 <!-- IMAGE -->
                 <div v-else-if="block.type === 'image'" class="py-1">
                   <div
@@ -317,11 +362,12 @@ const hasSlug = computed(() => String(props.article?.slug || '').trim().length >
 const publicSlugUrl = computed(() => {
   const rawSiteUrl = String(config.public.siteUrl || 'https://lota.tools').trim()
   const siteUrl = /^https?:\/\//i.test(rawSiteUrl) ? rawSiteUrl : `https://${rawSiteUrl}`
+  const category = String(props.article?.category || '').trim().replace(/^\/+|\/+$/g, '') || 'news'
   const slug = String(props.article?.slug || '').trim().replace(/^\/+/, '')
   if (!slug) return ''
 
   try {
-    return new URL(slug, siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`).toString()
+    return new URL(`${category}/${slug}`, siteUrl.endsWith('/') ? siteUrl : `${siteUrl}/`).toString()
   } catch {
     return ''
   }

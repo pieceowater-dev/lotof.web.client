@@ -10,7 +10,7 @@
         <Icon name="lucide:arrow-left" class="h-6 w-6" />
       </NuxtLink>
       <span class="text-sm md:text-base font-semibold text-slate-900 dark:text-white truncate">
-        {{ t('admin.newPublicationPageTitle') }}
+        {{ mode === 'edit' ? (t('admin.editPublication') || 'Редактирование публикации') : t('admin.newPublicationPageTitle') }}
       </span>
     </div>
 
@@ -24,6 +24,15 @@
       >
         {{ article.status === 'published' ? t('admin.editor.statusPublished') : t('admin.editor.statusDraft') }}
       </span>
+      <button
+        v-if="canDelete"
+        type="button"
+        class="flex items-center gap-1 px-2.5 py-1.5 text-xs sm:text-sm rounded-lg border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+        @click="$emit('delete')"
+      >
+        <Icon name="lucide:trash-2" class="h-4 w-4" />
+        <span class="hidden md:inline">Архивировать</span>
+      </button>
       <div class="hidden sm:block h-5 w-px bg-slate-200 dark:bg-slate-700" />
       <button
         :disabled="!isDirty"
@@ -56,12 +65,15 @@ interface Props {
   blocks: any[]
   isDirty: boolean
   isSaving: boolean
+  mode?: 'create' | 'edit'
+  canDelete?: boolean
 }
 
 defineProps<Props>()
 defineEmits<{
   save: []
   publish: []
+  delete: []
   'toggle-sidebar': []
 }>()
 

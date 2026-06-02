@@ -992,6 +992,7 @@
     "whatsnew": "What's new",
     "whatsnewDesc": "New features and improvements",
     "learning": "Learning materials",
+    "news": "News",
     "learningDesc": "Private learning content for authenticated users",
     "newPublication": "New publication",
     "newPublicationPageTitle": "New page",
@@ -1092,7 +1093,7 @@
       "schemaSourceUrl": "Source URL",
       "schemaSourceUrlPlaceholder": "https://lota.tools/news/source",
       "schemaSourceName": "Source name",
-      "schemaSourceNamePlaceholder": "Reuters",
+      "schemaSourceNamePlaceholder": "Source name",
       "schemaReviewedBy": "Reviewed by",
       "schemaReviewedByPlaceholder": "Jane Doe",
       "schemaReviewedByUrl": "Reviewed by URL",
@@ -1147,6 +1148,9 @@
         "orderedList": "Numbered list",
         "image": "Image",
         "callout": "Callout",
+        "spoiler": "Spoiler (auth required)",
+        "spoilerOpen": "Spoiler: open section",
+        "spoilerClose": "Spoiler: close section",
         "divider": "Divider",
         "html": "HTML code"
       }

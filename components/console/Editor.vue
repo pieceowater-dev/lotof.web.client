@@ -2,12 +2,15 @@
   <div class="publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
     <!-- Header -->
     <ConsoleEditorHeader
+      :mode="props.mode"
+      :can-delete="props.mode === 'edit' && !!props.onDelete"
       :article="article"
       :blocks="blocks"
       :is-dirty="isDirty"
       :is-saving="isSaving"
       @save="saveDraft"
       @publish="publish"
+      @delete="deletePublication"
       @toggle-sidebar="isMobileSidebarOpen = !isMobileSidebarOpen"
     />
 
@@ -31,7 +34,7 @@
         @drop="onDrop"
         @end-drag="endDrag"
         @block-keydown="onBlockKeydown"
-        @show-format-bar-event="(e) => showFormatBar(e.target.getBoundingClientRect())"
+        @show-format-bar-event="onShowFormatBarEvent"
         @click-self="activeBlockId = null"
       />
 
@@ -100,6 +103,36 @@ import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } 
 import { useI18n } from '@/composables/useI18n'
 
 const { t } = useI18n()
+const toast = useToast()
+
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+  к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+  х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+}
+
+function formatDateTimeLocal(date: Date = new Date()) {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function transliterateCyrillic(value: string): string {
+  let out = ''
+  for (const ch of String(value || '').toLowerCase()) {
+    out += CYRILLIC_TO_LATIN[ch] ?? ch
+  }
+  return out
+}
+
+function slugify(value: string): string {
+  return transliterateCyrillic(value)
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80)
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────
 interface Block {
@@ -143,12 +176,22 @@ interface Props {
   mode?: 'create' | 'edit'
   initialArticle?: Partial<ArticleState>
   initialBlocks?: Block[]
+  storageKey?: string
+  useLocalDraft?: boolean
+  onSave?: (payload: { article: ArticleState; blocks: Block[] }) => Promise<void> | void
+  onPublish?: (payload: { article: ArticleState; blocks: Block[] }) => Promise<void> | void
+  onDelete?: () => Promise<void> | void
 }
 
 const props = withDefaults(defineProps<Props>(), {
   mode: 'create',
   initialArticle: () => ({}),
-  initialBlocks: () => []
+  initialBlocks: () => [],
+  storageKey: 'publication_editor_draft',
+  useLocalDraft: true,
+  onSave: undefined,
+  onPublish: undefined,
+  onDelete: undefined,
 })
 
 // ─── Article state ────────────────────────────────────────────────────────
@@ -156,11 +199,11 @@ const article = reactive<ArticleState>({
   title: props.initialArticle.title || '',
   slug: props.initialArticle.slug || '',
   status: (props.initialArticle.status as any) || 'draft',
-  category: props.initialArticle.category || '',
+  category: props.initialArticle.category || 'news',
   author: props.initialArticle.author || '',
   authorUrl: (props.initialArticle as any).authorUrl || '',
   authorRole: (props.initialArticle as any).authorRole || '',
-  publishedAt: props.initialArticle.publishedAt || new Date().toISOString().split('T')[0],
+  publishedAt: props.initialArticle.publishedAt || formatDateTimeLocal(),
   updatedAt: (props.initialArticle as any).updatedAt || '',
   featuredImage: props.initialArticle.featuredImage || '',
   tags: props.initialArticle.tags || [],
@@ -192,11 +235,21 @@ let _idCounter = 0
 function uid() { return `b${++_idCounter}_${Math.random().toString(36).slice(2, 7)}` }
 
 function createBlock(type: string): Block {
+  const attrs = type === 'callout'
+    ? { calloutType: 'info' }
+      : {}
+
+  const content = type === 'ul'
+    ? '<li>Элемент</li>'
+    : type === 'ol'
+      ? '<li>Элемент</li>'
+      : ''
+
   return {
     id: uid(),
     type,
-    content: type === 'ul' ? '<li>Элемент</li>' : type === 'ol' ? '<li>Элемент</li>' : '',
-    attrs: type === 'callout' ? { calloutType: 'info' } : {},
+    content,
+    attrs,
   }
 }
 
@@ -345,7 +398,7 @@ const isMobileSidebarOpen = ref(false)
 
 const confirmDialog = reactive({
   open: false,
-  type: 'clear' as 'clear' | 'deleteBlock',
+  type: 'clear' as 'clear' | 'deleteBlock' | 'deletePublication',
   title: '',
   message: '',
   confirmLabel: '',
@@ -355,7 +408,7 @@ const confirmDialog = reactive({
 
 const pendingDeleteBlockIndex = ref<number | null>(null)
 
-function openConfirmDialog(type: 'clear' | 'deleteBlock', blockIndex?: number) {
+function openConfirmDialog(type: 'clear' | 'deleteBlock' | 'deletePublication', blockIndex?: number) {
   pendingDeleteBlockIndex.value = null
 
   if (type === 'clear') {
@@ -365,7 +418,7 @@ function openConfirmDialog(type: 'clear' | 'deleteBlock', blockIndex?: number) {
     confirmDialog.confirmLabel = 'Очистить'
     confirmDialog.cancelLabel = 'Отмена'
     confirmDialog.variant = 'danger'
-  } else {
+  } else if (type === 'deleteBlock') {
     confirmDialog.type = 'deleteBlock'
     confirmDialog.title = 'Удалить блок?'
     confirmDialog.message = 'Это действие нельзя отменить.'
@@ -373,11 +426,18 @@ function openConfirmDialog(type: 'clear' | 'deleteBlock', blockIndex?: number) {
     confirmDialog.cancelLabel = 'Отмена'
     confirmDialog.variant = 'danger'
     pendingDeleteBlockIndex.value = typeof blockIndex === 'number' ? blockIndex : null
+  } else {
+    confirmDialog.type = 'deletePublication'
+    confirmDialog.title = 'Архивировать публикацию?'
+    confirmDialog.message = 'Публикация исчезнет из списков и публичной выдачи.'
+    confirmDialog.confirmLabel = 'Архивировать'
+    confirmDialog.cancelLabel = 'Отмена'
+    confirmDialog.variant = 'danger'
   }
   confirmDialog.open = true
 }
 
-function runConfirmAction() {
+async function runConfirmAction() {
   const type = confirmDialog.type
   confirmDialog.open = false
 
@@ -392,6 +452,16 @@ function runConfirmAction() {
     if (index === null || index < 0 || index >= blocks.value.length) return
     blocks.value.splice(index, 1)
     scheduleAutosave()
+    return
+  }
+
+  if (type === 'deletePublication') {
+    if (!props.onDelete) return
+    try {
+      await props.onDelete()
+    } catch (error) {
+      console.error('[delete publication] failed', error)
+    }
   }
 }
 
@@ -413,6 +483,12 @@ function showFormatBar(rect: DOMRect) {
     formatBar.y = rect.top + window.scrollY
     formatBar.visible = true
   }
+}
+
+function onShowFormatBarEvent(e: Event) {
+  const target = e.target as HTMLElement | null
+  if (!target) return
+  showFormatBar(target.getBoundingClientRect())
 }
 
 function hideFormatBar() {
@@ -444,40 +520,17 @@ function syncSlug() {
     article.slug = ''
     return
   }
-
-  const normalized = title
-    .toLowerCase()
-    .replace(/[^a-zа-яё0-9\s-]/gi, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80)
-
-  article.slug = normalized.length <= 1 ? '' : normalized
+  article.slug = slugify(title)
 }
 
 function generateSlugFromTitle(title: string): string {
-  const normalized = title
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-zа-яё0-9\s-]/gi, '')
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .slice(0, 80)
-
-  return normalized.length <= 1 ? '' : normalized
+  return slugify(title)
 }
 
 function onArticlePatch(patch: Partial<ArticleState>) {
   if (Object.prototype.hasOwnProperty.call(patch, 'slug')) {
     isSlugManuallyEdited.value = true
-    const incoming = String(patch.slug || '')
-      .toLowerCase()
-      .replace(/[^a-zа-яё0-9-]/gi, '')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 80)
+    const incoming = slugify(String(patch.slug || ''))
     Object.assign(article, { ...patch, slug: incoming })
     return
   }
@@ -490,7 +543,7 @@ function blockTypeLabel(type: string) {
   const map: Record<string, string> = {
     paragraph: '¶', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5',
     quote: '"', ul: 'UL', ol: 'OL', image: 'IMG',
-    callout: 'ℹ', divider: '—', html: '</>',
+    callout: 'ℹ', spoiler: 'S', spoiler_open: 'S+', spoiler_close: 'S-', divider: '—', html: '</>',
   }
   return map[type] ?? type
 }
@@ -550,7 +603,7 @@ function getPayload(syncDom = true) {
   if (syncDom) {
     for (const block of blocks.value) {
       const el = blockRefs.value.get(block.id)
-      if (el && block.type !== 'divider' && block.type !== 'image' && block.type !== 'html') {
+      if (el && block.type !== 'divider' && block.type !== 'image' && block.type !== 'html' && block.type !== 'spoiler_open' && block.type !== 'spoiler_close') {
         block.content = el.innerHTML
       }
     }
@@ -562,15 +615,122 @@ function getPayload(syncDom = true) {
   trimmedArticle.author = (trimmedArticle.author || '').trim()
   trimmedArticle.metaTitle = (trimmedArticle.metaTitle || '').trim()
   trimmedArticle.metaDescription = (trimmedArticle.metaDescription || '').trim()
-  
-  const trimmedBlocks = blocks.value.map(block => ({
-    ...block,
-    content: ['divider', 'image', 'html'].includes(block.type)
-      ? block.content
-      : (block.content || '').trim()
-  }))
+
+  const normalizedBlocks = blocks.value.map(block => {
+    const type = String(block.type || '')
+    return {
+      ...block,
+      attrs: type === 'spoiler' || type === 'spoiler_open' || type === 'spoiler_close'
+        ? {}
+        : block.attrs,
+      content: ['divider', 'image', 'html', 'spoiler_open', 'spoiler_close'].includes(type)
+        ? block.content
+        : (block.content || '').trim()
+    }
+  })
+
+  const trimmedBlocks = normalizedBlocks.filter(isMeaningfulBlock)
+
+  if (!trimmedBlocks.length) {
+    trimmedBlocks.push(createBlock('paragraph'))
+  }
   
   return { article: trimmedArticle, blocks: trimmedBlocks }
+}
+
+function isMeaningfulBlock(block: Block): boolean {
+  const type = String(block?.type || '')
+
+  if (type === 'divider') return true
+
+  if (type === 'spoiler_open' || type === 'spoiler_close') return true
+
+  // Keep spoiler blocks even while empty so user can type after insertion.
+  if (type === 'spoiler') return true
+
+  if (type === 'image') {
+    const src = String(block?.attrs?.src || '').trim()
+    return src.length > 0
+  }
+
+  if (type === 'html') {
+    return stripHtml(String(block?.content || '')).length > 0
+  }
+
+  if (type === 'ul' || type === 'ol') {
+    const text = stripHtml(String(block?.content || ''))
+    return text.length > 0
+  }
+
+  return stripHtml(String(block?.content || '')).length > 0
+}
+
+function getMissingRequiredFields(action: 'save' | 'publish', payload: ReturnType<typeof getPayload>) {
+  const missing: string[] = []
+  const articleState = payload.article
+
+  if (!articleState.title) missing.push('title')
+  if (!articleState.author) missing.push('author')
+
+  return missing
+}
+
+function stripHtml(value: string): string {
+  return String(value || '')
+    .replace(/<\s*br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function firstNonEmptyBlockText(list: Block[]): string {
+  for (const block of list) {
+    const text = stripHtml(block?.content || '')
+    if (text) return text
+  }
+  return ''
+}
+
+function applyPublishAutofill(payload: ReturnType<typeof getPayload>) {
+  const nextArticle = { ...payload.article }
+
+  if (!nextArticle.slug) {
+    nextArticle.slug = generateSlugFromTitle(nextArticle.title)
+  }
+
+  if (!nextArticle.category) {
+    nextArticle.category = 'news'
+  }
+
+  if (!nextArticle.publishedAt) {
+    nextArticle.publishedAt = formatDateTimeLocal()
+  }
+
+  if (!nextArticle.metaTitle) {
+    nextArticle.metaTitle = nextArticle.title
+  }
+
+  if (!nextArticle.metaDescription) {
+    const fallback = firstNonEmptyBlockText(payload.blocks as Block[])
+    nextArticle.metaDescription = (fallback || nextArticle.title).slice(0, 160)
+  }
+
+  return {
+    article: nextArticle,
+    blocks: payload.blocks,
+  }
+}
+
+function showRequiredFieldsError(action: 'save' | 'publish', missing: string[]) {
+  toast.add({
+    title: action === 'publish' ? 'Нельзя опубликовать' : 'Нельзя сохранить',
+    description: `Заполните обязательные поля: ${missing.join(', ')}`,
+    color: 'red',
+  })
 }
 
 function hydrateEditorDomFromState() {
@@ -582,7 +742,7 @@ function hydrateEditorDomFromState() {
     for (const block of blocks.value) {
       const el = blockRefs.value.get(block.id)
       if (!el) continue
-      if (block.type === 'divider' || block.type === 'image' || block.type === 'html') continue
+      if (block.type === 'divider' || block.type === 'image' || block.type === 'html' || block.type === 'spoiler_open' || block.type === 'spoiler_close') continue
       if (el.innerHTML !== block.content) {
         el.innerHTML = block.content || ''
       }
@@ -590,15 +750,29 @@ function hydrateEditorDomFromState() {
   })
 }
 
-function saveDraft() {
+async function saveDraft() {
   if (!isDirty.value) return
+  const payload = getPayload(true)
+
   article.status = 'draft'
   isSaving.value = true
-  const payload = getPayload(true)
   isSavingManually.value = true
   Object.assign(article, payload.article)
   blocks.value = payload.blocks
-  console.log('[save draft]', payload)
+
+  try {
+    if (props.onSave) {
+      await props.onSave({ article: { ...payload.article }, blocks: [...payload.blocks] })
+    } else if (props.mode === 'create') {
+      toast.add({
+        title: 'Локальный черновик сохранен',
+        color: 'green',
+      })
+    }
+  } catch (error) {
+    console.error('[save draft] failed', error)
+  }
+
   saveToLocalStorage(false)
   isDirty.value = false
   nextTick(() => {
@@ -609,23 +783,46 @@ function saveDraft() {
   }, 600)
 }
 
-function publish() {
+async function publish() {
+  const payload = applyPublishAutofill(getPayload(true))
+  const missing = getMissingRequiredFields('publish', payload)
+  if (missing.length) {
+    showRequiredFieldsError('publish', missing)
+    return
+  }
+
   article.status = 'published'
-  const payload = getPayload(true)
   Object.assign(article, payload.article)
   blocks.value = payload.blocks
-  console.log('[publish]', payload)
-  saveToLocalStorage(false)
+
+  try {
+    if (props.onPublish) {
+      await props.onPublish({ article: { ...payload.article }, blocks: [...payload.blocks] })
+    }
+  } catch (error) {
+    console.error('[publish] failed', error)
+  }
+
+  if (props.mode === 'create') {
+    saveToLocalStorage(false)
+  } else {
+    localStorage.removeItem(STORAGE_KEY.value)
+  }
   isDirty.value = false
 }
 
+async function deletePublication() {
+  if (!props.onDelete) return
+  openConfirmDialog('deletePublication')
+}
+
 // ─── LocalStorage ─────────────────────────────────────────────────────────
-const STORAGE_KEY = 'publication_editor_draft'
+const STORAGE_KEY = computed(() => props.storageKey || 'publication_editor_draft')
 
 function saveToLocalStorage(syncDom = false) {
   const data = getPayload(syncDom)
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+    localStorage.setItem(STORAGE_KEY.value, JSON.stringify(data))
   } catch (e) {
     console.warn('Failed to save to localStorage', e)
   }
@@ -650,8 +847,9 @@ function scheduleAutosave() {
 }
 
 function loadFromLocalStorage() {
+  if (!props.useLocalDraft) return false
   try {
-    const saved = localStorage.getItem(STORAGE_KEY)
+    const saved = localStorage.getItem(STORAGE_KEY.value)
     if (!saved) return false
     const data = JSON.parse(saved)
     if (data.article && data.blocks) {
@@ -711,8 +909,9 @@ function performClearAll() {
   article.publisherUrl = ''
   article.publisherLogo = ''
   article.status = 'draft'
+  article.publishedAt = formatDateTimeLocal()
   isSlugManuallyEdited.value = false
-  localStorage.removeItem(STORAGE_KEY)
+  localStorage.removeItem(STORAGE_KEY.value)
   isDirty.value = false
   nextTick(() => titleEl.value?.focus())
 }
@@ -763,6 +962,10 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   document.removeEventListener('click', onDocumentClick)
   if (saveTimer) clearTimeout(saveTimer)
+})
+
+watch(() => article.title, () => {
+  syncSlug()
 })
 
 // ─── Exports for parent ───────────────────────────────────────────────────
