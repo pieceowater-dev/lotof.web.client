@@ -1,4 +1,5 @@
 import { fetchPublicationDocumentsFromUpstream, listPublicationDocuments } from '../../utils/publications';
+import { getApiBaseUrl } from '../../../utils/api-base';
 
 type PublicPublicationListResponse = {
   data?: {
@@ -37,7 +38,7 @@ export default defineEventHandler(async (event) => {
   const category = String(query.category || '').trim().toLowerCase();
   const includeDraft = String(query.includeDraft || 'false').toLowerCase() === 'true';
 
-  const capitalUrl = String(process.env.VITE_API_CAPITAL || 'http://localhost:8082').replace(/\/$/, '');
+  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
   try {
     const response = await $fetch<PublicPublicationListResponse>(`${capitalUrl}/query`, {
       method: 'POST',

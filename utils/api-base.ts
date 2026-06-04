@@ -16,6 +16,27 @@ const API_BASE_OVERRIDES: Record<ApiService, string | undefined> = {
   capital: import.meta.env.VITE_API_CAPITAL,
 };
 
+function normalizeOverride(service: ApiService, raw: string): string {
+  const trimmed = String(raw || '').trim();
+  if (!trimmed) return '';
+
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return normalizeBase(trimmed);
+  }
+
+  try {
+    const parsed = new URL(trimmed);
+    const normalizedPath = parsed.pathname.replace(/\/$/, '');
+    if (!normalizedPath || normalizedPath === '/') {
+      parsed.pathname = API_BASE_PATHS[service];
+      return normalizeBase(parsed.toString());
+    }
+    return normalizeBase(trimmed);
+  } catch {
+    return normalizeBase(trimmed);
+  }
+}
+
 function normalizeBase(urlOrPath: string): string {
   return urlOrPath.replace(/\/$/, '');
 }
@@ -64,7 +85,7 @@ export function toWsUrl(
 export function getApiBasePath(service: ApiService): string {
   const override = API_BASE_OVERRIDES[service];
   if (override && override.trim().length > 0) {
-    return normalizeBase(override.trim());
+    return normalizeOverride(service, override);
   }
   return API_BASE_PATHS[service];
 }
