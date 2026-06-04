@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import { Icon } from '#components'
 
 defineProps<{
   icon: string

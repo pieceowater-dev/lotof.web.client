@@ -1,4 +1,5 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients'
+import { getApiBaseUrl } from '@/utils/api-base'
 
 export type PublicationCategory = 'blog' | 'whatsnew' | 'articles' | 'learning' | 'news'
 export type PublicationStatus = 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived'
@@ -351,6 +352,31 @@ const UPDATE_PUBLICATION_MUTATION = /* GraphQL */ `
   }
 `
 
+const UPLOAD_PUBLICATION_IMAGE_MUTATION = /* GraphQL */ `
+  mutation UploadConsolePublicationImage(
+    $slug: String!
+    $file: Upload!
+    $kind: PublicationUploadKind = FEATURED
+    $alt: String
+    $caption: String
+  ) {
+    uploadConsolePublicationImage(
+      slug: $slug
+      file: $file
+      kind: $kind
+      alt: $alt
+      caption: $caption
+    ) {
+      assetId
+      url
+      key
+      contentType
+      size
+      kind
+    }
+  }
+`
+
 function asString(value: unknown): string {
   return String(value || '').trim()
 }
@@ -461,13 +487,29 @@ function parseAttrsJson(raw: string): Record<string, any> {
   }
 }
 
+function normalizeEditorBlockAttrs(type: string, attrs: Record<string, any>): Record<string, any> {
+  const nextAttrs = { ...(attrs || {}) }
+  if (String(type || '') === 'image') {
+    const legacySrc = asString(nextAttrs.s)
+    if (legacySrc && !asString(nextAttrs.src)) {
+      nextAttrs.src = legacySrc
+    }
+
+    const legacyAssetId = asString(nextAttrs.ai)
+    if (legacyAssetId && !asString(nextAttrs.assetId)) {
+      nextAttrs.assetId = legacyAssetId
+    }
+  }
+  return nextAttrs
+}
+
 function toEditorBlocks(blocks: GraphQLPublicationBlock[] | undefined): PublicationEditorBlock[] {
   return Array.isArray(blocks)
     ? blocks.map((block, index) => ({
       id: normalizeBlockId(block.id, index),
       type: asString(block.type) || 'paragraph',
       content: asString(block.content),
-      attrs: parseAttrsJson(block.attrsJson),
+      attrs: normalizeEditorBlockAttrs(asString(block.type) || 'paragraph', parseAttrsJson(block.attrsJson)),
     }))
     : []
 }
@@ -773,7 +815,7 @@ export function publicationBlocksToHtml(
     }
 
     if (type === 'image') {
-      const src = asString(attrs.src)
+      const src = asString(attrs.src || attrs.s)
       if (!src) continue
       const alt = asString(attrs.alt)
       const caption = asString(attrs.caption)
@@ -889,7 +931,7 @@ export async function capitalGetPublicPublicationByRoute(token: string, category
           category: candidate,
           slug,
           includeBlocks: true,
-        })
+        }, { suppressErrors: true })
         if (result.publicPublicationByRoute) return result
       } catch (error: any) {
         const status = error?.response?.status ?? error?.response?.statusCode ?? error?.status
@@ -992,6 +1034,91 @@ export async function capitalArchivePublication(token: string, slug: string, exp
   }, current.blocks)
 
   return true
+}
+
+export async function capitalUploadPublicationImage(
+  token: string,
+  slug: string,
+  file: File,
+  options?: { kind?: 'FEATURED' | 'INLINE'; alt?: string; caption?: string }
+): Promise<{ url: string; assetId: string; key: string; contentType: string; size: string; kind: string }> {
+  const operations = {
+    query: UPLOAD_PUBLICATION_IMAGE_MUTATION,
+    variables: {
+      slug: asString(slug),
+      file: null,
+      kind: options?.kind || 'FEATURED',
+      alt: asString(options?.alt),
+      caption: asString(options?.caption),
+    },
+  }
+
+  const buildForm = () => {
+    const form = new FormData()
+    form.append('operations', JSON.stringify(operations))
+    form.append('map', JSON.stringify({ '0': ['variables.file'] }))
+    form.append('0', file, file.name)
+    return form
+  }
+
+  const headers: Record<string, string> = {}
+  if (asString(token)) {
+    headers.CapitalAuthorization = `Bearer ${asString(token)}`
+  }
+
+  const primary = `${getApiBaseUrl('capital')}/query`
+  const fallbackCandidates: string[] = [primary]
+  const envDirect = String(import.meta.env.VITE_API_CAPITAL || '').trim().replace(/\/$/, '')
+  if (envDirect && !fallbackCandidates.includes(`${envDirect}/query`)) {
+    fallbackCandidates.push(`${envDirect}/query`)
+  }
+  if (!envDirect && process.client) {
+    const localhostDirect = 'http://localhost:8082/query'
+    if (!fallbackCandidates.includes(localhostDirect)) {
+      fallbackCandidates.push(localhostDirect)
+    }
+  }
+
+  let result: any = null
+  let lastMessage = ''
+  for (let i = 0; i < fallbackCandidates.length; i++) {
+    const response = await fetch(fallbackCandidates[i], {
+      method: 'POST',
+      headers,
+      body: buildForm(),
+      credentials: 'omit',
+    })
+
+    result = await response.json().catch(() => ({}))
+    if (response.ok && !result?.errors?.length) {
+      break
+    }
+
+    lastMessage = String(result?.errors?.[0]?.message || result?.message || `Upload failed with status ${response.status}`)
+    const isMultipartOrderError = lastMessage.toLowerCase().includes('first part must be operations')
+    const hasNextCandidate = i < fallbackCandidates.length - 1
+    if (!(isMultipartOrderError && hasNextCandidate)) {
+      throw new Error(lastMessage)
+    }
+  }
+
+  if (!result || result?.errors?.length) {
+    throw new Error(lastMessage || 'Upload failed')
+  }
+
+  const payload = result?.data?.uploadConsolePublicationImage
+  if (!payload?.url) {
+    throw new Error('Upload did not return image URL')
+  }
+
+  return {
+    url: asString(payload.url),
+    assetId: asString(payload.assetId),
+    key: asString(payload.key),
+    contentType: asString(payload.contentType),
+    size: asString(payload.size),
+    kind: asString(payload.kind),
+  }
 }
 
 export function toPublicationListDate(value: string): string {

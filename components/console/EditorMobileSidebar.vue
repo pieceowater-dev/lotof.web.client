@@ -46,6 +46,7 @@
           v-if="sidebarTab === 'settings'"
           :article="article"
           @update:article="$emit('update:article', $event)"
+          @upload-featured-image="$emit('upload-featured-image', $event)"
           @clear="$emit('clear')"
           @add-block="$emit('add-block')"
         />
@@ -77,6 +78,7 @@ interface Props {
 const props = defineProps<Props>()
 defineEmits<{
   'update:article': [Partial<any>]
+  'upload-featured-image': [File]
   'clear': []
   'add-block': []
   'close': []

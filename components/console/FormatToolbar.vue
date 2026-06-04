@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { provide } from 'vue'
-import { Icon } from '#components'
 import { useI18n } from '@/composables/useI18n'
 
 interface FormatBar {

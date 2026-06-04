@@ -108,7 +108,7 @@ export class ApiClient {
   async request<T>(
     query: any,
     variables?: Record<string, any>,
-    options?: { headers?: Record<string, string> }
+    options?: { headers?: Record<string, string>; suppressErrors?: boolean }
   ): Promise<T> {
     return this.requestWithRetry<T>(query, variables, options, 0);
   }
@@ -116,7 +116,7 @@ export class ApiClient {
   private async requestWithRetry<T>(
     query: any,
     variables?: Record<string, any>,
-    options?: { headers?: Record<string, string> },
+    options?: { headers?: Record<string, string>; suppressErrors?: boolean },
     retryCount: number = 0
   ): Promise<T> {
     // Merge headers each call to always use latest token + any provided headers
@@ -202,14 +202,16 @@ export class ApiClient {
           }
         }
       } else {
-        if (process.client) {
-          try {
-            const nuxtApp = useNuxtApp();
-            nuxtApp.$handleGraphQLError?.(error);
-          } catch {}
+        if (!options?.suppressErrors) {
+          if (process.client) {
+            try {
+              const nuxtApp = useNuxtApp();
+              nuxtApp.$handleGraphQLError?.(error);
+            } catch {}
+          }
+          const firstMsg = rawErrors?.[0]?.message || error.message || 'GraphQL request failed';
+          logError('GraphQL Error:', rawErrors || firstMsg);
         }
-        const firstMsg = rawErrors?.[0]?.message || error.message || 'GraphQL request failed';
-        logError('GraphQL Error:', rawErrors || firstMsg);
       }
       // Re-throw the original error so callers can inspect error.response.data for partial data
       throw error;

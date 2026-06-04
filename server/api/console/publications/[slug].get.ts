@@ -135,6 +135,21 @@ function mapUpstreamError(message: string): { statusCode: number; statusMessage:
   return { statusCode: 502, statusMessage: msg };
 }
 
+function normalizeBlockAttrs(block: { type?: string; attrs?: Record<string, unknown> }): Record<string, unknown> {
+  const attrs = { ...(block.attrs || {}) };
+  if (String(block.type || '') === 'image') {
+    const legacySrc = String(attrs.s || '').trim();
+    if (legacySrc && !String(attrs.src || '').trim()) {
+      attrs.src = legacySrc;
+    }
+    const legacyAssetId = String(attrs.ai || '').trim();
+    if (legacyAssetId && !String(attrs.assetId || '').trim()) {
+      attrs.assetId = legacyAssetId;
+    }
+  }
+  return attrs;
+}
+
 export default defineEventHandler(async (event) => {
   const slug = String(getRouterParam(event, 'slug') || '').trim();
   if (!slug) {
@@ -187,7 +202,7 @@ export default defineEventHandler(async (event) => {
       id: String(block?.id || ''),
       type: String(block?.type || 'paragraph'),
       content: String(block?.content || ''),
-      attrs,
+      attrs: normalizeBlockAttrs({ type: block?.type, attrs }),
     };
   });
 

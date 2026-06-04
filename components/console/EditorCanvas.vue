@@ -236,14 +236,21 @@
                       <Icon name="lucide:image-plus" class="h-7 w-7 text-slate-400 dark:text-slate-500" />
                     </div>
                     <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Добавьте изображение</p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Вставьте URL или загрузите файл</p>
-                    <input
-                      class="w-full max-w-xs mx-auto block px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700
-                             bg-white dark:bg-slate-900 text-slate-900 dark:text-white outline-none
-                             focus:ring-2 focus:ring-blue-500 focus:border-blue-400 transition-shadow"
-                      placeholder="https://lota.tools/image.jpg"
-                      @change="block.attrs.src = ($event.target as HTMLInputElement).value"
-                    />
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Загрузите файл</p>
+                    <div class="mb-4">
+                      <label
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <Icon name="lucide:upload" class="h-4 w-4" />
+                        <span>Выбрать файл</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          class="hidden"
+                          @change="onImageFileChange(block, $event)"
+                        />
+                      </label>
+                    </div>
                   </div>
                   <div v-else class="relative group/img">
                     <img
@@ -396,6 +403,7 @@ const emit = defineEmits<{
   'block-keydown': [Block, number, KeyboardEvent]
   'show-format-bar-event': [MouseEvent]
   'click-self': []
+  'upload-inline-image': [{ blockId: string; file: File }]
 }>()
 
 function setBlockRef(id: string, el: HTMLElement | null) {
@@ -406,6 +414,14 @@ function setBlockRef(id: string, el: HTMLElement | null) {
 function onTitleInput(e: Event) {
   const title = (e.target as HTMLElement).innerText
   emit('update:article', { title })
+}
+
+function onImageFileChange(block: Block, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  emit('upload-inline-image', { blockId: String(block.id || ''), file })
+  input.value = ''
 }
 
 function openPublicSlug() {

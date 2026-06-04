@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Icon } from '#components'
-
 interface Block {
   type: string
   content: string

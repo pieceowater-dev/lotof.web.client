@@ -160,7 +160,7 @@ function decodeBlocks(meta: Record<string, any>, body: string): EditorBlock[] {
     try {
       const json = Buffer.from(encoded, 'base64').toString('utf-8');
       const parsed = JSON.parse(json);
-      if (Array.isArray(parsed)) return parsed as EditorBlock[];
+      if (Array.isArray(parsed)) return parsed.map((block) => normalizeEditorBlock(block));
     } catch {
       // Ignore malformed editor payload and fallback to body conversion.
     }
@@ -185,6 +185,27 @@ function decodeBlocks(meta: Record<string, any>, body: string): EditorBlock[] {
       attrs: {},
     },
   ];
+}
+
+function normalizeEditorBlock(block: any): EditorBlock {
+  const attrs = { ...(block?.attrs || {}) };
+  if (String(block?.type || '') === 'image') {
+    const legacySrc = String(attrs.s || '').trim();
+    if (legacySrc && !String(attrs.src || '').trim()) {
+      attrs.src = legacySrc;
+    }
+    const legacyAssetId = String(attrs.ai || '').trim();
+    if (legacyAssetId && !String(attrs.assetId || '').trim()) {
+      attrs.assetId = legacyAssetId;
+    }
+  }
+
+  return {
+    id: String(block?.id || `b_${Date.now()}_x`),
+    type: String(block?.type || 'paragraph'),
+    content: String(block?.content || ''),
+    attrs,
+  };
 }
 
 function stripHtml(raw: string): string {

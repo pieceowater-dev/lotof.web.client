@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Icon } from '#components'
-
 defineProps<{ index?: number }>()
 defineEmits<{ open: [void] }>()
 </script>

@@ -24,6 +24,7 @@
         :active-block-id="activeBlockId"
         :drag-state="dragState"
         @update:article="onArticlePatch"
+        @upload-inline-image="uploadInlineImage"
         @set-active-block="(id) => activeBlockId = id"
         @add-block-at="openPicker"
         @duplicate-block="duplicateBlock"
@@ -43,6 +44,7 @@
         :article="article"
         :blocks="blocks"
         @update:article="onArticlePatch"
+        @upload-featured-image="uploadFeaturedImage"
         @add-block="openPicker(blocks.length)"
         @clear="clearAllConfirm"
       />
@@ -54,6 +56,7 @@
           :article="article"
           :blocks="blocks"
           @update:article="onArticlePatch"
+          @upload-featured-image="uploadFeaturedImage"
           @add-block="openPicker(blocks.length)"
           @clear="clearAllConfirm"
           @close="isMobileSidebarOpen = false"
@@ -101,9 +104,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { capitalUploadPublicationImage } from '@/api/publications'
 
 const { t } = useI18n()
 const toast = useToast()
+const authToken = useCookie<string | null>('auth_token')
+const legacyToken = useCookie<string | null>('token')
 
 const CYRILLIC_TO_LATIN: Record<string, string> = {
   а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
@@ -538,6 +544,74 @@ function onArticlePatch(patch: Partial<ArticleState>) {
   Object.assign(article, patch)
 }
 
+async function uploadFeaturedImage(file: File) {
+  const slug = String(article.slug || '').trim()
+  if (!slug) {
+    toast.add({ title: 'Сначала сохрани статью, чтобы получить slug', color: 'amber' })
+    return
+  }
+
+  const token = String(authToken.value || legacyToken.value || '').trim()
+  if (!token) {
+    toast.add({ title: 'Нет токена авторизации', color: 'red' })
+    return
+  }
+
+  try {
+    const uploaded = await capitalUploadPublicationImage(token, slug, file, { kind: 'FEATURED' })
+    onArticlePatch({
+      featuredImage: uploaded.url,
+      ogImage: String(article.ogImage || '').trim() || uploaded.url,
+    })
+    isDirty.value = true
+    await saveDraft()
+    toast.add({ title: 'Изображение загружено', color: 'green' })
+  } catch (error: any) {
+    toast.add({ title: error?.message || 'Не удалось загрузить изображение', color: 'red' })
+  }
+}
+
+async function uploadInlineImage(payload: { blockId: string; file: File }) {
+  const slug = String(article.slug || '').trim()
+  if (!slug) {
+    toast.add({ title: 'Сначала сохрани статью, чтобы получить slug', color: 'amber' })
+    return
+  }
+
+  const token = String(authToken.value || legacyToken.value || '').trim()
+  if (!token) {
+    toast.add({ title: 'Нет токена авторизации', color: 'red' })
+    return
+  }
+
+  try {
+    const uploaded = await capitalUploadPublicationImage(token, slug, payload.file, { kind: 'INLINE' })
+    const blockIndex = blocks.value.findIndex((item) => String(item.id) === String(payload.blockId))
+    const block = blockIndex >= 0 ? blocks.value[blockIndex] : null
+    if (!block || String(block.type) !== 'image') {
+      return
+    }
+
+    blocks.value[blockIndex] = {
+      ...block,
+      attrs: {
+        ...block.attrs,
+        src: uploaded.url,
+        ai: uploaded.assetId,
+        assetId: uploaded.assetId,
+      },
+    }
+
+    scheduleAutosave()
+    isDirty.value = true
+    await saveDraft()
+
+    toast.add({ title: 'Изображение загружено', color: 'green' })
+  } catch (error: any) {
+    toast.add({ title: error?.message || 'Не удалось загрузить изображение', color: 'red' })
+  }
+}
+
 // ─── Block type label ─────────────────────────────────────────────────────
 function blockTypeLabel(type: string) {
   const map: Record<string, string> = {
@@ -837,7 +911,6 @@ function scheduleAutosave() {
     isSaving.value = true
     const payload = getPayload(true)
     Object.assign(article, payload.article)
-    blocks.value = payload.blocks
     saveToLocalStorage(false)
     saveTimer = null
     setTimeout(() => {

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { Icon } from '#components'
 import { useI18n } from '@/composables/useI18n'
 
 defineProps<{

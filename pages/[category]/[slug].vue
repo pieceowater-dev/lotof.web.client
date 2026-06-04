@@ -469,7 +469,6 @@ function stripDuplicatedLead(markdown: string, title: string): string {
 }
 
 const sanitizedArticleBody = computed(() => stripDuplicatedLead(article.value?.body || '', articleTitle.value));
-const hasImageInBody = computed(() => /<img\b/i.test(sanitizedArticleBody.value));
 
 function escapeHtml(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -695,7 +694,7 @@ onBeforeUnmount(() => {
             </header>
 
             <img
-              v-if="articleOgImage && !hasImageInBody"
+              v-if="articleOgImage"
               :src="articleOgImage"
               :alt="articleOgImageAlt"
               width="1200"
