@@ -839,6 +839,7 @@ async function saveDraft() {
   Object.assign(article, payload.article)
   blocks.value = payload.blocks
 
+  let saveFailed = false
   try {
     if (props.onSave) {
       await props.onSave({ article: { ...payload.article }, blocks: [...payload.blocks] })
@@ -848,8 +849,20 @@ async function saveDraft() {
         color: 'green',
       })
     }
-  } catch (error) {
+  } catch (error: any) {
+    saveFailed = true
     console.error('[save draft] failed', error)
+    toast.add({
+      title: 'Не удалось сохранить черновик',
+      description: error?.message || 'Проверьте подключение и попробуйте снова',
+      color: 'red',
+    })
+  }
+
+  if (saveFailed) {
+    isSaving.value = false
+    isSavingManually.value = false
+    return
   }
 
   saveToLocalStorage(false)
@@ -874,12 +887,23 @@ async function publish() {
   Object.assign(article, payload.article)
   blocks.value = payload.blocks
 
+  let publishFailed = false
   try {
     if (props.onPublish) {
       await props.onPublish({ article: { ...payload.article }, blocks: [...payload.blocks] })
     }
-  } catch (error) {
+  } catch (error: any) {
+    publishFailed = true
     console.error('[publish] failed', error)
+    toast.add({
+      title: 'Не удалось опубликовать',
+      description: error?.message || 'Проверьте подключение и попробуйте снова',
+      color: 'red',
+    })
+  }
+
+  if (publishFailed) {
+    return
   }
 
   if (props.mode === 'create') {

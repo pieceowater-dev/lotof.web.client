@@ -91,11 +91,17 @@ async function updatePublication(payload: EditorPayload, status: 'draft' | 'publ
     await router.replace(`/console/publications/${nextSlug}`);
   }
 
-  initialArticle.value = {
-    ...payload.article,
-    status,
-    slug: nextSlug || payload.article.slug,
-  };
+  const effectiveSlug = String(nextSlug || payload.article.slug || currentSlug).trim();
+  const refreshed = await capitalGetPublicationBySlug(String(authToken.value || legacyToken.value || '').trim(), effectiveSlug);
+  if (refreshed?.article) {
+    initialArticle.value = { ...refreshed.article };
+  } else {
+    initialArticle.value = {
+      ...payload.article,
+      status,
+      slug: effectiveSlug,
+    };
+  }
 
   toast.add({
     title: status === 'published'
