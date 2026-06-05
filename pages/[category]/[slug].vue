@@ -7,6 +7,7 @@ import { capitalGetPublicPublicationByRoute } from '@/api/publications';
 
 definePageMeta({
   viewTransition: false,
+  path: '/:category(blog|whatsnew|articles|learning|news)/:slug',
 });
 
 type ArticleMeta = Record<string, string | string[]>;
@@ -138,6 +139,31 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
   async () => {
     if (!slugParam.value) return null;
 
+    // Prefer slug-based server fallback first: it already handles category probing
+    // and is resilient to upstream public list auth limitations.
+    try {
+      const all = await $fetch<PublicationsAllResponse>('/api/publications/all', {
+        query: {
+          includeDraft: 'false',
+          slug: slugParam.value,
+          category: categoryParam.value,
+        },
+      });
+      const bySlug = Array.isArray(all?.items)
+        ? all.items.find((item) => normalizeSlug(String(item?.slug || '')) === slugParam.value)
+        : null;
+      if (bySlug) {
+        return {
+          slug: normalizeSlug(String(bySlug.slug || '')),
+          category: normalizeSlug(String(bySlug.category || 'news')),
+          meta: bySlug.meta || {},
+          body: String(bySlug.body || ''),
+        };
+      }
+    } catch {
+      // Continue with direct route and local fallbacks below.
+    }
+
     if (categoryParam.value && SUPPORTED_PUBLICATION_CATEGORIES.has(categoryParam.value)) {
       try {
         const viewerToken = String(authToken.value || legacyToken.value || '').trim();
@@ -172,30 +198,6 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
         meta: localBySlug.meta,
         body: localBySlug.body,
       };
-    }
-
-    // Final fallback: resolve by slug via aggregated publications endpoint.
-    try {
-      const all = await $fetch<PublicationsAllResponse>('/api/publications/all', {
-        query: {
-          includeDraft: 'false',
-          slug: slugParam.value,
-          category: categoryParam.value,
-        },
-      });
-      const bySlug = Array.isArray(all?.items)
-        ? all.items.find((item) => normalizeSlug(String(item?.slug || '')) === slugParam.value)
-        : null;
-      if (bySlug) {
-        return {
-          slug: normalizeSlug(String(bySlug.slug || '')),
-          category: normalizeSlug(String(bySlug.category || 'news')),
-          meta: bySlug.meta || {},
-          body: String(bySlug.body || ''),
-        };
-      }
-    } catch {
-      // Keep null; final 404 below will handle it.
     }
 
     return null;
