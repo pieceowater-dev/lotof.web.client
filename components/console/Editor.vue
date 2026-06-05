@@ -566,7 +566,7 @@ async function uploadFeaturedImage(file: File) {
     })
     onArticlePatch({
       featuredImage: uploaded.url,
-      ogImage: String(article.ogImage || '').trim() || uploaded.url,
+      ogImage: uploaded.url,
     })
     isDirty.value = true
     await saveDraft()
