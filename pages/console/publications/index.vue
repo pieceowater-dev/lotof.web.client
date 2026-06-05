@@ -48,7 +48,7 @@
           <input
             v-model="search"
             type="text"
-            placeholder="Поиск по заголовку или slug"
+            placeholder="Поиск по заголовку или адресу"
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>
@@ -61,12 +61,12 @@
         </button>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-        <table class="w-full text-left text-sm">
+      <div class="mt-6 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+        <table class="min-w-[980px] w-full text-left text-sm">
           <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
             <tr>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Заголовок</th>
-              <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Slug</th>
+              <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Адрес</th>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Категория</th>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Статус</th>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Автор</th>
@@ -87,38 +87,49 @@
               :key="row.slug"
               class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
             >
-              <td class="px-4 py-3 font-medium text-slate-900 dark:text-white">{{ row.title }}</td>
-              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.slug }}</td>
+              <td class="px-4 py-3 text-slate-900 dark:text-white">
+                <button
+                  type="button"
+                  class="max-w-[380px] truncate text-left font-medium text-blue-700 hover:text-blue-800 hover:underline dark:text-blue-300 dark:hover:text-blue-200"
+                  :title="row.title"
+                  @click="editPublication(row.slug)"
+                >
+                  {{ row.title }}
+                </button>
+              </td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">
+                <a
+                  :href="publicPublicationUrl(row)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex max-w-[300px] items-center gap-1 truncate text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-300 dark:hover:text-blue-200"
+                  :title="publicPath(row)"
+                >
+                  <span class="truncate">{{ publicPath(row) }}</span>
+                  <Icon name="lucide:external-link" class="h-3.5 w-3.5 shrink-0" />
+                </a>
+              </td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ categoryLabel(row.category) }}</td>
               <td class="px-4 py-3">
                 <span
                   class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-                  :class="row.status === 'published'
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200'
-                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200'"
+                  :class="statusMeta(row.status).badgeClass"
                 >
-                  {{ row.status === 'published' ? 'Published' : 'Draft' }}
+                  {{ statusMeta(row.status).label }}
                 </span>
               </td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.author }}</td>
-              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.updatedAt || row.publishedAt }}</td>
+              <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ formatDate(row.updatedAt || row.publishedAt) }}</td>
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <button
                     type="button"
-                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    @click="$router.push(`/console/publications/${row.slug}`)"
-                  >
-                    <Icon name="lucide:edit-2" class="h-3.5 w-3.5" />
-                    Редактировать
-                  </button>
-                  <button
-                    type="button"
-                    class="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                    class="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                    title="Архивировать"
                     @click="deletePublication(row)"
                   >
-                    <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
-                    Архивировать
+                    <Icon name="lucide:trash-2" class="h-3 w-3" />
+                    Архив
                   </button>
                 </div>
               </td>
@@ -155,6 +166,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { capitalArchivePublication, capitalListPublications, type PublicationListRow } from '@/api/publications';
@@ -162,6 +174,8 @@ import { capitalArchivePublication, capitalListPublications, type PublicationLis
 definePageMeta({ middleware: 'admin' });
 
 const { t } = useI18n();
+const router = useRouter();
+const config = useRuntimeConfig();
 const authToken = useCookie<string | null>('auth_token');
 const legacyToken = useCookie<string | null>('token');
 
@@ -234,8 +248,79 @@ const counts = ref<Record<string, number>>({ all: 0, blog: 0, whatsnew: 0, artic
 const toast = useToast();
 
 function categoryLabel(value: string) {
-  const found = categories.value.find((c) => c.value === value);
+  const normalized = String(value || '').toLowerCase();
+  const found = categories.value.find((c) => c.value === normalized);
   return found?.label || value;
+}
+
+function statusMeta(rawStatus: string) {
+  const status = String(rawStatus || '').toLowerCase();
+  const map: Record<string, { label: string; badgeClass: string }> = {
+    published: {
+      label: 'Опубликовано',
+      badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200',
+    },
+    draft: {
+      label: 'Черновик',
+      badgeClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200',
+    },
+    in_review: {
+      label: 'На проверке',
+      badgeClass: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-200',
+    },
+    scheduled: {
+      label: 'Запланировано',
+      badgeClass: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-200',
+    },
+    archived: {
+      label: 'В архиве',
+      badgeClass: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+    },
+  };
+
+  return map[status] || {
+    label: rawStatus || 'Неизвестно',
+    badgeClass: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+  };
+}
+
+function normalizeCategory(raw: string): string {
+  return String(raw || '').trim().toLowerCase() || 'news';
+}
+
+function publicPath(row: PublicationListRow): string {
+  return `/${normalizeCategory(String(row.category || 'news'))}/${String(row.slug || '').trim()}`;
+}
+
+function resolveSiteBaseUrl(): string {
+  if (process.client) {
+    return String(window.location.origin || '').replace(/\/$/, '');
+  }
+
+  const configured = String(config.public.siteUrl || '').trim();
+  if (configured) {
+    return configured.replace(/\/$/, '');
+  }
+
+  return '';
+}
+
+function publicPublicationUrl(row: PublicationListRow): string {
+  const base = resolveSiteBaseUrl();
+  const path = publicPath(row);
+  return base ? `${base}${path}` : path;
+}
+
+function editPublication(slug: string) {
+  router.push(`/console/publications/${slug}`);
+}
+
+function formatDate(raw: string): string {
+  const value = String(raw || '').trim();
+  if (!value) return '—';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 function categoryCount(value: string) {

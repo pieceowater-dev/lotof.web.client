@@ -49,7 +49,7 @@ export type PublicationListRow = {
   title: string
   slug: string
   category: PublicationCategory
-  status: 'draft' | 'published'
+  status: PublicationStatus
   visibility: PublicationVisibility
   excerpt: string
   author: string
