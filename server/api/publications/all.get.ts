@@ -93,23 +93,156 @@ function safeImageSrc(src: string): string {
 
 function blocksToHtml(
   blocks: Array<{ type?: string; content?: string; attrsJson?: string }> | undefined,
-  fallbackText: string
+  fallbackText: string,
+  options?: { isAuthorized?: boolean }
 ): string {
   if (!Array.isArray(blocks) || !blocks.length) return fallbackText;
 
+  const isAuthorized = !!options?.isAuthorized;
   const parts: string[] = [];
+  let openSpoilerInner: string[] = [];
+  let isSpoilerOpen = false;
+
+  const renderUnauthorizedProtected = (kind: 'block' | 'section') => {
+    const kindLabel = 'Эксклюзивный контент';
+    const title = kind === 'section'
+      ? 'Войдите, чтобы открыть весь раздел'
+      : 'Войдите, чтобы открыть продолжение';
+    const text = kind === 'section'
+      ? 'После входа будет доступен полный блок с дополнительными деталями.'
+      : 'После входа откроется дополнительный материал с полезными нюансами.';
+    const kindStyle = kind === 'section'
+      ? 'bg-slate-100/90 dark:bg-slate-800/42'
+      : 'bg-zinc-100/90 dark:bg-zinc-800/38';
+    const animatedBg = kind === 'section'
+      ? 'radial-gradient(120% 160% at 5% 5%, rgba(148,163,184,0.16) 0%, rgba(148,163,184,0) 48%), radial-gradient(120% 160% at 95% 95%, rgba(100,116,139,0.12) 0%, rgba(100,116,139,0) 52%), linear-gradient(140deg, rgba(248,250,252,0.92) 0%, rgba(241,245,249,0.88) 100%)'
+      : 'radial-gradient(120% 160% at 5% 5%, rgba(161,161,170,0.16) 0%, rgba(161,161,170,0) 48%), radial-gradient(120% 160% at 95% 95%, rgba(113,113,122,0.12) 0%, rgba(113,113,122,0) 52%), linear-gradient(140deg, rgba(250,250,250,0.92) 0%, rgba(244,244,245,0.88) 100%)';
+    return `
+      <section class="relative my-6 overflow-hidden rounded-2xl p-5 shadow-[0_6px_24px_rgba(15,23,42,0.05)] ${kindStyle}" data-protected="true" data-protected-kind="${kind}">
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 opacity-78"
+          style="background-image:${animatedBg};background-size:230% 230%;animation:spoilerFlow 9s ease-in-out infinite;"
+        ></div>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute inset-0 mix-blend-soft-light opacity-12"
+          style="background-image:radial-gradient(circle at 12% 18%, rgba(255,255,255,0.52) 0 1px, transparent 2px),radial-gradient(circle at 80% 62%, rgba(255,255,255,0.44) 0 1px, transparent 2px),radial-gradient(circle at 44% 82%, rgba(255,255,255,0.38) 0 1px, transparent 2px);background-size:20px 20px,24px 24px,28px 28px;animation:spoilerNoise 8s linear infinite;"
+        ></div>
+        <div
+          aria-hidden="true"
+          class="pointer-events-none absolute -inset-y-full left-[-38%] w-[34%]"
+          style="background:linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.38) 50%, rgba(255,255,255,0) 100%);transform:skewX(-18deg);animation:exclusiveSheen 4.4s ease-in-out infinite;"
+        ></div>
+        <div class="relative">
+        <div class="inline-flex items-center rounded-full bg-white/75 px-2.5 py-1 text-[11px] font-semibold tracking-[0.04em] text-slate-600 dark:bg-slate-900/70 dark:text-slate-300">${kindLabel}</div>
+        <h3 class="mt-3 text-lg font-semibold text-slate-900 dark:text-slate-100">${title}</h3>
+        <p class="mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300">${text}</p>
+        <a
+          href="/?auth-needed=true"
+          onclick="try{var p=(window.location.pathname||'/')+(window.location.search||'')+(window.location.hash||'');localStorage.setItem('back-to',p.replace(/^\\//,''));}catch(e){}"
+          class="mt-4 inline-flex items-center rounded-full border border-transparent px-5 py-2 text-sm font-semibold leading-none transition hover:brightness-[1.03]"
+          style="background:linear-gradient(rgba(255,255,255,0.94),rgba(255,255,255,0.94)) padding-box,linear-gradient(90deg,#3b82f6 0%,#10b981 100%) border-box;"
+        >
+          <span class="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">Посмотреть</span>
+        </a>
+        </div>
+      </section>
+    `;
+  };
+
+  const renderAuthorizedExclusive = (innerHtml: string, kind: 'block' | 'section') => {
+    const kindBadge = 'эксклюзив';
+    const kindBackground = kind === 'section'
+      ? 'linear-gradient(145deg, rgba(241,245,249,0.58) 0%, rgba(226,232,240,0.44) 52%, rgba(241,245,249,0.5) 100%)'
+      : 'linear-gradient(145deg, rgba(244,244,245,0.56) 0%, rgba(228,228,231,0.42) 52%, rgba(244,244,245,0.5) 100%)';
+    const kindAccent = kind === 'section'
+      ? 'radial-gradient(120% 140% at 0% 0%, rgba(255,255,255,0.56) 0%, rgba(255,255,255,0) 56%), radial-gradient(120% 140% at 100% 100%, rgba(148,163,184,0.16) 0%, rgba(148,163,184,0) 62%)'
+      : 'radial-gradient(120% 140% at 0% 0%, rgba(255,255,255,0.54) 0%, rgba(255,255,255,0) 56%), radial-gradient(120% 140% at 100% 100%, rgba(113,113,122,0.15) 0%, rgba(113,113,122,0) 62%)';
+    const kindGlint = kind === 'section'
+      ? 'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.36) 46%, rgba(255,255,255,0) 100%)'
+      : 'linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.34) 46%, rgba(255,255,255,0) 100%)';
+    const innerPadding = kind === 'section'
+      ? 'px-4 pb-4 pt-2.5'
+      : 'px-4 py-3';
+    return `
+      <section class="relative my-6 overflow-hidden rounded-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.55),0_8px_28px_rgba(15,23,42,0.06)]" style="background:${kindBackground};backdrop-filter:blur(10px) saturate(130%);-webkit-backdrop-filter:blur(10px) saturate(130%);" data-protected="true" data-protected-kind="${kind}">
+        <div aria-hidden="true" class="pointer-events-none absolute inset-0" style="background-image:${kindAccent};"></div>
+        <div aria-hidden="true" class="pointer-events-none absolute -inset-y-full left-[-42%] w-[34%]" style="background:${kindGlint};transform:skewX(-17deg);animation:exclusiveSheen 6s ease-in-out infinite;"></div>
+        <div class="relative px-4 pt-2 text-[10px] font-medium tracking-[0.02em] text-slate-500 dark:text-slate-500">${kindBadge}</div>
+        <div class="relative ${innerPadding}">${innerHtml}</div>
+      </section>
+    `;
+  };
+
+  parts.push(`
+    <style>
+      @keyframes spoilerFlow {
+        0% { background-position: 0% 0%; }
+        50% { background-position: 100% 100%; }
+        100% { background-position: 0% 0%; }
+      }
+      @keyframes spoilerNoise {
+        0% { transform: translate3d(0,0,0) scale(1); }
+        25% { transform: translate3d(0.8%, -0.6%, 0) scale(1.02); }
+        50% { transform: translate3d(-0.6%, 0.8%, 0) scale(1.03); }
+        75% { transform: translate3d(0.7%, 0.4%, 0) scale(1.01); }
+        100% { transform: translate3d(0,0,0) scale(1); }
+      }
+      @keyframes exclusiveSheen {
+        0% { transform: translateX(-160%) skewX(-18deg); opacity: 0; }
+        20% { opacity: 0.45; }
+        55% { opacity: 0.5; }
+        100% { transform: translateX(470%) skewX(-18deg); opacity: 0; }
+      }
+    </style>
+  `);
+
+  const flushOpenSpoiler = () => {
+    if (!isSpoilerOpen) return;
+    if (!isAuthorized) {
+      parts.push(renderUnauthorizedProtected('section'));
+    } else {
+      parts.push(renderAuthorizedExclusive(openSpoilerInner.join(''), 'section'));
+    }
+    openSpoilerInner = [];
+    isSpoilerOpen = false;
+  };
+
+  const pushContent = (html: string) => {
+    if (!html) return;
+    if (isSpoilerOpen && isAuthorized) {
+      openSpoilerInner.push(html);
+      return;
+    }
+    if (isSpoilerOpen && !isAuthorized) {
+      return;
+    }
+    parts.push(html);
+  };
 
   for (const block of blocks) {
     const type = String(block?.type || 'paragraph').trim();
     const content = String(block?.content || '').trim();
     const attrs = parseAttrsJson(block?.attrsJson);
 
+    if (type === 'spoiler_open') {
+      flushOpenSpoiler();
+      isSpoilerOpen = true;
+      continue;
+    }
+
+    if (type === 'spoiler_close') {
+      flushOpenSpoiler();
+      continue;
+    }
+
     if (type === 'image') {
       const src = safeImageSrc(String(attrs.src || attrs.s || ''));
       if (!src) continue;
       const alt = escapeHtml(String(attrs.alt || ''));
       const caption = String(attrs.caption || '').trim();
-      parts.push(
+      pushContent(
         `<figure class="my-6">` +
         `<img src="${escapeHtml(src)}" alt="${alt}" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="lazy" decoding="async" />` +
         (caption ? `<figcaption class="mt-2 text-sm text-slate-500 dark:text-slate-400">${caption}</figcaption>` : '') +
@@ -119,7 +252,7 @@ function blocksToHtml(
     }
 
     if (type === 'html') {
-      if (content) parts.push(`<div class="my-4">${content}</div>`);
+      if (content) pushContent(`<div class="my-4">${content}</div>`);
       continue;
     }
 
@@ -131,31 +264,54 @@ function blocksToHtml(
         h4: 'mt-7 mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100',
         h5: 'mt-6 mb-2 text-lg font-semibold text-gray-800 dark:text-gray-100',
       } as const;
-      parts.push(`<${type} class="${classes[type as keyof typeof classes]}">${content}</${type}>`);
+      pushContent(`<${type} class="${classes[type as keyof typeof classes]}">${content}</${type}>`);
       continue;
     }
 
     if (type === 'ul' || type === 'ol') {
       if (!content) continue;
       const listTag = type;
-      parts.push(`<${listTag} class="my-4 list-${listTag === 'ul' ? 'disc' : 'decimal'} space-y-1 pl-6 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</${listTag}>`);
+      pushContent(`<${listTag} class="my-4 list-${listTag === 'ul' ? 'disc' : 'decimal'} space-y-1 pl-6 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</${listTag}>`);
       continue;
     }
 
     if (type === 'quote') {
-      if (content) parts.push(`<blockquote class="my-6 border-l-4 border-blue-300 pl-5 italic text-gray-600 dark:border-blue-600 dark:text-gray-400">${content}</blockquote>`);
+      if (content) pushContent(`<blockquote class="my-6 border-l-4 border-blue-300 pl-5 italic text-gray-600 dark:border-blue-600 dark:text-gray-400">${content}</blockquote>`);
+      continue;
+    }
+
+    if (type === 'callout') {
+      const calloutType = String(attrs.calloutType || 'info').trim();
+      const calloutClasses = {
+        info: 'bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900',
+        warning: 'bg-amber-50 dark:bg-amber-950/40 border border-amber-100 dark:border-amber-900',
+        success: 'bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-900',
+      }[calloutType] || 'bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900';
+      pushContent(`<div class="my-6 rounded-xl p-4 ${calloutClasses}">${content}</div>`);
+      continue;
+    }
+
+    if (type === 'spoiler') {
+      if (!isAuthorized) {
+        pushContent(renderUnauthorizedProtected('block'));
+        continue;
+      }
+
+      pushContent(renderAuthorizedExclusive(`<div class="text-sm leading-7 text-slate-700 dark:text-slate-300">${content}</div>`, 'block'));
       continue;
     }
 
     if (type === 'divider') {
-      parts.push('<hr class="my-8 border-slate-200 dark:border-slate-700" />');
+      pushContent('<hr class="my-8 border-slate-200 dark:border-slate-700" />');
       continue;
     }
 
     if (content) {
-      parts.push(`<p class="my-4 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</p>`);
+      pushContent(`<p class="my-4 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</p>`);
     }
   }
+
+  flushOpenSpoiler();
 
   if (!parts.length) return fallbackText;
   return parts.join('');
@@ -228,6 +384,7 @@ const GQL_CATEGORIES = ['BLOG', 'WHATSNEW', 'ARTICLES', 'LEARNING', 'NEWS'] as c
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const config = useRuntimeConfig(event);
+  const isAuthorized = !!String(getCookie(event, 'auth_token') || getCookie(event, 'token') || '').trim();
   const category = String(query.category || '').trim().toLowerCase();
   const slug = String(query.slug || '').trim().toLowerCase();
   const includeDraft = String(query.includeDraft || 'false').toLowerCase() === 'true';
@@ -295,7 +452,7 @@ export default defineEventHandler(async (event) => {
                 canonical_url: String(publication.canonicalUrl || '').trim(),
                 robots: String(publication.robots || '').trim(),
               },
-              body: blocksToHtml(publication.blocks, String(publication.excerpt || '').trim()),
+              body: blocksToHtml(publication.blocks, String(publication.excerpt || '').trim(), { isAuthorized }),
             },
           ],
         };

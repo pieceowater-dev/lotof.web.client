@@ -17,8 +17,8 @@ const blockGroups = [
     label: 'text',
     types: [
       { type: 'paragraph', label: 'paragraph', icon: 'lucide:pilcrow', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-      { type: 'h2', label: 'H2', icon: 'lucide:heading-2', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
-      { type: 'h3', label: 'H3', icon: 'lucide:heading-3', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
+      { type: 'h2', label: 'heading2', icon: 'lucide:heading-2', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
+      { type: 'h3', label: 'heading3', icon: 'lucide:heading-3', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' },
       { type: 'quote', label: 'quote', icon: 'lucide:quote', iconBg: 'bg-blue-100 dark:bg-blue-900/30', iconColor: 'text-blue-600 dark:text-blue-400' }
     ]
   },
