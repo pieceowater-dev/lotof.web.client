@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 
@@ -17,13 +17,25 @@ type PublicationApiDoc = {
   body?: string;
 };
 
-const { data: publicationDocsData } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
+const { data: publicationDocsData, refresh: refreshPublicationDocs } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
   query: {
     category: 'news',
     includeDraft: 'false',
   },
   default: () => ({ items: [] }),
 });
+
+const { data: whatsNewDocsData, refresh: refreshWhatsNewDocs } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
+  query: {
+    category: 'whatsnew',
+    includeDraft: 'false',
+  },
+  default: () => ({ items: [] }),
+});
+
+const authToken = useCookie<string | null>('token', { path: '/' });
+const legacyToken = useCookie<string | null>('auth_token', { path: '/' });
+const newsAuthRefreshDone = useState<boolean>('news-auth-refresh-done', () => false);
 
 function markdownToText(markdown: string): string {
   return markdown
@@ -78,11 +90,12 @@ function processNewsPosts(): ProcessedMarkdownPost[] {
   for (const doc of publicationDocsData.value?.items || []) {
     const meta = doc.meta || {};
     const body = String(doc.body || '');
+    const categorySlug = String(doc.category || meta.category || '').toLowerCase();
     const slug = String(doc.slug || meta.slug || '').trim();
     const title = String(meta.title || '').trim();
     const dateISO = String(meta.date || '').trim();
 
-    if (!slug || !title) continue;
+    if (!slug || !title || categorySlug !== 'news') continue;
 
     const imgFromBody = firstImage(body);
     const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
@@ -112,7 +125,51 @@ function processNewsPosts(): ProcessedMarkdownPost[] {
   return posts.sort((a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime());
 }
 
+function processWhatsNewPosts(): ProcessedMarkdownPost[] {
+  const posts: ProcessedMarkdownPost[] = [];
+
+  for (const doc of whatsNewDocsData.value?.items || []) {
+    const meta = doc.meta || {};
+    const body = String(doc.body || '');
+    const categorySlug = String(doc.category || meta.category || '').toLowerCase();
+    const slug = String(doc.slug || meta.slug || '').trim();
+    const title = String(meta.title || '').trim();
+    const dateISO = String(meta.date || '').trim();
+
+    if (!slug || !title || categorySlug !== 'whatsnew') continue;
+
+    const imgFromBody = firstImage(body);
+    const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
+    const imageAlt = imgFromBody?.alt || title;
+    const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
+    const author = String(meta.author || 'Lota Team');
+    const resolvedDate = dateISO || new Date().toISOString();
+
+    posts.push({
+      id: slug,
+      href: `/whatsnew/${slug}`,
+      category: t('app.whatsNew') || "What's New",
+      categorySlug: 'whatsnew',
+      title,
+      excerpt: String(meta.description || '').trim() || excerptFromBody(body),
+      preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
+      author,
+      publishedAt: formatDate(resolvedDate),
+      dateISO: resolvedDate,
+      readTime: readTimeLabel(body),
+      image,
+      imageAlt,
+      tags,
+    });
+  }
+
+  return posts.sort((a, b) => new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime());
+}
+
 const allNewsPosts = computed(() => processNewsPosts());
+const allWhatsNewPosts = computed(() => processWhatsNewPosts());
+const WHATS_NEW_SIDEBAR_LIMIT = 5;
+const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, WHATS_NEW_SIDEBAR_LIMIT));
 
 const newsSearch = ref('');
 const selectedNewsTag = ref('');
@@ -143,18 +200,63 @@ const filteredNewsPosts = computed(() => {
 const INITIAL_LIMIT = 12;
 const STEP = 8;
 const visibleCount = ref(INITIAL_LIMIT);
-const newsImagesBroken = ref<Record<string, boolean>>({});
-
-function handleNewsImageError(postId: string) {
-  newsImagesBroken.value[postId] = true;
-}
 
 const visibleNewsPosts = computed(() => filteredNewsPosts.value.slice(0, visibleCount.value));
 const canLoadMore = computed(() => visibleNewsPosts.value.length < filteredNewsPosts.value.length);
 
+const isMobileFeedViewport = ref(false);
+const newsSectionRef = ref<HTMLElement | null>(null);
+const isNewsSectionInView = ref(false);
+let mobileFeedMediaQuery: MediaQueryList | null = null;
+let newsSectionObserver: IntersectionObserver | null = null;
+
 const sentinelRef = ref<HTMLElement | null>(null);
 let observer: IntersectionObserver | null = null;
 let loadLocked = false;
+
+function onMobileFeedMediaChange(event: MediaQueryListEvent) {
+  isMobileFeedViewport.value = event.matches;
+}
+
+function disconnectNewsSectionObserver() {
+  if (newsSectionObserver) {
+    newsSectionObserver.disconnect();
+    newsSectionObserver = null;
+  }
+}
+
+async function ensureNewsSectionObserver() {
+  if (!process.client || !isMobileFeedViewport.value) {
+    isNewsSectionInView.value = false;
+    disconnectNewsSectionObserver();
+    return;
+  }
+
+  await nextTick();
+  const sectionEl = newsSectionRef.value;
+  if (!sectionEl) {
+    isNewsSectionInView.value = false;
+    disconnectNewsSectionObserver();
+    return;
+  }
+
+  if (!newsSectionObserver) {
+    newsSectionObserver = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0];
+        isNewsSectionInView.value = !!first?.isIntersecting;
+      },
+      {
+        root: null,
+        rootMargin: '-10% 0px -25% 0px',
+        threshold: 0.08,
+      }
+    );
+  }
+
+  newsSectionObserver.disconnect();
+  newsSectionObserver.observe(sectionEl);
+}
 
 function loadMore() {
   visibleCount.value = Math.min(filteredNewsPosts.value.length, visibleCount.value + STEP);
@@ -183,16 +285,40 @@ function setupObserver() {
 }
 
 onMounted(() => {
+  const hasToken = !!String(authToken.value || legacyToken.value || '').trim();
+  if (hasToken && !newsAuthRefreshDone.value) {
+    newsAuthRefreshDone.value = true;
+    Promise.allSettled([refreshPublicationDocs(), refreshWhatsNewDocs()]).catch(() => {
+      // Keep current payload if auth-aware refresh fails.
+    });
+  }
+
+  mobileFeedMediaQuery = window.matchMedia('(max-width: 767px)');
+  isMobileFeedViewport.value = mobileFeedMediaQuery.matches;
+  mobileFeedMediaQuery.addEventListener('change', onMobileFeedMediaChange);
+
   setupObserver();
+  ensureNewsSectionObserver();
 });
 
 onBeforeUnmount(() => {
   observer?.disconnect();
   observer = null;
+
+  if (mobileFeedMediaQuery) {
+    mobileFeedMediaQuery.removeEventListener('change', onMobileFeedMediaChange);
+    mobileFeedMediaQuery = null;
+  }
+
+  disconnectNewsSectionObserver();
 });
 
 watch([canLoadMore, () => visibleNewsPosts.value.length], () => {
   setupObserver();
+});
+
+watch([isMobileFeedViewport, () => visibleNewsPosts.value.length], () => {
+  ensureNewsSectionObserver();
 });
 
 watch([newsSearch, selectedNewsTag], () => {
@@ -229,7 +355,7 @@ useSeoMeta({
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
     <div class="flex-1">
-      <div class="mx-auto w-full max-w-[1180px] px-3 md:px-6 py-5 md:py-8 text-gray-700 dark:text-gray-300">
+      <div ref="newsSectionRef" class="mx-auto w-full max-w-[1180px] px-3 md:px-6 py-5 md:py-8 text-gray-700 dark:text-gray-300">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8 items-start">
           <section>
             <div class="mb-5 flex items-center gap-2">
@@ -248,69 +374,17 @@ useSeoMeta({
             <div v-if="canLoadMore" ref="sentinelRef" class="h-px w-full" aria-hidden="true" />
           </section>
 
-          <!-- Sidebar -->
-          <aside class="hidden lg:block lg:sticky lg:top-3 self-start">
-            <div class="rounded-3xl border border-blue-100/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90">
-              <div class="relative mb-4">
-                <UIcon name="lucide:search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <input
-                  v-model="newsSearch"
-                  type="text"
-                  :placeholder="t('app.searchArticles') || 'Поиск новостей'"
-                  class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-blue-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
-                />
-              </div>
-
-              <div v-if="popularNewsTags.length">
-                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                  {{ t('app.popularTags') || 'Популярные теги' }}
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    class="rounded-lg border px-2 py-1 text-xs transition"
-                    :class="selectedNewsTag === ''
-                      ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
-                    @click="selectedNewsTag = ''"
-                  >
-                    {{ t('app.all') || 'Все' }}
-                  </button>
-                  <button
-                    v-for="tag in popularNewsTags"
-                    :key="tag"
-                    type="button"
-                    class="rounded-lg border px-2 py-1 text-xs transition"
-                    :class="selectedNewsTag === tag
-                      ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                      : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-blue-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
-                    @click="selectedNewsTag = tag"
-                  >
-                    #{{ tag }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="mt-5 pt-5 border-t border-gray-100 dark:border-gray-700">
-                <div class="space-y-2">
-                  <NuxtLink
-                    to="/feed"
-                    class="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    <UIcon name="lucide:newspaper" class="h-4 w-4" />
-                    {{ t('app.feed') || 'Блог / Статьи' }}
-                  </NuxtLink>
-                  <NuxtLink
-                    to="/feed"
-                    class="flex items-center gap-2 text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
-                  >
-                    <UIcon name="lucide:sparkles" class="h-4 w-4" />
-                    {{ t('app.whatsNew') || 'Что нового' }}
-                  </NuxtLink>
-                </div>
-              </div>
-            </div>
-          </aside>
+          <FeedSidebarWidget
+            :articles-search="newsSearch"
+            :selected-tag="selectedNewsTag"
+            :popular-tags="popularNewsTags"
+            :whats-new-posts="whatsNewSidebarPosts"
+            :is-mobile-viewport="isMobileFeedViewport"
+            :is-feed-section-in-view="isNewsSectionInView"
+            @update:articles-search="newsSearch = $event"
+            @update:selected-tag="selectedNewsTag = $event"
+            @open="handleOpenPost"
+          />
         </div>
       </div>
     </div>

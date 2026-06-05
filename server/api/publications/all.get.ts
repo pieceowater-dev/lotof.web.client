@@ -5,26 +5,31 @@ type PublicPublicationListResponse = {
   data?: {
     publicPublications?: {
       items?: Array<{
+        id?: string;
+        slug?: string;
+        category?: string;
+        title?: string;
+        status?: string;
+        visibility?: string;
+        excerpt?: string;
+        author?: string;
+        publishedAtUnix?: string;
+      }>;
+    };
+  };
+  errors?: Array<{ message?: string }>;
+};
+
+type ConsolePublicationListResponse = {
+  data?: {
+    consolePublications?: {
+      items?: Array<{
         slug?: string;
         category?: string;
         title?: string;
         excerpt?: string;
         author?: string;
-        authorRole?: string;
         publishedAtUnix?: string;
-        tags?: string[];
-        ogImage?: string;
-        schemaType?: string;
-        sourceUrl?: string;
-        sourceName?: string;
-        reviewedBy?: string;
-        reviewedByUrl?: string;
-        reviewedDateUnix?: string;
-        publisherName?: string;
-        publisherUrl?: string;
-        publisherLogo?: string;
-        canonicalUrl?: string;
-        robots?: string;
       }>;
     };
   };
@@ -341,23 +346,26 @@ const PUBLIC_PUBLICATIONS_QUERY = `
         slug
         category
         title
+        status
+        visibility
         excerpt
         author
-        authorRole
         publishedAtUnix
-        tags
-        ogImage
-        schemaType
-        sourceUrl
-        sourceName
-        reviewedBy
-        reviewedByUrl
-        reviewedDateUnix
-        publisherName
-        publisherUrl
-        publisherLogo
-        canonicalUrl
-        robots
+      }
+    }
+  }
+`;
+
+const CONSOLE_PUBLICATIONS_QUERY = `
+  query ConsolePublications($filter: PublicationListFilterInput) {
+    consolePublications(filter: $filter) {
+      items {
+        slug
+        category
+        title
+        excerpt
+        author
+        publishedAtUnix
       }
     }
   }
@@ -405,7 +413,8 @@ export default defineEventHandler(async (event) => {
   const host = String(getHeader(event, 'host') || '').trim();
   const forwardedProto = String(getHeader(event, 'x-forwarded-proto') || '').trim().toLowerCase();
   const proto = forwardedProto === 'https' ? 'https' : 'http';
-  const isAuthorized = !!String(getCookie(event, 'auth_token') || getCookie(event, 'token') || '').trim();
+  const authToken = String(getCookie(event, 'auth_token') || getCookie(event, 'token') || '').trim();
+  const isAuthorized = !!authToken;
   const category = String(query.category || '').trim().toLowerCase();
   const slug = String(query.slug || '').trim().toLowerCase();
   const includeDraft = String(query.includeDraft || 'false').toLowerCase() === 'true';
@@ -413,10 +422,12 @@ export default defineEventHandler(async (event) => {
   const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
   const requestOrigin = (forwardedHost || host) ? `${proto}://${forwardedHost || host}`.replace(/\/$/, '') : '';
   const envCapital = String(process.env.VITE_API_CAPITAL || '').trim().replace(/\/$/, '');
+  const localDevCapital = process.env.NODE_ENV !== 'production' ? 'http://127.0.0.1:8082' : '';
 
   const endpointCandidates = [
-    `${capitalUrl}/query`,
     requestOrigin ? `${requestOrigin}/api-capital/query` : '',
+    `${capitalUrl}/query`,
+    localDevCapital ? `${localDevCapital}/query` : '',
     envCapital ? `${envCapital}/query` : '',
     envCapital ? `${envCapital}/api-capital/query` : '',
   ].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
@@ -428,6 +439,12 @@ export default defineEventHandler(async (event) => {
         return await $fetch<T>(endpoint, {
           method: 'POST',
           body: payload,
+          headers: authToken
+            ? {
+                authorization: `Bearer ${authToken}`,
+                capitalauthorization: `Bearer ${authToken}`,
+              }
+            : undefined,
         }) as T;
       } catch (error) {
         lastError = error;
@@ -533,31 +550,75 @@ export default defineEventHandler(async (event) => {
               title: String(item?.title || '').trim(),
               description: String(item?.excerpt || '').trim(),
               author: String(item?.author || 'Lota Team').trim(),
-              author_role: String(item?.authorRole || '').trim(),
               date: dateIso,
-              tags: Array.isArray(item?.tags) ? item.tags : [],
-              og_image: String(item?.ogImage || '').trim(),
-              schema_type: String(item?.schemaType || '').trim(),
-              source_url: String(item?.sourceUrl || '').trim(),
-              source_name: String(item?.sourceName || '').trim(),
-              reviewed_by: String(item?.reviewedBy || '').trim(),
-              reviewed_by_url: String(item?.reviewedByUrl || '').trim(),
-              reviewed_date: toIsoDate(item?.reviewedDateUnix),
-              publisher_name: String(item?.publisherName || '').trim(),
-              publisher_url: String(item?.publisherUrl || '').trim(),
-              publisher_logo: String(item?.publisherLogo || '').trim(),
-              canonical_url: String(item?.canonicalUrl || '').trim(),
-              robots: String(item?.robots || '').trim(),
+              tags: [],
+              robots: 'index,follow',
             },
             body: String(item?.excerpt || '').trim(),
           };
         })
         .filter((item): item is NonNullable<typeof item> => !!item);
 
-      return { items };
+      if (items.length > 0) {
+        return { items };
+      }
     }
   } catch {
     // Fall through to legacy sources.
+  }
+
+  // In local/dev setups, public list may be auth-guarded unexpectedly.
+  // If user has a token, fallback to console list but keep only published items.
+  if (isAuthorized) {
+    try {
+      const response = await queryCapital<ConsolePublicationListResponse>({
+        query: CONSOLE_PUBLICATIONS_QUERY,
+        variables: {
+          filter: {
+            ...(category ? { category: category.toUpperCase() } : {}),
+            status: 'PUBLISHED',
+            page: 1,
+            pageSize: 300,
+            includeDraft,
+          },
+        },
+      });
+
+      if (!response.errors?.length) {
+        const items = (response.data?.consolePublications?.items || [])
+          .map((item) => {
+            const slug = String(item?.slug || '').trim().toLowerCase();
+            if (!slug) return null;
+
+            const categorySlug = String(item?.category || 'news').trim().toLowerCase();
+            const dateIso = toIsoDate(item?.publishedAtUnix) || new Date().toISOString();
+
+            return {
+              slug,
+              category: categorySlug,
+              status: 'published' as const,
+              meta: {
+                slug,
+                category: categorySlug,
+                title: String(item?.title || '').trim(),
+                description: String(item?.excerpt || '').trim(),
+                author: String(item?.author || 'Lota Team').trim(),
+                date: dateIso,
+                tags: [],
+                robots: 'index,follow',
+              },
+              body: String(item?.excerpt || '').trim(),
+            };
+          })
+          .filter((item): item is NonNullable<typeof item> => !!item);
+
+        if (items.length > 0) {
+          return { items };
+        }
+      }
+    } catch {
+      // Continue to legacy sources.
+    }
   }
 
   const upstreamBaseUrl = String(config.publicationsBackendUrl || '').trim();

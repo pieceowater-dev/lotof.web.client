@@ -17,10 +17,14 @@ type PublicationApiDoc = {
   body?: string;
 };
 
-const { data: publicationDocsData } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
+const { data: publicationDocsData, refresh: refreshPublicationDocs } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
   query: { includeDraft: 'false' },
   default: () => ({ items: [] }),
 });
+
+const authToken = useCookie<string | null>('token', { path: '/' });
+const legacyToken = useCookie<string | null>('auth_token', { path: '/' });
+const feedAuthRefreshDone = useState<boolean>('feed-auth-refresh-done', () => false);
 
 function markdownToText(markdown: string): string {
   return markdown
@@ -72,6 +76,15 @@ function formatDate(dateISO: string): string {
 function processMarkdownPosts(): ProcessedMarkdownPost[] {
   const posts: ProcessedMarkdownPost[] = [];
 
+  const categoryLabel = (slug: string): string => {
+    if (slug === 'whatsnew') return t('app.whatsNew') || "What's New";
+    if (slug === 'news') return t('app.news') || 'News';
+    if (slug === 'blog') return t('app.blog') || 'Blog';
+    if (slug === 'learning') return t('app.learning') || 'Learning';
+    if (slug === 'articles') return t('app.articles') || 'Articles';
+    return t('app.articles') || 'Articles';
+  };
+
   for (const doc of publicationDocsData.value?.items || []) {
     const meta = doc.meta || {};
     const body = String(doc.body || '');
@@ -92,11 +105,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
     posts.push({
       id: `${categorySlug}:${slug}`,
       href: `/${categorySlug}/${slug}`,
-      category: categorySlug === 'whatsnew'
-        ? "What's New"
-        : categorySlug === 'news'
-          ? (t('app.news') || 'News')
-          : 'Articles',
+      category: categoryLabel(categorySlug),
       categorySlug,
       title,
       excerpt: String(meta.description || '').trim() || excerptFromBody(body),
@@ -115,7 +124,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 }
 
 const allProcessedPosts = computed(() => processMarkdownPosts());
-const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'articles'));
+const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug !== 'news' && post.categorySlug !== 'whatsnew'));
 const allWhatsNewPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'whatsnew'));
 const WHATS_NEW_SIDEBAR_LIMIT = 5;
 const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, WHATS_NEW_SIDEBAR_LIMIT));
@@ -174,13 +183,7 @@ const visibleArticleFeedPosts = computed(() => {
   return filteredArticleFeedPosts.value.slice(0, limit);
 });
 
-const localizedVisibleArticleFeedPosts = computed(() => {
-  const articleLabel = t('app.articles') || 'Articles';
-  return visibleArticleFeedPosts.value.map((post) => ({
-    ...post,
-    category: articleLabel,
-  }));
-});
+const localizedVisibleArticleFeedPosts = computed(() => visibleArticleFeedPosts.value);
 
 const canAutoLoadMoreMobilePosts = computed(() => {
   if (!isMobileFeedViewport.value) return false;
@@ -304,6 +307,15 @@ async function ensureMobileFeedObserver() {
 
 onMounted(() => {
   if (!process.client) return;
+
+  const hasToken = !!String(authToken.value || legacyToken.value || '').trim();
+  if (hasToken && !feedAuthRefreshDone.value) {
+    feedAuthRefreshDone.value = true;
+    refreshPublicationDocs().catch(() => {
+      // Keep current payload if auth-aware refresh fails.
+    });
+  }
+
   mobileFeedMediaQuery = window.matchMedia('(max-width: 767px)');
   isMobileFeedViewport.value = mobileFeedMediaQuery.matches;
   if (mobileFeedMediaQuery.matches) {

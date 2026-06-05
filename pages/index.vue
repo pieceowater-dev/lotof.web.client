@@ -393,50 +393,30 @@ type ProcessedMarkdownPost = HomeFeedPost & {
   dateISO: string;
 };
 
-const mdFiles = import.meta.glob('../public/content/publications/**/*.md', {
-  eager: true,
-  query: '?raw',
-  import: 'default',
-}) as Record<string, string>;
+type PublicationApiDoc = {
+  slug?: string;
+  category?: string;
+  meta?: Record<string, string | string[] | undefined>;
+  body?: string;
+};
 
-function parseFrontMatter(raw: string): { meta: Record<string, string | string[]>; body: string } {
-  const match = raw.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
-  if (!match) return { meta: {}, body: raw };
+const { data: publicationDocsData, refresh: refreshPublicationDocs } = await useFetch<{ items: PublicationApiDoc[] }>('/api/publications/all', {
+  query: { includeDraft: 'false' },
+  default: () => ({ items: [] }),
+});
 
-  const metaLines = match[1].split('\n');
-  const body = match[2] || '';
-  const meta: Record<string, string | string[]> = {};
+const publicationAuthToken = useCookie<string | null>('token', { path: '/' });
+const publicationLegacyToken = useCookie<string | null>('auth_token', { path: '/' });
+const homePublicationsAuthRefreshDone = useState<boolean>('home-publications-auth-refresh-done', () => false);
 
-  let currentArrayKey = '';
-  for (const line of metaLines) {
-    if (!line.trim()) continue;
-
-    const keyMatch = line.match(/^([a-zA-Z0-9_]+):\s*(.*)$/);
-    if (keyMatch) {
-      currentArrayKey = '';
-      const key = keyMatch[1];
-      const value = keyMatch[2]?.trim() || '';
-
-      if (!value) {
-        currentArrayKey = key;
-        meta[key] = [];
-        continue;
-      }
-
-      meta[key] = value.replace(/^"|"$/g, '');
-      continue;
-    }
-
-    const arrayMatch = line.match(/^\s*-\s*(.*)$/);
-    if (arrayMatch && currentArrayKey) {
-      const arr = Array.isArray(meta[currentArrayKey]) ? meta[currentArrayKey] as string[] : [];
-      arr.push((arrayMatch[1] || '').replace(/^"|"$/g, ''));
-      meta[currentArrayKey] = arr;
-    }
-  }
-
-  return { meta, body };
-}
+onMounted(() => {
+  const hasToken = !!String(publicationAuthToken.value || publicationLegacyToken.value || '').trim();
+  if (!hasToken || homePublicationsAuthRefreshDone.value) return;
+  homePublicationsAuthRefreshDone.value = true;
+  refreshPublicationDocs().catch(() => {
+    // Keep current payload if auth-aware refresh fails.
+  });
+});
 
 function markdownToText(markdown: string): string {
   return markdown
@@ -488,32 +468,43 @@ function formatDate(dateISO: string): string {
 function processMarkdownPosts(): ProcessedMarkdownPost[] {
   const posts: ProcessedMarkdownPost[] = [];
 
-  for (const [, raw] of Object.entries(mdFiles)) {
-    const { meta, body } = parseFrontMatter(raw);
-    const categorySlug = String(meta.category || '').toLowerCase();
-    const slug = String(meta.slug || '').trim();
+  const categoryLabel = (slug: string): string => {
+    if (slug === 'whatsnew') return t('app.whatsNew') || "What's New";
+    if (slug === 'news') return t('app.news') || 'News';
+    if (slug === 'blog') return t('app.blog') || 'Blog';
+    if (slug === 'learning') return t('app.learning') || 'Learning';
+    if (slug === 'articles') return t('app.articles') || 'Articles';
+    return t('app.articles') || 'Articles';
+  };
+
+  for (const doc of publicationDocsData.value?.items || []) {
+    const meta = doc.meta || {};
+    const body = String(doc.body || '');
+    const categorySlug = String(doc.category || meta.category || '').toLowerCase();
+    const slug = String(doc.slug || meta.slug || '').trim();
     const title = String(meta.title || '').trim();
     const dateISO = String(meta.date || '').trim();
 
-    if (!slug || !title || !dateISO) continue;
+    if (!slug || !title || !categorySlug) continue;
 
     const imgFromBody = firstImage(body);
     const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
     const imageAlt = imgFromBody?.alt || title;
-    const tags = Array.isArray(meta.tags) ? meta.tags : [];
+    const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');
+    const resolvedDate = dateISO || new Date().toISOString();
 
     posts.push({
-      id: slug,
+      id: `${categorySlug}:${slug}`,
       href: `/${categorySlug}/${slug}`,
-      category: categorySlug === 'whatsnew' ? "What's New" : categorySlug === 'news' ? 'News' : 'Articles',
+      category: categoryLabel(categorySlug),
       categorySlug,
       title,
       excerpt: String(meta.description || '').trim() || excerptFromBody(body),
       preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
       author,
-      publishedAt: formatDate(dateISO),
-      dateISO,
+      publishedAt: formatDate(resolvedDate),
+      dateISO: resolvedDate,
       readTime: readTimeLabel(body),
       image,
       imageAlt,
@@ -525,7 +516,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 }
 
 const allProcessedPosts = computed(() => processMarkdownPosts());
-const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'articles'));
+const articleFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug !== 'news' && post.categorySlug !== 'whatsnew'));
 const newsFeedPosts = computed(() => allProcessedPosts.value.filter((post) => post.categorySlug === 'news'));
 const HOME_NEWS_LIMIT = 10;
 const homeNewsPosts = computed(() => {
@@ -670,13 +661,7 @@ const visibleArticleFeedPosts = computed(() => {
   const limit = Math.min(maxVisibleFeedCards.value, feedVisibleCount.value);
   return filteredArticleFeedPosts.value.slice(0, limit);
 });
-const localizedVisibleArticleFeedPosts = computed(() => {
-  const articleLabel = t('app.articles') || 'Articles';
-  return visibleArticleFeedPosts.value.map((post) => ({
-    ...post,
-    category: articleLabel,
-  }));
-});
+const localizedVisibleArticleFeedPosts = computed(() => visibleArticleFeedPosts.value);
 const canAutoLoadMoreFeedPosts = computed(() => {
   return visibleArticleFeedPosts.value.length < maxVisibleFeedCards.value;
 });
