@@ -78,21 +78,51 @@ type EditorPayload = {
   blocks: Array<Record<string, any>>;
 };
 
+function isVersionMismatchError(error: any): boolean {
+  const message = String(error?.message || '').toLowerCase();
+  if (message.includes('version mismatch') || message.includes('update conflict')) return true;
+
+  const gqlErrors = Array.isArray(error?.response?.errors) ? error.response.errors : [];
+  return gqlErrors.some((entry: any) => {
+    const msg = String(entry?.message || '').toLowerCase();
+    return msg.includes('version mismatch') || msg.includes('update conflict');
+  });
+}
+
 async function updatePublication(payload: EditorPayload, status: 'draft' | 'published' | 'archived') {
   const currentSlug = String(route.params.slug || '').trim();
-  const nextSlug = await capitalUpdatePublication(String(authToken.value || legacyToken.value || '').trim(), currentSlug, {
-    ...payload.article,
-    status,
-    version: String(initialArticle.value.version || ''),
-    currentRevision: String(initialArticle.value.currentRevision || ''),
-  } as any, payload.blocks as any);
+  const token = String(authToken.value || legacyToken.value || '').trim();
+
+  let nextSlug = '';
+  try {
+    nextSlug = await capitalUpdatePublication(token, currentSlug, {
+      ...payload.article,
+      status,
+      version: String(initialArticle.value.version || ''),
+      currentRevision: String(initialArticle.value.currentRevision || ''),
+    } as any, payload.blocks as any);
+  } catch (error: any) {
+    if (!isVersionMismatchError(error)) throw error;
+
+    const latest = await capitalGetPublicationBySlug(token, currentSlug);
+    if (!latest?.article) throw error;
+
+    initialArticle.value = { ...latest.article };
+
+    nextSlug = await capitalUpdatePublication(token, currentSlug, {
+      ...payload.article,
+      status,
+      version: String(latest.article.version || ''),
+      currentRevision: String(latest.article.currentRevision || ''),
+    } as any, payload.blocks as any);
+  }
 
   if (nextSlug && nextSlug !== currentSlug) {
     await router.replace(`/console/publications/${nextSlug}`);
   }
 
   const effectiveSlug = String(nextSlug || payload.article.slug || currentSlug).trim();
-  const refreshed = await capitalGetPublicationBySlug(String(authToken.value || legacyToken.value || '').trim(), effectiveSlug);
+  const refreshed = await capitalGetPublicationBySlug(token, effectiveSlug);
   if (refreshed?.article) {
     initialArticle.value = { ...refreshed.article };
   } else {
