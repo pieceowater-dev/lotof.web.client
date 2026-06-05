@@ -106,8 +106,23 @@ const allArticles = computed<ArticleDoc[]>(() => {
     .filter((item): item is ArticleDoc => !!item);
 });
 
-const categoryParam = computed(() => normalizeSlug(String(route.params.category || '')));
-const slugParam = computed(() => normalizeSlug(String(route.params.slug || '')));
+const pathSegments = computed(() => {
+  const raw = String(route.path || '').split('?')[0];
+  return raw.split('/').filter(Boolean).map((segment) => normalizeSlug(segment));
+});
+
+const categoryParam = computed(() => {
+  const fromParams = normalizeSlug(String(route.params.category || ''));
+  if (fromParams) return fromParams;
+  return pathSegments.value.length >= 2 ? pathSegments.value[0] : '';
+});
+
+const slugParam = computed(() => {
+  const fromParams = normalizeSlug(String(route.params.slug || ''));
+  if (fromParams) return fromParams;
+  if (pathSegments.value.length >= 2) return pathSegments.value[1];
+  return pathSegments.value[0] || '';
+});
 
 function normalizeSiteUrl(raw: string): string {
   const trimmed = String(raw || '').trim();
