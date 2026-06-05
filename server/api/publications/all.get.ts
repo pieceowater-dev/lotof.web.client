@@ -12,6 +12,7 @@ type PublicPublicationListResponse = {
         author?: string;
         authorRole?: string;
         publishedAtUnix?: string;
+        featuredImage?: string;
         tags?: string[];
         ogImage?: string;
         schemaType?: string;
@@ -41,6 +42,7 @@ type PublicPublicationByRouteResponse = {
       author?: string;
       authorRole?: string;
       publishedAtUnix?: string;
+      featuredImage?: string;
       tags?: string[];
       ogImage?: string;
       schemaType?: string;
@@ -54,10 +56,112 @@ type PublicPublicationByRouteResponse = {
       publisherLogo?: string;
       canonicalUrl?: string;
       robots?: string;
+      blocks?: Array<{
+        id?: string;
+        type?: string;
+        content?: string;
+        attrsJson?: string;
+      }>;
     } | null;
   };
   errors?: Array<{ message?: string }>;
 };
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function parseAttrsJson(raw: string | undefined): Record<string, any> {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function safeImageSrc(src: string): string {
+  const value = String(src || '').trim();
+  if (!value) return '';
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value;
+  return '';
+}
+
+function blocksToHtml(
+  blocks: Array<{ type?: string; content?: string; attrsJson?: string }> | undefined,
+  fallbackText: string
+): string {
+  if (!Array.isArray(blocks) || !blocks.length) return fallbackText;
+
+  const parts: string[] = [];
+
+  for (const block of blocks) {
+    const type = String(block?.type || 'paragraph').trim();
+    const content = String(block?.content || '').trim();
+    const attrs = parseAttrsJson(block?.attrsJson);
+
+    if (type === 'image') {
+      const src = safeImageSrc(String(attrs.src || attrs.s || ''));
+      if (!src) continue;
+      const alt = escapeHtml(String(attrs.alt || ''));
+      const caption = String(attrs.caption || '').trim();
+      parts.push(
+        `<figure class="my-6">` +
+        `<img src="${escapeHtml(src)}" alt="${alt}" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="lazy" decoding="async" />` +
+        (caption ? `<figcaption class="mt-2 text-sm text-slate-500 dark:text-slate-400">${caption}</figcaption>` : '') +
+        `</figure>`
+      );
+      continue;
+    }
+
+    if (type === 'html') {
+      if (content) parts.push(`<div class="my-4">${content}</div>`);
+      continue;
+    }
+
+    if (type === 'h2' || type === 'h3' || type === 'h4' || type === 'h5') {
+      if (!content) continue;
+      const classes = {
+        h2: 'mt-10 mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100',
+        h3: 'mt-8 mb-3 text-2xl font-bold text-gray-900 dark:text-gray-100',
+        h4: 'mt-7 mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100',
+        h5: 'mt-6 mb-2 text-lg font-semibold text-gray-800 dark:text-gray-100',
+      } as const;
+      parts.push(`<${type} class="${classes[type as keyof typeof classes]}">${content}</${type}>`);
+      continue;
+    }
+
+    if (type === 'ul' || type === 'ol') {
+      if (!content) continue;
+      const listTag = type;
+      parts.push(`<${listTag} class="my-4 list-${listTag === 'ul' ? 'disc' : 'decimal'} space-y-1 pl-6 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</${listTag}>`);
+      continue;
+    }
+
+    if (type === 'quote') {
+      if (content) parts.push(`<blockquote class="my-6 border-l-4 border-blue-300 pl-5 italic text-gray-600 dark:border-blue-600 dark:text-gray-400">${content}</blockquote>`);
+      continue;
+    }
+
+    if (type === 'divider') {
+      parts.push('<hr class="my-8 border-slate-200 dark:border-slate-700" />');
+      continue;
+    }
+
+    if (content) {
+      parts.push(`<p class="my-4 text-base leading-7 text-gray-700 dark:text-gray-300">${content}</p>`);
+    }
+  }
+
+  if (!parts.length) return fallbackText;
+  return parts.join('');
+}
 
 const PUBLIC_PUBLICATIONS_QUERY = `
   query PublicPublications($filter: PublicationListFilterInput) {
@@ -70,6 +174,7 @@ const PUBLIC_PUBLICATIONS_QUERY = `
         author
         authorRole
         publishedAtUnix
+        featuredImage
         tags
         ogImage
         schemaType
@@ -96,7 +201,28 @@ const PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
       title
       excerpt
       author
+      authorRole
       publishedAtUnix
+      featuredImage
+      tags
+      ogImage
+      schemaType
+      sourceUrl
+      sourceName
+      reviewedBy
+      reviewedByUrl
+      reviewedDateUnix
+      publisherName
+      publisherUrl
+      publisherLogo
+      canonicalUrl
+      robots
+      blocks @include(if: $includeBlocks) {
+        id
+        type
+        content
+        attrsJson
+      }
     }
   }
 `;
@@ -126,7 +252,7 @@ export default defineEventHandler(async (event) => {
             variables: {
               category: gqlCategory,
               slug,
-              includeBlocks: false,
+              includeBlocks: true,
             },
           },
         });
@@ -159,6 +285,7 @@ export default defineEventHandler(async (event) => {
                 author: String(publication.author || 'Lota Team').trim(),
                 author_role: String(publication.authorRole || '').trim(),
                 date: dateIso,
+                featured_image: String(publication.featuredImage || '').trim(),
                 tags: Array.isArray(publication.tags) ? publication.tags : [],
                 og_image: String(publication.ogImage || '').trim(),
                 schema_type: String(publication.schemaType || '').trim(),
@@ -173,7 +300,7 @@ export default defineEventHandler(async (event) => {
                 canonical_url: String(publication.canonicalUrl || '').trim(),
                 robots: String(publication.robots || '').trim(),
               },
-              body: String(publication.excerpt || '').trim(),
+              body: blocksToHtml(publication.blocks, String(publication.excerpt || '').trim()),
             },
           ],
         };
@@ -224,6 +351,7 @@ export default defineEventHandler(async (event) => {
               author: String(item?.author || 'Lota Team').trim(),
               author_role: String(item?.authorRole || '').trim(),
               date: dateIso,
+              featured_image: String(item?.featuredImage || '').trim(),
               tags: Array.isArray(item?.tags) ? item.tags : [],
               og_image: String(item?.ogImage || '').trim(),
               schema_type: String(item?.schemaType || '').trim(),

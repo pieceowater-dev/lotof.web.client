@@ -217,7 +217,8 @@ const articleAuthor = computed(() => String(article.value?.meta.author || 'Lota 
 const articleAuthorRole = computed(() => String(article.value?.meta.author_role || '').trim());
 const articleOgImage = computed(() => {
   const ogImage = String(article.value?.meta.og_image || '').trim();
-  return ogImage || undefined;
+  const featuredImage = String(article.value?.meta.featured_image || '').trim();
+  return ogImage || featuredImage || undefined;
 });
 const articleOgImageAlt = computed(() => String(article.value?.meta.og_image_alt || articleTitle.value));
 const articleSourceUrl = computed(() => String(article.value?.meta.source_url || '').trim());
