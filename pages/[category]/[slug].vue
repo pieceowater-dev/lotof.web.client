@@ -121,17 +121,18 @@ const routeAsyncKey = `public-publication-route:${categoryParam.value}:${slugPar
 const { data: routePublication } = await useAsyncData<PublicationArticleDoc | null>(
   routeAsyncKey,
   async () => {
-    if (!categoryParam.value || !slugParam.value) return null;
-    if (!SUPPORTED_PUBLICATION_CATEGORIES.has(categoryParam.value)) return null;
+    if (!slugParam.value) return null;
 
-    try {
-      const viewerToken = String(authToken.value || legacyToken.value || '').trim();
-      const publication = await capitalGetPublicPublicationByRoute(viewerToken, categoryParam.value, slugParam.value);
-      if (publication) return publication;
-    } catch (error: any) {
-      const message = String(error?.message || '');
-      if (!message.includes('code = NotFound') && !message.includes('not found')) {
-        throw error;
+    if (categoryParam.value && SUPPORTED_PUBLICATION_CATEGORIES.has(categoryParam.value)) {
+      try {
+        const viewerToken = String(authToken.value || legacyToken.value || '').trim();
+        const publication = await capitalGetPublicPublicationByRoute(viewerToken, categoryParam.value, slugParam.value);
+        if (publication) return publication;
+      } catch (error: any) {
+        const message = String(error?.message || '');
+        if (!message.includes('code = NotFound') && !message.includes('not found')) {
+          throw error;
+        }
       }
     }
 
