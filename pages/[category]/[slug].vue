@@ -161,7 +161,11 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
     // Final fallback: resolve by slug via aggregated publications endpoint.
     try {
       const all = await $fetch<PublicationsAllResponse>('/api/publications/all', {
-        query: { includeDraft: 'false' },
+        query: {
+          includeDraft: 'false',
+          slug: slugParam.value,
+          category: categoryParam.value,
+        },
       });
       const bySlug = Array.isArray(all?.items)
         ? all.items.find((item) => normalizeSlug(String(item?.slug || '')) === slugParam.value)
