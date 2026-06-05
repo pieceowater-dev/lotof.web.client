@@ -7,6 +7,54 @@ import type { PluginOption } from 'vite';
 const publicationsRoot = join(process.cwd(), 'public/content/publications');
 const isProduction = process.env.NODE_ENV === 'production';
 
+function normalizeProxyBase(envValue: string | undefined, fallbackPath: string): string {
+  const override = String(envValue || '').trim();
+  if (!override) return '';
+
+  if (!/^https?:\/\//i.test(override)) {
+    return override.replace(/\/$/, '');
+  }
+
+  try {
+    const parsed = new URL(override);
+    const normalizedPath = parsed.pathname.replace(/\/$/, '');
+    if (isProduction) {
+      // In production all services are expected behind one domain and standard port.
+      parsed.port = '';
+    }
+    if (!normalizedPath || normalizedPath === '/') {
+      parsed.pathname = fallbackPath;
+    }
+    return parsed.toString().replace(/\/$/, '');
+  } catch {
+    return override.replace(/\/$/, '');
+  }
+}
+
+function buildApiProxyTarget(envValue: string | undefined, fallbackPath: string, devPort: number): string {
+  const overrideBase = normalizeProxyBase(envValue, fallbackPath);
+  if (overrideBase) {
+    return `${overrideBase}/**`;
+  }
+
+  if (!isProduction) {
+    return `http://127.0.0.1:${devPort}${fallbackPath}/**`;
+  }
+
+  const siteUrl = String(process.env.NUXT_PUBLIC_SITE_URL || '').trim();
+  if (siteUrl) {
+    try {
+      const parsedSite = new URL(siteUrl);
+      parsedSite.port = '';
+      return `${parsedSite.toString().replace(/\/$/, '')}${fallbackPath}/**`;
+    } catch {
+      return `${siteUrl.replace(/\/$/, '')}${fallbackPath}/**`;
+    }
+  }
+
+  return `https://lota.tools${fallbackPath}/**`;
+}
+
 function stripInspectorPlugins(plugins: PluginOption[]): PluginOption[] {
   const result: PluginOption[] = [];
   for (const plugin of plugins) {
@@ -91,10 +139,10 @@ export default defineNuxtConfig({
     '/images/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     // API routes
     '/api/**': { cors: true, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
-    '/api-hub/**': { proxy: 'http://127.0.0.1:8080/**' },
-    '/api-atrace/**': { proxy: 'http://127.0.0.1:8081/**' },
-    '/api-capital/**': { proxy: 'http://127.0.0.1:8082/**' },
-    '/api-contacts/**': { proxy: 'http://127.0.0.1:8083/**' },
+    '/api-hub/**': { proxy: buildApiProxyTarget(process.env.VITE_API_HUB, '/api-hub', 8080) },
+    '/api-atrace/**': { proxy: buildApiProxyTarget(process.env.VITE_API_ATRACE, '/api-atrace', 8081) },
+    '/api-capital/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CAPITAL, '/api-capital', 8082) },
+    '/api-contacts/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CONTACTS, '/api-contacts', 8083) },
     ...articleRouteRules
   },
   

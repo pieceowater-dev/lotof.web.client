@@ -1,4 +1,5 @@
 import { sanitizeSlug, type EditorArticle, type EditorBlock } from '../../../utils/publications';
+import { getApiBaseUrl } from '../../../../utils/api-base';
 
 type BodyShape = {
   article?: Partial<EditorArticle>;
@@ -156,7 +157,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const token = normalizeToken(event);
-  const capitalUrl = String(process.env.VITE_API_CAPITAL || 'http://localhost:8082').replace(/\/$/, '');
+  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
 
   const response = await $fetch<UpdatePublicationResponse>(`${capitalUrl}/query`, {
     method: 'POST',

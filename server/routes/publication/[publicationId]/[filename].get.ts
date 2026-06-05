@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../../../../utils/api-base';
+
 export default defineEventHandler(async (event) => {
   const publicationId = String(getRouterParam(event, 'publicationId') || '').trim();
   const filename = String(getRouterParam(event, 'filename') || '').trim();
@@ -6,7 +8,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid publication asset path' });
   }
 
-  const capitalUrl = String(process.env.VITE_API_CAPITAL || 'http://localhost:8082').replace(/\/$/, '');
+  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
   const upstreamUrl = `${capitalUrl}/publication/${encodeURIComponent(publicationId)}/${encodeURIComponent(filename)}`;
 
   const response = await fetch(upstreamUrl);

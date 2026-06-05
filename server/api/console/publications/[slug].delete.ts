@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../../../../utils/api-base';
+
 type GetPublicationResponse = {
   data?: {
     consolePublicationBySlug?: {
@@ -60,7 +62,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const token = normalizeToken(event);
-  const capitalUrl = String(process.env.VITE_API_CAPITAL || 'http://localhost:8082').replace(/\/$/, '');
+  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
 
   const current = await $fetch<GetPublicationResponse>(`${capitalUrl}/query`, {
     method: 'POST',

@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from '../../../../utils/api-base';
+
 type ConsolePublicationListItem = {
   title: string;
   slug: string;
@@ -107,7 +109,7 @@ export default defineEventHandler(async (event) => {
     filter.category = CATEGORY_TO_GQL[categoryRaw];
   }
 
-  const capitalUrl = String(process.env.VITE_API_CAPITAL || 'http://localhost:8082').replace(/\/$/, '');
+  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
   const response = await $fetch<ConsolePublicationsResponse>(`${capitalUrl}/query`, {
     method: 'POST',
     headers: {
