@@ -215,7 +215,10 @@ const articleTitle = computed(() => String(article.value?.meta.title || 'Article
 const articleDescription = computed(() => String(article.value?.meta.description || ''));
 const articleAuthor = computed(() => String(article.value?.meta.author || 'Lota Team'));
 const articleAuthorRole = computed(() => String(article.value?.meta.author_role || '').trim());
-const articleOgImage = computed(() => String(article.value?.meta.og_image || '/og-image.png'));
+const articleOgImage = computed(() => {
+  const ogImage = String(article.value?.meta.og_image || '').trim();
+  return ogImage || undefined;
+});
 const articleOgImageAlt = computed(() => String(article.value?.meta.og_image_alt || articleTitle.value));
 const articleSourceUrl = computed(() => String(article.value?.meta.source_url || '').trim());
 const articleSourceName = computed(() => String(article.value?.meta.source_name || '').trim());
@@ -231,7 +234,10 @@ const articleSchemaType = computed(() => {
 });
 const articlePublisherName = computed(() => String(article.value?.meta.publisher_name || 'Lota').trim() || 'Lota');
 const articlePublisherUrl = computed(() => String(article.value?.meta.publisher_url || siteUrl.value).trim() || siteUrl.value);
-const articlePublisherLogo = computed(() => String(article.value?.meta.publisher_logo || `${siteUrl.value}/og-image.png`).trim() || `${siteUrl.value}/og-image.png`);
+const articlePublisherLogo = computed(() => {
+  const logo = String(article.value?.meta.publisher_logo || '').trim();
+  return logo || undefined;
+});
 
 const articleTags = computed(() => {
   const tags = article.value?.meta.tags;
