@@ -10,7 +10,21 @@ type PublicPublicationListResponse = {
         title?: string;
         excerpt?: string;
         author?: string;
+        authorRole?: string;
         publishedAtUnix?: string;
+        tags?: string[];
+        ogImage?: string;
+        schemaType?: string;
+        sourceUrl?: string;
+        sourceName?: string;
+        reviewedBy?: string;
+        reviewedByUrl?: string;
+        reviewedDateUnix?: string;
+        publisherName?: string;
+        publisherUrl?: string;
+        publisherLogo?: string;
+        canonicalUrl?: string;
+        robots?: string;
       }>;
     };
   };
@@ -25,7 +39,21 @@ type PublicPublicationByRouteResponse = {
       title?: string;
       excerpt?: string;
       author?: string;
+      authorRole?: string;
       publishedAtUnix?: string;
+      tags?: string[];
+      ogImage?: string;
+      schemaType?: string;
+      sourceUrl?: string;
+      sourceName?: string;
+      reviewedBy?: string;
+      reviewedByUrl?: string;
+      reviewedDateUnix?: string;
+      publisherName?: string;
+      publisherUrl?: string;
+      publisherLogo?: string;
+      canonicalUrl?: string;
+      robots?: string;
     } | null;
   };
   errors?: Array<{ message?: string }>;
@@ -40,7 +68,21 @@ const PUBLIC_PUBLICATIONS_QUERY = `
         title
         excerpt
         author
+        authorRole
         publishedAtUnix
+        tags
+        ogImage
+        schemaType
+        sourceUrl
+        sourceName
+        reviewedBy
+        reviewedByUrl
+        reviewedDateUnix
+        publisherName
+        publisherUrl
+        publisherLogo
+        canonicalUrl
+        robots
       }
     }
   }
@@ -115,8 +157,21 @@ export default defineEventHandler(async (event) => {
                 title: String(publication.title || '').trim(),
                 description: String(publication.excerpt || '').trim(),
                 author: String(publication.author || 'Lota Team').trim(),
+                author_role: String(publication.authorRole || '').trim(),
                 date: dateIso,
-                tags: [] as string[],
+                tags: Array.isArray(publication.tags) ? publication.tags : [],
+                og_image: String(publication.ogImage || '').trim(),
+                schema_type: String(publication.schemaType || '').trim(),
+                source_url: String(publication.sourceUrl || '').trim(),
+                source_name: String(publication.sourceName || '').trim(),
+                reviewed_by: String(publication.reviewedBy || '').trim(),
+                reviewed_by_url: String(publication.reviewedByUrl || '').trim(),
+                reviewed_date: publication.reviewedDateUnix ? new Date(publication.reviewedDateUnix).toISOString() : '',
+                publisher_name: String(publication.publisherName || '').trim(),
+                publisher_url: String(publication.publisherUrl || '').trim(),
+                publisher_logo: String(publication.publisherLogo || '').trim(),
+                canonical_url: String(publication.canonicalUrl || '').trim(),
+                robots: String(publication.robots || '').trim(),
               },
               body: String(publication.excerpt || '').trim(),
             },
@@ -167,8 +222,21 @@ export default defineEventHandler(async (event) => {
               title: String(item?.title || '').trim(),
               description: String(item?.excerpt || '').trim(),
               author: String(item?.author || 'Lota Team').trim(),
+              author_role: String(item?.authorRole || '').trim(),
               date: dateIso,
-              tags: [] as string[],
+              tags: Array.isArray(item?.tags) ? item.tags : [],
+              og_image: String(item?.ogImage || '').trim(),
+              schema_type: String(item?.schemaType || '').trim(),
+              source_url: String(item?.sourceUrl || '').trim(),
+              source_name: String(item?.sourceName || '').trim(),
+              reviewed_by: String(item?.reviewedBy || '').trim(),
+              reviewed_by_url: String(item?.reviewedByUrl || '').trim(),
+              reviewed_date: item?.reviewedDateUnix ? new Date(item.reviewedDateUnix).toISOString() : '',
+              publisher_name: String(item?.publisherName || '').trim(),
+              publisher_url: String(item?.publisherUrl || '').trim(),
+              publisher_logo: String(item?.publisherLogo || '').trim(),
+              canonical_url: String(item?.canonicalUrl || '').trim(),
+              robots: String(item?.robots || '').trim(),
             },
             body: String(item?.excerpt || '').trim(),
           };
