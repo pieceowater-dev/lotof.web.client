@@ -30,6 +30,27 @@
 
         <!-- ── BLOCKS ─────────────────────────────────────────────── -->
         <div class="px-12 py-6 pb-16">
+          <figure
+            v-if="article.featuredImage"
+            class="mb-8"
+          >
+            <img
+              :src="article.featuredImage"
+              :alt="article.featuredImageAlt || article.title || 'Featured image'"
+              width="1200"
+              height="630"
+              class="w-full rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-gray-700"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption
+              v-if="article.featuredImageAlt"
+              class="mt-2 text-center text-xs text-slate-500 dark:text-slate-400"
+            >
+              {{ article.featuredImageAlt }}
+            </figcaption>
+          </figure>
+
           <template v-for="(block, i) in blocks" :key="block.id">
             <!-- Add button between blocks -->
             <ConsoleAddBetweenBlock :index="i" @open="$emit('add-block-at', i)" />

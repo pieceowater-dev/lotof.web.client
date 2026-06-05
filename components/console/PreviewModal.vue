@@ -9,6 +9,7 @@ interface Article {
   title: string
   metaDescription: string
   featuredImage: string
+  featuredImageAlt?: string
   author: string
   publishedAt: string
 }
@@ -77,7 +78,7 @@ function calloutClass(type: string): string {
         <img
           v-if="article.featuredImage"
           :src="article.featuredImage"
-          :alt="article.title"
+          :alt="article.featuredImageAlt || article.title"
           class="w-full h-96 object-cover rounded-2xl mb-8"
         />
 

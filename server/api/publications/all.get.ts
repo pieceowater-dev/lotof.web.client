@@ -12,7 +12,6 @@ type PublicPublicationListResponse = {
         author?: string;
         authorRole?: string;
         publishedAtUnix?: string;
-        featuredImage?: string;
         tags?: string[];
         ogImage?: string;
         schemaType?: string;
@@ -42,7 +41,6 @@ type PublicPublicationByRouteResponse = {
       author?: string;
       authorRole?: string;
       publishedAtUnix?: string;
-      featuredImage?: string;
       tags?: string[];
       ogImage?: string;
       schemaType?: string;
@@ -174,7 +172,6 @@ const PUBLIC_PUBLICATIONS_QUERY = `
         author
         authorRole
         publishedAtUnix
-        featuredImage
         tags
         ogImage
         schemaType
@@ -203,7 +200,6 @@ const PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
       author
       authorRole
       publishedAtUnix
-      featuredImage
       tags
       ogImage
       schemaType
@@ -285,7 +281,6 @@ export default defineEventHandler(async (event) => {
                 author: String(publication.author || 'Lota Team').trim(),
                 author_role: String(publication.authorRole || '').trim(),
                 date: dateIso,
-                featured_image: String(publication.featuredImage || '').trim(),
                 tags: Array.isArray(publication.tags) ? publication.tags : [],
                 og_image: String(publication.ogImage || '').trim(),
                 schema_type: String(publication.schemaType || '').trim(),
@@ -351,7 +346,6 @@ export default defineEventHandler(async (event) => {
               author: String(item?.author || 'Lota Team').trim(),
               author_role: String(item?.authorRole || '').trim(),
               date: dateIso,
-              featured_image: String(item?.featuredImage || '').trim(),
               tags: Array.isArray(item?.tags) ? item.tags : [],
               og_image: String(item?.ogImage || '').trim(),
               schema_type: String(item?.schemaType || '').trim(),

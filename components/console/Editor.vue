@@ -159,6 +159,7 @@ interface ArticleState {
   publishedAt: string
   updatedAt: string
   featuredImage: string
+  featuredImageAlt: string
   tags: string[]
   focusKeyword: string
   metaTitle: string
@@ -212,6 +213,7 @@ const article = reactive<ArticleState>({
   publishedAt: props.initialArticle.publishedAt || formatDateTimeLocal(),
   updatedAt: (props.initialArticle as any).updatedAt || '',
   featuredImage: props.initialArticle.featuredImage || '',
+  featuredImageAlt: (props.initialArticle as any).featuredImageAlt || '',
   tags: props.initialArticle.tags || [],
   focusKeyword: (props.initialArticle as any).focusKeyword || '',
   metaTitle: props.initialArticle.metaTitle || '',
@@ -558,7 +560,10 @@ async function uploadFeaturedImage(file: File) {
   }
 
   try {
-    const uploaded = await capitalUploadPublicationImage(token, slug, file, { kind: 'FEATURED' })
+    const uploaded = await capitalUploadPublicationImage(token, slug, file, {
+      kind: 'FEATURED',
+      alt: String(article.featuredImageAlt || '').trim(),
+    })
     onArticlePatch({
       featuredImage: uploaded.url,
       ogImage: String(article.ogImage || '').trim() || uploaded.url,
