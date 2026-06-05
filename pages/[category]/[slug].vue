@@ -3,7 +3,8 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
-import { capitalGetPublicPublicationByRoute } from '@/api/publications';
+import { capitalGetPublicPublicationByRoute, publicationBlocksToHtml } from '@/api/publications';
+import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 definePageMeta({
   viewTransition: false,
@@ -30,8 +31,78 @@ type PublicationsAllResponse = {
   items?: PublicationArticleDoc[];
 };
 
+type DirectPublicByRouteResponse = {
+  data?: {
+    publicPublicationByRoute?: {
+      slug?: string;
+      category?: string;
+      title?: string;
+      excerpt?: string;
+      author?: string;
+      authorRole?: string;
+      publishedAtUnix?: string;
+      tags?: string[];
+      ogImage?: string;
+      schemaType?: string;
+      sourceUrl?: string;
+      sourceName?: string;
+      reviewedBy?: string;
+      reviewedByUrl?: string;
+      reviewedDateUnix?: string;
+      publisherName?: string;
+      publisherUrl?: string;
+      publisherLogo?: string;
+      canonicalUrl?: string;
+      robots?: string;
+      blocks?: Array<{
+        id?: string;
+        type?: string;
+        content?: string;
+        attrsJson?: string;
+      }>;
+    } | null;
+  };
+  errors?: Array<{ message?: string }>;
+};
+
+const DIRECT_PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
+  query PublicPublicationByRoute($category: PublicationCategory!, $slug: String!, $includeBlocks: Boolean!) {
+    publicPublicationByRoute(category: $category, slug: $slug, includeBlocks: $includeBlocks) {
+      slug
+      category
+      title
+      excerpt
+      author
+      authorRole
+      publishedAtUnix
+      tags
+      ogImage
+      schemaType
+      sourceUrl
+      sourceName
+      reviewedBy
+      reviewedByUrl
+      reviewedDateUnix
+      publisherName
+      publisherUrl
+      publisherLogo
+      canonicalUrl
+      robots
+      blocks @include(if: $includeBlocks) {
+        id
+        type
+        content
+        attrsJson
+      }
+    }
+  }
+`;
+
+const DIRECT_GQL_CATEGORIES = ['BLOG', 'WHATSNEW', 'ARTICLES', 'LEARNING', 'NEWS'] as const;
+
 const { t, locale } = useI18n();
 const route = useRoute();
+const requestFetch = useRequestFetch();
 const config = useRuntimeConfig();
 const authToken = useCookie<string | null>('auth_token');
 const legacyToken = useCookie<string | null>('token');
@@ -132,9 +203,26 @@ function normalizeSiteUrl(raw: string): string {
   return `https://${trimmed.replace(/^\/+/, '').replace(/\/$/, '')}`;
 }
 
+function unixLikeToIso(raw: unknown): string {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+
+  const asNumber = Number(value);
+  if (Number.isFinite(asNumber) && asNumber > 0) {
+    const millis = value.length <= 10 ? asNumber * 1000 : asNumber;
+    const fromUnix = new Date(millis);
+    if (!Number.isNaN(fromUnix.getTime())) return fromUnix.toISOString();
+  }
+
+  const fromNative = new Date(value);
+  if (!Number.isNaN(fromNative.getTime())) return fromNative.toISOString();
+
+  return '';
+}
+
 const routeAsyncKey = `public-publication-route:${categoryParam.value}:${slugParam.value}`;
 
-const { data: routePublication } = await useAsyncData<PublicationArticleDoc | null>(
+const { data: routePublication, refresh: refreshRoutePublication } = await useAsyncData<PublicationArticleDoc | null>(
   routeAsyncKey,
   async () => {
     if (!slugParam.value) return null;
@@ -142,7 +230,7 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
     // Prefer slug-based server fallback first: it already handles category probing
     // and is resilient to upstream public list auth limitations.
     try {
-      const all = await $fetch<PublicationsAllResponse>('/api/publications/all', {
+      const all = await requestFetch<PublicationsAllResponse>('/api/publications/all', {
         query: {
           includeDraft: 'false',
           slug: slugParam.value,
@@ -162,6 +250,63 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
       }
     } catch {
       // Continue with direct route and local fallbacks below.
+    }
+
+    try {
+      const preferred = categoryParam.value ? categoryParam.value.toUpperCase() : '';
+      const categories = [preferred, ...DIRECT_GQL_CATEGORIES].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
+      const isAuthorized = !!String(authToken.value || legacyToken.value || '').trim();
+
+      for (const gqlCategory of categories) {
+        const response = await $fetch<DirectPublicByRouteResponse>('/api-capital/query', {
+          method: 'POST',
+          body: {
+            query: DIRECT_PUBLIC_PUBLICATION_BY_ROUTE_QUERY,
+            variables: {
+              category: gqlCategory,
+              slug: slugParam.value,
+              includeBlocks: true,
+            },
+          },
+        });
+
+        if (response?.errors?.length) continue;
+        const publication = response?.data?.publicPublicationByRoute;
+        if (!publication) continue;
+
+        const resolvedSlug = normalizeSlug(String(publication.slug || slugParam.value));
+        const resolvedCategory = normalizeSlug(String(publication.category || categoryParam.value || 'news'));
+
+        return {
+          slug: resolvedSlug,
+          category: resolvedCategory,
+          meta: {
+            slug: resolvedSlug,
+            category: resolvedCategory,
+            title: String(publication.title || '').trim(),
+            description: String(publication.excerpt || '').trim(),
+            author: String(publication.author || 'Lota Team').trim(),
+            author_role: String(publication.authorRole || '').trim(),
+            date: unixLikeToIso(publication.publishedAtUnix),
+            tags: Array.isArray(publication.tags) ? publication.tags : [],
+            og_image: String(publication.ogImage || '').trim(),
+            schema_type: String(publication.schemaType || '').trim(),
+            source_url: String(publication.sourceUrl || '').trim(),
+            source_name: String(publication.sourceName || '').trim(),
+            reviewed_by: String(publication.reviewedBy || '').trim(),
+            reviewed_by_url: String(publication.reviewedByUrl || '').trim(),
+            reviewed_date: unixLikeToIso(publication.reviewedDateUnix),
+            publisher_name: String(publication.publisherName || '').trim(),
+            publisher_url: String(publication.publisherUrl || '').trim(),
+            publisher_logo: String(publication.publisherLogo || '').trim(),
+            canonical: String(publication.canonicalUrl || '').trim(),
+            robots: String(publication.robots || '').trim(),
+          },
+          body: publicationBlocksToHtml(publication.blocks as any, { isAuthorized }) || String(publication.excerpt || '').trim(),
+        };
+      }
+    } catch {
+      // Continue with client helper and local fallbacks below.
     }
 
     if (categoryParam.value && SUPPORTED_PUBLICATION_CATEGORIES.has(categoryParam.value)) {
@@ -204,6 +349,32 @@ const { data: routePublication } = await useAsyncData<PublicationArticleDoc | nu
   },
   { watch: [categoryParam, slugParam] }
 );
+
+if (process.client) {
+  const refreshedForAuth = useState<boolean>('publication-route-auth-refresh-done', () => false);
+  onMounted(async () => {
+    if (refreshedForAuth.value) return;
+    refreshedForAuth.value = true;
+
+    let hasToken = !!String(authToken.value || legacyToken.value || '').trim();
+    if (!hasToken) {
+      try {
+        await refreshAccessToken();
+      } catch {
+        // Ignore silent refresh errors for public pages.
+      }
+      hasToken = !!String(authToken.value || legacyToken.value || '').trim();
+    }
+
+    if (!hasToken) return;
+
+    try {
+      await refreshRoutePublication();
+    } catch {
+      // Keep prerendered content if runtime refresh fails.
+    }
+  });
+}
 
 if (!routePublication.value) {
   throw createError({ statusCode: 404, statusMessage: 'Article not found' });

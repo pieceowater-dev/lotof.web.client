@@ -91,6 +91,23 @@ function safeImageSrc(src: string): string {
   return '';
 }
 
+function toIsoDate(value: unknown): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+
+  const asNumber = Number(raw);
+  if (Number.isFinite(asNumber) && asNumber > 0) {
+    const millis = raw.length <= 10 ? asNumber * 1000 : asNumber;
+    const fromUnix = new Date(millis);
+    if (!Number.isNaN(fromUnix.getTime())) return fromUnix.toISOString();
+  }
+
+  const fromNative = new Date(raw);
+  if (!Number.isNaN(fromNative.getTime())) return fromNative.toISOString();
+
+  return '';
+}
+
 function blocksToHtml(
   blocks: Array<{ type?: string; content?: string; attrsJson?: string }> | undefined,
   fallbackText: string,
@@ -384,12 +401,41 @@ const GQL_CATEGORIES = ['BLOG', 'WHATSNEW', 'ARTICLES', 'LEARNING', 'NEWS'] as c
 export default defineEventHandler(async (event) => {
   const query = getQuery(event);
   const config = useRuntimeConfig(event);
+  const forwardedHost = String(getHeader(event, 'x-forwarded-host') || '').trim();
+  const host = String(getHeader(event, 'host') || '').trim();
+  const forwardedProto = String(getHeader(event, 'x-forwarded-proto') || '').trim().toLowerCase();
+  const proto = forwardedProto === 'https' ? 'https' : 'http';
   const isAuthorized = !!String(getCookie(event, 'auth_token') || getCookie(event, 'token') || '').trim();
   const category = String(query.category || '').trim().toLowerCase();
   const slug = String(query.slug || '').trim().toLowerCase();
   const includeDraft = String(query.includeDraft || 'false').toLowerCase() === 'true';
 
   const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
+  const requestOrigin = (forwardedHost || host) ? `${proto}://${forwardedHost || host}`.replace(/\/$/, '') : '';
+  const envCapital = String(process.env.VITE_API_CAPITAL || '').trim().replace(/\/$/, '');
+
+  const endpointCandidates = [
+    `${capitalUrl}/query`,
+    requestOrigin ? `${requestOrigin}/api-capital/query` : '',
+    envCapital ? `${envCapital}/query` : '',
+    envCapital ? `${envCapital}/api-capital/query` : '',
+  ].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
+
+  async function queryCapital<T>(payload: { query: string; variables?: Record<string, any> }): Promise<T> {
+    let lastError: unknown = null;
+    for (const endpoint of endpointCandidates) {
+      try {
+        return await $fetch<T>(endpoint, {
+          method: 'POST',
+          body: payload,
+        }) as T;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw (lastError || createError({ statusCode: 502, statusMessage: 'Capital endpoint is not configured' }));
+  }
 
   // Slug-first resolution works for all categories and does not depend on list permissions.
   if (slug) {
@@ -398,15 +444,12 @@ export default defineEventHandler(async (event) => {
 
     for (const gqlCategory of categories) {
       try {
-        const routeResponse = await $fetch<PublicPublicationByRouteResponse>(`${capitalUrl}/query`, {
-          method: 'POST',
-          body: {
-            query: PUBLIC_PUBLICATION_BY_ROUTE_QUERY,
-            variables: {
-              category: gqlCategory,
-              slug,
-              includeBlocks: true,
-            },
+        const routeResponse = await queryCapital<PublicPublicationByRouteResponse>({
+          query: PUBLIC_PUBLICATION_BY_ROUTE_QUERY,
+          variables: {
+            category: gqlCategory,
+            slug,
+            includeBlocks: true,
           },
         });
 
@@ -415,11 +458,7 @@ export default defineEventHandler(async (event) => {
         const publication = routeResponse.data?.publicPublicationByRoute;
         if (!publication) continue;
 
-        const dateIsoRaw = String(publication.publishedAtUnix || '').trim();
-        const parsedDate = dateIsoRaw ? new Date(dateIsoRaw) : null;
-        const dateIso = parsedDate && !Number.isNaN(parsedDate.getTime())
-          ? parsedDate.toISOString()
-          : new Date().toISOString();
+        const dateIso = toIsoDate(publication.publishedAtUnix) || new Date().toISOString();
 
         const categorySlug = String(publication.category || 'news').trim().toLowerCase();
         const resolvedSlug = String(publication.slug || slug).trim().toLowerCase();
@@ -445,7 +484,7 @@ export default defineEventHandler(async (event) => {
                 source_name: String(publication.sourceName || '').trim(),
                 reviewed_by: String(publication.reviewedBy || '').trim(),
                 reviewed_by_url: String(publication.reviewedByUrl || '').trim(),
-                reviewed_date: publication.reviewedDateUnix ? new Date(publication.reviewedDateUnix).toISOString() : '',
+                reviewed_date: toIsoDate(publication.reviewedDateUnix),
                 publisher_name: String(publication.publisherName || '').trim(),
                 publisher_url: String(publication.publisherUrl || '').trim(),
                 publisher_logo: String(publication.publisherLogo || '').trim(),
@@ -463,17 +502,14 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const response = await $fetch<PublicPublicationListResponse>(`${capitalUrl}/query`, {
-      method: 'POST',
-      body: {
-        query: PUBLIC_PUBLICATIONS_QUERY,
-        variables: {
-          filter: {
-            ...(category ? { category: category.toUpperCase() } : {}),
-            page: 1,
-            pageSize: 300,
-            includeDraft,
-          },
+    const response = await queryCapital<PublicPublicationListResponse>({
+      query: PUBLIC_PUBLICATIONS_QUERY,
+      variables: {
+        filter: {
+          ...(category ? { category: category.toUpperCase() } : {}),
+          page: 1,
+          pageSize: 300,
+          includeDraft,
         },
       },
     });
@@ -485,11 +521,7 @@ export default defineEventHandler(async (event) => {
           if (!slug) return null;
 
           const categorySlug = String(item?.category || 'news').trim().toLowerCase();
-          const dateIsoRaw = String(item?.publishedAtUnix || '').trim();
-          const parsedDate = dateIsoRaw ? new Date(dateIsoRaw) : null;
-          const dateIso = parsedDate && !Number.isNaN(parsedDate.getTime())
-            ? parsedDate.toISOString()
-            : new Date().toISOString();
+          const dateIso = toIsoDate(item?.publishedAtUnix) || new Date().toISOString();
 
           return {
             slug,
@@ -510,7 +542,7 @@ export default defineEventHandler(async (event) => {
               source_name: String(item?.sourceName || '').trim(),
               reviewed_by: String(item?.reviewedBy || '').trim(),
               reviewed_by_url: String(item?.reviewedByUrl || '').trim(),
-              reviewed_date: item?.reviewedDateUnix ? new Date(item.reviewedDateUnix).toISOString() : '',
+              reviewed_date: toIsoDate(item?.reviewedDateUnix),
               publisher_name: String(item?.publisherName || '').trim(),
               publisher_url: String(item?.publisherUrl || '').trim(),
               publisher_logo: String(item?.publisherLogo || '').trim(),

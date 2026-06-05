@@ -12,6 +12,18 @@ defineEmits<{
 
 const { t } = useI18n()
 
+function resolveBlockTypeLabel(label: string): string {
+  const blockTypeKey = `admin.editor.blockTypes.${label}`
+  const fromBlockTypes = t(blockTypeKey)
+  if (String(fromBlockTypes || '').trim()) return fromBlockTypes
+
+  const editorKey = `admin.editor.${label}`
+  const fromEditor = t(editorKey)
+  if (String(fromEditor || '').trim()) return fromEditor
+
+  return label
+}
+
 const blockGroups = [
   {
     label: 'text',
@@ -82,7 +94,7 @@ const blockGroups = [
                 <div :class="`h-10 w-10 rounded-lg flex items-center justify-center ${item.iconBg}`">
                   <Icon :name="item.icon" :class="`h-5 w-5 ${item.iconColor}`" />
                 </div>
-                <span class="text-xs text-center leading-tight font-medium text-slate-600 dark:text-slate-200">{{ t(`admin.editor.blockTypes.${item.label}`) }}</span>
+                <span class="text-xs text-center leading-tight font-medium text-slate-600 dark:text-slate-200">{{ resolveBlockTypeLabel(item.label) }}</span>
               </button>
             </div>
           </div>
