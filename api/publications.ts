@@ -565,6 +565,7 @@ function toPublicationInput(article: PublicationEditorArticle, blocks: Publicati
   const title = asString(article.title)
   const slug = slugify(asString(article.slug)) || slugify(title)
   const excerpt = asString(article.metaDescription) || firstNonEmptyBlockText(blocks).slice(0, 160)
+  const featuredImage = asString(article.featuredImage)
 
   return {
     title,
@@ -577,13 +578,14 @@ function toPublicationInput(article: PublicationEditorArticle, blocks: Publicati
     authorUrl: asString(article.authorUrl) || undefined,
     authorRole: asString(article.authorRole) || undefined,
     publishedAtUnix: toUnixSeconds(article.publishedAt),
-    featuredImage: asString(article.featuredImage) || undefined,
+    featuredImage: featuredImage || undefined,
     tags: Array.isArray(article.tags) ? article.tags.map((tag) => asString(tag)).filter(Boolean) : [],
     focusKeyword: asString(article.focusKeyword) || undefined,
     metaTitle: asString(article.metaTitle) || title || undefined,
     metaDescription: asString(article.metaDescription) || excerpt || undefined,
     canonicalUrl: asString(article.canonicalUrl) || undefined,
-    ogImage: asString(article.ogImage) || undefined,
+    // Public route exposes ogImage; keep it synced with main editor image.
+    ogImage: featuredImage || asString(article.ogImage) || undefined,
     schemaType: toGqlSchemaType(article.schemaType),
     sourceUrl: asString(article.sourceUrl) || undefined,
     sourceName: asString(article.sourceName) || undefined,

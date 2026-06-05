@@ -94,27 +94,40 @@ async function updatePublication(payload: EditorPayload, status: 'draft' | 'publ
   const token = String(authToken.value || legacyToken.value || '').trim();
 
   let nextSlug = '';
-  try {
-    nextSlug = await capitalUpdatePublication(token, currentSlug, {
-      ...payload.article,
-      status,
-      version: String(initialArticle.value.version || ''),
-      currentRevision: String(initialArticle.value.currentRevision || ''),
-    } as any, payload.blocks as any);
-  } catch (error: any) {
-    if (!isVersionMismatchError(error)) throw error;
+  let lastError: any = null;
+  const MAX_ATTEMPTS = 4;
+  let expectedVersion = String(initialArticle.value.version || '');
+  let expectedCurrentRevision = String(initialArticle.value.currentRevision || '');
 
-    const latest = await capitalGetPublicationBySlug(token, currentSlug);
-    if (!latest?.article) throw error;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      nextSlug = await capitalUpdatePublication(token, currentSlug, {
+        ...payload.article,
+        status,
+        version: expectedVersion,
+        currentRevision: expectedCurrentRevision,
+      } as any, payload.blocks as any);
+      lastError = null;
+      break;
+    } catch (error: any) {
+      lastError = error;
+      if (!isVersionMismatchError(error) || attempt === MAX_ATTEMPTS) {
+        throw error;
+      }
 
-    initialArticle.value = { ...latest.article };
+      const latest = await capitalGetPublicationBySlug(token, currentSlug);
+      if (!latest?.article) {
+        throw error;
+      }
 
-    nextSlug = await capitalUpdatePublication(token, currentSlug, {
-      ...payload.article,
-      status,
-      version: String(latest.article.version || ''),
-      currentRevision: String(latest.article.currentRevision || ''),
-    } as any, payload.blocks as any);
+      initialArticle.value = { ...latest.article };
+      expectedVersion = String(latest.article.version || '');
+      expectedCurrentRevision = String(latest.article.currentRevision || '');
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
   }
 
   if (nextSlug && nextSlug !== currentSlug) {
