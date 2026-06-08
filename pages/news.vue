@@ -104,7 +104,7 @@ function processNewsPosts(): ProcessedMarkdownPost[] {
     if (!slug || !title || categorySlug !== 'news') continue;
 
     const imgFromBody = firstImage(body);
-    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '/og-image.png');
+    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '').trim();
     const imageAlt = imgFromBody?.alt || title;
     const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');
@@ -145,7 +145,7 @@ function processWhatsNewPosts(): ProcessedMarkdownPost[] {
     if (!slug || !title || categorySlug !== 'whatsnew') continue;
 
     const imgFromBody = firstImage(body);
-    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '/og-image.png');
+    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '').trim();
     const imageAlt = imgFromBody?.alt || title;
     const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');

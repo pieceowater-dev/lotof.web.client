@@ -937,26 +937,118 @@ useHead(() => ({
 function setupAnchorScroll() {
   if (!process.client) return;
 
-  function handleAnchorClick(e: MouseEvent) {
-    const target = e.target as HTMLElement | null;
-    const anchor = target?.closest('a[href^="#"]') as HTMLAnchorElement | null;
-    if (!anchor) return;
-
-    const hash = anchor.getAttribute('href');
-    if (!hash || !hash.startsWith('#')) return;
-
-    const id = hash.slice(1);
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    e.preventDefault();
-    const headerOffset = 72;
-    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
-    window.scrollTo({ top, behavior: 'smooth' });
+  function resolveHashId(rawHash: string): string {
+    const clean = String(rawHash || '').replace(/^#/, '');
+    if (!clean) return '';
+    try { return decodeURIComponent(clean); } catch { return clean; }
   }
 
-  document.addEventListener('click', handleAnchorClick);
-  return () => document.removeEventListener('click', handleAnchorClick);
+  // Return the element the page actually scrolls in (may be <main>, not window).
+  function getScrollContainer(): HTMLElement {
+    return (
+      (document.querySelector('main.main-scroll') as HTMLElement | null)
+      ?? (document.querySelector('main') as HTMLElement | null)
+      ?? document.documentElement
+    );
+  }
+
+  function getHeaderOffset(): number {
+    let maxBottom = 0;
+    for (const header of Array.from(document.querySelectorAll('header'))) {
+      const style = window.getComputedStyle(header);
+      if (style.position !== 'fixed' && style.position !== 'sticky') continue;
+      const rect = header.getBoundingClientRect();
+      if (rect.bottom <= 0 || rect.top > 120) continue;
+      maxBottom = Math.max(maxBottom, rect.bottom);
+    }
+    return Math.max(0, Math.round(maxBottom + 8));
+  }
+
+  function scrollToHash(rawHash: string, behavior: ScrollBehavior = 'smooth'): boolean {
+    const id = resolveHashId(rawHash);
+    if (!id) return false;
+
+    let el = document.getElementById(id);
+    if (!el && typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+      el = document.querySelector(`#${CSS.escape(id)}`) as HTMLElement | null;
+    }
+    if (!el) return false;
+
+    const container = getScrollContainer();
+    const isDocRoot = container === document.documentElement || container === document.body;
+    const currentScroll = isDocRoot ? window.scrollY : container.scrollTop;
+    const containerRect = container.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    const headerOffset = getHeaderOffset();
+
+    const top = Math.max(
+      0,
+      Math.round(elRect.top - containerRect.top + currentScroll - headerOffset),
+    );
+
+    if (isDocRoot) {
+      window.scrollTo({ top, behavior });
+    } else {
+      container.scrollTo({ top, behavior });
+    }
+
+    return true;
+  }
+
+  function findAnchorFromEvent(e: MouseEvent): HTMLAnchorElement | null {
+    const direct = (e.target as HTMLElement | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
+    if (direct) return direct;
+    const path = typeof e.composedPath === 'function' ? e.composedPath() : [];
+    for (const node of path) {
+      if (node instanceof HTMLAnchorElement && node.hasAttribute('href')) return node;
+      if (node instanceof HTMLElement) {
+        const nested = node.closest('a[href]') as HTMLAnchorElement | null;
+        if (nested) return nested;
+      }
+    }
+    return null;
+  }
+
+  function handleAnchorClick(e: MouseEvent) {
+    const anchor = findAnchorFromEvent(e);
+    if (!anchor) return;
+
+    const href = anchor.getAttribute('href') || '';
+    if (!href) return;
+
+    let resolvedUrl: URL;
+    try { resolvedUrl = new URL(href, window.location.href); } catch { return; }
+
+    if (!resolvedUrl.hash) return;
+
+    const norm = (v: string) => String(v || '').replace(/\/+$/, '') || '/';
+    const samePage =
+      resolvedUrl.origin === window.location.origin &&
+      norm(resolvedUrl.pathname) === norm(window.location.pathname) &&
+      resolvedUrl.search === window.location.search;
+
+    if (!samePage) return;
+
+    // Prevent browser default FIRST so it doesn't also jump/snap.
+    e.preventDefault();
+
+    scrollToHash(resolvedUrl.hash, 'smooth');
+
+    if (window.location.hash !== resolvedUrl.hash) {
+      window.history.pushState(null, '', resolvedUrl.hash);
+    }
+  }
+
+  function handleHashChange() {
+    scrollToHash(window.location.hash, 'smooth');
+  }
+
+  document.addEventListener('click', handleAnchorClick, true);
+  window.addEventListener('hashchange', handleHashChange);
+  return () => {
+    document.removeEventListener('click', handleAnchorClick, true);
+    window.removeEventListener('hashchange', handleHashChange);
+  };
 }
 
 let cleanupAnchorScroll: (() => void) | undefined;
@@ -970,15 +1062,50 @@ onMounted(() => {
   });
   cleanupAnchorScroll = setupAnchorScroll();
 
-  // Scroll to hash on initial load
+  // Scroll to hash on initial load using the same container-aware logic.
   if (window.location.hash) {
     nextTick(() => {
-      const id = window.location.hash.slice(1);
-      const el = document.getElementById(id);
-      if (el) {
-        const headerOffset = 72;
-        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+      const rawHash = String(window.location.hash || '').replace(/^#/, '');
+      if (!rawHash) return;
+      let id = rawHash;
+      try { id = decodeURIComponent(rawHash); } catch { id = rawHash; }
+
+      let el = document.getElementById(id);
+      if (!el && typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+        el = document.querySelector(`#${CSS.escape(id)}`) as HTMLElement | null;
+      }
+      if (!el) return;
+
+      const container: HTMLElement =
+        (document.querySelector('main.main-scroll') as HTMLElement | null)
+        ?? (document.querySelector('main') as HTMLElement | null)
+        ?? document.documentElement;
+
+      const isDocRoot = container === document.documentElement || container === document.body;
+      const currentScroll = isDocRoot ? window.scrollY : container.scrollTop;
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+
+      // Measure fixed header height.
+      let maxBottom = 0;
+      for (const header of Array.from(document.querySelectorAll('header'))) {
+        const style = window.getComputedStyle(header);
+        if (style.position !== 'fixed' && style.position !== 'sticky') continue;
+        const rect = header.getBoundingClientRect();
+        if (rect.bottom <= 0 || rect.top > 120) continue;
+        maxBottom = Math.max(maxBottom, rect.bottom);
+      }
+      const headerOffset = Math.max(0, Math.round(maxBottom + 8));
+
+      const top = Math.max(
+        0,
+        Math.round(elRect.top - containerRect.top + currentScroll - headerOffset),
+      );
+
+      if (isDocRoot) {
         window.scrollTo({ top, behavior: 'smooth' });
+      } else {
+        container.scrollTo({ top, behavior: 'smooth' });
       }
     });
   }

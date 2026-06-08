@@ -657,7 +657,18 @@ function isAnchorableHeading(block: Block): boolean {
 }
 
 function blockAnchor(block: Block, fallbackIndex: number): string {
-  return `#${slugifyAnchor(String(block?.content || ''), fallbackIndex)}`
+  const base = slugifyAnchor(String(block?.content || ''), fallbackIndex)
+  let duplicateCount = 0
+
+  for (let i = 0; i <= fallbackIndex; i += 1) {
+    const candidate = props.blocks[i]
+    if (!isAnchorableHeading(candidate)) continue
+    const candidateBase = slugifyAnchor(String(candidate?.content || ''), i)
+    if (candidateBase === base) duplicateCount += 1
+  }
+
+  const resolved = duplicateCount > 1 ? `${base}-${duplicateCount}` : base
+  return `#${resolved}`
 }
 
 async function copyAnchorToClipboard(anchor: string) {

@@ -619,6 +619,76 @@ export default defineEventHandler(async (event) => {
     throw (lastError || createError({ statusCode: 502, statusMessage: 'Capital endpoint is not configured' }));
   }
 
+  async function enrichItemsWithFeaturedImage<T extends {
+    slug: string;
+    category: string;
+    meta: Record<string, any>;
+  }>(items: T[]): Promise<T[]> {
+    if (!Array.isArray(items) || !items.length) return items;
+
+    const details = await Promise.all(
+      items.map(async (item) => {
+        const slugValue = String(item.slug || '').trim().toLowerCase();
+        const categoryValue = String(item.category || '').trim().toLowerCase();
+        const gqlCategory = categoryValue.toUpperCase();
+        if (!slugValue || !GQL_CATEGORIES.includes(gqlCategory as typeof GQL_CATEGORIES[number])) {
+          return null;
+        }
+
+        try {
+          const routeResponse = await queryCapital<PublicPublicationByRouteResponse>({
+            query: PUBLIC_PUBLICATION_BY_ROUTE_QUERY,
+            variables: {
+              category: gqlCategory,
+              slug: slugValue,
+              includeBlocks: true,
+            },
+          });
+
+          if (routeResponse.errors?.length) return null;
+          const publication = routeResponse.data?.publicPublicationByRoute;
+          if (!publication) return null;
+
+          const ogImage = String(publication.ogImage || '').trim();
+          if (ogImage) {
+            return { slug: slugValue, category: categoryValue, ogImage };
+          }
+
+          for (const block of Array.isArray(publication.blocks) ? publication.blocks : []) {
+            if (String(block?.type || '').trim() !== 'image') continue;
+            const attrs = normalizeBlockAttrs('image', parseAttrsJson(String(block?.attrsJson || '')));
+            const src = safeImageSrc(String(attrs.src || attrs.s || ''));
+            if (src) return { slug: slugValue, category: categoryValue, ogImage: src };
+          }
+
+          return null;
+        } catch {
+          return null;
+        }
+      })
+    );
+
+    const imageByKey = new Map<string, string>();
+    for (const detail of details) {
+      if (!detail?.ogImage) continue;
+      imageByKey.set(`${detail.category}:${detail.slug}`, detail.ogImage);
+    }
+
+    return items.map((item) => {
+      const key = `${String(item.category || '').trim().toLowerCase()}:${String(item.slug || '').trim().toLowerCase()}`;
+      const ogImage = imageByKey.get(key);
+      if (!ogImage) return item;
+      return {
+        ...item,
+        meta: {
+          ...item.meta,
+          og_image: ogImage,
+          featured_image: ogImage,
+        },
+      };
+    });
+  }
+
   // Slug-first resolution works for all categories and does not depend on list permissions.
   if (slug) {
     const preferred = category ? category.toUpperCase() : '';
@@ -725,7 +795,8 @@ export default defineEventHandler(async (event) => {
         .filter((item): item is NonNullable<typeof item> => !!item);
 
       if (items.length > 0) {
-        return { items };
+        const enrichedItems = await enrichItemsWithFeaturedImage(items);
+        return { items: enrichedItems };
       }
     }
   } catch {
@@ -778,7 +849,8 @@ export default defineEventHandler(async (event) => {
           .filter((item): item is NonNullable<typeof item> => !!item);
 
         if (items.length > 0) {
-          return { items };
+          const enrichedItems = await enrichItemsWithFeaturedImage(items);
+          return { items: enrichedItems };
         }
       }
     } catch {
