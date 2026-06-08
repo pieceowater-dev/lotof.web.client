@@ -60,24 +60,33 @@
               class="group/block relative py-2.5"
             >
               <!-- Block toolbar -->
-              <div class="absolute right-2 top-2 z-10 flex items-center gap-1 rounded-lg border border-slate-200/80 bg-white/90 p-1 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-slate-700 dark:bg-slate-900/90">
+              <div class="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-white/90 p-0.5 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-slate-700 dark:bg-slate-900/90">
+                <button
+                  v-if="isAnchorableHeading(block)"
+                  class="rounded-md p-1 transition-colors"
+                  :class="copiedAnchor === block.id
+                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-300'"
+                  :title="copiedAnchor === block.id ? 'Якорь скопирован' : 'Скопировать якорь'"
+                  @click="copyAnchorToClipboard(blockAnchor(block, i))"
+                ><Icon :name="copiedAnchor === block.id ? 'lucide:check' : 'lucide:link-2'" class="h-3 w-3" /></button>
                 <button
                   v-if="i > 0"
                   class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                   title="Вверх"
                   @click="$emit('move-block', i, -1)"
-                ><Icon name="lucide:chevron-up" class="h-3.5 w-3.5" /></button>
+                ><Icon name="lucide:chevron-up" class="h-3 w-3" /></button>
                 <button
                   v-if="i < blocks.length - 1"
                   class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                   title="Вниз"
                   @click="$emit('move-block', i, 1)"
-                ><Icon name="lucide:chevron-down" class="h-3.5 w-3.5" /></button>
+                ><Icon name="lucide:chevron-down" class="h-3 w-3" /></button>
                 <button
                   class="rounded-md p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                   title="Удалить"
                   @click="$emit('delete-block', i)"
-                ><Icon name="lucide:trash-2" class="h-3.5 w-3.5" /></button>
+                ><Icon name="lucide:trash-2" class="h-3 w-3" /></button>
               </div>
 
               <!-- Block content -->
@@ -94,6 +103,7 @@
                   :class="headingClass(block.type)"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
+                  @paste="$emit('block-paste', block, i, $event)"
                   @focus="$emit('set-active-block', block.id)"
                   @mouseup="$emit('show-format-bar-event', $event)"
                 />
@@ -108,6 +118,7 @@
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
+                  @paste="$emit('block-paste', block, i, $event)"
                   @focus="$emit('set-active-block', block.id)"
                   @mouseup="$emit('show-format-bar-event', $event)"
                 />
@@ -123,6 +134,7 @@
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
+                  @paste="$emit('block-paste', block, i, $event)"
                   @focus="$emit('set-active-block', block.id)"
                   @mouseup="$emit('show-format-bar-event', $event)"
                 />
@@ -137,6 +149,7 @@
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
+                  @paste="$emit('block-paste', block, i, $event)"
                   @focus="$emit('set-active-block', block.id)"
                   @mouseup="$emit('show-format-bar-event', $event)"
                 />
@@ -151,6 +164,7 @@
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
+                  @paste="$emit('block-paste', block, i, $event)"
                   @focus="$emit('set-active-block', block.id)"
                   @mouseup="$emit('show-format-bar-event', $event)"
                 />
@@ -184,6 +198,7 @@
                              empty:before:content-[attr(data-placeholder)] empty:before:opacity-40"
                       @input="block.content = ($event.target as HTMLElement).innerHTML"
                       @keydown="$emit('block-keydown', block, i, $event)"
+                      @paste="$emit('block-paste', block, i, $event)"
                       @focus="$emit('set-active-block', block.id)"
                       @mouseup="$emit('show-format-bar-event', $event)"
                     />
@@ -219,6 +234,7 @@
                            empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:empty:before:text-slate-600"
                     @input="block.content = ($event.target as HTMLElement).innerHTML"
                     @keydown="$emit('block-keydown', block, i, $event)"
+                    @paste="$emit('block-paste', block, i, $event)"
                     @focus="$emit('set-active-block', block.id)"
                     @mouseup="$emit('show-format-bar-event', $event)"
                   />
@@ -316,6 +332,147 @@
                 </div>
 
                 <!-- RAW HTML -->
+                <div v-else-if="block.type === 'button'" class="py-1">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                      <span class="font-semibold uppercase tracking-[0.08em]">Button</span>
+                      <button
+                        type="button"
+                        class="rounded-md border px-2 py-1 text-[11px] font-medium transition"
+                        :class="buttonKind(block) === 'custom'
+                          ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                          : 'border-slate-200 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                        @click="setButtonKind(block, 'custom')"
+                      >
+                        Ссылка
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-md border px-2 py-1 text-[11px] font-medium transition"
+                        :class="buttonKind(block) === 'login'
+                          ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                          : 'border-slate-200 text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+                        @click="setButtonKind(block, 'login')"
+                      >
+                        Системная: Войти
+                      </button>
+                    </div>
+
+                    <div class="grid gap-2">
+                      <input
+                        :value="String(block.attrs.text || '')"
+                        placeholder="Текст кнопки"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        @input="block.attrs.text = ($event.target as HTMLInputElement).value"
+                      />
+
+                      <input
+                        v-if="buttonKind(block) !== 'login'"
+                        :value="String(block.attrs.href || '')"
+                        placeholder="Ссылка: https://... или #yakor-sekcii"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        @input="block.attrs.href = ($event.target as HTMLInputElement).value"
+                      />
+
+                      <div class="flex flex-wrap gap-2">
+                        <button
+                          v-for="variant in buttonVariants"
+                          :key="variant.value"
+                          type="button"
+                          class="rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition"
+                          :class="buttonVariant(block) === variant.value
+                            ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+                            : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                          @click="setButtonVariant(block, variant.value)"
+                        >
+                          {{ variant.label }}
+                        </button>
+                      </div>
+
+                      <button
+                        v-if="buttonKind(block) !== 'login'"
+                        type="button"
+                        class="inline-flex items-center gap-3 rounded-lg px-1 py-1 text-xs text-slate-600 transition dark:text-slate-300"
+                        @click="block.attrs.newTab = !buttonOpensInNewTab(block)"
+                      >
+                        <span
+                          class="relative inline-flex h-5 w-9 items-center rounded-full transition"
+                          :class="buttonOpensInNewTab(block) ? 'bg-blue-500 dark:bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'"
+                        >
+                          <span
+                            class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition"
+                            :class="buttonOpensInNewTab(block) ? 'translate-x-4.5' : 'translate-x-0.5'"
+                          />
+                        </span>
+                        <span>Открывать в соседней вкладке</span>
+                      </button>
+                    </div>
+
+                    <div class="mt-3 flex items-center justify-between gap-3">
+                      <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                        У заголовков можно скопировать якорь через иконку в тулбаре блока.
+                      </p>
+                      <a
+                        :href="buttonPreviewHref(block)"
+                        :class="buttonPreviewClass(block)"
+                      >
+                        {{ String(block.attrs.text || 'Кнопка') || 'Кнопка' }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-else-if="block.type === 'faq'" class="py-1">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                    <div class="mb-3 flex items-center justify-between gap-2">
+                      <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">FAQ</h4>
+                    </div>
+
+                    <div class="space-y-3">
+                      <div
+                        v-for="(item, faqIndex) in getFaqItems(block)"
+                        :key="`faq-${block.id}-${faqIndex}`"
+                        class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                      >
+                        <div class="mb-2 flex items-center justify-between gap-2">
+                          <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Пара {{ faqIndex + 1 }}</span>
+                          <button
+                            type="button"
+                            class="rounded-md border border-transparent px-2 py-1 text-[11px] text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                            @click="removeFaqItem(block, faqIndex)"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+
+                        <input
+                          :value="String(item.q || '')"
+                          placeholder="Вопрос"
+                          class="mb-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          @input="updateFaqField(block, faqIndex, 'q', ($event.target as HTMLInputElement).value)"
+                        />
+                        <textarea
+                          :value="String(item.a || '')"
+                          rows="3"
+                          placeholder="Ответ"
+                          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          @input="updateFaqField(block, faqIndex, 'a', ($event.target as HTMLTextAreaElement).value)"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="mt-4 flex justify-end">
+                      <button
+                        type="button"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 transition hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-blue-300"
+                        @click="addFaqItem(block)"
+                      >
+                        + Добавить вопрос
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
                 <div v-else-if="block.type === 'html'" class="py-1">
                   <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                     <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
@@ -402,6 +559,8 @@ const publicSlugUrl = computed(() => {
 })
 
 const titleEl = ref<HTMLElement | null>(null)
+const copiedAnchor = ref<string | null>(null)
+let copiedAnchorTimer: ReturnType<typeof setTimeout> | null = null
 const blockRefs = new Map<string, HTMLElement>()
 
 defineExpose({
@@ -422,6 +581,7 @@ const emit = defineEmits<{
   'drop': [number]
   'end-drag': []
   'block-keydown': [Block, number, KeyboardEvent]
+  'block-paste': [Block, number, ClipboardEvent]
   'show-format-bar-event': [MouseEvent]
   'click-self': []
   'upload-inline-image': [{ blockId: string; file: File }]
@@ -448,6 +608,152 @@ function onImageFileChange(block: Block, event: Event) {
 function openPublicSlug() {
   if (!hasSlug.value || !publicSlugUrl.value || typeof window === 'undefined') return
   window.open(publicSlugUrl.value, '_blank', 'noopener,noreferrer')
+}
+
+function buttonKind(block: Block): 'custom' | 'login' {
+  return String(block?.attrs?.kind || 'custom') === 'login' ? 'login' : 'custom'
+}
+
+const cyrillicToLatin: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y',
+  к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f',
+  х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya',
+}
+
+function stripHtml(value: string): string {
+  return String(value || '')
+    .replace(/<\s*br\s*\/?>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function transliterate(value: string): string {
+  let out = ''
+  for (const ch of String(value || '').toLowerCase()) {
+    out += cyrillicToLatin[ch] ?? ch
+  }
+  return out
+}
+
+function slugifyAnchor(value: string, fallbackIndex: number): string {
+  const normalized = transliterate(stripHtml(value))
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+  return normalized || `section-${fallbackIndex + 1}`
+}
+
+function isAnchorableHeading(block: Block): boolean {
+  return ['h2', 'h3', 'h4', 'h5'].includes(String(block?.type || ''))
+}
+
+function blockAnchor(block: Block, fallbackIndex: number): string {
+  return `#${slugifyAnchor(String(block?.content || ''), fallbackIndex)}`
+}
+
+async function copyAnchorToClipboard(anchor: string) {
+  if (!anchor || typeof navigator === 'undefined' || !navigator.clipboard?.writeText) return
+  try {
+    await navigator.clipboard.writeText(anchor)
+    const matchingBlock = props.blocks.find((block) => isAnchorableHeading(block) && blockAnchor(block, props.blocks.indexOf(block)) === anchor)
+    copiedAnchor.value = matchingBlock?.id || null
+    if (copiedAnchorTimer) clearTimeout(copiedAnchorTimer)
+    copiedAnchorTimer = setTimeout(() => {
+      copiedAnchor.value = null
+      copiedAnchorTimer = null
+    }, 1400)
+  } catch {
+    // ignore clipboard failures in editor helper UI
+  }
+}
+
+const buttonVariants = [
+  { value: 'solid', label: 'Заполненная' },
+  { value: 'outline', label: 'Контурная' },
+  { value: 'soft', label: 'Мягкая' },
+  { value: 'link', label: 'Текстовая' },
+] as const
+
+function buttonVariant(block: Block): 'solid' | 'outline' | 'soft' | 'link' {
+  const value = String(block?.attrs?.variant || '').trim().toLowerCase()
+  if (value === 'outline' || value === 'soft' || value === 'link') return value
+  if (value === 'secondary') return 'outline'
+  return 'solid'
+}
+
+function setButtonKind(block: Block, kind: 'custom' | 'login') {
+  block.attrs.kind = kind
+  if (kind === 'login') {
+    block.attrs.text = String(block.attrs.text || '').trim() || 'Войти'
+    block.attrs.href = '/?auth-needed=true'
+    block.attrs.newTab = false
+    if (!String(block.attrs.variant || '').trim()) {
+      block.attrs.variant = 'solid'
+    }
+    return
+  }
+}
+
+function setButtonVariant(block: Block, variant: 'solid' | 'outline' | 'soft' | 'link') {
+  block.attrs.variant = variant
+}
+
+function buttonOpensInNewTab(block: Block): boolean {
+  return Boolean(block?.attrs?.newTab ?? true)
+}
+
+function buttonPreviewHref(block: Block): string {
+  if (buttonKind(block) === 'login') return '/?auth-needed=true'
+  return String(block?.attrs?.href || '').trim() || '#'
+}
+
+function buttonPreviewClass(block: Block): string {
+  const variant = buttonVariant(block)
+  if (variant === 'outline') {
+    return 'inline-flex items-center rounded-md border border-blue-500 bg-transparent px-3 py-1.5 text-xs font-semibold text-blue-600 shadow-sm dark:border-blue-400 dark:text-blue-300'
+  }
+  if (variant === 'soft') {
+    return 'inline-flex items-center rounded-md bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
+  }
+  if (variant === 'link') {
+    return 'inline-flex items-center px-1 py-1 text-xs font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200'
+  }
+  return 'inline-flex items-center rounded-md bg-blue-500 px-3 py-1.5 text-xs font-semibold !text-white no-underline shadow-sm dark:bg-blue-500 dark:!text-white'
+}
+
+function getFaqItems(block: Block): Array<{ q: string; a: string }> {
+  if (!Array.isArray(block?.attrs?.items)) {
+    block.attrs.items = [{ q: '', a: '' }]
+  }
+  return block.attrs.items
+}
+
+function addFaqItem(block: Block) {
+  getFaqItems(block).push({ q: '', a: '' })
+}
+
+function removeFaqItem(block: Block, index: number) {
+  const items = getFaqItems(block)
+  if (items.length <= 1) {
+    items[0] = { q: '', a: '' }
+    return
+  }
+  items.splice(index, 1)
+}
+
+function updateFaqField(block: Block, index: number, field: 'q' | 'a', value: string) {
+  const items = getFaqItems(block)
+  if (!items[index]) items[index] = { q: '', a: '' }
+  items[index][field] = value
 }
 
 // ─── Block styling helpers ───────────────────────────────────────────────

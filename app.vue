@@ -42,7 +42,7 @@
     />
   </ClientOnly>
 
-  <UNotifications />
+  <UNotifications :ui="notificationsUi" />
 </template>
 
 <script setup lang="ts">
@@ -117,7 +117,15 @@ const normalizedSiteUrl = computed(() => String(config.public.siteUrl || 'https:
 
 const routeSegments = computed(() => route.path.split('/').filter(Boolean));
 const isConsoleRoute = computed(() => route.path.startsWith('/console'));
+const isPublicationEditorRoute = computed(() => /^\/console\/publications(?:\/|$)/.test(route.path));
 const isSharedNamespaceRoute = computed(() => /^\/shared\/[^/]+(?:\/|$)/.test(route.path));
+
+const notificationsUi = computed(() => {
+  if (!isPublicationEditorRoute.value) return {};
+  return {
+    position: 'top-[unset] bottom-0'
+  };
+});
 const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew']);
 const isNamespacePrivateRoute = computed(() => {
   const segments = routeSegments.value;

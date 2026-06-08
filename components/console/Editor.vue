@@ -35,6 +35,7 @@
         @drop="onDrop"
         @end-drag="endDrag"
         @block-keydown="onBlockKeydown"
+        @block-paste="onBlockPaste"
         @show-format-bar-event="onShowFormatBarEvent"
         @click-self="activeBlockId = null"
       />
@@ -245,6 +246,10 @@ function uid() { return `b${++_idCounter}_${Math.random().toString(36).slice(2, 
 function createBlock(type: string): Block {
   const attrs = type === 'callout'
     ? { calloutType: 'info' }
+    : type === 'button'
+      ? { text: 'Кнопка', href: '', newTab: true, kind: 'custom', variant: 'solid' }
+      : type === 'faq'
+        ? { items: [{ q: '', a: '' }] }
       : {}
 
   const content = type === 'ul'
@@ -341,6 +346,139 @@ function onBlockKeydown(block: Block, index: number, e: KeyboardEvent) {
 
 function onBlockFocus(block: Block) {
   activeBlockId.value = block.id
+}
+
+function looksLikeMarkdownBulk(text: string): boolean {
+  const value = String(text || '').trim()
+  if (!value) return false
+  if (value.length < 120 && !value.includes('\n')) return false
+  return /(^|\n)(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s+|!\[[^\]]*\]\([^)]*\)|\[[^\]]+\]\([^)]*\))/m.test(value)
+}
+
+function escapeHtml(value: string): string {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+}
+
+function normalizeInlineMarkdown(value: string): string {
+  let out = escapeHtml(value)
+  out = out.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+  out = out.replace(/\*(.+?)\*/g, '<em>$1</em>')
+  out = out.replace(/`([^`]+)`/g, '<code>$1</code>')
+  out = out.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, href: string) => {
+    const url = String(href || '').trim()
+    if (!url) return label
+    return `<a href="${escapeHtml(url)}">${escapeHtml(label)}</a>`
+  })
+  return out
+}
+
+function markdownToBlocks(markdown: string): Block[] {
+  const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n')
+  const result: Block[] = []
+  let index = 0
+
+  const pushBlock = (type: string, content: string, attrs: Record<string, any> = {}) => {
+    result.push({ id: uid(), type, content, attrs })
+  }
+
+  while (index < lines.length) {
+    const rawLine = lines[index]
+    const line = rawLine.trim()
+
+    if (!line) {
+      index += 1
+      continue
+    }
+
+    const heading = line.match(/^(#{2,5})\s+(.+)$/)
+    if (heading) {
+      const level = heading[1].length
+      const type = (`h${Math.min(Math.max(level, 2), 5)}`)
+      pushBlock(type, normalizeInlineMarkdown(heading[2]))
+      index += 1
+      continue
+    }
+
+    const image = line.match(/^!\[([^\]]*)\]\(([^)\s]+)[^)]*\)$/)
+    if (image) {
+      pushBlock('image', '', { src: String(image[2] || '').trim(), alt: String(image[1] || '').trim() })
+      index += 1
+      continue
+    }
+
+    if (/^[-*]\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^[-*]\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^[-*]\s+/, ''))
+        index += 1
+      }
+      const listHtml = items.map((item) => `<li>${normalizeInlineMarkdown(item)}</li>`).join('')
+      pushBlock('ul', listHtml)
+      continue
+    }
+
+    if (/^\d+\.\s+/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^\d+\.\s+/, ''))
+        index += 1
+      }
+      const listHtml = items.map((item) => `<li>${normalizeInlineMarkdown(item)}</li>`).join('')
+      pushBlock('ol', listHtml)
+      continue
+    }
+
+    if (/^>\s?/.test(line)) {
+      const items: string[] = []
+      while (index < lines.length && /^>\s?/.test(lines[index].trim())) {
+        items.push(lines[index].trim().replace(/^>\s?/, ''))
+        index += 1
+      }
+      pushBlock('quote', normalizeInlineMarkdown(items.join('<br>')))
+      continue
+    }
+
+    const paragraphLines: string[] = [line]
+    index += 1
+    while (index < lines.length) {
+      const next = lines[index].trim()
+      if (!next) {
+        index += 1
+        break
+      }
+      if (/^(#{1,6}\s+|[-*]\s+|\d+\.\s+|>\s+|!\[[^\]]*\]\([^)]*\))/.test(next)) break
+      paragraphLines.push(next)
+      index += 1
+    }
+    pushBlock('paragraph', normalizeInlineMarkdown(paragraphLines.join(' ')))
+  }
+
+  return result.length ? result : [createBlock('paragraph')]
+}
+
+function onBlockPaste(_block: Block, index: number, e: ClipboardEvent) {
+  const text = String(e.clipboardData?.getData('text/plain') || '')
+  if (!looksLikeMarkdownBulk(text)) return
+
+  e.preventDefault()
+  const parsedBlocks = markdownToBlocks(text)
+  if (!parsedBlocks.length) return
+
+  blocks.value.splice(index, 1, ...parsedBlocks)
+  activeBlockId.value = parsedBlocks[0]?.id || null
+
+  nextTick(() => {
+    hydrateEditorDomFromState()
+    const firstId = parsedBlocks[0]?.id
+    if (!firstId) return
+    const el = blockRefs.value.get(firstId)
+    if (el) el.focus()
+  })
+
+  scheduleAutosave()
 }
 
 // ─── Drag & drop ─────────────────────────────────────────────────────────
@@ -569,7 +707,10 @@ async function uploadFeaturedImage(file: File) {
       ogImage: uploaded.url,
     })
     isDirty.value = true
-    await saveDraft()
+    const saved = await saveDraft()
+    if (!saved) {
+      throw new Error('Картинка загружена, но сохранить публикацию не удалось. Обновите страницу и повторите сохранение.')
+    }
     toast.add({ title: 'Изображение загружено', color: 'green' })
   } catch (error: any) {
     toast.add({ title: error?.message || 'Не удалось загрузить изображение', color: 'red' })
@@ -609,7 +750,10 @@ async function uploadInlineImage(payload: { blockId: string; file: File }) {
 
     scheduleAutosave()
     isDirty.value = true
-    await saveDraft()
+    const saved = await saveDraft()
+    if (!saved) {
+      throw new Error('Картинка загружена, но сохранить публикацию не удалось. Обновите страницу и повторите сохранение.')
+    }
 
     toast.add({ title: 'Изображение загружено', color: 'green' })
   } catch (error: any) {
@@ -623,6 +767,7 @@ function blockTypeLabel(type: string) {
     paragraph: '¶', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5',
     quote: '"', ul: 'UL', ol: 'OL', image: 'IMG',
     callout: 'ℹ', spoiler: 'S', spoiler_open: 'S+', spoiler_close: 'S-', divider: '—', html: '</>',
+    button: 'BTN', faq: 'FAQ',
   }
   return map[type] ?? type
 }
@@ -682,7 +827,7 @@ function getPayload(syncDom = true) {
   if (syncDom) {
     for (const block of blocks.value) {
       const el = blockRefs.value.get(block.id)
-      if (el && block.type !== 'divider' && block.type !== 'image' && block.type !== 'html' && block.type !== 'spoiler_open' && block.type !== 'spoiler_close') {
+      if (el && !['divider', 'image', 'html', 'spoiler_open', 'spoiler_close', 'button', 'faq'].includes(block.type)) {
         block.content = el.innerHTML
       }
     }
@@ -702,7 +847,7 @@ function getPayload(syncDom = true) {
       attrs: type === 'spoiler' || type === 'spoiler_open' || type === 'spoiler_close'
         ? {}
         : block.attrs,
-      content: ['divider', 'image', 'html', 'spoiler_open', 'spoiler_close'].includes(type)
+      content: ['divider', 'image', 'html', 'spoiler_open', 'spoiler_close', 'button', 'faq'].includes(type)
         ? block.content
         : (block.content || '').trim()
     }
@@ -734,6 +879,23 @@ function isMeaningfulBlock(block: Block): boolean {
 
   if (type === 'html') {
     return stripHtml(String(block?.content || '')).length > 0
+  }
+
+  if (type === 'button') {
+    const kind = String(block?.attrs?.kind || 'custom').trim().toLowerCase()
+    const text = String(block?.attrs?.text || '').trim()
+    const href = String(block?.attrs?.href || '').trim()
+    if (kind === 'login') return text.length > 0
+    return text.length > 0 && href.length > 0
+  }
+
+  if (type === 'faq') {
+    const items = Array.isArray(block?.attrs?.items) ? block.attrs.items : []
+    return items.some((item: any) => {
+      const q = String(item?.q || '').trim()
+      const a = String(item?.a || '').trim()
+      return q.length > 0 || a.length > 0
+    })
   }
 
   if (type === 'ul' || type === 'ol') {
@@ -821,7 +983,7 @@ function hydrateEditorDomFromState() {
     for (const block of blocks.value) {
       const el = blockRefs.value.get(block.id)
       if (!el) continue
-      if (block.type === 'divider' || block.type === 'image' || block.type === 'html' || block.type === 'spoiler_open' || block.type === 'spoiler_close') continue
+      if (['divider', 'image', 'html', 'spoiler_open', 'spoiler_close', 'button', 'faq'].includes(block.type)) continue
       if (el.innerHTML !== block.content) {
         el.innerHTML = block.content || ''
       }
@@ -829,8 +991,8 @@ function hydrateEditorDomFromState() {
   })
 }
 
-async function saveDraft() {
-  if (!isDirty.value) return
+async function saveDraft(): Promise<boolean> {
+  if (!isDirty.value) return true
   const payload = getPayload(true)
 
   article.status = 'draft'
@@ -862,7 +1024,7 @@ async function saveDraft() {
   if (saveFailed) {
     isSaving.value = false
     isSavingManually.value = false
-    return
+    return false
   }
 
   saveToLocalStorage(false)
@@ -873,6 +1035,8 @@ async function saveDraft() {
   setTimeout(() => {
     isSaving.value = false
   }, 600)
+
+  return true
 }
 
 async function publish() {

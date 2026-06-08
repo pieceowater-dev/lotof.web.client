@@ -50,9 +50,15 @@ function markdownToText(markdown: string): string {
 }
 
 function firstImage(markdown: string): { src: string; alt: string } | null {
-  const match = markdown.match(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/);
-  if (!match) return null;
-  return { src: match[2], alt: match[1] || '' };
+  const markdownMatch = markdown.match(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/);
+  if (markdownMatch) {
+    return { src: markdownMatch[2], alt: markdownMatch[1] || '' };
+  }
+
+  const htmlMatch = markdown.match(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i);
+  if (!htmlMatch) return null;
+  const altMatch = markdown.match(/<img\s+[^>]*alt=["']([^"']*)["'][^>]*>/i);
+  return { src: htmlMatch[1], alt: altMatch?.[1] || '' };
 }
 
 function excerptFromBody(markdown: string): string {
@@ -98,7 +104,7 @@ function processNewsPosts(): ProcessedMarkdownPost[] {
     if (!slug || !title || categorySlug !== 'news') continue;
 
     const imgFromBody = firstImage(body);
-    const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
+    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '/og-image.png');
     const imageAlt = imgFromBody?.alt || title;
     const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');
@@ -139,7 +145,7 @@ function processWhatsNewPosts(): ProcessedMarkdownPost[] {
     if (!slug || !title || categorySlug !== 'whatsnew') continue;
 
     const imgFromBody = firstImage(body);
-    const image = String(meta.og_image || imgFromBody?.src || '/og-image.png');
+    const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '/og-image.png');
     const imageAlt = imgFromBody?.alt || title;
     const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
     const author = String(meta.author || 'Lota Team');

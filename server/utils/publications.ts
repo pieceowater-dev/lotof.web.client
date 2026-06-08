@@ -198,6 +198,11 @@ function normalizeEditorBlock(block: any): EditorBlock {
     if (legacyAssetId && !String(attrs.assetId || '').trim()) {
       attrs.assetId = legacyAssetId;
     }
+
+    const legacyAlt = String(attrs.a || attrs.imageAlt || '').trim();
+    if (legacyAlt && !String(attrs.alt || '').trim()) {
+      attrs.alt = legacyAlt;
+    }
   }
 
   return {
@@ -252,6 +257,29 @@ function blockToMarkdown(block: EditorBlock): string {
   if (type === 'callout') {
     const calloutType = String(block.attrs?.calloutType || 'info').toUpperCase();
     return `> [!${calloutType}]\n> ${text.replace(/\n/g, '\n> ')}`;
+  }
+
+  if (type === 'button') {
+    const kind = String(block.attrs?.kind || 'custom').trim().toLowerCase();
+    const label = String(block.attrs?.text || '').trim() || (kind === 'login' ? 'Войти' : 'Подробнее');
+    const href = kind === 'login'
+      ? '/?auth-needed=true'
+      : String(block.attrs?.href || '').trim();
+    if (!href) return '';
+    return `[${label}](${href})`;
+  }
+
+  if (type === 'faq') {
+    const items = Array.isArray(block.attrs?.items) ? block.attrs.items : [];
+    const lines = items
+      .map((item: any) => {
+        const q = String(item?.q || '').trim();
+        const a = String(item?.a || '').trim();
+        if (!q || !a) return '';
+        return `Q: ${q}\nA: ${a}`;
+      })
+      .filter(Boolean);
+    return lines.join('\n\n');
   }
 
   return text;

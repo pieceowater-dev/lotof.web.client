@@ -89,11 +89,110 @@ function parseAttrsJson(raw: string | undefined): Record<string, any> {
   }
 }
 
+function normalizeBlockAttrs(type: string, attrs: Record<string, any>): Record<string, any> {
+  const nextAttrs = { ...(attrs || {}) };
+  const normalizeButtonVariant = (value: unknown): string => {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'outline' || raw === 'soft' || raw === 'link') return raw;
+    if (raw === 'secondary') return 'outline';
+    return 'solid';
+  };
+
+  if (type === 'image') {
+    const src = String(nextAttrs.s || '').trim();
+    if (src && !String(nextAttrs.src || '').trim()) {
+      nextAttrs.src = src;
+    }
+
+    const assetId = String(nextAttrs.ai || '').trim();
+    if (assetId && !String(nextAttrs.assetId || '').trim()) {
+      nextAttrs.assetId = assetId;
+    }
+
+    const alt = String(nextAttrs.al || nextAttrs.a || nextAttrs.imageAlt || '').trim();
+    if (alt && !String(nextAttrs.alt || '').trim()) {
+      nextAttrs.alt = alt;
+    }
+  }
+
+  if (type === 'button') {
+    const text = String(nextAttrs.tx || '').trim();
+    if (text && !String(nextAttrs.text || '').trim()) {
+      nextAttrs.text = text;
+    }
+
+    const href = String(nextAttrs.hr || '').trim();
+    if (href && !String(nextAttrs.href || '').trim()) {
+      nextAttrs.href = href;
+    }
+
+    if (typeof nextAttrs.nt === 'boolean' && typeof nextAttrs.newTab !== 'boolean') {
+      nextAttrs.newTab = nextAttrs.nt;
+    }
+
+    const kind = String(nextAttrs.kd || '').trim();
+    if (kind && !String(nextAttrs.kind || '').trim()) {
+      nextAttrs.kind = kind;
+    }
+
+    const variant = String(nextAttrs.vr || '').trim();
+    if (variant && !String(nextAttrs.variant || '').trim()) {
+      nextAttrs.variant = normalizeButtonVariant(variant);
+    }
+
+    if (String(nextAttrs.variant || '').trim()) {
+      nextAttrs.variant = normalizeButtonVariant(nextAttrs.variant);
+    } else {
+      nextAttrs.variant = 'solid';
+    }
+  }
+
+  if (type === 'faq') {
+    const shortItems = Array.isArray(nextAttrs.it) ? nextAttrs.it : [];
+    if (shortItems.length && !Array.isArray(nextAttrs.items)) {
+      nextAttrs.items = shortItems;
+    }
+  }
+
+  return nextAttrs;
+}
+
 function safeImageSrc(src: string): string {
   const value = String(src || '').trim();
   if (!value) return '';
   if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) return value;
   return '';
+}
+
+function safeLinkHref(raw: string): string {
+  const value = String(raw || '').trim();
+  if (!value) return '';
+  const lower = value.toLowerCase();
+  if (lower.startsWith('javascript:') || lower.startsWith('data:') || lower.startsWith('vbscript:')) return '';
+  return value;
+}
+
+function slugifyAnchor(value: string, fallbackIndex: number): string {
+  const translit = String(value || '')
+    .toLowerCase()
+    .replace(/а/g, 'a').replace(/б/g, 'b').replace(/в/g, 'v').replace(/г/g, 'g').replace(/д/g, 'd')
+    .replace(/е/g, 'e').replace(/ё/g, 'e').replace(/ж/g, 'zh').replace(/з/g, 'z').replace(/и/g, 'i')
+    .replace(/й/g, 'y').replace(/к/g, 'k').replace(/л/g, 'l').replace(/м/g, 'm').replace(/н/g, 'n')
+    .replace(/о/g, 'o').replace(/п/g, 'p').replace(/р/g, 'r').replace(/с/g, 's').replace(/т/g, 't')
+    .replace(/у/g, 'u').replace(/ф/g, 'f').replace(/х/g, 'h').replace(/ц/g, 'ts').replace(/ч/g, 'ch')
+    .replace(/ш/g, 'sh').replace(/щ/g, 'sch').replace(/ъ/g, '').replace(/ы/g, 'y').replace(/ь/g, '')
+    .replace(/э/g, 'e').replace(/ю/g, 'yu').replace(/я/g, 'ya');
+
+  const normalized = translit
+    .replace(/&[a-z0-9#]+;/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized || `section-${fallbackIndex + 1}`;
 }
 
 function toIsoDate(value: unknown): string {
@@ -122,6 +221,22 @@ function blocksToHtml(
 
   const isAuthorized = !!options?.isAuthorized;
   const parts: string[] = [];
+  const authBackToOnClick = "try{var p=(window.location.pathname||'/')+(window.location.search||'')+(window.location.hash||'');localStorage.setItem('back-to',p.replace(/^\\//,''));}catch(e){}";
+  const headingAnchorCounts = new Map<string, number>();
+
+  const buttonVariantClass = (variant: string) => {
+    const value = String(variant || '').trim().toLowerCase() || 'solid';
+    if (value === 'outline') {
+      return 'group inline-flex items-center gap-2 rounded-md border border-blue-500 bg-transparent px-5 py-3 text-sm font-semibold text-blue-600 shadow-sm transition duration-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-950/30 dark:hover:text-blue-200';
+    }
+    if (value === 'soft') {
+      return 'group inline-flex items-center gap-2 rounded-md bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700 transition duration-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60';
+    }
+    if (value === 'link') {
+      return 'group inline-flex items-center gap-2 px-1 py-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200';
+    }
+    return 'group inline-flex items-center gap-2 rounded-md bg-blue-500 px-5 py-3 text-sm font-semibold !text-white no-underline shadow-sm transition duration-200 hover:bg-blue-600 dark:bg-blue-500 dark:!text-white dark:hover:bg-blue-400';
+  };
   let openSpoilerInner: string[] = [];
   let isSpoilerOpen = false;
 
@@ -243,10 +358,10 @@ function blocksToHtml(
     parts.push(html);
   };
 
-  for (const block of blocks) {
+  for (const [index, block] of blocks.entries()) {
     const type = String(block?.type || 'paragraph').trim();
     const content = String(block?.content || '').trim();
-    const attrs = parseAttrsJson(block?.attrsJson);
+    const attrs = normalizeBlockAttrs(type, parseAttrsJson(block?.attrsJson));
 
     if (type === 'spoiler_open') {
       flushOpenSpoiler();
@@ -262,7 +377,7 @@ function blocksToHtml(
     if (type === 'image') {
       const src = safeImageSrc(String(attrs.src || attrs.s || ''));
       if (!src) continue;
-      const alt = escapeHtml(String(attrs.alt || ''));
+      const alt = escapeHtml(String(attrs.alt || attrs.a || attrs.imageAlt || ''));
       const caption = String(attrs.caption || '').trim();
       pushContent(
         `<figure class="my-6">` +
@@ -280,13 +395,17 @@ function blocksToHtml(
 
     if (type === 'h2' || type === 'h3' || type === 'h4' || type === 'h5') {
       if (!content) continue;
+      const baseAnchor = slugifyAnchor(content, index);
+      const anchorCount = headingAnchorCounts.get(baseAnchor) || 0;
+      headingAnchorCounts.set(baseAnchor, anchorCount + 1);
+      const anchorId = anchorCount === 0 ? baseAnchor : `${baseAnchor}-${anchorCount + 1}`;
       const classes = {
         h2: 'mt-10 mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100',
         h3: 'mt-8 mb-3 text-2xl font-bold text-gray-900 dark:text-gray-100',
         h4: 'mt-7 mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100',
         h5: 'mt-6 mb-2 text-lg font-semibold text-gray-800 dark:text-gray-100',
       } as const;
-      pushContent(`<${type} class="${classes[type as keyof typeof classes]}">${content}</${type}>`);
+      pushContent(`<${type} id="${escapeHtml(anchorId)}" class="scroll-mt-28 ${classes[type as keyof typeof classes]}">${content}</${type}>`);
       continue;
     }
 
@@ -310,6 +429,52 @@ function blocksToHtml(
         success: 'bg-green-50 dark:bg-green-950/40 border border-green-100 dark:border-green-900',
       }[calloutType] || 'bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900';
       pushContent(`<div class="my-6 rounded-xl p-4 ${calloutClasses}">${content}</div>`);
+      continue;
+    }
+
+    if (type === 'button') {
+      const kind = String(attrs.kind || 'custom').trim().toLowerCase();
+      const variant = String(attrs.variant || '').trim() || 'solid';
+      const label = escapeHtml(String(attrs.text || '').trim() || (kind === 'login' ? 'Войти' : 'Подробнее'));
+      const href = kind === 'login'
+        ? '/?auth-needed=true'
+        : safeLinkHref(String(attrs.href || ''));
+      if (!href) continue;
+
+      const isAnchor = href.startsWith('#');
+      const shouldOpenInNewTab = Boolean(attrs.newTab) && !isAnchor && kind !== 'login';
+      const target = shouldOpenInNewTab ? ' target="_blank" rel="noopener noreferrer"' : '';
+      const clickHandler = kind === 'login' ? ` onclick="${authBackToOnClick}"` : '';
+
+      pushContent(
+        `<div class="my-8">` +
+        `<a href="${escapeHtml(href)}"${target}${clickHandler} class="${buttonVariantClass(variant)}"><span>${label}</span><span aria-hidden="true" class="text-base leading-none transition duration-200 group-hover:translate-x-0.5">→</span></a>` +
+        `</div>`
+      );
+      continue;
+    }
+
+    if (type === 'faq') {
+      const items = Array.isArray(attrs.items) ? attrs.items : [];
+      const validItems = items.filter((item: any) => {
+        const q = String(item?.q || '').trim();
+        const a = String(item?.a || '').trim();
+        return !!q && !!a;
+      });
+      if (!validItems.length) continue;
+
+      const faqHtml = validItems.map((item: any) => {
+        const q = escapeHtml(String(item.q || '').trim());
+        const a = escapeHtml(String(item.a || '').trim()).replace(/\n/g, '<br>');
+        return (
+          `<details class="group rounded-2xl border border-slate-200/90 bg-white/95 px-5 py-4 shadow-[0_8px_28px_rgba(15,23,42,0.05)] transition hover:border-blue-200 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-blue-800/70" data-faq-item>` +
+          `<summary class="flex cursor-pointer list-none items-start justify-between gap-4 pr-0 text-base font-semibold leading-6 text-slate-900 marker:content-none dark:text-slate-50" data-faq-question><span>${q}</span><span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition group-open:rotate-45 group-open:border-blue-200 group-open:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:group-open:border-blue-800 dark:group-open:text-blue-300">+</span></summary>` +
+          `<div class="mt-3 border-t border-slate-100 pt-3 text-[15px] leading-7 text-slate-600 dark:border-slate-800 dark:text-slate-300" data-faq-answer>${a}</div>` +
+          `</details>`
+        );
+      }).join('');
+
+      pushContent(`<section class="my-10 space-y-4" data-faq-block>${faqHtml}</section>`);
       continue;
     }
 

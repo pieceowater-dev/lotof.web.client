@@ -50,6 +50,8 @@ const blockGroups = [
   {
     label: 'elements',
     types: [
+      { type: 'button', label: 'button', icon: 'lucide:rectangle-ellipsis', iconBg: 'bg-indigo-100 dark:bg-indigo-900/30', iconColor: 'text-indigo-600 dark:text-indigo-400' },
+      { type: 'faq', label: 'faq', icon: 'lucide:messages-square', iconBg: 'bg-cyan-100 dark:bg-cyan-900/30', iconColor: 'text-cyan-600 dark:text-cyan-400' },
       { type: 'callout', label: 'callout', icon: 'lucide:info', iconBg: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600 dark:text-amber-400' },
       { type: 'spoiler', label: 'spoiler', icon: 'lucide:eye-off', iconBg: 'bg-slate-100 dark:bg-slate-800', iconColor: 'text-slate-700 dark:text-slate-300' },
       { type: 'spoiler_open', label: 'spoilerOpen', icon: 'lucide:between-vertical-start', iconBg: 'bg-slate-100 dark:bg-slate-800', iconColor: 'text-slate-700 dark:text-slate-300' },
@@ -65,10 +67,10 @@ const blockGroups = [
   <Teleport to="body">
     <div
       v-if="open"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 dark:bg-black/50 backdrop-blur-md"
+      class="fixed inset-0 z-50 overflow-y-auto p-4 bg-slate-900/30 dark:bg-black/50 backdrop-blur-md"
       @click.self="$emit('update:open', false)"
     >
-      <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-[520px] overflow-hidden">
+      <div class="mx-auto my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <!-- Header -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
           <h3 class="font-semibold text-slate-900 dark:text-white">{{ t('admin.editor.addBlock') }}</h3>
@@ -81,7 +83,7 @@ const blockGroups = [
         </div>
 
         <!-- Content -->
-        <div class="p-4 grid gap-4">
+        <div class="grid gap-4 overflow-y-auto p-4">
           <div v-for="group in blockGroups" :key="group.label" class="space-y-3">
             <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300 px-1">{{ t(`admin.editor.blockGroups.${group.label}`) }}</h4>
             <div class="grid grid-cols-3 gap-2">

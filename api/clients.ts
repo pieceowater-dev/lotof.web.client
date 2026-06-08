@@ -149,6 +149,7 @@ export class ApiClient {
       const messages: string[] = Array.isArray(rawErrors)
         ? rawErrors.map((e: any) => String(e?.message || '').toLowerCase())
         : [];
+      const isOptimisticConflict = messages.some((m) => m.includes('version mismatch') || m.includes('update conflict'));
       const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
       );
@@ -201,7 +202,7 @@ export class ApiClient {
             throw error;
           }
         }
-      } else {
+      } else if (!isOptimisticConflict) {
         if (!options?.suppressErrors) {
           if (process.client) {
             try {

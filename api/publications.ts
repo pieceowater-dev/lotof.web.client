@@ -489,7 +489,14 @@ function parseAttrsJson(raw: string): Record<string, any> {
 
 function normalizeEditorBlockAttrs(type: string, attrs: Record<string, any>): Record<string, any> {
   const nextAttrs = { ...(attrs || {}) }
-  if (String(type || '') === 'image') {
+  const normalizedType = String(type || '')
+  const normalizeButtonVariant = (value: string) => {
+    const raw = asString(value).toLowerCase()
+    if (raw === 'outline' || raw === 'soft' || raw === 'link') return raw
+    if (raw === 'secondary') return 'outline'
+    return 'solid'
+  }
+  if (normalizedType === 'image') {
     const legacySrc = asString(nextAttrs.s)
     if (legacySrc && !asString(nextAttrs.src)) {
       nextAttrs.src = legacySrc
@@ -499,7 +506,61 @@ function normalizeEditorBlockAttrs(type: string, attrs: Record<string, any>): Re
     if (legacyAssetId && !asString(nextAttrs.assetId)) {
       nextAttrs.assetId = legacyAssetId
     }
+
+    const legacyAlt = asString(nextAttrs.a || nextAttrs.imageAlt)
+    if (legacyAlt && !asString(nextAttrs.alt)) {
+      nextAttrs.alt = legacyAlt
+    }
   }
+
+  if (normalizedType === 'button') {
+    const text = asString(nextAttrs.tx)
+    if (text && !asString(nextAttrs.text)) {
+      nextAttrs.text = text
+    }
+
+    const href = asString(nextAttrs.hr)
+    if (href && !asString(nextAttrs.href)) {
+      nextAttrs.href = href
+    }
+
+    if (typeof nextAttrs.nt === 'boolean' && typeof nextAttrs.newTab !== 'boolean') {
+      nextAttrs.newTab = nextAttrs.nt
+    }
+
+    const kind = asString(nextAttrs.kd)
+    if (kind && !asString(nextAttrs.kind)) {
+      nextAttrs.kind = kind
+    }
+
+    const variant = asString(nextAttrs.vr)
+    if (variant && !asString(nextAttrs.variant)) {
+      nextAttrs.variant = normalizeButtonVariant(variant)
+    }
+
+    if (asString(nextAttrs.variant)) {
+      nextAttrs.variant = normalizeButtonVariant(nextAttrs.variant)
+    } else {
+      nextAttrs.variant = 'solid'
+    }
+
+    // Remove short backend keys so saves always use updated long-key values
+    delete nextAttrs.tx
+    delete nextAttrs.hr
+    delete nextAttrs.nt
+    delete nextAttrs.kd
+    delete nextAttrs.vr
+  }
+
+  if (normalizedType === 'faq') {
+    const items = Array.isArray(nextAttrs.it) ? nextAttrs.it : []
+    if (items.length && !Array.isArray(nextAttrs.items)) {
+      nextAttrs.items = items
+    }
+    // Remove short backend key so saves always use updated long-key value
+    delete nextAttrs.it
+  }
+
   return nextAttrs
 }
 
@@ -671,6 +732,28 @@ export function publicationBlocksToHtml(
   const loginHref = '/?auth-needed=true'
   const authBackToOnClick = "try{var p=(window.location.pathname||'/')+(window.location.search||'')+(window.location.hash||'');localStorage.setItem('back-to',p.replace(/^\\//,''));}catch(e){}"
 
+  const buttonVariantClass = (variant: string) => {
+    const value = asString(variant).toLowerCase() || 'classic'
+    if (value === 'outline') {
+      return 'group inline-flex items-center gap-2 rounded-md border border-blue-500 bg-transparent px-5 py-3 text-sm font-semibold text-blue-600 shadow-sm transition duration-200 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-400 dark:text-blue-300 dark:hover:bg-blue-950/30 dark:hover:text-blue-200'
+    }
+    if (value === 'soft') {
+      return 'group inline-flex items-center gap-2 rounded-md bg-blue-50 px-5 py-3 text-sm font-semibold text-blue-700 transition duration-200 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-950/60'
+    }
+    if (value === 'link') {
+      return 'group inline-flex items-center gap-2 px-1 py-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200'
+    }
+    return 'group inline-flex items-center gap-2 rounded-md bg-blue-500 px-5 py-3 text-sm font-semibold !text-white no-underline shadow-sm transition duration-200 hover:bg-blue-600 dark:bg-blue-500 dark:!text-white dark:hover:bg-blue-400'
+  }
+
+  const headingAnchorCounts = new Map<string, number>()
+  const nextHeadingAnchor = (value: string, fallbackIndex: number) => {
+    const base = slugify(stripHtml(value)).slice(0, 80) || `section-${fallbackIndex + 1}`
+    const count = headingAnchorCounts.get(base) || 0
+    headingAnchorCounts.set(base, count + 1)
+    return count === 0 ? base : `${base}-${count + 1}`
+  }
+
   const renderUnauthorizedProtected = (kind: 'block' | 'section') => {
     const kindLabel = 'Эксклюзивный контент'
     const kindTitle = kind === 'section'
@@ -770,6 +853,12 @@ export function publicationBlocksToHtml(
   let openSpoilerInner: string[] = []
   let isSpoilerOpen = false
 
+  const esc = (value: string) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+
   const flushOpenSpoiler = () => {
     if (!isSpoilerOpen) return
 
@@ -795,9 +884,9 @@ export function publicationBlocksToHtml(
     parts.push(html)
   }
 
-  for (const block of Array.isArray(blocks) ? blocks : []) {
+  for (const [index, block] of (Array.isArray(blocks) ? blocks : []).entries()) {
     const type = asString(block.type) || 'paragraph'
-    const attrs = parseAttrsJson(block.attrsJson)
+    const attrs = normalizeEditorBlockAttrs(type, parseAttrsJson(block.attrsJson))
     const content = asString(block.content)
 
     if (type === 'spoiler_open') {
@@ -819,7 +908,7 @@ export function publicationBlocksToHtml(
     if (type === 'image') {
       const src = asString(attrs.src || attrs.s)
       if (!src) continue
-      const alt = asString(attrs.alt)
+      const alt = asString(attrs.alt || attrs.a || attrs.imageAlt)
       const caption = asString(attrs.caption)
       pushContent(`
         <figure class="my-6">
@@ -854,6 +943,50 @@ export function publicationBlocksToHtml(
       continue
     }
 
+    if (type === 'button') {
+      const kind = asString(attrs.kind).toLowerCase() || 'custom'
+      const variant = asString(attrs.variant) || 'solid'
+      const text = asString(attrs.text) || (kind === 'login' ? 'Войти' : 'Подробнее')
+      const href = kind === 'login' ? '/?auth-needed=true' : asString(attrs.href)
+      if (!href) continue
+
+      const isAnchor = href.startsWith('#')
+      const shouldOpenInNewTab = Boolean(attrs.newTab) && !isAnchor && kind !== 'login'
+      const target = shouldOpenInNewTab ? ' target="_blank" rel="noopener noreferrer"' : ''
+      const clickHandler = kind === 'login' ? ` onclick="${authBackToOnClick}"` : ''
+
+      pushContent(
+        `<div class="my-8">` +
+        `<a href="${esc(href)}"${target}${clickHandler} class="${buttonVariantClass(variant)}"><span>${esc(text)}</span><span aria-hidden="true" class="text-base leading-none transition duration-200 group-hover:translate-x-0.5">→</span></a>` +
+        `</div>`
+      )
+      continue
+    }
+
+    if (type === 'faq') {
+      const items = Array.isArray(attrs.items) ? attrs.items : []
+      const validItems = items.filter((item) => {
+        const q = asString(item?.q)
+        const a = asString(item?.a)
+        return !!q && !!a
+      })
+      if (!validItems.length) continue
+
+      const faqItemsHtml = validItems.map((item) => {
+        const q = esc(asString(item.q))
+        const a = esc(asString(item.a)).replace(/\n/g, '<br>')
+        return (
+          `<details class="group rounded-2xl border border-slate-200/90 bg-white/95 px-5 py-4 shadow-[0_8px_28px_rgba(15,23,42,0.05)] transition hover:border-blue-200 dark:border-slate-700 dark:bg-slate-900/80 dark:hover:border-blue-800/70" data-faq-item>` +
+          `<summary class="flex cursor-pointer list-none items-start justify-between gap-4 pr-0 text-base font-semibold leading-6 text-slate-900 marker:content-none dark:text-slate-50" data-faq-question><span>${q}</span><span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition group-open:rotate-45 group-open:border-blue-200 group-open:text-blue-600 dark:border-slate-700 dark:text-slate-300 dark:group-open:border-blue-800 dark:group-open:text-blue-300">+</span></summary>` +
+          `<div class="mt-3 border-t border-slate-100 pt-3 text-[15px] leading-7 text-slate-600 dark:border-slate-800 dark:text-slate-300" data-faq-answer>${a}</div>` +
+          `</details>`
+        )
+      }).join('')
+
+      pushContent(`<section class="my-10 space-y-4" data-faq-block>${faqItemsHtml}</section>`)
+      continue
+    }
+
     if (type === 'spoiler') {
       if (!isAuthorized) {
         pushContent(renderUnauthorizedProtected('block'))
@@ -871,13 +1004,14 @@ export function publicationBlocksToHtml(
 
     if (type === 'h2' || type === 'h3' || type === 'h4' || type === 'h5') {
       const tag = type
+      const anchorId = nextHeadingAnchor(content, index)
       const classes = {
         h2: 'mt-10 mb-3 text-3xl font-bold text-gray-900 dark:text-gray-100',
         h3: 'mt-8 mb-3 text-2xl font-bold text-gray-900 dark:text-gray-100',
         h4: 'mt-7 mb-2 text-xl font-semibold text-gray-900 dark:text-gray-100',
         h5: 'mt-6 mb-2 text-lg font-semibold text-gray-800 dark:text-gray-100',
       }[tag]
-      pushContent(`<${tag} class="${classes}">${content}</${tag}>`)
+      pushContent(`<${tag} id="${esc(anchorId)}" class="scroll-mt-28 ${classes}">${content}</${tag}>`)
       continue
     }
 
@@ -1068,40 +1202,19 @@ export async function capitalUploadPublicationImage(
     headers.CapitalAuthorization = `Bearer ${asString(token)}`
   }
 
-  const primary = `${getApiBaseUrl('capital')}/query`
-  const fallbackCandidates: string[] = [primary]
-  const envDirect = String(import.meta.env.VITE_API_CAPITAL || '').trim().replace(/\/$/, '')
-  if (envDirect && !fallbackCandidates.includes(`${envDirect}/query`)) {
-    fallbackCandidates.push(`${envDirect}/query`)
-  }
-  if (!envDirect && process.client) {
-    const localhostDirect = 'http://localhost:8082/query'
-    if (!fallbackCandidates.includes(localhostDirect)) {
-      fallbackCandidates.push(localhostDirect)
-    }
-  }
+  const uploadUrl = `${getApiBaseUrl('capital')}/query`
 
-  let result: any = null
-  let lastMessage = ''
-  for (let i = 0; i < fallbackCandidates.length; i++) {
-    const response = await fetch(fallbackCandidates[i], {
-      method: 'POST',
-      headers,
-      body: buildForm(),
-      credentials: 'omit',
-    })
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers,
+    body: buildForm(),
+    credentials: 'omit',
+  })
 
-    result = await response.json().catch(() => ({}))
-    if (response.ok && !result?.errors?.length) {
-      break
-    }
-
-    lastMessage = String(result?.errors?.[0]?.message || result?.message || `Upload failed with status ${response.status}`)
-    const isMultipartOrderError = lastMessage.toLowerCase().includes('first part must be operations')
-    const hasNextCandidate = i < fallbackCandidates.length - 1
-    if (!(isMultipartOrderError && hasNextCandidate)) {
-      throw new Error(lastMessage)
-    }
+  const result: any = await response.json().catch(() => ({}))
+  const lastMessage = String(result?.errors?.[0]?.message || result?.message || `Upload failed with status ${response.status}`)
+  if (!response.ok) {
+    throw new Error(lastMessage)
   }
 
   if (!result || result?.errors?.length) {

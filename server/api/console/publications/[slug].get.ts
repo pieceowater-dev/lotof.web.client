@@ -139,7 +139,14 @@ function mapUpstreamError(message: string): { statusCode: number; statusMessage:
 
 function normalizeBlockAttrs(block: { type?: string; attrs?: Record<string, unknown> }): Record<string, unknown> {
   const attrs = { ...(block.attrs || {}) };
-  if (String(block.type || '') === 'image') {
+  const type = String(block.type || '');
+  const normalizeButtonVariant = (value: unknown): string => {
+    const raw = String(value || '').trim().toLowerCase();
+    if (raw === 'outline' || raw === 'soft' || raw === 'link') return raw;
+    if (raw === 'secondary') return 'outline';
+    return 'solid';
+  };
+  if (type === 'image') {
     const legacySrc = String(attrs.s || '').trim();
     if (legacySrc && !String(attrs.src || '').trim()) {
       attrs.src = legacySrc;
@@ -148,6 +155,58 @@ function normalizeBlockAttrs(block: { type?: string; attrs?: Record<string, unkn
     if (legacyAssetId && !String(attrs.assetId || '').trim()) {
       attrs.assetId = legacyAssetId;
     }
+
+    const legacyAlt = String(attrs.al || attrs.a || attrs.imageAlt || '').trim();
+    if (legacyAlt && !String(attrs.alt || '').trim()) {
+      attrs.alt = legacyAlt;
+    }
+  }
+
+  if (type === 'button') {
+    const text = String(attrs.tx || '').trim();
+    if (text && !String(attrs.text || '').trim()) {
+      attrs.text = text;
+    }
+
+    const href = String(attrs.hr || '').trim();
+    if (href && !String(attrs.href || '').trim()) {
+      attrs.href = href;
+    }
+
+    if (typeof attrs.nt === 'boolean' && typeof attrs.newTab !== 'boolean') {
+      attrs.newTab = attrs.nt;
+    }
+
+    const kind = String(attrs.kd || '').trim();
+    if (kind && !String(attrs.kind || '').trim()) {
+      attrs.kind = kind;
+    }
+
+    const variant = String(attrs.vr || '').trim();
+    if (variant && !String(attrs.variant || '').trim()) {
+      attrs.variant = normalizeButtonVariant(variant);
+    }
+
+    if (String(attrs.variant || '').trim()) {
+      attrs.variant = normalizeButtonVariant(attrs.variant);
+    } else {
+      attrs.variant = 'solid';
+    }
+
+    // Remove short backend keys so saves use updated long-key values
+    delete attrs.tx;
+    delete attrs.hr;
+    delete attrs.nt;
+    delete attrs.kd;
+    delete attrs.vr;
+  }
+
+  if (type === 'faq') {
+    const shortItems = Array.isArray(attrs.it) ? attrs.it : [];
+    if (shortItems.length && !Array.isArray(attrs.items)) {
+      attrs.items = shortItems;
+    }
+    delete attrs.it;
   }
   return attrs;
 }

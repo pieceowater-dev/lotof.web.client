@@ -1,5 +1,3 @@
-import { getApiBaseUrl } from '../../../../utils/api-base';
-
 export default defineEventHandler(async (event) => {
   const publicationId = String(getRouterParam(event, 'publicationId') || '').trim();
   const filename = String(getRouterParam(event, 'filename') || '').trim();
@@ -8,19 +6,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Invalid publication asset path' });
   }
 
-  const capitalUrl = String(getApiBaseUrl('capital') || '').replace(/\/$/, '');
-  const upstreamUrl = `${capitalUrl}/publication/${encodeURIComponent(publicationId)}/${encodeURIComponent(filename)}`;
-
-  const response = await fetch(upstreamUrl);
-  if (!response.ok) {
-    throw createError({ statusCode: response.status, statusMessage: 'Publication asset not found' });
-  }
-
-  const contentType = String(response.headers.get('content-type') || 'application/octet-stream').trim();
-  const cacheControl = String(response.headers.get('cache-control') || 'public, max-age=300').trim();
-
-  setHeader(event, 'content-type', contentType);
-  setHeader(event, 'cache-control', cacheControl);
-
-  return new Uint8Array(await response.arrayBuffer());
+  const target = `/api-capital/publication/${encodeURIComponent(publicationId)}/${encodeURIComponent(filename)}`;
+  return sendRedirect(event, target, 307);
 });

@@ -27,10 +27,9 @@ function normalizeOverride(service: ApiService, raw: string): string {
   try {
     const parsed = new URL(trimmed);
     const normalizedPath = parsed.pathname.replace(/\/$/, '');
-    if (!normalizedPath || normalizedPath === '/') {
-      parsed.pathname = API_BASE_PATHS[service];
-      return normalizeBase(parsed.toString());
-    }
+    // Respect explicit absolute overrides as-is (host[:port] or custom path).
+    // Do not force service proxy prefixes like /api-capital onto direct backends.
+    if (!normalizedPath || normalizedPath === '/') return normalizeBase(parsed.toString());
     return normalizeBase(trimmed);
   } catch {
     return normalizeBase(trimmed);

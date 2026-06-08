@@ -31,6 +31,11 @@ type PublicationsAllResponse = {
   items?: PublicationArticleDoc[];
 };
 
+const { data: sidebarWhatsNewData } = await useFetch<PublicationsAllResponse>('/api/publications/all', {
+  query: { category: 'whatsnew', includeDraft: 'false' },
+  default: () => ({ items: [] }),
+});
+
 type DirectPublicByRouteResponse = {
   data?: {
     publicPublicationByRoute?: {
@@ -391,7 +396,32 @@ const articleOgImage = computed(() => {
   const featuredImage = String(article.value?.meta.featured_image || '').trim();
   return ogImage || featuredImage || undefined;
 });
-const articleOgImageAlt = computed(() => String(article.value?.meta.og_image_alt || articleTitle.value));
+const articleFirstBodyImageAlt = computed(() => {
+  const body = String(article.value?.body || '');
+
+  const markdownImage = body.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+  const markdownAlt = String(markdownImage?.[1] || '').trim();
+  if (markdownAlt) return markdownAlt;
+
+  const htmlAlt = body.match(/<img\s+[^>]*alt=["']([^"']*)["'][^>]*>/i);
+  const rawHtmlAlt = String(htmlAlt?.[1] || '').trim();
+  if (!rawHtmlAlt) return '';
+
+  return rawHtmlAlt
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+});
+
+const articleOgImageAlt = computed(() => {
+  const featuredAlt = String(article.value?.meta.featured_image_alt || '').trim();
+  const ogAlt = String(article.value?.meta.og_image_alt || '').trim();
+  return featuredAlt || ogAlt || articleFirstBodyImageAlt.value || articleTitle.value;
+});
 const articleSourceUrl = computed(() => String(article.value?.meta.source_url || '').trim());
 const articleSourceName = computed(() => String(article.value?.meta.source_name || '').trim());
 const articleAuthorUrl = computed(() => String(article.value?.meta.author_url || '').trim());
@@ -609,6 +639,33 @@ const isArticleInView = ref(true);
 let sidebarMediaQuery: MediaQueryList | null = null;
 
 const sidebarBasePosts = computed<HomeFeedPost[]>(() => {
+  const apiItems = sidebarWhatsNewData.value?.items || [];
+  if (apiItems.length > 0) {
+    return apiItems
+      .filter((doc) => String(doc.slug || '') !== slugParam.value)
+      .map((doc) => {
+        const meta = doc.meta || {};
+        const body = String(doc.body || '');
+        const slug = String(doc.slug || '').trim();
+        const title = String(meta.title || slug);
+        const imgMatch = body.match(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/);
+        const imgSrc = String(meta.og_image || meta.featured_image || imgMatch?.[2] || '/og-image.png');
+        return {
+          id: slug,
+          href: `/whatsnew/${slug}`,
+          category: t('app.whatsNew') || "What's New",
+          title,
+          excerpt: String(meta.description || '').trim(),
+          author: String(meta.author || 'Lota Team'),
+          publishedAt: toDateLabel(String(meta.date || '')),
+          readTime: estimateReadTime(body),
+          image: imgSrc,
+          imageAlt: title,
+          tags: Array.isArray(meta.tags) ? meta.tags.map(String) : [],
+        } as HomeFeedPost;
+      });
+  }
+  // fallback to local markdown files
   if (!article.value) return [];
   return allArticles.value
     .filter((item) => item.slug !== article.value?.slug && item.category === 'whatsnew')
@@ -765,6 +822,82 @@ function markdownToHtml(markdown: string): string {
 
 const articleHtml = computed(() => sanitizedArticleBody.value);
 
+function stripHtmlTags(value: string): string {
+  return String(value || '')
+    .replace(/<\s*br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+const faqItems = computed(() => {
+  const html = String(articleHtml.value || '');
+  if (!html.includes('data-faq-item')) return [] as Array<{ question: string; answer: string }>;
+
+  const items: Array<{ question: string; answer: string }> = [];
+  const re = /<details[^>]*data-faq-item[^>]*>[\s\S]*?<summary[^>]*data-faq-question[^>]*>([\s\S]*?)<\/summary>[\s\S]*?<div[^>]*data-faq-answer[^>]*>([\s\S]*?)<\/div>[\s\S]*?<\/details>/gi;
+
+  let match: RegExpExecArray | null = re.exec(html);
+  while (match) {
+    const question = stripHtmlTags(match[1]);
+    const answer = stripHtmlTags(match[2]);
+    if (question && answer) {
+      items.push({ question, answer });
+    }
+    match = re.exec(html);
+  }
+
+  return items;
+});
+
+const faqJsonLd = computed(() => {
+  if (!faqItems.value.length) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqItems.value.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  };
+});
+
+function setupFaqAccordion() {
+  if (!process.client) return;
+
+  const root = document.querySelector('.article-content');
+  if (!root) return;
+
+  const items = Array.from(root.querySelectorAll<HTMLDetailsElement>('details[data-faq-item]'));
+  if (!items.length) return;
+
+  let isSyncing = false;
+  items.forEach((item, index) => {
+    item.open = index === 0;
+  });
+
+  items.forEach((item) => {
+    item.ontoggle = () => {
+      if (isSyncing || !item.open) return;
+      isSyncing = true;
+      for (const other of items) {
+        if (other !== item) other.open = false;
+      }
+      isSyncing = false;
+    };
+  });
+}
+
 useSeoMeta({
   title: () => articleTitle.value,
   description: () => articleDescription.value,
@@ -797,13 +930,58 @@ useHead(() => ({
   script: [
     { type: 'application/ld+json', children: JSON.stringify(articleJsonLd.value) },
     { type: 'application/ld+json', children: JSON.stringify(breadcrumbJsonLd.value) },
+    ...(faqJsonLd.value ? [{ type: 'application/ld+json', children: JSON.stringify(faqJsonLd.value) }] : []),
   ],
 }));
+
+function setupAnchorScroll() {
+  if (!process.client) return;
+
+  function handleAnchorClick(e: MouseEvent) {
+    const target = e.target as HTMLElement | null;
+    const anchor = target?.closest('a[href^="#"]') as HTMLAnchorElement | null;
+    if (!anchor) return;
+
+    const hash = anchor.getAttribute('href');
+    if (!hash || !hash.startsWith('#')) return;
+
+    const id = hash.slice(1);
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    e.preventDefault();
+    const headerOffset = 72;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
+  document.addEventListener('click', handleAnchorClick);
+  return () => document.removeEventListener('click', handleAnchorClick);
+}
+
+let cleanupAnchorScroll: (() => void) | undefined;
 
 onMounted(() => {
   if (!process.client) return;
   document.documentElement.classList.add('article-slug-page');
   document.body.classList.add('article-slug-page');
+  nextTick(() => {
+    setupFaqAccordion();
+  });
+  cleanupAnchorScroll = setupAnchorScroll();
+
+  // Scroll to hash on initial load
+  if (window.location.hash) {
+    nextTick(() => {
+      const id = window.location.hash.slice(1);
+      const el = document.getElementById(id);
+      if (el) {
+        const headerOffset = 72;
+        const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+  }
 
   sidebarMediaQuery = window.matchMedia('(max-width: 1023px)');
   isMobileSidebarViewport.value = sidebarMediaQuery.matches;
@@ -819,11 +997,19 @@ watch(
   async () => {
     if (!process.client) return;
     await nextTick();
+    setupFaqAccordion();
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }
 );
 
+watch(articleHtml, async () => {
+  if (!process.client) return;
+  await nextTick();
+  setupFaqAccordion();
+});
+
 onBeforeUnmount(() => {
+  cleanupAnchorScroll?.();
   if (!process.client) return;
   if (sidebarMediaQuery) {
     if (typeof sidebarMediaQuery.removeEventListener === 'function') {

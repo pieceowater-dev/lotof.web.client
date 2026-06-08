@@ -1151,6 +1151,8 @@
         "unorderedList": "Bulleted list",
         "orderedList": "Numbered list",
         "image": "Image",
+        "button": "Button",
+        "faq": "FAQ accordion",
         "callout": "Callout",
         "spoiler": "Spoiler (auth required)",
         "spoilerOpen": "Spoiler: open section",
