@@ -8,6 +8,7 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 
 const hubBaseUrl = process.env.VITE_API_HUB || 'http://localhost:8080';
 const atraceBaseUrl = process.env.VITE_API_ATRACE; // optional
+const capitalBaseUrl = process.env.VITE_API_CAPITAL; // optional
 
 const withQueryPath = (baseUrl: string) => `${baseUrl.replace(/\/$/, '')}/query`;
 
@@ -26,6 +27,15 @@ if (atraceBaseUrl) {
   generates['api/__generated__/atrace-types.ts'] = {
     schema: withQueryPath(atraceBaseUrl),
     documents: ['api/atrace/**/*.gql'],
+    plugins,
+    config: { avoidOptionals: false }
+  };
+}
+
+if (capitalBaseUrl) {
+  generates['api/__generated__/capital-types.ts'] = {
+    schema: withQueryPath(capitalBaseUrl),
+    documents: ['api/capital/**/*.gql'],
     plugins,
     config: { avoidOptionals: false }
   };

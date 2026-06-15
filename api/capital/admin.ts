@@ -101,3 +101,183 @@ export async function capitalRemoveAdmin(token: string, id: string): Promise<boo
   const res = await capitalClient.request<{ removeCapitalAdmin: boolean }>(REMOVE_CAPITAL_ADMIN_MUTATION, { id });
   return !!res.removeCapitalAdmin;
 }
+
+export type AdminBillingInfo = {
+  adminAccounts: {
+    accounts: Array<{
+      id: string;
+      namespace: string;
+      displayName: string;
+      billingEmail: string;
+      status: string;
+      createdAt: string;
+      owner?: {
+        id: string;
+        username: string;
+        email: string;
+      } | null;
+      subscriptions?: {
+        subscriptions: Array<{
+          id: string;
+          planId: string;
+          status: string;
+        }>;
+      } | null;
+    }>;
+    total: number;
+  };
+  adminPlans: Array<{
+    id: string;
+    code: string;
+    name: string;
+    description?: string | null;
+    currency: string;
+    interval: string;
+    amountCents: number;
+    trialDays: number;
+    status: string;
+  }>;
+  adminInvoices: {
+    invoices: Array<{
+      id: string;
+      accountId: string;
+      number: string;
+      status: string;
+      totalCents: number;
+      currency: string;
+      issueDate: string;
+      dueDate: string;
+    }>;
+    total: number;
+  };
+  adminSubscriptions: {
+    subscriptions: Array<{
+      id: string;
+      accountId: string;
+      planId: string;
+      status: string;
+      quantity: number;
+      startsAt: string;
+      currentPeriodStart: string;
+      currentPeriodEnd: string;
+    }>;
+    total: number;
+  };
+};
+
+const GET_ADMIN_BILLING_INFO_QUERY = /* GraphQL */ `
+  query GetAdminBillingInfo($page: Int, $pageSize: Int, $namespace: String, $applicationCode: String) {
+    adminAccounts(page: $page, pageSize: $pageSize, applicationCode: $applicationCode) {
+      accounts {
+        id
+        namespace
+        displayName
+        billingEmail
+        status
+        createdAt
+        owner {
+          id
+          username
+          email
+        }
+        subscriptions {
+          subscriptions {
+            id
+            planId
+            status
+          }
+        }
+      }
+      total
+    }
+    adminPlans(applicationCode: $applicationCode) {
+      id
+      code
+      name
+      description
+      currency
+      interval
+      amountCents
+      trialDays
+      status
+    }
+    adminInvoices(page: $page, pageSize: $pageSize, namespace: $namespace, applicationCode: $applicationCode) {
+      invoices {
+        id
+        accountId
+        number
+        status
+        totalCents
+        currency
+        issueDate
+        dueDate
+      }
+      total
+    }
+    adminSubscriptions(page: $page, pageSize: $pageSize, namespace: $namespace, applicationCode: $applicationCode) {
+      subscriptions {
+        id
+        accountId
+        planId
+        status
+        quantity
+        startsAt
+        currentPeriodStart
+        currentPeriodEnd
+      }
+      total
+    }
+  }
+`;
+
+export async function capitalGetAdminBillingInfo(
+  token: string, 
+  page: number = 1, 
+  pageSize: number = 20, 
+  namespace?: string, 
+  applicationCode?: string
+): Promise<AdminBillingInfo> {
+  setGlobalAuthToken(token);
+  return await capitalClient.request<AdminBillingInfo>(GET_ADMIN_BILLING_INFO_QUERY, { 
+    page, 
+    pageSize, 
+    namespace: namespace || null,
+    applicationCode: applicationCode || null
+  });
+}
+
+export async function capitalCreatePlan(token: string, input: any) {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation CreatePlan($input: CreatePlanInput!) {
+      createPlan(input: $input) {
+        id
+      }
+    }
+  `;
+  return await capitalClient.request(mutation, { input });
+}
+
+export async function capitalUpdatePlan(token: string, id: string, input: any) {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation UpdatePlan($id: String!, $input: UpdatePlanInput!) {
+      updatePlan(id: $id, input: $input) {
+        id
+      }
+    }
+  `;
+  return await capitalClient.request(mutation, { id, input });
+}
+
+export async function capitalArchivePlan(token: string, id: string) {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation ArchivePlan($id: String!) {
+      archivePlan(id: $id) {
+        id
+      }
+    }
+  `;
+  return await capitalClient.request(mutation, { id });
+}

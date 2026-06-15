@@ -48,7 +48,7 @@
             :title="t('admin.billing')"
             :description="t('admin.billingDesc')"
             icon="lucide:credit-card"
-            status="coming"
+            status="active"
             href="/console/billing"
             bg-gradient="bg-white dark:bg-slate-900"
             icon-bg="bg-emerald-100 dark:bg-emerald-900/30"

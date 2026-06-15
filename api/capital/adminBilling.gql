@@ -1,0 +1,72 @@
+query GetAdminBillingInfo($page: Int, $pageSize: Int) {
+  adminAccounts(page: $page, pageSize: $pageSize) {
+    accounts {
+      id
+      namespace
+      displayName
+      billingEmail
+      status
+      createdAt
+    }
+    total
+  }
+  adminPlans {
+    id
+    code
+    name
+    description
+    currency
+    interval
+    amountCents
+    trialDays
+    status
+  }
+  adminInvoices(page: $page, pageSize: $pageSize) {
+    invoices {
+      id
+      accountId
+      number
+      status
+      totalCents
+      currency
+      issueDate
+      dueDate
+    }
+    total
+  }
+  adminSubscriptions(page: $page, pageSize: $pageSize) {
+    subscriptions {
+      id
+      accountId
+      planId
+      status
+      quantity
+      startsAt
+      currentPeriodStart
+      currentPeriodEnd
+    }
+    total
+  }
+}
+
+mutation CreatePlan($input: CreatePlanInput!) {
+  createPlan(input: $input) {
+    id
+    code
+    name
+  }
+}
+
+mutation UpdatePlan($id: String!, $input: UpdatePlanInput!) {
+  updatePlan(id: $id, input: $input) {
+    id
+    name
+  }
+}
+
+mutation ArchivePlan($id: String!) {
+  archivePlan(id: $id) {
+    id
+    status
+  }
+}
