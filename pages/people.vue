@@ -7,7 +7,7 @@ import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import AppTable from '@/components/ui/AppTable.vue'
 
 const { token, user } = useAuth();
-const { rows: friends, applyLoaded: applyLoadedFriends, load, loading } = useFriendships();
+const { rows: friends, applyLoaded: applyLoadedFriends, load, loading, currentStatus } = useFriendships();
 
 const search = ref('');
 const userFound = ref<boolean | null>(null);
@@ -179,15 +179,25 @@ const items = (row: FriendRow) => ([
         const { hubAcceptFriendship } = await import('@/api/hub/friendships/mutations');
         await hubAcceptFriendship(token.value, row.id);
         toast.add({ title: t('app.notification'), description: t('app.accepted'), color: 'blue' });
-        load(FriendshipStatus.Accepted);
+        selectedTab.value = 0;
       }
     }] : []),
-    { label: t('app.toRejected'), icon: 'lucide:user-minus', click: async () => {
+    ...(row.status !== FriendshipStatus.Rejected ? [{
+      label: t('app.toRejected'), icon: 'lucide:user-minus',
+      click: async () => {
+        if (!token.value) return;
+        const { hubRejectFriendship } = await import('@/api/hub/friendships/mutations');
+        await hubRejectFriendship(token.value, row.id);
+        toast.add({ title: t('app.notification'), description: t('app.toRejected'), color: 'orange' });
+        selectedTab.value = 2;
+      }
+    }] : []),
+    { label: t('app.remove'), icon: 'lucide:trash-2', click: async () => {
       if (!token.value) return;
       const { hubRemoveFriendship } = await import('@/api/hub/friendships/mutations');
       await hubRemoveFriendship(token.value, row.id);
-      toast.add({ title: t('app.notification'), description: t('app.toRejected'), color: 'orange' });
-      load(FriendshipStatus.Rejected);
+      toast.add({ title: t('app.notification'), description: t('app.remove'), color: 'red' });
+      load(currentStatus.value);
     }}
   ]
 ]);

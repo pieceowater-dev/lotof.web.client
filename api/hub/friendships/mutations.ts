@@ -14,6 +14,12 @@ const ACCEPT_FRIENDSHIP = /* GraphQL */ `
   }
 `;
 
+const REJECT_FRIENDSHIP = /* GraphQL */ `
+  mutation RejectFriendship($friendshipId: ID!) {
+    rejectFriendshipRequest(friendshipId: $friendshipId) { id status friend { id username email } }
+  }
+`;
+
 const REMOVE_FRIENDSHIP = /* GraphQL */ `
   mutation RemoveFriendship($friendshipId: ID!) {
     removeFriendship(friendshipId: $friendshipId)
@@ -30,6 +36,12 @@ export async function hubAcceptFriendship(token: string, friendshipId: string) {
   setGlobalAuthToken(token);
   const data = await hubClient.request<{ acceptFriendshipRequest: Friendship }>(ACCEPT_FRIENDSHIP, { friendshipId });
   return data.acceptFriendshipRequest;
+}
+
+export async function hubRejectFriendship(token: string, friendshipId: string) {
+  setGlobalAuthToken(token);
+  const data = await hubClient.request<{ rejectFriendshipRequest: Friendship }>(REJECT_FRIENDSHIP, { friendshipId });
+  return data.rejectFriendshipRequest;
 }
 
 export async function hubRemoveFriendship(token: string, friendshipId: string) {
