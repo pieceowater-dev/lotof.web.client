@@ -32,6 +32,25 @@ async function freshClient(namespaceSlug: string): Promise<GraphQLClient> {
   });
 }
 
+// A namespace's tenant schema is provisioned lazily on first access (see
+// menu.msvc.core's ConfigTenants warmup) — a request landing during that
+// brief window gets "tenant migration in progress, retry later" instead of
+// data. Retrying a few times with a short delay rides through it instead of
+// surfacing a hard error on what's usually just the very first page load.
+async function withMigrationRetry<T>(fn: () => Promise<T>, attempts = 4, delayMs = 600): Promise<T> {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      const isMigrating = message.includes('tenant migration in progress');
+      if (!isMigrating || attempt === attempts - 1) throw e;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw new Error('unreachable');
+}
+
 const StorefrontDocument = /* GraphQL */ `
   query Storefront {
     brandSettings {
@@ -62,13 +81,13 @@ export type StorefrontData = {
 
 export async function getPublicStorefront(namespaceSlug: string): Promise<StorefrontData> {
   const client = await freshClient(namespaceSlug);
-  const res = await client.request<{
+  const res = await withMigrationRetry(() => client.request<{
     brandSettings: MenuBrandSettings | null;
     branches: { rows: MenuBranch[] };
     categories: { rows: MenuCategory[] };
     badges: { rows: MenuBadge[] };
     promoBanners: { rows: MenuPromoBanner[] };
-  }>(StorefrontDocument, {});
+  }>(StorefrontDocument, {}));
 
   return {
     brandSettings: res.brandSettings,
@@ -89,10 +108,10 @@ const PublicMenuItemsDocument = /* GraphQL */ `
 
 export async function getPublicMenuItems(namespaceSlug: string, categoryId: string): Promise<MenuItem[]> {
   const client = await freshClient(namespaceSlug);
-  const res = await client.request<{ menuItems: { rows: MenuItem[] } }>(
+  const res = await withMigrationRetry(() => client.request<{ menuItems: { rows: MenuItem[] } }>(
     PublicMenuItemsDocument,
     { categoryId }
-  );
+  ));
   return res.menuItems.rows.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 

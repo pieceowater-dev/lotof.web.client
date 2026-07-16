@@ -27,13 +27,13 @@ const onPrimaryText = computed(() => getContrastTextColor(props.primaryColor));
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="w-full rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden transition-shadow hover:shadow-md">
     <button
       type="button"
       class="w-full text-left block group"
       @click="emit('open')"
     >
-      <div class="relative aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800">
+      <div class="relative aspect-square w-full bg-gray-100 dark:bg-gray-800">
         <img
           v-if="item.imageUrl"
           :src="item.imageUrl"
@@ -97,7 +97,7 @@ const onPrimaryText = computed(() => getContrastTextColor(props.primaryColor));
 
     <button
       type="button"
-      class="w-full text-left block mt-3 pr-1"
+      class="w-full text-left block mt-3 px-3 pb-3"
       @click="emit('open')"
     >
       <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2">{{ item.name }}</div>

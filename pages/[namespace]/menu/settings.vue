@@ -5,6 +5,7 @@ import BrandSection from '@/components/menu/settings/BrandSection.vue';
 import BranchesSection from '@/components/menu/settings/BranchesSection.vue';
 import CatalogSection from '@/components/menu/settings/CatalogSection.vue';
 import PromoBannersSection from '@/components/menu/settings/PromoBannersSection.vue';
+import ShareLinkSection from '@/components/menu/settings/ShareLinkSection.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -18,7 +19,7 @@ const goBack = () => {
   navigateTo(`/${nsSlug.value}/menu`);
 };
 
-type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners';
+type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'share';
 
 const tabs = computed(() => [
   { key: 'staff' as TabKey, label: t('menu.staff') || 'Staff', icon: 'lucide:users' },
@@ -26,6 +27,7 @@ const tabs = computed(() => [
   { key: 'branches' as TabKey, label: t('menu.branches') || 'Branches', icon: 'lucide:map-pin' },
   { key: 'catalog' as TabKey, label: t('menu.catalog') || 'Catalog', icon: 'lucide:layout-grid' },
   { key: 'promobanners' as TabKey, label: t('menu.promoBanners') || 'Banners', icon: 'lucide:image' },
+  { key: 'share' as TabKey, label: t('menu.shareTab') || 'Share', icon: 'lucide:link' },
 ]);
 
 const activeTab = ref<TabKey>((route.query.tab as TabKey) || 'staff');
@@ -88,6 +90,7 @@ watch(activeTab, (tab) => {
       <BranchesSection v-else-if="activeTab === 'branches'" />
       <CatalogSection v-else-if="activeTab === 'catalog'" />
       <PromoBannersSection v-else-if="activeTab === 'promobanners'" />
+      <ShareLinkSection v-else-if="activeTab === 'share'" />
     </div>
   </div>
 </template>

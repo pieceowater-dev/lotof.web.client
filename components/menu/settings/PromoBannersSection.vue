@@ -126,7 +126,7 @@ onMounted(load);
         <div
           v-for="b in banners"
           :key="b.id"
-          class="group relative rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900"
+          class="group relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
         >
           <div class="w-full h-28 relative bg-gray-100 dark:bg-gray-800">
             <img v-if="b.imageUrl" :src="b.imageUrl" :alt="b.imageAlt || b.title" class="w-full h-full object-cover">

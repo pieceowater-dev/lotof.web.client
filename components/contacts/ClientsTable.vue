@@ -449,7 +449,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl shadow-lg ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900">
+  <div class="relative overflow-hidden rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
     <!-- Finder-style search bar -->
     <div data-tour="contacts-table-search" class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
       <FinderStyleSearch

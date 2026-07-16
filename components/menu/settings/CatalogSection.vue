@@ -355,7 +355,7 @@ onMounted(() => {
 
     <div class="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
       <!-- Categories column -->
-      <div class="rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900 flex flex-col min-h-0">
+      <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col min-h-0">
         <div class="flex items-center justify-between px-3 py-2 border-b border-gray-100 dark:border-gray-800">
           <span class="text-sm font-semibold">{{ t('menu.categories') || 'Categories' }}</span>
           <UButton icon="lucide:plus" size="2xs" color="primary" variant="soft" @click="openCreateCategory" />

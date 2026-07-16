@@ -117,7 +117,23 @@ export function toAbsoluteUrl(urlOrPath: string): string {
     }
   } catch {}
 
-  return `http://127.0.0.1${normalized}`;
+  // Last-resort fallback that doesn't depend on any Nuxt composable/app
+  // instance — those need "current Nuxt instance" tracking that some SSR
+  // call chains lose after intervening awaits (observed in practice: both
+  // useRequestURL() and useRuntimeConfig() throwing here, landing on this
+  // branch, for the public storefront's server-rendered data fetch). A
+  // direct env read always works from plain server-side code.
+  const envSiteUrl = process.env.NUXT_PUBLIC_SITE_URL;
+  if (envSiteUrl && envSiteUrl.trim()) {
+    return `${normalizeBase(envSiteUrl.trim())}${normalized}`;
+  }
+
+  // True last resort: hit this same Nitro server's own port (which proxies
+  // /api-*/** to the right backend per nuxt.config.ts routeRules) rather
+  // than a bare 127.0.0.1 with an implicit :80 that's never listening —
+  // that produced ECONNREFUSED 127.0.0.1:80 for every SSR request that
+  // reached this branch.
+  return `http://127.0.0.1:${process.env.PORT || 3000}${normalized}`;
 }
 
 export function getApiBaseUrl(service: ApiService): string {

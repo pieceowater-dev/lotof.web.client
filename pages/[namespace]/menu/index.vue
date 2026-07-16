@@ -6,6 +6,9 @@ import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { smartOrderNumber } from '@/utils/orderNumber';
+import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
@@ -205,27 +208,78 @@ watch(search, () => {
 });
 
 const columns = computed(() => [
-  { key: 'number', label: t('menu.orderNumber') || 'Order #' },
+  { key: 'number', label: t('menu.orderNumber') || 'Order #', sortable: true },
   { key: 'customerName', label: t('menu.customer') || 'Customer' },
   { key: 'phone', label: t('menu.phone') || 'Phone' },
   { key: 'type', label: t('menu.type') || 'Type' },
   { key: 'status', label: t('menu.status') || 'Status' },
-  { key: 'totalAmount', label: t('menu.total') || 'Total' },
-  { key: 'createdAt', label: t('menu.createdAt') || 'Created' },
+  { key: 'totalAmount', label: t('menu.total') || 'Total', sortable: true },
+  { key: 'createdAt', label: t('menu.createdAt') || 'Created', sortable: true },
+  { key: 'actions', label: '' },
 ]);
 
 function formatDate(iso: string) {
   try {
-    return new Date(iso).toLocaleString();
+    const d = new Date(iso);
+    const isToday = d.toDateString() === new Date().toDateString();
+    return isToday
+      ? d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
   } catch {
     return iso;
   }
 }
 
-onMounted(() => {
+function initialFor(order: MenuOrder): string {
+  return (order.customerName || order.phone || '?').slice(0, 1).toUpperCase();
+}
+
+async function copyOrderLink(order: MenuOrder) {
+  const url = `${window.location.origin}/${nsSlug.value}/menu?order=${smartOrderNumber(order)}`;
+  try {
+    await navigator.clipboard.writeText(url);
+    useToast().add({ title: t('menu.linkCopied') || 'Link copied', color: 'primary' });
+  } catch (e) {
+    logError('[menu/index] copyOrderLink failed', e);
+  }
+}
+
+// Deep-link support: ?order=<smart number> opens that order's detail on
+// load, so shared/bookmarked order links (written back by OrderDetailModal
+// while it's open) actually resolve to something on a fresh page load. The
+// smart number is "YYMMDD-NNN" — NNN is the actual daily order number the
+// backend understands for search, so we parse that trailing segment back
+// out. It isn't globally unique on its own (resets daily), so on a
+// collision this opens the most recently created match, which is the
+// overwhelmingly common case for a link someone just shared.
+async function openFromQuery() {
+  const raw = route.query.order as string | undefined;
+  if (!raw) return;
+  const numericPart = raw.includes('-') ? raw.slice(raw.lastIndexOf('-') + 1) : raw;
+  const orderNumber = Number(numericPart);
+  if (Number.isNaN(orderNumber)) return;
+  const existing = orders.value.find((o) => o.number === orderNumber);
+  if (existing) {
+    openDetail(existing);
+    return;
+  }
+  try {
+    const menuToken = await getToken();
+    const { menuOrdersList } = await import('@/api/menu/order/list');
+    const res = await menuOrdersList(menuToken, nsSlug.value, { search: String(orderNumber), length: 'TEN' });
+    const matches = res.orders.filter((o) => o.number === orderNumber);
+    matches.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    if (matches[0]) openDetail(matches[0]);
+  } catch (e) {
+    logError('[menu/index] openFromQuery failed', e);
+  }
+}
+
+onMounted(async () => {
   loadBranches();
-  loadOrders();
+  await loadOrders();
   loadStatusCounts();
+  openFromQuery();
 });
 
 const isCreateOrderOpen = ref(false);
@@ -253,9 +307,10 @@ async function handleStatusChange(order: MenuOrder, status: string) {
 
 function statusMenuItems(row: MenuOrder) {
   return [
-    STATUSES.filter((s) => s !== row.status).map((s) => ({
+    nextStatuses(row.status).map((s) => ({
       label: statusLabel(s),
-      icon: cardStyle(s).icon,
+      icon: statusBadgeStyle(s).icon,
+      status: s,
       click: () => handleStatusChange(row, s),
     })),
   ];
@@ -432,10 +487,18 @@ async function handleCreateOrder(payload: any) {
         @select="openDetail"
       >
         <template #number-data="{ row }">
-          <span class="font-mono font-semibold">#{{ row.number }}</span>
+          <span class="font-mono font-semibold tabular-nums">{{ smartOrderNumber(row) }}</span>
         </template>
         <template #customerName-data="{ row }">
-          {{ row.customerName || '—' }}
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
+              {{ initialFor(row) }}
+            </span>
+            <span class="truncate">{{ row.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
+          </div>
+        </template>
+        <template #phone-data="{ row }">
+          <span class="tabular-nums">{{ formatDisplayPhoneUniversal(row.phone) }}</span>
         </template>
         <template #type-data="{ row }">
           <UBadge color="gray" variant="subtle">
@@ -450,22 +513,37 @@ async function handleCreateOrder(payload: any) {
               :disabled="updatingStatusId === row.id"
               @click.stop
             >
-              <UBadge :color="statusColor(row.status)" variant="subtle" class="cursor-pointer">
+              <span
+                class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
+                :class="statusBadgeStyle(row.status).bg"
+              >
+                <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
                 {{ statusLabel(row.status) }}
-              </UBadge>
+              </span>
               <Icon
                 :name="updatingStatusId === row.id ? 'lucide:loader-2' : 'lucide:chevron-down'"
                 class="w-3 h-3 text-gray-400"
                 :class="{ 'animate-spin': updatingStatusId === row.id }"
               />
             </button>
+            <template #item="{ item }">
+              <span class="flex items-center gap-2 w-full">
+                <span class="h-2 w-2 rounded-full flex-shrink-0" :class="statusBadgeStyle(item.status).bg" />
+                <span class="truncate">{{ item.label }}</span>
+              </span>
+            </template>
           </UDropdown>
         </template>
         <template #totalAmount-data="{ row }">
-          {{ row.totalAmount }}
+          <span class="font-semibold tabular-nums">{{ row.totalAmount.toLocaleString() }}</span>
         </template>
         <template #createdAt-data="{ row }">
-          {{ formatDate(row.createdAt) }}
+          <span class="text-gray-500 dark:text-gray-400">{{ formatDate(row.createdAt) }}</span>
+        </template>
+        <template #actions-data="{ row }">
+          <UTooltip :text="t('menu.copyLink') || 'Copy share link'">
+            <UButton icon="lucide:link" size="2xs" color="gray" variant="ghost" @click.stop="copyOrderLink(row)" />
+          </UTooltip>
         </template>
       </AppTable>
     </div>

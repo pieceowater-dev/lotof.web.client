@@ -62,7 +62,7 @@ function formatGender(gender?: boolean | null): string {
 <template>
   <div
     v-if="client"
-    class="bg-white dark:bg-gray-800 rounded-lg shadow ring-1 ring-gray-200 dark:ring-gray-700 overflow-hidden"
+    class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden"
   >
     <!-- Header -->
     <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">

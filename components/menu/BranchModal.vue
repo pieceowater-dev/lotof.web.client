@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
@@ -29,6 +30,7 @@ const form = reactive({
   lat: undefined as number | undefined,
   lng: undefined as number | undefined,
   isPrimary: false,
+  isActive: true,
 });
 
 watch(() => [props.modelValue, props.branch], () => {
@@ -42,6 +44,7 @@ watch(() => [props.modelValue, props.branch], () => {
   form.lat = b?.lat ?? undefined;
   form.lng = b?.lng ?? undefined;
   form.isPrimary = b?.isPrimary || false;
+  form.isActive = b ? b.isActive : true;
 }, { immediate: true });
 
 // Same phone sanitize/validate rules as the Contacts app's client-create form.
@@ -74,6 +77,9 @@ function handleSubmit() {
     lat: form.lat,
     lng: form.lng,
     isPrimary: form.isPrimary,
+    // isActive only exists on UpdateBranchInput — new branches always
+    // start active on the backend, so this is a no-op on create.
+    ...(props.branch ? { isActive: form.isActive } : {}),
   });
 }
 </script>
@@ -115,20 +121,23 @@ function handleSubmit() {
             <UInput v-model="form.city" size="lg" />
           </UFormGroup>
         </div>
-        <UFormGroup :label="t('menu.businessCategory') || 'Business category'">
+        <UFormGroup :label="t('menu.businessCategory') || 'Business category'" :help="t('menu.businessCategoryHelp') || 'Reference only — for your own brand organization, does not affect the storefront.'">
           <UInput v-model="form.businessCategory" size="lg" />
         </UFormGroup>
-        <div class="grid grid-cols-2 gap-4">
-          <UFormGroup :label="t('menu.lat') || 'Latitude'">
-            <UInput v-model.number="form.lat" type="number" step="any" size="lg" />
-          </UFormGroup>
-          <UFormGroup :label="t('menu.lng') || 'Longitude'">
-            <UInput v-model.number="form.lng" type="number" step="any" size="lg" />
-          </UFormGroup>
-        </div>
-        <div class="flex items-center gap-2">
-          <UToggle v-model="form.isPrimary" />
-          <span class="text-sm">{{ t('menu.isPrimary') || 'Primary branch' }}</span>
+        <UFormGroup :label="t('menu.location') || 'Location'">
+          <ClientOnly>
+            <BranchLocationPicker :lat="form.lat" :lng="form.lng" @update="(lat, lng) => { form.lat = lat; form.lng = lng; }" />
+          </ClientOnly>
+        </UFormGroup>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <UToggle v-model="form.isPrimary" />
+            <span class="text-sm">{{ t('menu.isPrimary') || 'Primary branch' }}</span>
+          </div>
+          <div v-if="branch" class="flex items-center gap-2">
+            <UToggle v-model="form.isActive" />
+            <span class="text-sm">{{ t('menu.isActive') || 'Active' }}</span>
+          </div>
         </div>
       </div>
 

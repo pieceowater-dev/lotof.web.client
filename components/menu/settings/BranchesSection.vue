@@ -5,6 +5,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import BranchModal from '@/components/menu/BranchModal.vue';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
@@ -22,6 +23,7 @@ const saving = ref(false);
 const columns = computed(() => [
   { key: 'name', label: t('menu.name') || 'Name' },
   { key: 'address', label: t('menu.address') || 'Address' },
+  { key: 'phone', label: t('menu.phone') || 'Phone' },
   { key: 'city', label: t('menu.city') || 'City' },
   { key: 'isPrimary', label: t('menu.isPrimary') || 'Primary' },
   { key: 'isActive', label: t('menu.isActive') || 'Active' },
@@ -136,6 +138,9 @@ onMounted(load);
         :loading="loading"
         empty-icon="lucide:map-pin"
       >
+        <template #phone-data="{ row }">
+          <span class="tabular-nums">{{ row.phone ? formatDisplayPhoneUniversal(row.phone) : '—' }}</span>
+        </template>
         <template #isPrimary-data="{ row }">
           <UIcon v-if="row.isPrimary" name="lucide:star" class="w-4 h-4 text-amber-500" />
           <span v-else class="text-gray-400">—</span>

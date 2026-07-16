@@ -4,16 +4,28 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPublicStorefront, getPublicMenuItems, submitPublicOrder } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
+import { parseSocialLinks, socialIcon } from '@/utils/social';
+import { telHref, whatsappHref } from '@/utils/phoneLinks';
+import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
+import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 
 definePageMeta({ layout: false });
 
 const { t } = useI18n();
 const route = useRoute();
+const router = useRouter();
 const nsSlug = computed(() => route.params.namespace as string);
 const branchParam = computed(() => (route.query.b as string) || '');
 const sourceTag = computed(() => (route.query.t as string) || '');
+
+// Cart + branch selection survive a page reload/return visit, scoped per
+// tenant so switching storefronts never leaks one tenant's cart into
+// another's.
+const cartStorageKey = computed(() => `lota-menu-cart-${nsSlug.value}`);
+const branchStorageKey = computed(() => `lota-menu-branch-${nsSlug.value}`);
 
 // Server-rendered so the per-tenant title/description/OG tags in useHead()
 // below are actually crawlable, not just visible after client hydration.
@@ -36,7 +48,7 @@ const activeCategoryId = ref<string>('');
 const visibleBranches = computed(() => (data.value?.storefront.branches || []).filter((b) => b.isActive));
 const activeBranch = computed(() => visibleBranches.value.find((b) => b.id === selectedBranchId.value) || null);
 const needsBranchPicker = computed(() => visibleBranches.value.length > 1 && !selectedBranchId.value);
-const primaryColor = computed(() => data.value?.storefront.brandSettings?.primaryColor || '#c97a1e');
+const primaryColor = computed(() => data.value?.storefront.brandSettings?.primaryColor || '#3b82f6');
 // secondaryColor was set in Brand settings but never actually rendered
 // anywhere on the storefront. Brand identity (hero band, header, main CTAs)
 // stays on primaryColor; secondaryColor gets a clear, consistent job as the
@@ -49,18 +61,48 @@ const secondaryColor = computed(() => data.value?.storefront.brandSettings?.seco
 // whichever of black/white text actually has usable contrast against it.
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
 
+// Brand-level contact info isn't its own field — the primary (or first)
+// branch's phone stands in for "call the business", since that's the number
+// that's actually staffed, and social links live on brand settings already.
+const brandPhone = computed(() => {
+  const branches = data.value?.storefront.branches || [];
+  return (branches.find((b) => b.isPrimary) || branches[0])?.phone || '';
+});
+const brandSocialLinks = computed(() => parseSocialLinks(data.value?.storefront.brandSettings?.socialLinks));
+
 watch(data, (d) => {
   if (!d) return;
   const active = visibleBranches.value;
+  const storedBranchId = process.client ? localStorage.getItem(branchStorageKey.value) : null;
   if (branchParam.value && active.some((b) => b.id === branchParam.value)) {
     selectedBranchId.value = branchParam.value;
+  } else if (storedBranchId && active.some((b) => b.id === storedBranchId)) {
+    selectedBranchId.value = storedBranchId;
   } else if (active.length === 1) {
     selectedBranchId.value = active[0].id;
   }
   if (d.storefront.categories.length && !activeCategoryId.value) {
     activeCategoryId.value = d.storefront.categories[0].id;
   }
+  // Deep-link support: ?item=<id> auto-opens that product's detail sheet,
+  // so a shared/bookmarked product link resolves to something on load.
+  const itemId = route.query.item as string | undefined;
+  if (itemId && !selectedItem.value) {
+    for (const items of Object.values(d.itemsByCategory)) {
+      const found = items.find((i) => i.id === itemId);
+      if (found) {
+        openItemDetail(found);
+        break;
+      }
+    }
+  }
 }, { immediate: true });
+
+watch(selectedBranchId, (id) => {
+  if (!process.client) return;
+  if (id) localStorage.setItem(branchStorageKey.value, id);
+  else localStorage.removeItem(branchStorageKey.value);
+});
 
 const visibleItemsByCategory = computed(() => {
   const result: Record<string, MenuItem[]> = {};
@@ -97,6 +139,7 @@ const searchResults = computed(() => {
 });
 
 // --- Scroll-spy category nav ---
+const scrollContainerRef = ref<HTMLElement | null>(null);
 const categoryRefs = ref<Record<string, HTMLElement>>({});
 const navRefs = ref<Record<string, HTMLElement>>({});
 function setCategoryRef(id: string, el: any) {
@@ -106,14 +149,17 @@ function setNavRef(id: string, el: any) {
   if (el) navRefs.value[id] = el as HTMLElement;
 }
 
+// The page scrolls via its own inner container (see the h-screen comment on
+// the root div below), not `window` — window.scrollTo() was a silent no-op.
+// scrollIntoView() sidesteps having to identify that container by ref/math
+// at all: the browser walks up to whichever ancestor is actually scrollable
+// and respects the section's `scroll-mt-*` class for sticky-header
+// clearance automatically.
 function scrollToCategory(id: string) {
   suppressSpy = true;
   activeCategoryId.value = id;
   const el = categoryRefs.value[id];
-  if (el) {
-    const y = el.getBoundingClientRect().top + window.scrollY - 56;
-    window.scrollTo({ top: y, behavior: 'smooth' });
-  }
+  el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   window.setTimeout(() => { suppressSpy = false; }, 700);
 }
 
@@ -149,6 +195,37 @@ function openItemDetail(item: MenuItem) {
   selectedItem.value = item;
   sheetQuantity.value = 1;
   isItemSheetOpen.value = true;
+  // Encode the open product into the URL so the sheet can be shared/reopened
+  // directly — see the matching ?item= lookup in the data watcher above.
+  if (route.query.item !== item.id) {
+    router.replace({ query: { ...route.query, item: item.id } });
+  }
+}
+function closeItemDetail() {
+  isItemSheetOpen.value = false;
+  if (route.query.item) {
+    const q = { ...route.query };
+    delete q.item;
+    router.replace({ query: q });
+  }
+}
+
+// --- Promo banner sheet: tapping a banner opens it full-width from the
+// bottom with an explicit "go to link" action, instead of navigating away
+// immediately — targetUrl is a free-form URL, which can just as well be one
+// of this storefront's own ?item= product deep links as an external one. ---
+const selectedBanner = ref<MenuPromoBanner | null>(null);
+const isBannerSheetOpen = ref(false);
+function openBanner(b: MenuPromoBanner) {
+  selectedBanner.value = b;
+  isBannerSheetOpen.value = true;
+}
+function followBannerLink() {
+  const url = selectedBanner.value?.targetUrl;
+  if (!url) return;
+  isBannerSheetOpen.value = false;
+  if (url.startsWith('/')) router.push(url);
+  else window.open(url, '_blank', 'noopener');
 }
 
 // --- Cart ---
@@ -190,6 +267,19 @@ function changeQuantity(line: CartLine, delta: number) {
 
 const cartCount = computed(() => cart.value.reduce((sum, l) => sum + l.quantity, 0));
 const cartTotal = computed(() => cart.value.reduce((sum, l) => sum + l.quantity * l.price, 0));
+
+if (process.client) {
+  try {
+    const stored = localStorage.getItem(cartStorageKey.value);
+    if (stored) cart.value = JSON.parse(stored);
+  } catch (e) {
+    logError('[shared/menu] failed to restore cart from localStorage', e);
+  }
+}
+watch(cart, (c) => {
+  if (!process.client) return;
+  localStorage.setItem(cartStorageKey.value, JSON.stringify(c));
+}, { deep: true });
 
 function openCheckout() {
   isCartOpen.value = false;
@@ -280,6 +370,7 @@ useHead(() => {
 
 <template>
   <div
+    ref="scrollContainerRef"
     class="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950"
     :style="{ '--brand-color': primaryColor }"
   >
@@ -323,7 +414,8 @@ useHead(() => {
       <!-- Header: brand takes top billing — colored hero band in the
            tenant's own primary color, big elevated logo card. -->
       <div class="relative" :style="{ backgroundColor: primaryColor }">
-        <div class="max-w-3xl mx-auto px-4 pt-7 pb-6 flex items-center gap-4">
+        <div class="max-w-3xl mx-auto px-4 pt-7 pb-6">
+        <div class="flex items-center gap-4">
           <div class="w-20 h-20 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
             <img
               v-if="data.storefront.brandSettings?.logoUrl"
@@ -333,7 +425,7 @@ useHead(() => {
             >
             <Icon v-else name="lucide:store" class="w-8 h-8 text-gray-300" />
           </div>
-          <div class="min-w-0">
+          <div class="min-w-0 flex-1">
             <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
               {{ data.storefront.brandSettings?.name || nsSlug }}
             </h1>
@@ -341,22 +433,60 @@ useHead(() => {
               {{ data.storefront.brandSettings.welcomeMessage }}
             </p>
           </div>
+          <!-- Brand contacts: call the business directly, or jump to its socials -->
+          <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0">
+            <a
+              v-if="brandPhone"
+              :href="telHref(brandPhone)"
+              class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
+              :style="{ color: onPrimaryText }"
+              :aria-label="t('menu.call') || 'Call'"
+            >
+              <Icon name="lucide:phone" class="w-4 h-4" />
+            </a>
+            <a
+              v-for="link in brandSocialLinks"
+              :key="link.url"
+              :href="link.url"
+              target="_blank"
+              rel="noopener"
+              class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
+              :style="{ color: onPrimaryText }"
+              :aria-label="link.label || 'Social link'"
+            >
+              <Icon :name="socialIcon(link.label)" class="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+        <a
+          v-if="activeBranch || visibleBranches[0]"
+          :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
+          target="_blank"
+          rel="noopener"
+          class="mt-3 inline-flex items-center gap-1.5 max-w-full rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-xs font-medium transition-colors"
+          :style="{ color: onPrimaryText }"
+        >
+          <Icon name="lucide:map-pin" class="w-3.5 h-3.5 flex-shrink-0" />
+          <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
+          <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
+        </a>
         </div>
       </div>
 
       <!-- Promo banners -->
       <div v-if="data.storefront.promoBanners.length" class="max-w-3xl mx-auto px-4 pt-4 flex gap-3 overflow-x-auto">
-        <a
+        <button
           v-for="b in data.storefront.promoBanners"
           :key="b.id"
-          :href="b.targetUrl || undefined"
-          class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block"
+          type="button"
+          class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block text-left"
+          @click="openBanner(b)"
         >
           <img :src="b.imageUrl" :alt="b.imageAlt || b.title" class="w-full h-full object-cover">
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
             <span class="text-white text-sm font-semibold">{{ b.title }}</span>
           </div>
-        </a>
+        </button>
       </div>
 
       <!-- Branch picker -->
@@ -380,6 +510,17 @@ useHead(() => {
       <!-- Catalog: search + sticky anchor nav + continuous scroll sections -->
       <template v-else>
         <div class="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+          <div v-if="activeBranch && visibleBranches.length > 1" class="max-w-3xl mx-auto px-4 pt-2 flex justify-start">
+            <button
+              type="button"
+              class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full px-3 py-1"
+              @click="selectedBranchId = ''"
+            >
+              <Icon name="lucide:map-pin" class="w-3 h-3" />
+              {{ activeBranch.name }}
+              <Icon name="lucide:chevron-down" class="w-3 h-3 text-gray-400" />
+            </button>
+          </div>
           <div class="max-w-3xl mx-auto px-4 pt-2.5 pb-2 flex items-center gap-2">
             <div class="relative flex-1 min-w-0">
               <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -462,7 +603,7 @@ useHead(() => {
             :key="c.id"
             :ref="(el) => setCategoryRef(c.id, el)"
             :data-category-id="c.id"
-            class="scroll-mt-28"
+            class="scroll-mt-28 border-t border-gray-200 dark:border-gray-800 pt-6 first:border-t-0 first:pt-0"
           >
             <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ c.name }}</h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
@@ -490,7 +631,7 @@ useHead(() => {
         <!-- Floating cart bar -->
         <div
           v-if="cartCount > 0"
-          class="fixed bottom-0 left-0 right-0 pt-8 pb-4 px-4 bg-gradient-to-t from-gray-50 dark:from-gray-950 via-gray-50/95 dark:via-gray-950/95 to-transparent pointer-events-none"
+          class="fixed bottom-0 left-0 right-0 z-30 pt-8 pb-4 px-4 bg-gradient-to-t from-gray-50 dark:from-gray-950 via-gray-50/95 dark:via-gray-950/95 to-transparent pointer-events-none"
         >
           <div class="max-w-3xl mx-auto pointer-events-auto">
             <button
@@ -509,27 +650,89 @@ useHead(() => {
         </div>
       </template>
 
-      <!-- Bottom clearance so page content never sits under the fixed cart bar -->
-      <div class="pb-20" />
+      <!-- Footer: company/contact info instead of a bare spacer. -->
+      <footer class="mt-10 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div class="max-w-3xl mx-auto px-4 py-6 space-y-3">
+          <div class="font-semibold text-gray-900 dark:text-white">{{ data.storefront.brandSettings?.name || nsSlug }}</div>
+          <div v-if="activeBranch || visibleBranches[0]" class="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <Icon name="lucide:map-pin" class="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{{ (activeBranch || visibleBranches[0]).address }}</span>
+          </div>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <a
+              v-if="activeBranch || visibleBranches[0]"
+              :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1.5 transition-colors"
+            >
+              <Icon name="lucide:map" class="w-3.5 h-3.5" />
+              {{ t('menu.openIn2gis') || 'Open in 2GIS' }}
+            </a>
+            <a
+              v-if="brandPhone"
+              :href="telHref(brandPhone)"
+              class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1.5 transition-colors"
+            >
+              <Icon name="lucide:phone" class="w-3.5 h-3.5" />
+              {{ formatDisplayPhoneUniversal(brandPhone) }}
+            </a>
+          </div>
+          <div v-if="brandSocialLinks.length" class="flex items-center gap-2 pt-1">
+            <a
+              v-for="link in brandSocialLinks"
+              :key="link.url"
+              :href="link.url"
+              target="_blank"
+              rel="noopener"
+              class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+              :aria-label="link.label || 'Social link'"
+            >
+              <Icon :name="socialIcon(link.label)" class="w-4 h-4" />
+            </a>
+          </div>
+          <a
+            href="https://lota.tools"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors pt-2"
+          >
+            <img src="/assets/logo.png" alt="" class="w-3 h-3">
+            {{ t('menu.poweredByFooter') || 'Powered by lota' }}
+          </a>
+        </div>
+      </footer>
+      <!-- Clearance so the footer never sits under the fixed cart bar — only
+           actually needed while that bar is showing, otherwise it was just
+           dead empty space below the footer on every page load. -->
+      <div v-if="cartCount > 0" class="pb-24" />
     </template>
 
     <!-- Item detail sheet -->
-    <USlideover v-model="isItemSheetOpen">
+    <USlideover v-model="isItemSheetOpen" @update:model-value="(v: boolean) => { if (!v) closeItemDetail(); }">
       <UCard v-if="selectedItem" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
         <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ selectedItem.name }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isItemSheetOpen = false" />
+          <div class="flex items-center justify-end">
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="closeItemDetail" />
           </div>
         </template>
 
         <div class="space-y-4">
-          <img
-            v-if="selectedItem.imageUrl"
-            :src="selectedItem.imageUrl"
-            :alt="selectedItem.imageAlt || selectedItem.name"
-            class="w-full aspect-video object-cover rounded-xl"
-          >
+          <div class="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <img
+              v-if="selectedItem.imageUrl"
+              :src="selectedItem.imageUrl"
+              :alt="selectedItem.imageAlt || selectedItem.name"
+              class="w-full h-full object-cover"
+            >
+            <Icon v-else name="lucide:utensils" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ selectedItem.name }}</h2>
+            <div class="text-lg font-bold mt-1" :style="{ color: secondaryColor }">
+              {{ selectedItem.price }} {{ data?.storefront.brandSettings?.currencyCode }}
+            </div>
+          </div>
           <div v-if="selectedItem.badgeIds.length" class="flex flex-wrap gap-1.5">
             <span
               v-for="bid in selectedItem.badgeIds"
@@ -543,9 +746,6 @@ useHead(() => {
           <p v-if="selectedItem.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             {{ selectedItem.description }}
           </p>
-          <div class="text-lg font-bold" :style="{ color: secondaryColor }">
-            {{ selectedItem.price }} {{ data?.storefront.brandSettings?.currencyCode }}
-          </div>
         </div>
 
         <template #footer>
@@ -574,7 +774,7 @@ useHead(() => {
               block
               :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
               class="border-0 flex-1"
-              @click="addToCartQty(selectedItem, sheetQuantity); isItemSheetOpen = false"
+              @click="addToCartQty(selectedItem, sheetQuantity); closeItemDetail()"
             >
               {{ t('menu.addToCart') || 'Add to cart' }} · {{ selectedItem.price * sheetQuantity }} {{ data?.storefront.brandSettings?.currencyCode }}
             </UButton>
@@ -583,11 +783,39 @@ useHead(() => {
       </UCard>
     </USlideover>
 
-    <!-- Cart modal -->
-    <UModal v-model="isCartOpen">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <!-- Banner sheet: full-width from the bottom, explicit "go to link" action -->
+    <USlideover v-model="isBannerSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
+      <UCard v-if="selectedBanner" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
         <template #header>
-          <h3 class="text-lg font-semibold">{{ t('menu.cart') || 'Cart' }}</h3>
+          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ selectedBanner.title }}</h3>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isBannerSheetOpen = false" />
+          </div>
+        </template>
+        <div class="space-y-4">
+          <img :src="selectedBanner.imageUrl" :alt="selectedBanner.imageAlt || selectedBanner.title" class="w-full aspect-video object-cover rounded-xl">
+          <p v-if="selectedBanner.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+            {{ selectedBanner.description }}
+          </p>
+        </div>
+        <template v-if="selectedBanner.targetUrl" #footer>
+          <UButton block :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" icon="lucide:arrow-right" @click="followBannerLink">
+            {{ t('menu.viewMore') || 'View more' }}
+          </UButton>
+        </template>
+      </UCard>
+    </USlideover>
+
+    <!-- Cart sheet -->
+    <USlideover v-model="isCartOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+        <template #header>
+          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ t('menu.cart') || 'Cart' }}</h3>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isCartOpen = false" />
+          </div>
         </template>
         <div v-if="cart.length" class="space-y-4">
           <div v-for="line in cart" :key="line.menuItemId" class="flex items-center gap-3">
@@ -637,21 +865,26 @@ useHead(() => {
           </div>
         </template>
       </UCard>
-    </UModal>
+    </USlideover>
 
-    <!-- Checkout modal -->
-    <UModal v-model="isCheckoutOpen" @close="closeCheckout">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-        <template v-if="orderResult" #header>
-          <h3 class="text-lg font-semibold">{{ t('menu.orderNumber') || 'Order' }} #{{ orderResult.number }}</h3>
-        </template>
-        <template v-else #header>
-          <h3 class="text-lg font-semibold">{{ t('menu.yourDetails') || 'Your details' }}</h3>
+    <!-- Checkout sheet -->
+    <USlideover v-model="isCheckoutOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }" @update:model-value="(v: boolean) => { if (!v) closeCheckout(); }">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+        <template #header>
+          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="flex items-center justify-between">
+            <h3 v-if="orderResult" class="text-lg font-semibold">{{ t('menu.orderNumber') || 'Order' }} #{{ orderResult.number }}</h3>
+            <h3 v-else class="text-lg font-semibold">{{ t('menu.yourDetails') || 'Your details' }}</h3>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="closeCheckout" />
+          </div>
         </template>
 
-        <div v-if="orderResult" class="text-center py-6">
-          <UIcon name="lucide:check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-          <p class="text-gray-700 dark:text-gray-300">{{ t('menu.orderReceived') || 'Order received!' }}</p>
+        <div v-if="orderResult" class="text-center py-10">
+          <div class="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center mx-auto mb-4">
+            <Icon name="lucide:check" class="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('menu.orderReceived') || 'Order received!' }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('menu.orderReceivedDesc') || "We'll be in touch shortly to confirm the details." }}</p>
         </div>
 
         <div v-else class="space-y-4">
@@ -708,11 +941,20 @@ useHead(() => {
               {{ t('menu.pickup') || 'Pickup' }}
             </UButton>
           </div>
-          <UFormGroup v-if="checkoutForm.type === 'delivery'" :label="t('menu.address') || 'Delivery address'" required>
-            <UInput v-model="checkoutForm.deliveryAddress" size="lg" />
-          </UFormGroup>
+          <template v-if="checkoutForm.type === 'delivery'">
+            <UFormGroup :label="t('menu.address') || 'Delivery address'" required>
+              <UInput v-model="checkoutForm.deliveryAddress" size="lg" />
+            </UFormGroup>
+            <p class="text-xs text-gray-400 -mt-2">{{ t('menu.deliveryFeeNote') || 'Delivery fee is calculated separately and not included in the order total.' }}</p>
+          </template>
           <UFormGroup v-else-if="activeBranch" :label="t('menu.pickupFrom') || 'Pickup from'">
-            <div class="text-sm text-gray-600 dark:text-gray-400">{{ activeBranch.name }} — {{ activeBranch.address }}</div>
+            <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ activeBranch.name }} — {{ activeBranch.address }}</div>
+            <div v-if="activeBranch.lat && activeBranch.lng" class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 h-40 mb-2">
+              <iframe :src="osmEmbedSrc(activeBranch.lat, activeBranch.lng)" class="w-full h-full border-0" loading="lazy" title="Branch location" />
+            </div>
+            <UButton size="sm" color="gray" variant="soft" icon="lucide:map" :to="twoGisSearchHref(activeBranch.address)" target="_blank">
+              {{ t('menu.openIn2gis') || 'Open in 2GIS' }}
+            </UButton>
           </UFormGroup>
           <UFormGroup :label="t('menu.comment') || 'Comment'">
             <UTextarea v-model="checkoutForm.comment" :rows="2" />
@@ -740,6 +982,6 @@ useHead(() => {
           </div>
         </template>
       </UCard>
-    </UModal>
+    </USlideover>
   </div>
 </template>

@@ -46,7 +46,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg ring-1 ring-gray-200 dark:ring-gray-800 overflow-hidden flex flex-col h-full">
+  <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col h-full">
     <div class="flex-1 min-h-0 overflow-auto">
       <div class="overflow-x-auto">
         <UTable

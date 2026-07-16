@@ -5,6 +5,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
 import { getContrastTextColor } from '@/utils/color';
+import { parseSocialLinks, serializeSocialLinks, socialIcon, type SocialLink } from '@/utils/social';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 
 const { t } = useI18n();
@@ -22,11 +23,11 @@ const form = reactive({
   primaryColor: '',
   secondaryColor: '',
   welcomeMessage: '',
-  currencyCode: 'USD',
-  socialLinks: '[]',
+  currencyCode: 'KZT',
   seoTitle: '',
   seoDescription: '',
 });
+const socialLinksList = ref<SocialLink[]>([]);
 
 function applySettings(s: MenuBrandSettings | null) {
   if (!s) return;
@@ -36,10 +37,17 @@ function applySettings(s: MenuBrandSettings | null) {
   form.primaryColor = s.primaryColor || '';
   form.secondaryColor = s.secondaryColor || '';
   form.welcomeMessage = s.welcomeMessage || '';
-  form.currencyCode = s.currencyCode || 'USD';
-  form.socialLinks = s.socialLinks || '[]';
+  form.currencyCode = s.currencyCode || 'KZT';
+  socialLinksList.value = parseSocialLinks(s.socialLinks);
   form.seoTitle = s.seoTitle || '';
   form.seoDescription = s.seoDescription || '';
+}
+
+function addSocialLink() {
+  socialLinksList.value.push({ label: '', url: '' });
+}
+function removeSocialLink(idx: number) {
+  socialLinksList.value.splice(idx, 1);
 }
 
 async function load() {
@@ -79,7 +87,7 @@ async function save() {
       secondaryColor: form.secondaryColor.trim() || undefined,
       welcomeMessage: form.welcomeMessage.trim() || undefined,
       currencyCode: form.currencyCode.trim() || undefined,
-      socialLinks: form.socialLinks.trim() || undefined,
+      socialLinks: serializeSocialLinks(socialLinksList.value),
       seoTitle: form.seoTitle.trim() || undefined,
       seoDescription: form.seoDescription.trim() || undefined,
     });
@@ -122,7 +130,7 @@ onMounted(load);
     <div v-else class="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-5 items-start">
       <div class="space-y-4">
         <!-- Identity -->
-        <div class="rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
           <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             <Icon name="lucide:store" class="h-3.5 w-3.5" />
             {{ t('menu.identity') || 'Identity' }}
@@ -150,7 +158,7 @@ onMounted(load);
         </div>
 
         <!-- Colors -->
-        <div class="rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
           <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             <Icon name="lucide:palette" class="h-3.5 w-3.5" />
             {{ t('menu.colors') || 'Colors' }}
@@ -159,7 +167,7 @@ onMounted(load);
             <UFormGroup :label="t('menu.primaryColor') || 'Primary color'">
               <div class="flex items-center gap-2">
                 <input v-model="form.primaryColor" type="color" class="h-9 w-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent flex-shrink-0">
-                <UInput v-model="form.primaryColor" size="lg" placeholder="#c97a1e" class="flex-1" />
+                <UInput v-model="form.primaryColor" size="lg" placeholder="#3b82f6" class="flex-1" />
               </div>
             </UFormGroup>
             <UFormGroup :label="t('menu.secondaryColor') || 'Secondary color'">
@@ -171,8 +179,29 @@ onMounted(load);
           </div>
         </div>
 
+        <!-- Social links: shown as call/social buttons on the storefront
+             header + footer (see pages/to/[namespace]/menu/index.vue) -->
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:share-2" class="h-3.5 w-3.5" />
+              {{ t('menu.socialLinks') || 'Social links' }}
+            </div>
+            <UButton size="2xs" color="gray" variant="soft" icon="lucide:plus" @click="addSocialLink">
+              {{ t('menu.addSocialLink') || 'Add' }}
+            </UButton>
+          </div>
+          <div v-if="!socialLinksList.length" class="text-sm text-gray-400">{{ t('menu.noSocialLinks') || 'No social links yet' }}</div>
+          <div v-for="(link, idx) in socialLinksList" :key="idx" class="flex items-center gap-2">
+            <Icon :name="socialIcon(link.label)" class="h-4 w-4 text-gray-400 flex-shrink-0" />
+            <UInput v-model="link.label" size="sm" :placeholder="t('menu.socialLabelPlaceholder') || 'Instagram'" class="w-32 flex-shrink-0" />
+            <UInput v-model="link.url" size="sm" placeholder="https://..." class="flex-1" />
+            <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="removeSocialLink(idx)" />
+          </div>
+        </div>
+
         <!-- SEO -->
-        <div class="rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
           <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
             <Icon name="lucide:search" class="h-3.5 w-3.5" />
             SEO
@@ -202,7 +231,7 @@ onMounted(load);
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
           {{ t('menu.preview') || 'Preview' }}
         </div>
-        <div class="rounded-xl overflow-hidden ring-1 ring-gray-200 dark:ring-gray-800 bg-white dark:bg-gray-950">
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
           <!-- Mirrors the storefront's hero header exactly (see
                pages/to/[namespace]/menu/index.vue) so this preview never
                drifts out of sync with what customers actually see. -->
@@ -232,7 +261,7 @@ onMounted(load);
               class="w-full rounded-lg px-3 py-2 text-sm font-medium text-center border"
               :style="{ borderColor: previewSecondary, color: previewSecondary }"
             >
-              {{ form.currencyCode || 'USD' }} 12.00
+              {{ form.currencyCode || 'KZT' }} 12.00
             </div>
           </div>
         </div>
