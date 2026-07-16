@@ -22,6 +22,12 @@ const sort = defineModel<any>('sort')
 const page = defineModel<number>('page')
 const pageCount = defineModel<number>('pageCount')
 
+// UTable's row-click event isn't forwarded automatically: AppTable's root
+// element is a wrapper <div>, not <UTable> itself, so Vue's default attrs
+// fallthrough never reaches the nested UTable — an explicit re-emit is
+// required for @select to work on the consumer side.
+const emit = defineEmits<{ (e: 'select', row: any): void }>()
+
 const { t } = useI18n()
 
 const options = computed(() => props.pageCountOptions || [10, 25, 50, 100])
@@ -64,6 +70,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           }"
           class="w-full min-w-max"
           :hover="hover ?? true"
+          @select="(row: any) => emit('select', row)"
         >
           <!-- Dynamic forward of column data slots -->
           <template

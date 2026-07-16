@@ -1,6 +1,7 @@
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
+import { useMenuToken } from '@/composables/useMenuToken';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -9,11 +10,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // Public content pages
   if (routeName === 'feed' || routeName === 'slug' || routeName === 'news' || routeName === 'category-slug' || to.path === '/feed' || to.path === '/news') return;
   // Allow public access to public post page
-  if (/^\/shared\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
+  if (/^\/to\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
+  // Allow public, unauthenticated access to the public storefront page
+  if (/^\/to\/[^/]+\/menu(\/|$)/.test(to.path)) return;
   if (process.server) return;
 
   const isAtraceRoute = /\/atrace(\/|$)/.test(to.path);
   const isContactsRoute = /\/contacts(\/|$)/.test(to.path);
+  const isMenuRoute = /\/menu(\/|$)/.test(to.path);
   let token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) {
     // Try one refresh before redirecting to root when access token is expired.
@@ -65,6 +69,24 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const { ensure, current } = useContactsToken();
     const contactsToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
     if (!contactsToken) {
+      try {
+        const full = to.fullPath || to.path;
+        const trimmed = full.startsWith('/') ? full.slice(1) : full;
+        localStorage.setItem('back-to', trimmed);
+      } catch {}
+      return navigateTo('/');
+    }
+  }
+
+  if (isMenuRoute) {
+    const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
+    // Skip token check for plans page - it doesn't require app token
+    if (to.path.includes('/menu/plans')) {
+      return;
+    }
+    const { ensure, current } = useMenuToken();
+    const menuToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
+    if (!menuToken) {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;

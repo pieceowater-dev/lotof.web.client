@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { sanitizePhoneInput } from '@/utils/phone';
 import type { ClientIdentity } from '@/api/contacts/identities';
 
 interface Props {
@@ -55,6 +56,14 @@ let copiedTimeout: ReturnType<typeof setTimeout> | null = null;
 
 function getDisplayValue(identity: ClientIdentity): string {
   return props.identityDisplayValues?.[identity.id] || identity.value;
+}
+
+function updatePhoneValue(idx: number, value: string) {
+  emit('updatePhone', idx, sanitizePhoneInput(value));
+}
+
+function updateWhatsappValue(idx: number, value: string) {
+  emit('updateWhatsapp', idx, sanitizePhoneInput(value));
 }
 
 function handleCopy(identity: ClientIdentity) {
@@ -287,9 +296,11 @@ function getIdentityTypeLabel(type: string): string {
                 <UInput
                   :model-value="phone"
                   type="tel"
+                  inputmode="tel"
+                  pattern="[0-9+()\s-]*"
                   :placeholder="idx === 0 ? t('contacts.primaryNumber') + ' *' : t('contacts.additionalNumber')"
                   size="md"
-                  @update:model-value="$emit('updatePhone', idx, $event)"
+                  @update:model-value="updatePhoneValue(idx, $event)"
                 />
               </UFormGroup>
               <UButton
@@ -437,9 +448,11 @@ function getIdentityTypeLabel(type: string): string {
                 <UInput
                   :model-value="whatsapp"
                   type="tel"
+                  inputmode="tel"
+                  pattern="[0-9+()\s-]*"
                   :placeholder="t('contacts.enterPhone')"
                   size="md"
-                  @update:model-value="$emit('updateWhatsapp', idx, $event)"
+                  @update:model-value="updateWhatsappValue(idx, $event)"
                 />
               </UFormGroup>
               <UButton

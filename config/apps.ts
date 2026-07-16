@@ -27,6 +27,15 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.clientsDesc',
     canAdd: true,
   },
+  {
+    name: 'lota Orders',
+    bundle: 'pieceowater.menu',
+    address: 'menu',
+  icon: 'lucide:receipt',
+    titleKey: 'app.menu',
+    descriptionKey: 'app.menuDesc',
+    canAdd: true,
+  },
 {
     name: 'lota Links',
     bundle: 'pieceowater.links',

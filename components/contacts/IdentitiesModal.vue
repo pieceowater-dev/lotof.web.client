@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { useToast } from '#imports';
 import type { ClientIdentity } from '@/api/contacts/identities';
-import { 
+import {
   getClientIdentities,
   createIdentity,
   deleteIdentity,
   verifyIdentity,
   setPrimaryIdentity
 } from '@/api/contacts/identities';
+import { sanitizePhoneInput } from '@/utils/phone';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -37,6 +38,11 @@ const newType = ref('email');
 const newValue = ref('');
 
 const identityTypes = ['email', 'phone', 'telegram', 'whatsapp'];
+const isPhoneLikeType = computed(() => newType.value === 'phone' || newType.value === 'whatsapp');
+
+function updateNewValue(value: string) {
+  newValue.value = isPhoneLikeType.value ? sanitizePhoneInput(value) : value;
+}
 
 async function loadIdentities() {
   if (!token.value || !selectedNS.value) return;
@@ -180,9 +186,13 @@ watch(() => props.isOpen, (newVal) => {
           size="sm"
         />
         <UInput
-          v-model="newValue"
+          :model-value="newValue"
+          :type="isPhoneLikeType ? 'tel' : 'text'"
+          :inputmode="isPhoneLikeType ? 'tel' : undefined"
+          :pattern="isPhoneLikeType ? '[0-9+()\\s-]*' : undefined"
           :placeholder="`Enter ${newType}...`"
           size="sm"
+          @update:model-value="updateNewValue"
           @keyup.enter="handleCreateIdentity"
         />
         <UButton

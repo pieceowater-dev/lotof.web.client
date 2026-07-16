@@ -47,7 +47,7 @@ const publicUrl = computed(() => {
     } catch {}
     // Fallback if not found
     if (!ns) ns = 'ns';
-    return `${window.location.origin}/shared/${ns}/atrace/post/${props.post.id}`;
+    return `${window.location.origin}/to/${ns}/atrace/post/${props.post.id}`;
 });
 
 async function handleCopy() {

@@ -130,8 +130,11 @@ export default defineNuxtConfig({
   
   // Route-specific rendering rules
   routeRules: {
-    // Public QR display pages should be client-side only to avoid hydration issues with WebSocket
-    '/shared/**': { ssr: false },
+    // The public atrace post page uses WebSocket-driven live state and must stay
+    // client-side only to avoid hydration mismatches. The menu storefront under
+    // /to/*/menu/** has no such dependency and is intentionally left server-rendered
+    // (default ssr:true) so its per-tenant title/description/OG tags are crawlable.
+    '/to/*/atrace/**': { ssr: false },
     // Static assets caching
     '/_nuxt/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/favicon/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
@@ -143,6 +146,7 @@ export default defineNuxtConfig({
     '/api-atrace/**': { proxy: buildApiProxyTarget(process.env.VITE_API_ATRACE, '/api-atrace', 8081) },
     '/api-capital/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CAPITAL, '/api-capital', 8082) },
     '/api-contacts/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CONTACTS, '/api-contacts', 8083) },
+    '/api-menu/**': { proxy: buildApiProxyTarget(process.env.VITE_API_MENU, '/api-menu', 8095) },
     ...articleRouteRules
   },
   

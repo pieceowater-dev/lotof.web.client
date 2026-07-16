@@ -1,6 +1,7 @@
 // Manages current namespace selection (multi-tenant context)
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { useMenuToken } from '@/composables/useMenuToken';
 
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
@@ -73,6 +74,11 @@ export function useNamespace() {
         clear();
         // Fallback: manual expire in case path/domain differs
         document.cookie = `${CookieKeys.ATRACE_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      } catch {}
+      try {
+        const { clear } = useMenuToken();
+        clear();
+        document.cookie = `${CookieKeys.MENU_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
     }
   }

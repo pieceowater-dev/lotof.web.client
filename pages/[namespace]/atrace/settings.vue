@@ -175,7 +175,7 @@ function localizeErrorMessage(error: unknown): string {
     }
     
     // Return original message if no localization found
-    return message;
+    return message || (t('common.genericError') || 'Something went wrong. Please try again.');
 }
 
 function resetRouteForm() {

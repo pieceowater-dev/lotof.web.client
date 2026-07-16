@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, sanitizePhoneInput } from '@/utils/phone';
 import FinderStyleSearch from './FinderStyleSearch.vue';
 
 const { t } = useI18n();
@@ -357,6 +357,10 @@ function cancelEditPrimaryPhone() {
   editPhone.value = '';
 }
 
+function updateEditPhone(value: string) {
+  editPhone.value = sanitizePhoneInput(value);
+}
+
 function saveEditPrimaryPhone(clientId: string) {
   emit('savePrimaryPhone', { clientId, phone: editPhone.value });
   editingPhoneClientId.value = null;
@@ -670,10 +674,14 @@ function addTagToFilter(tagId: string, tagName: string) {
                   class="space-y-2"
                 >
                   <UInput
-                    v-model="editPhone"
+                    :model-value="editPhone"
+                    type="tel"
+                    inputmode="tel"
+                    pattern="[0-9+()\s-]*"
                     size="xs"
                     :placeholder="t('contacts.enterPhone')"
                     @click.stop
+                    @update:model-value="updateEditPhone"
                   />
                   <p
                     v-if="editPhone.trim()"

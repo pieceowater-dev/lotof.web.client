@@ -85,7 +85,7 @@ const pageTitle = computed(() => {
 
   if (!segments.length) return 'Hub'; // Main page title
 
-  if (segments[0] === 'shared') {
+  if (segments[0] === 'to') {
     const ns = segments[1];
     if (segments[2] === 'atrace') {
       const appTitle = t('app.atraceTitle') || t('app.attendance') || 'A-Trace';
@@ -118,7 +118,7 @@ const normalizedSiteUrl = computed(() => String(config.public.siteUrl || 'https:
 const routeSegments = computed(() => route.path.split('/').filter(Boolean));
 const isConsoleRoute = computed(() => route.path.startsWith('/console'));
 const isPublicationEditorRoute = computed(() => /^\/console\/publications(?:\/|$)/.test(route.path));
-const isSharedNamespaceRoute = computed(() => /^\/shared\/[^/]+(?:\/|$)/.test(route.path));
+const isSharedNamespaceRoute = computed(() => /^\/to\/[^/]+(?:\/|$)/.test(route.path));
 
 const notificationsUi = computed(() => {
   if (!isPublicationEditorRoute.value) return {};
@@ -131,7 +131,7 @@ const isNamespacePrivateRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length < 2) return false;
   const first = segments[0];
-  return first !== 'console' && first !== 'shared' && !PUBLIC_CATEGORY_PREFIXES.has(first);
+  return first !== 'console' && first !== 'to' && !PUBLIC_CATEGORY_PREFIXES.has(first);
 });
 const isPeopleRoute = computed(() => route.path === '/people');
 const isPrivateRoute = computed(() => {
@@ -142,7 +142,7 @@ const isArticleRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length !== 1) return false;
   const first = segments[0];
-  return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'shared';
+  return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'to';
 });
 
 const queryLang = computed(() => {

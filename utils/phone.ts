@@ -1,5 +1,16 @@
 import { AsYouType, parsePhoneNumberFromString } from 'libphonenumber-js/min';
 
+// Shared input-time mask: strips everything except digits/+/()/space/dash
+// as the user types. Same rule used across Contacts and Menu phone fields.
+export function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^\d+()\s-]/g, '');
+}
+
+export function isPhoneInputValid(value: string): boolean {
+  if (!value) return true;
+  return value.replace(/\D/g, '').length >= 10;
+}
+
 function maskWithCountryCode(digitsOnly: string): string | null {
   // Expected canonical shape: country code (1-3) + national part (10 digits).
   if (digitsOnly.length < 11 || digitsOnly.length > 13) return null;
