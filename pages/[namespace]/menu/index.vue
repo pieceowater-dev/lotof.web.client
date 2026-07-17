@@ -131,13 +131,24 @@ const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).so
 
 // Known source tags, pulled from saved share links, so the filter is a
 // selector of real tracking sources instead of free text prone to typos.
-const sourceTagOptions = ref<string[]>([]);
+// The filter still submits the raw sourceTag (what orders are actually
+// searchable by) — only the dropdown's displayed text uses the link's
+// human-readable label instead of that tag. When multiple links share one
+// tag, the first label seen wins.
+const sourceTagOptions = ref<{ sourceTag: string; label: string }[]>([]);
 async function loadSourceTagOptions() {
   try {
     const menuToken = await getToken();
     const { menuShareLinksList } = await import('@/api/menu/sharelink/list');
     const links = await menuShareLinksList(menuToken, nsSlug.value);
-    sourceTagOptions.value = [...new Set(links.map((l) => l.sourceTag).filter(Boolean))].sort();
+    const byTag = new Map<string, string>();
+    for (const l of links) {
+      if (!l.sourceTag || byTag.has(l.sourceTag)) continue;
+      byTag.set(l.sourceTag, l.label || l.sourceTag);
+    }
+    sourceTagOptions.value = [...byTag.entries()]
+      .map(([sourceTag, label]) => ({ sourceTag, label }))
+      .sort((a, b) => a.label.localeCompare(b.label));
   } catch (e) {
     logError('[menu/index] loadSourceTagOptions failed', e);
   }
@@ -576,6 +587,26 @@ function openDetail(row: MenuOrder) {
   clearNewOrder(row.id);
 }
 
+// Switches the already-open detail modal to a different order by id (e.g.
+// clicking one of "customer's other orders" inside it) — looks in the
+// currently-loaded list first, falls back to fetching it directly since a
+// past order very often won't match the current filters.
+async function handleOpenOrderById(orderId: string) {
+  const existing = orders.value.find((o) => o.id === orderId);
+  if (existing) {
+    openDetail(existing);
+    return;
+  }
+  try {
+    const menuToken = await getToken();
+    const { menuGetOrder } = await import('@/api/menu/order/get');
+    const fetched = await menuGetOrder(menuToken, nsSlug.value, orderId);
+    if (fetched) openDetail(fetched);
+  } catch (e) {
+    logError('[menu/index] handleOpenOrderById failed', e);
+  }
+}
+
 // Closing the detail modal means whatever was edited (status, comment, ...)
 // should be reflected immediately rather than waiting for the next poll —
 // and a plain reload naturally drops the row if it no longer matches the
@@ -917,6 +948,7 @@ async function handleCreateOrder(payload: any) {
       :order="selectedOrder"
       :branches="branches"
       @status-changed="handleDetailStatusChanged"
+      @open-order="handleOpenOrderById"
     />
 
     <!-- Full filter panel: source tag + date ranges, for building a report
@@ -945,7 +977,7 @@ async function handleCreateOrder(payload: any) {
             </div>
             <USelectMenu
               v-model="sourceTagFilter"
-              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...sourceTagOptions.map((s) => ({ label: s, value: s }))]"
+              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...sourceTagOptions.map((s) => ({ label: s.label, value: s.sourceTag }))]"
               value-attribute="value"
               option-attribute="label"
               icon="lucide:link"

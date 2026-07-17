@@ -31,3 +31,23 @@ export async function menuUpdateOrder(menuToken: string, namespaceSlug: string, 
     return res.updateOrder;
   }, namespaceSlug);
 }
+
+const LinkOrderClientDocument = /* GraphQL */ `
+  mutation LinkOrderClient($orderId: ID!, $clientId: String!) {
+    linkOrderClient(orderId: $orderId, clientId: $clientId) {
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+    }
+  }
+`;
+
+export async function menuLinkOrderClient(menuToken: string, namespaceSlug: string, orderId: string, clientId: string): Promise<MenuOrder> {
+  const devHeaders = await getDeviceHeaders();
+  return menuRequestWithRefresh(async () => {
+    const res = await menuClient.request<{ linkOrderClient: MenuOrder }>(
+      LinkOrderClientDocument,
+      { orderId, clientId },
+      { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.linkOrderClient;
+  }, namespaceSlug);
+}

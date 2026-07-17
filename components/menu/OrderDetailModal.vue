@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -35,6 +36,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
   (e: 'statusChanged', order: MenuOrder): void;
+  (e: 'openOrder', orderId: string): void;
 }>();
 
 const isOpen = computed({
@@ -163,11 +165,195 @@ async function loadDetails() {
   }
 }
 
+// --- Customer order history: this customer's other orders, so staff can
+// spot repeat customers / past issues without leaving the detail view.
+// Authenticated admin query, so (unlike the storefront's public lookup)
+// there's no need to worry about someone looking up a stranger's phone.
+const customerOrders = ref<MenuOrder[]>([]);
+async function loadCustomerOrders() {
+  if (!props.order?.phone) {
+    customerOrders.value = [];
+    return;
+  }
+  try {
+    const menuToken = await getToken();
+    const { menuOrdersList } = await import('@/api/menu/order/list');
+    // The backend does a substring match on the raw stored phone, which has
+    // no formatting — searching with a formatted number (e.g. "+7 777...")
+    // would never match a stored "77777777777".
+    const res = await menuOrdersList(menuToken, nsSlug.value, { search: props.order.phone.replace(/\D/g, ''), length: 'TEN' });
+    customerOrders.value = res.orders
+      .filter((o) => o.id !== props.order!.id && o.phone.replace(/\D/g, '') === props.order!.phone.replace(/\D/g, ''))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  } catch (e) {
+    logError('[OrderDetailModal] loadCustomerOrders failed', e);
+    customerOrders.value = [];
+  }
+}
+
+// --- lota Contacts integration: view/link/create a client from this order's
+// phone. Only relevant when the namespace actually has Contacts installed —
+// that check is purely for UX (don't show a feature that would just error);
+// the real access control is each service's own auth directives, so menu
+// never needs to know Contacts is installed to enforce anything.
+const contactsInstalled = ref(false);
+const clientProfile = ref<import('@/api/contacts/listClients').ClientRow | null>(null);
+const clientCandidate = ref<import('@/api/contacts/listClients').ClientRow | null>(null);
+const clientPhoneIdentity = ref<import('@/api/contacts/identities').ClientIdentity | null>(null);
+const clientLoading = ref(false);
+const linkingClient = ref(false);
+const creatingClient = ref(false);
+
+function clientDisplayName(row: import('@/api/contacts/listClients').ClientRow): string {
+  if (row.individual) {
+    return [row.individual.firstName, row.individual.lastName].filter(Boolean).join(' ') || (t('menu.guestCustomer') || 'Guest');
+  }
+  if (row.legalEntity) {
+    return row.legalEntity.brandName || row.legalEntity.legalName;
+  }
+  return row.client.shortId || row.client.id;
+}
+
+async function getContactsAuth(): Promise<string | null> {
+  if (!nsSlug.value) return null;
+  const { ensure } = useContactsToken();
+  return ensure(nsSlug.value, hubToken.value);
+}
+
+async function loadClientIntegration() {
+  clientProfile.value = null;
+  clientCandidate.value = null;
+  clientPhoneIdentity.value = null;
+  if (!props.order || !hubToken.value) return;
+  try {
+    const { hubIsAppInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
+    contactsInstalled.value = await hubIsAppInNamespace(hubToken.value, nsSlug.value, 'pieceowater.contacts');
+  } catch (e) {
+    logError('[OrderDetailModal] hubIsAppInNamespace failed', e);
+    contactsInstalled.value = false;
+  }
+  if (!contactsInstalled.value) return;
+
+  clientLoading.value = true;
+  try {
+    const contactsToken = await getContactsAuth();
+    if (!contactsToken) return;
+
+    if (props.order.clientId) {
+      const { getClient } = await import('@/api/contacts/getClient');
+      clientProfile.value = await getClient(contactsToken, nsSlug.value, props.order.clientId);
+      if (clientProfile.value) {
+        const { getClientIdentities } = await import('@/api/contacts/identities');
+        const res = await getClientIdentities(contactsToken, props.order.clientId, nsSlug.value);
+        clientPhoneIdentity.value = res.clientIdentities.rows.find((i) => i.type === 'phone') || null;
+      }
+    } else if (props.order.phone) {
+      const { getClientByIdentity } = await import('@/api/contacts/getClient');
+      clientCandidate.value = await getClientByIdentity(contactsToken, nsSlug.value, 'phone', props.order.phone);
+    }
+  } catch (e) {
+    logError('[OrderDetailModal] loadClientIntegration failed', e);
+  } finally {
+    clientLoading.value = false;
+  }
+}
+
+// Keeps the linked Contacts client's name/phone in sync when staff edits
+// them on the order — best-effort: a sync failure shouldn't undo or block
+// the order save itself, since the order update already succeeded.
+async function syncClientFromOrderEdit(customerName: string, phone: string) {
+  if (!props.order?.clientId || !contactsInstalled.value || !clientProfile.value?.individual) return;
+  try {
+    const contactsToken = await getContactsAuth();
+    if (!contactsToken) return;
+    const { firstName, lastName } = splitCustomerName(customerName);
+    const { contactsUpdateIndividualClient } = await import('@/api/contacts/mutations');
+    // Echo back birthDate/gender — UpdateIndividualClient overwrites the
+    // whole individual record, so omitting them would blank them out.
+    await contactsUpdateIndividualClient(contactsToken, nsSlug.value, props.order.clientId, {
+      firstName,
+      lastName,
+      middleName: clientProfile.value.individual.middleName,
+      birthDate: clientProfile.value.individual.birthDate,
+      gender: clientProfile.value.individual.gender,
+    });
+
+    const normalizedPhone = phone.replace(/\D/g, '');
+    if (clientPhoneIdentity.value && clientPhoneIdentity.value.value.replace(/\D/g, '') !== normalizedPhone) {
+      const { updateIdentity } = await import('@/api/contacts/identities');
+      await updateIdentity(contactsToken, nsSlug.value, clientPhoneIdentity.value.id, phone);
+    }
+  } catch (e) {
+    logError('[OrderDetailModal] syncClientFromOrderEdit failed', e);
+  }
+}
+
+async function linkExistingClient() {
+  if (!props.order || !clientCandidate.value) return;
+  linkingClient.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuLinkOrderClient } = await import('@/api/menu/order/update');
+    const updated = await menuLinkOrderClient(menuToken, nsSlug.value, props.order.id, clientCandidate.value.client.id);
+    emit('statusChanged', updated);
+    clientProfile.value = clientCandidate.value;
+    clientCandidate.value = null;
+    useToast().add({ title: t('menu.clientLinked') || 'Client linked', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] linkExistingClient failed', e);
+    useToast().add({ title: getErrorMessage(e) || 'Failed to link client', color: 'red' });
+  } finally {
+    linkingClient.value = false;
+  }
+}
+
+// Splits "Иван Петров" into first/last for the client record — the closest
+// this can get without a dedicated name field on the order itself. A blank
+// or single-word name still produces a valid (if minimal) client.
+function splitCustomerName(name: string): { firstName: string; lastName: string } {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: t('menu.guestCustomer') || 'Guest', lastName: '' };
+  if (parts.length === 1) return { firstName: parts[0], lastName: '' };
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
+}
+
+async function createClientFromOrder() {
+  if (!props.order) return;
+  creatingClient.value = true;
+  try {
+    const contactsToken = await getContactsAuth();
+    if (!contactsToken) throw new Error('No contacts token');
+    const { contactsCreateIndividualClient } = await import('@/api/contacts/mutations');
+    const { createIdentity } = await import('@/api/contacts/identities');
+    const { firstName, lastName } = splitCustomerName(props.order.customerName || '');
+    const created = await contactsCreateIndividualClient(contactsToken, nsSlug.value, {
+      individual: { firstName, lastName },
+      status: 'ACTIVE',
+    });
+    await createIdentity(contactsToken, nsSlug.value, created.client.id, 'phone', props.order.phone, true);
+
+    const menuToken = await getToken();
+    const { menuLinkOrderClient } = await import('@/api/menu/order/update');
+    const updated = await menuLinkOrderClient(menuToken, nsSlug.value, props.order.id, created.client.id);
+    emit('statusChanged', updated);
+    clientProfile.value = created;
+    clientCandidate.value = null;
+    useToast().add({ title: t('menu.clientCreated') || 'Client created', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] createClientFromOrder failed', e);
+    useToast().add({ title: getErrorMessage(e) || 'Failed to create client', color: 'red' });
+  } finally {
+    creatingClient.value = false;
+  }
+}
+
 watch(() => [props.modelValue, props.order?.id], ([open]) => {
   if (open && props.order) {
     loadDetails();
     loadHubMembers();
     loadCatalog();
+    loadCustomerOrders();
+    loadClientIntegration();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
     // still short, but readable instead of a bare "4". See the matching
@@ -450,6 +636,7 @@ async function saveEditOrder() {
       deliveryAddress: editForm.deliveryAddress.trim() || undefined,
       comment: editForm.comment.trim() || undefined,
     });
+    await syncClientFromOrderEdit(editForm.customerName.trim(), editForm.phone.trim());
     emit('statusChanged', updated);
     isEditingOrder.value = false;
     await loadDetails();
@@ -553,10 +740,6 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
             <div class="flex items-center justify-between">
               <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.contactInfo') || 'Contact info' }}</div>
               <div class="flex items-center gap-3">
-                <NuxtLink v-if="order.clientId && !isEditingOrder" :to="`/${nsSlug}/contacts/${order.clientId}`" class="text-xs font-medium text-primary-600 dark:text-primary-300 hover:underline inline-flex items-center gap-1">
-                  {{ t('menu.viewClient') || 'View client' }}
-                  <Icon name="lucide:arrow-up-right" class="w-3 h-3" />
-                </NuxtLink>
                 <button v-if="!isEditingOrder" type="button" class="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center gap-1" @click="startEditOrder">
                   <Icon name="lucide:pencil" class="w-3 h-3" />
                   {{ t('common.edit') || 'Edit' }}
@@ -570,7 +753,15 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                   {{ (order.customerName || order.phone || '?').slice(0, 1).toUpperCase() }}
                 </span>
                 <div class="min-w-0">
-                  <div class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ order.customerName || (t('menu.guestCustomer') || 'Guest') }}</div>
+                  <NuxtLink
+                    v-if="order.clientId"
+                    :to="`/${nsSlug}/contacts/${order.clientId}`"
+                    class="group text-sm font-semibold text-gray-900 dark:text-white hover:text-primary-600 dark:hover:text-primary-400 transition-colors inline-flex items-center gap-1 truncate"
+                  >
+                    <span class="truncate">{{ order.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
+                    <Icon name="lucide:arrow-up-right" class="w-3 h-3 flex-shrink-0 text-gray-400 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors" />
+                  </NuxtLink>
+                  <div v-else class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ order.customerName || (t('menu.guestCustomer') || 'Guest') }}</div>
                   <div class="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{{ phoneDisplay }}</div>
                 </div>
               </div>
@@ -598,6 +789,43 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                 />
               </UFormGroup>
             </div>
+          </div>
+
+          <!-- lota Contacts integration: link an existing match found by
+               phone, or create one from this order. Once a client is
+               already linked, the name in Contact Details above is the
+               link to their profile — no need to duplicate it here. -->
+          <div v-if="!isEditingOrder && contactsInstalled && !clientProfile" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-2.5">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:contact" class="w-3.5 h-3.5" />
+              {{ t('menu.contactsClient') || 'Client' }}
+            </div>
+
+            <div v-if="clientLoading" class="flex items-center gap-2 text-sm text-gray-400">
+              <Icon name="lucide:loader-2" class="w-3.5 h-3.5 animate-spin" />
+              {{ t('app.loading') || 'Loading...' }}
+            </div>
+
+            <div v-else-if="clientCandidate" class="flex items-center justify-between gap-2">
+              <span class="text-sm text-gray-600 dark:text-gray-300 truncate">
+                {{ t('menu.clientMatchFound') || 'Match found' }}: {{ clientDisplayName(clientCandidate) }}
+              </span>
+              <UButton size="xs" color="primary" variant="soft" :loading="linkingClient" @click="linkExistingClient">
+                {{ t('menu.linkClient') || 'Link' }}
+              </UButton>
+            </div>
+
+            <UButton
+              v-else
+              size="xs"
+              color="gray"
+              variant="soft"
+              icon="lucide:user-plus"
+              :loading="creatingClient"
+              @click="createClientFromOrder"
+            >
+              {{ t('menu.createClientFromOrder') || 'Create client from this order' }}
+            </UButton>
           </div>
 
           <!-- Delivery / pickup card -->
@@ -800,6 +1028,38 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                 />
                 <USelect v-model="newMemberRole" :options="ROLES.map((r) => ({ label: roleLabel(r), value: r }))" value-attribute="value" option-attribute="label" size="sm" class="w-36" />
                 <UButton size="sm" icon="lucide:plus" :loading="addingMember" :disabled="!newMemberUserId || addingMember" @click="addMember" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Customer order history: other orders from this same phone —
+               click a number to switch this modal to that order. -->
+          <div v-if="!isEditingOrder && customerOrders.length">
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+              <Icon name="lucide:history" class="w-3.5 h-3.5" />
+              {{ t('menu.customerHistory') || "Customer's other orders" }}
+            </div>
+            <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-1.5">
+              <div v-for="co in customerOrders" :key="co.id" class="flex items-center justify-between gap-2 text-sm">
+                <div class="flex items-center gap-2 min-w-0">
+                  <button
+                    type="button"
+                    class="font-mono tabular-nums text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors"
+                    @click="emit('openOrder', co.id)"
+                  >
+                    {{ smartOrderNumber(co) }}
+                  </button>
+                  <span
+                    class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-[10px] font-semibold flex-shrink-0"
+                    :style="{ backgroundColor: statusBadgeStyle(co.status).bg }"
+                  >
+                    {{ statusLabel(co.status) }}
+                  </span>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0 text-gray-400">
+                  <span class="tabular-nums">{{ formatDate(co.createdAt) }}</span>
+                  <span class="font-semibold text-gray-700 dark:text-gray-300 tabular-nums">{{ co.totalAmount.toLocaleString() }}</span>
+                </div>
               </div>
             </div>
           </div>

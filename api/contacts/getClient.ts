@@ -67,6 +67,61 @@ const GET_CLIENT_BY_SHORT_ID_QUERY = gql`
   }
 `;
 
+const GET_CLIENT_BY_IDENTITY_QUERY = gql`
+  query GetClientByIdentity($type: String!, $value: String!) {
+    clientByIdentity(type: $type, value: $value) {
+      client {
+        id
+        shortId
+        clientType
+        status
+        createdAt
+        updatedAt
+      }
+      individual {
+        firstName
+        lastName
+        middleName
+        birthDate
+        gender
+      }
+      legalEntity {
+        legalName
+        brandName
+        binIin
+        registrationCountry
+        registrationDate
+      }
+      additionalInfo
+    }
+  }
+`;
+
+/**
+ * Find the client owning a given identity (e.g. type: "phone"). Returns
+ * null both when nothing matches and on any request failure — this is a
+ * best-effort lookup, not something that should ever block the caller.
+ */
+export async function getClientByIdentity(
+  contactsToken: string,
+  namespaceSlug: string,
+  type: string,
+  value: string
+): Promise<ClientRow | null> {
+  setContactsAppToken(contactsToken);
+  try {
+    const data = await contactsClient.request<{ clientByIdentity: ClientRow | null }>(
+      GET_CLIENT_BY_IDENTITY_QUERY,
+      { type, value },
+      { headers: { Namespace: namespaceSlug } }
+    );
+    return data.clientByIdentity || null;
+  } catch (error) {
+    console.error('Failed to fetch client by identity:', error);
+    return null;
+  }
+}
+
 /**
  * Check if string is a UUID (contains dashes)
  */
