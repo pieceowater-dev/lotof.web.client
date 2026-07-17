@@ -159,12 +159,17 @@ onMounted(() => {
         <UInput v-model="linkGenSource" size="lg" placeholder="instagram" />
       </UFormGroup>
 
-      <div class="rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2 flex items-center justify-between gap-2">
-        <span class="text-xs font-mono text-gray-500 dark:text-gray-400 truncate">{{ generatedLink }}</span>
-        <UButton size="2xs" color="gray" variant="soft" icon="lucide:copy" class="flex-shrink-0" @click="copyLink(generatedLink)" />
+      <!-- Preview only — deliberately not copyable here. A link that gets
+           shared before it's saved can never show up in the list below or
+           be tied to a source tag report, so the only way to get a usable
+           link is to save it first. -->
+      <div class="rounded-lg border border-dashed border-gray-200 dark:border-gray-700 px-3 py-2 flex items-center gap-2">
+        <Icon name="lucide:eye" class="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+        <span class="text-xs font-mono text-gray-400 dark:text-gray-500 truncate">{{ generatedLink }}</span>
       </div>
 
-      <div class="flex justify-end">
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-xs text-gray-400">{{ t('menu.saveLinkToUseHint') || 'Save it to get a copyable link' }}</p>
         <UButton color="primary" icon="lucide:bookmark-plus" :loading="saving" :disabled="!isFormValid || saving" @click="saveLink">
           {{ t('menu.saveLink') || 'Save link' }}
         </UButton>

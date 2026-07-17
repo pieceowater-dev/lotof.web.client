@@ -589,23 +589,40 @@ useHead(() => {
             <p
               v-if="data.storefront.brandSettings?.welcomeMessage"
               class="text-sm mt-0.5 cursor-pointer"
-              :class="isDescriptionExpanded ? 'line-clamp-2' : 'truncate'"
+              :class="isDescriptionExpanded ? '' : 'line-clamp-2'"
               :style="{ color: onPrimaryText, opacity: 0.85 }"
               @click="isDescriptionExpanded = !isDescriptionExpanded"
             >
               {{ data.storefront.brandSettings.welcomeMessage }}
             </p>
           </div>
-          <!-- Brand contacts: call the business directly, or jump to its socials -->
-          <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0 pt-1">
+        </div>
+        <!-- Address + brand contacts share a row below the name, instead of
+             competing with it for width — social icons used to sit next to
+             the (already truncating) shop name and squeeze it further on
+             narrow screens. -->
+        <div v-if="activeBranch || visibleBranches[0] || brandPhone || brandSocialLinks.length" class="mt-3 flex items-center justify-between gap-2 flex-wrap">
+          <a
+            v-if="activeBranch || visibleBranches[0]"
+            :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
+            target="_blank"
+            rel="noopener"
+            class="inline-flex items-center gap-1.5 max-w-full rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-xs font-medium transition-colors min-w-0"
+            :style="{ color: onPrimaryText }"
+          >
+            <Icon name="lucide:map-pin" class="w-3.5 h-3.5 flex-shrink-0" />
+            <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
+            <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
+          </a>
+          <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0 ml-auto">
             <a
               v-if="brandPhone"
               :href="telHref(brandPhone)"
-              class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
+              class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
               :style="{ color: onPrimaryText }"
               :aria-label="t('menu.call') || 'Call'"
             >
-              <Icon name="lucide:phone" class="w-4 h-4" />
+              <Icon name="lucide:phone" class="w-3.5 h-3.5" />
             </a>
             <a
               v-for="link in brandSocialLinks"
@@ -613,26 +630,14 @@ useHead(() => {
               :href="link.link"
               target="_blank"
               rel="noopener"
-              class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
+              class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
               :style="{ color: onPrimaryText }"
               :aria-label="link.description || socialLabel(link.name)"
             >
-              <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
+              <Icon :name="socialIcon(link.name)" class="w-3.5 h-3.5" />
             </a>
           </div>
         </div>
-        <a
-          v-if="activeBranch || visibleBranches[0]"
-          :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
-          target="_blank"
-          rel="noopener"
-          class="mt-3 inline-flex items-center gap-1.5 max-w-full rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-xs font-medium transition-colors"
-          :style="{ color: onPrimaryText }"
-        >
-          <Icon name="lucide:map-pin" class="w-3.5 h-3.5 flex-shrink-0" />
-          <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
-          <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
-        </a>
         </div>
       </div>
 
@@ -889,8 +894,14 @@ useHead(() => {
     <USlideover v-model="isItemSheetOpen" @update:model-value="(v: boolean) => { if (!v) closeItemDetail(); }">
       <UCard v-if="selectedItem" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
         <template #header>
-          <div class="flex items-center justify-end">
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="closeItemDetail" />
+          <div class="flex items-center gap-3">
+            <div class="min-w-0 flex-1">
+              <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                {{ t('menu.itemDetails') || 'Menu item' }}
+              </p>
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ selectedItem.name }}</h2>
+            </div>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" class="flex-shrink-0" @click="closeItemDetail" />
           </div>
         </template>
 
@@ -904,11 +915,8 @@ useHead(() => {
             >
             <Icon v-else name="lucide:utensils" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
           </div>
-          <div>
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ selectedItem.name }}</h2>
-            <div class="text-lg font-bold mt-1" :style="{ color: secondaryColor }">
-              {{ formatMoney(selectedItem.price, data?.storefront.brandSettings?.currencyCode) }}
-            </div>
+          <div class="text-xl font-bold" :style="{ color: secondaryColor }">
+            {{ formatMoney(selectedItem.price, data?.storefront.brandSettings?.currencyCode) }}
           </div>
           <div v-if="selectedItem.badgeIds.length" class="flex flex-wrap gap-1.5">
             <span

@@ -129,7 +129,67 @@ const closedTo = ref('');
 const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '' });
 const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
 
+// Known source tags, pulled from saved share links, so the filter is a
+// selector of real tracking sources instead of free text prone to typos.
+const sourceTagOptions = ref<string[]>([]);
+async function loadSourceTagOptions() {
+  try {
+    const menuToken = await getToken();
+    const { menuShareLinksList } = await import('@/api/menu/sharelink/list');
+    const links = await menuShareLinksList(menuToken, nsSlug.value);
+    sourceTagOptions.value = [...new Set(links.map((l) => l.sourceTag).filter(Boolean))].sort();
+  } catch (e) {
+    logError('[menu/index] loadSourceTagOptions failed', e);
+  }
+}
+
 const summary = ref<OrdersSummary | null>(null);
+
+// Row selection: when the user checks specific orders, the footer switches
+// from "every order matching the filters" to "just these" — useful for
+// pulling a total on an arbitrary hand-picked subset the filters can't
+// express (e.g. "these 5 orders the courier is taking this run").
+const selectedOrders = ref<MenuOrder[]>([]);
+const selectedSummary = computed(() => {
+  if (!selectedOrders.value.length) return null;
+  return {
+    count: selectedOrders.value.length,
+    totalAmount: selectedOrders.value.reduce((sum, o) => sum + o.totalAmount, 0),
+  };
+});
+
+// Quick filters (status/branch/type) persist across visits so the admin
+// doesn't have to re-apply "just my branch, just new orders" every time
+// they open the page. Scoped per-namespace since branch IDs differ.
+const FILTERS_STORAGE_KEY = computed(() => `menu:quickFilters:${nsSlug.value}`);
+let restoringFilters = false;
+function restoreQuickFilters() {
+  if (!process.client) return;
+  try {
+    const raw = localStorage.getItem(FILTERS_STORAGE_KEY.value);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    restoringFilters = true;
+    if (Array.isArray(saved.selectedStatuses)) selectedStatuses.value = saved.selectedStatuses;
+    if (Array.isArray(saved.selectedBranchIds)) selectedBranchIds.value = saved.selectedBranchIds;
+    if (saved.selectedType === '' || saved.selectedType === 'delivery' || saved.selectedType === 'pickup') {
+      selectedType.value = saved.selectedType;
+    }
+  } catch (e) {
+    logError('[menu/index] restoreQuickFilters failed', e);
+  } finally {
+    restoringFilters = false;
+  }
+}
+function persistQuickFilters() {
+  if (!process.client || restoringFilters) return;
+  localStorage.setItem(FILTERS_STORAGE_KEY.value, JSON.stringify({
+    selectedStatuses: selectedStatuses.value,
+    selectedBranchIds: selectedBranchIds.value,
+    selectedType: selectedType.value,
+  }));
+}
+watch([selectedStatuses, selectedBranchIds, selectedType], persistQuickFilters, { deep: true });
 
 function dateInputToRfc3339(dateStr: string, endOfDay = false): string | undefined {
   if (!dateStr) return undefined;
@@ -209,6 +269,11 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
     });
     orders.value = res.orders;
     totalCount.value = res.count;
+    // A real (non-silent) reload means the filters/search changed — the
+    // previous selection almost certainly no longer matches what's on
+    // screen, so drop it rather than leave a stale, invisible selection
+    // driving the summary footer. Silent background polls leave it alone.
+    if (!opts.silent) selectedOrders.value = [];
   } catch (e) {
     logError('[menu/index] loadOrders failed', e);
     if (!opts.silent) error.value = getErrorMessage(e) || 'Failed to load orders';
@@ -356,7 +421,9 @@ async function openFromQuery() {
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 
 onMounted(async () => {
+  restoreQuickFilters();
   loadBranches();
+  loadSourceTagOptions();
   await loadOrders();
   loadStatusCounts();
   loadSummary();
@@ -597,6 +664,7 @@ async function handleCreateOrder(payload: any) {
 
     <div class="flex-1 min-h-0">
       <AppTable
+        v-model:selected="selectedOrders"
         :rows="orders"
         :columns="columns"
         :loading="loading"
@@ -673,21 +741,37 @@ async function handleCreateOrder(payload: any) {
       </AppTable>
     </div>
 
-    <!-- Summary: aggregates every order matching the current filters, not
-         just the loaded page — accurate for pulling a quick report over a
-         period (combine with the date-range filters above). -->
+    <!-- Summary: by default aggregates every order matching the current
+         filters, not just the loaded page — accurate for pulling a quick
+         report over a period (combine with the date-range filters above).
+         Checking specific rows switches it to just that subset instead. -->
     <div
-      v-if="summary"
-      class="flex-shrink-0 mt-2 flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"
+      v-if="selectedSummary || summary"
+      class="flex-shrink-0 mt-2 flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors"
+      :class="selectedSummary
+        ? 'border-primary-200 dark:border-primary-800 bg-primary-50/60 dark:bg-primary-950/20'
+        : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'"
     >
-      <span class="text-gray-500 dark:text-gray-400">
-        {{ t('menu.summaryOrders') || 'Orders' }}:
-        <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ summary.count }}</span>
-      </span>
-      <span class="text-gray-500 dark:text-gray-400">
-        {{ t('menu.summaryTotal') || 'Total' }}:
-        <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ summary.totalAmount.toLocaleString() }}</span>
-      </span>
+      <div class="flex items-center gap-3">
+        <span class="text-gray-500 dark:text-gray-400">
+          {{ selectedSummary ? (t('menu.summarySelected') || 'Selected') : (t('menu.summaryOrders') || 'Orders') }}:
+          <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ (selectedSummary || summary)!.count }}</span>
+        </span>
+        <span class="text-gray-500 dark:text-gray-400">
+          {{ t('menu.summaryTotal') || 'Total' }}:
+          <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ (selectedSummary || summary)!.totalAmount.toLocaleString() }}</span>
+        </span>
+      </div>
+      <UButton
+        v-if="selectedSummary"
+        size="2xs"
+        color="primary"
+        variant="soft"
+        icon="lucide:x"
+        @click="selectedOrders = []"
+      >
+        {{ t('menu.clearSelection') || 'Clear selection' }}
+      </UButton>
     </div>
 
     <CreateOrderModal
@@ -709,33 +793,66 @@ async function handleCreateOrder(payload: any) {
          over a period rather than everyday triage — kept out of the
          always-visible bar above. -->
     <USlideover v-model="isFilterPanelOpen">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto bg-gray-50/60 dark:bg-gray-950/40' } }" class="flex flex-col h-full">
         <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ t('menu.moreFilters') || 'More filters' }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isFilterPanelOpen = false" />
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40 flex-shrink-0">
+              <Icon name="lucide:sliders-horizontal" class="h-4 w-4 text-primary-600 dark:text-primary-300" />
+            </span>
+            <div class="min-w-0">
+              <h3 class="text-base font-semibold leading-tight">{{ t('menu.moreFilters') || 'More filters' }}</h3>
+              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.moreFiltersHint') || 'For building a report over a period' }}</p>
+            </div>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" class="ml-auto flex-shrink-0" @click="isFilterPanelOpen = false" />
           </div>
         </template>
 
         <div class="space-y-4">
-          <UFormGroup :label="t('menu.sourceTagLabel') || 'Source'" :hint="t('menu.sourceTagFilterHint') || 'Matches links generated in the Share tab'">
-            <UInput v-model="sourceTagFilter" icon="lucide:link" placeholder="instagram" />
-          </UFormGroup>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormGroup :label="t('menu.createdFrom') || 'Created from'">
-              <UInput v-model="createdFrom" type="date" />
-            </UFormGroup>
-            <UFormGroup :label="t('menu.createdTo') || 'Created to'">
-              <UInput v-model="createdTo" type="date" />
-            </UFormGroup>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:link" class="h-3.5 w-3.5" />
+              {{ t('menu.sourceTagLabel') || 'Source' }}
+            </div>
+            <USelectMenu
+              v-model="sourceTagFilter"
+              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...sourceTagOptions.map((s) => ({ label: s, value: s }))]"
+              value-attribute="value"
+              option-attribute="label"
+              icon="lucide:link"
+              :popper="{ strategy: 'fixed' }"
+            />
+            <p class="text-xs text-gray-400">{{ t('menu.sourceTagFilterHint') || 'From links saved in the Share tab' }}</p>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormGroup :label="t('menu.closedFrom') || 'Closed from'" :hint="t('menu.closedHint') || 'Completed or cancelled'">
-              <UInput v-model="closedFrom" type="date" />
-            </UFormGroup>
-            <UFormGroup :label="t('menu.closedTo') || 'Closed to'">
-              <UInput v-model="closedTo" type="date" />
-            </UFormGroup>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:calendar-plus" class="h-3.5 w-3.5" />
+              {{ t('menu.createdRangeLabel') || 'Created' }}
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <UFormGroup :label="t('menu.createdFrom') || 'From'">
+                <UInput v-model="createdFrom" type="date" />
+              </UFormGroup>
+              <UFormGroup :label="t('menu.createdTo') || 'To'">
+                <UInput v-model="createdTo" type="date" />
+              </UFormGroup>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:calendar-check-2" class="h-3.5 w-3.5" />
+              {{ t('menu.closedRangeLabel') || 'Closed' }}
+            </div>
+            <p class="text-xs text-gray-400 -mt-1">{{ t('menu.closedHint') || 'Completed or cancelled' }}</p>
+            <div class="grid grid-cols-2 gap-3">
+              <UFormGroup :label="t('menu.closedFrom') || 'From'">
+                <UInput v-model="closedFrom" type="date" />
+              </UFormGroup>
+              <UFormGroup :label="t('menu.closedTo') || 'To'">
+                <UInput v-model="closedTo" type="date" />
+              </UFormGroup>
+            </div>
           </div>
         </div>
 
@@ -744,7 +861,7 @@ async function handleCreateOrder(payload: any) {
             <UButton color="gray" variant="ghost" @click="clearFilterPanel">
               {{ t('app.clear') || 'Clear' }}
             </UButton>
-            <UButton color="primary" @click="applyFilterPanel">
+            <UButton color="primary" icon="lucide:check" @click="applyFilterPanel">
               {{ t('menu.applyFilters') || 'Apply' }}
             </UButton>
           </div>

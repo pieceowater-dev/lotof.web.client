@@ -5,7 +5,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
 import { getContrastTextColor } from '@/utils/color';
-import { parseSocialLinks, serializeSocialLinks, socialIcon, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
+import { parseSocialLinks, serializeSocialLinks, socialIcon, socialLabel, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 
@@ -61,9 +61,18 @@ function addSocialLink() {
 function removeSocialLink(idx: number) {
   socialLinksList.value.splice(idx, 1);
 }
-const platformOptions = SOCIAL_PLATFORMS.map((p) => ({ label: p.label, value: p.value }));
+const platformOptions = SOCIAL_PLATFORMS.map((p) => ({ label: p.label, value: p.value, icon: p.icon }));
 function placeholderFor(name: number): string {
   return SOCIAL_PLATFORMS.find((p) => p.value === name)?.placeholder || 'https://...';
+}
+// Pre-fill the link with the platform's URL prefix the moment it's picked,
+// so the admin just appends their number/handle instead of typing (or
+// copy-pasting) "https://wa.me/" from scratch every time. Only kicks in
+// on an empty field — never overwrites a link someone already typed.
+function onPlatformChange(link: SocialLink) {
+  if (link.link.trim()) return;
+  const prefix = SOCIAL_PLATFORMS.find((p) => p.value === link.name)?.prefix;
+  if (prefix) link.link = prefix;
 }
 
 async function load() {
@@ -215,11 +224,31 @@ onMounted(load);
             </UButton>
           </div>
           <div v-if="!socialLinksList.length" class="text-sm text-gray-400">{{ t('menu.noSocialLinks') || 'No social links yet' }}</div>
-          <div v-for="(link, idx) in socialLinksList" :key="idx" class="flex items-center gap-2">
-            <Icon :name="socialIcon(link.name)" class="h-4 w-4 text-gray-400 flex-shrink-0" />
-            <USelectMenu v-model="link.name" :options="platformOptions" value-attribute="value" option-attribute="label" size="sm" class="w-36 flex-shrink-0" :popper="{ strategy: 'fixed' }" />
-            <UInput v-model="link.link" size="sm" :placeholder="placeholderFor(link.name)" class="flex-1" />
-            <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="removeSocialLink(idx)" />
+          <div v-for="(link, idx) in socialLinksList" :key="idx" class="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div class="flex items-center gap-2">
+              <USelectMenu
+                v-model="link.name"
+                :options="platformOptions"
+                value-attribute="value"
+                option-attribute="label"
+                size="sm"
+                class="w-40 flex-shrink-0"
+                :popper="{ strategy: 'fixed' }"
+                @change="onPlatformChange(link)"
+              >
+                <template #label>
+                  <span class="flex items-center gap-1.5 min-w-0">
+                    <Icon :name="socialIcon(link.name)" class="h-4 w-4 flex-shrink-0" />
+                    <span class="truncate">{{ socialLabel(link.name) }}</span>
+                  </span>
+                </template>
+              </USelectMenu>
+              <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" class="sm:hidden flex-shrink-0 ml-auto" @click="removeSocialLink(idx)" />
+            </div>
+            <div class="flex items-center gap-2">
+              <UInput v-model="link.link" size="sm" :placeholder="placeholderFor(link.name)" class="flex-1" />
+              <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" class="hidden sm:flex flex-shrink-0" @click="removeSocialLink(idx)" />
+            </div>
           </div>
         </div>
 
@@ -250,23 +279,35 @@ onMounted(load);
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">
           {{ t('menu.preview') || 'Preview' }}
         </div>
-        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950">
-          <!-- Mirrors the storefront's hero header exactly (see
+        <div class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 shadow-sm">
+          <!-- Mirrors the storefront's hero header (see
                pages/to/[namespace]/menu/index.vue) so this preview never
                drifts out of sync with what customers actually see. -->
-          <div class="p-4 pb-5 flex items-center gap-3" :style="{ backgroundColor: previewPrimary }">
-            <div class="w-14 h-14 rounded-2xl bg-white shadow ring-2 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
-              <img
-                v-if="form.logoUrl"
-                :src="form.logoUrl"
-                :alt="form.logoAlt || form.name"
-                class="w-full h-full object-contain p-1"
-              >
-              <Icon v-else name="lucide:store" class="h-5 w-5 text-gray-300" />
+          <div class="p-4 pb-4" :style="{ backgroundColor: previewPrimary }">
+            <div class="flex items-start gap-3">
+              <div class="w-14 h-14 rounded-2xl bg-white shadow ring-2 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                <img
+                  v-if="form.logoUrl"
+                  :src="form.logoUrl"
+                  :alt="form.logoAlt || form.name"
+                  class="w-full h-full object-contain p-1"
+                >
+                <Icon v-else name="lucide:store" class="h-5 w-5 text-gray-300" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-base font-bold truncate" :style="{ color: previewOnPrimaryText }">{{ form.name || (t('menu.name') || 'Name') }}</div>
+                <div v-if="form.welcomeMessage" class="text-xs mt-0.5 line-clamp-2" :style="{ color: previewOnPrimaryText, opacity: 0.85 }">{{ form.welcomeMessage }}</div>
+              </div>
             </div>
-            <div class="min-w-0">
-              <div class="text-base font-bold truncate" :style="{ color: previewOnPrimaryText }">{{ form.name || (t('menu.name') || 'Name') }}</div>
-              <div v-if="form.welcomeMessage" class="text-xs truncate" :style="{ color: previewOnPrimaryText, opacity: 0.85 }">{{ form.welcomeMessage }}</div>
+            <div v-if="socialLinksList.length" class="mt-3 flex items-center gap-1.5">
+              <span
+                v-for="(link, idx) in socialLinksList.slice(0, 5)"
+                :key="idx"
+                class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"
+                :style="{ color: previewOnPrimaryText }"
+              >
+                <Icon :name="socialIcon(link.name)" class="h-3.5 w-3.5" />
+              </span>
             </div>
           </div>
           <div class="p-4 space-y-2.5">

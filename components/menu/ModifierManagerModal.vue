@@ -231,95 +231,110 @@ watch(() => props.modelValue, (open) => {
 </script>
 
 <template>
-  <UModal v-model="isOpen" :ui="{ width: 'sm:max-w-2xl' }">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal v-model="isOpen" :ui="{ width: 'sm:max-w-3xl' }">
+    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'p-0 sm:p-0' } }">
       <template #header>
-        <div class="flex items-center gap-2.5">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">
-            <Icon name="lucide:list-plus" class="h-4 w-4 text-primary-600 dark:text-primary-300" />
+        <div class="flex items-center gap-3">
+          <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40 flex-shrink-0">
+            <Icon name="lucide:list-plus" class="h-5 w-5 text-primary-600 dark:text-primary-300" />
           </span>
-          <h3 class="text-lg font-semibold">
-            {{ t('menu.modifiers') || 'Modifiers' }}
-          </h3>
+          <div class="min-w-0">
+            <h3 class="text-base font-semibold leading-tight">
+              {{ t('menu.modifiers') || 'Modifiers' }}
+            </h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {{ t('menu.modifiersHint') || 'Extras and choices customers pick when adding an item — sizes, toppings, sauces' }}
+            </p>
+          </div>
         </div>
       </template>
 
-      <div class="grid grid-cols-1 md:grid-cols-[180px_1fr] gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-[220px_1fr] md:divide-x md:divide-gray-100 dark:md:divide-gray-800 max-h-[70vh] md:max-h-[65vh]">
         <!-- Groups list -->
-        <div class="border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800 pb-4 md:pb-0 md:pr-4">
-          <div class="flex items-center justify-between mb-2">
+        <div class="flex flex-col min-h-0 border-b md:border-b-0 border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-950/40">
+          <div class="flex items-center justify-between px-4 pt-4 pb-2 flex-shrink-0">
             <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
               {{ t('menu.modifierGroups') || 'Groups' }}
             </span>
-            <UButton icon="lucide:plus" size="2xs" color="primary" variant="soft" @click="startNewGroup" />
+            <UTooltip :text="t('menu.addModifierGroup') || 'New group'">
+              <UButton icon="lucide:plus" size="2xs" color="primary" variant="soft" @click="startNewGroup" />
+            </UTooltip>
           </div>
-          <div v-if="groupsLoading" class="flex items-center justify-center py-6">
-            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
-          </div>
-          <div v-else-if="!groups.length" class="text-xs text-gray-500 dark:text-gray-400 py-2">
-            {{ t('menu.noModifierGroups') || 'No modifier groups yet' }}
-          </div>
-          <div v-else class="space-y-0.5">
-            <div
-              v-for="g in groups"
-              :key="g.id"
-              class="group flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer text-sm"
-              :class="g.id === selectedGroupId
-                ? 'bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300 font-medium'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'"
-              @click="selectGroup(g)"
-            >
-              <span class="truncate">{{ g.name }}</span>
-              <UButton
-                icon="lucide:trash-2"
-                size="2xs"
-                color="red"
-                variant="ghost"
-                class="hidden group-hover:flex flex-shrink-0"
-                @click.stop="removeGroup(g)"
-              />
+          <div class="flex-1 overflow-y-auto px-2.5 pb-3">
+            <div v-if="groupsLoading" class="flex items-center justify-center py-8">
+              <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+            </div>
+            <div v-else-if="!groups.length" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-4 text-center">
+              {{ t('menu.noModifierGroups') || 'No modifier groups yet' }}
+            </div>
+            <div v-else class="space-y-1">
+              <button
+                v-for="g in groups"
+                :key="g.id"
+                type="button"
+                class="group w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-sm transition-colors"
+                :class="g.id === selectedGroupId
+                  ? 'bg-white dark:bg-gray-900 text-primary-700 dark:text-primary-300 font-medium shadow-sm ring-1 ring-primary-100 dark:ring-primary-900/50'
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-900/50'"
+                @click="selectGroup(g)"
+              >
+                <Icon :name="g.type === 'multi' ? 'lucide:list-checks' : 'lucide:circle-dot'" class="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
+                <span class="truncate flex-1">{{ g.name }}</span>
+                <UButton
+                  icon="lucide:trash-2"
+                  size="2xs"
+                  color="red"
+                  variant="ghost"
+                  class="hidden group-hover:flex flex-shrink-0"
+                  @click.stop="removeGroup(g)"
+                />
+              </button>
             </div>
           </div>
         </div>
 
         <!-- Group form + options -->
-        <div class="space-y-4">
-          <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <div class="overflow-y-auto p-5 space-y-5">
+          <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+            <Icon :name="editingGroupId ? 'lucide:pencil' : 'lucide:sparkles'" class="h-3.5 w-3.5" />
             {{ editingGroupId ? (t('menu.editModifierGroup') || 'Edit group') : (t('menu.addModifierGroup') || 'New group') }}
           </div>
 
           <UFormGroup :label="t('menu.name') || 'Name'" required>
-            <UInput v-model="groupForm.name" size="lg" />
+            <UInput v-model="groupForm.name" size="lg" :placeholder="t('menu.modifierNamePlaceholder') || 'e.g. Size, Toppings'" />
           </UFormGroup>
 
-          <div class="grid grid-cols-2 gap-3">
-            <UFormGroup :label="t('menu.modifierType') || 'Selection type'">
-              <div class="flex rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
-                <button
-                  type="button"
-                  class="flex-1 px-2 py-1.5 text-xs font-medium transition-colors"
-                  :class="groupForm.type === 'single' ? 'bg-primary-500 text-white' : 'bg-transparent text-gray-500 dark:text-gray-400'"
-                  @click="groupForm.type = 'single'"
-                >
-                  {{ t('menu.modifierTypeSingle') || 'Single choice' }}
-                </button>
-                <button
-                  type="button"
-                  class="flex-1 px-2 py-1.5 text-xs font-medium transition-colors"
-                  :class="groupForm.type === 'multi' ? 'bg-primary-500 text-white' : 'bg-transparent text-gray-500 dark:text-gray-400'"
-                  @click="groupForm.type = 'multi'"
-                >
-                  {{ t('menu.modifierTypeMulti') || 'Multiple choice' }}
-                </button>
-              </div>
-            </UFormGroup>
-            <UFormGroup :label="t('menu.isRequired') || 'Required'">
-              <label class="flex items-center gap-1.5 h-9 text-sm cursor-pointer">
-                <UCheckbox v-model="groupForm.isRequired" />
-                {{ t('menu.modifierRequiredHint') || 'Customer must pick one' }}
-              </label>
-            </UFormGroup>
-          </div>
+          <UFormGroup :label="t('menu.modifierType') || 'Selection type'">
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
+                :class="groupForm.type === 'single'
+                  ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
+                  : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'"
+                @click="groupForm.type = 'single'"
+              >
+                <Icon name="lucide:circle-dot" class="h-4 w-4 flex-shrink-0" />
+                {{ t('menu.modifierTypeSingle') || 'Single choice' }}
+              </button>
+              <button
+                type="button"
+                class="flex items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-colors"
+                :class="groupForm.type === 'multi'
+                  ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
+                  : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-700'"
+                @click="groupForm.type = 'multi'"
+              >
+                <Icon name="lucide:list-checks" class="h-4 w-4 flex-shrink-0" />
+                {{ t('menu.modifierTypeMulti') || 'Multiple choice' }}
+              </button>
+            </div>
+          </UFormGroup>
+
+          <label class="flex items-center gap-2 text-sm cursor-pointer w-fit">
+            <UCheckbox v-model="groupForm.isRequired" />
+            {{ t('menu.modifierRequiredHint') || 'Customer must pick one' }}
+          </label>
 
           <div v-if="groupForm.type === 'multi'" class="grid grid-cols-2 gap-3">
             <UFormGroup :label="t('menu.modifierMinSelect') || 'Min selections'">
@@ -331,54 +346,60 @@ watch(() => props.modelValue, (open) => {
           </div>
 
           <div class="flex justify-end">
-            <UButton color="primary" size="sm" :loading="groupSaving" :disabled="!isGroupFormValid || groupSaving" @click="saveGroup">
+            <UButton color="primary" :icon="editingGroupId ? 'lucide:check' : 'lucide:plus'" :loading="groupSaving" :disabled="!isGroupFormValid || groupSaving" @click="saveGroup">
               {{ editingGroupId ? (t('app.save') || 'Save') : (t('menu.addModifierGroup') || 'Create group') }}
             </UButton>
           </div>
 
           <!-- Options for the selected (already-saved) group -->
-          <div v-if="editingGroupId" class="pt-3 border-t border-gray-100 dark:border-gray-800 space-y-2">
-            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          <div v-if="editingGroupId" class="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:tags" class="h-3.5 w-3.5" />
               {{ t('menu.modifierOptions') || 'Options' }}
             </div>
             <div v-if="optionsLoading" class="flex items-center justify-center py-4">
               <UIcon name="lucide:loader-2" class="w-4 h-4 animate-spin text-gray-400" />
             </div>
-            <div v-else-if="!options.length" class="text-xs text-gray-500 dark:text-gray-400">
-              {{ t('menu.noModifierOptions') || 'No options yet' }}
+            <div v-else-if="!options.length" class="text-xs text-gray-500 dark:text-gray-400 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 px-3 py-4 text-center">
+              {{ t('menu.noModifierOptions') || 'No options yet — add the first one below' }}
             </div>
-            <div v-else class="space-y-1">
+            <div v-else class="rounded-xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
               <div
                 v-for="o in options"
                 :key="o.id"
-                class="group flex items-center justify-between px-2 py-1 rounded-lg text-sm"
-                :class="editingOptionId === o.id ? 'bg-primary-50 dark:bg-primary-950/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'"
+                class="group flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors"
+                :class="editingOptionId === o.id ? 'bg-primary-50 dark:bg-primary-950/30' : 'bg-white dark:bg-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800/50'"
               >
                 <span class="truncate">{{ o.name }}</span>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                  <span class="text-xs text-gray-500 dark:text-gray-400 tabular-nums">{{ o.price }}</span>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                  <span class="text-xs text-gray-500 dark:text-gray-400 tabular-nums mr-1">{{ o.price }}</span>
                   <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="editOption(o)" />
                   <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="removeOption(o)" />
                 </div>
               </div>
             </div>
 
-            <div class="flex items-end gap-2 pt-2">
+            <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-950/40 p-3 flex flex-col sm:flex-row sm:items-end gap-2">
               <UFormGroup :label="t('menu.name') || 'Name'" class="flex-1">
-                <UInput v-model="optionForm.name" size="sm" />
+                <UInput v-model="optionForm.name" size="sm" :placeholder="t('menu.modifierOptionPlaceholder') || 'e.g. Large'" />
               </UFormGroup>
-              <UFormGroup :label="t('menu.price') || 'Price'" class="w-24">
+              <UFormGroup :label="t('menu.price') || 'Price'" class="sm:w-24">
                 <UInput v-model.number="optionForm.price" type="number" step="0.01" size="sm" />
               </UFormGroup>
-              <UButton
-                :icon="editingOptionId ? 'lucide:check' : 'lucide:plus'"
-                size="sm"
-                color="primary"
-                :loading="optionSaving"
-                :disabled="!isOptionFormValid || optionSaving"
-                @click="saveOption"
-              />
-              <UButton v-if="editingOptionId" icon="lucide:x" size="sm" color="gray" variant="ghost" @click="resetOptionForm" />
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <UButton
+                  :icon="editingOptionId ? 'lucide:check' : 'lucide:plus'"
+                  size="sm"
+                  color="primary"
+                  class="flex-1 sm:flex-initial justify-center"
+                  :loading="optionSaving"
+                  :disabled="!isOptionFormValid || optionSaving"
+                  @click="saveOption"
+                >
+                  {{ editingOptionId ? (t('app.save') || 'Save') : (t('app.add') || 'Add') }}
+                </UButton>
+                <UButton v-if="editingOptionId" icon="lucide:x" size="sm" color="gray" variant="ghost" @click="resetOptionForm" />
+              </div>
             </div>
           </div>
         </div>
