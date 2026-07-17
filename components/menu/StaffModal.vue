@@ -87,6 +87,7 @@ function handleSubmit() {
             option-attribute="label"
             searchable
             :placeholder="t('menu.selectMember') || 'Select a member'"
+            :popper="{ strategy: 'fixed' }"
           />
         </UFormGroup>
         <UFormGroup :label="t('menu.role') || 'Role'" required>
@@ -95,6 +96,7 @@ function handleSubmit() {
             :options="roleOptions"
             value-attribute="value"
             option-attribute="label"
+            :popper="{ strategy: 'fixed' }"
           />
         </UFormGroup>
       </div>

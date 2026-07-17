@@ -275,6 +275,7 @@ function handleSubmit() {
               option-attribute="label"
               :placeholder="t('menu.chooseBranch') || 'Choose a branch'"
               :ui="{ rounded: 'rounded-xl' }"
+              :popper="{ strategy: 'fixed' }"
             />
           </UFormGroup>
         </div>
@@ -313,6 +314,7 @@ function handleSubmit() {
               option-attribute="label"
               :placeholder="t('menu.selectCategory') || 'Select category'"
               :ui="{ rounded: 'rounded-lg' }"
+              :popper="{ strategy: 'fixed' }"
             />
             <UButton
               block

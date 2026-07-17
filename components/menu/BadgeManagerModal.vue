@@ -39,12 +39,12 @@ const ICON_OPTIONS = [
   '💰', '🏷️', '⏱️', '📦', '🚚', '✅',
 ];
 
-const form = reactive({ text: '', bgColor: '#c97a1e', textColor: '#ffffff', icon: '' });
+const form = reactive({ text: '', bgColor: '#b91c1c', textColor: '#ffffff', icon: '' });
 
 function resetForm() {
   editingId.value = null;
   form.text = '';
-  form.bgColor = '#c97a1e';
+  form.bgColor = '#b91c1c';
   form.textColor = '#ffffff';
   form.icon = '';
   isIconPickerOpen.value = false;

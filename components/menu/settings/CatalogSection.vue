@@ -7,10 +7,12 @@ import AppTable from '@/components/ui/AppTable.vue';
 import CategoryModal from '@/components/menu/CategoryModal.vue';
 import MenuItemModal from '@/components/menu/MenuItemModal.vue';
 import BadgeManagerModal from '@/components/menu/BadgeManagerModal.vue';
+import ModifierManagerModal from '@/components/menu/ModifierManagerModal.vue';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
+import type { MenuModifierGroup } from '@/api/menu/modifiergroup/list';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -26,6 +28,7 @@ const error = ref<string | null>(null);
 
 const badges = ref<MenuBadge[]>([]);
 const branches = ref<MenuBranch[]>([]);
+const modifierGroups = ref<MenuModifierGroup[]>([]);
 
 const isCategoryModalOpen = ref(false);
 const editingCategory = ref<MenuCategory | null>(null);
@@ -36,6 +39,7 @@ const editingItem = ref<MenuItem | null>(null);
 const itemSaving = ref(false);
 
 const isBadgeManagerOpen = ref(false);
+const isModifierManagerOpen = ref(false);
 
 async function getToken(): Promise<string> {
   const { current } = useMenuToken();
@@ -104,6 +108,17 @@ async function loadBranches() {
   }
 }
 
+async function loadModifierGroups() {
+  try {
+    const menuToken = await getToken();
+    const { menuModifierGroupsList } = await import('@/api/menu/modifiergroup/list');
+    const res = await menuModifierGroupsList(menuToken, nsSlug.value);
+    modifierGroups.value = res.groups;
+  } catch (e) {
+    logError('[menu/settings/catalog] loadModifierGroups failed', e);
+  }
+}
+
 watch(selectedCategoryId, loadItems);
 
 const itemColumns = computed(() => [
@@ -111,12 +126,17 @@ const itemColumns = computed(() => [
   { key: 'name', label: t('menu.name') || 'Name' },
   { key: 'price', label: t('menu.price') || 'Price' },
   { key: 'badges', label: t('menu.itemBadges') || 'Badges' },
+  { key: 'modifiers', label: t('menu.modifiers') || 'Modifiers' },
   { key: 'isActive', label: t('menu.isActive') || 'Active' },
   { key: 'actions', label: t('app.actions') || 'Actions' },
 ]);
 
 function badgeById(id: string) {
   return badges.value.find((b) => b.id === id);
+}
+
+function modifierGroupById(id: string) {
+  return modifierGroups.value.find((g) => g.id === id);
 }
 
 function itemIndex(row: MenuItem) {
@@ -248,10 +268,27 @@ async function syncBadgesAndExclusions(itemId: string, badgeIds: string[], exclu
   await Promise.all(tasks);
 }
 
+async function syncModifiers(itemId: string, modifierGroupIds: string[]) {
+  const menuToken = await getToken();
+  const prevModifierGroupIds = new Set(editingItem.value?.modifierGroupIds || []);
+  const nextModifierGroupIds = new Set(modifierGroupIds);
+
+  const { menuAddModifierToItem, menuRemoveModifierFromItem } = await import('@/api/menu/menuitem/modifier');
+
+  const tasks: Promise<any>[] = [];
+  for (const id of nextModifierGroupIds) {
+    if (!prevModifierGroupIds.has(id)) tasks.push(menuAddModifierToItem(menuToken, nsSlug.value, itemId, id));
+  }
+  for (const id of prevModifierGroupIds) {
+    if (!nextModifierGroupIds.has(id)) tasks.push(menuRemoveModifierFromItem(menuToken, nsSlug.value, itemId, id));
+  }
+  await Promise.all(tasks);
+}
+
 async function handleItemSubmit(payload: Record<string, any>) {
   if (!selectedCategoryId.value) return;
   itemSaving.value = true;
-  const { badgeIds, excludedBranchIds, ...itemFields } = payload;
+  const { badgeIds, modifierGroupIds, excludedBranchIds, ...itemFields } = payload;
   try {
     const menuToken = await getToken();
     let savedItem: MenuItem;
@@ -279,8 +316,10 @@ async function handleItemSubmit(payload: Record<string, any>) {
       savedItem = await menuCreateMenuItem(menuToken, nsSlug.value, { categoryId: selectedCategoryId.value, ...itemFields, sortOrder: nextSortOrder } as any);
     }
     await syncBadgesAndExclusions(savedItem.id, badgeIds || [], excludedBranchIds || []);
+    await syncModifiers(savedItem.id, modifierGroupIds || []);
     savedItem.badgeIds = badgeIds || [];
     savedItem.excludedBranchIds = excludedBranchIds || [];
+    savedItem.modifierGroupIds = modifierGroupIds || [];
 
     const idx = items.value.findIndex((i) => i.id === savedItem.id);
     if (idx !== -1) {
@@ -341,6 +380,7 @@ onMounted(() => {
   loadCategories();
   loadBadges();
   loadBranches();
+  loadModifierGroups();
 });
 </script>
 
@@ -391,16 +431,16 @@ onMounted(() => {
             </div>
           </div>
         </div>
-        <div class="border-t border-gray-100 dark:border-gray-800 p-2">
+        <div class="border-t border-gray-100 dark:border-gray-800 p-2 space-y-1">
           <UButton
             block
             size="xs"
             color="gray"
             variant="ghost"
-            icon="lucide:tags"
-            @click="isBadgeManagerOpen = true"
+            icon="lucide:list-plus"
+            @click="isModifierManagerOpen = true"
           >
-            {{ t('menu.badges') || 'Badges' }}
+            {{ t('menu.modifiers') || 'Modifiers' }}
           </UButton>
         </div>
       </div>
@@ -447,6 +487,17 @@ onMounted(() => {
                 </span>
               </div>
             </template>
+            <template #modifiers-data="{ row }">
+              <div class="flex flex-wrap gap-1">
+                <span
+                  v-for="id in row.modifierGroupIds"
+                  :key="id"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                >
+                  {{ modifierGroupById(id)?.name || '' }}
+                </span>
+              </div>
+            </template>
             <template #isActive-data="{ row }">
               <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle">
                 {{ row.isActive ? (t('menu.isActive') || 'Active') : '—' }}
@@ -476,12 +527,18 @@ onMounted(() => {
       :saving="itemSaving"
       :available-badges="badges"
       :available-branches="branches"
+      :available-modifier-groups="modifierGroups"
       @submit="handleItemSubmit"
       @manage-badges="isBadgeManagerOpen = true"
+      @manage-modifiers="isModifierManagerOpen = true"
     />
     <BadgeManagerModal
       v-model="isBadgeManagerOpen"
       @changed="loadBadges"
+    />
+    <ModifierManagerModal
+      v-model="isModifierManagerOpen"
+      @changed="loadModifierGroups"
     />
   </div>
 </template>

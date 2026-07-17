@@ -361,7 +361,11 @@ async function refreshConsoleAccess() {
     const admin = await capitalGetAdminByUserId(authToken, currentUserId);
     const role = Number(admin?.role ?? -1);
     canSeeConsoleCard.value = !!admin && (role === 0 || role === 1);
-  } catch {
+  } catch (e) {
+    // This used to fail silently, which made "the Console card disappeared"
+    // indistinguishable from "you're not a capital admin" — log it so a
+    // real backend/network failure is visible instead of just hiding the card.
+    logError('[home] refreshConsoleAccess failed', e);
     canSeeConsoleCard.value = false;
   }
 }

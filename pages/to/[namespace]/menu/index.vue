@@ -2,19 +2,22 @@
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getPublicStorefront, getPublicMenuItems, submitPublicOrder } from '@/api/menu/public/storefront';
+import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder } from '@/api/menu/public/storefront';
+import type { PublicModifierGroup, PublicModifierOption } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
-import { parseSocialLinks, socialIcon } from '@/utils/social';
+import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
+import { formatMoney } from '@/utils/currency';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 
 definePageMeta({ layout: false });
 
-const { t } = useI18n();
+const { t, locale, setLocale, available: availableLocales } = useI18n();
+const LOCALE_LABELS: Record<string, string> = { ru: 'РУ', kk: 'ҚАЗ', en: 'EN' };
 const route = useRoute();
 const router = useRouter();
 const nsSlug = computed(() => route.params.namespace as string);
@@ -23,8 +26,10 @@ const sourceTag = computed(() => (route.query.t as string) || '');
 
 // Cart + branch selection survive a page reload/return visit, scoped per
 // tenant so switching storefronts never leaks one tenant's cart into
-// another's.
-const cartStorageKey = computed(() => `lota-menu-cart-${nsSlug.value}`);
+// another's. The cart itself is additionally scoped per branch — different
+// branches (cities) keep independent carts, since switching branch can
+// change which products are even available (see excludedBranchIds below).
+const cartStorageKey = computed(() => `lota-menu-cart-${nsSlug.value}-${selectedBranchId.value || 'default'}`);
 const branchStorageKey = computed(() => `lota-menu-branch-${nsSlug.value}`);
 
 // Server-rendered so the per-tenant title/description/OG tags in useHead()
@@ -33,16 +38,126 @@ const { data, pending: loading, error: fetchError } = await useAsyncData(
   `storefront-${nsSlug.value}`,
   async () => {
     const storefront = await getPublicStorefront(nsSlug.value);
-    const entries = await Promise.all(
-      storefront.categories.map(async (c) => [c.id, await getPublicMenuItems(nsSlug.value, c.id)] as const)
-    );
-    return { storefront, itemsByCategory: Object.fromEntries(entries) as Record<string, MenuItem[]> };
+    const [entries, modifierGroups] = await Promise.all([
+      Promise.all(storefront.categories.map(async (c) => [c.id, await getPublicMenuItems(nsSlug.value, c.id)] as const)),
+      getPublicModifierGroups(nsSlug.value),
+    ]);
+    return { storefront, itemsByCategory: Object.fromEntries(entries) as Record<string, MenuItem[]>, modifierGroups };
   }
 );
 
 const error = computed(() => fetchError.value ? (getErrorMessage(fetchError.value) || 'Failed to load storefront') : null);
 
+// --- Item modifiers (size, add-ons, ...) ---
+// modifierGroups is small and fetched once for the whole tenant up front;
+// options are fetched lazily per group the first time an item that uses it
+// is opened, then cached — most storefronts only ever touch a handful of
+// groups regardless of catalog size.
+const modifierOptionsByGroup = ref<Record<string, PublicModifierOption[]>>({});
+const modifierOptionsLoading = ref<Set<string>>(new Set());
+
+async function ensureModifierOptionsLoaded(groupIds: string[]) {
+  const toLoad = groupIds.filter((id) => !modifierOptionsByGroup.value[id] && !modifierOptionsLoading.value.has(id));
+  if (!toLoad.length) return;
+  toLoad.forEach((id) => modifierOptionsLoading.value.add(id));
+  try {
+    const results = await Promise.all(toLoad.map((id) => getPublicModifierOptions(nsSlug.value, id)));
+    toLoad.forEach((id, idx) => { modifierOptionsByGroup.value[id] = results[idx]; });
+  } catch (e) {
+    logError('[shared/menu] ensureModifierOptionsLoaded failed', e);
+  } finally {
+    toLoad.forEach((id) => modifierOptionsLoading.value.delete(id));
+  }
+}
+
+function modifierGroupById(id: string): PublicModifierGroup | undefined {
+  return data.value?.modifierGroups.find((g) => g.id === id);
+}
+
+// selectedItem's modifier groups, in isRequired-first order so the choices
+// a customer must make before adding to cart appear above the optional ones.
+const selectedItemModifierGroups = computed(() => {
+  if (!selectedItem.value) return [];
+  return selectedItem.value.modifierGroupIds
+    .map((id) => modifierGroupById(id))
+    .filter((g): g is PublicModifierGroup => !!g)
+    .sort((a, b) => Number(b.isRequired) - Number(a.isRequired));
+});
+
+// groupId -> selected option ids. Reset every time the sheet opens for a
+// (possibly different) item.
+const selectedModifiers = reactive<Record<string, string[]>>({});
+
+function toggleModifierOption(group: PublicModifierGroup, optionId: string) {
+  const current = selectedModifiers[group.id] || [];
+  if (group.type === 'multi') {
+    if (current.includes(optionId)) {
+      selectedModifiers[group.id] = current.filter((id) => id !== optionId);
+    } else if (!group.maxSelect || current.length < group.maxSelect) {
+      selectedModifiers[group.id] = [...current, optionId];
+    }
+  } else {
+    // single-choice group: mutually exclusive — picking one clears any other,
+    // and clicking the already-selected option clears it (unless required).
+    if (current.includes(optionId)) {
+      selectedModifiers[group.id] = group.isRequired ? current : [];
+    } else {
+      selectedModifiers[group.id] = [optionId];
+    }
+  }
+}
+
+const isModifierSelectionValid = computed(() => {
+  for (const group of selectedItemModifierGroups.value) {
+    const count = (selectedModifiers[group.id] || []).length;
+    const min = group.isRequired ? Math.max(group.minSelect || 1, 1) : (group.minSelect || 0);
+    if (count < min) return false;
+    if (group.maxSelect && count > group.maxSelect) return false;
+  }
+  return true;
+});
+
+const selectedModifierLines = computed(() => {
+  const lines: { modifierOptionId: string; name: string; price: number }[] = [];
+  for (const group of selectedItemModifierGroups.value) {
+    const options = modifierOptionsByGroup.value[group.id] || [];
+    for (const optionId of selectedModifiers[group.id] || []) {
+      const opt = options.find((o) => o.id === optionId);
+      if (opt) lines.push({ modifierOptionId: opt.id, name: opt.name, price: opt.price });
+    }
+  }
+  return lines;
+});
+
+const modifierUnitPriceTotal = computed(() => selectedModifierLines.value.reduce((sum, m) => sum + m.price, 0));
+
+// --- Item detail sheet ---
+const selectedItem = ref<MenuItem | null>(null);
+const isItemSheetOpen = ref(false);
+const sheetQuantity = ref(1);
+function openItemDetail(item: MenuItem) {
+  selectedItem.value = item;
+  sheetQuantity.value = 1;
+  for (const key of Object.keys(selectedModifiers)) delete selectedModifiers[key];
+  isItemSheetOpen.value = true;
+  if (item.modifierGroupIds.length) ensureModifierOptionsLoaded(item.modifierGroupIds);
+  // Encode the open product into the URL so the sheet can be shared/reopened
+  // directly — see the matching ?item= lookup in the data watcher above.
+  if (route.query.item !== item.id) {
+    router.replace({ query: { ...route.query, item: item.id } });
+  }
+}
+function closeItemDetail() {
+  isItemSheetOpen.value = false;
+  if (route.query.item) {
+    const q = { ...route.query };
+    delete q.item;
+    router.replace({ query: q });
+  }
+}
+
 const selectedBranchId = ref<string>('');
+const isDescriptionExpanded = ref(false);
 const activeCategoryId = ref<string>('');
 
 const visibleBranches = computed(() => (data.value?.storefront.branches || []).filter((b) => b.isActive));
@@ -74,8 +189,16 @@ watch(data, (d) => {
   if (!d) return;
   const active = visibleBranches.value;
   const storedBranchId = process.client ? localStorage.getItem(branchStorageKey.value) : null;
-  if (branchParam.value && active.some((b) => b.id === branchParam.value)) {
-    selectedBranchId.value = branchParam.value;
+  // ?b= accepts either the short slug ("almaty") or the raw branch UUID —
+  // slug is what new share links use, UUID keeps any already-shared link
+  // working. selectedBranchId itself always ends up holding the real id,
+  // since every other comparison on this page (excludedBranchIds, etc.)
+  // matches against it.
+  const byParam = branchParam.value
+    ? active.find((b) => b.slug === branchParam.value || b.id === branchParam.value)
+    : undefined;
+  if (byParam) {
+    selectedBranchId.value = byParam.id;
   } else if (storedBranchId && active.some((b) => b.id === storedBranchId)) {
     selectedBranchId.value = storedBranchId;
   } else if (active.length === 1) {
@@ -160,16 +283,30 @@ function scrollToCategory(id: string) {
   activeCategoryId.value = id;
   const el = categoryRefs.value[id];
   el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  // Only the explicit click brings its own nav pill into view — doing this
+  // on every activeCategoryId change (including the ones scroll-spy makes
+  // continuously while the page scrolls) fired a competing horizontal
+  // smooth-scroll animation on top of the user's own vertical scroll,
+  // which is what actually made scrolling feel choppy/interrupted.
+  //
+  // The pill row sits in a `position: sticky` header, and calling
+  // scrollIntoView() on the button itself (even with inline/horizontal
+  // intent) makes the browser also walk up to the page's own vertical
+  // scroll container and "correct" its scrollTop against the button's
+  // pre-sticky layout position — fighting the scroll above and, in
+  // practice, cancelling it back to (or near) 0. Scrolling the pill row's
+  // own scrollLeft directly sidesteps the vertical container entirely.
+  const btn = navRefs.value[id];
+  if (btn?.parentElement) {
+    const container = btn.parentElement;
+    const target = btn.offsetLeft - (container.clientWidth - btn.clientWidth) / 2;
+    container.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+  }
   window.setTimeout(() => { suppressSpy = false; }, 700);
 }
 
 let suppressSpy = false;
 let observer: IntersectionObserver | null = null;
-
-watch(activeCategoryId, (id) => {
-  const btn = navRefs.value[id];
-  btn?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-});
 
 onMounted(() => {
   nextTick(() => {
@@ -186,29 +323,6 @@ onMounted(() => {
   });
 });
 onBeforeUnmount(() => observer?.disconnect());
-
-// --- Item detail sheet ---
-const selectedItem = ref<MenuItem | null>(null);
-const isItemSheetOpen = ref(false);
-const sheetQuantity = ref(1);
-function openItemDetail(item: MenuItem) {
-  selectedItem.value = item;
-  sheetQuantity.value = 1;
-  isItemSheetOpen.value = true;
-  // Encode the open product into the URL so the sheet can be shared/reopened
-  // directly — see the matching ?item= lookup in the data watcher above.
-  if (route.query.item !== item.id) {
-    router.replace({ query: { ...route.query, item: item.id } });
-  }
-}
-function closeItemDetail() {
-  isItemSheetOpen.value = false;
-  if (route.query.item) {
-    const q = { ...route.query };
-    delete q.item;
-    router.replace({ query: q });
-  }
-}
 
 // --- Promo banner sheet: tapping a banner opens it full-width from the
 // bottom with an explicit "go to link" action, instead of navigating away
@@ -229,19 +343,32 @@ function followBannerLink() {
 }
 
 // --- Cart ---
-type CartLine = { menuItemId: string; name: string; price: number; quantity: number; imageUrl?: string | null };
+type CartLineModifier = { modifierOptionId: string; name: string; price: number };
+type CartLine = { menuItemId: string; name: string; price: number; quantity: number; imageUrl?: string | null; modifiers?: CartLineModifier[] };
 const cart = ref<CartLine[]>([]);
 const isCartOpen = ref(false);
 const isCheckoutOpen = ref(false);
 const submitting = ref(false);
 const orderResult = ref<{ number: number } | null>(null);
 
-function addToCartQty(item: MenuItem, qty: number) {
-  const existing = cart.value.find((l) => l.menuItemId === item.id);
+// Two lines are "the same" only if they're the same item AND the same exact
+// modifier selection — a Latte with oat milk and a Latte with no milk are
+// different purchasable things and must not silently merge quantities.
+function modifiersKey(mods?: CartLineModifier[]): string {
+  return (mods || []).map((m) => m.modifierOptionId).sort().join(',');
+}
+
+function lineUnitPrice(line: CartLine): number {
+  return line.price + (line.modifiers || []).reduce((sum, m) => sum + m.price, 0);
+}
+
+function addToCartQty(item: MenuItem, qty: number, modifiers?: CartLineModifier[]) {
+  const key = modifiersKey(modifiers);
+  const existing = cart.value.find((l) => l.menuItemId === item.id && modifiersKey(l.modifiers) === key);
   if (existing) {
     existing.quantity += qty;
   } else {
-    cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: qty, imageUrl: item.imageUrl });
+    cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: qty, imageUrl: item.imageUrl, modifiers });
   }
 }
 
@@ -250,7 +377,7 @@ function addToCart(item: MenuItem) {
 }
 
 function cartQuantityFor(itemId: string): number {
-  return cart.value.find((l) => l.menuItemId === itemId)?.quantity || 0;
+  return cart.value.filter((l) => l.menuItemId === itemId).reduce((sum, l) => sum + l.quantity, 0);
 }
 
 function decrementItem(item: MenuItem) {
@@ -261,23 +388,36 @@ function decrementItem(item: MenuItem) {
 function changeQuantity(line: CartLine, delta: number) {
   line.quantity += delta;
   if (line.quantity <= 0) {
-    cart.value = cart.value.filter((l) => l.menuItemId !== line.menuItemId);
+    const key = modifiersKey(line.modifiers);
+    cart.value = cart.value.filter((l) => !(l.menuItemId === line.menuItemId && modifiersKey(l.modifiers) === key));
   }
 }
 
 const cartCount = computed(() => cart.value.reduce((sum, l) => sum + l.quantity, 0));
-const cartTotal = computed(() => cart.value.reduce((sum, l) => sum + l.quantity * l.price, 0));
+const cartTotal = computed(() => cart.value.reduce((sum, l) => sum + l.quantity * lineUnitPrice(l), 0));
 
-if (process.client) {
+// Reload the cart whenever the branch-scoped storage key changes (branch
+// switched) — swaps in that branch's own saved cart instead of carrying the
+// previous branch's items over. `immediate: true` also performs the
+// initial load once selectedBranchId has resolved (see the data watcher
+// above), rather than racing it.
+let restoringCart = false;
+watch(cartStorageKey, (key) => {
+  if (!process.client) return;
+  restoringCart = true;
   try {
-    const stored = localStorage.getItem(cartStorageKey.value);
-    if (stored) cart.value = JSON.parse(stored);
+    const stored = localStorage.getItem(key);
+    cart.value = stored ? JSON.parse(stored) : [];
   } catch (e) {
     logError('[shared/menu] failed to restore cart from localStorage', e);
+    cart.value = [];
+  } finally {
+    restoringCart = false;
   }
-}
+}, { immediate: true });
+
 watch(cart, (c) => {
-  if (!process.client) return;
+  if (!process.client || restoringCart) return;
   localStorage.setItem(cartStorageKey.value, JSON.stringify(c));
 }, { deep: true });
 
@@ -328,6 +468,11 @@ async function submitOrder() {
         name: l.name,
         priceAtPurchase: l.price,
         quantity: l.quantity,
+        modifiers: (l.modifiers || []).map((m) => ({
+          modifierOptionId: m.modifierOptionId,
+          name: m.name,
+          priceAtPurchase: m.price,
+        })),
       })),
     });
     orderResult.value = { number: result.number };
@@ -398,7 +543,19 @@ useHead(() => {
            kept visually quiet (small type, muted color) so the tenant's
            own brand below remains the dominant element on the page. -->
       <div class="bg-gray-50 dark:bg-gray-950">
-        <div class="max-w-3xl mx-auto px-4 py-1.5 flex justify-end">
+        <div class="max-w-3xl mx-auto px-4 py-1.5 flex items-center justify-between">
+          <div class="flex items-center gap-0.5">
+            <button
+              v-for="loc in availableLocales"
+              :key="loc"
+              type="button"
+              class="px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors"
+              :class="locale === loc ? 'text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-800' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+              @click="setLocale(loc)"
+            >
+              {{ LOCALE_LABELS[loc] || loc.toUpperCase() }}
+            </button>
+          </div>
           <a
             href="https://lota.tools"
             target="_blank"
@@ -415,7 +572,7 @@ useHead(() => {
            tenant's own primary color, big elevated logo card. -->
       <div class="relative" :style="{ backgroundColor: primaryColor }">
         <div class="max-w-3xl mx-auto px-4 pt-7 pb-6">
-        <div class="flex items-center gap-4">
+        <div class="flex items-start gap-4">
           <div class="w-20 h-20 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
             <img
               v-if="data.storefront.brandSettings?.logoUrl"
@@ -425,16 +582,22 @@ useHead(() => {
             >
             <Icon v-else name="lucide:store" class="w-8 h-8 text-gray-300" />
           </div>
-          <div class="min-w-0 flex-1">
+          <div class="min-w-0 flex-1 pt-1">
             <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
               {{ data.storefront.brandSettings?.name || nsSlug }}
             </h1>
-            <p v-if="data.storefront.brandSettings?.welcomeMessage" class="text-sm mt-0.5 truncate" :style="{ color: onPrimaryText, opacity: 0.85 }">
+            <p
+              v-if="data.storefront.brandSettings?.welcomeMessage"
+              class="text-sm mt-0.5 cursor-pointer"
+              :class="isDescriptionExpanded ? 'line-clamp-2' : 'truncate'"
+              :style="{ color: onPrimaryText, opacity: 0.85 }"
+              @click="isDescriptionExpanded = !isDescriptionExpanded"
+            >
               {{ data.storefront.brandSettings.welcomeMessage }}
             </p>
           </div>
           <!-- Brand contacts: call the business directly, or jump to its socials -->
-          <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0">
+          <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0 pt-1">
             <a
               v-if="brandPhone"
               :href="telHref(brandPhone)"
@@ -446,15 +609,15 @@ useHead(() => {
             </a>
             <a
               v-for="link in brandSocialLinks"
-              :key="link.url"
-              :href="link.url"
+              :key="link.link"
+              :href="link.link"
               target="_blank"
               rel="noopener"
               class="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
               :style="{ color: onPrimaryText }"
-              :aria-label="link.label || 'Social link'"
+              :aria-label="link.description || socialLabel(link.name)"
             >
-              <Icon :name="socialIcon(link.label)" class="w-4 h-4" />
+              <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
             </a>
           </div>
         </div>
@@ -479,7 +642,7 @@ useHead(() => {
           v-for="b in data.storefront.promoBanners"
           :key="b.id"
           type="button"
-          class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block text-left"
+          class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block text-left shadow-md"
           @click="openBanner(b)"
         >
           <img :src="b.imageUrl" :alt="b.imageAlt || b.title" class="w-full h-full object-cover">
@@ -498,7 +661,7 @@ useHead(() => {
           <button
             v-for="b in visibleBranches"
             :key="b.id"
-            class="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-primary-400 transition-colors"
+            class="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md hover:border-primary-400 transition-all"
             @click="selectedBranchId = b.id"
           >
             <div class="font-medium text-gray-900 dark:text-white">{{ b.name }}</div>
@@ -509,7 +672,7 @@ useHead(() => {
 
       <!-- Catalog: search + sticky anchor nav + continuous scroll sections -->
       <template v-else>
-        <div class="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800">
+        <div class="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 shadow-sm">
           <div v-if="activeBranch && visibleBranches.length > 1" class="max-w-3xl mx-auto px-4 pt-2 flex justify-start">
             <button
               type="button"
@@ -528,7 +691,7 @@ useHead(() => {
                 v-model="searchQuery"
                 type="search"
                 :placeholder="t('menu.searchMenu') || 'Search menu'"
-                class="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                class="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
               >
               <button
                 v-if="searchQuery"
@@ -542,7 +705,7 @@ useHead(() => {
             <button
               v-if="cartCount > 0"
               type="button"
-              class="relative flex-shrink-0 w-9 h-9 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 flex items-center justify-center"
+              class="relative flex-shrink-0 w-9 h-9 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-center"
               @click="isCartOpen = true"
             >
               <Icon name="lucide:shopping-bag" class="w-4 h-4 text-gray-700 dark:text-gray-200" />
@@ -558,8 +721,8 @@ useHead(() => {
               v-for="c in data.storefront.categories"
               :key="c.id"
               :ref="(el) => setNavRef(c.id, el)"
-              class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-colors"
-              :class="activeCategoryId !== c.id ? 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800' : ''"
+              class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm"
+              :class="activeCategoryId !== c.id ? 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800' : 'shadow-md'"
               :style="activeCategoryId === c.id ? { backgroundColor: primaryColor, color: onPrimaryText } : {}"
               @click="scrollToCategory(c.id)"
             >
@@ -644,7 +807,7 @@ useHead(() => {
                 <Icon name="lucide:shopping-bag" class="w-4 h-4" />
                 {{ t('menu.viewCart') || 'View cart' }} · {{ cartCount }}
               </span>
-              <span class="font-bold tabular-nums">{{ cartTotal }} {{ data.storefront.brandSettings?.currencyCode }}</span>
+              <span class="font-bold tabular-nums">{{ formatMoney(cartTotal, data.storefront.brandSettings?.currencyCode) }}</span>
             </button>
           </div>
         </div>
@@ -681,25 +844,39 @@ useHead(() => {
           <div v-if="brandSocialLinks.length" class="flex items-center gap-2 pt-1">
             <a
               v-for="link in brandSocialLinks"
-              :key="link.url"
-              :href="link.url"
+              :key="link.link"
+              :href="link.link"
               target="_blank"
               rel="noopener"
               class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              :aria-label="link.label || 'Social link'"
+              :aria-label="link.description || socialLabel(link.name)"
             >
-              <Icon :name="socialIcon(link.label)" class="w-4 h-4" />
+              <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
             </a>
           </div>
-          <a
-            href="https://lota.tools"
-            target="_blank"
-            rel="noopener"
-            class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors pt-2"
-          >
-            <img src="/assets/logo.png" alt="" class="w-3 h-3">
-            {{ t('menu.poweredByFooter') || 'Powered by lota' }}
-          </a>
+          <div class="flex items-center justify-between pt-2">
+            <a
+              href="https://lota.tools"
+              target="_blank"
+              rel="noopener"
+              class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            >
+              <img src="/assets/logo.png" alt="" class="w-3 h-3">
+              {{ t('menu.poweredByFooter') || 'Powered by lota' }}
+            </a>
+            <div class="flex items-center gap-0.5">
+              <button
+                v-for="loc in availableLocales"
+                :key="loc"
+                type="button"
+                class="px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors"
+                :class="locale === loc ? 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
+                @click="setLocale(loc)"
+              >
+                {{ LOCALE_LABELS[loc] || loc.toUpperCase() }}
+              </button>
+            </div>
+          </div>
         </div>
       </footer>
       <!-- Clearance so the footer never sits under the fixed cart bar — only
@@ -730,7 +907,7 @@ useHead(() => {
           <div>
             <h2 class="text-xl font-bold text-gray-900 dark:text-white">{{ selectedItem.name }}</h2>
             <div class="text-lg font-bold mt-1" :style="{ color: secondaryColor }">
-              {{ selectedItem.price }} {{ data?.storefront.brandSettings?.currencyCode }}
+              {{ formatMoney(selectedItem.price, data?.storefront.brandSettings?.currencyCode) }}
             </div>
           </div>
           <div v-if="selectedItem.badgeIds.length" class="flex flex-wrap gap-1.5">
@@ -746,38 +923,89 @@ useHead(() => {
           <p v-if="selectedItem.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             {{ selectedItem.description }}
           </p>
+
+          <div v-for="group in selectedItemModifierGroups" :key="group.id" class="pt-3 border-t border-gray-100 dark:border-gray-800">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.name }}</span>
+              <span
+                class="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
+                :class="group.isRequired
+                  ? 'bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400'
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'"
+              >
+                {{ group.isRequired
+                  ? (t('menu.modifierRequired') || 'Required')
+                  : (t('menu.modifierOptional') || 'Optional') }}
+              </span>
+            </div>
+            <div v-if="!modifierOptionsByGroup[group.id]" class="flex items-center justify-center py-3">
+              <UIcon name="lucide:loader-2" class="w-4 h-4 animate-spin text-gray-400" />
+            </div>
+            <div v-else class="space-y-1.5">
+              <label
+                v-for="opt in modifierOptionsByGroup[group.id]"
+                :key="opt.id"
+                class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
+                :class="(selectedModifiers[group.id] || []).includes(opt.id)
+                  ? 'border-primary-400 bg-primary-50 dark:bg-primary-950/30'
+                  : 'border-gray-200 dark:border-gray-800'"
+                @click="toggleModifierOption(group, opt.id)"
+              >
+                <span class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
+                  <span
+                    class="w-4 h-4 flex-shrink-0 flex items-center justify-center border-2"
+                    :class="[
+                      group.type === 'multi' ? 'rounded-[4px]' : 'rounded-full',
+                      (selectedModifiers[group.id] || []).includes(opt.id) ? 'border-primary-500' : 'border-gray-300 dark:border-gray-700',
+                    ]"
+                    :style="(selectedModifiers[group.id] || []).includes(opt.id) ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}"
+                  >
+                    <Icon v-if="(selectedModifiers[group.id] || []).includes(opt.id)" name="lucide:check" class="w-2.5 h-2.5 text-white" />
+                  </span>
+                  {{ opt.name }}
+                </span>
+                <span v-if="opt.price" class="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">+{{ formatMoney(opt.price, data?.storefront.brandSettings?.currencyCode) }}</span>
+              </label>
+            </div>
+          </div>
         </div>
 
         <template #footer>
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full p-1 flex-shrink-0">
-              <button
-                type="button"
-                class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-40"
+          <div class="flex flex-col gap-2">
+            <p v-if="!isModifierSelectionValid" class="text-xs text-red-500 text-center">
+              {{ t('menu.modifierSelectionRequired') || 'Please complete the required options above.' }}
+            </p>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full p-1 flex-shrink-0">
+                <button
+                  type="button"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-40"
+                  :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                  :disabled="sheetQuantity <= 1"
+                  @click="sheetQuantity = Math.max(1, sheetQuantity - 1)"
+                >
+                  <Icon name="lucide:minus" class="w-4 h-4" />
+                </button>
+                <span class="w-6 text-center text-sm font-bold tabular-nums">{{ sheetQuantity }}</span>
+                <button
+                  type="button"
+                  class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
+                  :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                  @click="sheetQuantity++"
+                >
+                  <Icon name="lucide:plus" class="w-4 h-4" />
+                </button>
+              </div>
+              <UButton
+                block
+                :disabled="!isModifierSelectionValid"
                 :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-                :disabled="sheetQuantity <= 1"
-                @click="sheetQuantity = Math.max(1, sheetQuantity - 1)"
+                class="border-0 flex-1"
+                @click="addToCartQty(selectedItem, sheetQuantity, selectedModifierLines); closeItemDetail()"
               >
-                <Icon name="lucide:minus" class="w-4 h-4" />
-              </button>
-              <span class="w-6 text-center text-sm font-bold tabular-nums">{{ sheetQuantity }}</span>
-              <button
-                type="button"
-                class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
-                :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-                @click="sheetQuantity++"
-              >
-                <Icon name="lucide:plus" class="w-4 h-4" />
-              </button>
+                {{ t('menu.addToCart') || 'Add to cart' }} · {{ formatMoney((selectedItem.price + modifierUnitPriceTotal) * sheetQuantity, data?.storefront.brandSettings?.currencyCode) }}
+              </UButton>
             </div>
-            <UButton
-              block
-              :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-              class="border-0 flex-1"
-              @click="addToCartQty(selectedItem, sheetQuantity); closeItemDetail()"
-            >
-              {{ t('menu.addToCart') || 'Add to cart' }} · {{ selectedItem.price * sheetQuantity }} {{ data?.storefront.brandSettings?.currencyCode }}
-            </UButton>
           </div>
         </template>
       </UCard>
@@ -818,14 +1046,17 @@ useHead(() => {
           </div>
         </template>
         <div v-if="cart.length" class="space-y-4">
-          <div v-for="line in cart" :key="line.menuItemId" class="flex items-center gap-3">
+          <div v-for="line in cart" :key="`${line.menuItemId}::${modifiersKey(line.modifiers)}`" class="flex items-center gap-3">
             <img v-if="line.imageUrl" :src="line.imageUrl" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
             <div v-else class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
               <Icon name="lucide:utensils" class="w-5 h-5 text-gray-300 dark:text-gray-700" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="text-sm font-medium truncate">{{ line.name }}</div>
-              <div class="text-xs" :style="{ color: secondaryColor }">{{ line.price }} {{ data?.storefront.brandSettings?.currencyCode }}</div>
+              <div v-if="line.modifiers?.length" class="text-xs text-gray-400 dark:text-gray-500 truncate">
+                {{ line.modifiers.map((m) => m.name).join(', ') }}
+              </div>
+              <div class="text-xs" :style="{ color: secondaryColor }">{{ formatMoney(lineUnitPrice(line), data?.storefront.brandSettings?.currencyCode) }}</div>
             </div>
             <div class="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 rounded-full p-1 flex-shrink-0">
               <button
@@ -858,7 +1089,7 @@ useHead(() => {
         </div>
         <template v-if="cart.length" #footer>
           <div class="flex items-center justify-between">
-            <span class="font-semibold" :style="{ color: secondaryColor }">{{ cartTotal }} {{ data?.storefront.brandSettings?.currencyCode }}</span>
+            <span class="font-semibold" :style="{ color: secondaryColor }">{{ formatMoney(cartTotal, data?.storefront.brandSettings?.currencyCode) }}</span>
             <UButton :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" @click="openCheckout">
               {{ t('menu.checkout') || 'Checkout' }}
             </UButton>
@@ -898,14 +1129,17 @@ useHead(() => {
               </button>
             </div>
             <div class="space-y-1 text-sm">
-              <div v-for="line in cart" :key="line.menuItemId" class="flex justify-between gap-2">
-                <span class="text-gray-600 dark:text-gray-300 truncate">{{ line.quantity }}× {{ line.name }}</span>
-                <span class="font-medium tabular-nums flex-shrink-0" :style="{ color: secondaryColor }">{{ line.quantity * line.price }} {{ data?.storefront.brandSettings?.currencyCode }}</span>
+              <div v-for="line in cart" :key="`${line.menuItemId}::${modifiersKey(line.modifiers)}`" class="flex justify-between gap-2">
+                <span class="text-gray-600 dark:text-gray-300 truncate">
+                  {{ line.quantity }}× {{ line.name }}
+                  <span v-if="line.modifiers?.length" class="text-gray-400 dark:text-gray-500">({{ line.modifiers.map((m) => m.name).join(', ') }})</span>
+                </span>
+                <span class="font-medium tabular-nums flex-shrink-0" :style="{ color: secondaryColor }">{{ formatMoney(line.quantity * lineUnitPrice(line), data?.storefront.brandSettings?.currencyCode) }}</span>
               </div>
             </div>
             <div class="flex justify-between pt-2 mt-2 border-t border-gray-200 dark:border-gray-700 text-sm font-semibold">
               <span>{{ t('menu.total') || 'Total' }}</span>
-              <span class="tabular-nums" :style="{ color: secondaryColor }">{{ cartTotal }} {{ data?.storefront.brandSettings?.currencyCode }}</span>
+              <span class="tabular-nums" :style="{ color: secondaryColor }">{{ formatMoney(cartTotal, data?.storefront.brandSettings?.currencyCode) }}</span>
             </div>
           </div>
 
@@ -914,6 +1148,7 @@ useHead(() => {
               :model-value="checkoutForm.phone"
               type="tel"
               inputmode="tel"
+              autocomplete="tel"
               pattern="[0-9+()\s-]*"
               size="lg"
               :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
@@ -921,7 +1156,7 @@ useHead(() => {
             />
           </UFormGroup>
           <UFormGroup :label="t('menu.yourName') || 'Your name'">
-            <UInput v-model="checkoutForm.customerName" size="lg" />
+            <UInput v-model="checkoutForm.customerName" autocomplete="name" size="lg" />
           </UFormGroup>
           <div class="flex gap-2">
             <UButton
@@ -943,7 +1178,7 @@ useHead(() => {
           </div>
           <template v-if="checkoutForm.type === 'delivery'">
             <UFormGroup :label="t('menu.address') || 'Delivery address'" required>
-              <UInput v-model="checkoutForm.deliveryAddress" size="lg" />
+              <UInput v-model="checkoutForm.deliveryAddress" autocomplete="street-address" size="lg" />
             </UFormGroup>
             <p class="text-xs text-gray-400 -mt-2">{{ t('menu.deliveryFeeNote') || 'Delivery fee is calculated separately and not included in the order total.' }}</p>
           </template>
@@ -974,10 +1209,10 @@ useHead(() => {
               :disabled="!isCheckoutValid || submitting"
               @click="submitOrder"
             >
-              {{ t('app.create') || 'Place order' }}
+              {{ t('menu.placeOrder') || 'Place order' }}
             </UButton>
             <UButton v-else :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" @click="closeCheckout">
-              {{ t('app.cancel') || 'Close' }}
+              {{ t('menu.orderConfirmClose') || 'Great!' }}
             </UButton>
           </div>
         </template>

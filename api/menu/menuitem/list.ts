@@ -16,12 +16,13 @@ export type MenuItem = {
   seoDescription?: string | null;
   badgeIds: string[];
   excludedBranchIds: string[];
+  modifierGroupIds: string[];
 };
 
 const MenuItemsDocument = /* GraphQL */ `
   query MenuItems($categoryId: String, $filter: DefaultFilterInput) {
     menuItems(categoryId: $categoryId, filter: $filter) {
-      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription badgeIds excludedBranchIds }
+      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription badgeIds excludedBranchIds modifierGroupIds }
       info { count }
     }
   }

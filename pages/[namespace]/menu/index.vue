@@ -9,7 +9,7 @@ import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
-import type { MenuOrder } from '@/api/menu/order/list';
+import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
@@ -115,6 +115,59 @@ const selectedStatuses = ref<string[]>([]);
 const search = ref('');
 const statusCounts = ref<Record<string, number>>({});
 
+// Quick filter: order type. Full-panel filters (source tag + date ranges)
+// are separate — those are for building a report over a period, not for
+// everyday triage, so they live behind an explicit "More filters" toggle
+// instead of competing for space in the always-visible bar.
+const selectedType = ref<'' | 'delivery' | 'pickup'>('');
+const isFilterPanelOpen = ref(false);
+const sourceTagFilter = ref('');
+const createdFrom = ref('');
+const createdTo = ref('');
+const closedFrom = ref('');
+const closedTo = ref('');
+const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '' });
+const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
+
+const summary = ref<OrdersSummary | null>(null);
+
+function dateInputToRfc3339(dateStr: string, endOfDay = false): string | undefined {
+  if (!dateStr) return undefined;
+  return endOfDay ? `${dateStr}T23:59:59Z` : `${dateStr}T00:00:00Z`;
+}
+
+const currentFilterParams = computed(() => ({
+  statuses: selectedStatuses.value,
+  branchIds: selectedBranchIds.value,
+  search: search.value.trim() || undefined,
+  types: selectedType.value ? [selectedType.value] : undefined,
+  sourceTag: appliedFilterPanel.sourceTag || undefined,
+  createdFrom: dateInputToRfc3339(appliedFilterPanel.createdFrom),
+  createdTo: dateInputToRfc3339(appliedFilterPanel.createdTo, true),
+  closedFrom: dateInputToRfc3339(appliedFilterPanel.closedFrom),
+  closedTo: dateInputToRfc3339(appliedFilterPanel.closedTo, true),
+}));
+
+function applyFilterPanel() {
+  appliedFilterPanel.sourceTag = sourceTagFilter.value.trim();
+  appliedFilterPanel.createdFrom = createdFrom.value;
+  appliedFilterPanel.createdTo = createdTo.value;
+  appliedFilterPanel.closedFrom = closedFrom.value;
+  appliedFilterPanel.closedTo = closedTo.value;
+  isFilterPanelOpen.value = false;
+  loadOrders();
+  loadSummary();
+}
+
+function clearFilterPanel() {
+  sourceTagFilter.value = '';
+  createdFrom.value = '';
+  createdTo.value = '';
+  closedFrom.value = '';
+  closedTo.value = '';
+  applyFilterPanel();
+}
+
 const branchOptions = computed(() => branches.value.map((b) => ({ label: b.name, value: b.id })));
 const branchSelectLabel = computed(() => {
   if (selectedBranchIds.value.length === 0) return t('menu.allBranches') || 'All branches';
@@ -144,25 +197,33 @@ async function loadBranches() {
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
 
-async function loadOrders() {
-  loading.value = true;
+async function loadOrders(opts: { silent?: boolean } = {}) {
+  if (!opts.silent) loading.value = true;
   error.value = null;
   try {
     const menuToken = await getToken();
     const { menuOrdersList } = await import('@/api/menu/order/list');
     const res = await menuOrdersList(menuToken, nsSlug.value, {
-      statuses: selectedStatuses.value,
-      branchIds: selectedBranchIds.value,
-      search: search.value.trim() || undefined,
+      ...currentFilterParams.value,
       length: 'FIFTY',
     });
     orders.value = res.orders;
     totalCount.value = res.count;
   } catch (e) {
     logError('[menu/index] loadOrders failed', e);
-    error.value = getErrorMessage(e) || 'Failed to load orders';
+    if (!opts.silent) error.value = getErrorMessage(e) || 'Failed to load orders';
   } finally {
-    loading.value = false;
+    if (!opts.silent) loading.value = false;
+  }
+}
+
+async function loadSummary() {
+  try {
+    const menuToken = await getToken();
+    const { menuOrdersSummary } = await import('@/api/menu/order/list');
+    summary.value = await menuOrdersSummary(menuToken, nsSlug.value, currentFilterParams.value);
+  } catch (e) {
+    logError('[menu/index] loadSummary failed', e);
   }
 }
 
@@ -175,6 +236,7 @@ async function loadStatusCounts() {
         menuOrdersList(menuToken, nsSlug.value, {
           statuses: [s],
           branchIds: selectedBranchIds.value,
+          types: selectedType.value ? [selectedType.value] : undefined,
           length: 'TEN',
         }).then((r) => [s, r.count] as const).catch(() => [s, 0] as const)
       )
@@ -190,21 +252,30 @@ function toggleStatus(s: string) {
   if (idx === -1) selectedStatuses.value = [...selectedStatuses.value, s];
   else selectedStatuses.value = selectedStatuses.value.filter((v) => v !== s);
   loadOrders();
+  loadSummary();
 }
 
 function clearStatuses() {
   selectedStatuses.value = [];
   loadOrders();
+  loadSummary();
 }
 
 watch(selectedBranchIds, () => {
   loadOrders();
   loadStatusCounts();
+  loadSummary();
+});
+
+watch(selectedType, () => {
+  loadOrders();
+  loadStatusCounts();
+  loadSummary();
 });
 
 watch(search, () => {
   if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(loadOrders, 400);
+  searchDebounce = setTimeout(() => { loadOrders(); loadSummary(); }, 400);
 });
 
 const columns = computed(() => [
@@ -275,11 +346,31 @@ async function openFromQuery() {
   }
 }
 
+// Soft "live" refresh: poll the list (and summary) on a short interval so
+// new/updated orders show up without a manual reload — a full GraphQL
+// subscription would need a new pub/sub + WebSocket transport on the
+// backend for a single-tenant admin table, so this gets the same
+// user-facing result more cheaply. Skipped entirely while the detail modal
+// is open so an in-progress status change/comment edit never gets
+// clobbered by a background refresh.
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
 onMounted(async () => {
   loadBranches();
   await loadOrders();
   loadStatusCounts();
+  loadSummary();
   openFromQuery();
+  pollTimer = setInterval(() => {
+    if (isDetailOpen.value) return;
+    loadOrders({ silent: true });
+    loadStatusCounts();
+    loadSummary();
+  }, 8000);
+});
+
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer);
 });
 
 const isCreateOrderOpen = ref(false);
@@ -307,7 +398,7 @@ async function handleStatusChange(order: MenuOrder, status: string) {
 
 function statusMenuItems(row: MenuOrder) {
   return [
-    nextStatuses(row.status).map((s) => ({
+    nextStatuses(row.status, row.type).map((s) => ({
       label: statusLabel(s),
       icon: statusBadgeStyle(s).icon,
       status: s,
@@ -357,7 +448,7 @@ async function handleCreateOrder(payload: any) {
         <h1 class="text-2xl font-semibold">
           {{ t('menu.title') || 'Orders' }}
         </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('menu.subtitle') || 'Orders, quick filters and search' }}</span>
+        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('menu.subtitle') || 'Every order from your storefronts, in one place' }}</span>
       </div>
       <div class="flex items-center gap-2 self-start">
         <UButton
@@ -447,6 +538,7 @@ async function handleCreateOrder(payload: any) {
         option-attribute="label"
         class="w-full sm:w-56"
         :ui="{ rounded: 'rounded-xl' }"
+        :popper="{ strategy: 'fixed' }"
       >
         <template #label>
           <span class="truncate">{{ branchSelectLabel }}</span>
@@ -459,6 +551,31 @@ async function handleCreateOrder(payload: any) {
         class="w-full sm:flex-1"
         :ui="{ rounded: 'rounded-xl' }"
       />
+      <div class="flex rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex-shrink-0">
+        <button
+          v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }]"
+          :key="opt.value"
+          type="button"
+          class="px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors"
+          :class="selectedType === opt.value
+            ? 'bg-primary-500 text-white'
+            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'"
+          @click="selectedType = opt.value as typeof selectedType"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
+      <UButton
+        icon="lucide:sliders-horizontal"
+        color="gray"
+        variant="soft"
+        class="flex-shrink-0"
+        :ui="{ rounded: 'rounded-xl' }"
+        @click="isFilterPanelOpen = true"
+      >
+        <span class="hidden sm:inline">{{ t('menu.moreFilters') || 'More filters' }}</span>
+        <span v-if="hasActiveFilterPanel" class="w-1.5 h-1.5 rounded-full bg-primary-500" />
+      </UButton>
       <UButton
         icon="lucide:plus"
         color="primary"
@@ -506,7 +623,7 @@ async function handleCreateOrder(payload: any) {
           </UBadge>
         </template>
         <template #status-data="{ row }">
-          <UDropdown :items="statusMenuItems(row)">
+          <UDropdown v-if="nextStatuses(row.status, row.type).length" :items="statusMenuItems(row)" :popper="{ placement: 'bottom-start' }">
             <button
               type="button"
               class="inline-flex items-center gap-1 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
@@ -515,7 +632,7 @@ async function handleCreateOrder(payload: any) {
             >
               <span
                 class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
-                :class="statusBadgeStyle(row.status).bg"
+                :style="{ backgroundColor: statusBadgeStyle(row.status).bg }"
               >
                 <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
                 {{ statusLabel(row.status) }}
@@ -528,11 +645,19 @@ async function handleCreateOrder(payload: any) {
             </button>
             <template #item="{ item }">
               <span class="flex items-center gap-2 w-full">
-                <span class="h-2 w-2 rounded-full flex-shrink-0" :class="statusBadgeStyle(item.status).bg" />
+                <span class="h-2 w-2 rounded-full flex-shrink-0" :style="{ backgroundColor: statusBadgeStyle(item.status).bg }" />
                 <span class="truncate">{{ item.label }}</span>
               </span>
             </template>
           </UDropdown>
+          <span
+            v-else
+            class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
+            :style="{ backgroundColor: statusBadgeStyle(row.status).bg }"
+          >
+            <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
+            {{ statusLabel(row.status) }}
+          </span>
         </template>
         <template #totalAmount-data="{ row }">
           <span class="font-semibold tabular-nums">{{ row.totalAmount.toLocaleString() }}</span>
@@ -546,6 +671,23 @@ async function handleCreateOrder(payload: any) {
           </UTooltip>
         </template>
       </AppTable>
+    </div>
+
+    <!-- Summary: aggregates every order matching the current filters, not
+         just the loaded page — accurate for pulling a quick report over a
+         period (combine with the date-range filters above). -->
+    <div
+      v-if="summary"
+      class="flex-shrink-0 mt-2 flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-2.5 text-sm"
+    >
+      <span class="text-gray-500 dark:text-gray-400">
+        {{ t('menu.summaryOrders') || 'Orders' }}:
+        <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ summary.count }}</span>
+      </span>
+      <span class="text-gray-500 dark:text-gray-400">
+        {{ t('menu.summaryTotal') || 'Total' }}:
+        <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ summary.totalAmount.toLocaleString() }}</span>
+      </span>
     </div>
 
     <CreateOrderModal
@@ -562,5 +704,52 @@ async function handleCreateOrder(payload: any) {
       :branches="branches"
       @status-changed="handleDetailStatusChanged"
     />
+
+    <!-- Full filter panel: source tag + date ranges, for building a report
+         over a period rather than everyday triage — kept out of the
+         always-visible bar above. -->
+    <USlideover v-model="isFilterPanelOpen">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ t('menu.moreFilters') || 'More filters' }}</h3>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isFilterPanelOpen = false" />
+          </div>
+        </template>
+
+        <div class="space-y-4">
+          <UFormGroup :label="t('menu.sourceTagLabel') || 'Source'" :hint="t('menu.sourceTagFilterHint') || 'Matches links generated in the Share tab'">
+            <UInput v-model="sourceTagFilter" icon="lucide:link" placeholder="instagram" />
+          </UFormGroup>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormGroup :label="t('menu.createdFrom') || 'Created from'">
+              <UInput v-model="createdFrom" type="date" />
+            </UFormGroup>
+            <UFormGroup :label="t('menu.createdTo') || 'Created to'">
+              <UInput v-model="createdTo" type="date" />
+            </UFormGroup>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormGroup :label="t('menu.closedFrom') || 'Closed from'" :hint="t('menu.closedHint') || 'Completed or cancelled'">
+              <UInput v-model="closedFrom" type="date" />
+            </UFormGroup>
+            <UFormGroup :label="t('menu.closedTo') || 'Closed to'">
+              <UInput v-model="closedTo" type="date" />
+            </UFormGroup>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="ghost" @click="clearFilterPanel">
+              {{ t('app.clear') || 'Clear' }}
+            </UButton>
+            <UButton color="primary" @click="applyFilterPanel">
+              {{ t('menu.applyFilters') || 'Apply' }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </USlideover>
   </div>
 </template>

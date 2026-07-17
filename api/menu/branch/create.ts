@@ -11,14 +11,14 @@ export type CreateBranchInput = {
   lng?: number;
   workingHours?: string;
   city?: string;
-  businessCategory?: string;
   isPrimary?: boolean;
+  slug?: string;
 };
 
 const CreateBranchDocument = /* GraphQL */ `
   mutation CreateBranch($input: CreateBranchInput!) {
     createBranch(input: $input) {
-      id name address phone lat lng workingHours isActive city businessCategory isPrimary
+      id name address phone lat lng workingHours isActive city isPrimary slug
     }
   }
 `;

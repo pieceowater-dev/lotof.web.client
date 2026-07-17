@@ -12,15 +12,15 @@ export type MenuBranch = {
   workingHours: string;
   isActive: boolean;
   city?: string | null;
-  businessCategory?: string | null;
   isPrimary: boolean;
+  slug: string;
 };
 
 const BranchesDocument = /* GraphQL */ `
   query Branches($filter: DefaultFilterInput) {
     branches(filter: $filter) {
       rows {
-        id name address phone lat lng workingHours isActive city businessCategory isPrimary
+        id name address phone lat lng workingHours isActive city isPrimary slug
       }
       info { count }
     }

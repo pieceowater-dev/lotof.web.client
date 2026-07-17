@@ -4,6 +4,7 @@ import ImageUpload from '@/components/menu/ImageUpload.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
+import type { MenuModifierGroup } from '@/api/menu/modifiergroup/list';
 
 const { t } = useI18n();
 
@@ -14,12 +15,14 @@ const props = defineProps<{
   saving?: boolean;
   availableBadges?: MenuBadge[];
   availableBranches?: MenuBranch[];
+  availableModifierGroups?: MenuModifierGroup[];
 }>();
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
   (e: 'submit', payload: Record<string, any>): void;
   (e: 'manage-badges'): void;
+  (e: 'manage-modifiers'): void;
 }>();
 
 const isOpen = computed({
@@ -38,6 +41,7 @@ const form = reactive({
 });
 
 const selectedBadgeIds = ref<string[]>([]);
+const selectedModifierGroupIds = ref<string[]>([]);
 // Branches where this item IS available (UI is opt-in for clarity; converted
 // to the backend's opt-out exclusion list on submit).
 const availableBranchIds = ref<string[]>([]);
@@ -53,6 +57,7 @@ watch(() => [props.modelValue, props.item], () => {
   form.seoTitle = it?.seoTitle || '';
   form.seoDescription = it?.seoDescription || '';
   selectedBadgeIds.value = [...(it?.badgeIds || [])];
+  selectedModifierGroupIds.value = [...(it?.modifierGroupIds || [])];
   const excluded = new Set(it?.excludedBranchIds || []);
   availableBranchIds.value = (props.availableBranches || []).filter((b) => !excluded.has(b.id)).map((b) => b.id);
 }, { immediate: true });
@@ -67,6 +72,12 @@ function toggleBadge(id: string) {
   selectedBadgeIds.value = selectedBadgeIds.value.includes(id)
     ? selectedBadgeIds.value.filter((x) => x !== id)
     : [...selectedBadgeIds.value, id];
+}
+
+function toggleModifierGroup(id: string) {
+  selectedModifierGroupIds.value = selectedModifierGroupIds.value.includes(id)
+    ? selectedModifierGroupIds.value.filter((x) => x !== id)
+    : [...selectedModifierGroupIds.value, id];
 }
 
 function toggleBranch(id: string) {
@@ -88,6 +99,7 @@ function handleSubmit() {
     seoTitle: form.seoTitle.trim() || undefined,
     seoDescription: form.seoDescription.trim() || undefined,
     badgeIds: selectedBadgeIds.value,
+    modifierGroupIds: selectedModifierGroupIds.value,
     excludedBranchIds,
   });
 }
@@ -137,6 +149,30 @@ function handleSubmit() {
               @click="toggleBadge(b.id)"
             >
               <span v-if="b.icon">{{ b.icon }}</span>{{ b.text }}
+            </button>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-gray-100 dark:border-gray-800 mt-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('menu.modifiers') || 'Modifiers' }}</span>
+            <UButton size="2xs" color="gray" variant="ghost" icon="lucide:settings" @click="emit('manage-modifiers')" />
+          </div>
+          <div v-if="!(availableModifierGroups || []).length" class="text-xs text-gray-500 dark:text-gray-400">
+            {{ t('menu.noModifierGroups') || 'No modifier groups yet' }}
+          </div>
+          <div v-else class="flex flex-wrap gap-2">
+            <button
+              v-for="g in availableModifierGroups"
+              :key="g.id"
+              type="button"
+              class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border-2 transition-colors"
+              :class="selectedModifierGroupIds.includes(g.id)
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30 text-primary-700 dark:text-primary-300'
+                : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'"
+              @click="toggleModifierGroup(g.id)"
+            >
+              {{ g.name }}
             </button>
           </div>
         </div>

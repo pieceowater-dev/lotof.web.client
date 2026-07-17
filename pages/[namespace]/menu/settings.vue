@@ -26,7 +26,7 @@ const tabs = computed(() => [
   { key: 'brand' as TabKey, label: t('menu.brand') || 'Brand', icon: 'lucide:palette' },
   { key: 'branches' as TabKey, label: t('menu.branches') || 'Branches', icon: 'lucide:map-pin' },
   { key: 'catalog' as TabKey, label: t('menu.catalog') || 'Catalog', icon: 'lucide:layout-grid' },
-  { key: 'promobanners' as TabKey, label: t('menu.promoBanners') || 'Banners', icon: 'lucide:image' },
+  { key: 'promobanners' as TabKey, label: t('menu.attraction') || 'Attraction', icon: 'lucide:megaphone' },
   { key: 'share' as TabKey, label: t('menu.shareTab') || 'Share', icon: 'lucide:link' },
 ]);
 

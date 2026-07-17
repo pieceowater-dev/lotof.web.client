@@ -26,7 +26,7 @@ const form = reactive({
   address: '',
   phone: '',
   city: '',
-  businessCategory: '',
+  slug: '',
   lat: undefined as number | undefined,
   lng: undefined as number | undefined,
   isPrimary: false,
@@ -40,7 +40,7 @@ watch(() => [props.modelValue, props.branch], () => {
   form.address = b?.address || '';
   form.phone = b?.phone || '';
   form.city = b?.city || '';
-  form.businessCategory = b?.businessCategory || '';
+  form.slug = b?.slug || '';
   form.lat = b?.lat ?? undefined;
   form.lng = b?.lng ?? undefined;
   form.isPrimary = b?.isPrimary || false;
@@ -73,7 +73,7 @@ function handleSubmit() {
     address: form.address.trim(),
     phone: form.phone.trim() || undefined,
     city: form.city.trim() || undefined,
-    businessCategory: form.businessCategory.trim() || undefined,
+    slug: form.slug.trim() || undefined,
     lat: form.lat,
     lng: form.lng,
     isPrimary: form.isPrimary,
@@ -121,8 +121,8 @@ function handleSubmit() {
             <UInput v-model="form.city" size="lg" />
           </UFormGroup>
         </div>
-        <UFormGroup :label="t('menu.businessCategory') || 'Business category'" :help="t('menu.businessCategoryHelp') || 'Reference only — for your own brand organization, does not affect the storefront.'">
-          <UInput v-model="form.businessCategory" size="lg" />
+        <UFormGroup :label="t('menu.branchSlug') || 'Short link id'" :hint="t('menu.branchSlugHint') || 'Leave blank to auto-generate from the city'">
+          <UInput v-model="form.slug" size="lg" placeholder="almaty" />
         </UFormGroup>
         <UFormGroup :label="t('menu.location') || 'Location'">
           <ClientOnly>

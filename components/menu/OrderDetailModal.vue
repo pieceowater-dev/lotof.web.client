@@ -293,6 +293,46 @@ async function addExistingProduct(item: MenuItem, quantity = 1) {
   }
 }
 
+const updatingItemId = ref<string | null>(null);
+
+async function changeItemQuantity(item: MenuOrderItem, delta: number) {
+  if (!props.order) return;
+  const nextQty = item.quantity + delta;
+  if (nextQty < 1) return;
+  updatingItemId.value = item.id;
+  try {
+    const menuToken = await getToken();
+    const { menuUpdateOrderItemQuantity } = await import('@/api/menu/order/updateItemQuantity');
+    const updated = await menuUpdateOrderItemQuantity(menuToken, nsSlug.value, item.id, nextQty);
+    emit('statusChanged', updated);
+    await loadDetails();
+  } catch (e) {
+    logError('[OrderDetailModal] changeItemQuantity failed', e);
+    useToast().add({ title: getErrorMessage(e) || 'Failed to update quantity', color: 'red' });
+  } finally {
+    updatingItemId.value = null;
+  }
+}
+
+async function removeItem(item: MenuOrderItem) {
+  if (!props.order) return;
+  if (process.client && !window.confirm(t('menu.confirmRemoveOrderItem') || 'Remove this item from the order?')) return;
+  updatingItemId.value = item.id;
+  try {
+    const menuToken = await getToken();
+    const { menuRemoveOrderItem } = await import('@/api/menu/order/removeItem');
+    const updated = await menuRemoveOrderItem(menuToken, nsSlug.value, item.id);
+    emit('statusChanged', updated);
+    await loadDetails();
+    useToast().add({ title: t('menu.orderItemRemoved') || 'Item removed', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] removeItem failed', e);
+    useToast().add({ title: getErrorMessage(e) || 'Failed to remove item', color: 'red' });
+  } finally {
+    updatingItemId.value = null;
+  }
+}
+
 const isQuickAddOpen = ref(false);
 const quickAddSaving = ref(false);
 const quickAddForm = reactive({ name: '', price: '', categoryId: '' });
@@ -443,7 +483,11 @@ function formatDate(iso: string) {
   }
 }
 
-const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + i.priceAtPurchase * i.quantity, 0));
+function itemUnitPrice(i: MenuOrderItem): number {
+  return i.priceAtPurchase + (i.modifiers || []).reduce((sum, m) => sum + m.priceAtPurchase, 0);
+}
+
+const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitPrice(i) * i.quantity, 0));
 </script>
 
 <template>
@@ -456,20 +500,20 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + i.priceAt
               <div class="font-mono font-bold text-lg leading-tight">{{ smartOrderNumber(order) }}</div>
               <div class="text-xs text-gray-400">{{ formatDate(order.createdAt) }}</div>
             </div>
-            <UDropdown :items="[nextStatuses(order!.status).map((s) => ({ label: statusLabel(s), status: s, click: () => changeStatus(s) }))]">
-              <button type="button" class="inline-flex items-center gap-1.5 rounded-full disabled:opacity-50" :disabled="updatingStatus || !nextStatuses(order.status).length">
+            <UDropdown :items="[nextStatuses(order!.status, order!.type).map((s) => ({ label: statusLabel(s), status: s, click: () => changeStatus(s) }))]">
+              <button type="button" class="inline-flex items-center gap-1.5 rounded-full disabled:opacity-50" :disabled="updatingStatus || !nextStatuses(order.status, order.type).length">
                 <span
                   class="inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-1 text-white text-xs font-semibold ring-4"
-                  :class="[statusBadgeStyle(order.status).bg, statusBadgeStyle(order.status).ring]"
+                  :style="{ backgroundColor: statusBadgeStyle(order.status).bg, '--tw-ring-color': statusBadgeStyle(order.status).ring }"
                 >
                   <Icon :name="statusBadgeStyle(order.status).icon" class="w-3.5 h-3.5" />
                   {{ statusLabel(order.status) }}
                 </span>
-                <Icon v-if="nextStatuses(order.status).length" :name="updatingStatus ? 'lucide:loader-2' : 'lucide:chevron-down'" class="w-3.5 h-3.5 text-gray-400" :class="{ 'animate-spin': updatingStatus }" />
+                <Icon v-if="nextStatuses(order.status, order.type).length" :name="updatingStatus ? 'lucide:loader-2' : 'lucide:chevron-down'" class="w-3.5 h-3.5 text-gray-400" :class="{ 'animate-spin': updatingStatus }" />
               </button>
               <template #item="{ item }">
                 <span class="flex items-center gap-2 w-full">
-                  <span class="h-2 w-2 rounded-full flex-shrink-0" :class="statusBadgeStyle(item.status).bg" />
+                  <span class="h-2 w-2 rounded-full flex-shrink-0" :style="{ backgroundColor: statusBadgeStyle(item.status).bg }" />
                   <span class="truncate">{{ item.label }}</span>
                 </span>
               </template>
@@ -633,7 +677,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + i.priceAt
                   <UInput v-model="quickAddForm.name" size="sm" :placeholder="t('menu.name') || 'Name'" :ui="{ rounded: 'rounded-lg' }" />
                   <UInput v-model="quickAddForm.price" type="number" size="sm" :placeholder="t('menu.price') || 'Price'" :ui="{ rounded: 'rounded-lg' }" />
                 </div>
-                <USelectMenu v-model="quickAddForm.categoryId" size="sm" :options="catalogCategories.map((c) => ({ label: c.name, value: c.id }))" value-attribute="value" option-attribute="label" :placeholder="t('menu.selectCategory') || 'Select category'" :ui="{ rounded: 'rounded-lg' }" />
+                <USelectMenu v-model="quickAddForm.categoryId" size="sm" :options="catalogCategories.map((c) => ({ label: c.name, value: c.id }))" value-attribute="value" option-attribute="label" :placeholder="t('menu.selectCategory') || 'Select category'" :ui="{ rounded: 'rounded-lg' }" :popper="{ strategy: 'fixed' }" />
                 <UButton block size="sm" color="primary" :label="t('menu.addAndUse') || 'Add & use in order'" :loading="quickAddSaving" :disabled="!isQuickAddValid || quickAddSaving" class="rounded-lg justify-center" @click="submitQuickAddProduct" />
               </div>
 
@@ -666,16 +710,56 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + i.priceAt
                       <button type="button" class="text-left hover:text-primary-600 dark:hover:text-primary-300 hover:underline" @click="openProductDetail(i)">
                         {{ i.name }}
                       </button>
+                      <div v-if="i.modifiers?.length" class="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
+                        <span
+                          v-for="m in i.modifiers"
+                          :key="m.id"
+                          class="text-xs text-gray-400 dark:text-gray-500"
+                        >
+                          + {{ m.name }}<template v-if="m.priceAtPurchase"> ({{ m.priceAtPurchase > 0 ? '+' : '' }}{{ m.priceAtPurchase }})</template>
+                        </span>
+                      </div>
                     </td>
-                    <td class="px-4 py-2.5 text-gray-500 dark:text-gray-400 text-center w-16">×{{ i.quantity }}</td>
-                    <td class="px-4 py-2.5 text-right w-28 tabular-nums">{{ i.priceAtPurchase }} × {{ i.quantity }}</td>
-                    <td class="px-4 py-2.5 text-right w-24 font-medium tabular-nums">{{ i.priceAtPurchase * i.quantity }}</td>
+                    <td class="px-4 py-2.5">
+                      <div class="flex items-center justify-center gap-1">
+                        <UButton
+                          icon="lucide:minus"
+                          size="2xs"
+                          color="gray"
+                          variant="soft"
+                          :disabled="updatingItemId === i.id || i.quantity <= 1"
+                          @click="changeItemQuantity(i, -1)"
+                        />
+                        <span class="w-5 text-center tabular-nums">{{ i.quantity }}</span>
+                        <UButton
+                          icon="lucide:plus"
+                          size="2xs"
+                          color="gray"
+                          variant="soft"
+                          :disabled="updatingItemId === i.id"
+                          @click="changeItemQuantity(i, 1)"
+                        />
+                      </div>
+                    </td>
+                    <td class="px-4 py-2.5 text-right w-28 tabular-nums">{{ itemUnitPrice(i) }} × {{ i.quantity }}</td>
+                    <td class="px-4 py-2.5 text-right w-24 font-medium tabular-nums">{{ itemUnitPrice(i) * i.quantity }}</td>
+                    <td class="px-2 py-2.5 w-9">
+                      <UButton
+                        icon="lucide:trash-2"
+                        size="2xs"
+                        color="red"
+                        variant="ghost"
+                        :loading="updatingItemId === i.id"
+                        @click="removeItem(i)"
+                      />
+                    </td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr class="border-t border-gray-200 dark:border-gray-800 font-semibold">
                     <td class="px-4 py-2.5" colspan="3">{{ t('menu.total') || 'Total' }}</td>
                     <td class="px-4 py-2.5 text-right tabular-nums">{{ order.totalAmount ?? itemsTotal }}</td>
+                    <td />
                   </tr>
                 </tfoot>
               </table>
@@ -710,6 +794,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + i.priceAt
                   :placeholder="t('menu.selectMember') || 'Select a member'"
                   size="sm"
                   class="flex-1"
+                  :popper="{ strategy: 'fixed' }"
                 />
                 <USelect v-model="newMemberRole" :options="ROLES.map((r) => ({ label: roleLabel(r), value: r }))" value-attribute="value" option-attribute="label" size="sm" class="w-36" />
                 <UButton size="sm" icon="lucide:plus" :loading="addingMember" :disabled="!newMemberUserId || addingMember" @click="addMember" />

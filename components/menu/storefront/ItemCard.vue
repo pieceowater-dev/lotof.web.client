@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { getContrastTextColor } from '@/utils/color';
+import { formatMoney } from '@/utils/currency';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 
@@ -24,6 +25,17 @@ const itemBadges = computed(() => props.item.badgeIds
   .filter((b): b is MenuBadge => !!b));
 
 const onPrimaryText = computed(() => getContrastTextColor(props.primaryColor));
+
+// Items with modifier groups can't be quick-added from the grid — each add
+// may need a different combination of choices (size, add-ons, ...), so a
+// bare "+" can't represent "one more of the same exact thing" the way it
+// does for a plain item. Route those straight to the detail sheet instead.
+const hasModifiers = computed(() => (props.item.modifierGroupIds || []).length > 0);
+
+function handleAddClick() {
+  if (hasModifiers.value) emit('open');
+  else emit('add');
+}
 </script>
 
 <template>
@@ -62,13 +74,17 @@ const onPrimaryText = computed(() => getContrastTextColor(props.primaryColor));
     <div class="relative h-0">
       <div class="absolute -top-4 right-2 z-10">
         <button
-          v-if="!quantity"
+          v-if="!quantity || hasModifiers"
           type="button"
-          class="w-9 h-9 rounded-full shadow-md flex items-center justify-center text-white active:scale-90 transition-transform"
+          class="relative w-9 h-9 rounded-full shadow-md flex items-center justify-center text-white active:scale-90 transition-transform"
           :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-          @click="emit('add')"
+          @click="handleAddClick"
         >
           <Icon name="lucide:plus" class="w-4 h-4" />
+          <span
+            v-if="quantity"
+            class="absolute -top-1.5 -left-1.5 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center bg-white dark:bg-gray-900 text-gray-900 dark:text-white ring-1 ring-black/5 dark:ring-white/10"
+          >{{ quantity }}</span>
         </button>
         <div
           v-else
@@ -101,7 +117,7 @@ const onPrimaryText = computed(() => getContrastTextColor(props.primaryColor));
       @click="emit('open')"
     >
       <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2">{{ item.name }}</div>
-      <div class="text-sm font-semibold mt-1" :style="{ color: secondaryColor }">{{ item.price }} {{ currency }}</div>
+      <div class="text-sm font-semibold mt-1 tabular-nums" :style="{ color: secondaryColor }">{{ formatMoney(item.price, currency) }}</div>
     </button>
   </div>
 </template>

@@ -2,6 +2,14 @@ import { menuClient } from '@/api/clients';
 import { menuRequestWithRefresh } from '@/api/menu/menuRequestWithRefresh';
 import { getDeviceHeaders } from '@/utils/device';
 
+export type MenuOrderItemModifier = {
+  id: string;
+  orderItemId: string;
+  modifierOptionId: string;
+  name: string;
+  priceAtPurchase: number;
+};
+
 export type MenuOrderItem = {
   id: string;
   orderId: string;
@@ -9,12 +17,16 @@ export type MenuOrderItem = {
   name: string;
   priceAtPurchase: number;
   quantity: number;
+  modifiers: MenuOrderItemModifier[];
 };
 
 const OrderItemsDocument = /* GraphQL */ `
   query OrderItems($orderId: String!) {
     orderItems(orderId: $orderId) {
-      rows { id orderId menuItemId name priceAtPurchase quantity }
+      rows {
+        id orderId menuItemId name priceAtPurchase quantity
+        modifiers { id orderItemId modifierOptionId name priceAtPurchase }
+      }
     }
   }
 `;

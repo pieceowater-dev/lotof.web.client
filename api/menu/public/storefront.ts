@@ -57,7 +57,7 @@ const StorefrontDocument = /* GraphQL */ `
       id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription
     }
     branches(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
-      rows { id name address phone lat lng workingHours isActive city businessCategory isPrimary }
+      rows { id name address phone lat lng workingHours isActive city isPrimary slug }
     }
     categories(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id parentId name sortOrder isActive availableFrom availableTo availableDays }
@@ -101,7 +101,7 @@ export async function getPublicStorefront(namespaceSlug: string): Promise<Storef
 const PublicMenuItemsDocument = /* GraphQL */ `
   query PublicMenuItems($categoryId: String) {
     menuItems(categoryId: $categoryId, filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
-      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt badgeIds excludedBranchIds }
+      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt badgeIds excludedBranchIds modifierGroupIds }
     }
   }
 `;
@@ -115,11 +115,69 @@ export async function getPublicMenuItems(namespaceSlug: string, categoryId: stri
   return res.menuItems.rows.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+export type PublicModifierGroup = {
+  id: string;
+  name: string;
+  type: string;
+  minSelect: number;
+  maxSelect?: number | null;
+  isRequired: boolean;
+};
+
+export type PublicModifierOption = {
+  id: string;
+  groupId: string;
+  name: string;
+  price: number;
+  sortOrder: number;
+};
+
+const PublicModifierGroupsDocument = /* GraphQL */ `
+  query PublicModifierGroups {
+    modifierGroups(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id name type minSelect maxSelect isRequired }
+    }
+  }
+`;
+
+export async function getPublicModifierGroups(namespaceSlug: string): Promise<PublicModifierGroup[]> {
+  const client = await freshClient(namespaceSlug);
+  const res = await withMigrationRetry(() => client.request<{ modifierGroups: { rows: PublicModifierGroup[] } }>(
+    PublicModifierGroupsDocument,
+    {}
+  ));
+  return res.modifierGroups.rows;
+}
+
+const PublicModifierOptionsDocument = /* GraphQL */ `
+  query PublicModifierOptions($groupId: String!) {
+    modifierOptions(groupId: $groupId) {
+      rows { id groupId name price sortOrder }
+    }
+  }
+`;
+
+export async function getPublicModifierOptions(namespaceSlug: string, groupId: string): Promise<PublicModifierOption[]> {
+  const client = await freshClient(namespaceSlug);
+  const res = await withMigrationRetry(() => client.request<{ modifierOptions: { rows: PublicModifierOption[] } }>(
+    PublicModifierOptionsDocument,
+    { groupId }
+  ));
+  return res.modifierOptions.rows.sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+export type PublicOrderItemModifierInput = {
+  modifierOptionId: string;
+  name: string;
+  priceAtPurchase: number;
+};
+
 export type PublicOrderItemInput = {
   menuItemId: string;
   name: string;
   priceAtPurchase: number;
   quantity: number;
+  modifiers?: PublicOrderItemModifierInput[];
 };
 
 export type PublicOrderInput = {

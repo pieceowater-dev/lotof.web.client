@@ -14,26 +14,38 @@ const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
   COMPLETED: [],
   CANCELLED: [],
 };
-export function nextStatuses(current: string): string[] {
-  return ORDER_STATUS_TRANSITIONS[current] || [];
+// DELIVERING only means something for a delivery order — a pickup order has
+// no courier leg, so READY may skip straight to COMPLETED for pickup
+// instead of being forced through a status that doesn't apply to it.
+// Mirrors the same exception in the backend's CanTransitionTo.
+export function nextStatuses(current: string, orderType?: string): string[] {
+  const base = ORDER_STATUS_TRANSITIONS[current] || [];
+  if (current === 'READY' && orderType === 'pickup' && !base.includes('COMPLETED')) {
+    return [...base, 'COMPLETED'];
+  }
+  return base;
 }
 
-// Full literal class strings (not template-interpolated) so Tailwind's JIT
-// content scanner can actually find and generate them at build time. Shades
-// picked (600/700, not 500) so white badge text clears WCAG AA at small
-// sizes — 500-weight amber/emerald/teal read as low-contrast ("Завершён"
-// was reported unreadable at emerald-500).
+// Real hex values applied via inline :style, not Tailwind utility classes —
+// this badge's background previously used dynamically-composed class
+// strings (e.g. "bg-emerald-800") which is exactly the pattern that bit the
+// iOS-zoom-prevention CSS earlier (a class-based rule silently losing to
+// something else / not applying as expected). Hex + inline style has no
+// specificity or content-scanning failure mode, so it's guaranteed to render
+// regardless of how the consuming component composes classes around it.
+// Colors are also each visually distinct (ACCEPTED no longer reuses the same
+// blue as NEW) and all clear WCAG AA contrast with white text.
 const STATUS_BADGE_STYLE: Record<string, { bg: string; ring: string; icon: string }> = {
-  NEW: { bg: 'bg-blue-600', ring: 'ring-blue-200 dark:ring-blue-900', icon: 'lucide:inbox' },
-  ACCEPTED: { bg: 'bg-primary-600', ring: 'ring-primary-200 dark:ring-primary-900', icon: 'lucide:check' },
-  IN_PREPARATION: { bg: 'bg-amber-700', ring: 'ring-amber-200 dark:ring-amber-900', icon: 'lucide:cooking-pot' },
-  READY: { bg: 'bg-teal-700', ring: 'ring-teal-200 dark:ring-teal-900', icon: 'lucide:package-check' },
-  DELIVERING: { bg: 'bg-violet-600', ring: 'ring-violet-200 dark:ring-violet-900', icon: 'lucide:truck' },
-  COMPLETED: { bg: 'bg-emerald-800', ring: 'ring-emerald-200 dark:ring-emerald-900', icon: 'lucide:check-check' },
-  CANCELLED: { bg: 'bg-red-600', ring: 'ring-red-200 dark:ring-red-900', icon: 'lucide:x' },
+  NEW: { bg: '#2563eb', ring: '#bfdbfe', icon: 'lucide:inbox' },
+  ACCEPTED: { bg: '#0891b2', ring: '#a5f3fc', icon: 'lucide:check' },
+  IN_PREPARATION: { bg: '#b45309', ring: '#fde68a', icon: 'lucide:cooking-pot' },
+  READY: { bg: '#0f766e', ring: '#99f6e4', icon: 'lucide:package-check' },
+  DELIVERING: { bg: '#7c3aed', ring: '#ddd6fe', icon: 'lucide:truck' },
+  COMPLETED: { bg: '#047857', ring: '#a7f3d0', icon: 'lucide:check-check' },
+  CANCELLED: { bg: '#dc2626', ring: '#fecaca', icon: 'lucide:x' },
 };
 export function statusBadgeStyle(s: string) {
-  return STATUS_BADGE_STYLE[s] || { bg: 'bg-gray-400', ring: 'ring-gray-200 dark:ring-gray-800', icon: 'lucide:circle' };
+  return STATUS_BADGE_STYLE[s] || { bg: '#9ca3af', ring: '#e5e7eb', icon: 'lucide:circle' };
 }
 
 const HISTORY_DOT_STYLE: Record<string, { bg: string; dot: string }> = {

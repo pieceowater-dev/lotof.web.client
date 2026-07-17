@@ -13,14 +13,14 @@ export type UpdateBranchInput = {
   workingHours?: string;
   isActive?: boolean;
   city?: string;
-  businessCategory?: string;
   isPrimary?: boolean;
+  slug?: string;
 };
 
 const UpdateBranchDocument = /* GraphQL */ `
   mutation UpdateBranch($input: UpdateBranchInput!) {
     updateBranch(input: $input) {
-      id name address phone lat lng workingHours isActive city businessCategory isPrimary
+      id name address phone lat lng workingHours isActive city isPrimary slug
     }
   }
 `;

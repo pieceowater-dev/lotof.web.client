@@ -77,9 +77,15 @@ html.ios, body.ios, #__nuxt {
   overflow: visible;
 }
 
-/* Disable auto-zoom on input focus for iOS Safari */
-input, textarea, select {
-  font-size: 16px;
+/* Disable auto-zoom on input focus for iOS Safari. Scoped to mobile widths
+   and !important because Nuxt UI's size props (e.g. UInput size="sm") apply
+   Tailwind text-size utility classes directly on the <input>/<textarea> —
+   a class selector beats a bare element selector, so the plain rule below
+   was silently losing to `.text-sm`/`.text-xs` and zoom still triggered. */
+@media (max-width: 768px) {
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 }
 
 /* Tables: ensure header text is not uppercased anywhere */
