@@ -36,15 +36,17 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.menuDesc',
     canAdd: true,
   },
-{
-    name: 'lota Links',
-    bundle: 'pieceowater.links',
-    address: 'links',
-  icon: 'lucide:link',
-    titleKey: 'app.links',
-    descriptionKey: 'app.linksDesc',
-    canAdd: false,
-  },
+  // 'lota Links' temporarily hidden from the homepage — uncomment to bring
+  // the card back, nothing else about the app needs to change.
+  // {
+  //   name: 'lota Links',
+  //   bundle: 'pieceowater.links',
+  //   address: 'links',
+  //   icon: 'lucide:link',
+  //   titleKey: 'app.links',
+  //   descriptionKey: 'app.linksDesc',
+  //   canAdd: false,
+  // },
   {
     name: 'lota Offers',
     bundle: 'pieceowater.offers',

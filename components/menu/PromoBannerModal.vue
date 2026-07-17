@@ -30,6 +30,13 @@ const form = reactive({
   targetUrl: '',
   startDate: '',
   endDate: '',
+  // This field didn't exist here at all before — every edit silently sent
+  // no isActive at all, and the backend's Updates() call writes it
+  // unconditionally, so every single edit was quietly turning banners off
+  // (isActive defaults to false on save unless something sets it true).
+  // New banners default to true to match what create() already does
+  // server-side.
+  isActive: true,
 });
 
 watch(() => [props.modelValue, props.banner], () => {
@@ -42,6 +49,7 @@ watch(() => [props.modelValue, props.banner], () => {
   form.targetUrl = b?.targetUrl || '';
   form.startDate = b?.startDate ? b.startDate.slice(0, 10) : '';
   form.endDate = b?.endDate ? b.endDate.slice(0, 10) : '';
+  form.isActive = b ? b.isActive : true;
 }, { immediate: true });
 
 const isFormValid = computed(() => form.title.trim().length > 0 && form.imageUrl.trim().length > 0);
@@ -60,6 +68,7 @@ function handleSubmit() {
     targetUrl: form.targetUrl.trim() || undefined,
     startDate: form.startDate || undefined,
     endDate: form.endDate || undefined,
+    isActive: form.isActive,
   });
 }
 </script>
@@ -113,6 +122,13 @@ function handleSubmit() {
             <UInput v-model="form.endDate" type="date" size="lg" />
           </UFormGroup>
         </div>
+        <label class="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 px-3.5 py-2.5 cursor-pointer">
+          <span class="flex items-center gap-2 text-sm font-medium">
+            <Icon name="lucide:eye" class="h-4 w-4 text-gray-400" />
+            {{ t('menu.bannerActive') || 'Shown on storefront' }}
+          </span>
+          <UToggle v-model="form.isActive" />
+        </label>
       </div>
 
       <template #footer>

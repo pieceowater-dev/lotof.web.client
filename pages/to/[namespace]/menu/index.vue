@@ -10,6 +10,7 @@ import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
+import { smartOrderNumber } from '@/utils/orderNumber';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -349,7 +350,7 @@ const cart = ref<CartLine[]>([]);
 const isCartOpen = ref(false);
 const isCheckoutOpen = ref(false);
 const submitting = ref(false);
-const orderResult = ref<{ number: number } | null>(null);
+const orderResult = ref<{ number: number; createdAt: string } | null>(null);
 
 // Two lines are "the same" only if they're the same item AND the same exact
 // modifier selection — a Latte with oat milk and a Latte with no milk are
@@ -475,7 +476,7 @@ async function submitOrder() {
         })),
       })),
     });
-    orderResult.value = { number: result.number };
+    orderResult.value = { number: result.number, createdAt: result.createdAt };
     cart.value = [];
   } catch (e) {
     logError('[shared/menu] submitOrder failed', e);
@@ -1112,7 +1113,7 @@ useHead(() => {
         <template #header>
           <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
           <div class="flex items-center justify-between">
-            <h3 v-if="orderResult" class="text-lg font-semibold">{{ t('menu.orderNumber') || 'Order' }} #{{ orderResult.number }}</h3>
+            <h3 v-if="orderResult" class="text-lg font-semibold">{{ t('menu.orderNumber') || 'Order' }} {{ smartOrderNumber(orderResult) }}</h3>
             <h3 v-else class="text-lg font-semibold">{{ t('menu.yourDetails') || 'Your details' }}</h3>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="closeCheckout" />
           </div>
@@ -1123,6 +1124,7 @@ useHead(() => {
             <Icon name="lucide:check" class="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
           </div>
           <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('menu.orderReceived') || 'Order received!' }}</p>
+          <p class="text-sm mt-1" :style="{ color: secondaryColor }">{{ t('menu.yourOrder') || 'Your order' }} {{ smartOrderNumber(orderResult) }}</p>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('menu.orderReceivedDesc') || "We'll be in touch shortly to confirm the details." }}</p>
         </div>
 

@@ -195,14 +195,14 @@ export type PublicOrderInput = {
 const CreatePublicOrderDocument = /* GraphQL */ `
   mutation CreatePublicOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
-      id number status
+      id number status createdAt
     }
   }
 `;
 
-export async function submitPublicOrder(namespaceSlug: string, input: PublicOrderInput): Promise<{ id: string; number: number; status: string }> {
+export async function submitPublicOrder(namespaceSlug: string, input: PublicOrderInput): Promise<{ id: string; number: number; status: string; createdAt: string }> {
   const client = await freshClient(namespaceSlug);
-  const res = await client.request<{ createOrder: { id: string; number: number; status: string } }>(
+  const res = await client.request<{ createOrder: { id: string; number: number; status: string; createdAt: string } }>(
     CreatePublicOrderDocument,
     {
       input: {
