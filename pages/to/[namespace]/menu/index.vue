@@ -940,7 +940,12 @@ useHead(() => {
     </template>
 
     <!-- Item detail sheet -->
-    <USlideover v-model="isItemSheetOpen" @update:model-value="(v: boolean) => { if (!v) closeItemDetail(); }">
+    <USlideover
+      v-model="isItemSheetOpen"
+      side="bottom"
+      :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }"
+      @update:model-value="(v: boolean) => { if (!v) closeItemDetail(); }"
+    >
       <UCard v-if="selectedItem" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
         <template #header>
           <div class="flex items-center gap-3">
