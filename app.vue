@@ -43,6 +43,7 @@
   </ClientOnly>
 
   <UNotifications :ui="notificationsUi" />
+  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
@@ -54,6 +55,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
 import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();
 const { t, locale, setLocale } = useI18n();

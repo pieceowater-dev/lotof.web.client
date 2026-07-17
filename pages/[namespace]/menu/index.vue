@@ -417,23 +417,92 @@ async function openFromQuery() {
 // backend for a single-tenant admin table, so this gets the same
 // user-facing result more cheaply. Skipped entirely while the detail modal
 // is open so an in-progress status change/comment edit never gets
-// clobbered by a background refresh.
+// clobbered by a background refresh, and skipped when the user has turned
+// the toggle off.
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+const liveUpdatesEnabled = ref(true);
+const LIVE_UPDATES_STORAGE_KEY = computed(() => `menu:liveUpdates:${nsSlug.value}`);
+function restoreLiveUpdatesPref() {
+  if (!process.client) return;
+  try {
+    const raw = localStorage.getItem(LIVE_UPDATES_STORAGE_KEY.value);
+    if (raw !== null) liveUpdatesEnabled.value = raw === '1';
+  } catch (e) {
+    logError('[menu/index] restoreLiveUpdatesPref failed', e);
+  }
+}
+watch(liveUpdatesEnabled, (v) => {
+  if (!process.client) return;
+  localStorage.setItem(LIVE_UPDATES_STORAGE_KEY.value, v ? '1' : '0');
+});
+
+// Orders that just appeared via a background poll — used to flash the row
+// and chime, so a busy admin notices a new order land without staring at
+// the table. Cleared a couple seconds after the highlight animation ends.
+const newOrderIds = ref<Set<string>>(new Set());
+const displayRows = computed(() =>
+  orders.value.map((o) => (newOrderIds.value.has(o.id) ? { ...o, class: 'row-flash-new' } : o))
+);
+
+// Synthesized rather than an audio asset — a couple of short sine-wave
+// tones is enough for a notification chime and avoids shipping/loading a
+// sound file for something this small.
+function playNewOrderChime() {
+  if (!process.client) return;
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+    [880, 1108.73].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = now + i * 0.12;
+      gain.gain.setValueAtTime(0, start);
+      gain.gain.linearRampToValueAtTime(0.25, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.4);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch (e) {
+    logError('[menu/index] playNewOrderChime failed', e);
+  }
+}
+
+async function pollTick() {
+  if (isDetailOpen.value || !liveUpdatesEnabled.value) return;
+  const previousIds = new Set(orders.value.map((o) => o.id));
+  await loadOrders({ silent: true });
+  const freshIds = orders.value.filter((o) => !previousIds.has(o.id)).map((o) => o.id);
+  if (freshIds.length) {
+    freshIds.forEach((id) => newOrderIds.value.add(id));
+    newOrderIds.value = new Set(newOrderIds.value);
+    playNewOrderChime();
+    setTimeout(() => {
+      freshIds.forEach((id) => newOrderIds.value.delete(id));
+      newOrderIds.value = new Set(newOrderIds.value);
+    }, 2600);
+  }
+  loadStatusCounts();
+  loadSummary();
+}
 
 onMounted(async () => {
   restoreQuickFilters();
+  restoreLiveUpdatesPref();
   loadBranches();
   loadSourceTagOptions();
   await loadOrders();
   loadStatusCounts();
   loadSummary();
   openFromQuery();
-  pollTimer = setInterval(() => {
-    if (isDetailOpen.value) return;
-    loadOrders({ silent: true });
-    loadStatusCounts();
-    loadSummary();
-  }, 8000);
+  pollTimer = setInterval(pollTick, 8000);
 });
 
 onBeforeUnmount(() => {
@@ -481,6 +550,18 @@ function openDetail(row: MenuOrder) {
   selectedOrder.value = row;
   isDetailOpen.value = true;
 }
+
+// Closing the detail modal means whatever was edited (status, comment, ...)
+// should be reflected immediately rather than waiting for the next poll —
+// and a plain reload naturally drops the row if it no longer matches the
+// active filters (e.g. filtered to NEW and the order was just accepted).
+watch(isDetailOpen, (isOpen, wasOpen) => {
+  if (!isOpen && wasOpen) {
+    loadOrders();
+    loadStatusCounts();
+    loadSummary();
+  }
+});
 
 function handleDetailStatusChanged(updated: MenuOrder) {
   const idx = orders.value.findIndex((o) => o.id === updated.id);
@@ -662,10 +743,22 @@ async function handleCreateOrder(payload: any) {
       {{ error }}
     </div>
 
+    <div class="flex items-center justify-between mb-2 flex-shrink-0">
+      <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
+        <UCheckbox v-model="liveUpdatesEnabled" />
+        {{ t('menu.liveUpdates') || 'Live updates' }}
+        <span
+          v-if="liveUpdatesEnabled"
+          class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
+          :title="t('menu.liveUpdatesHint') || 'Auto-refreshes every few seconds and chimes on new orders'"
+        />
+      </label>
+    </div>
+
     <div class="flex-1 min-h-0">
       <AppTable
         v-model:selected="selectedOrders"
-        :rows="orders"
+        :rows="displayRows"
         :columns="columns"
         :loading="loading"
         empty-icon="lucide:receipt"
@@ -691,12 +784,20 @@ async function handleCreateOrder(payload: any) {
           </UBadge>
         </template>
         <template #status-data="{ row }">
-          <UDropdown v-if="nextStatuses(row.status, row.type).length" :items="statusMenuItems(row)" :popper="{ placement: 'bottom-start' }">
+          <!-- The .stop lives on this wrapping span, not on the trigger
+               button inside UDropdown: UDropdown's own open/close toggle is
+               a click listener on its HMenuButton wrapper, an ANCESTOR of
+               the button. Putting .stop on the button itself blocked that
+               ancestor listener from ever firing, so the dropdown silently
+               never opened — stopping one level further out still prevents
+               the row's own @select from firing without eating the click
+               UDropdown needs. -->
+          <span v-if="nextStatuses(row.status, row.type).length" @click.stop>
+          <UDropdown :items="statusMenuItems(row)" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
             <button
               type="button"
               class="inline-flex items-center gap-1 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
               :disabled="updatingStatusId === row.id"
-              @click.stop
             >
               <span
                 class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
@@ -718,6 +819,7 @@ async function handleCreateOrder(payload: any) {
               </span>
             </template>
           </UDropdown>
+          </span>
           <span
             v-else
             class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"

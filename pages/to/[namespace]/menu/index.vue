@@ -2,8 +2,8 @@
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder } from '@/api/menu/public/storefront';
-import type { PublicModifierGroup, PublicModifierOption } from '@/api/menu/public/storefront';
+import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders } from '@/api/menu/public/storefront';
+import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
@@ -32,6 +32,7 @@ const sourceTag = computed(() => (route.query.t as string) || '');
 // change which products are even available (see excludedBranchIds below).
 const cartStorageKey = computed(() => `lota-menu-cart-${nsSlug.value}-${selectedBranchId.value || 'default'}`);
 const branchStorageKey = computed(() => `lota-menu-branch-${nsSlug.value}`);
+const contactStorageKey = computed(() => `lota-menu-contact-${nsSlug.value}`);
 
 // Server-rendered so the per-tenant title/description/OG tags in useHead()
 // below are actually crawlable, not just visible after client hydration.
@@ -310,6 +311,7 @@ let suppressSpy = false;
 let observer: IntersectionObserver | null = null;
 
 onMounted(() => {
+  restoreContact();
   nextTick(() => {
     observer = new IntersectionObserver((entries) => {
       if (suppressSpy) return;
@@ -436,6 +438,28 @@ const checkoutForm = reactive({
   comment: '',
 });
 
+// Contact details (name + phone only — not address/comment, those are
+// per-order) survive across visits so a returning customer doesn't have to
+// retype them. Scoped per namespace like the cart, so one storefront never
+// pre-fills another's contact field with a name typed elsewhere.
+function restoreContact() {
+  if (!process.client) return;
+  try {
+    const raw = localStorage.getItem(contactStorageKey.value);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (typeof saved.customerName === 'string') checkoutForm.customerName = saved.customerName;
+    if (typeof saved.phone === 'string') checkoutForm.phone = saved.phone;
+  } catch (e) {
+    logError('[shared/menu] restoreContact failed', e);
+  }
+}
+watch([() => checkoutForm.customerName, () => checkoutForm.phone], ([customerName, phone]) => {
+  if (!process.client) return;
+  if (!customerName && !phone) return;
+  localStorage.setItem(contactStorageKey.value, JSON.stringify({ customerName, phone }));
+});
+
 function sanitizePhoneInput(value: string): string {
   return value.replace(/[^\d+()\s-]/g, '');
 }
@@ -443,6 +467,30 @@ function updatePhoneValue(value: string) {
   checkoutForm.phone = sanitizePhoneInput(value);
 }
 const isPhoneValid = computed(() => checkoutForm.phone.replace(/\D/g, '').length >= 10);
+
+// "Previous orders" — fetched from the backend (myOrders query), matched by
+// the phone currently in the form. Debounced so it doesn't fire a request on
+// every keystroke while typing the number.
+const myPastOrders = ref<MyOrderSummary[]>([]);
+let myOrdersDebounce: ReturnType<typeof setTimeout> | null = null;
+watch(() => checkoutForm.phone, (phone) => {
+  if (myOrdersDebounce) clearTimeout(myOrdersDebounce);
+  if (!isPhoneValid.value) {
+    myPastOrders.value = [];
+    return;
+  }
+  myOrdersDebounce = setTimeout(async () => {
+    try {
+      // Stored phone numbers have no "+"/spacing (see submitOrder), and the
+      // backend does a substring match — normalize to digits-only or a
+      // number typed with formatting (e.g. "+7 778...") would never match.
+      myPastOrders.value = await getMyOrders(nsSlug.value, phone.replace(/\D/g, ''));
+    } catch (e) {
+      logError('[shared/menu] getMyOrders failed', e);
+      myPastOrders.value = [];
+    }
+  }, 500);
+});
 
 const isCheckoutValid = computed(() => {
   if (!isPhoneValid.value) return false;
@@ -489,8 +537,8 @@ async function submitOrder() {
 function closeCheckout() {
   isCheckoutOpen.value = false;
   orderResult.value = null;
-  checkoutForm.customerName = '';
-  checkoutForm.phone = '';
+  // Contact details (name/phone) are intentionally kept so they're still
+  // pre-filled next time — only the order-specific fields reset.
   checkoutForm.deliveryAddress = '';
   checkoutForm.comment = '';
 }
@@ -1165,6 +1213,23 @@ useHead(() => {
               @update:model-value="updatePhoneValue"
             />
           </UFormGroup>
+
+          <div v-if="myPastOrders.length" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 space-y-2">
+            <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {{ t('menu.previousOrders') || 'Previous orders' }}
+            </span>
+            <div class="space-y-1.5">
+              <div v-for="o in myPastOrders" :key="o.id" class="flex items-center justify-between text-sm">
+                <span class="text-gray-600 dark:text-gray-300 truncate">
+                  <span class="font-mono tabular-nums">{{ smartOrderNumber(o) }}</span>
+                </span>
+                <span class="font-medium tabular-nums flex-shrink-0" :style="{ color: secondaryColor }">
+                  {{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
           <UFormGroup :label="t('menu.yourName') || 'Your name'">
             <UInput v-model="checkoutForm.customerName" autocomplete="name" size="lg" />
           </UFormGroup>

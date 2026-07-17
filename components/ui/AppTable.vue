@@ -173,4 +173,19 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 .dark :deep(tbody tr:hover td) {
   background-color: rgb(64 64 64 / 0.3) !important;
 }
+
+/* Momentary flash for rows that just appeared (e.g. new orders arriving
+   via a background poll) — set by a consumer via `row.class`. */
+:deep(tr.row-flash-new) {
+  animation: row-flash-new 2.4s ease-out;
+}
+
+:deep(tr.row-flash-new td) {
+  animation: row-flash-new 2.4s ease-out;
+}
+
+@keyframes row-flash-new {
+  0% { background-color: rgba(16, 185, 129, 0.28); }
+  100% { background-color: transparent; }
+}
 </style>

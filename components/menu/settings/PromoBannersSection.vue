@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import PromoBannerModal from '@/components/menu/PromoBannerModal.vue';
@@ -8,6 +9,7 @@ import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -86,7 +88,7 @@ async function handleSubmit(payload: Record<string, any>) {
 }
 
 async function handleDelete(b: MenuPromoBanner) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteBanner') || 'Delete this banner?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteBanner') || 'Delete this banner?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeletePromoBanner } = await import('@/api/menu/promobanner/delete');
@@ -192,7 +194,7 @@ async function saveBadge() {
 }
 
 async function removeBadge(b: MenuBadge) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteBadge') || 'Delete this badge?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteBadge') || 'Delete this badge?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteBadge } = await import('@/api/menu/badge/delete');

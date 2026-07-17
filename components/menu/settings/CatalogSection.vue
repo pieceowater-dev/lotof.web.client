@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -15,6 +16,7 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuModifierGroup } from '@/api/menu/modifiergroup/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -215,7 +217,7 @@ async function moveCategory(c: MenuCategory, direction: -1 | 1) {
 }
 
 async function handleCategoryDelete(c: MenuCategory) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteCategory') || 'Delete this category?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteCategory') || 'Delete this category?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteCategory } = await import('@/api/menu/category/delete');
@@ -363,7 +365,7 @@ async function moveItem(it: MenuItem, direction: -1 | 1) {
 }
 
 async function handleItemDelete(it: MenuItem) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteMenuItem') || 'Delete this item?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteMenuItem') || 'Delete this item?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteMenuItem } = await import('@/api/menu/menuitem/delete');
@@ -472,6 +474,15 @@ onMounted(() => {
                 <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="itemIndex(row) === items.length - 1" @click="moveItem(row, 1)" />
               </div>
             </template>
+            <template #name-data="{ row }">
+              <button
+                type="button"
+                class="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate"
+                @click="openEditItem(row)"
+              >
+                {{ row.name }}
+              </button>
+            </template>
             <template #price-data="{ row }">
               {{ row.price }}
             </template>
@@ -505,7 +516,6 @@ onMounted(() => {
             </template>
             <template #actions-data="{ row }">
               <div class="flex gap-1">
-                <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEditItem(row)" />
                 <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleItemDelete(row)" />
               </div>
             </template>

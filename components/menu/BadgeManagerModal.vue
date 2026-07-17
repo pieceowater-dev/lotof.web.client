@@ -1,11 +1,13 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBadge } from '@/api/menu/badge/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -126,7 +128,7 @@ async function save() {
 }
 
 async function remove(b: MenuBadge) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteBadge') || 'Delete this badge?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteBadge') || 'Delete this badge?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteBadge } = await import('@/api/menu/badge/delete');

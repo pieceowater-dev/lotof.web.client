@@ -220,3 +220,28 @@ export async function submitPublicOrder(namespaceSlug: string, input: PublicOrde
   );
   return res.createOrder;
 }
+
+// "Your previous orders" for the checkout form — public/unauthenticated,
+// same trust model as createOrder above: whoever types the phone number is
+// trusted to be its owner (no OTP verification). Deliberately requests only
+// non-sensitive summary fields (not phone/customerName/deliveryAddress/
+// comment, even though the backend type technically has them) to keep the
+// exposure minimal if someone does look up a number that isn't theirs.
+export type MyOrderSummary = { id: string; number: number; status: string; totalAmount: number; createdAt: string };
+
+const MyOrdersDocument = /* GraphQL */ `
+  query MyOrders($phone: String!) {
+    myOrders(phone: $phone) {
+      rows { id number status totalAmount createdAt }
+    }
+  }
+`;
+
+export async function getMyOrders(namespaceSlug: string, phone: string): Promise<MyOrderSummary[]> {
+  const client = await freshClient(namespaceSlug);
+  const res = await client.request<{ myOrders: { rows: MyOrderSummary[] } }>(
+    MyOrdersDocument,
+    { phone }
+  );
+  return res.myOrders.rows;
+}

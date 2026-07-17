@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
@@ -19,6 +20,7 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const router = useRouter();
 const nsSlug = computed(() => route.params.namespace as string);
@@ -316,7 +318,7 @@ async function changeItemQuantity(item: MenuOrderItem, delta: number) {
 
 async function removeItem(item: MenuOrderItem) {
   if (!props.order) return;
-  if (process.client && !window.confirm(t('menu.confirmRemoveOrderItem') || 'Remove this item from the order?')) return;
+  if (!(await confirm({ message: t('menu.confirmRemoveOrderItem') || 'Remove this item from the order?' }))) return;
   updatingItemId.value = item.id;
   try {
     const menuToken = await getToken();

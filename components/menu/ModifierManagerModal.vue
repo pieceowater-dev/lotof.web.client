@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuModifierGroup } from '@/api/menu/modifiergroup/list';
 import type { MenuModifierOption } from '@/api/menu/modifieroption/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -149,7 +151,7 @@ async function saveGroup() {
 }
 
 async function removeGroup(g: MenuModifierGroup) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteModifierGroup') || 'Delete this modifier group?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteModifierGroup') || 'Delete this modifier group?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteModifierGroup } = await import('@/api/menu/modifiergroup/delete');
@@ -209,7 +211,7 @@ async function saveOption() {
 }
 
 async function removeOption(o: MenuModifierOption) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteModifierOption') || 'Delete this option?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteModifierOption') || 'Delete this option?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteModifierOption } = await import('@/api/menu/modifieroption/delete');

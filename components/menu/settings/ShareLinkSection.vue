@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuShareLink } from '@/api/menu/sharelink/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -119,7 +121,7 @@ async function saveLink() {
 }
 
 async function removeLink(link: MenuShareLink) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteShareLink') || 'Delete this link?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteShareLink') || 'Delete this link?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteShareLink } = await import('@/api/menu/sharelink/delete');

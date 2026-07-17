@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -8,6 +9,7 @@ import StaffModal from '@/components/menu/StaffModal.vue';
 import type { MenuStaff, StaffRole } from '@/api/menu/staff/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { token: hubToken } = useAuth();
@@ -130,7 +132,7 @@ async function handleSubmit(payload: { userId: string; role: StaffRole }) {
 }
 
 async function handleDelete(s: MenuStaff) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteStaff') || 'Remove this staff member?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteStaff') || 'Remove this staff member?' }))) return;
   try {
     const menuToken = await getToken();
     const { menuDeleteStaff } = await import('@/api/menu/staff/delete');
@@ -178,12 +180,12 @@ onMounted(() => {
         empty-icon="lucide:users"
       >
         <template #userId-data="{ row }">
-          <div class="flex items-center gap-2">
+          <button type="button" class="group flex items-center gap-2 text-left" @click="openEdit(row)">
             <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase text-gray-600 dark:text-gray-300 flex-shrink-0">
               {{ displayName(row.userId).slice(0, 2) }}
             </span>
-            <span>{{ displayName(row.userId) }}</span>
-          </div>
+            <span class="font-medium text-gray-900 dark:text-gray-100 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">{{ displayName(row.userId) }}</span>
+          </button>
         </template>
         <template #role-data="{ row }">
           <UBadge :color="roleColor(row.role)" variant="subtle">
@@ -192,7 +194,6 @@ onMounted(() => {
         </template>
         <template #actions-data="{ row }">
           <div class="flex gap-1">
-            <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEdit(row)" />
             <UButton
               v-if="row.role !== 'OWNER'"
               icon="lucide:trash-2"

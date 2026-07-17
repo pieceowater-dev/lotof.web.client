@@ -69,7 +69,7 @@ watch(activeTab, (tab) => {
       </div>
     </div>
 
-    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800 mb-4 flex-shrink-0 bg-white dark:bg-gray-900">
+    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 mb-4 flex-shrink-0 bg-white dark:bg-gray-900">
       <button
         v-for="tab in tabs"
         :key="tab.key"

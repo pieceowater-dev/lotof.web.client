@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -9,6 +10,7 @@ import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
+const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
@@ -92,7 +94,7 @@ async function handleSubmit(payload: Record<string, any>) {
 }
 
 async function handleDelete(b: MenuBranch) {
-  if (process.client && !window.confirm(t('menu.confirmDeleteBranch') || 'Delete this branch?')) return;
+  if (!(await confirm({ message: t('menu.confirmDeleteBranch') || 'Delete this branch?' }))) return;
   try {
     const { current } = useMenuToken();
     const menuToken = current();
@@ -138,6 +140,15 @@ onMounted(load);
         :loading="loading"
         empty-icon="lucide:map-pin"
       >
+        <template #name-data="{ row }">
+          <button
+            type="button"
+            class="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate"
+            @click="openEdit(row)"
+          >
+            {{ row.name }}
+          </button>
+        </template>
         <template #phone-data="{ row }">
           <span class="tabular-nums">{{ row.phone ? formatDisplayPhoneUniversal(row.phone) : '—' }}</span>
         </template>
@@ -152,7 +163,6 @@ onMounted(load);
         </template>
         <template #actions-data="{ row }">
           <div class="flex gap-1">
-            <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEdit(row)" />
             <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete(row)" />
           </div>
         </template>
