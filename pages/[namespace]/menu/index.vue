@@ -54,7 +54,7 @@ const CARD_STYLE: Record<string, { icon: string; active: string; iconBg: string;
     checkColor: 'text-primary-300 dark:text-primary-700',
   },
   IN_PREPARATION: {
-    icon: 'lucide:cooking-pot',
+    icon: 'lucide:hourglass',
     active: 'border-amber-300 bg-amber-50 shadow-sm dark:border-amber-700 dark:bg-amber-950/30',
     iconBg: 'bg-amber-100 dark:bg-amber-900/40',
     iconColor: 'text-amber-600 dark:text-amber-300',

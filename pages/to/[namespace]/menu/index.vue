@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders } from '@/api/menu/public/storefront';
+import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders, getPublicOrderStatus } from '@/api/menu/public/storefront';
 import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
@@ -10,7 +10,7 @@ import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
-import { smartOrderNumber } from '@/utils/orderNumber';
+import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -33,6 +33,7 @@ const sourceTag = computed(() => (route.query.t as string) || '');
 const cartStorageKey = computed(() => `lota-menu-cart-${nsSlug.value}-${selectedBranchId.value || 'default'}`);
 const branchStorageKey = computed(() => `lota-menu-branch-${nsSlug.value}`);
 const contactStorageKey = computed(() => `lota-menu-contact-${nsSlug.value}`);
+const lastOrderStorageKey = computed(() => `lota-menu-last-order-${nsSlug.value}`);
 
 // Server-rendered so the per-tenant title/description/OG tags in useHead()
 // below are actually crawlable, not just visible after client hydration.
@@ -345,6 +346,81 @@ function followBannerLink() {
   else window.open(url, '_blank', 'noopener');
 }
 
+// --- "My order" lookup: a customer types the order number they were shown
+// at checkout + the phone it was placed under, and — if it matches — a new
+// tab opens with the read-only status page. The number+phone pair is the
+// whole ownership check (no OTP), same trust model as checkout itself.
+const isMyOrderSheetOpen = ref(false);
+const myOrderNumberInput = ref('');
+const myOrderPhoneInput = ref('');
+const myOrderLookupError = ref('');
+const myOrderLookupLoading = ref(false);
+
+// Pre-fill from the last order placed on this device, so returning to check
+// on it is a single tap instead of having to remember/retype the number.
+function openMyOrderSheet() {
+  myOrderNumberInput.value = '';
+  myOrderPhoneInput.value = '';
+  myOrderLookupError.value = '';
+  if (process.client) {
+    try {
+      const raw = localStorage.getItem(lastOrderStorageKey.value);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (typeof saved.number === 'number' && typeof saved.createdAt === 'string') {
+          myOrderNumberInput.value = smartOrderNumber(saved);
+        }
+        if (typeof saved.phone === 'string') myOrderPhoneInput.value = saved.phone;
+      }
+    } catch (e) {
+      logError('[shared/menu] restoreLastOrder failed', e);
+    }
+  }
+  isMyOrderSheetOpen.value = true;
+}
+
+// The whole lookup key lives in one path segment: "YYMMDD-NNN-PHONEDIGITS"
+// (the smart order number, itself already dash-separated, plus the digits-
+// only phone). The order-status page splits it back apart on "-".
+function orderStatusHref(smartNumber: string, phone: string): string {
+  return `/to/${nsSlug.value}/menu/${smartNumber}-${phone.replace(/\D/g, '')}`;
+}
+
+async function submitMyOrderLookup() {
+  myOrderLookupError.value = '';
+  const parsed = parseSmartOrderNumber(myOrderNumberInput.value);
+  if (!parsed) {
+    myOrderLookupError.value = t('menu.myOrderInvalidNumber') || 'Enter the order number exactly as shown, e.g. 260718-003';
+    return;
+  }
+  if (myOrderPhoneInput.value.replace(/\D/g, '').length < 10) {
+    myOrderLookupError.value = t('menu.myOrderInvalidPhone') || 'Enter the phone the order was placed under';
+    return;
+  }
+
+  myOrderLookupLoading.value = true;
+  try {
+    const found = await getPublicOrderStatus(
+      nsSlug.value,
+      parsed.number,
+      myOrderPhoneInput.value.replace(/\D/g, ''),
+      parsed.createdFrom,
+      parsed.createdTo
+    );
+    if (!found) {
+      myOrderLookupError.value = t('menu.myOrderNotFound') || "Couldn't find an order with that number and phone";
+      return;
+    }
+    isMyOrderSheetOpen.value = false;
+    window.open(orderStatusHref(smartOrderNumber(found), myOrderPhoneInput.value), '_blank', 'noopener');
+  } catch (e) {
+    logError('[shared/menu] submitMyOrderLookup failed', e);
+    myOrderLookupError.value = getErrorMessage(e) || (t('menu.myOrderNotFound') || "Couldn't find an order with that number and phone");
+  } finally {
+    myOrderLookupLoading.value = false;
+  }
+}
+
 // --- Cart ---
 type CartLineModifier = { modifierOptionId: string; name: string; price: number };
 type CartLine = { menuItemId: string; name: string; price: number; quantity: number; imageUrl?: string | null; modifiers?: CartLineModifier[] };
@@ -472,6 +548,13 @@ const isPhoneValid = computed(() => checkoutForm.phone.replace(/\D/g, '').length
 // the phone currently in the form. Debounced so it doesn't fire a request on
 // every keystroke while typing the number.
 const myPastOrders = ref<MyOrderSummary[]>([]);
+// The backend already caps this list (10 rows) so a heavy repeat customer
+// never floods the response — this just keeps the collapsed view short.
+const MY_PAST_ORDERS_COLLAPSED_COUNT = 3;
+const myPastOrdersExpanded = ref(false);
+const visiblePastOrders = computed(() => (
+  myPastOrdersExpanded.value ? myPastOrders.value : myPastOrders.value.slice(0, MY_PAST_ORDERS_COLLAPSED_COUNT)
+));
 let myOrdersDebounce: ReturnType<typeof setTimeout> | null = null;
 watch(() => checkoutForm.phone, (phone) => {
   if (myOrdersDebounce) clearTimeout(myOrdersDebounce);
@@ -485,6 +568,7 @@ watch(() => checkoutForm.phone, (phone) => {
       // backend does a substring match — normalize to digits-only or a
       // number typed with formatting (e.g. "+7 778...") would never match.
       myPastOrders.value = await getMyOrders(nsSlug.value, phone.replace(/\D/g, ''));
+      myPastOrdersExpanded.value = false;
     } catch (e) {
       logError('[shared/menu] getMyOrders failed', e);
       myPastOrders.value = [];
@@ -526,6 +610,13 @@ async function submitOrder() {
     });
     orderResult.value = { number: result.number, createdAt: result.createdAt };
     cart.value = [];
+    if (process.client) {
+      localStorage.setItem(lastOrderStorageKey.value, JSON.stringify({
+        number: result.number,
+        createdAt: result.createdAt,
+        phone: checkoutForm.phone.trim(),
+      }));
+    }
   } catch (e) {
     logError('[shared/menu] submitOrder failed', e);
     useToast().add({ title: getErrorMessage(e) || 'Failed to submit order', color: 'red' });
@@ -592,8 +683,8 @@ useHead(() => {
            kept visually quiet (small type, muted color) so the tenant's
            own brand below remains the dominant element on the page. -->
       <div class="bg-gray-50 dark:bg-gray-950">
-        <div class="max-w-3xl mx-auto px-4 py-1.5 flex items-center justify-between">
-          <div class="flex items-center gap-0.5">
+        <div class="max-w-3xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-0.5 flex-shrink-0">
             <button
               v-for="loc in availableLocales"
               :key="loc"
@@ -609,7 +700,7 @@ useHead(() => {
             href="https://lota.tools"
             target="_blank"
             rel="noopener"
-            class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+            class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
           >
             <img src="/assets/logo.png" alt="" class="w-3 h-3">
             {{ t('menu.poweredBy') || 'Powered by' }} <span class="font-semibold">lota</span>
@@ -745,7 +836,7 @@ useHead(() => {
                 v-model="searchQuery"
                 type="search"
                 :placeholder="t('menu.searchMenu') || 'Search menu'"
-                class="w-full pl-9 pr-8 py-2 text-sm rounded-xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                class="w-full pl-9 pr-8 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
               >
               <button
                 v-if="searchQuery"
@@ -757,16 +848,12 @@ useHead(() => {
               </button>
             </div>
             <button
-              v-if="cartCount > 0"
               type="button"
-              class="relative flex-shrink-0 w-9 h-9 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center justify-center"
-              @click="isCartOpen = true"
+              class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+              @click="openMyOrderSheet"
             >
-              <Icon name="lucide:shopping-bag" class="w-4 h-4 text-gray-700 dark:text-gray-200" />
-              <span
-                class="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full text-[10px] font-bold flex items-center justify-center"
-                :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-              >{{ cartCount }}</span>
+              <Icon name="lucide:receipt-text" class="w-4 h-4" />
+              {{ t('menu.myOrder') || 'My order' }}
             </button>
           </div>
 
@@ -786,7 +873,7 @@ useHead(() => {
         </div>
 
         <!-- Search results -->
-        <div v-if="isSearching" class="max-w-3xl mx-auto px-4 py-4 pb-28">
+        <div v-if="isSearching" class="max-w-3xl mx-auto px-4 py-4 pb-2">
           <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">
             {{ t('menu.searchResults') || 'Search results' }}
           </h2>
@@ -814,7 +901,7 @@ useHead(() => {
         </div>
 
         <!-- Category sections -->
-        <div v-else class="max-w-3xl mx-auto px-4 py-4 pb-28 space-y-8">
+        <div v-else class="max-w-3xl mx-auto px-4 py-4 pb-2 space-y-8">
           <section
             v-for="c in data.storefront.categories"
             :key="c.id"
@@ -866,6 +953,29 @@ useHead(() => {
           </div>
         </div>
       </template>
+
+      <!-- My order tracking: a proper, hard-to-miss block at the bottom of
+           the menu, not just a small button — the top-bar/search-bar
+           shortcuts are easy to miss on a long scroll. -->
+      <div class="max-w-3xl mx-auto px-4 pt-8">
+        <button
+          type="button"
+          class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          @click="openMyOrderSheet"
+        >
+          <span
+            class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+            :style="{ backgroundColor: `${primaryColor}`, color: secondaryColor }"
+          >
+            <Icon name="lucide:receipt-text" class="w-5 h-5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrder') || 'My order' }}</span>
+            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.myOrderBlockHint') || 'Check your order status and details' }}</span>
+          </span>
+          <Icon name="lucide:chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+        </button>
+      </div>
 
       <!-- Footer: company/contact info instead of a bare spacer. -->
       <footer class="mt-10 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
@@ -967,7 +1077,7 @@ useHead(() => {
               :alt="selectedItem.imageAlt || selectedItem.name"
               class="w-full h-full object-cover"
             >
-            <Icon v-else name="lucide:utensils" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
+            <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
           </div>
           <div class="text-xl font-bold" :style="{ color: secondaryColor }">
             {{ formatMoney(selectedItem.price, data?.storefront.brandSettings?.currencyCode) }}
@@ -1074,6 +1184,52 @@ useHead(() => {
     </USlideover>
 
     <!-- Banner sheet: full-width from the bottom, explicit "go to link" action -->
+    <!-- "My order" lookup sheet -->
+    <USlideover v-model="isMyOrderSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+        <template #header>
+          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold">{{ t('menu.myOrder') || 'My order' }}</h3>
+            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isMyOrderSheetOpen = false" />
+          </div>
+        </template>
+        <div class="space-y-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ t('menu.myOrderHint') || 'Enter your order number (shown at checkout) and the phone it was placed under.' }}
+          </p>
+          <UFormGroup :label="t('menu.orderNumber') || 'Order number'" required>
+            <UInput v-model="myOrderNumberInput" placeholder="260718-003" size="lg" @keyup.enter="submitMyOrderLookup" />
+          </UFormGroup>
+          <UFormGroup :label="t('menu.phone') || 'Phone'" required>
+            <UInput
+              :model-value="myOrderPhoneInput"
+              type="tel"
+              inputmode="tel"
+              autocomplete="tel"
+              pattern="[0-9+()\s-]*"
+              size="lg"
+              :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
+              @update:model-value="(v: string) => (myOrderPhoneInput = v.replace(/[^\d+()\s-]/g, ''))"
+              @keyup.enter="submitMyOrderLookup"
+            />
+          </UFormGroup>
+          <p v-if="myOrderLookupError" class="text-sm text-red-600 dark:text-red-400">{{ myOrderLookupError }}</p>
+        </div>
+        <template #footer>
+          <UButton
+            block
+            :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+            class="border-0"
+            :loading="myOrderLookupLoading"
+            @click="submitMyOrderLookup"
+          >
+            {{ t('menu.myOrderSubmit') || 'Find my order' }}
+          </UButton>
+        </template>
+      </UCard>
+    </USlideover>
+
     <USlideover v-model="isBannerSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
       <UCard v-if="selectedBanner" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
         <template #header>
@@ -1111,7 +1267,7 @@ useHead(() => {
           <div v-for="line in cart" :key="`${line.menuItemId}::${modifiersKey(line.modifiers)}`" class="flex items-center gap-3">
             <img v-if="line.imageUrl" :src="line.imageUrl" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
             <div v-else class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
-              <Icon name="lucide:utensils" class="w-5 h-5 text-gray-300 dark:text-gray-700" />
+              <Icon name="lucide:package" class="w-5 h-5 text-gray-300 dark:text-gray-700" />
             </div>
             <div class="min-w-0 flex-1">
               <div class="text-sm font-medium truncate">{{ line.name }}</div>
@@ -1179,6 +1335,18 @@ useHead(() => {
           <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('menu.orderReceived') || 'Order received!' }}</p>
           <p class="text-sm mt-1" :style="{ color: secondaryColor }">{{ t('menu.yourOrder') || 'Your order' }} {{ smartOrderNumber(orderResult) }}</p>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('menu.orderReceivedDesc') || "We'll be in touch shortly to confirm the details." }}</p>
+
+          <a
+            :href="orderStatusHref(smartOrderNumber(orderResult), checkoutForm.phone)"
+            target="_blank"
+            rel="noopener"
+            class="mt-6 flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold border-2 shadow-lg active:scale-[0.98] transition-transform"
+            :style="{ backgroundColor: primaryColor, color: secondaryColor, borderColor: secondaryColor }"
+          >
+            <Icon name="lucide:receipt-text" class="w-4 h-4" />
+            {{ t('menu.viewOrder') || 'View order' }}
+            <Icon name="lucide:arrow-right" class="w-4 h-4" />
+          </a>
         </div>
 
         <div v-else class="space-y-4">
@@ -1224,7 +1392,7 @@ useHead(() => {
               {{ t('menu.previousOrders') || 'Previous orders' }}
             </span>
             <div class="space-y-1.5">
-              <div v-for="o in myPastOrders" :key="o.id" class="flex items-center justify-between text-sm">
+              <div v-for="o in visiblePastOrders" :key="o.id" class="flex items-center justify-between text-sm">
                 <span class="text-gray-600 dark:text-gray-300 truncate">
                   <span class="font-mono tabular-nums">{{ smartOrderNumber(o) }}</span>
                 </span>
@@ -1233,6 +1401,17 @@ useHead(() => {
                 </span>
               </div>
             </div>
+            <button
+              v-if="myPastOrders.length > MY_PAST_ORDERS_COLLAPSED_COUNT"
+              type="button"
+              class="text-xs font-medium pt-0.5"
+              :style="{ color: secondaryColor }"
+              @click="myPastOrdersExpanded = !myPastOrdersExpanded"
+            >
+              {{ myPastOrdersExpanded
+                ? (t('menu.showLess') || 'Show less')
+                : (t('menu.showMoreOrders', { count: myPastOrders.length - MY_PAST_ORDERS_COLLAPSED_COUNT }) || `Show ${myPastOrders.length - MY_PAST_ORDERS_COLLAPSED_COUNT} more`) }}
+            </button>
           </div>
 
           <UFormGroup :label="t('menu.yourName') || 'Your name'">
@@ -1291,7 +1470,7 @@ useHead(() => {
             >
               {{ t('menu.placeOrder') || 'Place order' }}
             </UButton>
-            <UButton v-else :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" @click="closeCheckout">
+            <UButton v-else color="gray" variant="ghost" @click="closeCheckout">
               {{ t('menu.orderConfirmClose') || 'Great!' }}
             </UButton>
           </div>

@@ -7,6 +7,7 @@ import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
+import type { ORDER_STATUSES } from '@/utils/orderStatus';
 
 // Unauthenticated reads for the public storefront page (/to/[namespace]/menu).
 // Every field these hit is intentionally free of @menuAuth on the backend —
@@ -219,6 +220,45 @@ export async function submitPublicOrder(namespaceSlug: string, input: PublicOrde
     }
   );
   return res.createOrder;
+}
+
+// "Track my order" — public/unauthenticated, same trust model as
+// createOrder above: whoever knows the order number AND the phone it was
+// placed under is trusted to be its owner (no OTP verification).
+export type PublicOrderStatus = {
+  id: string;
+  number: number;
+  branchId?: string | null;
+  type: string;
+  status: (typeof ORDER_STATUSES)[number];
+  customerName?: string | null;
+  deliveryAddress?: string | null;
+  totalAmount: number;
+  createdAt: string;
+  closedAt?: string | null;
+};
+
+const OrderStatusDocument = /* GraphQL */ `
+  query PublicOrderStatus($number: Int!, $phone: String!, $createdFrom: String!, $createdTo: String!) {
+    orderStatus(number: $number, phone: $phone, createdFrom: $createdFrom, createdTo: $createdTo) {
+      id number branchId type status customerName deliveryAddress totalAmount createdAt closedAt
+    }
+  }
+`;
+
+export async function getPublicOrderStatus(
+  namespaceSlug: string,
+  number: number,
+  phone: string,
+  createdFrom: string,
+  createdTo: string
+): Promise<PublicOrderStatus | null> {
+  const client = await freshClient(namespaceSlug);
+  const res = await client.request<{ orderStatus: PublicOrderStatus | null }>(
+    OrderStatusDocument,
+    { number, phone, createdFrom, createdTo }
+  );
+  return res.orderStatus;
 }
 
 // "Your previous orders" for the checkout form — public/unauthenticated,

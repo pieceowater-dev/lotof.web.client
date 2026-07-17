@@ -53,7 +53,7 @@ function handleAddClick() {
           class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
         >
         <div v-else class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-700">
-          <Icon name="lucide:utensils" class="w-7 h-7" />
+          <Icon name="lucide:package" class="w-7 h-7" />
         </div>
         <div v-if="itemBadges.length" class="absolute top-1.5 left-1.5 flex flex-wrap gap-1 max-w-[calc(100%-12px)]">
           <span

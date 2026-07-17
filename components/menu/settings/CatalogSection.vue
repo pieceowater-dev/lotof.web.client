@@ -466,7 +466,7 @@ onMounted(() => {
             :rows="items"
             :columns="itemColumns"
             :loading="itemsLoading"
-            empty-icon="lucide:utensils-crossed"
+            empty-icon="lucide:package"
           >
             <template #sortOrder-data="{ row }">
               <div class="flex flex-col -my-1">

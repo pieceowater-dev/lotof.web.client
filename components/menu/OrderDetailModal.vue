@@ -1100,7 +1100,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
       <div v-else-if="selectedProductDetail" class="space-y-4">
         <div class="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
           <img v-if="selectedProductDetail.imageUrl" :src="selectedProductDetail.imageUrl" :alt="selectedProductDetail.imageAlt || selectedProductDetail.name" class="w-full h-full object-cover">
-          <Icon v-else name="lucide:utensils" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
+          <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
         </div>
         <div v-if="selectedProductDetail.badgeIds.length" class="flex flex-wrap gap-1.5">
           <span

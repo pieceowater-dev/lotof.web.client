@@ -38,7 +38,7 @@ export function nextStatuses(current: string, orderType?: string): string[] {
 const STATUS_BADGE_STYLE: Record<string, { bg: string; ring: string; icon: string }> = {
   NEW: { bg: '#2563eb', ring: '#bfdbfe', icon: 'lucide:inbox' },
   ACCEPTED: { bg: '#0891b2', ring: '#a5f3fc', icon: 'lucide:check' },
-  IN_PREPARATION: { bg: '#b45309', ring: '#fde68a', icon: 'lucide:cooking-pot' },
+  IN_PREPARATION: { bg: '#b45309', ring: '#fde68a', icon: 'lucide:hourglass' },
   READY: { bg: '#0f766e', ring: '#99f6e4', icon: 'lucide:package-check' },
   DELIVERING: { bg: '#7c3aed', ring: '#ddd6fe', icon: 'lucide:truck' },
   COMPLETED: { bg: '#047857', ring: '#a7f3d0', icon: 'lucide:check-check' },
