@@ -174,18 +174,21 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
   background-color: rgb(64 64 64 / 0.3) !important;
 }
 
-/* Momentary flash for rows that just appeared (e.g. new orders arriving
-   via a background poll) — set by a consumer via `row.class`. */
+/* Flash for rows that just appeared (e.g. new orders arriving via a
+   background poll) — set by a consumer via `row.class`. Settles to a dim
+   persistent tint rather than fading out entirely (`forwards` holds the
+   100% keyframe), so the row stays visibly "unacknowledged" until the
+   consumer removes the class (on open/status-change/row-click). */
 :deep(tr.row-flash-new) {
-  animation: row-flash-new 2.4s ease-out;
+  animation: row-flash-new 1.8s ease-out forwards;
 }
 
 :deep(tr.row-flash-new td) {
-  animation: row-flash-new 2.4s ease-out;
+  animation: row-flash-new 1.8s ease-out forwards;
 }
 
 @keyframes row-flash-new {
-  0% { background-color: rgba(16, 185, 129, 0.28); }
-  100% { background-color: transparent; }
+  0% { background-color: rgba(37, 99, 235, 0.35); }
+  100% { background-color: rgba(37, 99, 235, 0.12); }
 }
 </style>

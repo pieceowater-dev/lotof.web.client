@@ -439,21 +439,47 @@ watch(liveUpdatesEnabled, (v) => {
 
 // Orders that just appeared via a background poll — used to flash the row
 // and chime, so a busy admin notices a new order land without staring at
-// the table. Cleared a couple seconds after the highlight animation ends.
+// the table. Stays highlighted (not just a timed flash) until the admin
+// actually acknowledges it: opens the order, changes its status, or clicks
+// the row — see clearNewOrder(), called from those three places.
 const newOrderIds = ref<Set<string>>(new Set());
 const displayRows = computed(() =>
   orders.value.map((o) => (newOrderIds.value.has(o.id) ? { ...o, class: 'row-flash-new' } : o))
 );
+function clearNewOrder(id: string) {
+  if (!newOrderIds.value.has(id)) return;
+  newOrderIds.value.delete(id);
+  newOrderIds.value = new Set(newOrderIds.value);
+}
 
 // Synthesized rather than an audio asset — a couple of short sine-wave
 // tones is enough for a notification chime and avoids shipping/loading a
 // sound file for something this small.
+//
+// The AudioContext is created once and reused (not per-chime): browsers
+// mute/suspend audio contexts that weren't created or resumed following a
+// real user gesture, and a background poll firing on its own timer is
+// never one — creating a fresh context there plays nothing, silently, with
+// no error. Priming it on the page's first click/tap and reusing that same
+// (now-unlocked) instance is what actually gets sound out of it.
+let sharedAudioCtx: AudioContext | null = null;
+function ensureAudioContext(): AudioContext | null {
+  if (!process.client) return null;
+  const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+  if (!AudioCtx) return null;
+  if (!sharedAudioCtx) sharedAudioCtx = new AudioCtx();
+  return sharedAudioCtx;
+}
+function unlockAudio() {
+  const ctx = ensureAudioContext();
+  if (ctx?.state === 'suspended') ctx.resume().catch(() => {});
+}
+
 function playNewOrderChime() {
-  if (!process.client) return;
   try {
-    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    const ctx = ensureAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
     const now = ctx.currentTime;
     [880, 1108.73].forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -469,7 +495,6 @@ function playNewOrderChime() {
       osc.start(start);
       osc.stop(start + 0.4);
     });
-    setTimeout(() => ctx.close(), 800);
   } catch (e) {
     logError('[menu/index] playNewOrderChime failed', e);
   }
@@ -484,10 +509,6 @@ async function pollTick() {
     freshIds.forEach((id) => newOrderIds.value.add(id));
     newOrderIds.value = new Set(newOrderIds.value);
     playNewOrderChime();
-    setTimeout(() => {
-      freshIds.forEach((id) => newOrderIds.value.delete(id));
-      newOrderIds.value = new Set(newOrderIds.value);
-    }, 2600);
   }
   loadStatusCounts();
   loadSummary();
@@ -503,10 +524,12 @@ onMounted(async () => {
   loadSummary();
   openFromQuery();
   pollTimer = setInterval(pollTick, 8000);
+  window.addEventListener('pointerdown', unlockAudio, { once: true });
 });
 
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer);
+  window.removeEventListener('pointerdown', unlockAudio);
 });
 
 const isCreateOrderOpen = ref(false);
@@ -522,6 +545,7 @@ async function handleStatusChange(order: MenuOrder, status: string) {
     const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, order.id, status);
     const idx = orders.value.findIndex((o) => o.id === updated.id);
     if (idx !== -1) orders.value[idx] = updated;
+    clearNewOrder(order.id);
     loadStatusCounts();
     useToast().add({ title: t('menu.statusUpdated') || 'Status updated', color: 'primary' });
   } catch (e) {
@@ -549,6 +573,7 @@ const selectedOrder = ref<MenuOrder | null>(null);
 function openDetail(row: MenuOrder) {
   selectedOrder.value = row;
   isDetailOpen.value = true;
+  clearNewOrder(row.id);
 }
 
 // Closing the detail modal means whatever was edited (status, comment, ...)
@@ -567,6 +592,7 @@ function handleDetailStatusChanged(updated: MenuOrder) {
   const idx = orders.value.findIndex((o) => o.id === updated.id);
   if (idx !== -1) orders.value[idx] = updated;
   selectedOrder.value = updated;
+  clearNewOrder(updated.id);
   loadStatusCounts();
 }
 
@@ -602,9 +628,10 @@ async function handleCreateOrder(payload: any) {
         <UButton
           icon="lucide:external-link"
           size="xs"
-          color="gray"
+          color="emerald"
           variant="soft"
           class="min-w-fit whitespace-nowrap gap-2"
+          :ui="{ rounded: 'rounded-xl' }"
           :to="`/to/${nsSlug}/menu`"
           target="_blank"
         >
@@ -616,6 +643,7 @@ async function handleCreateOrder(payload: any) {
           color="primary"
           variant="soft"
           class="min-w-fit whitespace-nowrap gap-2"
+          :ui="{ rounded: 'rounded-xl' }"
           :to="`/${nsSlug}/menu/settings`"
         >
           {{ t('menu.settings') || 'Settings' }}
@@ -743,18 +771,6 @@ async function handleCreateOrder(payload: any) {
       {{ error }}
     </div>
 
-    <div class="flex items-center justify-between mb-2 flex-shrink-0">
-      <label class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 cursor-pointer select-none">
-        <UCheckbox v-model="liveUpdatesEnabled" />
-        {{ t('menu.liveUpdates') || 'Live updates' }}
-        <span
-          v-if="liveUpdatesEnabled"
-          class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
-          :title="t('menu.liveUpdatesHint') || 'Auto-refreshes every few seconds and chimes on new orders'"
-        />
-      </label>
-    </div>
-
     <div class="flex-1 min-h-0">
       <AppTable
         v-model:selected="selectedOrders"
@@ -843,18 +859,30 @@ async function handleCreateOrder(payload: any) {
       </AppTable>
     </div>
 
-    <!-- Summary: by default aggregates every order matching the current
-         filters, not just the loaded page — accurate for pulling a quick
-         report over a period (combine with the date-range filters above).
-         Checking specific rows switches it to just that subset instead. -->
+    <!-- Table footer: live-updates control always lives here; the summary
+         (by default every order matching the current filters, not just the
+         loaded page — combine with the date-range filters above for a quick
+         report over a period; checking specific rows switches it to just
+         that subset) only appears once there's something to show. -->
     <div
-      v-if="selectedSummary || summary"
       class="flex-shrink-0 mt-2 flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors"
       :class="selectedSummary
         ? 'border-primary-200 dark:border-primary-800 bg-primary-50/60 dark:bg-primary-950/20'
         : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'"
     >
-      <div class="flex items-center gap-3">
+      <label class="flex items-center gap-2 cursor-pointer select-none flex-shrink-0">
+        <UToggle v-model="liveUpdatesEnabled" size="sm" />
+        <span class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+          {{ t('menu.liveUpdates') || 'Live updates' }}
+          <span
+            v-if="liveUpdatesEnabled"
+            class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"
+            :title="t('menu.liveUpdatesHint') || 'Auto-refreshes every few seconds and chimes on new orders'"
+          />
+        </span>
+      </label>
+
+      <div v-if="selectedSummary || summary" class="flex items-center gap-3">
         <span class="text-gray-500 dark:text-gray-400">
           {{ selectedSummary ? (t('menu.summarySelected') || 'Selected') : (t('menu.summaryOrders') || 'Orders') }}:
           <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ (selectedSummary || summary)!.count }}</span>
@@ -863,17 +891,17 @@ async function handleCreateOrder(payload: any) {
           {{ t('menu.summaryTotal') || 'Total' }}:
           <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ (selectedSummary || summary)!.totalAmount.toLocaleString() }}</span>
         </span>
+        <UButton
+          v-if="selectedSummary"
+          size="2xs"
+          color="primary"
+          variant="soft"
+          icon="lucide:x"
+          @click="selectedOrders = []"
+        >
+          {{ t('menu.clearSelection') || 'Clear selection' }}
+        </UButton>
       </div>
-      <UButton
-        v-if="selectedSummary"
-        size="2xs"
-        color="primary"
-        variant="soft"
-        icon="lucide:x"
-        @click="selectedOrders = []"
-      >
-        {{ t('menu.clearSelection') || 'Clear selection' }}
-      </UButton>
     </div>
 
     <CreateOrderModal
