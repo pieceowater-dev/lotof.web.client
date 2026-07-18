@@ -266,4 +266,31 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('load', onPageLoad);
 });
+
+// Give every toast a sensible default icon based on its color so it reads
+// at a glance, without requiring every one of the ~40 call sites across the
+// app to pass one explicitly. Patches the same shared `notifications`
+// useState that Nuxt UI's useToast()/<UNotifications> already use, so it
+// applies regardless of which call site added the toast.
+const NOTIFICATION_ICON_BY_COLOR: Record<string, string> = {
+  red: 'lucide:alert-circle',
+  orange: 'lucide:alert-triangle',
+  amber: 'lucide:alert-triangle',
+  yellow: 'lucide:alert-triangle',
+  green: 'lucide:check-circle',
+  emerald: 'lucide:check-circle',
+  primary: 'lucide:info',
+  blue: 'lucide:info',
+  gray: 'lucide:bell',
+};
+const notifications = useState<Array<{ id: string; color?: string; icon?: string }>>('notifications', () => []);
+watch(
+  notifications,
+  (list) => {
+    for (const n of list) {
+      if (!n.icon) n.icon = NOTIFICATION_ICON_BY_COLOR[n.color || 'primary'];
+    }
+  },
+  { deep: true }
+);
 </script>

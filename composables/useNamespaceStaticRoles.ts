@@ -4,6 +4,7 @@
 import { logError } from '@/utils/logger';
 import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
 import { hubMembersList } from '@/api/hub/members/list';
+import { FilterPaginationLengthEnum } from '@gql-hub';
 
 export type StaticAccessRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
 
@@ -81,7 +82,7 @@ export function useNamespaceStaticRoles() {
       let page = 1;
       let batch: NamespaceMember[];
       do {
-        batch = await hubMembersList(hubToken, namespace.id, page, 'FIFTY');
+        batch = await hubMembersList(hubToken, namespace.id, page, FilterPaginationLengthEnum.Fifty);
         members.push(...batch);
         page += 1;
       } while (batch.length >= 50);

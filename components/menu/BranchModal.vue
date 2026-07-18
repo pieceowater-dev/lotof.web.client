@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import type { MenuBranch } from '@/api/menu/branch/list';
+import { DAY_KEYS, defaultWorkingHours, parseWorkingHours, serializeWorkingHours, type WorkingHours } from '@/utils/workingHours';
 
 const { t } = useI18n();
 
@@ -33,6 +34,18 @@ const form = reactive({
   isActive: true,
 });
 
+const dayLabel = (k: string) => ({
+  mon: t('menu.dayMon') || 'Mon',
+  tue: t('menu.dayTue') || 'Tue',
+  wed: t('menu.dayWed') || 'Wed',
+  thu: t('menu.dayThu') || 'Thu',
+  fri: t('menu.dayFri') || 'Fri',
+  sat: t('menu.daySat') || 'Sat',
+  sun: t('menu.daySun') || 'Sun',
+}[k] || k);
+
+const workingHours = reactive<WorkingHours>(defaultWorkingHours());
+
 watch(() => [props.modelValue, props.branch], () => {
   if (!props.modelValue) return;
   const b = props.branch;
@@ -45,6 +58,8 @@ watch(() => [props.modelValue, props.branch], () => {
   form.lng = b?.lng ?? undefined;
   form.isPrimary = b?.isPrimary || false;
   form.isActive = b ? b.isActive : true;
+  const wh = parseWorkingHours(b?.workingHours) || defaultWorkingHours();
+  DAY_KEYS.forEach((k) => { workingHours[k] = { ...wh[k] }; });
 }, { immediate: true });
 
 // Same phone sanitize/validate rules as the Contacts app's client-create form.
@@ -76,6 +91,7 @@ function handleSubmit() {
     slug: form.slug.trim() || undefined,
     lat: form.lat,
     lng: form.lng,
+    workingHours: serializeWorkingHours(workingHours),
     isPrimary: form.isPrimary,
     // isActive only exists on UpdateBranchInput — new branches always
     // start active on the backend, so this is a no-op on create.
@@ -128,6 +144,20 @@ function handleSubmit() {
           <ClientOnly>
             <BranchLocationPicker :lat="form.lat" :lng="form.lng" @update="(lat, lng) => { form.lat = lat; form.lng = lng; }" />
           </ClientOnly>
+        </UFormGroup>
+        <UFormGroup :label="t('menu.workingHours') || 'Working hours'">
+          <div class="space-y-1.5">
+            <div v-for="k in DAY_KEYS" :key="k" class="flex items-center gap-2">
+              <span class="w-8 text-sm text-gray-600 dark:text-gray-300 flex-shrink-0">{{ dayLabel(k) }}</span>
+              <UToggle v-model="workingHours[k].closed" size="sm" />
+              <span class="text-xs text-gray-400 w-14 flex-shrink-0">{{ workingHours[k].closed ? (t('menu.dayClosed') || 'Closed') : (t('menu.dayOpen') || 'Open') }}</span>
+              <template v-if="!workingHours[k].closed">
+                <UInput v-model="workingHours[k].open" type="time" size="sm" class="w-28" />
+                <span class="text-gray-400 text-xs">—</span>
+                <UInput v-model="workingHours[k].close" type="time" size="sm" class="w-28" />
+              </template>
+            </div>
+          </div>
         </UFormGroup>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">

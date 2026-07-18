@@ -113,8 +113,12 @@ async function saveRoute() {
 }
 
 async function handleDeleteRoute(routeItem: Route) {
-  const confirmText = t('app_route_delete_confirm') || 'Удалить маршрут?';
-  const ok = typeof window === 'undefined' ? true : window.confirm(confirmText);
+  const { confirm } = useConfirm();
+  const ok = await confirm({
+    message: t('app_route_delete_confirm') || 'Удалить маршрут?',
+    color: 'red',
+    icon: 'lucide:route',
+  });
   if (!ok) return;
   try {
     await deleteRouteById(routeItem.id);

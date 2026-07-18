@@ -483,7 +483,14 @@ async function saveRoleChange() {
 
 async function removeAdmin(id: string) {
   if (!token.value) return;
-  if (process.client && !window.confirm(t('admin.deleteAdminConfirm'))) return;
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    message: t('admin.deleteAdminConfirm'),
+    confirmLabel: t('app.remove') || 'Remove',
+    color: 'red',
+    icon: 'lucide:user-x',
+  });
+  if (!confirmed) return;
   actionLoading.value = true;
   errorMessage.value = '';
   try {

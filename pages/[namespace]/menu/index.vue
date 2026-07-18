@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
@@ -11,20 +12,39 @@ import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
 import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
+import { PaginationLength } from '@/utils/constants';
+import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
 
 const { t } = useI18n();
+
+// First-run onboarding: the namespace owner is guided through Brand (and
+// optionally Branches) setup before seeing the normal orders screen — a
+// freshly-installed app otherwise has no storefront name/colors/currency
+// set at all, which makes for a blank, broken-looking first share link.
+// Gated on "owner AND brand has no name yet" so it never re-appears for
+// staff or once the owner's actually completed it once.
+const showOnboarding = ref(false);
+async function checkOnboarding() {
+  try {
+    const menuToken = await getToken();
+    const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
+    const brand = await menuGetBrandSettings(menuToken, nsSlug.value);
+    if (brand?.name) return;
+    if (!hubToken.value) return;
+    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+    const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
+    if (namespace?.owner && currentUser.value?.id === namespace.owner) {
+      showOnboarding.value = true;
+    }
+  } catch (e) {
+    logError('[menu/index] checkOnboarding failed', e);
+  }
+}
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const { user: currentUser, fetchUser, token: hubToken } = useAuth();
 
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
-
-// Orders with no sourceTag weren't placed through any tracked share link —
-// they came in by phone, walk-in, or the bare menu URL, i.e. handled
-// directly rather than through a marketing channel. The backend's sourceTag
-// column has no NULL-vs-empty distinction worth exposing, so this sentinel
-// (never a real share link's tag — see loadSourceTagOptions) stands in for
-// "no tag" on both the quick-filter card and the source filter dropdown.
-const MANUAL_SOURCE_TAG = '__manual__';
 
 const statusLabel = (s: string) => ({
   NEW: t('menu.statusNew') || 'New',
@@ -115,6 +135,11 @@ function cardStyle(s: string) {
 const orders = ref<MenuOrder[]>([]);
 const totalCount = ref(0);
 const loading = ref(false);
+const page = ref(1);
+const pageCount = ref(50);
+const PAGE_LENGTH_BY_COUNT: Record<number, string> = {
+  10: PaginationLength.TEN, 25: PaginationLength.TWENTY_FIVE, 50: PaginationLength.FIFTY, 100: PaginationLength.ONE_HUNDRED,
+};
 const error = ref<string | null>(null);
 
 const branches = ref<MenuBranch[]>([]);
@@ -134,8 +159,41 @@ const createdFrom = ref('');
 const createdTo = ref('');
 const closedFrom = ref('');
 const closedTo = ref('');
-const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '' });
+const participantFilter = ref('');
+const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '', participantUserId: '' });
 const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
+
+// Staff eligible to be picked as a "participant" filter — same "has an
+// actual role" rule as the order detail's own participant picker (see
+// OrderDetailModal.vue), so this list never includes someone who couldn't
+// actually be assigned to an order in the first place.
+const participantOptions = ref<{ label: string; value: string }[]>([]);
+async function loadParticipantOptions() {
+  try {
+    const menuToken = await getToken();
+    const { menuStaffList } = await import('@/api/menu/staff/list');
+    const staffRes = await menuStaffList(menuToken, nsSlug.value);
+    if (!staffRes.staff.length || !hubToken.value) { participantOptions.value = []; return; }
+    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+    const { hubMembersList } = await import('@/api/hub/members/list');
+    const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
+    if (!namespace?.id) return;
+    const collected: Array<{ userId: string; username: string; email: string }> = [];
+    let page2 = 1;
+    let batch: Array<{ userId: string; username: string; email: string }>;
+    do {
+      batch = await hubMembersList(hubToken.value, namespace.id, page2, FilterPaginationLengthEnum.Fifty);
+      collected.push(...batch);
+      page2 += 1;
+    } while (batch.length >= 50);
+    const nameByUserId = new Map(collected.map((m) => [m.userId, m.username || m.email]));
+    participantOptions.value = staffRes.staff
+      .map((s) => ({ label: nameByUserId.get(s.userId) || (t('menu.unknownMember') || 'Unknown member'), value: s.userId }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+  } catch (e) {
+    logError('[menu/index] loadParticipantOptions failed', e);
+  }
+}
 
 // Known source tags, pulled from saved share links, so the filter is a
 // selector of real tracking sources instead of free text prone to typos.
@@ -225,6 +283,7 @@ const currentFilterParams = computed(() => ({
   createdTo: dateInputToRfc3339(appliedFilterPanel.createdTo, true),
   closedFrom: dateInputToRfc3339(appliedFilterPanel.closedFrom),
   closedTo: dateInputToRfc3339(appliedFilterPanel.closedTo, true),
+  participantUserId: appliedFilterPanel.participantUserId || undefined,
 }));
 
 function applyFilterPanel() {
@@ -233,7 +292,9 @@ function applyFilterPanel() {
   appliedFilterPanel.createdTo = createdTo.value;
   appliedFilterPanel.closedFrom = closedFrom.value;
   appliedFilterPanel.closedTo = closedTo.value;
+  appliedFilterPanel.participantUserId = participantFilter.value;
   isFilterPanelOpen.value = false;
+  page.value = 1;
   loadOrders();
   loadSummary();
 }
@@ -244,6 +305,7 @@ function clearFilterPanel() {
   createdTo.value = '';
   closedFrom.value = '';
   closedTo.value = '';
+  participantFilter.value = '';
   applyFilterPanel();
 }
 
@@ -284,7 +346,8 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
     const { menuOrdersList } = await import('@/api/menu/order/list');
     const res = await menuOrdersList(menuToken, nsSlug.value, {
       ...currentFilterParams.value,
-      length: 'FIFTY',
+      page: page.value,
+      length: PAGE_LENGTH_BY_COUNT[pageCount.value] || PaginationLength.FIFTY,
     });
     orders.value = res.orders;
     totalCount.value = res.count;
@@ -329,31 +392,40 @@ async function loadStatusCounts() {
   } catch (e) {
     logError('[menu/index] loadStatusCounts failed', e);
   }
-  loadManualOrdersCount();
+  loadMyOrdersCount();
 }
 
-const manualOrdersCount = ref(0);
-async function loadManualOrdersCount() {
+// "My orders" — orders the current staff member is actually assigned to via
+// order_members (see Participants on the order detail), not anything to do
+// with sourceTag. Needs the current user's id, so it depends on useAuth's
+// user being populated (see onMounted below).
+const myOrdersCount = ref(0);
+async function loadMyOrdersCount() {
+  if (!currentUser.value?.id) return;
   try {
     const menuToken = await getToken();
     const { menuOrdersList } = await import('@/api/menu/order/list');
     const res = await menuOrdersList(menuToken, nsSlug.value, {
-      sourceTag: MANUAL_SOURCE_TAG,
+      participantUserId: currentUser.value.id,
       branchIds: selectedBranchIds.value,
       types: selectedType.value ? [selectedType.value] : undefined,
       length: 'TEN',
     });
-    manualOrdersCount.value = res.count;
+    myOrdersCount.value = res.count;
   } catch (e) {
-    logError('[menu/index] loadManualOrdersCount failed', e);
+    logError('[menu/index] loadMyOrdersCount failed', e);
   }
 }
 
-const isManualFilterActive = computed(() => appliedFilterPanel.sourceTag === MANUAL_SOURCE_TAG);
-function toggleManualFilter() {
-  const next = isManualFilterActive.value ? '' : MANUAL_SOURCE_TAG;
-  sourceTagFilter.value = next;
-  appliedFilterPanel.sourceTag = next;
+// Derived from the same participant filter the "More filters" panel's own
+// dropdown drives — "my orders" is just that filter pinned to yourself, so
+// picking a colleague there correctly turns this card off, and vice versa.
+const myOrdersFilterActive = computed(() => !!currentUser.value?.id && appliedFilterPanel.participantUserId === currentUser.value.id);
+function toggleMyOrdersFilter() {
+  const next = myOrdersFilterActive.value ? '' : (currentUser.value?.id || '');
+  participantFilter.value = next;
+  appliedFilterPanel.participantUserId = next;
+  page.value = 1;
   loadOrders();
   loadSummary();
 }
@@ -362,23 +434,27 @@ function toggleStatus(s: string) {
   const idx = selectedStatuses.value.indexOf(s);
   if (idx === -1) selectedStatuses.value = [...selectedStatuses.value, s];
   else selectedStatuses.value = selectedStatuses.value.filter((v) => v !== s);
+  page.value = 1;
   loadOrders();
   loadSummary();
 }
 
 function clearStatuses() {
   selectedStatuses.value = [];
+  page.value = 1;
   loadOrders();
   loadSummary();
 }
 
 watch(selectedBranchIds, () => {
+  page.value = 1;
   loadOrders();
   loadStatusCounts();
   loadSummary();
 });
 
 watch(selectedType, () => {
+  page.value = 1;
   loadOrders();
   loadStatusCounts();
   loadSummary();
@@ -386,7 +462,11 @@ watch(selectedType, () => {
 
 watch(search, () => {
   if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(() => { loadOrders(); loadSummary(); }, 400);
+  searchDebounce = setTimeout(() => { page.value = 1; loadOrders(); loadSummary(); }, 400);
+});
+
+watch([page, pageCount], () => {
+  loadOrders();
 });
 
 const columns = computed(() => [
@@ -565,6 +645,8 @@ onMounted(async () => {
   restoreLiveUpdatesPref();
   loadBranches();
   loadSourceTagOptions();
+  loadParticipantOptions();
+  fetchUser().then(() => { loadMyOrdersCount(); checkOnboarding(); });
   await loadOrders();
   loadStatusCounts();
   loadSummary();
@@ -739,30 +821,30 @@ async function handleCreateOrder(payload: any) {
           <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ totalCount }}</span>
         </span>
       </button>
-      <!-- A different filter dimension from the status cards (source tag,
-           not status) — orders with no sourceTag, i.e. not placed through
-           any tracked share link. Distinct color so it doesn't read as
-           another status. -->
+      <!-- A different filter dimension from the status cards (who's on the
+           order, not what state it's in) — orders where the current staff
+           member is a participant (see order_members / Participants on the
+           order detail). Distinct color so it doesn't read as another status. -->
       <button
         class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
-        :class="isManualFilterActive
+        :class="myOrdersFilterActive
           ? 'border-indigo-300 bg-indigo-50 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/30'
           : CARD_INACTIVE"
-        @click="toggleManualFilter"
+        @click="toggleMyOrdersFilter"
       >
         <span
           class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
-          :class="isManualFilterActive ? 'bg-indigo-100 dark:bg-indigo-900/40' : CARD_INACTIVE_ICON_BG"
+          :class="myOrdersFilterActive ? 'bg-indigo-100 dark:bg-indigo-900/40' : CARD_INACTIVE_ICON_BG"
         >
           <Icon
             name="lucide:user"
             class="h-4 w-4"
-            :class="isManualFilterActive ? 'text-indigo-600 dark:text-indigo-300' : CARD_INACTIVE_ICON_COLOR"
+            :class="myOrdersFilterActive ? 'text-indigo-600 dark:text-indigo-300' : CARD_INACTIVE_ICON_COLOR"
           />
         </span>
         <span>
           <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.myOrdersCard') || 'My orders' }}</span>
-          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ manualOrdersCount }}</span>
+          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ myOrdersCount }}</span>
         </span>
       </button>
       <button
@@ -866,9 +948,13 @@ async function handleCreateOrder(payload: any) {
     <div class="flex-1 min-h-0">
       <AppTable
         v-model:selected="selectedOrders"
+        v-model:page="page"
+        v-model:page-count="pageCount"
         :rows="displayRows"
         :columns="columns"
         :loading="loading"
+        :total="totalCount"
+        pagination
         empty-icon="lucide:receipt-text"
         @select="openDetail"
       >
@@ -1039,13 +1125,30 @@ async function handleCreateOrder(payload: any) {
             </div>
             <USelectMenu
               v-model="sourceTagFilter"
-              :options="[{ label: t('menu.any') || 'Any', value: '' }, { label: t('menu.myOrdersCard') || 'My orders', value: MANUAL_SOURCE_TAG }, ...sourceTagOptions.map((s) => ({ label: s.label, value: s.sourceTag }))]"
+              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...sourceTagOptions.map((s) => ({ label: s.label, value: s.sourceTag }))]"
               value-attribute="value"
               option-attribute="label"
               icon="lucide:link"
               :popper="{ strategy: 'fixed' }"
             />
             <p class="text-xs text-gray-400">{{ t('menu.sourceTagFilterHint') || 'From links saved in the Share tab' }}</p>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:user" class="h-3.5 w-3.5" />
+              {{ t('menu.participantFilterLabel') || 'Participant' }}
+            </div>
+            <USelectMenu
+              v-model="participantFilter"
+              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...participantOptions]"
+              value-attribute="value"
+              option-attribute="label"
+              searchable
+              icon="lucide:user"
+              :popper="{ strategy: 'fixed' }"
+            />
+            <p class="text-xs text-gray-400">{{ t('menu.participantFilterHint') || 'Orders this staff member is assigned to' }}</p>
           </div>
 
           <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
@@ -1092,5 +1195,7 @@ async function handleCreateOrder(payload: any) {
         </template>
       </UCard>
     </USlideover>
+
+    <OnboardingWizard v-if="showOnboarding" @completed="showOnboarding = false" />
   </div>
 </template>

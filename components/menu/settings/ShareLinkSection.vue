@@ -6,6 +6,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuShareLink } from '@/api/menu/sharelink/list';
+import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -96,8 +97,14 @@ async function loadSavedLinks() {
 
 const isFormValid = computed(() => linkGenLabel.value.trim().length > 0);
 
+const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
+
 async function saveLink() {
   if (!isFormValid.value) return;
+  if (isAtLimit('max_links', savedLinks.value.length)) {
+    useToast().add({ title: t('menu.planLimitLinks') || 'Share link limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   saving.value = true;
   try {
     const menuToken = await getToken();
@@ -133,9 +140,10 @@ async function removeLink(link: MenuShareLink) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadBranches();
   loadSavedLinks();
+  loadPlanLimits(await getToken(), nsSlug.value);
 });
 </script>
 

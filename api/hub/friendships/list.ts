@@ -8,6 +8,7 @@ const MY_FRIENDS_QUERY = /* GraphQL */ `
       rows {
         id
         status
+        initiatedByMe
         friend { id username email }
       }
       info { count }

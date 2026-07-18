@@ -30,17 +30,19 @@ export type OrdersFilter = {
   createdTo?: string;
   closedFrom?: string;
   closedTo?: string;
+  participantUserId?: string;
   page?: number;
   length?: string;
 };
 
 const ORDER_FILTER_VARS = `
   $statuses: [String!], $branchIds: [String!], $search: String, $types: [String!], $sourceTag: String,
-  $createdFrom: String, $createdTo: String, $closedFrom: String, $closedTo: String
+  $createdFrom: String, $createdTo: String, $closedFrom: String, $closedTo: String, $participantUserId: String
 `;
 const ORDER_FILTER_ARGS = `
   statuses: $statuses, branchIds: $branchIds, search: $search, types: $types, sourceTag: $sourceTag,
-  createdFrom: $createdFrom, createdTo: $createdTo, closedFrom: $closedFrom, closedTo: $closedTo
+  createdFrom: $createdFrom, createdTo: $createdTo, closedFrom: $closedFrom, closedTo: $closedTo,
+  participantUserId: $participantUserId
 `;
 
 const OrdersDocument = /* GraphQL */ `
@@ -65,6 +67,7 @@ function filterVars(params: OrdersFilter) {
     createdTo: params.createdTo || undefined,
     closedFrom: params.closedFrom || undefined,
     closedTo: params.closedTo || undefined,
+    participantUserId: params.participantUserId || undefined,
   };
 }
 

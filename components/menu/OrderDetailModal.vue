@@ -6,6 +6,7 @@ import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { FilterPaginationLengthEnum } from '@gql-hub';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
 import { smartOrderNumber } from '@/utils/orderNumber';
@@ -25,7 +26,7 @@ const { confirm } = useConfirm();
 const route = useRoute();
 const router = useRouter();
 const nsSlug = computed(() => route.params.namespace as string);
-const { token: hubToken } = useAuth();
+const { token: hubToken, user: currentUser, fetchUser } = useAuth();
 
 const props = defineProps<{
   modelValue: boolean;
@@ -44,8 +45,6 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
 });
-
-const ROLES = ['OWNER', 'MANAGER', 'COOK', 'OPERATOR', 'COURIER'] as const;
 
 const statusLabel = (s: string) => ({
   NEW: t('menu.statusNew') || 'New',
@@ -71,13 +70,11 @@ const branchById = computed(() => {
   return map;
 });
 
-// Orders have no sourceTag when they weren't placed through a tracked share
-// link (phone/walk-in/bare menu URL) — shown as "My orders" to match the
-// admin list's quick-filter card of the same name. A tag that doesn't match
-// any current share link (e.g. one that's since been deleted) falls back to
-// the raw value rather than disappearing silently.
-function sourceTagLabel(tag: string | null | undefined): string {
-  if (!tag) return t('menu.myOrdersCard') || 'My orders';
+// Resolves a sourceTag to the share link's human-readable label instead of
+// the raw tag value — same mapping used by the admin list's source filter.
+// A tag that doesn't match any current share link (e.g. one that's since
+// been deleted) falls back to the raw value rather than disappearing silently.
+function sourceTagLabel(tag: string): string {
   return props.sourceTagOptions?.find((s) => s.sourceTag === tag)?.label || tag;
 }
 
@@ -107,13 +104,28 @@ async function loadHubMembers() {
     let page = 1;
     let batch: Array<{ userId: string; username: string; email: string }>;
     do {
-      batch = await hubMembersList(hubToken.value, namespace.id, page, 'FIFTY');
+      batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
       collected.push(...batch);
       page += 1;
     } while (batch.length >= 50);
     hubMembers.value = collected;
   } catch (e) {
     logError('[OrderDetailModal] loadHubMembers failed', e);
+  }
+}
+
+// Roles from the menu Staff settings — only members who actually have one
+// can be assigned to an order (see menuAuth role checks; someone with no
+// staff role couldn't do anything with the order even if assigned).
+const staffRoleByUserId = ref<Record<string, string>>({});
+async function loadStaffRoles() {
+  try {
+    const menuToken = await getToken();
+    const { menuStaffList } = await import('@/api/menu/staff/list');
+    const res = await menuStaffList(menuToken, nsSlug.value);
+    staffRoleByUserId.value = Object.fromEntries(res.staff.map((s) => [s.userId, s.role]));
+  } catch (e) {
+    logError('[OrderDetailModal] loadStaffRoles failed', e);
   }
 }
 
@@ -362,6 +374,8 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
   if (open && props.order) {
     loadDetails();
     loadHubMembers();
+    loadStaffRoles();
+    fetchUser();
     loadCatalog();
     loadCustomerOrders();
     loadClientIntegration();
@@ -411,23 +425,35 @@ async function changeStatus(status: string) {
 
 // --- Participants ---
 const newMemberUserId = ref('');
-const newMemberRole = ref<string>('COURIER');
 const addingMember = ref(false);
 
+// Only staff (someone with an actual role in Settings → Staff) can be
+// assigned — no separate role picker either, since their order role is just
+// their staff role (matches what they can actually do). The current user is
+// pinned first since self-assigning is the most common case.
 const memberOptions = computed(() => {
   const taken = new Set(members.value.map((m) => m.userId));
-  return hubMembers.value
-    .filter((m) => !taken.has(m.userId))
-    .map((m) => ({ label: m.username || m.email || (t('menu.unknownMember') || 'Unknown member'), value: m.userId }));
+  const eligible = hubMembers.value.filter((m) => !taken.has(m.userId) && staffRoleByUserId.value[m.userId]);
+  const sorted = [...eligible].sort((a, b) => {
+    if (a.userId === currentUser.value?.id) return -1;
+    if (b.userId === currentUser.value?.id) return 1;
+    return 0;
+  });
+  return sorted.map((m) => ({
+    label: `${m.username || m.email || (t('menu.unknownMember') || 'Unknown member')} — ${roleLabel(staffRoleByUserId.value[m.userId])}`,
+    value: m.userId,
+  }));
 });
 
 async function addMember() {
   if (!props.order || !newMemberUserId.value) return;
+  const role = staffRoleByUserId.value[newMemberUserId.value];
+  if (!role) return;
   addingMember.value = true;
   try {
     const menuToken = await getToken();
     const { menuAddOrderMember } = await import('@/api/menu/order/members');
-    const created = await menuAddOrderMember(menuToken, nsSlug.value, props.order.id, newMemberUserId.value, newMemberRole.value);
+    const created = await menuAddOrderMember(menuToken, nsSlug.value, props.order.id, newMemberUserId.value, role);
     members.value = [...members.value, created];
     newMemberUserId.value = '';
     useToast().add({ title: t('menu.memberAdded') || 'Member added', color: 'primary' });
@@ -869,7 +895,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                 <Icon name="lucide:message-square" class="w-4 h-4 text-gray-400 mt-0.5" />
                 <span class="text-gray-600 dark:text-gray-300">{{ order.comment }}</span>
               </div>
-              <div class="flex items-center gap-2 text-xs text-gray-400">
+              <div v-if="order.sourceTag" class="flex items-center gap-2 text-xs text-gray-400">
                 <Icon name="lucide:tag" class="w-3.5 h-3.5" />
                 {{ sourceTagLabel(order.sourceTag) }}
               </div>
@@ -1037,7 +1063,6 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                   class="flex-1"
                   :popper="{ strategy: 'fixed' }"
                 />
-                <USelect v-model="newMemberRole" :options="ROLES.map((r) => ({ label: roleLabel(r), value: r }))" value-attribute="value" option-attribute="label" size="sm" class="w-36" />
                 <UButton size="sm" icon="lucide:plus" :loading="addingMember" :disabled="!newMemberUserId || addingMember" @click="addMember" />
               </div>
             </div>

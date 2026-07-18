@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { localizeAtraceErrorMessage } from '@/utils/atrace/localizeError';
 import type { Role } from '@/api/atrace/role/getRoles';
+import { FilterPaginationLengthEnum } from '@gql-hub';
 
 export type AtraceMember = {
   id: string;
@@ -90,7 +91,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
 
         // Load members - using FIFTY to get more members
         const { hubMembersList } = await import('@/api/hub/members/list');
-        const membersList = await hubMembersList(hubToken, ns.id, 1, 'FIFTY');
+        const membersList = await hubMembersList(hubToken, ns.id, 1, FilterPaginationLengthEnum.Fifty);
 
         // Load active members from A-Trace to mark statuses
         const { atraceClient } = await import('@/api/clients');

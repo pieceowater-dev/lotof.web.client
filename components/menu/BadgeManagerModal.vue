@@ -5,6 +5,7 @@ import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBadge } from '@/api/menu/badge/list';
+import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -89,8 +90,14 @@ function pickIcon(icon: string) {
 
 const isFormValid = computed(() => form.text.trim().length > 0);
 
+const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
+
 async function save() {
   if (!isFormValid.value) return;
+  if (!editingId.value && isAtLimit('max_badges', badges.value.length)) {
+    useToast().add({ title: t('menu.planLimitBadges') || 'Badge limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   saving.value = true;
   try {
     const menuToken = await getToken();
@@ -143,9 +150,13 @@ async function remove(b: MenuBadge) {
   }
 }
 
-watch(() => props.modelValue, (open) => {
-  if (open) load();
-  else resetForm();
+watch(() => props.modelValue, async (open) => {
+  if (open) {
+    load();
+    loadPlanLimits(await getToken(), nsSlug.value);
+  } else {
+    resetForm();
+  }
 });
 </script>
 

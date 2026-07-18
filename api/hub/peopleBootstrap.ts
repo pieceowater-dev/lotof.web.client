@@ -20,6 +20,7 @@ const PEOPLE_BOOTSTRAP_QUERY = /* GraphQL */ `
       rows {
         id
         status
+        initiatedByMe
         friend { id username email }
       }
       info { count }
@@ -51,6 +52,7 @@ export interface PeopleBootstrapResult {
     rows: Array<{
       id: string;
       status: FriendshipStatus;
+      initiatedByMe: boolean;
       friend: { id: string; username: string; email: string };
     }>;
     info: { count: number };
@@ -74,13 +76,13 @@ export async function hubPeopleBootstrap(
   
   const variables = {
     namespacesFilter: {
-      pagination: { page: 1, length: 'TEN' as FilterPaginationLengthEnum }
+      pagination: { page: 1, length: 'ONE_HUNDRED' as FilterPaginationLengthEnum }
     },
     friendsStatus: FriendshipStatus.Accepted,
     membersFilter: {
       namespaceId: selectedNamespaceId,
       filter: {
-        pagination: { page: 1, length: 'TEN' as FilterPaginationLengthEnum }
+        pagination: { page: 1, length: 'ONE_HUNDRED' as FilterPaginationLengthEnum }
       }
     },
     friendSearchSearch: undefined,

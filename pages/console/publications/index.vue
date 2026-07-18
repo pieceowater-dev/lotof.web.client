@@ -365,7 +365,14 @@ function reload() {
 }
 
 async function deletePublication(row: PublicationListRow) {
-  const confirmed = window.confirm(`Архивировать публикацию \"${row.title}\"? Публикация исчезнет из списков и публичной выдачи.`);
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    title: 'Архивировать публикацию?',
+    message: `«${row.title}» исчезнет из списков и публичной выдачи.`,
+    confirmLabel: 'Архивировать',
+    color: 'red',
+    icon: 'lucide:archive',
+  });
   if (!confirmed) return;
 
   try {

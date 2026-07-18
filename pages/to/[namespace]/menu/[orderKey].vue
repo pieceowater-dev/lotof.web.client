@@ -4,24 +4,34 @@ import { logError } from '@/utils/logger';
 import { getPublicStorefront, getPublicOrderStatus } from '@/api/menu/public/storefront';
 import type { PublicOrderStatus } from '@/api/menu/public/storefront';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
+import type { MenuBranch } from '@/api/menu/branch/list';
 import { getContrastTextColor } from '@/utils/color';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseOrderStatusKey } from '@/utils/orderNumber';
 import { withRetry } from '@/utils/retry';
 import { statusBadgeStyle, ORDER_STATUSES } from '@/utils/orderStatus';
+import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
+import { telHref } from '@/utils/phoneLinks';
 
 definePageMeta({ layout: false });
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
+const LOCALE_TAG: Record<string, string> = { ru: 'ru-RU', kk: 'kk-KZ', en: 'en-US' };
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const orderKey = computed(() => route.params.orderKey as string);
 
 const brand = ref<MenuBrandSettings | null>(null);
+const branches = ref<MenuBranch[]>([]);
 const order = ref<PublicOrderStatus | null>(null);
 const loading = ref(true);
 const invalidLink = ref(false);
 const notFound = ref(false);
+
+// Same "primary branch phone stands in for the business line" convention as
+// the main storefront page.
+const brandPhone = computed(() => (branches.value.find((b) => b.isPrimary) || branches.value[0])?.phone || '');
+const brandSocialLinks = computed(() => parseSocialLinks(brand.value?.socialLinks));
 
 const primaryColor = computed(() => brand.value?.primaryColor || '#3b82f6');
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
@@ -53,7 +63,8 @@ const currentStepIndex = computed(() => {
 function formatDateTime(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    const tag = LOCALE_TAG[locale.value] || undefined;
+    return d.toLocaleDateString(tag, { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(tag, { hour: '2-digit', minute: '2-digit' });
   } catch {
     return iso;
   }
@@ -64,7 +75,9 @@ async function load() {
   invalidLink.value = false;
   notFound.value = false;
   try {
-    brand.value = (await withRetry(() => getPublicStorefront(nsSlug.value))).brandSettings;
+    const storefront = await withRetry(() => getPublicStorefront(nsSlug.value));
+    brand.value = storefront.brandSettings;
+    branches.value = storefront.branches;
   } catch (e) {
     logError('[order-status] getPublicStorefront failed', e);
   }
@@ -152,13 +165,16 @@ useHead(() => ({
     <!-- Header: mirrors the main storefront's hero (colored band, big logo
          card, brand name) so the two pages read as the same product — plus
          a small back link since this sub-page needs a way out, unlike the
-         storefront itself. -->
-    <div class="relative" :style="{ backgroundColor: primaryColor }">
+         storefront itself. Stays neutral (no color) until the brand actually
+         loads, rather than flashing primaryColor's blue fallback for
+         everyone while the fetch is still in flight. -->
+    <div class="relative" :class="!brand && 'bg-gray-100 dark:bg-gray-900'" :style="brand ? { backgroundColor: primaryColor } : {}">
       <div class="max-w-lg mx-auto px-4 pt-4 pb-6">
         <button
           type="button"
-          class="inline-flex items-center gap-1 text-xs font-medium mb-3 opacity-80 hover:opacity-100 transition-opacity"
-          :style="{ color: onPrimaryText }"
+          class="inline-flex items-center gap-1 text-xs font-medium mb-3 transition-opacity"
+          :class="brand ? 'opacity-80 hover:opacity-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+          :style="brand ? { color: onPrimaryText } : {}"
           @click="backToMenu"
         >
           <Icon name="lucide:arrow-left" class="w-3.5 h-3.5" />
@@ -169,7 +185,11 @@ useHead(() => ({
             <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.logoAlt || brand.name" class="w-full h-full object-contain p-1.5">
             <Icon v-else name="lucide:store" class="w-6 h-6 text-gray-300" />
           </div>
-          <h1 class="min-w-0 flex-1 text-xl font-bold truncate" :style="{ color: onPrimaryText }">{{ brand?.name || nsSlug }}</h1>
+          <h1
+            class="min-w-0 flex-1 text-xl font-bold truncate"
+            :class="!brand && 'text-gray-900 dark:text-white'"
+            :style="brand ? { color: onPrimaryText } : {}"
+          >{{ brand?.name || nsSlug }}</h1>
         </div>
       </div>
     </div>
@@ -266,6 +286,34 @@ useHead(() => ({
           </div>
         </div>
       </template>
+
+      <!-- Contact us: shown regardless of whether the order was found —
+           most useful exactly when the lookup fails and someone needs a
+           human instead. -->
+      <div v-if="brandPhone || brandSocialLinks.length" class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-800 text-center">
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-2.5">{{ t('menu.getInTouch') || 'Need help? Get in touch' }}</p>
+        <div class="flex items-center justify-center gap-2">
+          <a
+            v-if="brandPhone"
+            :href="telHref(brandPhone)"
+            class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors"
+            :aria-label="t('menu.call') || 'Call'"
+          >
+            <Icon name="lucide:phone" class="w-4 h-4" />
+          </a>
+          <a
+            v-for="link in brandSocialLinks"
+            :key="link.link"
+            :href="link.link"
+            target="_blank"
+            rel="noopener"
+            class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors"
+            :aria-label="link.description || socialLabel(link.name)"
+          >
+            <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
+          </a>
+        </div>
+      </div>
     </div>
   </div>
 </template>

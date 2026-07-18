@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import PromoBannerModal from '@/components/menu/PromoBannerModal.vue';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
+import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -52,7 +53,13 @@ async function loadBanners() {
   }
 }
 
+const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
+
 function openCreate() {
+  if (isAtLimit('max_promobanners', banners.value.length)) {
+    useToast().add({ title: t('menu.planLimitBanners') || 'Banner limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   editingBanner.value = null;
   isModalOpen.value = true;
 }
@@ -158,6 +165,10 @@ const isBadgeFormValid = computed(() => badgeForm.text.trim().length > 0);
 
 async function saveBadge() {
   if (!isBadgeFormValid.value) return;
+  if (!editingBadgeId.value && isAtLimit('max_badges', badges.value.length)) {
+    useToast().add({ title: t('menu.planLimitBadges') || 'Badge limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   badgeSaving.value = true;
   try {
     const menuToken = await getToken();
@@ -208,9 +219,10 @@ async function removeBadge(b: MenuBadge) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadBanners();
   loadBadges();
+  loadPlanLimits(await getToken(), nsSlug.value);
 });
 </script>
 

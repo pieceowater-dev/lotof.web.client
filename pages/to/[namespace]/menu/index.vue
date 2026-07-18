@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders, getPublicOrderStatus } from '@/api/menu/public/storefront';
+import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders, getPublicOrderStatus, getPublicStopList } from '@/api/menu/public/storefront';
 import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
@@ -12,6 +12,7 @@ import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
 import { withRetry } from '@/utils/retry';
+import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHours';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -167,6 +168,26 @@ const activeCategoryId = ref<string>('');
 const visibleBranches = computed(() => (data.value?.storefront.branches || []).filter((b) => b.isActive));
 const activeBranch = computed(() => visibleBranches.value.find((b) => b.id === selectedBranchId.value) || null);
 const needsBranchPicker = computed(() => visibleBranches.value.length > 1 && !selectedBranchId.value);
+
+// Closed-now notice: only shown once a branch is picked and it actually has
+// hours configured (parseWorkingHours returns null for branches that never
+// set any, so those silently skip the notice rather than falsely claiming
+// "closed" for every tenant that hasn't touched this feature yet).
+const activeBranchHours = computed(() => parseWorkingHours(activeBranch.value?.workingHours));
+const isBranchOpenNow = computed(() => {
+  if (!activeBranchHours.value) return true;
+  return isOpenNow(activeBranchHours.value);
+});
+const nextOpenText = computed(() => {
+  if (!activeBranchHours.value) return '';
+  const dayLabels = {
+    mon: t('menu.dayMon') || 'Mon', tue: t('menu.dayTue') || 'Tue', wed: t('menu.dayWed') || 'Wed',
+    thu: t('menu.dayThu') || 'Thu', fri: t('menu.dayFri') || 'Fri', sat: t('menu.daySat') || 'Sat', sun: t('menu.daySun') || 'Sun',
+  };
+  const next = nextOpenLabel(activeBranchHours.value, new Date(), dayLabels, t('menu.today') || 'today', t('menu.tomorrow') || 'tomorrow');
+  if (!next) return '';
+  return `${next.day} ${t('menu.at') || 'at'} ${next.time}`;
+});
 const primaryColor = computed(() => data.value?.storefront.brandSettings?.primaryColor || '#3b82f6');
 // secondaryColor was set in Brand settings but never actually rendered
 // anywhere on the storefront. Brand identity (hero band, header, main CTAs)
@@ -231,12 +252,26 @@ watch(selectedBranchId, (id) => {
   else localStorage.removeItem(branchStorageKey.value);
 });
 
+// Stop list — items temporarily unavailable at the selected branch (out of
+// stock today), unlike excludedBranchIds which is permanent. Re-fetched
+// whenever the branch changes since it's branch-scoped.
+const stoppedItemIds = ref<Set<string>>(new Set());
+watch(selectedBranchId, async (id) => {
+  if (!id) { stoppedItemIds.value = new Set(); return; }
+  try {
+    const ids = await getPublicStopList(nsSlug.value, id);
+    stoppedItemIds.value = new Set(ids);
+  } catch (e) {
+    logError('[shared/menu] getPublicStopList failed', e);
+  }
+}, { immediate: true });
+
 const visibleItemsByCategory = computed(() => {
   const result: Record<string, MenuItem[]> = {};
   const byCategory = data.value?.itemsByCategory || {};
   for (const [catId, items] of Object.entries(byCategory)) {
     result[catId] = selectedBranchId.value
-      ? items.filter((i) => !i.excludedBranchIds.includes(selectedBranchId.value))
+      ? items.filter((i) => !i.excludedBranchIds.includes(selectedBranchId.value) && !stoppedItemIds.value.has(i.id))
       : items;
   }
   return result;
@@ -513,6 +548,29 @@ const checkoutForm = reactive({
   type: 'delivery' as 'pickup' | 'delivery',
   deliveryAddress: '',
   comment: '',
+  scheduled: false,
+  scheduledDate: '', // "YYYY-MM-DD"
+  scheduledTime: '', // "HH:MM", start of a 1h window
+});
+
+// A local Date built from scheduledDate/scheduledTime, or null if either is
+// missing/invalid — used both for the ISO value sent to the backend and for
+// the human-readable "11:00–12:00" confirmation text.
+const scheduledDateTime = computed<Date | null>(() => {
+  if (!checkoutForm.scheduled || !checkoutForm.scheduledDate || !checkoutForm.scheduledTime) return null;
+  const d = new Date(`${checkoutForm.scheduledDate}T${checkoutForm.scheduledTime}:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+});
+const scheduledWindowLabel = computed(() => {
+  const start = scheduledDateTime.value;
+  if (!start) return '';
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  const fmt = (d: Date) => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  return `${fmt(start)}–${fmt(end)}`;
+});
+const todayDateInputValue = computed(() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 });
 
 // Contact details (name + phone only — not address/comment, those are
@@ -581,6 +639,7 @@ const isCheckoutValid = computed(() => {
   if (!isPhoneValid.value) return false;
   if (checkoutForm.type === 'delivery' && !checkoutForm.deliveryAddress.trim()) return false;
   if (checkoutForm.type === 'pickup' && !selectedBranchId.value) return false;
+  if (checkoutForm.scheduled && !scheduledDateTime.value) return false;
   return cart.value.length > 0;
 });
 
@@ -594,6 +653,7 @@ async function submitOrder() {
       customerName: checkoutForm.customerName.trim() || undefined,
       type: checkoutForm.type,
       deliveryAddress: checkoutForm.type === 'delivery' ? checkoutForm.deliveryAddress.trim() : undefined,
+      deliveryAt: scheduledDateTime.value ? scheduledDateTime.value.toISOString() : undefined,
       comment: checkoutForm.comment.trim() || undefined,
       sourceTag: sourceTag.value || undefined,
       totalAmount: cartTotal.value,
@@ -755,6 +815,14 @@ useHead(() => {
             <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
             <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
           </a>
+          <span
+            v-if="activeBranch && activeBranchHours"
+            class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium flex-shrink-0"
+            :style="{ color: onPrimaryText }"
+          >
+            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="isBranchOpenNow ? 'bg-emerald-400' : 'bg-red-400'" />
+            {{ isBranchOpenNow ? (t('menu.openNow') || 'Open now') : (t('menu.closedNow') || 'Closed now') }}
+          </span>
           <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0 ml-auto">
             <a
               v-if="brandPhone"
@@ -779,6 +847,20 @@ useHead(() => {
             </a>
           </div>
         </div>
+        </div>
+      </div>
+
+      <!-- Closed-now notice: orders are still accepted (see the ASAP/Schedule
+           toggle at checkout), just heads-up that nobody's there to start on
+           it until the branch reopens. -->
+      <div v-if="activeBranch && activeBranchHours && !isBranchOpenNow" class="max-w-3xl mx-auto px-4 pt-4">
+        <div class="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-4 py-3 flex items-start gap-2.5">
+          <Icon name="lucide:moon" class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+          <div class="text-sm text-amber-800 dark:text-amber-300">
+            <span class="font-medium">{{ t('menu.closedNowNotice') || "We're closed right now." }}</span>
+            {{ ' ' }}
+            <span v-if="nextOpenText">{{ t('menu.closedNowNoticeDetail') || 'Your order will be prepared when we open' }} {{ nextOpenText }}.</span>
+          </div>
         </div>
       </div>
 
@@ -1450,6 +1532,25 @@ useHead(() => {
             <UButton size="sm" color="gray" variant="soft" icon="lucide:map" :to="twoGisSearchHref(activeBranch.address)" target="_blank">
               {{ t('menu.openIn2gis') || 'Open in 2GIS' }}
             </UButton>
+          </UFormGroup>
+          <UFormGroup :label="t('menu.when') || 'When'">
+            <div class="flex gap-2">
+              <UButton size="sm" :variant="!checkoutForm.scheduled ? 'solid' : 'soft'" color="gray" @click="checkoutForm.scheduled = false">
+                {{ t('menu.asap') || 'As soon as possible' }}
+              </UButton>
+              <UButton size="sm" :variant="checkoutForm.scheduled ? 'solid' : 'soft'" color="gray" @click="checkoutForm.scheduled = true">
+                {{ t('menu.scheduleForLater') || 'Schedule for later' }}
+              </UButton>
+            </div>
+            <div v-if="checkoutForm.scheduled" class="mt-2 space-y-2">
+              <div class="flex gap-2">
+                <UInput v-model="checkoutForm.scheduledDate" type="date" :min="todayDateInputValue" size="lg" class="flex-1" />
+                <UInput v-model="checkoutForm.scheduledTime" type="time" size="lg" class="flex-1" />
+              </div>
+              <p v-if="scheduledWindowLabel" class="text-xs text-gray-500 dark:text-gray-400">
+                {{ t('menu.scheduledWindowHint') || 'We\'ll aim to have it ready between' }} {{ scheduledWindowLabel }}
+              </p>
+            </div>
           </UFormGroup>
           <UFormGroup :label="t('menu.comment') || 'Comment'">
             <UTextarea v-model="checkoutForm.comment" :rows="2" />

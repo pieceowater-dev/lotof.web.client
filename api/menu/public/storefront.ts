@@ -116,6 +116,23 @@ export async function getPublicMenuItems(namespaceSlug: string, categoryId: stri
   return res.menuItems.rows.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
+// Item ids temporarily unavailable at one branch (stock ran out today, etc.)
+// — distinct from excludedBranchIds, which is permanent ("never sold here").
+const PublicStopListDocument = /* GraphQL */ `
+  query PublicStopList($branchId: String!) {
+    publicStopList(branchId: $branchId)
+  }
+`;
+
+export async function getPublicStopList(namespaceSlug: string, branchId: string): Promise<string[]> {
+  const client = await freshClient(namespaceSlug);
+  const res = await withMigrationRetry(() => client.request<{ publicStopList: string[] }>(
+    PublicStopListDocument,
+    { branchId }
+  ));
+  return res.publicStopList;
+}
+
 export type PublicModifierGroup = {
   id: string;
   name: string;
@@ -187,6 +204,7 @@ export type PublicOrderInput = {
   customerName?: string;
   type: 'delivery' | 'pickup';
   deliveryAddress?: string;
+  deliveryAt?: string; // ISO start of a scheduled window (pre-order) — omitted means ASAP
   comment?: string;
   sourceTag?: string;
   totalAmount: number;
@@ -196,14 +214,14 @@ export type PublicOrderInput = {
 const CreatePublicOrderDocument = /* GraphQL */ `
   mutation CreatePublicOrder($input: CreateOrderInput!) {
     createOrder(input: $input) {
-      id number status createdAt
+      id number status createdAt deliveryAt
     }
   }
 `;
 
-export async function submitPublicOrder(namespaceSlug: string, input: PublicOrderInput): Promise<{ id: string; number: number; status: string; createdAt: string }> {
+export async function submitPublicOrder(namespaceSlug: string, input: PublicOrderInput): Promise<{ id: string; number: number; status: string; createdAt: string; deliveryAt?: string | null }> {
   const client = await freshClient(namespaceSlug);
-  const res = await client.request<{ createOrder: { id: string; number: number; status: string; createdAt: string } }>(
+  const res = await client.request<{ createOrder: { id: string; number: number; status: string; createdAt: string; deliveryAt?: string | null } }>(
     CreatePublicOrderDocument,
     {
       input: {
@@ -212,6 +230,7 @@ export async function submitPublicOrder(namespaceSlug: string, input: PublicOrde
         customerName: input.customerName,
         type: input.type,
         deliveryAddress: input.deliveryAddress,
+        deliveryAt: input.deliveryAt,
         comment: input.comment,
         sourceTag: input.sourceTag,
         totalAmount: input.totalAmount,
@@ -233,6 +252,7 @@ export type PublicOrderStatus = {
   status: (typeof ORDER_STATUSES)[number];
   customerName?: string | null;
   deliveryAddress?: string | null;
+  deliveryAt?: string | null;
   totalAmount: number;
   createdAt: string;
   closedAt?: string | null;
@@ -241,7 +261,7 @@ export type PublicOrderStatus = {
 const OrderStatusDocument = /* GraphQL */ `
   query PublicOrderStatus($number: Int!, $phone: String!, $createdFrom: String!, $createdTo: String!) {
     orderStatus(number: $number, phone: $phone, createdFrom: $createdFrom, createdTo: $createdTo) {
-      id number branchId type status customerName deliveryAddress totalAmount createdAt closedAt
+      id number branchId type status customerName deliveryAddress deliveryAt totalAmount createdAt closedAt
     }
   }
 `;

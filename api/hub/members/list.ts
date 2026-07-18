@@ -1,4 +1,5 @@
 import { hubClient, setGlobalAuthToken } from '@/api/clients';
+import { FilterPaginationLengthEnum } from '@/api/__generated__/hub-types';
 
 
 const MEMBERS_QUERY = /* GraphQL */ `
@@ -17,7 +18,7 @@ export async function hubMembersList(
   token: string,
   namespaceId?: string,
   page: number = 1,
-  length: 'TEN' | 'TWENTY_FIVE' | 'FIFTY' | 'HUNDRED' = 'TEN'
+  length: FilterPaginationLengthEnum = FilterPaginationLengthEnum.Ten
 ): Promise<Array<{ id: string; userId: string; username: string; email: string }>> {
   setGlobalAuthToken(token);
   const filter = {

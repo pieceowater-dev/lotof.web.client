@@ -136,11 +136,16 @@ function saveTier() {
   closeModal();
 }
 
-function deleteTier(tier: Tier) {
+async function deleteTier(tier: Tier) {
   if (!tier.id) return;
-  
-  const confirmText = t('app.tierDeleteConfirm') || 'Delete this tier?';
-  if (typeof window === 'undefined' || window.confirm(confirmText)) {
+
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    message: t('app.tierDeleteConfirm') || 'Delete this tier?',
+    color: 'red',
+    icon: 'lucide:trash-2',
+  });
+  if (confirmed) {
     emit('delete', tier.id);
   }
 }

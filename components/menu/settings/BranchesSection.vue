@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
+import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -21,6 +22,7 @@ const error = ref<string | null>(null);
 const isModalOpen = ref(false);
 const editingBranch = ref<MenuBranch | null>(null);
 const saving = ref(false);
+const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
 
 const columns = computed(() => [
   { key: 'name', label: t('menu.name') || 'Name' },
@@ -51,6 +53,10 @@ async function load() {
 }
 
 function openCreate() {
+  if (isAtLimit('max_branches', branches.value.length)) {
+    useToast().add({ title: t('menu.planLimitBranches') || 'Branch limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   editingBranch.value = null;
   isModalOpen.value = true;
 }
@@ -109,7 +115,12 @@ async function handleDelete(b: MenuBranch) {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  const { current } = useMenuToken();
+  const menuToken = current();
+  if (menuToken) loadPlanLimits(menuToken, nsSlug.value);
+});
 </script>
 
 <template>

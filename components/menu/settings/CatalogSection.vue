@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
+import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -121,6 +122,49 @@ async function loadModifierGroups() {
   }
 }
 
+// Stop list — temporarily marking an item unavailable at one branch (e.g.
+// "we're out of tomatoes today"), as opposed to excludedBranchIds which is a
+// permanent "we never sell this here". Branch-scoped, so nothing shows until
+// a branch is picked.
+const stopListBranchId = ref('');
+const stopListEntries = ref<{ id: string; menuItemId: string }[]>([]);
+const stopListLoading = ref(false);
+const stoppedItemIds = computed(() => new Set(stopListEntries.value.map((e) => e.menuItemId)));
+async function loadStopList() {
+  if (!stopListBranchId.value) { stopListEntries.value = []; return; }
+  stopListLoading.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuStopList } = await import('@/api/menu/stoplist/list');
+    stopListEntries.value = await menuStopList(menuToken, nsSlug.value, stopListBranchId.value);
+  } catch (e) {
+    logError('[menu/settings/catalog] loadStopList failed', e);
+  } finally {
+    stopListLoading.value = false;
+  }
+}
+watch(stopListBranchId, loadStopList);
+
+async function toggleStopped(item: MenuItem) {
+  if (!stopListBranchId.value) return;
+  try {
+    const menuToken = await getToken();
+    const existing = stopListEntries.value.find((e) => e.menuItemId === item.id);
+    if (existing) {
+      const { menuRemoveFromStopList } = await import('@/api/menu/stoplist/mutate');
+      await menuRemoveFromStopList(menuToken, nsSlug.value, existing.id);
+      stopListEntries.value = stopListEntries.value.filter((e) => e.id !== existing.id);
+    } else {
+      const { menuAddToStopList } = await import('@/api/menu/stoplist/mutate');
+      const created = await menuAddToStopList(menuToken, nsSlug.value, stopListBranchId.value, item.id);
+      stopListEntries.value = [...stopListEntries.value, created];
+    }
+  } catch (e) {
+    logError('[menu/settings/catalog] toggleStopped failed', e);
+    useToast().add({ title: getErrorMessage(e) || 'Failed to update stop list', color: 'red' });
+  }
+}
+
 watch(selectedCategoryId, loadItems);
 
 const itemColumns = computed(() => [
@@ -130,6 +174,7 @@ const itemColumns = computed(() => [
   { key: 'badges', label: t('menu.itemBadges') || 'Badges' },
   { key: 'modifiers', label: t('menu.modifiers') || 'Modifiers' },
   { key: 'isActive', label: t('menu.isActive') || 'Active' },
+  { key: 'stopList', label: t('menu.stopList') || 'Stop list' },
   { key: 'actions', label: t('app.actions') || 'Actions' },
 ]);
 
@@ -233,8 +278,25 @@ async function handleCategoryDelete(c: MenuCategory) {
   }
 }
 
+const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
+const totalItemCount = ref(0);
+async function loadTotalItemCount() {
+  try {
+    const menuToken = await getToken();
+    const { menuMenuItemsList } = await import('@/api/menu/menuitem/list');
+    const res = await menuMenuItemsList(menuToken, nsSlug.value);
+    totalItemCount.value = res.count;
+  } catch (e) {
+    logError('[menu/settings/catalog] loadTotalItemCount failed', e);
+  }
+}
+
 function openCreateItem() {
   if (!selectedCategoryId.value) return;
+  if (isAtLimit('max_menu_items', totalItemCount.value)) {
+    useToast().add({ title: t('menu.planLimitItems') || 'Menu item limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   editingItem.value = null;
   isItemModalOpen.value = true;
 }
@@ -329,6 +391,7 @@ async function handleItemSubmit(payload: Record<string, any>) {
       useToast().add({ title: t('menu.itemUpdated') || 'Item updated', color: 'primary' });
     } else {
       items.value = [...items.value, savedItem].sort((a, b) => a.sortOrder - b.sortOrder);
+      totalItemCount.value += 1;
       useToast().add({ title: t('menu.itemCreated') || 'Item created', color: 'primary' });
     }
     isItemModalOpen.value = false;
@@ -378,11 +441,13 @@ async function handleItemDelete(it: MenuItem) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadCategories();
   loadBadges();
   loadBranches();
   loadModifierGroups();
+  loadTotalItemCount();
+  loadPlanLimits(await getToken(), nsSlug.value);
 });
 </script>
 
@@ -449,17 +514,28 @@ onMounted(() => {
 
       <!-- Items column -->
       <div class="flex flex-col min-h-0">
-        <div class="flex items-center justify-between mb-2 flex-shrink-0">
-          <span class="text-sm font-semibold">{{ t('menu.menuItems') || 'Items' }}</span>
-          <UButton
-            icon="lucide:plus"
-            size="xs"
-            color="primary"
-            :disabled="!selectedCategoryId"
-            @click="openCreateItem"
-          >
-            {{ t('menu.createMenuItem') || 'Add item' }}
-          </UButton>
+        <div class="flex items-center justify-between mb-2 flex-shrink-0 gap-2">
+          <span class="text-sm font-semibold flex-shrink-0">{{ t('menu.menuItems') || 'Items' }}</span>
+          <div class="flex items-center gap-2 min-w-0">
+            <USelectMenu
+              v-model="stopListBranchId"
+              :options="[{ label: t('menu.stopListPickBranch') || 'Stop list: pick a branch', value: '' }, ...branches.map((b) => ({ label: b.name, value: b.id }))]"
+              value-attribute="value"
+              option-attribute="label"
+              size="xs"
+              class="w-48"
+              :popper="{ strategy: 'fixed' }"
+            />
+            <UButton
+              icon="lucide:plus"
+              size="xs"
+              color="primary"
+              :disabled="!selectedCategoryId"
+              @click="openCreateItem"
+            >
+              {{ t('menu.createMenuItem') || 'Add item' }}
+            </UButton>
+          </div>
         </div>
         <div class="flex-1 min-h-0">
           <AppTable
@@ -513,6 +589,18 @@ onMounted(() => {
               <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle">
                 {{ row.isActive ? (t('menu.isActive') || 'Active') : '—' }}
               </UBadge>
+            </template>
+            <template #stopList-data="{ row }">
+              <UTooltip v-if="!stopListBranchId" :text="t('menu.stopListPickBranchHint') || 'Pick a branch to manage'">
+                <span class="text-gray-300 dark:text-gray-700">—</span>
+              </UTooltip>
+              <UToggle
+                v-else
+                :model-value="stoppedItemIds.has(row.id)"
+                :disabled="stopListLoading"
+                color="red"
+                @update:model-value="toggleStopped(row)"
+              />
             </template>
             <template #actions-data="{ row }">
               <div class="flex gap-1">
