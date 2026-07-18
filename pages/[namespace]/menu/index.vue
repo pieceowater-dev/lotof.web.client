@@ -869,7 +869,7 @@ async function handleCreateOrder(payload: any) {
         :rows="displayRows"
         :columns="columns"
         :loading="loading"
-        empty-icon="lucide:receipt"
+        empty-icon="lucide:receipt-text"
         @select="openDetail"
       >
         <template #number-data="{ row }">

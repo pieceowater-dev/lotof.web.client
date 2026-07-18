@@ -316,7 +316,7 @@ const billingData = ref<AdminBillingInfo | null>(null);
 const projects = [
   { id: 'atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
-  { id: 'menu', title: 'Lota Orders', icon: 'lucide:receipt' }
+  { id: 'menu', title: 'Lota Orders', icon: 'lucide:receipt-text' }
 ] as const;
 
 type ProjectId = (typeof projects)[number]['id'];

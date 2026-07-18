@@ -199,7 +199,7 @@ function handleSubmit() {
       <template #header>
         <div class="flex items-center gap-2.5">
           <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">
-            <Icon name="lucide:receipt" class="h-4 w-4 text-primary-600 dark:text-primary-300" />
+            <Icon name="lucide:receipt-text" class="h-4 w-4 text-primary-600 dark:text-primary-300" />
           </span>
           <h3 class="text-lg font-semibold">
             {{ t('menu.createOrder') || 'Create order' }}
