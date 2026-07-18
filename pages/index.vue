@@ -11,6 +11,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
 // Composables
 const { user, token, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
@@ -422,57 +423,13 @@ onMounted(() => {
   });
 });
 
-function markdownToText(markdown: string): string {
-  return markdown
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`[^`]*`/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[[^\]]*\]\([^)]*\)/g, '$1')
-    .replace(/^#{1,6}\s+/gm, '')
-    .replace(/[>*_~#-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function firstImage(markdown: string): { src: string; alt: string } | null {
-  const markdownMatch = markdown.match(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/);
-  if (markdownMatch) {
-    return { src: markdownMatch[2], alt: markdownMatch[1] || '' };
-  }
-
-  const htmlMatch = markdown.match(/<img\s+[^>]*src=["']([^"']+)["'][^>]*>/i);
-  if (!htmlMatch) return null;
-  const altMatch = markdown.match(/<img\s+[^>]*alt=["']([^"']*)["'][^>]*>/i);
-  return { src: htmlMatch[1], alt: altMatch?.[1] || '' };
-}
-
-function excerptFromBody(markdown: string): string {
-  const lines = markdown.split('\n').map((line) => line.trim());
-  for (const line of lines) {
-    if (!line || line.startsWith('#') || line.startsWith('![') || line.startsWith('---')) continue;
-    const txt = markdownToText(line);
-    if (txt) return txt;
-  }
-  return markdownToText(markdown).slice(0, 180);
-}
-
 function readTimeLabel(markdown: string): string {
-  const words = markdownToText(markdown).split(' ').filter(Boolean).length;
-  const mins = Math.max(1, Math.ceil(words / 220));
+  const mins = estimateReadTimeMinutes(markdown);
   return t('app.readTimeMinutes', { minutes: mins }) || `${mins} min read`;
 }
 
 function formatDate(dateISO: string): string {
-  const dt = new Date(dateISO);
-  if (Number.isNaN(dt.getTime())) return dateISO;
-
-  const intlLocale = locale.value === 'ru'
-    ? 'ru-RU'
-    : locale.value === 'kk'
-      ? 'kk-KZ'
-      : 'en-GB';
-
-  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatPublishedDate(dateISO, locale.value);
 }
 
 function processMarkdownPosts(): ProcessedMarkdownPost[] {
@@ -497,7 +454,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
 
     if (!slug || !title || !categorySlug) continue;
 
-    const imgFromBody = firstImage(body);
+    const imgFromBody = extractFirstImage(body);
     const image = String(meta.og_image || meta.featured_image || imgFromBody?.src || '').trim();
     const imageAlt = imgFromBody?.alt || title;
     const tags = Array.isArray(meta.tags) ? meta.tags.map((tag) => String(tag)) : [];
@@ -510,8 +467,8 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
       category: categoryLabel(categorySlug),
       categorySlug,
       title,
-      excerpt: String(meta.description || '').trim() || excerptFromBody(body),
-      preview: String(meta.description || '').trim() ? excerptFromBody(body) : '',
+      excerpt: String(meta.description || '').trim() || excerptFromMarkdown(body),
+      preview: String(meta.description || '').trim() ? excerptFromMarkdown(body) : '',
       author,
       publishedAt: formatDate(resolvedDate),
       dateISO: resolvedDate,
@@ -1274,10 +1231,6 @@ watch([articlesSearch, selectedArticleTag], () => {
 </template>
 
 <style scoped>
-.pb-safe-or-4 {
-  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
-}
-
 .mobile-sheet-enter-active,
 .mobile-sheet-leave-active {
   transition: all 0.3s ease;

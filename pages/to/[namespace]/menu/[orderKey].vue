@@ -7,6 +7,7 @@ import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 import { getContrastTextColor } from '@/utils/color';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseOrderStatusKey } from '@/utils/orderNumber';
+import { withRetry } from '@/utils/retry';
 import { statusBadgeStyle, ORDER_STATUSES } from '@/utils/orderStatus';
 
 definePageMeta({ layout: false });
@@ -63,7 +64,7 @@ async function load() {
   invalidLink.value = false;
   notFound.value = false;
   try {
-    brand.value = (await getPublicStorefront(nsSlug.value)).brandSettings;
+    brand.value = (await withRetry(() => getPublicStorefront(nsSlug.value))).brandSettings;
   } catch (e) {
     logError('[order-status] getPublicStorefront failed', e);
   }
@@ -76,9 +77,12 @@ async function load() {
   }
 
   try {
-    order.value = await getPublicOrderStatus(nsSlug.value, parsed.number, parsed.phone, parsed.createdFrom, parsed.createdTo);
+    order.value = await withRetry(() => getPublicOrderStatus(nsSlug.value, parsed.number, parsed.phone, parsed.createdFrom, parsed.createdTo));
     if (!order.value) notFound.value = true;
   } catch (e) {
+    // A genuinely-missing order and a transient backend hiccup (surfaced as
+    // a thrown error even after retrying) look the same to the user here —
+    // both land on the "not found" state rather than a raw error screen.
     logError('[order-status] getPublicOrderStatus failed', e);
     notFound.value = true;
   } finally {

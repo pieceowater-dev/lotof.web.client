@@ -1473,6 +1473,7 @@
     "orderShareTitle": "Ссылка на заказ",
     "cityTag": "Город",
     "sourceTagLabel": "Источник",
+    "myOrdersCard": "Мои заказы",
     "generateLink": "Сгенерировать ссылку",
     "menuLinkGenerator": "Новая ссылка на меню",
     "menuLinkGeneratorDesc": "Добавьте город и источник, чтобы отслеживать, откуда пришёл заказ — сохраните её, чтобы использовать снова.",

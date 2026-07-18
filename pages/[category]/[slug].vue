@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { capitalGetPublicPublicationByRoute, publicationBlocksToHtml } from '@/api/publications';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
+import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
 
 definePageMeta({
   viewTransition: false,
@@ -600,10 +601,7 @@ function toTags(value: string | string[] | undefined): string[] {
 }
 
 function toDateLabel(dateISO: string): string {
-  const dt = new Date(dateISO);
-  if (Number.isNaN(dt.getTime())) return dateISO;
-  const intlLocale = locale.value === 'ru' ? 'ru-RU' : locale.value === 'kk' ? 'kk-KZ' : 'en-GB';
-  return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'short', year: 'numeric' });
+  return formatPublishedDate(dateISO, locale.value);
 }
 
 const suggestedArticles = computed<SuggestedArticle[]>(() => {
@@ -626,8 +624,7 @@ const suggestedArticles = computed<SuggestedArticle[]>(() => {
 });
 
 function estimateReadTime(markdown: string): string {
-  const words = markdown.replace(/```[\s\S]*?```/g, ' ').replace(/`[^`]*`/g, ' ').replace(/!\[[^\]]*\]\([^)]*\)/g, ' ').replace(/\[[^\]]*\]\([^)]*\)/g, ' ').replace(/^#{1,6}\s+/gm, '').replace(/[>*_~#-]/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length;
-  const minutes = Math.max(1, Math.ceil(words / 220));
+  const minutes = estimateReadTimeMinutes(markdown);
   return t('app.readTimeMinutes', { minutes }) || `${minutes} min read`;
 }
 
@@ -726,99 +723,6 @@ function stripDuplicatedLead(markdown: string, title: string): string {
 }
 
 const sanitizedArticleBody = computed(() => stripDuplicatedLead(article.value?.body || '', articleTitle.value));
-
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function sanitizeUrl(url: string): string {
-  const trimmed = url.trim();
-  return (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('/')) ? trimmed : '#';
-}
-
-function renderInline(text: string): string {
-  let safe = escapeHtml(text);
-  safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  safe = safe.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  safe = safe.replace(/`([^`]+)`/g, '<code class="rounded bg-gray-100 px-1 py-0.5 text-[0.9em] dark:bg-gray-800">$1</code>');
-  safe = safe.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, label: string, href: string) => {
-    const link = sanitizeUrl(href);
-    const target = link.startsWith('http') ? ' target="_blank" rel="noopener noreferrer"' : '';
-    return `<a href="${escapeHtml(link)}" class="text-blue-600 underline underline-offset-2 dark:text-blue-300"${target}>${label}</a>`;
-  });
-  return safe;
-}
-
-function inferImageDimensions(url: string): { width: number; height: number } {
-  const match = url.match(/\/(\d{2,5})\/(\d{2,5})(?:[/?]|$)/);
-  if (match) {
-    const w = Number(match[1]); const h = Number(match[2]);
-    if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) return { width: w, height: h };
-  }
-  return { width: 1200, height: 630 };
-}
-
-function markdownToHtml(markdown: string): string {
-  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
-  const html: string[] = [];
-  let index = 0;
-  let imageIndex = 0;
-
-  while (index < lines.length) {
-    const line = lines[index].trim();
-    if (!line) { index++; continue; }
-
-    const h3 = line.match(/^###\s+(.+)$/);
-    if (h3) { html.push(`<h3 class="mt-8 mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">${renderInline(h3[1])}</h3>`); index++; continue; }
-
-    const h2 = line.match(/^##\s+(.+)$/);
-    if (h2) { html.push(`<h2 class="mt-10 mb-3 text-2xl font-semibold text-gray-900 dark:text-gray-100">${renderInline(h2[1])}</h2>`); index++; continue; }
-
-    const h1 = line.match(/^#\s+(.+)$/);
-    if (h1) { html.push(`<h1 class="mt-10 mb-3 text-3xl font-semibold text-gray-900 dark:text-gray-100">${renderInline(h1[1])}</h1>`); index++; continue; }
-
-    const image = line.match(/^!\[([^\]]*)\]\(([^)]+)\)$/);
-    if (image) {
-      const rawSrc = sanitizeUrl(image[2]);
-      const dims = inferImageDimensions(rawSrc);
-      const isFirst = imageIndex === 0;
-      html.push(`<figure class="my-6"><img src="${escapeHtml(rawSrc)}" alt="${escapeHtml(image[1] || '')}" width="${dims.width}" height="${dims.height}" class="w-full rounded-2xl border border-gray-200 object-cover dark:border-gray-700" loading="${isFirst ? 'eager' : 'lazy'}" fetchpriority="${isFirst ? 'high' : 'low'}" decoding="async" /></figure>`);
-      imageIndex++; index++; continue;
-    }
-
-    if (/^\d+\.\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^\d+\.\s+/.test(lines[index].trim())) { items.push(lines[index].trim().replace(/^\d+\.\s+/, '')); index++; }
-      html.push(`<ol class="my-4 list-decimal space-y-1 pl-6 text-base leading-7 text-gray-700 dark:text-gray-300">${items.map((i) => `<li>${renderInline(i)}</li>`).join('')}</ol>`);
-      continue;
-    }
-
-    if (/^-\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^-\s+/.test(lines[index].trim())) { items.push(lines[index].trim().replace(/^-\s+/, '')); index++; }
-      html.push(`<ul class="my-4 list-disc space-y-1 pl-6 text-base leading-7 text-gray-700 dark:text-gray-300">${items.map((i) => `<li>${renderInline(i)}</li>`).join('')}</ul>`);
-      continue;
-    }
-
-    if (line.startsWith('>')) {
-      const items: string[] = [];
-      while (index < lines.length && lines[index].trim().startsWith('>')) { items.push(lines[index].trim().replace(/^>\s?/, '')); index++; }
-      html.push(`<blockquote class="my-6 border-l-4 border-blue-300 pl-5 italic text-gray-600 dark:border-blue-600 dark:text-gray-400">${items.map((i) => `<p>${renderInline(i)}</p>`).join('')}</blockquote>`);
-      continue;
-    }
-
-    const paragraph: string[] = [line];
-    index++;
-    while (index < lines.length) {
-      const next = lines[index].trim();
-      if (!next || /^(#{1,3}|!?\[|>\s|\d+\.\s|-\s)/.test(next)) break;
-      paragraph.push(next); index++;
-    }
-    html.push(`<p class="my-4 text-base leading-7 text-gray-700 dark:text-gray-300">${renderInline(paragraph.join(' '))}</p>`);
-  }
-
-  return html.join('');
-}
 
 const articleHtml = computed(() => sanitizedArticleBody.value);
 

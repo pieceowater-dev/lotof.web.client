@@ -1437,6 +1437,7 @@
     "orderShareTitle": "Order link",
     "cityTag": "City",
     "sourceTagLabel": "Source",
+    "myOrdersCard": "My orders",
     "generateLink": "Generate link",
     "menuLinkGenerator": "New menu link",
     "menuLinkGeneratorDesc": "Add a city and source tag to track where an order came from — save it to reuse later.",

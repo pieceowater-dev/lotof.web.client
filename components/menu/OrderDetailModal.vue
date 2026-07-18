@@ -31,6 +31,7 @@ const props = defineProps<{
   modelValue: boolean;
   order: MenuOrder | null;
   branches?: MenuBranch[];
+  sourceTagOptions?: { sourceTag: string; label: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -69,6 +70,16 @@ const branchById = computed(() => {
   for (const b of props.branches || []) map[b.id] = b;
   return map;
 });
+
+// Orders have no sourceTag when they weren't placed through a tracked share
+// link (phone/walk-in/bare menu URL) — shown as "My orders" to match the
+// admin list's quick-filter card of the same name. A tag that doesn't match
+// any current share link (e.g. one that's since been deleted) falls back to
+// the raw value rather than disappearing silently.
+function sourceTagLabel(tag: string | null | undefined): string {
+  if (!tag) return t('menu.myOrdersCard') || 'My orders';
+  return props.sourceTagOptions?.find((s) => s.sourceTag === tag)?.label || tag;
+}
 
 const items = ref<MenuOrderItem[]>([]);
 const history = ref<MenuOrderHistoryEntry[]>([]);
@@ -858,9 +869,9 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                 <Icon name="lucide:message-square" class="w-4 h-4 text-gray-400 mt-0.5" />
                 <span class="text-gray-600 dark:text-gray-300">{{ order.comment }}</span>
               </div>
-              <div v-if="order.sourceTag" class="flex items-center gap-2 text-xs text-gray-400">
+              <div class="flex items-center gap-2 text-xs text-gray-400">
                 <Icon name="lucide:tag" class="w-3.5 h-3.5" />
-                {{ order.sourceTag }}
+                {{ sourceTagLabel(order.sourceTag) }}
               </div>
             </template>
             <div v-else class="space-y-2.5">

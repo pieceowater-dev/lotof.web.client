@@ -748,9 +748,3 @@ async function handleRefreshFromRemote() {
     />
   </div>
 </template>
-
-<style scoped>
-.pb-safe-or-4 {
-  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
-}
-</style>

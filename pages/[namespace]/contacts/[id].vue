@@ -1,35 +1,33 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
-import { useContactsToken } from '@/composables/useContactsToken';
-import { logError } from '@/utils/logger';
-import { contactsUpdateClientStatus, contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
-import { type ClientRow } from '@/api/contacts/listClients';
-import { createIdentity, deleteIdentity, setPrimaryIdentity, updateIdentity, type ClientIdentity } from '@/api/contacts/identities';
-import { getClientEvents, type ClientEvent } from '@/api/contacts/events';
-import { getClientStampProgressBatch, type BonusBalance, type StampCard, type ClientStampProgress } from '@/api/contacts/loyalty';
-import { getClientPageData } from '@/api/contacts/clientPage';
-import { listTags } from '@/api/contacts/tags';
-import {
-  listDynamicFieldsWithValues,
-  setDynamicFieldValue,
-  deleteDynamicFieldValue,
-  type DynamicField,
-  type DynamicFieldValue,
-} from '@/api/contacts/dynamicFields';
-import { subscribeClientChanged } from '@/api/contacts/subscriptions';
-import { getClientsBatch } from '@/api/contacts/getClient';
 import { useNamespace } from '@/composables/useNamespace';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { useClientPage } from '@/composables/useClientPage';
+import { useClientEvents } from '@/composables/useClientEvents';
+import { useClientDynamicFields } from '@/composables/useClientDynamicFields';
+import { useClientIdentityDisplay } from '@/composables/useClientIdentityDisplay';
+import { useClientLiveSync } from '@/composables/useClientLiveSync';
+import { useClientPersonalInfoEdit } from '@/composables/useClientPersonalInfoEdit';
+import { useClientIdentitiesEdit } from '@/composables/useClientIdentitiesEdit';
+import {
+  copyToClipboard,
+  handlePhoneAction,
+  handleEmailAction,
+  handleTelegramAction,
+  handleWhatsappAction,
+  handleBack,
+} from '@/utils/contacts/contactActions';
+import { contactsUpdateClientStatus } from '@/api/contacts/mutations';
+import { logError } from '@/utils/logger';
 import ContactHeader from '@/components/contacts/ContactHeader.vue';
 import ContactPersonalInfo from '@/components/contacts/ContactPersonalInfo.vue';
 import ContactIdentities from '@/components/contacts/ContactIdentities.vue';
 import ContactLoyalty from '@/components/contacts/ContactLoyalty.vue';
 import ContactTimeline from '@/components/contacts/ContactTimeline.vue';
 import ContactTags from '@/components/contacts/ContactTags.vue';
+import ContactDynamicFields from '@/components/contacts/ContactDynamicFields.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
-import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
 definePageMeta({
   viewTransition: false,
@@ -41,98 +39,83 @@ const toast = useToast();
 const { t } = useI18n();
 const { token, user } = useAuth();
 const { selected: selectedNS, titleBySlug } = useNamespace();
+
 const clientId = computed(() => route.params.id as string);
-const contactsAppToken = ref('');
+const nsSlug = computed(() => route.params.namespace as string);
 const createdByUserId = computed(() => user.value?.id || '00000000-0000-0000-0000-000000000000');
+const currentUserId = computed(() => user.value?.id || '');
 
-const client = ref<ClientRow | null>(null);
-const identities = ref<ClientIdentity[]>([]);
-const tags = ref<any[]>([]);
-const tagNameById = ref<Record<string, string>>({});
-const events = ref<ClientEvent[]>([]);
-const eventsTotal = ref(0);
-const eventsLoadingMore = ref(false);
-const fullClientIdForEvents = ref('');
-const bonusBalance = ref<BonusBalance | null>(null);
-const stampCards = ref<StampCard[]>([]);
-const stampProgress = ref<ClientStampProgress[]>([]);
-const dynamicFields = ref<DynamicField[]>([]);
-const dynamicFieldValues = ref<Record<string, DynamicFieldValue>>({});
-const dynamicFieldDrafts = ref<Record<string, string | number | boolean | string[]>>({});
-const dynamicFieldsLoading = ref(false);
-const dynamicFieldsError = ref<string | null>(null);
-const dynamicFieldsSaving = ref(false);
-const loading = ref(true);
-const statusChangeLoading = ref(false);
 const isTagsModalOpen = ref(false);
-const isClientDataStale = ref(false);
-const EVENTS_PAGE_SIZE = 30;
+const statusChangeLoading = ref(false);
 
-const hasMoreEvents = computed(() => {
-  return events.value.length < eventsTotal.value;
-});
+// Core client data (client/identities/tags/loyalty) + load orchestration.
+const clientPage = useClientPage({ token, selectedNS, clientId, router });
+const {
+  client, identities, tags, tagNameById, bonusBalance, stampCards, stampProgress,
+  contactsAppToken, loading,
+} = clientPage;
 
-const dynamicFieldNameById = computed<Record<string, string>>(() => {
-  const map: Record<string, string> = {};
-  for (const field of dynamicFields.value) {
-    if (field.id && field.label) {
-      map[field.id] = field.label;
-    }
-  }
-  return map;
-});
-
-let stopClientSubscription: (() => void) | null = null;
-
-// Mock data for preview
-const useMockData = ref(false);
-
-// Edit mode state
-const editMode = ref({
-  personalInfo: false,
-  identities: false,
-});
-
-// Backup for canceling edits
-const backupClient = ref<ClientRow | null>(null);
-const backupIdentities = ref<ClientIdentity[]>([]);
-
-// Edit form data - Personal Info
-const editingFirstName = ref('');
-const editingLastName = ref('');
-const editingMiddleName = ref('');
-const editingBirthDate = ref('');
-const editingGender = ref<boolean | null>(null);
-const editingLegalName = ref('');
-const editingBrandName = ref('');
-const editingBinIin = ref('');
-const editingRegistrationCountry = ref('');
-const editingRegistrationDate = ref('');
-const editingAdditionalInfo = ref('');
-
-// Edit form data - Identities
-const editingPhones = ref<string[]>([]);
-const editingEmails = ref<string[]>([]);
-const editingTelegrams = ref<string[]>([]);
-const editingWhatsapps = ref<string[]>([]);
-const identityDisplayValues = ref<Record<string, string>>({});
-const relatedClientTargets = ref<Record<string, string>>({});
-const relatedClientNames = ref<Record<string, string>>({});
-
-const contactPersonIdentities = computed(() =>
-  identities.value.filter((i) => i.type === 'contact_person'),
-);
-
-function getPreferredIdentityForAdditionalInfo(): ClientIdentity | undefined {
-  return identities.value.find((item) => item.type === 'phone' && item.isPrimary)
-    || identities.value.find((item) => item.type === 'phone')
-    || identities.value.find((item) => item.isPrimary)
-    || identities.value[0];
+// Timeline pagination, feeding ContactTimeline via events/hasMoreEvents/loadMoreEvents.
+const {
+  events, hasMoreEvents, eventsLoadingMore, loadInitialEvents, loadMoreEvents: fetchMoreEvents,
+} = useClientEvents();
+function loadMoreEvents() {
+  return fetchMoreEvents(contactsAppToken.value);
 }
 
-function getAdditionalInfoValue(): string {
-  return getPreferredIdentityForAdditionalInfo()?.comments?.trim() || client.value?.additionalInfo?.trim() || '';
+// Dynamic-field draft/save state, feeding the extracted ContactDynamicFields.
+const {
+  dynamicFields, dynamicFieldDrafts, dynamicFieldsLoading, dynamicFieldsError, dynamicFieldsSaving,
+  dynamicFieldNameById, loadDynamicFieldsForClient, saveDynamicFields, resetDynamicFields,
+} = useClientDynamicFields({
+  contactsAppToken,
+  selectedNS,
+  clientId: computed(() => client.value?.client.id),
+  clientType: computed(() => client.value?.client.clientType),
+});
+
+// Related-client identity display (company/contact_person resolution).
+const {
+  identityDisplayValues, relatedClientTargets, loadRelatedClientNames, resolveIdentityDisplayValues, openRelatedClient,
+} = useClientIdentityDisplay({ identities, contactsAppToken, selectedNS, nsSlug, router });
+
+// Single load entry point: sequences the core client load with the sibling
+// composables' own loaders via injected hooks.
+async function loadClient() {
+  await clientPage.loadClient({
+    loadIdentityDisplay: async () => {
+      await loadRelatedClientNames();
+      await resolveIdentityDisplayValues();
+    },
+    loadEvents: loadInitialEvents,
+    loadDynamicFields: loadDynamicFieldsForClient,
+    resetDynamicFields,
+  });
 }
+
+// Live-update subscription + staleness banner.
+const { isClientDataStale, initClientSubscription, markLocalMutation, refreshStaleClientData } = useClientLiveSync({
+  token,
+  selectedNS,
+  client,
+  currentUserId,
+  loadClient,
+});
+
+// Edit-mode state for the personal-info / identities cards.
+const {
+  editMode: personalInfoEditMode, editingFirstName, editingLastName, editingMiddleName, editingBirthDate, editingGender,
+  editingLegalName, editingBrandName, editingBinIin, editingRegistrationCountry, editingRegistrationDate,
+  editingAdditionalInfo, getAdditionalInfoValue, startEditPersonalInfo, cancelEditPersonalInfo, savePersonalInfo,
+  updateField: updatePersonalInfoField,
+} = useClientPersonalInfoEdit({ client, identities, token, selectedNS, markLocalMutation, loadClient });
+
+const {
+  editMode: identitiesEditMode, editingPhones, editingEmails, editingTelegrams, editingWhatsapps,
+  startEditIdentities, cancelEditIdentities, saveIdentities,
+  addPhoneField, removePhoneField, addEmailField, removeEmailField,
+  addTelegramField, removeTelegramField, addWhatsappField, removeWhatsappField,
+} = useClientIdentitiesEdit({ client, identities, token, selectedNS, markLocalMutation, loadClient });
 
 const displayName = computed(() => {
   if (!client.value) return '';
@@ -144,312 +127,10 @@ const displayName = computed(() => {
   return c.legalEntity?.legalName || '---';
 });
 
-const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 const pageTitle = computed(() => {
   return displayName.value ? `${displayName.value} — ${nsTitle.value}` : t('common.loading');
 });
-
-function applyDynamicFieldValueToDraft(field: DynamicField, value?: DynamicFieldValue) {
-  if (!value) {
-    if (field.dataType === 'BOOLEAN') {
-      dynamicFieldDrafts.value[field.id] = false;
-      return;
-    }
-    if (field.dataType === 'MULTI_SELECT') {
-      dynamicFieldDrafts.value[field.id] = [];
-      return;
-    }
-    dynamicFieldDrafts.value[field.id] = '';
-    return;
-  }
-
-  if (field.dataType === 'NUMBER') {
-    dynamicFieldDrafts.value[field.id] = value.valueNumber ?? '';
-    return;
-  }
-  if (field.dataType === 'BOOLEAN') {
-    dynamicFieldDrafts.value[field.id] = !!value.valueBool;
-    return;
-  }
-  if (field.dataType === 'DATE') {
-    dynamicFieldDrafts.value[field.id] = value.valueDate || '';
-    return;
-  }
-
-  if (field.dataType === 'MULTI_SELECT') {
-    if (value.valueJson) {
-      try {
-        const parsed = JSON.parse(value.valueJson);
-        dynamicFieldDrafts.value[field.id] = Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
-      } catch {
-        dynamicFieldDrafts.value[field.id] = [];
-      }
-      return;
-    }
-    dynamicFieldDrafts.value[field.id] = [];
-    return;
-  }
-
-  dynamicFieldDrafts.value[field.id] = value.valueString || '';
-}
-
-function isDynamicFieldsEmptyStateError(error: unknown): boolean {
-  const message = String((error as any)?.message || error || '').toLowerCase();
-  const mentionsDynamicField = message.includes('dynamic field') || message.includes('dynamicfield');
-  return (message.includes('not found') && mentionsDynamicField)
-    || (message.includes('no rows') && mentionsDynamicField)
-    || (message.includes('no data') && mentionsDynamicField)
-    || message.includes('no dynamic fields')
-    || message.includes('no dynamic field values');
-}
-
-async function loadDynamicFieldsForClient(contactsToken: string, namespace: string, entityId: string) {
-  dynamicFieldsLoading.value = true;
-  dynamicFieldsError.value = null;
-
-  try {
-    const { dynamicFields: fieldsResp, dynamicFieldValues: valuesResp } =
-      await listDynamicFieldsWithValues(contactsToken, namespace, entityId, { includeDeleted: false });
-
-    const rawFields = fieldsResp?.rows || [];
-    const isIndividual = client.value?.client.clientType === 'INDIVIDUAL';
-
-    const filteredFields = rawFields
-      .filter((field) => {
-        if (field.clientTypeScope === 'ALL') return true;
-        if (field.clientTypeScope === 'INDIVIDUAL') return isIndividual;
-        if (field.clientTypeScope === 'LEGAL') return !isIndividual;
-        return true;
-      })
-      .slice()
-      .sort((a, b) => a.viewOrder - b.viewOrder);
-
-    dynamicFields.value = filteredFields;
-
-    if (filteredFields.length === 0) {
-      dynamicFieldValues.value = {};
-      dynamicFieldDrafts.value = {};
-      return;
-    }
-
-    const valueRows = valuesResp?.rows || [];
-    const nextValues: Record<string, DynamicFieldValue> = {};
-    for (const value of valueRows) {
-      nextValues[value.fieldId] = value;
-    }
-    dynamicFieldValues.value = nextValues;
-
-    const nextDrafts: Record<string, string | number | boolean | string[]> = {};
-    for (const field of filteredFields) {
-      const existingValue = nextValues[field.id];
-      if (!existingValue) {
-        if (field.dataType === 'BOOLEAN') {
-          nextDrafts[field.id] = false;
-        } else if (field.dataType === 'MULTI_SELECT') {
-          nextDrafts[field.id] = [];
-        } else {
-          nextDrafts[field.id] = '';
-        }
-        continue;
-      }
-
-      if (field.dataType === 'NUMBER') {
-        nextDrafts[field.id] = existingValue.valueNumber ?? '';
-      } else if (field.dataType === 'BOOLEAN') {
-        nextDrafts[field.id] = !!existingValue.valueBool;
-      } else if (field.dataType === 'DATE') {
-        nextDrafts[field.id] = existingValue.valueDate || '';
-      } else if (field.dataType === 'MULTI_SELECT') {
-        if (existingValue.valueJson) {
-          try {
-            const parsed = JSON.parse(existingValue.valueJson);
-            nextDrafts[field.id] = Array.isArray(parsed) ? parsed.map((item) => String(item)) : [];
-          } catch {
-            nextDrafts[field.id] = [];
-          }
-        } else {
-          nextDrafts[field.id] = [];
-        }
-      } else {
-        nextDrafts[field.id] = existingValue.valueString || '';
-      }
-    }
-    dynamicFieldDrafts.value = nextDrafts;
-  } catch (error) {
-    if (isDynamicFieldsEmptyStateError(error)) {
-      dynamicFields.value = [];
-      dynamicFieldValues.value = {};
-      dynamicFieldDrafts.value = {};
-      dynamicFieldsError.value = null;
-      return;
-    }
-
-    logError('Failed to load dynamic fields for client:', error);
-    dynamicFieldsError.value = t('common.errorDetails.loadFailed') || 'Failed to load data';
-  } finally {
-    dynamicFieldsLoading.value = false;
-  }
-}
-
-function hasDynamicFieldInputValue(field: DynamicField): boolean {
-  const rawValue = dynamicFieldDrafts.value[field.id];
-
-  if (field.dataType === 'MULTI_SELECT') {
-    return Array.isArray(rawValue) && rawValue.length > 0;
-  }
-
-  if (field.dataType === 'BOOLEAN') {
-    return typeof rawValue === 'boolean';
-  }
-
-  if (field.dataType === 'NUMBER') {
-    if (rawValue === '' || rawValue === null || rawValue === undefined) return false;
-    const parsed = Number(rawValue);
-    return Number.isFinite(parsed);
-  }
-
-  const text = String(rawValue ?? '').trim();
-  return text.length > 0;
-}
-
-async function saveDynamicFields() {
-  if (!contactsAppToken.value || !selectedNS.value || !client.value?.client.id) return;
-
-  try {
-    dynamicFieldsSaving.value = true;
-
-    for (const field of dynamicFields.value) {
-      const rawValue = dynamicFieldDrafts.value[field.id];
-      const existing = dynamicFieldValues.value[field.id];
-      const hasValue = hasDynamicFieldInputValue(field);
-
-      if (!hasValue) {
-        if (existing) {
-          await deleteDynamicFieldValue(contactsAppToken.value, selectedNS.value, existing.id);
-          delete dynamicFieldValues.value[field.id];
-        }
-        applyDynamicFieldValueToDraft(field, undefined);
-        continue;
-      }
-
-      const input: {
-        fieldId: string;
-        entityId: string;
-        valueString?: string;
-        valueNumber?: number;
-        valueBool?: boolean;
-        valueDate?: string;
-        valueJson?: string;
-      } = {
-        fieldId: field.id,
-        entityId: client.value.client.id,
-      };
-
-      if (field.dataType === 'NUMBER') {
-        input.valueNumber = Number(rawValue);
-      } else if (field.dataType === 'BOOLEAN') {
-        input.valueBool = !!rawValue;
-      } else if (field.dataType === 'DATE') {
-        input.valueDate = String(rawValue || '');
-      } else if (field.dataType === 'MULTI_SELECT') {
-        input.valueJson = JSON.stringify(Array.isArray(rawValue) ? rawValue : []);
-      } else {
-        input.valueString = String(rawValue || '');
-      }
-
-      const result = await setDynamicFieldValue(contactsAppToken.value, selectedNS.value, input);
-      dynamicFieldValues.value[field.id] = result.setDynamicFieldValue;
-      applyDynamicFieldValueToDraft(field, result.setDynamicFieldValue);
-    }
-
-    toast.add({ title: t('common.success') || 'Success', description: t('common.save') || 'Saved', color: 'emerald' });
-  } catch (error) {
-    logError('Failed to save dynamic field value:', error);
-    toast.add({ title: t('common.error') || 'Error', description: t('contacts.updateError') || 'Update failed', color: 'red' });
-  } finally {
-    dynamicFieldsSaving.value = false;
-  }
-}
-
-async function loadRelatedClientNames() {
-  if (!contactsAppToken.value || !selectedNS.value) return;
-  
-  const identityRows = identities.value || [];
-  const relatedClientIds: string[] = [];
-  
-  for (const item of identityRows) {
-    if ((item.type === 'company' || item.type === 'contact_person') && item.value?.trim()) {
-      relatedClientIds.push(item.value.trim());
-    }
-  }
-  
-  if (relatedClientIds.length === 0) return;
-  
-  try {
-    const clientsMap = await getClientsBatch(contactsAppToken.value, selectedNS.value, relatedClientIds);
-    const namesMap: Record<string, string> = {};
-    
-    for (const id of relatedClientIds) {
-      const clientData = clientsMap[id];
-      if (!clientData) continue;
-      
-      let name = '';
-      if (clientData.client.clientType === 'INDIVIDUAL' && clientData.individual) {
-        const parts = [clientData.individual.lastName, clientData.individual.firstName].filter(Boolean);
-        name = parts.join(' ');
-      } else if (clientData.legalEntity?.legalName) {
-        name = clientData.legalEntity.legalName;
-      }
-      
-      if (name) {
-        namesMap[id] = name;
-      }
-    }
-    
-    relatedClientNames.value = namesMap;
-  } catch (error) {
-    logError('Failed to load related client names:', error);
-  }
-}
-
-async function resolveIdentityDisplayValues() {
-  const displayMap: Record<string, string> = {};
-  const targetMap: Record<string, string> = {};
-  const identityRows = identities.value || [];
-
-  for (const item of identityRows) {
-    const identityRef = item.value?.trim() || '';
-
-    if (item.type === 'company' || item.type === 'contact_person') {
-      // First try to use the loaded client name
-      const clientName = relatedClientNames.value[identityRef];
-      // Fall back to comments if it looks like a custom name (not a short ID)
-      const comments = item.comments?.trim() || '';
-      const customName = comments && !comments.match(/^[a-z0-9]{8}$/i) ? comments : '';
-      // Use: clientName > customName > default text
-      const name = clientName || customName || t('contacts.relatedClient');
-      displayMap[item.id] = name;
-      targetMap[item.id] = identityRef;
-      continue;
-    }
-
-    if (item.type === 'phone' || item.type === 'whatsapp') {
-      displayMap[item.id] = formatDisplayPhoneUniversal(item.value);
-      continue;
-    }
-
-    displayMap[item.id] = item.value;
-  }
-
-  identityDisplayValues.value = displayMap;
-  relatedClientTargets.value = targetMap;
-}
-
-function openRelatedClient(identity: ClientIdentity) {
-  const target = relatedClientTargets.value[identity.id] || identity.value;
-  router.push(`/${nsSlug.value}/contacts/${target}`);
-}
 
 useHead(() => ({
   title: pageTitle.value,
@@ -459,515 +140,6 @@ onMounted(async () => {
   await loadClient();
   await initClientSubscription();
 });
-
-onBeforeUnmount(() => {
-  if (stopClientSubscription) {
-    stopClientSubscription();
-    stopClientSubscription = null;
-  }
-});
-
-watch([() => token.value, () => selectedNS.value, () => client.value?.client.id], async () => {
-  await initClientSubscription();
-});
-
-function markLocalMutation() {
-  isClientDataStale.value = false;
-}
-
-async function initClientSubscription() {
-  if (!token.value || !selectedNS.value || !client.value?.client.id) return;
-
-  const { ensure } = useContactsToken();
-  const contactsToken = await ensure(selectedNS.value, token.value);
-  if (!contactsToken) return;
-
-  if (stopClientSubscription) {
-    stopClientSubscription();
-    stopClientSubscription = null;
-  }
-
-  stopClientSubscription = subscribeClientChanged(
-    contactsToken,
-    selectedNS.value,
-    (event) => {
-      // Only handle events for this specific client
-      if (event.clientId !== client.value?.client.id) return;
-      
-      // Don't show stale banner for our own changes
-      const currentUserId = user.value?.id || '';
-      if (event.changedBy === currentUserId) return;
-      
-      isClientDataStale.value = true;
-    },
-    () => {
-      // Fallback is manual reload; no hard failure for the page.
-    },
-  );
-}
-
-async function refreshStaleClientData() {
-  await loadClient();
-  isClientDataStale.value = false;
-}
-
-function sortEventsByDateDesc(rows: ClientEvent[]): ClientEvent[] {
-  return rows.slice().sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-}
-
-function mergeUniqueEvents(existingRows: ClientEvent[], incomingRows: ClientEvent[]): ClientEvent[] {
-  const byId = new Map<string, ClientEvent>();
-  for (const row of existingRows) {
-    byId.set(row.id, row);
-  }
-  for (const row of incomingRows) {
-    byId.set(row.id, row);
-  }
-  return sortEventsByDateDesc(Array.from(byId.values()));
-}
-
-async function loadMoreEvents() {
-  if (!contactsAppToken.value || !fullClientIdForEvents.value || eventsLoadingMore.value) {
-    return;
-  }
-  if (eventsTotal.value > 0 && events.value.length >= eventsTotal.value) {
-    return;
-  }
-
-  try {
-    eventsLoadingMore.value = true;
-    const eventsData = await getClientEvents(
-      contactsAppToken.value,
-      fullClientIdForEvents.value,
-      EVENTS_PAGE_SIZE,
-      events.value.length,
-    );
-
-    const nextRows = sortEventsByDateDesc(eventsData.rows || []);
-    events.value = mergeUniqueEvents(events.value, nextRows);
-    eventsTotal.value = Number(eventsData.info?.count || 0);
-  } catch (eventsError) {
-    logError('Failed to load more client events by full client id:', eventsError);
-  } finally {
-    eventsLoadingMore.value = false;
-  }
-}
-
-async function loadClient() {
-  // Use mock data for preview
-  if (useMockData.value) {
-    loading.value = true;
-    
-    // Simulate loading delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Mock client data
-    client.value = {
-      client: {
-        id: '550e8400-e29b-41d4-a716-446655440000',
-        shortId: 'a9B2mX7q',
-        clientType: 'INDIVIDUAL',
-        status: 'ACTIVE',
-        createdAt: '2024-01-15T10:30:00Z',
-        updatedAt: '2024-03-01T14:22:00Z',
-      },
-      individual: {
-        firstName: 'Александр',
-        lastName: 'Петров',
-        middleName: 'Иванович',
-        birthDate: '1990-05-15',
-        gender: true,
-      },
-      tags: [],
-    };
-
-    const mockClientId = client.value.client.id;
-    
-    // Mock identities
-    identities.value = [
-      {
-        id: '1',
-        clientId: mockClientId,
-        type: 'phone',
-        value: '+7 (777) 123-45-67',
-        isPrimary: true,
-        verifiedAt: '2024-01-15T10:30:00Z',
-      },
-      {
-        id: '2',
-        clientId: mockClientId,
-        type: 'email',
-        value: 'a.petrov@lota.tools',
-        isPrimary: true,
-        verifiedAt: '2024-01-16T11:20:00Z',
-      },
-      {
-        id: '3',
-        clientId: mockClientId,
-        type: 'telegram',
-        value: '@apetrov',
-        isPrimary: false,
-      },
-    ];
-    
-    // Mock tags
-    tags.value = [
-      { id: '1', name: 'VIP' },
-      { id: '2', name: 'Постоянный клиент' },
-      { id: '3', name: 'Оптовик' },
-    ];
-    
-    // Mock events
-    events.value = [
-      {
-        id: '1',
-        clientId: mockClientId,
-        eventType: 'CLIENT_CREATED',
-        payload: '{}',
-        createdAt: '2024-01-15T10:30:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '2',
-        clientId: mockClientId,
-        eventType: 'IDENTITY_ADDED',
-        payload: JSON.stringify({ type: 'phone', value: '+7 (777) 123-45-67' }),
-        createdAt: '2024-01-15T10:31:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '3',
-        clientId: mockClientId,
-        eventType: 'IDENTITY_ADDED',
-        payload: JSON.stringify({ type: 'email', value: 'a.petrov@lota.tools' }),
-        createdAt: '2024-01-16T11:20:00Z',
-        createdBy: 'admin@lota.tools',
-      },
-      {
-        id: '4',
-        clientId: mockClientId,
-        eventType: 'TAG_ADDED',
-        payload: JSON.stringify({ tagName: 'VIP' }),
-        createdAt: '2024-01-20T09:15:00Z',
-        createdBy: 'manager@lota.tools',
-      },
-      {
-        id: '5',
-        clientId: mockClientId,
-        eventType: 'TAG_ADDED',
-        payload: JSON.stringify({ tagName: 'Постоянный клиент' }),
-        createdAt: '2024-01-22T14:30:00Z',
-        createdBy: 'manager@lota.tools',
-      },
-      {
-        id: '6',
-        clientId: mockClientId,
-        eventType: 'BONUS_EARNED',
-        payload: JSON.stringify({ amount: 1500, reason: 'REGISTRATION' }),
-        createdAt: '2024-02-01T08:00:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '7',
-        clientId: mockClientId,
-        eventType: 'BONUS_SPENT',
-        payload: JSON.stringify({ amount: 500, description: 'Скидка 10% на покупку' }),
-        createdAt: '2024-02-05T16:45:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '8',
-        clientId: mockClientId,
-        eventType: 'TAG_ADDED',
-        payload: JSON.stringify({ tagName: 'Оптовик' }),
-        createdAt: '2024-02-08T10:20:00Z',
-        createdBy: 'admin@lota.tools',
-      },
-      {
-        id: '9',
-        clientId: mockClientId,
-        eventType: 'IDENTITY_ADDED',
-        payload: JSON.stringify({ type: 'telegram', value: '@apetrov' }),
-        createdAt: '2024-02-10T12:00:00Z',
-        createdBy: 'user',
-      },
-      {
-        id: '10',
-        clientId: mockClientId,
-        eventType: 'BONUS_EARNED',
-        payload: JSON.stringify({ amount: 2500, reason: 'PURCHASE' }),
-        createdAt: '2024-02-15T09:30:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '11',
-        clientId: mockClientId,
-        eventType: 'TIER_UPGRADED',
-        payload: JSON.stringify({ from: 'SILVER', to: 'GOLD' }),
-        createdAt: '2024-02-20T13:22:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '12',
-        clientId: mockClientId,
-        eventType: 'BONUS_SPENT',
-        payload: JSON.stringify({ amount: 1200, description: 'Скидка 20% на покупку' }),
-        createdAt: '2024-02-22T11:15:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '13',
-        clientId: mockClientId,
-        eventType: 'BONUS_EARNED',
-        payload: JSON.stringify({ amount: 3000, reason: 'TIER_BONUS' }),
-        createdAt: '2024-02-25T08:00:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '14',
-        clientId: mockClientId,
-        eventType: 'IDENTITY_VERIFIED',
-        payload: JSON.stringify({ type: 'email', value: 'a.petrov@lota.tools' }),
-        createdAt: '2024-02-26T15:45:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '15',
-        clientId: mockClientId,
-        eventType: 'COMMENT_ADDED',
-        payload: JSON.stringify({ text: 'Звоним только с 10:00 до 12:00' }),
-        createdAt: '2024-02-28T09:00:00Z',
-        createdBy: 'manager@lota.tools',
-      },
-      {
-        id: '16',
-        clientId: mockClientId,
-        eventType: 'BONUS_EARNED',
-        payload: JSON.stringify({ amount: 1800, reason: 'VISIT' }),
-        createdAt: '2024-03-01T10:30:00Z',
-        createdBy: 'system',
-      },
-      {
-        id: '17',
-        clientId: mockClientId,
-        eventType: 'STATUS_CHANGED',
-        payload: JSON.stringify({ from: 'ACTIVE', to: 'ACTIVE' }),
-        createdAt: '2024-03-01T14:22:00Z',
-        createdBy: 'admin@lota.tools',
-      },
-      {
-        id: '18',
-        clientId: mockClientId,
-        eventType: 'IDENTITY_ADDED',
-        payload: JSON.stringify({ type: 'whatsapp', value: '+7 777 123-45-67' }),
-        createdAt: '2024-03-02T10:15:00Z',
-        createdBy: 'user',
-      },
-      {
-        id: '19',
-        clientId: mockClientId,
-        eventType: 'RECORD_UPDATED',
-        payload: JSON.stringify({ field: 'birthDate', oldValue: '1990-05-15', newValue: '1990-05-15' }),
-        createdAt: '2024-03-02T11:00:00Z',
-        createdBy: 'admin@lota.tools',
-      },
-      {
-        id: '20',
-        clientId: mockClientId,
-        eventType: 'BONUS_EXPIRED',
-        payload: JSON.stringify({ amount: 520 }),
-        createdAt: '2024-03-02T23:59:00Z',
-        createdBy: 'system',
-      },
-    ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    
-    // Mock bonus balance
-    bonusBalance.value = {
-      clientId: mockClientId,
-      totalBonuses: 15420,
-      availableBonuses: 12850,
-      expiringSoon: 2570,
-      updatedAt: '2024-03-01T14:22:00Z',
-    };
-    
-    // Mock stamp cards and progress
-    stampCards.value = [
-      {
-        id: 'stamp-1',
-        name: 'Кофейная карта',
-        description: 'Каждый 10-й кофе бесплатно',
-        type: 'COFFEE',
-        status: 'ACTIVE',
-        totalStamps: 10,
-        rewardDescription: 'Бесплатный кофе любого размера',
-        validFrom: '2024-01-01T00:00:00Z',
-        validUntil: '2024-12-31T23:59:59Z',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
-      {
-        id: 'stamp-2',
-        name: 'Обеды',
-        description: 'Соберите 15 штампов за обеды',
-        type: 'MEAL',
-        status: 'ACTIVE',
-        totalStamps: 15,
-        rewardDescription: 'Скидка 50% на следующий обед',
-        validFrom: '2024-01-01T00:00:00Z',
-        validUntil: null,
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-      },
-    ];
-    
-    stampProgress.value = [
-      {
-        id: 'progress-1',
-        clientId: mockClientId,
-        stampCardId: 'stamp-1',
-        currentStamps: 7,
-        completedRounds: 3,
-        lastStampAt: '2024-02-28T12:30:00Z',
-        stampCard: stampCards.value[0],
-      },
-      {
-        id: 'progress-2',
-        clientId: mockClientId,
-        stampCardId: 'stamp-2',
-        currentStamps: 11,
-        completedRounds: 0,
-        lastStampAt: '2024-02-27T13:15:00Z',
-        stampCard: stampCards.value[1],
-      },
-    ];
-
-    dynamicFields.value = [];
-    dynamicFieldValues.value = {};
-    dynamicFieldDrafts.value = {};
-    
-    loading.value = false;
-    return;
-  }
-  
-  // Real data loading
-  if (!token.value || !selectedNS.value) {
-    loading.value = false;
-    return;
-  }
-
-  try {
-    loading.value = true;
-    const { ensure } = useContactsToken();
-    const contactsToken = await ensure(selectedNS.value, token.value);
-    if (!contactsToken) return;
-    contactsAppToken.value = contactsToken;
-
-    let stampCardsList: StampCard[] = [];
-    let fullClientId = '';
-
-    try {
-      // Aggregated GraphQL call for most client-page data.
-      const pageData = await getClientPageData(contactsToken, selectedNS.value, clientId.value);
-      if (!pageData.client) {
-        toast.add({
-          title: t('common.error'),
-          description: t('contacts.loadError'),
-          color: 'red',
-        });
-        router.push(`/${selectedNS.value}/contacts`);
-        return;
-      }
-
-      client.value = pageData.client;
-      fullClientId = pageData.client.client.id;
-      identities.value = pageData.identities;
-      tags.value = pageData.tags;
-      tagNameById.value = {};
-
-      try {
-        const allTagsData = await listTags(contactsToken, selectedNS.value);
-        const nextTagNameById: Record<string, string> = {};
-        for (const tag of (allTagsData?.tags?.rows || [])) {
-          if (tag.id && tag.name) {
-            nextTagNameById[tag.id] = tag.name;
-          }
-        }
-        for (const tag of (pageData.tags || [])) {
-          if (tag.id && tag.name) {
-            nextTagNameById[tag.id] = tag.name;
-          }
-        }
-        tagNameById.value = nextTagNameById;
-      } catch (tagsError) {
-        logError('Failed to load tags for timeline tag-name mapping:', tagsError);
-      }
-
-      events.value = [];
-      bonusBalance.value = pageData.bonusBalance;
-      stampCardsList = pageData.stampCards || [];
-      stampCards.value = stampCardsList;
-
-      await loadRelatedClientNames();
-      await resolveIdentityDisplayValues();
-
-      // Always load timeline by full UUID to ensure all related client events are returned.
-      fullClientIdForEvents.value = fullClientId;
-      events.value = [];
-      eventsTotal.value = 0;
-      try {
-        const eventsData = await getClientEvents(contactsToken, fullClientId, EVENTS_PAGE_SIZE, 0);
-        events.value = sortEventsByDateDesc(eventsData.rows || []);
-        eventsTotal.value = Number(eventsData.info?.count || events.value.length);
-      } catch (eventsError) {
-        logError('Failed to load client events by full client id:', eventsError);
-        events.value = sortEventsByDateDesc(pageData.events || []);
-        eventsTotal.value = events.value.length;
-      }
-    } catch (aggregatedError) {
-      logError('Failed to load client page data:', aggregatedError);
-      toast.add({
-        title: t('common.error'),
-        description: t('contacts.loadError'),
-        color: 'red',
-      });
-      router.push(`/${selectedNS.value}/contacts`);
-      return;
-    }
-
-    // Fetch stamp progress for all cards in one batched request
-    if (stampCardsList.length > 0 && fullClientId) {
-      try {
-        stampProgress.value = await getClientStampProgressBatch(
-          contactsToken,
-          fullClientId,
-          stampCardsList.map((c) => c.id),
-        );
-      } catch (error) {
-        logError('Failed to load stamp progress:', error);
-        stampProgress.value = [];
-      }
-    } else {
-      stampProgress.value = [];
-    }
-
-    if (fullClientId) {
-      await loadDynamicFieldsForClient(contactsToken, selectedNS.value, fullClientId);
-    } else {
-      dynamicFields.value = [];
-      dynamicFieldValues.value = {};
-      dynamicFieldDrafts.value = {};
-    }
-  } catch (error) {
-    logError('Failed to load client:', error);
-    toast.add({
-      title: t('common.error'),
-      description: t('contacts.loadError'),
-      color: 'red',
-    });
-  } finally {
-    loading.value = false;
-  }
-}
 
 async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
   if (!token.value || !selectedNS.value || !client.value) return;
@@ -994,448 +166,22 @@ async function updateStatus(newStatus: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED') {
   }
 }
 
-async function copyToClipboard(text: string) {
-  try {
-    if (navigator?.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      const tempInput = document.createElement('input');
-      tempInput.value = text;
-      document.body.appendChild(tempInput);
-      tempInput.select();
-      document.execCommand('copy');
-      document.body.removeChild(tempInput);
-    }
-    toast.add({
-      title: t('contacts.copied'),
-      icon: 'i-heroicons-clipboard-document-check',
-      color: 'emerald',
-    });
-  } catch (err) {
-    logError('Failed to copy to clipboard', err);
-    toast.add({
-      title: t('contacts.copyFailed'),
-      color: 'red',
-    });
-  }
+function onBack() {
+  handleBack(router, nsSlug.value);
 }
 
-function handlePhoneAction(phone: string) {
-  window.location.href = `tel:${phone}`;
-}
-
-function handleEmailAction(email: string) {
-  window.location.href = `mailto:${email}`;
-}
-
-function handleTelegramAction(telegram: string) {
-  const handle = telegram.replace(/^@/, '');
-  window.open(`https://t.me/${handle}`, '_blank');
-}
-
-function handleWhatsappAction(phone: string) {
-  const clean = phone.replace(/\D/g, '');
-  window.open(`https://wa.me/${clean}`, '_blank');
-}
-
-function handleBack() {
-  const nsSlug = route.params.namespace as string;
-  if (window.history.length > 1) {
-    router.back();
-  } else {
-    router.push(`/${nsSlug}/contacts/all/1-20`);
-  }
-}
-
-// Edit mode functions
-function startEditPersonalInfo() {
-  if (!client.value) return;
-  
-  backupClient.value = JSON.parse(JSON.stringify(client.value));
-  
-  if (client.value.individual) {
-    editingFirstName.value = client.value.individual.firstName;
-    editingLastName.value = client.value.individual.lastName;
-    editingMiddleName.value = client.value.individual.middleName || '';
-    editingBirthDate.value = client.value.individual.birthDate ? new Date(client.value.individual.birthDate).toISOString().split('T')[0] : '';
-    editingGender.value = client.value.individual.gender !== undefined ? client.value.individual.gender : null;
-  } else if (client.value.legalEntity) {
-    editingLegalName.value = client.value.legalEntity.legalName;
-    editingBrandName.value = client.value.legalEntity.brandName || '';
-    editingBinIin.value = client.value.legalEntity.binIin || '';
-    editingRegistrationCountry.value = client.value.legalEntity.registrationCountry || '';
-    editingRegistrationDate.value = client.value.legalEntity.registrationDate ? new Date(client.value.legalEntity.registrationDate).toISOString().split('T')[0] : '';
-  }
-  editingAdditionalInfo.value = getAdditionalInfoValue();
-  
-  editMode.value.personalInfo = true;
-}
-
-function cancelEditPersonalInfo() {
-  editMode.value.personalInfo = false;
-  backupClient.value = null;
-}
-
-async function savePersonalInfo() {
-  if (!client.value) return;
-
-  if (useMockData.value) {
-    if (client.value.individual) {
-      client.value.individual.firstName = editingFirstName.value;
-      client.value.individual.lastName = editingLastName.value;
-      client.value.individual.middleName = editingMiddleName.value;
-      client.value.individual.birthDate = editingBirthDate.value ? editingBirthDate.value : undefined;
-      client.value.individual.gender = editingGender.value;
-    } else if (client.value.legalEntity) {
-      client.value.legalEntity.legalName = editingLegalName.value;
-      client.value.legalEntity.brandName = editingBrandName.value;
-      client.value.legalEntity.binIin = editingBinIin.value;
-      client.value.legalEntity.registrationCountry = editingRegistrationCountry.value;
-      client.value.legalEntity.registrationDate = editingRegistrationDate.value ? editingRegistrationDate.value : undefined;
-    }
-
-    editMode.value.personalInfo = false;
-    toast.add({
-      title: t('common.success'),
-      description: t('contacts.clientDataUpdated'),
-      color: 'emerald',
-    });
-    return;
-  }
-
-  if (!token.value || !selectedNS.value) return;
-
-  try {
-    const { ensure } = useContactsToken();
-    const contactsToken = await ensure(selectedNS.value, token.value);
-    if (!contactsToken) return;
-
-    if (client.value.individual) {
-      await contactsUpdateIndividualClient(contactsToken, selectedNS.value, client.value.client.id, {
-        firstName: editingFirstName.value.trim(),
-        lastName: editingLastName.value.trim(),
-        middleName: editingMiddleName.value.trim() || undefined,
-        birthDate: editingBirthDate.value || undefined,
-        gender: editingGender.value,
-      });
-    } else if (client.value.legalEntity) {
-      await contactsUpdateLegalEntityClient(contactsToken, selectedNS.value, client.value.client.id, {
-        legalName: editingLegalName.value.trim(),
-        brandName: editingBrandName.value.trim() || undefined,
-        binIin: editingBinIin.value.trim() || undefined,
-        registrationCountry: editingRegistrationCountry.value.trim() || undefined,
-        registrationDate: editingRegistrationDate.value || undefined,
-      });
-    }
-
-    const additionalInfo = editingAdditionalInfo.value.trim();
-    const identityForInfo = getPreferredIdentityForAdditionalInfo();
-    if (identityForInfo) {
-      const currentComments = identityForInfo.comments?.trim() || '';
-      if (currentComments !== additionalInfo) {
-        await updateIdentity(
-          contactsToken,
-          selectedNS.value,
-          identityForInfo.id,
-          identityForInfo.value,
-          additionalInfo,
-        );
-      }
-    } else if (additionalInfo) {
-      // Persist additional info even when client has no existing identities.
-      await createIdentity(
-        contactsToken,
-        selectedNS.value,
-        client.value.client.id,
-        'company',
-        client.value.client.shortId || client.value.client.id,
-        false,
-        additionalInfo,
-      );
-    }
-
-    editMode.value.personalInfo = false;
-    markLocalMutation();
-    await loadClient();
-    toast.add({
-      title: t('common.success'),
-      description: t('contacts.clientDataUpdated'),
-      color: 'emerald',
-    });
-  } catch (error) {
-    logError('Failed to save personal info:', error);
-    toast.add({
-      title: t('common.error'),
-      description: t('contacts.updateError'),
-      color: 'red',
-    });
-  }
-}
-
-function startEditIdentities() {
-  backupIdentities.value = JSON.parse(JSON.stringify(identities.value));
-  
-  editingPhones.value = identities.value
-    .filter(id => id.type === 'phone')
-    .map(id => id.value)
-    .slice(0, 5);
-  if (editingPhones.value.length === 0) {
-    editingPhones.value = [''];
-  }
-  
-  editingEmails.value = identities.value
-    .filter(id => id.type === 'email')
-    .map(id => id.value)
-    .slice(0, 5);
-  if (editingEmails.value.length === 0) {
-    editingEmails.value = [''];
-  }
-
-  editingTelegrams.value = identities.value
-    .filter(id => id.type === 'telegram')
-    .map(id => id.value)
-    .slice(0, 5);
-  if (editingTelegrams.value.length === 0) {
-    editingTelegrams.value = [''];
-  }
-
-  editingWhatsapps.value = identities.value
-    .filter(id => id.type === 'whatsapp')
-    .map(id => id.value)
-    .slice(0, 5);
-  if (editingWhatsapps.value.length === 0) {
-    editingWhatsapps.value = [''];
-  }
-  
-  editMode.value.identities = true;
-}
-
-function cancelEditIdentities() {
-  editMode.value.identities = false;
-  backupIdentities.value = [];
-}
-
-async function syncIdentityType(
-  contactsToken: string,
-  namespace: string,
-  clientIdValue: string,
-  type: 'phone' | 'email' | 'telegram' | 'whatsapp',
-  desiredValues: string[],
-  existingItems: ClientIdentity[],
-) {
-  const normalizedDesired = desiredValues.map(value => value.trim()).filter(Boolean);
-  const resultingIds: string[] = [];
-  const maxLength = Math.max(normalizedDesired.length, existingItems.length);
-
-  for (let index = 0; index < maxLength; index += 1) {
-    const desiredValue = normalizedDesired[index];
-    const existingItem = existingItems[index];
-
-    if (existingItem && desiredValue) {
-      if (existingItem.value !== desiredValue) {
-        const result = await updateIdentity(contactsToken, namespace, existingItem.id, desiredValue);
-        resultingIds.push(result.updateIdentity.id);
-      } else {
-        resultingIds.push(existingItem.id);
-      }
-      continue;
-    }
-
-    if (existingItem && !desiredValue) {
-      await deleteIdentity(contactsToken, namespace, existingItem.id);
-      continue;
-    }
-
-    if (!existingItem && desiredValue) {
-      const result = await createIdentity(contactsToken, namespace, clientIdValue, type, desiredValue, resultingIds.length === 0);
-      resultingIds.push(result.createIdentity.id);
-    }
-  }
-
-  if (resultingIds.length > 0) {
-    await setPrimaryIdentity(contactsToken, namespace, resultingIds[0]);
-  }
-}
-
-async function saveIdentities() {
-  if (!client.value) return;
-
-  if (useMockData.value) {
-    identities.value = [
-      ...editingPhones.value
-        .filter(p => p.trim())
-        .map((value, idx) => ({
-          id: `phone-${idx}`,
-          clientId: client.value!.client.id,
-          type: 'phone',
-          value,
-          isPrimary: idx === 0,
-          verifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
-      ...editingEmails.value
-        .filter(e => e.trim())
-        .map((value, idx) => ({
-          id: `email-${idx}`,
-          clientId: client.value!.client.id,
-          type: 'email',
-          value,
-          isPrimary: idx === 0,
-          verifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
-      ...editingTelegrams.value
-        .filter(v => v.trim())
-        .map((value, idx) => ({
-          id: `telegram-${idx}`,
-          clientId: client.value!.client.id,
-          type: 'telegram',
-          value,
-          isPrimary: idx === 0,
-          verifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
-      ...editingWhatsapps.value
-        .filter(v => v.trim())
-        .map((value, idx) => ({
-          id: `whatsapp-${idx}`,
-          clientId: client.value!.client.id,
-          type: 'whatsapp',
-          value,
-          isPrimary: idx === 0,
-          verifiedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
-    ];
-
-    editMode.value.identities = false;
-    toast.add({
-      title: t('common.success'),
-      description: t('contacts.contactDataUpdated'),
-      color: 'emerald',
-    });
-    return;
-  }
-
-  if (!token.value || !selectedNS.value) return;
-
-  try {
-    const { ensure } = useContactsToken();
-    const contactsToken = await ensure(selectedNS.value, token.value);
-    if (!contactsToken) return;
-
-    const clientIdValue = client.value.client.id;
-    await syncIdentityType(
-      contactsToken,
-      selectedNS.value,
-      clientIdValue,
-      'phone',
-      editingPhones.value,
-      identities.value.filter(id => id.type === 'phone'),
-    );
-    await syncIdentityType(
-      contactsToken,
-      selectedNS.value,
-      clientIdValue,
-      'email',
-      editingEmails.value,
-      identities.value.filter(id => id.type === 'email'),
-    );
-    await syncIdentityType(
-      contactsToken,
-      selectedNS.value,
-      clientIdValue,
-      'telegram',
-      editingTelegrams.value,
-      identities.value.filter(id => id.type === 'telegram'),
-    );
-    await syncIdentityType(
-      contactsToken,
-      selectedNS.value,
-      clientIdValue,
-      'whatsapp',
-      editingWhatsapps.value,
-      identities.value.filter(id => id.type === 'whatsapp'),
-    );
-
-    editMode.value.identities = false;
-    markLocalMutation();
-    await loadClient();
-    toast.add({
-      title: t('common.success'),
-      description: t('contacts.contactDataUpdated'),
-      color: 'emerald',
-    });
-  } catch (error) {
-    logError('Failed to save identities:', error);
-    toast.add({
-      title: t('common.error'),
-      description: t('contacts.updateError'),
-      color: 'red',
-    });
-  }
-}
-
-function addPhoneField() {
-  if (editingPhones.value.length < 5) {
-    editingPhones.value.push('');
-  }
-}
-
-function removePhoneField(index: number) {
-  if (editingPhones.value.length > 1) {
-    editingPhones.value.splice(index, 1);
-  }
-}
-
-function addEmailField() {
-  if (editingEmails.value.length < 5) {
-    editingEmails.value.push('');
-  }
-}
-
-function removeEmailField(index: number) {
-  if (editingEmails.value.length > 1) {
-    editingEmails.value.splice(index, 1);
-  }
-}
-
-function addTelegramField() {
-  if (editingTelegrams.value.length < 5) {
-    editingTelegrams.value.push('');
-  }
-}
-
-function removeTelegramField(index: number) {
-  if (editingTelegrams.value.length > 1) {
-    editingTelegrams.value.splice(index, 1);
-  }
-}
-
-function addWhatsappField() {
-  if (editingWhatsapps.value.length < 5) {
-    editingWhatsapps.value.push('');
-  }
-}
-
-function removeWhatsappField(index: number) {
-  if (editingWhatsapps.value.length > 1) {
-    editingWhatsapps.value.splice(index, 1);
-  }
+function onCopyToClipboard(text: string) {
+  return copyToClipboard(text, toast, t);
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
     <!-- Page Header -->
-    <ContactHeader 
-      :client="client" 
+    <ContactHeader
+      :client="client"
       :namespace="nsSlug"
-      @back="handleBack"
+      @back="onBack"
     />
 
     <!-- Loading State -->
@@ -1485,7 +231,7 @@ function removeWhatsappField(index: number) {
           <!-- Personal Info Section -->
           <ContactPersonalInfo
             :client="client"
-            :edit-mode="editMode.personalInfo"
+            :edit-mode="personalInfoEditMode"
             :editing-first-name="editingFirstName"
             :editing-last-name="editingLastName"
             :editing-middle-name="editingMiddleName"
@@ -1501,19 +247,7 @@ function removeWhatsappField(index: number) {
             @start-edit="startEditPersonalInfo"
             @save-edit="savePersonalInfo"
             @cancel-edit="cancelEditPersonalInfo"
-            @update-field="(field, value) => {
-              if (field === 'firstName') editingFirstName = value as string;
-              if (field === 'lastName') editingLastName = value as string;
-              if (field === 'middleName') editingMiddleName = value as string;
-              if (field === 'birthDate') editingBirthDate = value as string;
-              if (field === 'gender') editingGender = value as (boolean | null);
-              if (field === 'legalName') editingLegalName = value as string;
-              if (field === 'brandName') editingBrandName = value as string;
-              if (field === 'binIin') editingBinIin = value as string;
-              if (field === 'registrationCountry') editingRegistrationCountry = value as string;
-              if (field === 'registrationDate') editingRegistrationDate = value as string;
-              if (field === 'additionalInfo') editingAdditionalInfo = value as string;
-            }"
+            @update-field="updatePersonalInfoField"
           />
 
           <!-- Identities Section -->
@@ -1521,7 +255,7 @@ function removeWhatsappField(index: number) {
             :identities="identities"
             :identity-display-values="identityDisplayValues"
             :related-client-targets="relatedClientTargets"
-            :edit-mode="editMode.identities"
+            :edit-mode="identitiesEditMode"
             :editing-phones="editingPhones"
             :editing-emails="editingEmails"
             :editing-telegrams="editingTelegrams"
@@ -1545,7 +279,7 @@ function removeWhatsappField(index: number) {
             @email-action="handleEmailAction"
             @telegram-action="handleTelegramAction"
             @whatsapp-action="handleWhatsappAction"
-            @copy-to-clipboard="copyToClipboard"
+            @copy-to-clipboard="onCopyToClipboard"
             @navigate-related-client="openRelatedClient"
           />
 
@@ -1562,90 +296,24 @@ function removeWhatsappField(index: number) {
           />
 
           <!-- Tags Section -->
-          <ContactTags 
-            :tags="tags" 
+          <ContactTags
+            :tags="tags"
             :client-id="client?.client.id"
             @open-tags-modal="isTagsModalOpen = true"
             @tag-added="loadClient"
             @tag-removed="loadClient"
           />
 
-          <UCard>
-            <template #header>
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Дополнительные поля
-                  </h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Значения динамических полей клиента
-                  </p>
-                </div>
-                <UButton
-                  color="primary"
-                  size="xs"
-                  :loading="dynamicFieldsSaving"
-                  :disabled="dynamicFieldsLoading"
-                  @click="saveDynamicFields"
-                >
-                  Сохранить все
-                </UButton>
-              </div>
-            </template>
-
-            <div
-              v-if="dynamicFieldsLoading"
-              class="py-6 text-center text-sm text-gray-500 dark:text-gray-400"
-            >
-              {{ t('common.loading') }}
-            </div>
-
-            <div
-              v-else-if="dynamicFieldsError"
-              class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200"
-            >
-              {{ dynamicFieldsError }}
-            </div>
-
-            <div
-              v-else-if="dynamicFields.length === 0"
-              class="py-6 text-center text-sm text-gray-500 dark:text-gray-400"
-            >
-              Поля не настроены
-            </div>
-
-            <div
-              v-else
-              class="space-y-3"
-            >
-              <div
-                v-for="field in dynamicFields"
-                :key="field.id"
-                class="py-2"
-              >
-                <div class="mb-2 flex items-center justify-between gap-3">
-                  <div class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    {{ field.label }}
-                    <span
-                      v-if="field.isRequired"
-                      class="text-red-500"
-                    >*</span>
-                  </div>
-                </div>
-
-                <DynamicFieldInput
-                  v-model="dynamicFieldDrafts[field.id]"
-                  :field="field"
-                  :disabled="dynamicFieldsSaving"
-                  :yes-label="t('contacts.yes') || 'Да'"
-                  :no-label="t('contacts.no') || 'Нет'"
-                  :none-selected-label="t('contacts.noneSelected') || 'Ничего не выбрано'"
-                  :select-options-label="t('contacts.selectOptions') || 'Выберите варианты'"
-                  :selected-count-suffix="t('contacts.selectedCountSuffix') || 'выбрано'"
-                />
-              </div>
-            </div>
-          </UCard>
+          <!-- Dynamic Fields Section -->
+          <ContactDynamicFields
+            :fields="dynamicFields"
+            :drafts="dynamicFieldDrafts"
+            :loading="dynamicFieldsLoading"
+            :error="dynamicFieldsError"
+            :saving="dynamicFieldsSaving"
+            @save-all="saveDynamicFields"
+            @update-draft="(fieldId, value) => dynamicFieldDrafts[fieldId] = value"
+          />
         </div>
 
         <!-- Right Column - Timeline -->

@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
 import { useRoute } from 'vue-router';
+import { isAtracePermissionError } from '@/utils/atracePermissions';
 
 const { t, locale } = useI18n();
 
@@ -13,15 +14,6 @@ const props = defineProps<{
 
 const route = useRoute();
 const namespaceSlug = computed(() => route.params.namespace as string | undefined);
-
-function hasAtracePermissionError(error: any, permission?: string): boolean {
-  return Boolean(error?.response?.errors?.some((err: any) => {
-    const message = String(err?.message || '').toLowerCase();
-    if (!message) return false;
-    if (permission && message.includes(`missing permission ${permission}`.toLowerCase())) return true;
-    return message.includes('missing permission') || message.includes('access denied');
-  }));
-}
 
 type UserStats = {
   userId: string;
@@ -231,7 +223,7 @@ async function loadStats() {
     );
     stats.value = result;
   } catch (e: any) {
-    const permissionError = hasAtracePermissionError(e, 'tracker.attendance.view');
+    const permissionError = isAtracePermissionError(e, 'tracker.attendance.view');
     const unauthorizedError =
       e?.response?.errors?.some((err: any) =>
         String(err?.message || '').includes('unauthorized: token is missing for key "AtraceAuthorization"')

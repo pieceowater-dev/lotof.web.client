@@ -18,6 +18,14 @@ const nsSlug = computed(() => route.params.namespace as string);
 
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
 
+// Orders with no sourceTag weren't placed through any tracked share link —
+// they came in by phone, walk-in, or the bare menu URL, i.e. handled
+// directly rather than through a marketing channel. The backend's sourceTag
+// column has no NULL-vs-empty distinction worth exposing, so this sentinel
+// (never a real share link's tag — see loadSourceTagOptions) stands in for
+// "no tag" on both the quick-filter card and the source filter dropdown.
+const MANUAL_SOURCE_TAG = '__manual__';
+
 const statusLabel = (s: string) => ({
   NEW: t('menu.statusNew') || 'New',
   ACCEPTED: t('menu.statusAccepted') || 'Accepted',
@@ -321,6 +329,33 @@ async function loadStatusCounts() {
   } catch (e) {
     logError('[menu/index] loadStatusCounts failed', e);
   }
+  loadManualOrdersCount();
+}
+
+const manualOrdersCount = ref(0);
+async function loadManualOrdersCount() {
+  try {
+    const menuToken = await getToken();
+    const { menuOrdersList } = await import('@/api/menu/order/list');
+    const res = await menuOrdersList(menuToken, nsSlug.value, {
+      sourceTag: MANUAL_SOURCE_TAG,
+      branchIds: selectedBranchIds.value,
+      types: selectedType.value ? [selectedType.value] : undefined,
+      length: 'TEN',
+    });
+    manualOrdersCount.value = res.count;
+  } catch (e) {
+    logError('[menu/index] loadManualOrdersCount failed', e);
+  }
+}
+
+const isManualFilterActive = computed(() => appliedFilterPanel.sourceTag === MANUAL_SOURCE_TAG);
+function toggleManualFilter() {
+  const next = isManualFilterActive.value ? '' : MANUAL_SOURCE_TAG;
+  sourceTagFilter.value = next;
+  appliedFilterPanel.sourceTag = next;
+  loadOrders();
+  loadSummary();
 }
 
 function toggleStatus(s: string) {
@@ -704,6 +739,32 @@ async function handleCreateOrder(payload: any) {
           <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ totalCount }}</span>
         </span>
       </button>
+      <!-- A different filter dimension from the status cards (source tag,
+           not status) — orders with no sourceTag, i.e. not placed through
+           any tracked share link. Distinct color so it doesn't read as
+           another status. -->
+      <button
+        class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
+        :class="isManualFilterActive
+          ? 'border-indigo-300 bg-indigo-50 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/30'
+          : CARD_INACTIVE"
+        @click="toggleManualFilter"
+      >
+        <span
+          class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
+          :class="isManualFilterActive ? 'bg-indigo-100 dark:bg-indigo-900/40' : CARD_INACTIVE_ICON_BG"
+        >
+          <Icon
+            name="lucide:user"
+            class="h-4 w-4"
+            :class="isManualFilterActive ? 'text-indigo-600 dark:text-indigo-300' : CARD_INACTIVE_ICON_COLOR"
+          />
+        </span>
+        <span>
+          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.myOrdersCard') || 'My orders' }}</span>
+          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ manualOrdersCount }}</span>
+        </span>
+      </button>
       <button
         v-for="s in STATUSES"
         :key="s"
@@ -947,6 +1008,7 @@ async function handleCreateOrder(payload: any) {
       v-model="isDetailOpen"
       :order="selectedOrder"
       :branches="branches"
+      :source-tag-options="sourceTagOptions"
       @status-changed="handleDetailStatusChanged"
       @open-order="handleOpenOrderById"
     />
@@ -977,7 +1039,7 @@ async function handleCreateOrder(payload: any) {
             </div>
             <USelectMenu
               v-model="sourceTagFilter"
-              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...sourceTagOptions.map((s) => ({ label: s.label, value: s.sourceTag }))]"
+              :options="[{ label: t('menu.any') || 'Any', value: '' }, { label: t('menu.myOrdersCard') || 'My orders', value: MANUAL_SOURCE_TAG }, ...sourceTagOptions.map((s) => ({ label: s.label, value: s.sourceTag }))]"
               value-attribute="value"
               option-attribute="label"
               icon="lucide:link"

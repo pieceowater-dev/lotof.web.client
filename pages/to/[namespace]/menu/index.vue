@@ -11,6 +11,7 @@ import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
+import { withRetry } from '@/utils/retry';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -39,14 +40,14 @@ const lastOrderStorageKey = computed(() => `lota-menu-last-order-${nsSlug.value}
 // below are actually crawlable, not just visible after client hydration.
 const { data, pending: loading, error: fetchError } = await useAsyncData(
   `storefront-${nsSlug.value}`,
-  async () => {
+  () => withRetry(async () => {
     const storefront = await getPublicStorefront(nsSlug.value);
     const [entries, modifierGroups] = await Promise.all([
       Promise.all(storefront.categories.map(async (c) => [c.id, await getPublicMenuItems(nsSlug.value, c.id)] as const)),
       getPublicModifierGroups(nsSlug.value),
     ]);
     return { storefront, itemsByCategory: Object.fromEntries(entries) as Record<string, MenuItem[]>, modifierGroups };
-  }
+  })
 );
 
 const error = computed(() => fetchError.value ? (getErrorMessage(fetchError.value) || 'Failed to load storefront') : null);
