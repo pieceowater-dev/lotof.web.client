@@ -675,7 +675,6 @@ async function handleStatusChange(order: MenuOrder, status: string) {
     if (idx !== -1) orders.value[idx] = updated;
     clearNewOrder(order.id);
     loadStatusCounts();
-    useToast().add({ title: t('menu.statusUpdated') || 'Status updated', color: 'primary' });
   } catch (e) {
     logError('[menu/index] handleStatusChange failed', e);
     useToast().add({ title: getErrorMessage(e) || 'Failed to update status', color: 'red' });

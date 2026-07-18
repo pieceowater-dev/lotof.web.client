@@ -13,14 +13,18 @@ export default defineAppConfig({
         // Show toasts at the top right of the screen
         position: 'top-0 bottom-[unset]'
       },
-      // Frosted-glass toast cards: translucent + blurred background instead
-      // of Nuxt UI's default solid white/gray-900, softer ring, taller
-      // radius. Slot keys per node_modules/@nuxt/ui .../notification.js.
+      // Liquid-glass toast cards: a diagonal light-to-tint gradient (the
+      // "sheen" a curved glass pane catches), heavy blur + saturation boost
+      // so whatever's behind bleeds through in color, a bright inset line
+      // along the top edge (glass catching light) layered with a soft
+      // diffused drop shadow for elevation, and a near-white hairline ring
+      // to read as a distinct pane rather than a flat tinted rectangle.
+      // Slot keys per node_modules/@nuxt/ui .../notification.js.
       notification: {
-        background: 'bg-white/75 dark:bg-gray-900/70 backdrop-blur-xl backdrop-saturate-150',
-        shadow: 'shadow-xl',
-        rounded: 'rounded-2xl',
-        ring: 'ring-1 ring-black/5 dark:ring-white/10',
+        background: 'bg-gradient-to-br from-white/90 via-white/70 to-blue-50/50 dark:from-gray-900/85 dark:via-gray-900/70 dark:to-blue-950/40 backdrop-blur-2xl backdrop-saturate-[180%]',
+        shadow: 'shadow-[0_10px_40px_-10px_rgba(15,23,42,0.25),0_2px_10px_-4px_rgba(15,23,42,0.15),inset_0_1px_0_0_rgba(255,255,255,0.8)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6),0_2px_10px_-4px_rgba(0,0,0,0.4),inset_0_1px_0_0_rgba(255,255,255,0.12)]',
+        rounded: 'rounded-[22px]',
+        ring: 'ring-1 ring-white/70 dark:ring-white/10',
         title: 'text-sm font-semibold text-gray-900 dark:text-white',
         description: 'mt-1 text-sm leading-5 text-gray-600 dark:text-gray-300',
         progress: {

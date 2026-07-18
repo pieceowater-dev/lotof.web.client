@@ -414,7 +414,6 @@ async function changeStatus(status: string) {
     const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, props.order.id, status);
     emit('statusChanged', updated);
     await loadDetails();
-    useToast().add({ title: t('menu.statusUpdated') || 'Status updated', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] changeStatus failed', e);
     useToast().add({ title: getErrorMessage(e) || 'Failed to update status', color: 'red' });
