@@ -30,6 +30,16 @@ export default defineAppConfig({
         default: {
           color: 'primary',
           timeout: 5000
+        },
+        // A snappier pop-and-slide instead of Nuxt UI's plain fade — enters
+        // with a soft overshoot (cubic-bezier ~ease-out-back), exits quickly.
+        transition: {
+          enterActiveClass: 'transition-all duration-[400ms] ease-[cubic-bezier(0.16,1,0.3,1)]',
+          enterFromClass: 'opacity-0 scale-95 translate-x-6',
+          enterToClass: 'opacity-100 scale-100 translate-x-0',
+          leaveActiveClass: 'transition-all duration-200 ease-in',
+          leaveFromClass: 'opacity-100 scale-100 translate-x-0',
+          leaveToClass: 'opacity-0 scale-95 translate-x-6'
         }
       },
       // Nuxt UI's default panel width is `w-full` (100% of the wrapping
