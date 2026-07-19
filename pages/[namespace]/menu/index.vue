@@ -16,6 +16,7 @@ import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
 
 const { t } = useI18n();
+const { isOwnerOrManager } = useMenuStaffRole();
 
 // First-run onboarding: the namespace owner is guided through Brand (and
 // optionally Branches) setup before seeing the normal orders screen — a
@@ -791,6 +792,7 @@ async function handleCreateOrder(payload: any) {
           {{ t('menu.storefront') || 'Storefront' }}
         </UButton>
         <UButton
+          v-if="isOwnerOrManager"
           icon="lucide:settings"
           size="xs"
           color="primary"

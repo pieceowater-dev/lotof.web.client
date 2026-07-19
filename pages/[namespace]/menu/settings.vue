@@ -11,6 +11,18 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
+// Defense in depth: the Settings link itself is already hidden for
+// cook/operator/courier (see [namespace]/menu/index.vue), but a direct URL
+// visit would otherwise land on a page whose every action the backend is
+// going to reject anyway (@menuAuth(roles: [OWNER, MANAGER]) on all of it).
+// Bounce back rather than show a settings screen that can't do anything.
+const { role: staffRole, isOwnerOrManager } = useMenuStaffRole();
+watch(staffRole, (r) => {
+  if (r && !isOwnerOrManager.value) {
+    navigateTo(`/${nsSlug.value}/menu`);
+  }
+}, { immediate: true });
+
 const goBack = () => {
   if (process.client) {
     window.history.back();
@@ -47,6 +59,7 @@ watch(activeTab, (tab) => {
       </div>
       <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
         <UButton
+          v-if="staffRole === 'OWNER'"
           icon="lucide:star"
           size="xs"
           color="amber"
