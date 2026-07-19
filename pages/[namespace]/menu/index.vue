@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
-import { getErrorMessage } from '@/utils/types/errors';
+import { getErrorMessage, isPermissionError } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
@@ -191,7 +191,13 @@ async function loadParticipantOptions() {
       .map((s) => ({ label: nameByUserId.get(s.userId) || (t('menu.unknownMember') || 'Unknown member'), value: s.userId }))
       .sort((a, b) => a.label.localeCompare(b.label));
   } catch (e) {
-    logError('[menu/index] loadParticipantOptions failed', e);
+    // staffList is OWNER/MANAGER-only — cook/operator/courier legitimately
+    // can't load it, so the participant filter just stays empty for them
+    // rather than logging an expected, non-actionable failure every time.
+    if (!isPermissionError(e)) {
+      logError('[menu/index] loadParticipantOptions failed', e);
+    }
+    participantOptions.value = [];
   }
 }
 
@@ -358,7 +364,7 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
     if (!opts.silent) selectedOrders.value = [];
   } catch (e) {
     logError('[menu/index] loadOrders failed', e);
-    if (!opts.silent) error.value = getErrorMessage(e) || 'Failed to load orders';
+    if (!opts.silent) error.value = getErrorMessage(e, t) || 'Failed to load orders';
   } finally {
     if (!opts.silent) loading.value = false;
   }
@@ -677,7 +683,7 @@ async function handleStatusChange(order: MenuOrder, status: string) {
     loadStatusCounts();
   } catch (e) {
     logError('[menu/index] handleStatusChange failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to update status', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update status', color: 'red' });
   } finally {
     updatingStatusId.value = null;
   }
@@ -755,7 +761,7 @@ async function handleCreateOrder(payload: any) {
     loadStatusCounts();
   } catch (e) {
     logError('[menu/index] handleCreateOrder failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to create order', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create order', color: 'red' });
   } finally {
     creatingOrder.value = false;
   }

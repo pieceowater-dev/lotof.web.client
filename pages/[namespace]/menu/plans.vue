@@ -66,7 +66,7 @@ async function fetchPlans() {
     const result = await getMenuPlans(nsSlug.value, false);
     plans.value = result.plans;
   } catch (err) {
-    error.value = getErrorMessage(err) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    error.value = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     console.error('Failed to fetch plans:', err);
   } finally {
     loading.value = false;
@@ -161,7 +161,7 @@ async function subscribePlan(plan: Plan) {
     try {
       await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.menu');
     } catch (installErr) {
-      const msg = getErrorMessage(installErr).toLowerCase();
+      const msg = getErrorMessage(installErr, t).toLowerCase();
       if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
         throw installErr;
       }
@@ -176,7 +176,7 @@ async function subscribePlan(plan: Plan) {
     await navigateTo(returnTo, { replace: true });
   } catch (err) {
     console.error('Failed to subscribe:', err);
-    const errorMsg = getErrorMessage(err) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    const errorMsg = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
 
     let title = t('common.error') || 'Error';
     let description = errorMsg;

@@ -61,7 +61,7 @@ function tr(path: string, fallback: string): string {
 }
 
 function getCreateClientErrorToast(error: unknown): { title: string; description: string } {
-  const rawMessage = getErrorMessage(error);
+  const rawMessage = getErrorMessage(error, t);
   const compactMessage = rawMessage.replace(/^rpc error:\s*code\s*=\s*\w+\s*desc\s*=\s*/i, '').trim();
 
   const activeClientsLimitMatch = compactMessage.match(/You have\s+(\d+)\s+active clients,\s+maximum allowed is\s+(\d+)/i);

@@ -25,7 +25,7 @@ const members = ref<Array<{ userId: string; username: string; email: string }>>(
 const roleLabel = (r: StaffRole) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
   MANAGER: t('menu.roleManager') || 'Manager',
-  COOK: t('menu.roleCook') || 'Cook',
+  COOK: t('menu.roleCook') || 'Specialist',
   OPERATOR: t('menu.roleOperator') || 'Operator',
   COURIER: t('menu.roleCourier') || 'Courier',
 }[r] || r);
@@ -51,7 +51,7 @@ const ROLE_LEGEND: { role: StaffRole; border: string; bg: string; title: string;
 const roleDesc = (r: StaffRole) => ({
   OWNER: t('menu.roleOwnerDesc') || 'Full control over the namespace and app.',
   MANAGER: t('menu.roleManagerDesc') || 'Manages staff, menu, and settings.',
-  COOK: t('menu.roleCookDesc') || 'Prepares orders in the kitchen.',
+  COOK: t('menu.roleCookDesc') || 'Handles their stage of the order pipeline.',
   OPERATOR: t('menu.roleOperatorDesc') || 'Takes and manages orders.',
   COURIER: t('menu.roleCourierDesc') || 'Delivers orders to customers.',
 }[r] || '');
@@ -123,7 +123,7 @@ async function load() {
     staff.value = res.staff;
   } catch (e) {
     logError('[menu/settings/staff] load failed', e);
-    error.value = getErrorMessage(e) || 'Failed to load staff';
+    error.value = getErrorMessage(e, t) || 'Failed to load staff';
   } finally {
     loading.value = false;
   }
@@ -155,7 +155,7 @@ async function handleSubmit(payload: { userId: string; role: StaffRole | null })
       isModalOpen.value = false;
     } catch (e) {
       logError('[menu/settings/staff] save failed', e);
-      useToast().add({ title: getErrorMessage(e) || 'Failed to save staff member', color: 'red' });
+      useToast().add({ title: getErrorMessage(e, t) || 'Failed to save staff member', color: 'red' });
     } finally {
       saving.value = false;
     }
@@ -185,7 +185,7 @@ async function handleSubmit(payload: { userId: string; role: StaffRole | null })
     isModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/staff] save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save staff member', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save staff member', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -202,7 +202,7 @@ async function handleRemove(row: StaffRow) {
     useToast().add({ title: t('menu.staffDeleted') || 'Staff member removed', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/staff] delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to remove staff member', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to remove staff member', color: 'red' });
   }
 }
 

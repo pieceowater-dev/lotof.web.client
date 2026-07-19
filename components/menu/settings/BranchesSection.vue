@@ -46,7 +46,7 @@ async function load() {
     branches.value = res.branches;
   } catch (e) {
     logError('[menu/settings/branches] load failed', e);
-    error.value = getErrorMessage(e) || 'Failed to load branches';
+    error.value = getErrorMessage(e, t) || 'Failed to load branches';
   } finally {
     loading.value = false;
   }
@@ -93,7 +93,7 @@ async function handleSubmit(payload: Record<string, any>) {
     isModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/branches] save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save branch', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save branch', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -111,7 +111,7 @@ async function handleDelete(b: MenuBranch) {
     useToast().add({ title: t('menu.branchDeleted') || 'Branch deleted', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/branches] delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete branch', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete branch', color: 'red' });
   }
 }
 

@@ -108,7 +108,7 @@ export function useAtracePosts(
         }
       }
     } catch (e: unknown) {
-      const errorMsg = getErrorMessage(e) || 'Failed to load posts';
+      const errorMsg = getErrorMessage(e, t) || 'Failed to load posts';
       // Check if it's an authentication/token error
       const isAuthError = errorMsg.toLowerCase().includes('unauthorized') ||
         errorMsg.toLowerCase().includes('invalid') ||
@@ -190,7 +190,7 @@ export function useAtracePosts(
       form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' };
       form.pin = '';
     } catch (e) {
-      const msg = getErrorMessage(e);
+      const msg = getErrorMessage(e, t);
       const lower = msg.toLowerCase();
       if (lower.includes('post limit reached') || lower.includes('resourceexhausted')) {
         const match = msg.match(/You have\s+(\d+)\s+posts,\s+maximum allowed is\s+(\d+)/i);

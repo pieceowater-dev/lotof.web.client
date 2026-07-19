@@ -141,7 +141,7 @@ async function submitQuickAdd() {
     itemSearch.value = '';
   } catch (e) {
     logError('[CreateOrderModal] submitQuickAdd failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to create item', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create item', color: 'red' });
   } finally {
     quickAddSaving.value = false;
   }

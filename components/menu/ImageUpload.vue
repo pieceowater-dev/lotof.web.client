@@ -42,7 +42,7 @@ async function onFileChange(e: Event) {
     emit('update:modelValue', result.url);
   } catch (err) {
     logError('[ImageUpload] upload failed', err);
-    useToast().add({ title: getErrorMessage(err) || (t('menu.uploadFailed') || 'Upload failed'), color: 'red' });
+    useToast().add({ title: getErrorMessage(err, t) || (t('menu.uploadFailed') || 'Upload failed'), color: 'red' });
   } finally {
     uploading.value = false;
     if (fileInput.value) fileInput.value.value = '';

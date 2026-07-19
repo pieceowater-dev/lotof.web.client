@@ -91,7 +91,7 @@ const sendAction = async () => {
       userFound.value = null;
       foundUser.value = null;
     } catch (e: any) {
-      const msg = getErrorMessage(e) || (t('common.genericError') || 'Something went wrong. Please try again.');
+      const msg = getErrorMessage(e, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
       toast.add({ title: t('app.notification'), description: msg, color: 'red' });
     }
     return;
@@ -106,7 +106,7 @@ const sendAction = async () => {
     // reload pending tab
     selectedTab.value = 1; // Pending
   } catch (e: any) {
-    const msg = getErrorMessage(e) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    const msg = getErrorMessage(e, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     // Show clearer message, do not logout on backend business error
     if (/user id mismatch/i.test(msg)) {
       toast.add({ title: t('app.notification'), description: t('app.identityMismatch'), color: 'red' });
@@ -376,7 +376,7 @@ async function addMemberFromFriend(friendUserId: string) {
     toast.add({ title: t('app.added'), color: 'emerald' });
     await loadMembers();
   } catch (e: any) {
-    const msg = getErrorMessage(e) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    const msg = getErrorMessage(e, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     toast.add({ title: t('app.notification'), description: msg, color: 'red' });
   }
 }
@@ -399,7 +399,7 @@ async function removeMember(member: { userId: string; username: string; email: s
     toast.add({ title: t('app.memberRemoved') || 'Removed from team', description: member.username, color: 'gray' });
     await loadMembers();
   } catch (e: any) {
-    const msg = getErrorMessage(e) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    const msg = getErrorMessage(e, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     toast.add({ title: t('app.notification'), description: msg, color: 'red' });
   }
 }

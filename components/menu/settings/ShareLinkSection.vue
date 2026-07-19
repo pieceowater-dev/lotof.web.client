@@ -121,7 +121,7 @@ async function saveLink() {
     useToast().add({ title: t('menu.linkSaved') || 'Link saved', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/share] saveLink failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save link', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save link', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -136,7 +136,7 @@ async function removeLink(link: MenuShareLink) {
     savedLinks.value = savedLinks.value.filter((l) => l.id !== link.id);
   } catch (e) {
     logError('[menu/settings/share] removeLink failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete link', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete link', color: 'red' });
   }
 }
 

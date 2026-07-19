@@ -128,7 +128,7 @@ async function save() {
     emit('changed');
   } catch (e) {
     logError('[BadgeManagerModal] save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save badge', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save badge', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -146,7 +146,7 @@ async function remove(b: MenuBadge) {
     emit('changed');
   } catch (e) {
     logError('[BadgeManagerModal] delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete badge', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete badge', color: 'red' });
   }
 }
 

@@ -451,7 +451,7 @@ async function submitMyOrderLookup() {
     window.open(orderStatusHref(smartOrderNumber(found), myOrderPhoneInput.value), '_blank', 'noopener');
   } catch (e) {
     logError('[shared/menu] submitMyOrderLookup failed', e);
-    myOrderLookupError.value = getErrorMessage(e) || (t('menu.myOrderNotFound') || "Couldn't find an order with that number and phone");
+    myOrderLookupError.value = getErrorMessage(e, t) || (t('menu.myOrderNotFound') || "Couldn't find an order with that number and phone");
   } finally {
     myOrderLookupLoading.value = false;
   }
@@ -680,7 +680,7 @@ async function submitOrder() {
     }
   } catch (e) {
     logError('[shared/menu] submitOrder failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to submit order', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to submit order', color: 'red' });
   } finally {
     submitting.value = false;
   }

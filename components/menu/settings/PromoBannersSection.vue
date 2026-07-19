@@ -47,7 +47,7 @@ async function loadBanners() {
     banners.value = res.banners;
   } catch (e) {
     logError('[menu/settings/banners] load failed', e);
-    bannersError.value = getErrorMessage(e) || 'Failed to load banners';
+    bannersError.value = getErrorMessage(e, t) || 'Failed to load banners';
   } finally {
     bannersLoading.value = false;
   }
@@ -88,7 +88,7 @@ async function handleSubmit(payload: Record<string, any>) {
     isModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/banners] save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save banner', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save banner', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -104,7 +104,7 @@ async function handleDelete(b: MenuPromoBanner) {
     useToast().add({ title: t('menu.bannerDeleted') || 'Banner deleted', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/banners] delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete banner', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete banner', color: 'red' });
   }
 }
 
@@ -198,7 +198,7 @@ async function saveBadge() {
     resetBadgeForm();
   } catch (e) {
     logError('[menu/settings/badges] save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save badge', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save badge', color: 'red' });
   } finally {
     badgeSaving.value = false;
   }
@@ -215,7 +215,7 @@ async function removeBadge(b: MenuBadge) {
     useToast().add({ title: t('menu.badgeDeleted') || 'Badge deleted', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/badges] delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete badge', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete badge', color: 'red' });
   }
 }
 

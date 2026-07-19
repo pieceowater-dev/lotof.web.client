@@ -77,7 +77,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     } catch (e) {
       routesError.value = isAtracePermissionError(e, 'tracker.route.view')
         ? getRouteAccessDeniedMessage()
-        : (getErrorMessage(e) || (t('app.route.loadFailed') || 'Failed to load routes'));
+        : (getErrorMessage(e, t) || (t('app.route.loadFailed') || 'Failed to load routes'));
       routes.value = [];
     } finally {
       routesLoading.value = false;
@@ -223,7 +223,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     } catch (e) {
       const errorMsg = isAtracePermissionError(e, 'tracker.route.view')
         ? getRouteAccessDeniedMessage()
-        : (getErrorMessage(e) || 'Failed to load route data');
+        : (getErrorMessage(e, t) || 'Failed to load route data');
       if (shouldSetRoutesLoading) {
         routesError.value = errorMsg;
         routes.value = [];
@@ -379,7 +379,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
       isRouteCreateOpen.value = false;
       resetRouteCreateForm();
     } catch (e) {
-      routeCreateError.value = getErrorMessage(e) || (t('app_route_save_failed') || 'Failed to save route');
+      routeCreateError.value = getErrorMessage(e, t) || (t('app_route_save_failed') || 'Failed to save route');
     } finally {
       routeCreateSaving.value = false;
     }

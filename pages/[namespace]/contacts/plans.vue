@@ -83,7 +83,7 @@ async function fetchPlans() {
     plans.value = result.plans;
     console.log('Fetched plans:', result.plans.length, result.plans);
   } catch (err) {
-    error.value = getErrorMessage(err) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    error.value = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     console.error('Failed to fetch plans:', err);
   } finally {
     loading.value = false;
@@ -198,7 +198,7 @@ async function subscribePlan(plan: Plan) {
     try {
       await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.contacts');
     } catch (installErr) {
-      const msg = getErrorMessage(installErr).toLowerCase();
+      const msg = getErrorMessage(installErr, t).toLowerCase();
       if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
         throw installErr;
       }
@@ -213,7 +213,7 @@ async function subscribePlan(plan: Plan) {
     await navigateTo(returnTo, { replace: true });
   } catch (err) {
     console.error('Failed to subscribe:', err);
-    const errorMsg = getErrorMessage(err) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    const errorMsg = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     
     // Check if it's a downgrade protection error
     let title = t('common.error') || 'Error';

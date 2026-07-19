@@ -82,6 +82,29 @@ function isTechnicalDetail(raw: string): boolean {
   return TECHNICAL_PATTERNS.some((p) => p.test(raw))
 }
 
+// "You're authenticated but not allowed to do this" — distinct from a
+// technical failure. Backend directives/services phrase these in plain,
+// grep-able English regardless of the caller's locale (see
+// MenuAuthDirective, staff.svc.go's owner-protection checks, and the
+// order-status role scoping in order.ctrl.go), so callers can reliably
+// recognize the *kind* of error even though the raw wording is never
+// itself fit to show a user.
+const PERMISSION_PATTERNS = [
+  /^forbidden:/i,
+  /does not have access/i,
+  /permission denied/i,
+  /not authorized/i,
+  /not allowed to/i,
+]
+
+export function isPermissionError(e: unknown): boolean {
+  const raw = extractRawMessage(e)
+  if (!raw) return false
+  const grpcMatch = raw.match(GRPC_WRAPPER_RE)
+  const desc = grpcMatch ? grpcMatch[2] : raw
+  return PERMISSION_PATTERNS.some((p) => p.test(desc))
+}
+
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
 // stack traces, bare "rpc error: code = Unknown desc = ...") to end users —
 // they're meaningless and alarming. The detail is never lost though: it's
@@ -89,9 +112,21 @@ function isTechnicalDetail(raw: string): boolean {
 // Returns '' when the message is either absent or judged technical, so the
 // existing `getErrorMessage(e) || 'contextual fallback'` pattern used at
 // every call site activates and shows a specific, friendly message instead.
-export function getErrorMessage(e: unknown): string {
+//
+// `t`, when passed, is the caller's own already-resolved useI18n().t (never
+// call useI18n() in here — this runs inside async catch blocks, after an
+// await, where Vue's composable-injection context is no longer reliably
+// available). With it, a permission error resolves to a proper localized
+// "you don't have access" message instead of being silently swallowed down
+// to the caller's generic fallback text, which would otherwise misdescribe
+// *why* the action failed.
+export function getErrorMessage(e: unknown, t?: (key: string) => string): string {
   const raw = extractRawMessage(e)
   if (!raw) return ''
+  if (isPermissionError(e)) {
+    console.error('[app] permission error (hidden from UI):', raw, e)
+    return t ? (t('common.permissionDenied') || '') : ''
+  }
   if (isTechnicalDetail(raw)) {
     console.error('[app] technical error (hidden from UI):', raw, e)
     return ''

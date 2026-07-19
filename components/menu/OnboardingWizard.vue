@@ -66,7 +66,7 @@ async function saveBrandAndContinue() {
     step.value = 2;
   } catch (e) {
     logError('[onboarding] saveBrandAndContinue failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save brand settings', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save brand settings', color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -96,7 +96,7 @@ async function addBranch() {
     branchForm.phone = '';
   } catch (e) {
     logError('[onboarding] addBranch failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to add branch', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add branch', color: 'red' });
   } finally {
     branchSaving.value = false;
   }
@@ -204,12 +204,9 @@ function finish() {
           </UButton>
         </div>
 
-        <div class="flex justify-between pt-1">
-          <UButton color="gray" variant="ghost" @click="finish">
-            {{ addedBranches.length ? (t('menu.onboardingDone') || 'Done') : (t('menu.onboardingSkip') || 'Skip for now') }}
-          </UButton>
-          <UButton v-if="addedBranches.length" color="primary" @click="finish">
-            {{ t('menu.onboardingFinish') || "Go to my store" }}
+        <div class="flex justify-end pt-1">
+          <UButton color="primary" @click="finish">
+            {{ addedBranches.length ? (t('menu.onboardingFinish') || 'Go to my store') : (t('menu.onboardingSkip') || 'Skip for now') }}
           </UButton>
         </div>
       </div>

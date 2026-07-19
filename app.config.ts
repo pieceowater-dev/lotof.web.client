@@ -13,18 +13,29 @@ export default defineAppConfig({
         // Show toasts at the top right of the screen
         position: 'top-0 bottom-[unset]'
       },
-      // Liquid-glass toast cards: a diagonal light-to-tint gradient (the
-      // "sheen" a curved glass pane catches), heavy blur + saturation boost
-      // so whatever's behind bleeds through in color, a bright inset line
-      // along the top edge (glass catching light) layered with a soft
-      // diffused drop shadow for elevation, and a near-white hairline ring
-      // to read as a distinct pane rather than a flat tinted rectangle.
-      // Slot keys per node_modules/@nuxt/ui .../notification.js.
+      // Toast cards use the exact same floating-glass-pill recipe as
+      // AppHeader.vue's header bar / top blur strip (bg-white/90 +
+      // backdrop-blur + a light border + shadow-sm + rounded-3xl) instead
+      // of a heavier bespoke treatment — consistent with the one glass
+      // surface already established elsewhere in this app.
       notification: {
-        background: 'bg-gradient-to-br from-white/90 via-white/70 to-blue-50/50 dark:from-gray-900/85 dark:via-gray-900/70 dark:to-blue-950/40 backdrop-blur-2xl backdrop-saturate-[180%]',
-        shadow: 'shadow-[0_10px_40px_-10px_rgba(15,23,42,0.25),0_2px_10px_-4px_rgba(15,23,42,0.15),inset_0_1px_0_0_rgba(255,255,255,0.8)] dark:shadow-[0_10px_40px_-10px_rgba(0,0,0,0.6),0_2px_10px_-4px_rgba(0,0,0,0.4),inset_0_1px_0_0_rgba(255,255,255,0.12)]',
-        rounded: 'rounded-[22px]',
-        ring: 'ring-1 ring-white/70 dark:ring-white/10',
+        // Notification.vue renders TWO nested divs: an outer one carrying
+        // `background`/`shadow`/`rounded`/`ring`, and an inner one (slot
+        // key `container`) carrying `container`/`rounded`/`ring` again.
+        // Both need the same treatment or whichever gets inspected/clips
+        // looks unstyled. `ring-0`/`shadow-none` (not empty strings) are
+        // required to actually cancel Nuxt UI's own defaults
+        // (ring-1 ring-gray-200, shadow-lg): mergeConfig concatenates
+        // rather than replaces plain-string slots, so an empty override
+        // leaves the default class sitting there unopposed — only
+        // another same-conflict-group utility makes tailwind-merge drop
+        // it, same as `border` (its own CSS property, no conflict group
+        // with `ring`) needs `ring-0` alongside it, not instead of it.
+        container: 'relative overflow-hidden rounded-3xl border border-blue-100/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur ring-0',
+        background: 'border border-blue-100/80 dark:border-gray-700 bg-white/90 dark:bg-gray-800/90 backdrop-blur ring-0',
+        shadow: 'shadow-sm',
+        rounded: 'rounded-3xl',
+        ring: 'ring-0',
         title: 'text-sm font-semibold text-gray-900 dark:text-white',
         description: 'mt-1 text-sm leading-5 text-gray-600 dark:text-gray-300',
         progress: {

@@ -33,7 +33,7 @@ type RoleSelection = StaffRole | typeof NONE;
 const roleOptions = computed(() => [
   { label: t('menu.noRole') || 'No role', value: NONE },
   { label: t('menu.roleManager') || 'Manager', value: 'MANAGER' },
-  { label: t('menu.roleCook') || 'Cook', value: 'COOK' },
+  { label: t('menu.roleCook') || 'Specialist', value: 'COOK' },
   { label: t('menu.roleOperator') || 'Operator', value: 'OPERATOR' },
   { label: t('menu.roleCourier') || 'Courier', value: 'COURIER' },
 ]);

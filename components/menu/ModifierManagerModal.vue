@@ -144,7 +144,7 @@ async function saveGroup() {
     emit('changed');
   } catch (e) {
     logError('[ModifierManagerModal] saveGroup failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save modifier group', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save modifier group', color: 'red' });
   } finally {
     groupSaving.value = false;
   }
@@ -162,7 +162,7 @@ async function removeGroup(g: MenuModifierGroup) {
     emit('changed');
   } catch (e) {
     logError('[ModifierManagerModal] removeGroup failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete modifier group', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete modifier group', color: 'red' });
   }
 }
 
@@ -204,7 +204,7 @@ async function saveOption() {
     resetOptionForm();
   } catch (e) {
     logError('[ModifierManagerModal] saveOption failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save option', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save option', color: 'red' });
   } finally {
     optionSaving.value = false;
   }
@@ -220,7 +220,7 @@ async function removeOption(o: MenuModifierOption) {
     if (editingOptionId.value === o.id) resetOptionForm();
   } catch (e) {
     logError('[ModifierManagerModal] removeOption failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete option', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete option', color: 'red' });
   }
 }
 

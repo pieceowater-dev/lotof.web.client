@@ -87,7 +87,7 @@ async function load() {
     applySettings(settings);
   } catch (e) {
     logError('[menu/settings/brand] load failed', e);
-    error.value = getErrorMessage(e) || 'Failed to load brand settings';
+    error.value = getErrorMessage(e, t) || 'Failed to load brand settings';
   } finally {
     loading.value = false;
   }
@@ -120,7 +120,7 @@ async function save() {
     useToast().add({ title: t('menu.brandSettingsSaved') || 'Saved', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/brand] save failed', e);
-    error.value = getErrorMessage(e) || 'Failed to save brand settings';
+    error.value = getErrorMessage(e, t) || 'Failed to save brand settings';
   } finally {
     saving.value = false;
   }

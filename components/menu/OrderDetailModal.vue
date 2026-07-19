@@ -59,7 +59,7 @@ const statusLabel = (s: string) => ({
 const roleLabel = (r: string) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
   MANAGER: t('menu.roleManager') || 'Manager',
-  COOK: t('menu.roleCook') || 'Cook',
+  COOK: t('menu.roleCook') || 'Specialist',
   OPERATOR: t('menu.roleOperator') || 'Operator',
   COURIER: t('menu.roleCourier') || 'Courier',
 }[r] || r);
@@ -182,7 +182,7 @@ async function loadDetails() {
     members.value = membersRes;
   } catch (e) {
     logError('[OrderDetailModal] loadDetails failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to load order details', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to load order details', color: 'red' });
   } finally {
     loading.value = false;
   }
@@ -324,7 +324,7 @@ async function linkExistingClient() {
     useToast().add({ title: t('menu.clientLinked') || 'Client linked', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] linkExistingClient failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to link client', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to link client', color: 'red' });
   } finally {
     linkingClient.value = false;
   }
@@ -364,7 +364,7 @@ async function createClientFromOrder() {
     useToast().add({ title: t('menu.clientCreated') || 'Client created', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] createClientFromOrder failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to create client', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create client', color: 'red' });
   } finally {
     creatingClient.value = false;
   }
@@ -416,7 +416,7 @@ async function changeStatus(status: string) {
     await loadDetails();
   } catch (e) {
     logError('[OrderDetailModal] changeStatus failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to update status', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update status', color: 'red' });
   } finally {
     updatingStatus.value = false;
   }
@@ -458,7 +458,7 @@ async function addMember() {
     useToast().add({ title: t('menu.memberAdded') || 'Member added', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] addMember failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to add member', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add member', color: 'red' });
   } finally {
     addingMember.value = false;
   }
@@ -473,7 +473,7 @@ async function removeMember(m: MenuOrderMember) {
     useToast().add({ title: t('menu.memberRemoved') || 'Member removed', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] removeMember failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to remove member', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to remove member', color: 'red' });
   }
 }
 
@@ -511,7 +511,7 @@ async function addExistingProduct(item: MenuItem, quantity = 1) {
     useToast().add({ title: t('menu.productAdded') || 'Product added', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] addExistingProduct failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to add product', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add product', color: 'red' });
   } finally {
     addingProductId.value = null;
   }
@@ -532,7 +532,7 @@ async function changeItemQuantity(item: MenuOrderItem, delta: number) {
     await loadDetails();
   } catch (e) {
     logError('[OrderDetailModal] changeItemQuantity failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to update quantity', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update quantity', color: 'red' });
   } finally {
     updatingItemId.value = null;
   }
@@ -551,7 +551,7 @@ async function removeItem(item: MenuOrderItem) {
     useToast().add({ title: t('menu.orderItemRemoved') || 'Item removed', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] removeItem failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to remove item', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to remove item', color: 'red' });
   } finally {
     updatingItemId.value = null;
   }
@@ -592,7 +592,7 @@ async function submitQuickAddProduct() {
     await addExistingProduct(newItem);
   } catch (e) {
     logError('[OrderDetailModal] submitQuickAddProduct failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to create product', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create product', color: 'red' });
   } finally {
     quickAddSaving.value = false;
   }
@@ -615,7 +615,7 @@ async function openProductDetail(orderItem: MenuOrderItem) {
     selectedProductDetail.value = await menuGetMenuItem(menuToken, nsSlug.value, orderItem.menuItemId);
   } catch (e) {
     logError('[OrderDetailModal] openProductDetail failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to load product', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to load product', color: 'red' });
   } finally {
     productDetailLoading.value = false;
   }
@@ -679,7 +679,7 @@ async function saveEditOrder() {
     useToast().add({ title: t('menu.orderUpdated') || 'Order updated', color: 'primary' });
   } catch (e) {
     logError('[OrderDetailModal] saveEditOrder failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to update order', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update order', color: 'red' });
   } finally {
     savingEdit.value = false;
   }

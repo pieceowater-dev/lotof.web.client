@@ -64,7 +64,7 @@ async function loadCategories() {
     }
   } catch (e) {
     logError('[menu/settings/catalog] loadCategories failed', e);
-    error.value = getErrorMessage(e) || 'Failed to load categories';
+    error.value = getErrorMessage(e, t) || 'Failed to load categories';
   } finally {
     categoriesLoading.value = false;
   }
@@ -83,7 +83,7 @@ async function loadItems() {
     items.value = res.items.sort((a, b) => a.sortOrder - b.sortOrder);
   } catch (e) {
     logError('[menu/settings/catalog] loadItems failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to load items', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to load items', color: 'red' });
   } finally {
     itemsLoading.value = false;
   }
@@ -161,7 +161,7 @@ async function toggleStopped(item: MenuItem) {
     }
   } catch (e) {
     logError('[menu/settings/catalog] toggleStopped failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to update stop list', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update stop list', color: 'red' });
   }
 }
 
@@ -231,7 +231,7 @@ async function handleCategorySubmit(payload: Record<string, any>) {
     isCategoryModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/catalog] category save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save category', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save category', color: 'red' });
   } finally {
     categorySaving.value = false;
   }
@@ -257,7 +257,7 @@ async function moveCategory(c: MenuCategory, direction: -1 | 1) {
     categories.value = [...categories.value].sort((a, b) => a.sortOrder - b.sortOrder);
   } catch (e) {
     logError('[menu/settings/catalog] moveCategory failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to reorder', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to reorder', color: 'red' });
   }
 }
 
@@ -274,7 +274,7 @@ async function handleCategoryDelete(c: MenuCategory) {
     useToast().add({ title: t('menu.categoryDeleted') || 'Category deleted', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/catalog] category delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete category', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete category', color: 'red' });
   }
 }
 
@@ -397,7 +397,7 @@ async function handleItemSubmit(payload: Record<string, any>) {
     isItemModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/catalog] item save failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to save item', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save item', color: 'red' });
   } finally {
     itemSaving.value = false;
   }
@@ -423,7 +423,7 @@ async function moveItem(it: MenuItem, direction: -1 | 1) {
     items.value = [...items.value].sort((a, b) => a.sortOrder - b.sortOrder);
   } catch (e) {
     logError('[menu/settings/catalog] moveItem failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to reorder', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to reorder', color: 'red' });
   }
 }
 
@@ -437,7 +437,7 @@ async function handleItemDelete(it: MenuItem) {
     useToast().add({ title: t('menu.itemDeleted') || 'Item deleted', color: 'primary' });
   } catch (e) {
     logError('[menu/settings/catalog] item delete failed', e);
-    useToast().add({ title: getErrorMessage(e) || 'Failed to delete item', color: 'red' });
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete item', color: 'red' });
   }
 }
 
