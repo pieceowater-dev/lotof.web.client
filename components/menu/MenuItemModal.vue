@@ -114,7 +114,7 @@ function handleSubmit() {
         </h3>
       </template>
 
-      <div class="space-y-4">
+      <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1 -mr-1">
         <UFormGroup :label="t('menu.name') || 'Name'" required>
           <UInput v-model="form.name" size="lg" />
         </UFormGroup>

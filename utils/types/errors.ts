@@ -70,6 +70,13 @@ const TECHNICAL_PATTERNS = [
   /Unexpected token/i,
   /is not a function/i,
   /is not defined/i,
+  // graphql-request's ClientError, when the response never reached the
+  // GraphQL layer at all (a proxy/rate-limiter rejection, a 500 from the
+  // gateway itself, ...), formats its .message as this plus a raw
+  // `{"response":{...},"request":{...}}` dump of the whole request —
+  // variables and all. Never fit to show as-is; isRateLimitError below
+  // carves out 429 specifically for a friendlier, actionable message.
+  /^GraphQL Error \(Code: \d+\)/,
 ]
 
 function isTechnicalDetail(raw: string): boolean {
@@ -105,6 +112,14 @@ export function isPermissionError(e: unknown): boolean {
   return PERMISSION_PATTERNS.some((p) => p.test(desc))
 }
 
+// graphql-request's ClientError for an HTTP 429 (rate limited before the
+// request ever reached the GraphQL layer — no `response.errors`, just a
+// bare status) always starts with this exact prefix.
+export function isRateLimitError(e: unknown): boolean {
+  const raw = extractRawMessage(e)
+  return /^GraphQL Error \(Code: 429\)/.test(raw)
+}
+
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
 // stack traces, bare "rpc error: code = Unknown desc = ...") to end users —
 // they're meaningless and alarming. The detail is never lost though: it's
@@ -126,6 +141,10 @@ export function getErrorMessage(e: unknown, t?: (key: string) => string): string
   if (isPermissionError(e)) {
     console.error('[app] permission error (hidden from UI):', raw, e)
     return t ? (t('common.permissionDenied') || '') : ''
+  }
+  if (isRateLimitError(e)) {
+    console.error('[app] rate-limited (hidden from UI):', raw, e)
+    return t ? (t('common.rateLimited') || '') : ''
   }
   if (isTechnicalDetail(raw)) {
     console.error('[app] technical error (hidden from UI):', raw, e)

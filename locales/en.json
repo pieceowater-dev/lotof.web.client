@@ -622,6 +622,7 @@
     "notAuthenticated": "Not authenticated",
     "genericError": "Something went wrong. Please try again.",
     "permissionDenied": "You don't have permission to do this. Ask an owner or manager for access.",
+    "rateLimited": "Too many requests — please wait a moment and try again.",
     "success": "Success",
     "pinChanged": "PIN changed",
     "info": "Information",

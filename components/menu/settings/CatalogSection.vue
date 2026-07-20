@@ -5,13 +5,13 @@ import { useConfirm } from '@/composables/useConfirm';
 import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import AppTable from '@/components/ui/AppTable.vue';
 import CategoryModal from '@/components/menu/CategoryModal.vue';
 import MenuItemModal from '@/components/menu/MenuItemModal.vue';
 import BadgeManagerModal from '@/components/menu/BadgeManagerModal.vue';
 import ModifierManagerModal from '@/components/menu/ModifierManagerModal.vue';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
+import type { UpdateMenuItemInput } from '@/api/menu/menuitem/update';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuModifierGroup } from '@/api/menu/modifiergroup/list';
@@ -167,17 +167,6 @@ async function toggleStopped(item: MenuItem) {
 
 watch(selectedCategoryId, loadItems);
 
-const itemColumns = computed(() => [
-  { key: 'sortOrder', label: '' },
-  { key: 'name', label: t('menu.name') || 'Name' },
-  { key: 'price', label: t('menu.price') || 'Price' },
-  { key: 'badges', label: t('menu.itemBadges') || 'Badges' },
-  { key: 'modifiers', label: t('menu.modifiers') || 'Modifiers' },
-  { key: 'isActive', label: t('menu.isActive') || 'Active' },
-  { key: 'stopList', label: t('menu.stopList') || 'Stop list' },
-  { key: 'actions', label: t('app.actions') || 'Actions' },
-]);
-
 function badgeById(id: string) {
   return badges.value.find((b) => b.id === id);
 }
@@ -188,6 +177,92 @@ function modifierGroupById(id: string) {
 
 function itemIndex(row: MenuItem) {
   return items.value.findIndex((i) => i.id === row.id);
+}
+
+// Drag-and-drop reordering for the items list — AppTable/UTable renders
+// its own <tr> internally with no hook for draggable/@dragstart, so this
+// list is a plain draggable div list instead (see the template), separate
+// from moveItem's adjacent-swap arrows which stay as a keyboard/precision
+// fallback.
+const draggedItem = ref<MenuItem | null>(null);
+const dragOverItemId = ref<string | null>(null);
+
+// updateMenuItem does a blind full-column overwrite on the backend (see the
+// comment in handleItemSubmit) — any field left out of the payload gets
+// reset to its zero value, not left unchanged. Reorder operations only mean
+// to change sortOrder, so they must echo every other field back untouched.
+function fullItemPayload(it: MenuItem, overrides: Partial<UpdateMenuItemInput>): UpdateMenuItemInput {
+  return {
+    id: it.id,
+    categoryId: it.categoryId,
+    name: it.name,
+    description: it.description ?? undefined,
+    price: it.price,
+    imageUrl: it.imageUrl ?? undefined,
+    isActive: it.isActive,
+    sortOrder: it.sortOrder,
+    imageAlt: it.imageAlt ?? undefined,
+    seoTitle: it.seoTitle ?? undefined,
+    seoDescription: it.seoDescription ?? undefined,
+    ...overrides,
+  };
+}
+
+function onItemDragStart(item: MenuItem) {
+  draggedItem.value = item;
+}
+
+function onItemDragOver(item: MenuItem) {
+  if (draggedItem.value && draggedItem.value.id !== item.id) {
+    dragOverItemId.value = item.id;
+  }
+}
+
+function onItemDragLeave(item: MenuItem) {
+  if (dragOverItemId.value === item.id) dragOverItemId.value = null;
+}
+
+async function onItemDrop(targetItem: MenuItem) {
+  dragOverItemId.value = null;
+  const dragged = draggedItem.value;
+  draggedItem.value = null;
+  if (!dragged || dragged.id === targetItem.id) return;
+
+  const sorted = [...items.value].sort((a, b) => a.sortOrder - b.sortOrder);
+  const fromIdx = sorted.findIndex((x) => x.id === dragged.id);
+  const toIdx = sorted.findIndex((x) => x.id === targetItem.id);
+  if (fromIdx === -1 || toIdx === -1) return;
+
+  const reordered = [...sorted];
+  const [moved] = reordered.splice(fromIdx, 1);
+  reordered.splice(toIdx, 0, moved);
+
+  // Only persist the items whose position actually changed, not the whole
+  // category — a drag from the top to the bottom of a long list would
+  // otherwise fire one request per item.
+  const changed = reordered
+    .map((it, idx) => ({ it, idx }))
+    .filter(({ it, idx }) => it.sortOrder !== idx);
+  if (!changed.length) return;
+
+  try {
+    const menuToken = await getToken();
+    const { menuUpdateMenuItem } = await import('@/api/menu/menuitem/update');
+    await Promise.all(
+      changed.map(({ it, idx }) => menuUpdateMenuItem(menuToken, nsSlug.value, fullItemPayload(it, { sortOrder: idx })))
+    );
+    changed.forEach(({ it, idx }) => { it.sortOrder = idx; });
+    items.value = reordered;
+  } catch (e) {
+    logError('[menu/settings/catalog] reorder items failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to reorder', color: 'red' });
+    await loadItems(); // recover the real order from the server
+  }
+}
+
+function onItemDragEnd() {
+  draggedItem.value = null;
+  dragOverItemId.value = null;
 }
 
 function openCreateCategory() {
@@ -415,8 +490,8 @@ async function moveItem(it: MenuItem, direction: -1 | 1) {
     const menuToken = await getToken();
     const { menuUpdateMenuItem } = await import('@/api/menu/menuitem/update');
     await Promise.all([
-      menuUpdateMenuItem(menuToken, nsSlug.value, { id: it.id, name: it.name, sortOrder: bOrder, isActive: it.isActive }),
-      menuUpdateMenuItem(menuToken, nsSlug.value, { id: other.id, name: other.name, sortOrder: aOrder, isActive: other.isActive }),
+      menuUpdateMenuItem(menuToken, nsSlug.value, fullItemPayload(it, { sortOrder: bOrder })),
+      menuUpdateMenuItem(menuToken, nsSlug.value, fullItemPayload(other, { sortOrder: aOrder })),
     ]);
     it.sortOrder = bOrder;
     other.sortOrder = aOrder;
@@ -537,33 +612,41 @@ onMounted(async () => {
             </UButton>
           </div>
         </div>
-        <div class="flex-1 min-h-0">
-          <AppTable
-            :rows="items"
-            :columns="itemColumns"
-            :loading="itemsLoading"
-            empty-icon="lucide:package"
-          >
-            <template #sortOrder-data="{ row }">
-              <div class="flex flex-col -my-1">
+        <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+          <div v-if="itemsLoading" class="flex items-center justify-center py-8">
+            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+          <div v-else-if="!items.length" class="flex flex-col items-center justify-center gap-2 py-10 text-center">
+            <UIcon name="lucide:package" class="w-6 h-6 text-gray-300 dark:text-gray-700" />
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('menu.noMenuItems') || 'No items yet' }}</span>
+          </div>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div
+              v-for="row in items"
+              :key="row.id"
+              draggable="true"
+              class="group flex items-center gap-2 px-2 py-2 transition-colors"
+              :class="dragOverItemId === row.id ? 'bg-primary-50 dark:bg-primary-950/30' : draggedItem?.id === row.id ? 'opacity-40' : 'hover:bg-gray-50 dark:hover:bg-gray-800/40'"
+              @dragstart="onItemDragStart(row)"
+              @dragover.prevent="onItemDragOver(row)"
+              @dragleave="onItemDragLeave(row)"
+              @drop.prevent="onItemDrop(row)"
+              @dragend="onItemDragEnd"
+            >
+              <Icon name="lucide:grip-vertical" class="w-4 h-4 text-gray-300 dark:text-gray-600 flex-shrink-0 cursor-grab active:cursor-grabbing" />
+              <div class="hidden group-hover:flex flex-col -my-1 flex-shrink-0">
                 <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="itemIndex(row) === 0" @click="moveItem(row, -1)" />
                 <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="itemIndex(row) === items.length - 1" @click="moveItem(row, 1)" />
               </div>
-            </template>
-            <template #name-data="{ row }">
               <button
                 type="button"
-                class="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate"
+                class="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate w-32 flex-shrink-0"
                 @click="openEditItem(row)"
               >
                 {{ row.name }}
               </button>
-            </template>
-            <template #price-data="{ row }">
-              {{ row.price }}
-            </template>
-            <template #badges-data="{ row }">
-              <div class="flex flex-wrap gap-1">
+              <span class="text-sm text-gray-600 dark:text-gray-400 tabular-nums flex-shrink-0 w-16 text-right">{{ row.price }}</span>
+              <div class="hidden lg:flex flex-wrap gap-1 flex-shrink-0 w-28">
                 <span
                   v-for="id in row.badgeIds"
                   :key="id"
@@ -573,9 +656,7 @@ onMounted(async () => {
                   {{ badgeById(id)?.text || '' }}
                 </span>
               </div>
-            </template>
-            <template #modifiers-data="{ row }">
-              <div class="flex flex-wrap gap-1">
+              <div class="hidden xl:flex flex-wrap gap-1 flex-shrink-0 w-28">
                 <span
                   v-for="id in row.modifierGroupIds"
                   :key="id"
@@ -584,30 +665,25 @@ onMounted(async () => {
                   {{ modifierGroupById(id)?.name || '' }}
                 </span>
               </div>
-            </template>
-            <template #isActive-data="{ row }">
-              <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle">
+              <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle" class="hidden sm:inline-flex flex-shrink-0">
                 {{ row.isActive ? (t('menu.isActive') || 'Active') : '—' }}
               </UBadge>
-            </template>
-            <template #stopList-data="{ row }">
-              <UTooltip v-if="!stopListBranchId" :text="t('menu.stopListPickBranchHint') || 'Pick a branch to manage'">
-                <span class="text-gray-300 dark:text-gray-700">—</span>
-              </UTooltip>
-              <UToggle
-                v-else
-                :model-value="stoppedItemIds.has(row.id)"
-                :disabled="stopListLoading"
-                color="red"
-                @update:model-value="toggleStopped(row)"
-              />
-            </template>
-            <template #actions-data="{ row }">
-              <div class="flex gap-1">
-                <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleItemDelete(row)" />
+              <div class="flex-shrink-0 w-9 flex justify-center">
+                <UTooltip v-if="!stopListBranchId" :text="t('menu.stopListPickBranchHint') || 'Pick a branch to manage'">
+                  <span class="text-gray-300 dark:text-gray-700">—</span>
+                </UTooltip>
+                <UToggle
+                  v-else
+                  :model-value="stoppedItemIds.has(row.id)"
+                  :disabled="stopListLoading"
+                  color="red"
+                  @update:model-value="toggleStopped(row)"
+                />
               </div>
-            </template>
-          </AppTable>
+              <div class="flex-1" />
+              <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" class="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" @click="handleItemDelete(row)" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
