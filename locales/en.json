@@ -1081,6 +1081,7 @@
     "planUpdated": "Plan updated",
     "planArchived": "Plan archived",
     "planSaveFailed": "Failed to save plan",
+    "planPartialCreateRollbackFailed": "(the monthly plan was created but could not be rolled back — check the list and archive it manually)",
     "archivePlanConfirmTitle": "Archive this plan?",
     "articles": "Articles",
     "articlesDesc": "Public SEO content created by marketers",

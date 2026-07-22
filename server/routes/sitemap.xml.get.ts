@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../../utils/api-base';
+import { fromGqlCategory } from '../../utils/publicationCategory';
 
 type PublicPublicationsResponse = {
   data?: {
@@ -14,14 +15,6 @@ type PublicPublicationsResponse = {
     };
   };
   errors?: Array<{ message?: string }>;
-};
-
-const GQL_TO_CLIENT_CATEGORY: Record<string, string> = {
-  BLOG: 'blog',
-  WHATSNEW: 'whatsnew',
-  ARTICLES: 'articles',
-  LEARNING: 'academy',
-  NEWS: 'news',
 };
 
 const PUBLIC_PUBLICATIONS_QUERY = `
@@ -77,14 +70,20 @@ async function fetchAllPublishedArticles(capitalEndpoint: string): Promise<Array
       },
     });
 
-    if (response?.errors?.length) break;
+    // A GraphQL-level error (HTTP 200 with an errors[] body -- wrong schema,
+    // resolver failure, misconfigured proxy) is NOT the same thing as "zero
+    // published articles". Throwing here lets the caller's candidate loop
+    // retry the next endpoint instead of silently shipping an empty sitemap.
+    if (response?.errors?.length) {
+      throw new Error(`publicPublications returned errors: ${response.errors.map((e) => e?.message).join('; ')}`);
+    }
     const payload = response?.data?.publicPublications;
     const items = Array.isArray(payload?.items) ? payload!.items! : [];
 
     for (const item of items) {
       const slug = String(item?.slug || '').trim().toLowerCase();
       if (!slug) continue;
-      const category = GQL_TO_CLIENT_CATEGORY[String(item?.category || '').trim().toUpperCase()] || 'news';
+      const category = fromGqlCategory(item?.category);
       const lastmod = unixToIsoDate(item?.updatedAtUnix) || unixToIsoDate(item?.publishedAtUnix);
       results.push({ category, slug, lastmod });
     }
@@ -124,14 +123,28 @@ export default defineEventHandler(async (event) => {
 
   const today = new Date().toISOString().slice(0, 10);
   let articles: Array<{ category: string; slug: string; lastmod: string }> = [];
+  let lastError: unknown = null;
+  let succeeded = false;
 
   for (const endpoint of endpointCandidates) {
     try {
       articles = await fetchAllPublishedArticles(endpoint);
+      succeeded = true;
       break;
-    } catch {
+    } catch (err) {
+      lastError = err;
       // Try next endpoint candidate.
     }
+  }
+
+  // Every candidate failed: the sitemap still ships (static pages only) so
+  // crawlers never see a 5xx, but this must not fail silently -- a healthy
+  // deploy should always have at least one working candidate.
+  if (!succeeded) {
+    console.error('[sitemap.xml] all endpoint candidates failed', {
+      candidates: endpointCandidates,
+      lastError: lastError instanceof Error ? lastError.message : lastError,
+    });
   }
 
   const urls = [

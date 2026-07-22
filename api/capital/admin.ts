@@ -131,6 +131,7 @@ export type AdminBillingInfo = {
     code: string;
     name: string;
     description?: string | null;
+    applicationCode: string;
     currency: string;
     interval: string;
     amountCents: number;
@@ -195,6 +196,7 @@ const GET_ADMIN_BILLING_INFO_QUERY = /* GraphQL */ `
       code
       name
       description
+      applicationCode
       currency
       interval
       amountCents

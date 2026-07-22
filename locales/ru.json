@@ -1119,6 +1119,7 @@
     "planUpdated": "Тариф обновлён",
     "planArchived": "Тариф архивирован",
     "planSaveFailed": "Не удалось сохранить тариф",
+    "planPartialCreateRollbackFailed": "(месячный план создан, но откатить его не удалось — проверьте список и заархивируйте вручную)",
     "archivePlanConfirmTitle": "Архивировать тариф?",
     "articles": "Статьи",
     "articlesDesc": "Публичный SEO контент, создаваемый маркетологами",

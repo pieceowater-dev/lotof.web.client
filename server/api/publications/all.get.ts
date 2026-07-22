@@ -1,5 +1,6 @@
 import { fetchPublicationDocumentsFromUpstream, listPublicationDocuments } from '../../utils/publications';
 import { getApiBaseUrl } from '../../../utils/api-base';
+import { toGqlCategory, fromGqlCategory } from '../../../utils/publicationCategory';
 
 type PublicPublicationListResponse = {
   data?: {
@@ -70,32 +71,6 @@ type PublicPublicationByRouteResponse = {
   };
   errors?: Array<{ message?: string }>;
 };
-
-const CLIENT_TO_GQL_CATEGORY: Record<string, string> = {
-  blog: 'BLOG',
-  whatsnew: 'WHATSNEW',
-  articles: 'ARTICLES',
-  academy: 'LEARNING',
-  news: 'NEWS',
-};
-
-const GQL_TO_CLIENT_CATEGORY: Record<string, string> = {
-  BLOG: 'blog',
-  WHATSNEW: 'whatsnew',
-  ARTICLES: 'articles',
-  LEARNING: 'academy',
-  NEWS: 'news',
-};
-
-function toGqlCategory(raw: string | undefined): string {
-  const value = String(raw || '').trim().toLowerCase();
-  return CLIENT_TO_GQL_CATEGORY[value] || value.toUpperCase();
-}
-
-function fromGqlCategory(raw: string | undefined): string {
-  const value = String(raw || '').trim().toUpperCase();
-  return GQL_TO_CLIENT_CATEGORY[value] || value.toLowerCase() || 'news';
-}
 
 function escapeHtml(value: string): string {
   return value

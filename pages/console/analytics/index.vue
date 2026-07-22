@@ -391,9 +391,9 @@ const growthTooltipStyle = computed(() => {
 
 // ─── Per-app active subscriptions (categorical slots 1-3: blue/orange/aqua) ─
 const APPS = [
-  { key: 'atrace', label: 'A-Trace', match: 'atrace', colorClass: 'bg-blue-600 dark:bg-blue-500' },
-  { key: 'contacts', label: 'Contacts', match: 'contacts', colorClass: 'bg-orange-500 dark:bg-orange-500' },
-  { key: 'menu', label: 'Orders', match: 'menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
+  { key: 'atrace', label: 'A-Trace', applicationCode: 'pieceowater.atrace', colorClass: 'bg-blue-600 dark:bg-blue-500' },
+  { key: 'contacts', label: 'Contacts', applicationCode: 'pieceowater.contacts', colorClass: 'bg-orange-500 dark:bg-orange-500' },
+  { key: 'menu', label: 'Orders', applicationCode: 'pieceowater.menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
 ] as const;
 
 const appBars = computed(() => {
@@ -402,7 +402,7 @@ const appBars = computed(() => {
   return APPS.map(app => {
     const count = subs.filter(s => {
       const plan = plans.find(p => p.id === s.planId);
-      return plan?.code?.toLowerCase().includes(app.match);
+      return plan?.applicationCode === app.applicationCode;
     }).length;
     return { key: app.key, label: app.label, value: count, colorClass: app.colorClass };
   });

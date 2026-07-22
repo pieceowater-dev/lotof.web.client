@@ -6,6 +6,7 @@ import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { capitalGetPublicPublicationByRoute, publicationBlocksToHtml } from '@/api/publications';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
+import { toGqlCategory, fromGqlCategory, CATEGORY_TO_GQL } from '@/utils/publicationCategory';
 
 definePageMeta({
   viewTransition: false,
@@ -106,33 +107,7 @@ const DIRECT_PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
   }
 `;
 
-const DIRECT_GQL_CATEGORIES = ['BLOG', 'WHATSNEW', 'ARTICLES', 'LEARNING', 'NEWS'] as const;
-
-const CLIENT_TO_GQL_CATEGORY: Record<string, string> = {
-  blog: 'BLOG',
-  whatsnew: 'WHATSNEW',
-  articles: 'ARTICLES',
-  academy: 'LEARNING',
-  news: 'NEWS',
-};
-
-const GQL_TO_CLIENT_CATEGORY: Record<string, string> = {
-  BLOG: 'blog',
-  WHATSNEW: 'whatsnew',
-  ARTICLES: 'articles',
-  LEARNING: 'academy',
-  NEWS: 'news',
-};
-
-function toGqlCategory(raw: string): string {
-  const value = String(raw || '').trim().toLowerCase();
-  return CLIENT_TO_GQL_CATEGORY[value] || value.toUpperCase();
-}
-
-function fromGqlCategory(raw: string): string {
-  const value = String(raw || '').trim().toUpperCase();
-  return GQL_TO_CLIENT_CATEGORY[value] || value.toLowerCase() || 'news';
-}
+const DIRECT_GQL_CATEGORIES = Object.values(CATEGORY_TO_GQL);
 
 const { t, locale } = useI18n();
 const route = useRoute();
@@ -506,18 +481,6 @@ const articleCanonical = computed(() => {
   return `${siteUrl.value}/${resolvedCategory}/${slugParam.value}`;
 });
 
-const articleHreflangLinks = computed(() => {
-  const normalized = articleCanonical.value.replace(/\?.*$/, '');
-  const absolute = /^https?:\/\//i.test(normalized) ? normalized : `${siteUrl.value}${normalized.startsWith('/') ? '' : '/'}${normalized}`;
-  const links = [{ rel: 'alternate', hreflang: 'x-default', href: absolute }];
-  for (const lang of ['ru', 'en', 'kk']) {
-    const url = new URL(absolute);
-    url.searchParams.set('lang', lang);
-    links.push({ rel: 'alternate', hreflang: lang, href: url.toString() });
-  }
-  return links;
-});
-
 const articleRobots = computed(() => String(article.value?.meta.robots || 'index,follow'));
 
 const articlePublishedIso = computed(() => {
@@ -855,7 +818,6 @@ useHead(() => ({
   title: articleTitle.value,
   link: [
     { rel: 'canonical', href: articleCanonical.value },
-    ...articleHreflangLinks.value,
   ],
   meta: [
     { name: 'robots', content: articleRobots.value },

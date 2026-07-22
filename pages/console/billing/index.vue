@@ -650,7 +650,7 @@ async function submitPlanModal() {
   try {
     if (planModal.mode === 'create') {
       const codePrefix = generatedCodePrefix.value;
-      await capitalCreatePlan(token.value, {
+      const monthlyResult: any = await capitalCreatePlan(token.value, {
         code: `${codePrefix}-monthly`,
         name: planForm.name.trim(),
         description: planForm.description.trim() || undefined,
@@ -660,16 +660,34 @@ async function submitPlanModal() {
         trialDays: planForm.trialDays || 0,
         applicationCode: selectedProjectAppCode.value,
       });
-      await capitalCreatePlan(token.value, {
-        code: `${codePrefix}-yearly`,
-        name: planForm.name.trim(),
-        description: planForm.description.trim() || undefined,
-        currency: planForm.currency.trim().toUpperCase(),
-        interval: 'YEAR',
-        amountCents: Math.round(planForm.yearlyPrice * 100),
-        trialDays: planForm.trialDays || 0,
-        applicationCode: selectedProjectAppCode.value,
-      });
+      const monthlyId = monthlyResult?.createPlan?.id;
+
+      try {
+        await capitalCreatePlan(token.value, {
+          code: `${codePrefix}-yearly`,
+          name: planForm.name.trim(),
+          description: planForm.description.trim() || undefined,
+          currency: planForm.currency.trim().toUpperCase(),
+          interval: 'YEAR',
+          amountCents: Math.round(planForm.yearlyPrice * 100),
+          trialDays: planForm.trialDays || 0,
+          applicationCode: selectedProjectAppCode.value,
+        });
+      } catch (yearlyError: any) {
+        // The monthly leg already landed -- a "the pair" plan can't exist
+        // with only one interval, so best-effort archive it back out rather
+        // than leaving an orphaned monthly-only plan the admin didn't ask for.
+        if (monthlyId) {
+          try {
+            await capitalArchivePlan(token.value, monthlyId);
+          } catch {
+            planModal.error = (yearlyError?.message || (t('admin.planSaveFailed') || 'Не удалось сохранить тариф'))
+              + ' ' + (t('admin.planPartialCreateRollbackFailed') || '(месячный план создан, но откатить его не удалось — проверьте список и заархивируйте вручную)');
+            return;
+          }
+        }
+        throw yearlyError;
+      }
       toast.add({ title: t('admin.planCreated') || 'Тариф создан', color: 'green' });
     } else if (planModal.plan) {
       await capitalUpdatePlan(token.value, planModal.plan.id, {

@@ -1,7 +1,15 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients'
 import { getApiBaseUrl } from '@/utils/api-base'
+import {
+  type PublicationCategory,
+  PUBLICATION_CATEGORY_ALIASES,
+  CATEGORY_TO_GQL,
+  GQL_TO_CATEGORY,
+  toGqlCategory,
+  fromGqlCategory,
+} from '@/utils/publicationCategory'
 
-export type PublicationCategory = 'blog' | 'whatsnew' | 'articles' | 'academy' | 'news'
+export type { PublicationCategory }
 export type PublicationStatus = 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived'
 export type PublicationVisibility = 'public' | 'unlisted' | 'private'
 export type PublicationSchemaType = 'Article' | 'NewsArticle' | 'BlogPosting'
@@ -139,30 +147,6 @@ type GraphQLPublicPublication = {
   blocks: GraphQLPublicationBlock[]
   createdAtUnix: string
   updatedAtUnix: string
-}
-
-const PUBLICATION_CATEGORY_ALIASES: Record<string, PublicationCategory> = {
-  blog: 'blog',
-  whatsnew: 'whatsnew',
-  articles: 'articles',
-  academy: 'academy',
-  news: 'news',
-}
-
-const CATEGORY_TO_GQL: Record<PublicationCategory, string> = {
-  blog: 'BLOG',
-  whatsnew: 'WHATSNEW',
-  articles: 'ARTICLES',
-  academy: 'LEARNING',
-  news: 'NEWS',
-}
-
-const GQL_TO_CATEGORY: Record<string, PublicationCategory> = {
-  BLOG: 'blog',
-  WHATSNEW: 'whatsnew',
-  ARTICLES: 'articles',
-  LEARNING: 'academy',
-  NEWS: 'news',
 }
 
 const STATUS_TO_GQL: Record<PublicationStatus, string> = {
@@ -411,20 +395,11 @@ function normalizeCategory(raw: string | undefined): PublicationCategory {
   return PUBLICATION_CATEGORY_ALIASES[value] || 'news'
 }
 
-function toGqlCategory(raw: string | undefined): string {
-  return CATEGORY_TO_GQL[normalizeCategory(raw)] || 'NEWS'
-}
-
 function toGqlCategoryStrict(raw: string | undefined): string | null {
   const value = asString(raw).toLowerCase()
   const category = PUBLICATION_CATEGORY_ALIASES[value]
   if (!category) return null
   return CATEGORY_TO_GQL[category] || null
-}
-
-function fromGqlCategory(raw: string | undefined): PublicationCategory {
-  const value = asString(raw).toUpperCase()
-  return GQL_TO_CATEGORY[value] || 'news'
 }
 
 function normalizeStatus(raw: string | undefined): PublicationStatus {

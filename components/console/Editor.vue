@@ -228,7 +228,7 @@ const article = reactive<ArticleState>({
   publisherName: (props.initialArticle as any).publisherName || 'Lota',
   publisherUrl: (props.initialArticle as any).publisherUrl || '',
   publisherLogo: (props.initialArticle as any).publisherLogo || '',
-  robots: props.initialArticle.robots || 'index',
+  robots: props.initialArticle.robots || 'index,follow',
 })
 
 // ─── Blocks ───────────────────────────────────────────────────────────────
