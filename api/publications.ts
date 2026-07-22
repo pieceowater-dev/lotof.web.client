@@ -1,7 +1,7 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients'
 import { getApiBaseUrl } from '@/utils/api-base'
 
-export type PublicationCategory = 'blog' | 'whatsnew' | 'articles' | 'learning' | 'news'
+export type PublicationCategory = 'blog' | 'whatsnew' | 'articles' | 'academy' | 'news'
 export type PublicationStatus = 'draft' | 'in_review' | 'scheduled' | 'published' | 'archived'
 export type PublicationVisibility = 'public' | 'unlisted' | 'private'
 export type PublicationSchemaType = 'Article' | 'NewsArticle' | 'BlogPosting'
@@ -24,8 +24,8 @@ export type PublicationEditorArticle = {
   publishedAt: string
   updatedAt: string
   featuredImage: string
+  featuredImageAlt: string
   tags: string[]
-  focusKeyword: string
   metaTitle: string
   metaDescription: string
   canonicalUrl: string
@@ -89,8 +89,8 @@ type GraphQLPublication = {
   publishedAtUnix: string
   scheduledAtUnix: string
   featuredImage: string
+  featuredImageAlt: string
   tags: string[]
-  focusKeyword: string
   metaTitle: string
   metaDescription: string
   canonicalUrl: string
@@ -125,6 +125,7 @@ type GraphQLPublicPublication = {
   tags: string[]
   canonicalUrl: string
   ogImage: string
+  featuredImageAlt: string
   schemaType: string
   sourceUrl: string
   sourceName: string
@@ -144,7 +145,7 @@ const PUBLICATION_CATEGORY_ALIASES: Record<string, PublicationCategory> = {
   blog: 'blog',
   whatsnew: 'whatsnew',
   articles: 'articles',
-  learning: 'learning',
+  academy: 'academy',
   news: 'news',
 }
 
@@ -152,7 +153,7 @@ const CATEGORY_TO_GQL: Record<PublicationCategory, string> = {
   blog: 'BLOG',
   whatsnew: 'WHATSNEW',
   articles: 'ARTICLES',
-  learning: 'LEARNING',
+  academy: 'LEARNING',
   news: 'NEWS',
 }
 
@@ -160,7 +161,7 @@ const GQL_TO_CATEGORY: Record<string, PublicationCategory> = {
   BLOG: 'blog',
   WHATSNEW: 'whatsnew',
   ARTICLES: 'articles',
-  LEARNING: 'learning',
+  LEARNING: 'academy',
   NEWS: 'news',
 }
 
@@ -242,6 +243,8 @@ const CONSOLE_PUBLICATIONS_QUERY = /* GraphQL */ `
     }
   }
 `
+// Note: the "learning" GraphQL field name is fixed by the backend schema; the client
+// remaps it to "academy" when exposing counts (see capitalListPublications below).
 
 const CONSOLE_PUBLICATION_BY_SLUG_QUERY = /* GraphQL */ `
   query ConsolePublicationBySlug($slug: String!, $includeBlocks: Boolean = true) {
@@ -259,8 +262,8 @@ const CONSOLE_PUBLICATION_BY_SLUG_QUERY = /* GraphQL */ `
       publishedAtUnix
       scheduledAtUnix
       featuredImage
+      featuredImageAlt
       tags
-      focusKeyword
       metaTitle
       metaDescription
       canonicalUrl
@@ -304,6 +307,7 @@ const PUBLIC_PUBLICATION_BY_ROUTE_QUERY = /* GraphQL */ `
       tags
       canonicalUrl
       ogImage
+      featuredImageAlt
       schemaType
       sourceUrl
       sourceName
@@ -640,8 +644,8 @@ function toPublicationInput(article: PublicationEditorArticle, blocks: Publicati
     authorRole: asString(article.authorRole) || undefined,
     publishedAtUnix: toUnixSeconds(article.publishedAt),
     featuredImage: featuredImage || undefined,
+    featuredImageAlt: asString(article.featuredImageAlt) || undefined,
     tags: Array.isArray(article.tags) ? article.tags.map((tag) => asString(tag)).filter(Boolean) : [],
-    focusKeyword: asString(article.focusKeyword) || undefined,
     metaTitle: asString(article.metaTitle) || title || undefined,
     metaDescription: asString(article.metaDescription) || excerpt || undefined,
     canonicalUrl: asString(article.canonicalUrl) || undefined,
@@ -673,8 +677,8 @@ function mapPublicationToEditorArticle(publication: GraphQLPublication): Publica
     publishedAt: parseUnixToDateTimeLocal(publication.publishedAtUnix),
     updatedAt: parseUnixToDateTimeLocal(publication.updatedAtUnix),
     featuredImage: asString(publication.featuredImage),
+    featuredImageAlt: asString(publication.featuredImageAlt),
     tags: Array.isArray(publication.tags) ? publication.tags.map((tag) => asString(tag)).filter(Boolean) : [],
-    focusKeyword: asString(publication.focusKeyword),
     metaTitle: asString(publication.metaTitle),
     metaDescription: asString(publication.metaDescription),
     canonicalUrl: asString(publication.canonicalUrl),
@@ -707,6 +711,7 @@ function mapPublicPublicationToArticle(publication: GraphQLPublicPublication, bo
       date: parseUnixToDateTimeLocal(publication.publishedAtUnix),
       canonical: asString(publication.canonicalUrl),
       og_image: asString(publication.ogImage),
+      featured_image_alt: asString(publication.featuredImageAlt),
       source_url: asString(publication.sourceUrl),
       source_name: asString(publication.sourceName),
       reviewed_by: asString(publication.reviewedBy),
@@ -1022,6 +1027,47 @@ export function publicationBlocksToHtml(
   return parts.join('')
 }
 
+type GraphQLPublicationListItem = {
+  id: string
+  title: string
+  slug: string
+  category: string
+  status: string
+  visibility: string
+  excerpt: string
+  author: string
+  publishedAtUnix: string
+  scheduledAtUnix: string
+  updatedAtUnix: string
+  version: string
+}
+
+type GraphQLPublicationListPayload = {
+  items: GraphQLPublicationListItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+  counts: Record<string, number>
+}
+
+function mapPublicationListItem(item: GraphQLPublicationListItem): PublicationListRow {
+  return {
+    id: asString(item.id),
+    title: asString(item.title),
+    slug: asString(item.slug),
+    category: fromGqlCategory(item.category),
+    status: GQL_TO_STATUS[asString(item.status).toUpperCase()] || 'draft',
+    visibility: fromGqlVisibility(item.visibility),
+    excerpt: asString(item.excerpt),
+    author: asString(item.author),
+    publishedAt: parseUnixToDateTimeLocal(item.publishedAtUnix),
+    updatedAt: parseUnixToDateTimeLocal(item.updatedAtUnix),
+    scheduledAt: parseUnixToDateTimeLocal(item.scheduledAtUnix),
+    version: asString(item.version),
+  }
+}
+
 export async function capitalListPublications(token: string, filter: Record<string, any> = {}): Promise<PublicationListPayload> {
   setGlobalAuthToken(token || null)
   const gqlFilter = {
@@ -1030,8 +1076,14 @@ export async function capitalListPublications(token: string, filter: Record<stri
     status: filter?.status ? toGqlStatus(filter.status) : undefined,
     visibility: filter?.visibility ? toGqlVisibility(filter.visibility) : undefined,
   }
-  const res = await capitalClient.request<{ consolePublications: PublicationListPayload }>(CONSOLE_PUBLICATIONS_QUERY, { filter: gqlFilter })
-  return res.consolePublications
+  const res = await capitalClient.request<{ consolePublications: GraphQLPublicationListPayload }>(CONSOLE_PUBLICATIONS_QUERY, { filter: gqlFilter })
+  const payload = res.consolePublications
+  const rawCounts = (payload.counts || {}) as Record<string, number>
+  return {
+    ...payload,
+    items: Array.isArray(payload.items) ? payload.items.map(mapPublicationListItem) : [],
+    counts: { ...rawCounts, academy: rawCounts.learning || 0 },
+  }
 }
 
 export async function capitalGetPublicationBySlug(token: string, slug: string): Promise<{ article: PublicationEditorArticle; blocks: PublicationEditorBlock[] } | null> {

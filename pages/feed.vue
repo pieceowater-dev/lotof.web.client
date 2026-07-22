@@ -86,7 +86,7 @@ function processMarkdownPosts(): ProcessedMarkdownPost[] {
     if (slug === 'whatsnew') return t('app.whatsNew') || "What's New";
     if (slug === 'news') return t('app.news') || 'News';
     if (slug === 'blog') return t('app.blog') || 'Blog';
-    if (slug === 'learning') return t('app.learning') || 'Learning';
+    if (slug === 'academy') return t('app.academy') || 'Academy';
     if (slug === 'articles') return t('app.articles') || 'Articles';
     return t('app.articles') || 'Articles';
   };

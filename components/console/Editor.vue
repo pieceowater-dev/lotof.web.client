@@ -23,6 +23,7 @@
         :blocks="blocks"
         :active-block-id="activeBlockId"
         :drag-state="dragState"
+        :selected-block-range="selectedBlockRange"
         @update:article="onArticlePatch"
         @upload-inline-image="uploadInlineImage"
         @set-active-block="(id) => activeBlockId = id"
@@ -47,7 +48,6 @@
         @update:article="onArticlePatch"
         @upload-featured-image="uploadFeaturedImage"
         @add-block="openPicker(blocks.length)"
-        @clear="clearAllConfirm"
       />
 
       <!-- Mobile Sidebar -->
@@ -59,7 +59,6 @@
           @update:article="onArticlePatch"
           @upload-featured-image="uploadFeaturedImage"
           @add-block="openPicker(blocks.length)"
-          @clear="clearAllConfirm"
           @close="isMobileSidebarOpen = false"
         />
       </Teleport>
@@ -84,6 +83,7 @@
       :format-bar="formatBar"
       @hide="hideFormatBar"
       @apply-format="applyFormat"
+      @delete-blocks="deleteSelectedBlocks"
     />
 
     <!-- Confirm Dialog -->
@@ -162,7 +162,6 @@ interface ArticleState {
   featuredImage: string
   featuredImageAlt: string
   tags: string[]
-  focusKeyword: string
   metaTitle: string
   metaDescription: string
   canonicalUrl: string
@@ -216,7 +215,6 @@ const article = reactive<ArticleState>({
   featuredImage: props.initialArticle.featuredImage || '',
   featuredImageAlt: (props.initialArticle as any).featuredImageAlt || '',
   tags: props.initialArticle.tags || [],
-  focusKeyword: (props.initialArticle as any).focusKeyword || '',
   metaTitle: props.initialArticle.metaTitle || '',
   metaDescription: props.initialArticle.metaDescription || '',
   canonicalUrl: (props.initialArticle as any).canonicalUrl || '',
@@ -530,9 +528,46 @@ function openPicker(index: number) {
 }
 
 // ─── Text format toolbar ──────────────────────────────────────────────────
-const formatBar = reactive({ visible: false, x: 0, y: 0 })
+const formatBar = reactive({ visible: false, x: 0, y: 0, mode: 'format' as 'format' | 'deleteBlocks', blockCount: 0 })
 let savedRange: Range | null = null
 const isSlugManuallyEdited = ref(false)
+
+// ─── Multi-block selection (native text selection spanning multiple blocks) ─
+const selectedBlockRange = ref<{ start: number; end: number } | null>(null)
+
+function resolveBlockIndex(node: Node | null): number | null {
+  const el = (node instanceof Element ? node : node?.parentElement) || null
+  const blockEl = el?.closest<HTMLElement>('[data-block-index]')
+  if (!blockEl) return null
+  const index = Number(blockEl.dataset.blockIndex)
+  return Number.isFinite(index) ? index : null
+}
+
+function onSelectionChange() {
+  const sel = window.getSelection()
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+    selectedBlockRange.value = null
+    return
+  }
+
+  const startIndex = resolveBlockIndex(sel.anchorNode)
+  const endIndex = resolveBlockIndex(sel.focusNode)
+  if (startIndex === null || endIndex === null || startIndex === endIndex) {
+    selectedBlockRange.value = null
+    return
+  }
+
+  selectedBlockRange.value = {
+    start: Math.min(startIndex, endIndex),
+    end: Math.max(startIndex, endIndex),
+  }
+}
+
+function deleteSelectedBlocks() {
+  const range = selectedBlockRange.value
+  if (!range) return
+  openConfirmDialog('deleteBlocks', undefined, range)
+}
 
 const SAVE_DEBOUNCE_MS = 500
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -544,7 +579,7 @@ const isMobileSidebarOpen = ref(false)
 
 const confirmDialog = reactive({
   open: false,
-  type: 'clear' as 'clear' | 'deleteBlock' | 'deletePublication',
+  type: 'deleteBlock' as 'deleteBlock' | 'deleteBlocks' | 'deletePublication',
   title: '',
   message: '',
   confirmLabel: '',
@@ -553,18 +588,13 @@ const confirmDialog = reactive({
 })
 
 const pendingDeleteBlockIndex = ref<number | null>(null)
+const pendingDeleteBlockRange = ref<{ start: number; end: number } | null>(null)
 
-function openConfirmDialog(type: 'clear' | 'deleteBlock' | 'deletePublication', blockIndex?: number) {
+function openConfirmDialog(type: 'deleteBlock' | 'deleteBlocks' | 'deletePublication', blockIndex?: number, blockRange?: { start: number; end: number }) {
   pendingDeleteBlockIndex.value = null
+  pendingDeleteBlockRange.value = null
 
-  if (type === 'clear') {
-    confirmDialog.type = 'clear'
-    confirmDialog.title = 'Очистить весь контент?'
-    confirmDialog.message = 'Это удалит всю статью из редактора. Действие нельзя отменить.'
-    confirmDialog.confirmLabel = 'Очистить'
-    confirmDialog.cancelLabel = 'Отмена'
-    confirmDialog.variant = 'danger'
-  } else if (type === 'deleteBlock') {
+  if (type === 'deleteBlock') {
     confirmDialog.type = 'deleteBlock'
     confirmDialog.title = 'Удалить блок?'
     confirmDialog.message = 'Это действие нельзя отменить.'
@@ -572,6 +602,15 @@ function openConfirmDialog(type: 'clear' | 'deleteBlock' | 'deletePublication', 
     confirmDialog.cancelLabel = 'Отмена'
     confirmDialog.variant = 'danger'
     pendingDeleteBlockIndex.value = typeof blockIndex === 'number' ? blockIndex : null
+  } else if (type === 'deleteBlocks') {
+    const count = blockRange ? blockRange.end - blockRange.start + 1 : 0
+    confirmDialog.type = 'deleteBlocks'
+    confirmDialog.title = `Удалить ${count} ${count === 1 ? 'блок' : 'блока'}?`
+    confirmDialog.message = 'Это действие нельзя отменить.'
+    confirmDialog.confirmLabel = 'Удалить'
+    confirmDialog.cancelLabel = 'Отмена'
+    confirmDialog.variant = 'danger'
+    pendingDeleteBlockRange.value = blockRange || null
   } else {
     confirmDialog.type = 'deletePublication'
     confirmDialog.title = 'Архивировать публикацию?'
@@ -587,16 +626,25 @@ async function runConfirmAction() {
   const type = confirmDialog.type
   confirmDialog.open = false
 
-  if (type === 'clear') {
-    performClearAll()
-    return
-  }
-
   if (type === 'deleteBlock') {
     const index = pendingDeleteBlockIndex.value
     pendingDeleteBlockIndex.value = null
     if (index === null || index < 0 || index >= blocks.value.length) return
     blocks.value.splice(index, 1)
+    scheduleAutosave()
+    return
+  }
+
+  if (type === 'deleteBlocks') {
+    const range = pendingDeleteBlockRange.value
+    pendingDeleteBlockRange.value = null
+    selectedBlockRange.value = null
+    hideFormatBar()
+    if (!range) return
+    const start = Math.max(0, range.start)
+    const end = Math.min(blocks.value.length - 1, range.end)
+    if (start > end) return
+    blocks.value.splice(start, end - start + 1)
     scheduleAutosave()
     return
   }
@@ -622,9 +670,20 @@ function applyFormat(cmd: string, value?: string) {
 }
 
 function showFormatBar(rect: DOMRect) {
+  if (selectedBlockRange.value) {
+    const range = selectedBlockRange.value
+    formatBar.mode = 'deleteBlocks'
+    formatBar.blockCount = range.end - range.start + 1
+    formatBar.x = rect.left + rect.width / 2
+    formatBar.y = rect.top + window.scrollY
+    formatBar.visible = true
+    return
+  }
+
   const sel = window.getSelection()
   if (sel && sel.rangeCount > 0) {
     savedRange = sel.getRangeAt(0).cloneRange()
+    formatBar.mode = 'format'
     formatBar.x = rect.left + rect.width / 2
     formatBar.y = rect.top + window.scrollY
     formatBar.visible = true
@@ -646,18 +705,6 @@ function onDocumentClick(e: MouseEvent) {
   const sel = window.getSelection()
   if (!sel || sel.isCollapsed) hideFormatBar()
 }
-
-// ─── SEO helpers ──────────────────────────────────────────────────────────
-const seoScore = computed(() => {
-  let score = 0
-  if (article.metaTitle) score += 15
-  if (article.metaTitle.length >= 30 && article.metaTitle.length <= 60) score += 15
-  if (article.metaDescription) score += 15
-  if (article.metaDescription.length >= 120 && article.metaDescription.length <= 160) score += 15
-  if (article.slug) score += 10
-  if (blocks.value.some(b => b.type === 'image' && b.attrs.alt)) score += 10
-  return score
-})
 
 function syncSlug() {
   if (isSlugManuallyEdited.value) return
@@ -1146,44 +1193,14 @@ function deleteBlock(i: number) {
   openConfirmDialog('deleteBlock', i)
 }
 
-function clearAllConfirm() {
-  openConfirmDialog('clear')
-}
-
-function performClearAll() {
-  blocks.value = [createBlock('paragraph')]
-  article.title = ''
-  article.slug = ''
-  article.focusKeyword = ''
-  article.metaTitle = ''
-  article.metaDescription = ''
-  article.canonicalUrl = ''
-  article.ogImage = ''
-  article.tags = []
-  article.category = 'news'
-  article.author = ''
-  article.authorUrl = ''
-  article.authorRole = ''
-  article.sourceUrl = ''
-  article.sourceName = ''
-  article.reviewedBy = ''
-  article.reviewedByUrl = ''
-  article.reviewedDate = ''
-  article.updatedAt = ''
-  article.schemaType = 'Article'
-  article.publisherName = 'Lota'
-  article.publisherUrl = ''
-  article.publisherLogo = ''
-  article.status = 'draft'
-  article.publishedAt = formatDateTimeLocal()
-  isSlugManuallyEdited.value = false
-  localStorage.removeItem(STORAGE_KEY.value)
-  isDirty.value = false
-  nextTick(() => titleEl.value?.focus())
-}
-
 // ─── Keyboard shortcuts ───────────────────────────────────────────────────
 function onKeydown(e: KeyboardEvent) {
+  if (selectedBlockRange.value && (e.key === 'Delete' || e.key === 'Backspace')) {
+    e.preventDefault()
+    deleteSelectedBlocks()
+    return
+  }
+
   if ((e.metaKey || e.ctrlKey) && e.key === 's') {
     e.preventDefault()
     saveDraft()
@@ -1209,6 +1226,7 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(() => {
   document.addEventListener('keydown', onKeydown)
   document.addEventListener('click', onDocumentClick)
+  document.addEventListener('selectionchange', onSelectionChange)
   isHydrating.value = true
   if (!loadFromLocalStorage()) {
     const first = createBlock('paragraph')
@@ -1227,6 +1245,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', onKeydown)
   document.removeEventListener('click', onDocumentClick)
+  document.removeEventListener('selectionchange', onSelectionChange)
   if (saveTimer) clearTimeout(saveTimer)
 })
 

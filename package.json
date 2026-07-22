@@ -3,11 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "npm run sitemap:generate && nuxt build",
+    "build": "nuxt build",
     "dev": "NUXT_DEVTOOLS=false nuxt dev --host",
-    "generate": "npm run sitemap:generate && nuxt generate",
+    "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "sitemap:generate": "node generate-sitemap.mjs",
     "typecheck": "nuxi typecheck",
     "lint": "eslint .",
     "postinstall": "nuxt prepare",

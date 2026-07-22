@@ -57,7 +57,9 @@
 
             <!-- Block container with drag/drop and toolbar -->
             <div
-              class="group/block relative py-2.5"
+              class="group/block relative py-2.5 rounded-lg transition-colors"
+              :data-block-index="i"
+              :class="isBlockSelected(i) ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-200 dark:ring-blue-900' : ''"
             >
               <!-- Block toolbar -->
               <div class="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-white/90 p-0.5 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-slate-700 dark:bg-slate-900/90">
@@ -82,6 +84,11 @@
                   title="Вниз"
                   @click="$emit('move-block', i, 1)"
                 ><Icon name="lucide:chevron-down" class="h-3 w-3" /></button>
+                <button
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+                  title="Дублировать"
+                  @click="$emit('duplicate-block', i)"
+                ><Icon name="lucide:copy" class="h-3 w-3" /></button>
                 <button
                   class="rounded-md p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                   title="Удалить"
@@ -526,9 +533,16 @@ interface Props {
   blocks: Block[]
   activeBlockId: string | null
   dragState: any
+  selectedBlockRange?: { start: number; end: number } | null
 }
 
 const props = defineProps<Props>()
+
+function isBlockSelected(index: number): boolean {
+  const range = props.selectedBlockRange
+  if (!range) return false
+  return index >= range.start && index <= range.end
+}
 
 const { t } = useI18n()
 const config = useRuntimeConfig()

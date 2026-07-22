@@ -113,9 +113,9 @@
               <td class="px-4 py-3">
                 <span
                   class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
-                  :class="statusMeta(row.status).badgeClass"
+                  :class="statusMeta(row.status, row.publishedAt).badgeClass"
                 >
-                  {{ statusMeta(row.status).label }}
+                  {{ statusMeta(row.status, row.publishedAt).label }}
                 </span>
               </td>
               <td class="px-4 py-3 text-slate-600 dark:text-slate-300">{{ row.author }}</td>
@@ -217,8 +217,8 @@ const categories = computed(() => [
     iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
   },
   {
-    value: 'learning',
-    label: t('admin.learning'),
+    value: 'academy',
+    label: t('admin.academy'),
     icon: 'lucide:book',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
     inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
@@ -244,7 +244,7 @@ const total = ref(0);
 const totalPages = ref(1);
 const loading = ref(false);
 const rows = ref<PublicationListRow[]>([]);
-const counts = ref<Record<string, number>>({ all: 0, blog: 0, whatsnew: 0, articles: 0, learning: 0, news: 0 });
+const counts = ref<Record<string, number>>({ all: 0, blog: 0, whatsnew: 0, articles: 0, academy: 0, news: 0 });
 const toast = useToast();
 
 function categoryLabel(value: string) {
@@ -253,8 +253,18 @@ function categoryLabel(value: string) {
   return found?.label || value;
 }
 
-function statusMeta(rawStatus: string) {
-  const status = String(rawStatus || '').toLowerCase();
+function statusMeta(rawStatus: string, publishedAt?: string) {
+  let status = String(rawStatus || '').toLowerCase();
+
+  // A "published" row whose publish date is still in the future stays hidden
+  // from the public route (backend gate), so it's effectively scheduled.
+  if (status === 'published' && publishedAt) {
+    const parsed = new Date(publishedAt);
+    if (!Number.isNaN(parsed.getTime()) && parsed.getTime() > Date.now()) {
+      status = 'scheduled';
+    }
+  }
+
   const map: Record<string, { label: string; badgeClass: string }> = {
     published: {
       label: 'Опубликовано',

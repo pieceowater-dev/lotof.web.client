@@ -1,10 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import type { PluginOption } from 'vite';
 
-const publicationsRoot = join(process.cwd(), 'public/content/publications');
 const isProduction = process.env.NODE_ENV === 'production';
 
 function normalizeProxyBase(envValue: string | undefined, fallbackPath: string): string {
@@ -74,57 +71,6 @@ function stripInspectorPlugins(plugins: PluginOption[]): PluginOption[] {
   return result;
 }
 
-function collectMarkdownFiles(dirPath: string): string[] {
-  try {
-    const entries = readdirSync(dirPath, { withFileTypes: true });
-    return entries.flatMap((entry) => {
-      const fullPath = join(dirPath, entry.name);
-      if (entry.isDirectory()) return collectMarkdownFiles(fullPath);
-      if (entry.isFile() && entry.name.endsWith('.md')) return [fullPath];
-      return [];
-    });
-  } catch {
-    return [];
-  }
-}
-
-function collectArticleRoutes(): string[] {
-  const markdownFiles = collectMarkdownFiles(publicationsRoot);
-  const routes = new Set<string>();
-
-  for (const filePath of markdownFiles) {
-    try {
-      const raw = readFileSync(filePath, 'utf-8');
-      const frontMatterMatch = raw.match(/^---\n([\s\S]*?)\n---/);
-      const frontMatter = frontMatterMatch?.[1] || '';
-      const slugMatch = frontMatter.match(/^slug:\s*"?([^"\n]+)"?\s*$/m);
-      const slug = String(slugMatch?.[1] || '').trim().toLowerCase();
-      if (!slug) continue;
-      routes.add(`/${slug}`);
-    } catch {
-      // Skip invalid files during config-time route discovery.
-    }
-  }
-
-  return Array.from(routes);
-}
-
-const articleRoutes = collectArticleRoutes();
-const articleRouteRules = isProduction
-  ? Object.fromEntries(
-      articleRoutes.map((route) => [
-        route,
-        {
-          ssr: true,
-          prerender: true,
-          headers: {
-            'cache-control': 'public, max-age=900, s-maxage=3600',
-          },
-        },
-      ])
-    )
-  : {};
-
 export default defineNuxtConfig({
   ssr: true, // Enable server-side rendering for Nitro server
   
@@ -147,7 +93,6 @@ export default defineNuxtConfig({
     '/api-capital/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CAPITAL, '/api-capital', 8082) },
     '/api-contacts/**': { proxy: buildApiProxyTarget(process.env.VITE_API_CONTACTS, '/api-contacts', 8083) },
     '/api-menu/**': { proxy: buildApiProxyTarget(process.env.VITE_API_MENU, '/api-menu', 8095) },
-    ...articleRouteRules
   },
   
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.
@@ -355,9 +300,7 @@ export default defineNuxtConfig({
     },
     prerender: {
       crawlLinks: isProduction,
-      routes: isProduction
-        ? Array.from(new Set(['/', '/feed', ...articleRoutes]))
-        : ['/', '/feed']
+      routes: ['/', '/feed']
     },
     compressPublicAssets: true,
     routeRules: {

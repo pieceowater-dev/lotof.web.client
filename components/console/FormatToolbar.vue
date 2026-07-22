@@ -6,6 +6,8 @@ interface FormatBar {
   visible: boolean
   x: number
   y: number
+  mode?: 'format' | 'deleteBlocks'
+  blockCount?: number
 }
 
 const props = defineProps<{
@@ -15,6 +17,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'hide': [void]
   'apply-format': [string, string | undefined]
+  'delete-blocks': [void]
 }>()
 
 const { t } = useI18n()
@@ -43,6 +46,17 @@ function insertLink() {
       }"
       @mousedown.prevent
     >
+      <!-- Multi-block selection: delete action instead of text formatting -->
+      <button
+        v-if="props.formatBar.mode === 'deleteBlocks'"
+        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-colors text-sm font-medium"
+        @click="emit('delete-blocks')"
+      >
+        <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
+        Удалить {{ props.formatBar.blockCount }} {{ props.formatBar.blockCount === 1 ? 'блок' : 'блока' }}
+      </button>
+
+      <template v-else>
       <!-- Bold -->
       <ConsoleFormatButton
         icon="lucide:bold"
@@ -106,6 +120,7 @@ function insertLink() {
         :label="t('admin.editor.clearFormatting')"
         cmd="removeFormat"
       />
+      </template>
     </div>
   </Teleport>
 </template>

@@ -9,7 +9,7 @@ import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
 
 definePageMeta({
   viewTransition: false,
-  path: '/:category(blog|whatsnew|articles|learning|news)/:slug',
+  path: '/:category(blog|whatsnew|articles|academy|news)/:slug',
 });
 
 type ArticleMeta = Record<string, string | string[]>;
@@ -49,6 +49,7 @@ type DirectPublicByRouteResponse = {
       publishedAtUnix?: string;
       tags?: string[];
       ogImage?: string;
+      featuredImageAlt?: string;
       schemaType?: string;
       sourceUrl?: string;
       sourceName?: string;
@@ -83,6 +84,7 @@ const DIRECT_PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
       publishedAtUnix
       tags
       ogImage
+      featuredImageAlt
       schemaType
       sourceUrl
       sourceName
@@ -106,6 +108,32 @@ const DIRECT_PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
 
 const DIRECT_GQL_CATEGORIES = ['BLOG', 'WHATSNEW', 'ARTICLES', 'LEARNING', 'NEWS'] as const;
 
+const CLIENT_TO_GQL_CATEGORY: Record<string, string> = {
+  blog: 'BLOG',
+  whatsnew: 'WHATSNEW',
+  articles: 'ARTICLES',
+  academy: 'LEARNING',
+  news: 'NEWS',
+};
+
+const GQL_TO_CLIENT_CATEGORY: Record<string, string> = {
+  BLOG: 'blog',
+  WHATSNEW: 'whatsnew',
+  ARTICLES: 'articles',
+  LEARNING: 'academy',
+  NEWS: 'news',
+};
+
+function toGqlCategory(raw: string): string {
+  const value = String(raw || '').trim().toLowerCase();
+  return CLIENT_TO_GQL_CATEGORY[value] || value.toUpperCase();
+}
+
+function fromGqlCategory(raw: string): string {
+  const value = String(raw || '').trim().toUpperCase();
+  return GQL_TO_CLIENT_CATEGORY[value] || value.toLowerCase() || 'news';
+}
+
 const { t, locale } = useI18n();
 const route = useRoute();
 const requestFetch = useRequestFetch();
@@ -113,7 +141,7 @@ const config = useRuntimeConfig();
 const authToken = useCookie<string | null>('auth_token');
 const legacyToken = useCookie<string | null>('token');
 
-const SUPPORTED_PUBLICATION_CATEGORIES = new Set(['blog', 'whatsnew', 'articles', 'learning', 'news']);
+const SUPPORTED_PUBLICATION_CATEGORIES = new Set(['blog', 'whatsnew', 'articles', 'academy', 'news']);
 
 const mdFiles = import.meta.glob('../../public/content/publications/**/*.md', {
   eager: true,
@@ -259,7 +287,7 @@ const { data: routePublication, refresh: refreshRoutePublication } = await useAs
     }
 
     try {
-      const preferred = categoryParam.value ? categoryParam.value.toUpperCase() : '';
+      const preferred = categoryParam.value ? toGqlCategory(categoryParam.value) : '';
       const categories = [preferred, ...DIRECT_GQL_CATEGORIES].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
       const isAuthorized = !!String(authToken.value || legacyToken.value || '').trim();
 
@@ -281,7 +309,7 @@ const { data: routePublication, refresh: refreshRoutePublication } = await useAs
         if (!publication) continue;
 
         const resolvedSlug = normalizeSlug(String(publication.slug || slugParam.value));
-        const resolvedCategory = normalizeSlug(String(publication.category || categoryParam.value || 'news'));
+        const resolvedCategory = publication.category ? fromGqlCategory(publication.category) : (categoryParam.value || 'news');
 
         return {
           slug: resolvedSlug,
@@ -296,6 +324,7 @@ const { data: routePublication, refresh: refreshRoutePublication } = await useAs
             date: unixLikeToIso(publication.publishedAtUnix),
             tags: Array.isArray(publication.tags) ? publication.tags : [],
             og_image: String(publication.ogImage || '').trim(),
+            featured_image_alt: String(publication.featuredImageAlt || '').trim(),
             schema_type: String(publication.schemaType || '').trim(),
             source_url: String(publication.sourceUrl || '').trim(),
             source_name: String(publication.sourceName || '').trim(),
@@ -470,7 +499,11 @@ const backHref = computed(() => isNews.value ? '/news' : '/feed');
 const articleCanonical = computed(() => {
   const canonical = String(article.value?.meta.canonical || '').trim();
   if (canonical) return canonical;
-  return `${siteUrl.value}/${categoryParam.value}/${slugParam.value}`;
+  // Prefer the article's own resolved category over the raw route param: a
+  // stale/aliased link (e.g. an old category segment) should still canonicalize
+  // to where the article actually lives, not to whatever URL it was reached by.
+  const resolvedCategory = String(article.value?.category || categoryParam.value || 'news').trim();
+  return `${siteUrl.value}/${resolvedCategory}/${slugParam.value}`;
 });
 
 const articleHreflangLinks = computed(() => {
@@ -810,10 +843,12 @@ useSeoMeta({
   ogType: 'article',
   ogUrl: () => articleCanonical.value,
   ogImage: () => articleOgImage.value,
+  ogImageAlt: () => articleOgImageAlt.value,
   twitterCard: 'summary_large_image',
   twitterTitle: () => articleTitle.value,
   twitterDescription: () => articleDescription.value,
   twitterImage: () => articleOgImage.value,
+  twitterImageAlt: () => articleOgImageAlt.value,
 });
 
 useHead(() => ({

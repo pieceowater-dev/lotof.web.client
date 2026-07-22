@@ -15,7 +15,6 @@ interface Article {
   featuredImage: string
   featuredImageAlt?: string
   tags: string[]
-  focusKeyword?: string
   canonicalUrl?: string
   schemaType: 'Article' | 'NewsArticle' | 'BlogPosting'
   sourceUrl?: string
@@ -37,7 +36,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'update:article': [Partial<Article>]
   'upload-featured-image': [File]
-  clear: []
   'add-block': []
 }>()
 
@@ -85,7 +83,7 @@ function onFeaturedImageFileChange(event: Event) {
               { value: 'whatsnew', label: t('admin.whatsnew'), icon: 'lucide:sparkles' },
               { value: 'articles', label: t('admin.articles'), icon: 'lucide:file-text' },
               { value: 'news', label: t('app.news') || 'Новости', icon: 'lucide:newspaper' },
-              { value: 'learning', label: t('admin.learning'), icon: 'lucide:graduation-cap' }
+              { value: 'academy', label: t('admin.academy'), icon: 'lucide:graduation-cap' }
             ]"
             :key="cat.value || 'none'"
             type="button"
@@ -221,16 +219,6 @@ function onFeaturedImageFileChange(event: Event) {
       >
         <Icon name="lucide:plus" class="h-4 w-4" />
         {{ t('admin.editor.addBlock') }}
-      </button>
-    </div>
-
-    <!-- Clear all button -->
-    <div class="p-4 border-t border-slate-100 dark:border-slate-800">
-      <button
-        @click="$emit('clear')"
-        class="w-full px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 text-xs font-medium hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
-      >
-        {{ t('admin.editor.clearAll') }}
       </button>
     </div>
   </div>

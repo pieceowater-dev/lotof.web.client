@@ -20,7 +20,6 @@ export type EditorArticle = {
   updatedAt?: string;
   featuredImage?: string;
   tags: string[];
-  focusKeyword?: string;
   metaTitle?: string;
   metaDescription?: string;
   canonicalUrl?: string;
@@ -75,7 +74,7 @@ const CATEGORY_DIRS: Record<string, string> = {
   news: 'news',
   whatsnew: 'whatsnew',
   articles: 'articles',
-  learning: 'learning',
+  academy: 'academy',
   blog: 'blog',
 };
 
@@ -323,7 +322,6 @@ export function renderMarkdown(article: EditorArticle, blocks: EditorBlock[]): s
     `source_name: "${escapeYamlValue(article.sourceName || '')}"`,
     `status: "${escapeYamlValue(article.status || 'draft')}"`,
     `editor_schema_type: "${escapeYamlValue(article.schemaType || 'Article')}"`,
-    `editor_focus_keyword: "${escapeYamlValue(article.focusKeyword || '')}"`,
     `editor_meta_title: "${escapeYamlValue(article.metaTitle || '')}"`,
     `editor_blocks_b64: "${encodedBlocks}"`,
     '---',
@@ -375,7 +373,6 @@ function toArticle(meta: Record<string, any>, slugFallback: string, categoryFall
     updatedAt: String(meta.updated_at || ''),
     featuredImage: String(meta.featuredImage || ''),
     tags: Array.isArray(meta.tags) ? meta.tags.map((v) => String(v)) : [],
-    focusKeyword: String(meta.editor_focus_keyword || ''),
     metaTitle: String(meta.editor_meta_title || ''),
     metaDescription: String(meta.description || meta.metaDescription || ''),
     canonicalUrl: String(meta.canonical || ''),
@@ -569,7 +566,7 @@ export function buildListResponse(items: PublicationListItem[], categoryRaw: str
     blog: items.filter((i) => i.category === 'blog').length,
     whatsnew: items.filter((i) => i.category === 'whatsnew').length,
     articles: items.filter((i) => i.category === 'articles').length,
-    learning: items.filter((i) => i.category === 'learning').length,
+    academy: items.filter((i) => i.category === 'academy').length,
     news: items.filter((i) => i.category === 'news').length,
   };
 

@@ -33,7 +33,6 @@
         :article="article"
         @update:article="$emit('update:article', $event)"
         @upload-featured-image="$emit('upload-featured-image', $event)"
-        @clear="$emit('clear')"
         @add-block="$emit('add-block')"
       />
       <ConsoleSeoSidebar
@@ -64,7 +63,6 @@ const props = defineProps<Props>()
 defineEmits<{
   'update:article': [Partial<any>]
   'upload-featured-image': [File]
-  'clear': []
   'add-block': []
 }>()
 
@@ -78,7 +76,7 @@ const seoScore = computed(() => {
   if (props.article.metaDescription) score += 15
   if (props.article.metaDescription?.length >= 120 && props.article.metaDescription?.length <= 160) score += 15
   if (props.article.slug) score += 10
-  if (props.blocks.some(b => b.type === 'image' && b.attrs.alt)) score += 10
+  if (props.blocks.some(b => b.type === 'image' && b.attrs.alt)) score += 30
   return score
 })
 

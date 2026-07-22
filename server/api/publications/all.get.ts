@@ -48,6 +48,7 @@ type PublicPublicationByRouteResponse = {
       publishedAtUnix?: string;
       tags?: string[];
       ogImage?: string;
+      featuredImageAlt?: string;
       schemaType?: string;
       sourceUrl?: string;
       sourceName?: string;
@@ -69,6 +70,32 @@ type PublicPublicationByRouteResponse = {
   };
   errors?: Array<{ message?: string }>;
 };
+
+const CLIENT_TO_GQL_CATEGORY: Record<string, string> = {
+  blog: 'BLOG',
+  whatsnew: 'WHATSNEW',
+  articles: 'ARTICLES',
+  academy: 'LEARNING',
+  news: 'NEWS',
+};
+
+const GQL_TO_CLIENT_CATEGORY: Record<string, string> = {
+  BLOG: 'blog',
+  WHATSNEW: 'whatsnew',
+  ARTICLES: 'articles',
+  LEARNING: 'academy',
+  NEWS: 'news',
+};
+
+function toGqlCategory(raw: string | undefined): string {
+  const value = String(raw || '').trim().toLowerCase();
+  return CLIENT_TO_GQL_CATEGORY[value] || value.toUpperCase();
+}
+
+function fromGqlCategory(raw: string | undefined): string {
+  const value = String(raw || '').trim().toUpperCase();
+  return GQL_TO_CLIENT_CATEGORY[value] || value.toLowerCase() || 'news';
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -548,6 +575,7 @@ const PUBLIC_PUBLICATION_BY_ROUTE_QUERY = `
       publishedAtUnix
       tags
       ogImage
+      featuredImageAlt
       schemaType
       sourceUrl
       sourceName
@@ -630,7 +658,7 @@ export default defineEventHandler(async (event) => {
       items.map(async (item) => {
         const slugValue = String(item.slug || '').trim().toLowerCase();
         const categoryValue = String(item.category || '').trim().toLowerCase();
-        const gqlCategory = categoryValue.toUpperCase();
+        const gqlCategory = toGqlCategory(categoryValue);
         if (!slugValue || !GQL_CATEGORIES.includes(gqlCategory as typeof GQL_CATEGORIES[number])) {
           return null;
         }
@@ -691,7 +719,7 @@ export default defineEventHandler(async (event) => {
 
   // Slug-first resolution works for all categories and does not depend on list permissions.
   if (slug) {
-    const preferred = category ? category.toUpperCase() : '';
+    const preferred = category ? toGqlCategory(category) : '';
     const categories = [preferred, ...GQL_CATEGORIES].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
 
     for (const gqlCategory of categories) {
@@ -712,7 +740,7 @@ export default defineEventHandler(async (event) => {
 
         const dateIso = toIsoDate(publication.publishedAtUnix) || new Date().toISOString();
 
-        const categorySlug = String(publication.category || 'news').trim().toLowerCase();
+        const categorySlug = fromGqlCategory(publication.category);
         const resolvedSlug = String(publication.slug || slug).trim().toLowerCase();
 
         return {
@@ -731,6 +759,7 @@ export default defineEventHandler(async (event) => {
                 date: dateIso,
                 tags: Array.isArray(publication.tags) ? publication.tags : [],
                 og_image: String(publication.ogImage || '').trim(),
+                featured_image_alt: String(publication.featuredImageAlt || '').trim(),
                 schema_type: String(publication.schemaType || '').trim(),
                 source_url: String(publication.sourceUrl || '').trim(),
                 source_name: String(publication.sourceName || '').trim(),
@@ -758,7 +787,7 @@ export default defineEventHandler(async (event) => {
       query: PUBLIC_PUBLICATIONS_QUERY,
       variables: {
         filter: {
-          ...(category ? { category: category.toUpperCase() } : {}),
+          ...(category ? { category: toGqlCategory(category) } : {}),
           page: 1,
           pageSize: 300,
           includeDraft,
@@ -772,7 +801,7 @@ export default defineEventHandler(async (event) => {
           const slug = String(item?.slug || '').trim().toLowerCase();
           if (!slug) return null;
 
-          const categorySlug = String(item?.category || 'news').trim().toLowerCase();
+          const categorySlug = fromGqlCategory(item?.category);
           const dateIso = toIsoDate(item?.publishedAtUnix) || new Date().toISOString();
 
           return {
@@ -811,7 +840,7 @@ export default defineEventHandler(async (event) => {
         query: CONSOLE_PUBLICATIONS_QUERY,
         variables: {
           filter: {
-            ...(category ? { category: category.toUpperCase() } : {}),
+            ...(category ? { category: toGqlCategory(category) } : {}),
             status: 'PUBLISHED',
             page: 1,
             pageSize: 300,
@@ -826,7 +855,7 @@ export default defineEventHandler(async (event) => {
             const slug = String(item?.slug || '').trim().toLowerCase();
             if (!slug) return null;
 
-            const categorySlug = String(item?.category || 'news').trim().toLowerCase();
+            const categorySlug = fromGqlCategory(item?.category);
             const dateIso = toIsoDate(item?.publishedAtUnix) || new Date().toISOString();
 
             return {

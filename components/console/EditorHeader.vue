@@ -18,11 +18,13 @@
     <div class="flex items-center gap-1.5 md:gap-3 flex-shrink-0 ml-auto">
       <span
         class="text-xs px-2 py-1 md:px-2.5 md:py-1 rounded-full font-semibold border"
-        :class="article.status === 'published'
+        :class="isScheduled
+          ? 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-900/20 dark:text-cyan-400 dark:border-cyan-800'
+          : article.status === 'published'
           ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800'
           : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'"
       >
-        {{ article.status === 'published' ? t('admin.editor.statusPublished') : t('admin.editor.statusDraft') }}
+        {{ isScheduled ? 'Запланировано' : article.status === 'published' ? t('admin.editor.statusPublished') : t('admin.editor.statusDraft') }}
       </span>
       <button
         v-if="canDelete"
@@ -46,18 +48,19 @@
         <span class="hidden md:inline">{{ isDirty ? t('app.save') : 'Сохранено' }}</span>
       </button>
       <UButton
-        icon="lucide:send"
+        :icon="willBeScheduled ? 'lucide:calendar-clock' : 'lucide:send'"
         color="primary"
         size="sm"
         @click="$emit('publish')"
       >
-        <span class="hidden md:inline">{{ t('admin.editor.publish') }}</span>
+        <span class="hidden md:inline">{{ willBeScheduled ? 'Запланировать' : t('admin.editor.publish') }}</span>
       </UButton>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 
 interface Props {
@@ -69,7 +72,7 @@ interface Props {
   canDelete?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 defineEmits<{
   save: []
   publish: []
@@ -78,4 +81,15 @@ defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+function isFutureDate(value: string): boolean {
+  if (!value) return false
+  const parsed = new Date(value)
+  return !Number.isNaN(parsed.getTime()) && parsed.getTime() > Date.now()
+}
+
+// A "published" article whose publish date is still in the future stays
+// hidden from the public route (backend gate), so it's effectively scheduled.
+const isScheduled = computed(() => props.article.status === 'published' && isFutureDate(props.article.publishedAt))
+const willBeScheduled = computed(() => isFutureDate(props.article.publishedAt))
 </script>
