@@ -8,6 +8,7 @@
       <template #actions>
         <button
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+          @click="openCreatePlan"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>{{ t('admin.newPlan') }}</span>
@@ -156,17 +157,38 @@
 
         <!-- Plans Tab -->
         <div v-show="activeTab === 'plans'">
-          <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-            {{ t('admin.pricingPlans') }} · {{ selectedProjectTitle }}
-          </h3>
-          <div class="grid gap-6 md:grid-cols-3">
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+              {{ t('admin.pricingPlans') }} · {{ selectedProjectTitle }}
+            </h3>
+            <button
+              class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 transition-colors"
+              @click="openCreatePlan"
+            >
+              <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+              {{ t('admin.newPlan') }}
+            </button>
+          </div>
+
+          <div v-if="!selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            {{ t('admin.noPlanCreated') }}
+          </div>
+
+          <div v-else class="grid gap-6 md:grid-cols-3">
             <div
               v-for="plan in selectedProjectPlans"
               :key="plan.id"
-              class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+              class="relative rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+              :class="plan.status === 'PLAN_ARCHIVED' ? 'opacity-50' : ''"
             >
-              <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ plan.name }}</h4>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ t(plan.description || plan.code) }}</p>
+              <div class="flex items-start justify-between gap-2">
+                <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ plan.name }}</h4>
+                <span
+                  v-if="plan.status === 'PLAN_ARCHIVED'"
+                  class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                >{{ t('admin.archived') }}</span>
+              </div>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ resolvePlanDescription(plan) }}</p>
               <div class="mt-4 text-3xl font-bold text-slate-900 dark:text-white">
                 {{ (plan.amountCents / 100).toFixed(0) }} {{ plan.currency }}
                 <span class="text-sm">/{{ t(`admin.interval.${plan.interval.toLowerCase()}`) }}</span>
@@ -174,7 +196,25 @@
               <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-400">
                 <li>{{ t('admin.currency') }}: {{ plan.currency }}</li>
                 <li>{{ t('admin.trialDays') }}: {{ plan.trialDays }}</li>
+                <li class="font-mono text-[11px] text-slate-400">{{ plan.code }}</li>
               </ul>
+              <div class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+                <button
+                  class="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                  @click="openEditPlan(plan)"
+                >
+                  <Icon name="lucide:pencil" class="h-3 w-3" />
+                  {{ t('admin.edit') }}
+                </button>
+                <button
+                  v-if="plan.status !== 'PLAN_ARCHIVED'"
+                  class="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                  @click="onArchivePlan(plan)"
+                >
+                  <Icon name="lucide:archive" class="h-3 w-3" />
+                  {{ t('admin.archive') }}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -293,14 +333,149 @@
       </div>
     </div> <!-- End v-else -->
   </div> <!-- End mx-auto -->
+
+  <!-- Create / Edit Plan Modal -->
+  <Teleport to="body">
+    <div
+      v-if="planModal.open"
+      class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
+      @click.self="closePlanModal"
+    >
+      <div class="mx-auto my-8 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+            {{ planModal.mode === 'create' ? t('admin.newPlan') : t('admin.editPlanTitle') }}
+          </h3>
+          <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closePlanModal">
+            <Icon name="lucide:x" class="h-4 w-4" />
+          </button>
+        </div>
+
+        <div class="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+          <p class="text-xs text-slate-500 dark:text-slate-400">
+            {{ t('admin.planForApp') }}: <strong>{{ selectedProjectTitle }}</strong>
+          </p>
+
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planName') }} *</label>
+            <input
+              v-model="planForm.name"
+              type="text"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              placeholder="A-Trace Pro"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planDescription') }}</label>
+            <textarea
+              v-model="planForm.description"
+              rows="2"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white resize-none"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.currency') }} *</label>
+              <input
+                v-model="planForm.currency"
+                type="text"
+                maxlength="3"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                placeholder="KZT"
+              />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.trialDays') }}</label>
+              <input
+                v-model.number="planForm.trialDays"
+                type="number"
+                min="0"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+          </div>
+
+          <template v-if="planModal.mode === 'create'">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.monthlyPrice') }} *</label>
+                <input
+                  v-model.number="planForm.monthlyPrice"
+                  type="number"
+                  min="0"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.yearlyPrice') }} *</label>
+                <input
+                  v-model.number="planForm.yearlyPrice"
+                  type="number"
+                  min="0"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400">{{ t('admin.planCreatesBothIntervals') }}</p>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planCode') }}</label>
+              <input
+                :value="generatedCodePrefix"
+                type="text"
+                disabled
+                class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+              />
+            </div>
+          </template>
+
+          <template v-else>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                {{ t('admin.price') }} ({{ planModal.plan?.interval === 'YEAR' ? t('admin.interval.year') : t('admin.interval.month') }}) *
+              </label>
+              <input
+                v-model.number="planForm.amount"
+                type="number"
+                min="0"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+            </div>
+          </template>
+
+          <p v-if="planModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            {{ planModal.error }}
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
+          <button
+            class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            @click="closePlanModal"
+          >
+            {{ t('app.cancel') || 'Отмена' }}
+          </button>
+          <button
+            :disabled="planModal.saving"
+            class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            @click="submitPlanModal"
+          >
+            <Icon v-if="planModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
+            {{ t('app.save') || 'Сохранить' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </div> <!-- End min-h-screen -->
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, watch } from 'vue';
+import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { capitalGetAdminBillingInfo, type AdminBillingInfo } from '@/api/capital/admin';
+import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, type AdminBillingInfo } from '@/api/capital/admin';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -309,14 +484,15 @@ definePageMeta({
 
 const { t } = useI18n();
 const { token } = useAuth();
+const toast = useToast();
 const activeTab = ref('plans');
 const loading = ref(true);
 const billingData = ref<AdminBillingInfo | null>(null);
 
 const projects = [
-  { id: 'atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
-  { id: 'contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
-  { id: 'menu', title: 'Lota Orders', icon: 'lucide:receipt-text' }
+  { id: 'atrace', appCode: 'pieceowater.atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
+  { id: 'contacts', appCode: 'pieceowater.contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
+  { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' }
 ] as const;
 
 type ProjectId = (typeof projects)[number]['id'];
@@ -324,11 +500,25 @@ const selectedProject = ref<ProjectId>('atrace');
 const selectedProjectTitle = computed(() => {
   return projects.find(p => p.id === selectedProject.value)?.title || selectedProject.value;
 });
+const selectedProjectAppCode = computed(() => {
+  return projects.find(p => p.id === selectedProject.value)?.appCode || selectedProject.value;
+});
 
 function getPlanName(planId: string) {
   if (!billingData.value) return planId;
   const plan = billingData.value.adminPlans?.find(p => p.id === planId);
   return plan ? plan.name : planId;
+}
+
+// Legacy plans seeded via cfg.go store `description` as an i18n key suffix
+// (e.g. "pieceowater.atrace.free.description"), resolved on the public
+// pricing page via t('app.' + description). Mirror that here so admins see
+// the real text instead of the raw key; plans created via this console store
+// literal text, which simply won't match any key and falls through as-is.
+function resolvePlanDescription(plan: { description?: string | null; code: string }): string {
+  const raw = (plan.description || '').trim();
+  if (!raw) return plan.code;
+  return t('app.' + raw) || raw;
 }
 
 // Watch for project changes for automatic data refresh
@@ -349,7 +539,7 @@ async function refreshData() {
     // However, if we want to list *only* specific namespace on backend:
     // billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, selectedNamespace.value);
     
-    billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, undefined, selectedProject.value);
+    billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, undefined, selectedProjectAppCode.value);
     console.log('[billing] Data received:', {
       accounts: billingData.value?.adminAccounts?.accounts?.length,
       plans: billingData.value?.adminPlans?.length,
@@ -375,11 +565,155 @@ onMounted(async () => {
 });
 
 const selectedProjectPlans = computed(() => {
-  if (!billingData.value) return [];
-  const list = billingData.value.adminPlans || [];
-  // Use includes for more flexible matching (e.g. app-code in plan-code)
-  return list.filter(p => p.code.toLowerCase().includes(selectedProject.value.toLowerCase()));
+  // Server already filters by the resolved applicationCode (see refreshData).
+  return billingData.value?.adminPlans || [];
 });
+
+// ─── Plan create/edit modal ────────────────────────────────────────────────
+type PlanRow = AdminBillingInfo['adminPlans'][number];
+
+const planModal = reactive({
+  open: false,
+  mode: 'create' as 'create' | 'edit',
+  plan: null as PlanRow | null,
+  saving: false,
+  error: '',
+});
+
+const planForm = reactive({
+  name: '',
+  description: '',
+  currency: 'KZT',
+  trialDays: 0,
+  monthlyPrice: 0,
+  yearlyPrice: 0,
+  amount: 0,
+});
+
+function slugifyPlanName(value: string): string {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-') || 'plan';
+}
+
+const generatedCodePrefix = computed(() => {
+  return `kz.${selectedProjectAppCode.value}.${slugifyPlanName(planForm.name)}`;
+});
+
+function openCreatePlan() {
+  planModal.mode = 'create';
+  planModal.plan = null;
+  planModal.error = '';
+  planForm.name = '';
+  planForm.description = '';
+  planForm.currency = 'KZT';
+  planForm.trialDays = 0;
+  planForm.monthlyPrice = 0;
+  planForm.yearlyPrice = 0;
+  planModal.open = true;
+}
+
+function openEditPlan(plan: PlanRow) {
+  planModal.mode = 'edit';
+  planModal.plan = plan;
+  planModal.error = '';
+  planForm.name = plan.name;
+  planForm.description = plan.description || '';
+  planForm.currency = plan.currency;
+  planForm.trialDays = plan.trialDays;
+  planForm.amount = plan.amountCents / 100;
+  planModal.open = true;
+}
+
+function closePlanModal() {
+  if (planModal.saving) return;
+  planModal.open = false;
+}
+
+async function submitPlanModal() {
+  if (!token.value) return;
+  planModal.error = '';
+
+  if (!planForm.name.trim()) {
+    planModal.error = t('admin.planNameRequired') || 'Введите название тарифа';
+    return;
+  }
+  if (!planForm.currency.trim()) {
+    planModal.error = t('admin.currencyRequired') || 'Укажите валюту';
+    return;
+  }
+
+  planModal.saving = true;
+  try {
+    if (planModal.mode === 'create') {
+      const codePrefix = generatedCodePrefix.value;
+      await capitalCreatePlan(token.value, {
+        code: `${codePrefix}-monthly`,
+        name: planForm.name.trim(),
+        description: planForm.description.trim() || undefined,
+        currency: planForm.currency.trim().toUpperCase(),
+        interval: 'MONTH',
+        amountCents: Math.round(planForm.monthlyPrice * 100),
+        trialDays: planForm.trialDays || 0,
+        applicationCode: selectedProjectAppCode.value,
+      });
+      await capitalCreatePlan(token.value, {
+        code: `${codePrefix}-yearly`,
+        name: planForm.name.trim(),
+        description: planForm.description.trim() || undefined,
+        currency: planForm.currency.trim().toUpperCase(),
+        interval: 'YEAR',
+        amountCents: Math.round(planForm.yearlyPrice * 100),
+        trialDays: planForm.trialDays || 0,
+        applicationCode: selectedProjectAppCode.value,
+      });
+      toast.add({ title: t('admin.planCreated') || 'Тариф создан', color: 'green' });
+    } else if (planModal.plan) {
+      await capitalUpdatePlan(token.value, planModal.plan.id, {
+        name: planForm.name.trim(),
+        description: planForm.description.trim() || undefined,
+        amountCents: Math.round(planForm.amount * 100),
+        trialDays: planForm.trialDays || 0,
+      });
+      toast.add({ title: t('admin.planUpdated') || 'Тариф обновлён', color: 'green' });
+    }
+
+    planModal.open = false;
+    await refreshData();
+  } catch (e: any) {
+    planModal.error = e?.message || (t('admin.planSaveFailed') || 'Не удалось сохранить тариф');
+  } finally {
+    planModal.saving = false;
+  }
+}
+
+async function onArchivePlan(plan: PlanRow) {
+  if (!token.value) return;
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    title: t('admin.archivePlanConfirmTitle') || 'Архивировать тариф?',
+    message: `«${plan.name}» (${plan.code})`,
+    confirmLabel: t('admin.archive') || 'Архивировать',
+    color: 'red',
+    icon: 'lucide:archive',
+  });
+  if (!confirmed) return;
+
+  try {
+    await capitalArchivePlan(token.value, plan.id);
+    toast.add({ title: t('admin.planArchived') || 'Тариф архивирован', color: 'green' });
+    await refreshData();
+  } catch (e: any) {
+    toast.add({
+      title: t('admin.planSaveFailed') || 'Не удалось архивировать тариф',
+      description: e?.message,
+      color: 'red',
+    });
+  }
+}
 
 const selectedProjectSubscriptions = computed(() => {
   if (!billingData.value) return [];

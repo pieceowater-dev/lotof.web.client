@@ -36,7 +36,7 @@
             :title="t('admin.analytics')"
             :description="t('admin.analyticsDesc')"
             icon="lucide:bar-chart-2"
-            status="coming"
+            status="active"
             href="/console/analytics"
             bg-gradient="bg-white dark:bg-slate-900"
             icon-bg="bg-blue-100 dark:bg-blue-900/30"
