@@ -245,7 +245,7 @@ onMounted(async () => {
 // ─── KPI cards ──────────────────────────────────────────────────────────
 const activeSubscriptions = computed(() => {
   const subs = billingData.value?.adminSubscriptions?.subscriptions || [];
-  return subs.filter(s => s.status === 'SUBSCRIPTION_ACTIVE').length;
+  return subs.filter(s => s.status === 'ACTIVE').length;
 });
 
 const newNamespacesLast30Days = computed(() => {
@@ -397,7 +397,7 @@ const APPS = [
 ] as const;
 
 const appBars = computed(() => {
-  const subs = (billingData.value?.adminSubscriptions?.subscriptions || []).filter(s => s.status === 'SUBSCRIPTION_ACTIVE');
+  const subs = (billingData.value?.adminSubscriptions?.subscriptions || []).filter(s => s.status === 'ACTIVE');
   const plans = billingData.value?.adminPlans || [];
   return APPS.map(app => {
     const count = subs.filter(s => {

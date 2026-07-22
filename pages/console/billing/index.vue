@@ -252,12 +252,12 @@
                     <span 
                       :class="[
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                        subscription.status === 'SUBSCRIPTION_ACTIVE' 
+                        subscription.status === 'ACTIVE' 
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
                           : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
                       ]"
                     >
-                      <span :class="['h-1.5 w-1.5 rounded-full', subscription.status === 'SUBSCRIPTION_ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400']"></span>
+                      <span :class="['h-1.5 w-1.5 rounded-full', subscription.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400']"></span>
                       {{ subscription.status }}
                     </span>
                   </td>
