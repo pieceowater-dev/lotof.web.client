@@ -117,7 +117,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="account in billingData?.adminAccounts.accounts"
+                  v-for="account in pagedAccounts"
                   :key="account.id"
                   class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
@@ -157,6 +157,14 @@
               </tbody>
             </table>
             </div>
+          </div>
+          <div v-if="(billingData?.adminAccounts?.accounts?.length || 0) > TABLE_PAGE_SIZE" class="mt-4 flex justify-end">
+            <UPagination
+              v-model="accountsPage"
+              :page-count="TABLE_PAGE_SIZE"
+              :total="billingData?.adminAccounts?.accounts?.length || 0"
+              size="xs"
+            />
           </div>
         </div>
 
@@ -242,7 +250,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="subscription in selectedProjectSubscriptions"
+                  v-for="subscription in pagedSubscriptions"
                   :key="subscription.id"
                   class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
@@ -272,6 +280,14 @@
             </table>
             </div>
           </div>
+          <div v-if="selectedProjectSubscriptions.length > TABLE_PAGE_SIZE" class="mt-4 flex justify-end">
+            <UPagination
+              v-model="subscriptionsPage"
+              :page-count="TABLE_PAGE_SIZE"
+              :total="selectedProjectSubscriptions.length"
+              size="xs"
+            />
+          </div>
         </div>
 
         <!-- Invoices Tab -->
@@ -293,7 +309,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="invoice in selectedProjectInvoices"
+                  v-for="invoice in pagedInvoices"
                   :key="invoice.id"
                   class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
@@ -320,6 +336,14 @@
               </tbody>
             </table>
             </div>
+          </div>
+          <div v-if="selectedProjectInvoices.length > TABLE_PAGE_SIZE" class="mt-4 flex justify-end">
+            <UPagination
+              v-model="invoicesPage"
+              :page-count="TABLE_PAGE_SIZE"
+              :total="selectedProjectInvoices.length"
+              size="xs"
+            />
           </div>
         </div>
     </div> <!-- End v-else -->
@@ -881,6 +905,29 @@ const selectedProjectInvoices = computed(() => {
         date: inv.issueDate ? new Date(inv.issueDate).toLocaleDateString() : 'N/A'
       };
     });
+});
+
+// Client-side pagination for the three tables -- refreshData already fetches
+// up to 100 rows per list in one shot, so paging is just slicing that batch
+// rather than a separate server round-trip.
+const TABLE_PAGE_SIZE = 10;
+const accountsPage = ref(1);
+const subscriptionsPage = ref(1);
+const invoicesPage = ref(1);
+
+function pageOf<T>(items: T[], page: number): T[] {
+  const start = (page - 1) * TABLE_PAGE_SIZE;
+  return items.slice(start, start + TABLE_PAGE_SIZE);
+}
+
+const pagedAccounts = computed(() => pageOf(billingData.value?.adminAccounts?.accounts || [], accountsPage.value));
+const pagedSubscriptions = computed(() => pageOf(selectedProjectSubscriptions.value, subscriptionsPage.value));
+const pagedInvoices = computed(() => pageOf(selectedProjectInvoices.value, invoicesPage.value));
+
+watch(selectedProject, () => {
+  accountsPage.value = 1;
+  subscriptionsPage.value = 1;
+  invoicesPage.value = 1;
 });
 </script>
 

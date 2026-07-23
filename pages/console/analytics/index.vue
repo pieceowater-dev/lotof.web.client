@@ -158,9 +158,18 @@
 
         <!-- Recent namespaces -->
         <div>
-          <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
-            {{ t('admin.recentNamespaces') }}
-          </h3>
+          <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+              {{ t('admin.recentNamespaces') }}
+            </h3>
+            <NuxtLink
+              to="/console/namespaces"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:underline dark:text-blue-400"
+            >
+              {{ t('admin.viewAllNamespaces') || 'Смотреть все' }}
+              <Icon name="lucide:arrow-right" class="h-3 w-3" />
+            </NuxtLink>
+          </div>
           <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
             <div class="overflow-x-auto">
               <table class="w-full min-w-[720px] text-left text-sm">
@@ -295,7 +304,7 @@
                     <td colspan="8" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
                   </tr>
                   <tr
-                    v-for="link in filteredDeepLinks"
+                    v-for="link in pagedDeepLinks"
                     :key="link.id"
                     class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                   >
@@ -329,6 +338,14 @@
                 </tbody>
               </table>
             </div>
+          </div>
+          <div v-if="filteredDeepLinks.length > DEEP_LINKS_PAGE_SIZE" class="mt-4 flex justify-end">
+            <UPagination
+              v-model="deepLinksPage"
+              :page-count="DEEP_LINKS_PAGE_SIZE"
+              :total="filteredDeepLinks.length"
+              size="xs"
+            />
           </div>
         </div>
       </div>
@@ -761,6 +778,14 @@ const filteredDeepLinks = computed(() => {
   if (selectedCategoryId.value === null) return deepLinks.value;
   return deepLinks.value.filter(l => l.categoryId === selectedCategoryId.value);
 });
+
+const DEEP_LINKS_PAGE_SIZE = 10;
+const deepLinksPage = ref(1);
+const pagedDeepLinks = computed(() => {
+  const start = (deepLinksPage.value - 1) * DEEP_LINKS_PAGE_SIZE;
+  return filteredDeepLinks.value.slice(start, start + DEEP_LINKS_PAGE_SIZE);
+});
+watch(selectedCategoryId, () => { deepLinksPage.value = 1; });
 
 async function loadDeepLinks() {
   if (!token.value) return;

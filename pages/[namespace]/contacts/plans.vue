@@ -211,6 +211,8 @@ async function subscribePlan(plan: Plan) {
     const { ensure } = useContactsToken();
     await ensure(nsSlug.value, token);
 
+    useAnalytics().track('plan_subscribed', { app: 'pieceowater.contacts', plan: plan.code });
+
     // Navigate to app
     const returnTo = resolveReturnTo();
     await navigateTo(returnTo, { replace: true });

@@ -7,11 +7,13 @@ export type AdminNamespaceRow = {
   createdAt: string | null
   leadSource: string | null
   ownerInfo: { username: string; email: string; phone?: string | null } | null
+  memberInfos: Array<{ id: string; username: string; email: string; phone?: string | null }> | null
+  apps: Array<{ id: string; namespaceID: string; appBundle: string }> | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
-  query AdminNamespaces($page: Int!, $length: FilterPaginationLengthEnum!) {
-    adminNamespaces(filter: { pagination: { page: $page, length: $length } }) {
+  query AdminNamespaces($page: Int!, $length: FilterPaginationLengthEnum!, $search: String) {
+    adminNamespaces(filter: { search: $search, pagination: { page: $page, length: $length } }) {
       rows {
         id
         title
@@ -23,6 +25,17 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
           email
           phone
         }
+        memberInfos {
+          id
+          username
+          email
+          phone
+        }
+        apps {
+          id
+          namespaceID
+          appBundle
+        }
       }
       info {
         count
@@ -30,6 +43,20 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
     }
   }
 `
+
+export async function hubGetAdminNamespacesPage(
+  token: string,
+  page: number,
+  length: string = 'TWENTY',
+  search?: string
+): Promise<{ rows: AdminNamespaceRow[]; total: number }> {
+  setGlobalAuthToken(token || null)
+  const res = await hubClient.request<{ adminNamespaces: { rows: AdminNamespaceRow[]; info: { count: number } } }>(
+    ADMIN_NAMESPACES_QUERY,
+    { page, length, search: search || undefined }
+  )
+  return { rows: res.adminNamespaces?.rows || [], total: res.adminNamespaces?.info?.count || 0 }
+}
 
 export async function hubGetAdminNamespaces(token: string): Promise<{ rows: AdminNamespaceRow[]; total: number }> {
   setGlobalAuthToken(token || null)

@@ -108,6 +108,7 @@ async function runCheck() {
     });
 
     const ok = !!(res && res.id);
+    useAnalytics().track('atrace_check', { method: methodEnum, ok });
     // Set cooldown for static QR regardless of result to avoid spam
     if (qMethodNum.value === '3') setCooldown();
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: ok ? '1' : '0' } });

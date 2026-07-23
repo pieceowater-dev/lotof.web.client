@@ -670,6 +670,9 @@ async function submitOrder() {
       })),
     });
     orderResult.value = { number: result.number, createdAt: result.createdAt };
+    // Public storefront -- the customer has no hub session, so the auto-stamped
+    // useNamespace().selected wouldn't reflect the namespace being ordered from.
+    useAnalytics().track('menu_order_placed', { namespace: nsSlug.value, type: checkoutForm.type, itemCount: cart.value.length, totalAmount: cartTotal.value });
     cart.value = [];
     if (process.client) {
       localStorage.setItem(lastOrderStorageKey.value, JSON.stringify({

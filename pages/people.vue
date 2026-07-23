@@ -86,6 +86,7 @@ const sendAction = async () => {
       // HandleInviteActions, which only processes bundles present here).
       const actions = JSON.stringify({ version: 1 });
       await hubCreateInvite(token.value, { namespaceSlug: nsSlug, email, actions });
+      useAnalytics().track('hub_member_invited');
       toast.add({ title: t('app.sendInvite'), description: email, color: 'blue' });
       search.value = '';
       userFound.value = null;

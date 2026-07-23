@@ -581,6 +581,7 @@ async function handleSubmit() {
       };
       const result = await contactsCreateIndividualClient(contactsToken, selectedNS.value, input);
       clientId = result.client.id;
+      useAnalytics().track('contacts_client_created', { clientType: 'INDIVIDUAL' });
     } else {
       if (selectedExistingLegalEntity.value) {
         clientId = selectedExistingLegalEntity.value.client.id;
@@ -597,6 +598,7 @@ async function handleSubmit() {
         };
         const result = await contactsCreateLegalEntityClient(contactsToken, selectedNS.value, input);
         clientId = result.client.id;
+        useAnalytics().track('contacts_client_created', { clientType: 'LEGAL_ENTITY' });
 
         if (contactPersonForm.value.firstName.trim()) {
           const contactInput: CreateIndividualClientInput = {

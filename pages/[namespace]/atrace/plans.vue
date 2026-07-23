@@ -191,6 +191,8 @@ async function subscribePlan(plan: Plan) {
     const { ensure } = useAtraceToken();
     await ensure(nsSlug.value, token);
 
+    useAnalytics().track('plan_subscribed', { app: 'pieceowater.atrace', plan: plan.code });
+
     // Navigate to app
     const returnTo = resolveReturnTo();
     await navigateTo(returnTo, { replace: true });

@@ -80,6 +80,9 @@ export function useNamespace() {
         clear();
         document.cookie = `${CookieKeys.MENU_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
+      try {
+        useAnalytics().setNamespaceContext(ns);
+      } catch {}
     }
   }
 
