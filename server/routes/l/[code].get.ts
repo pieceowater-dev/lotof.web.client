@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
   ].filter((value, index, arr) => !!value && arr.indexOf(value) === index);
 
   let found = false;
+  let target = '';
 
   for (const endpoint of endpointCandidates) {
     try {
@@ -58,22 +59,39 @@ export default defineEventHandler(async (event) => {
       });
       if (res?.errors?.length) throw new Error(res.errors[0]?.message || 'resolveDeepLink failed');
       found = Boolean(res?.data?.resolveDeepLink?.found);
+      target = String(res?.data?.resolveDeepLink?.target || '');
       break;
     } catch {
       // Try next endpoint candidate.
     }
   }
 
-  if (found) {
-    setCookie(event, 'lead_ref', code, {
+  if (!found) {
+    return sendRedirect(event, '/', 307);
+  }
+
+  setCookie(event, 'lead_ref', code, {
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60, // 30 days -- generous attribution window
+    sameSite: 'lax',
+    httpOnly: false, // read by client-side login() to carry through the OAuth redirect
+  });
+
+  // A product target (vs. "home"/empty) means the visitor should land in
+  // that app -- since every product route requires a logged-in namespace,
+  // send them straight into the auto-login flow (see pages/index.vue's
+  // auth-needed handling) with the app tagged so a brand-new signup gets it
+  // auto-installed (see useAuth's login() and GoogleCallbackState.TargetApp).
+  const isProductTarget = target && target !== 'home';
+  if (isProductTarget) {
+    setCookie(event, 'target_app', target, {
       path: '/',
-      maxAge: 30 * 24 * 60 * 60, // 30 days -- generous attribution window
+      maxAge: 30 * 24 * 60 * 60,
       sameSite: 'lax',
       httpOnly: false, // read by client-side login() to carry through the OAuth redirect
     });
+    return sendRedirect(event, `/?auth-needed=true&ref=${encodeURIComponent(code)}`, 307);
   }
 
-  // `target` (home vs. a specific product) is reserved for a future
-  // per-product landing page -- every deep link lands on home today.
-  return sendRedirect(event, found ? `/?ref=${encodeURIComponent(code)}` : '/', 307);
+  return sendRedirect(event, `/?ref=${encodeURIComponent(code)}`, 307);
 });

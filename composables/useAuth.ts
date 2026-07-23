@@ -92,8 +92,16 @@ export function useAuth() {
       const leadRef = useCookie<string | null>('lead_ref').value;
       if (leadRef) leadParam = `&lead=${encodeURIComponent(leadRef)}`;
     } catch {}
+    // Carry a deep link's target app (set by server/routes/l/[code].get.ts as
+    // the `target_app` cookie) through the OAuth round-trip so a brand-new
+    // signup gets it auto-installed -- see GoogleCallbackState.TargetApp.
+    let appParam = '';
+    try {
+      const targetApp = useCookie<string | null>('target_app').value;
+      if (targetApp) appParam = `&app=${encodeURIComponent(targetApp)}`;
+    } catch {}
     useAnalytics().track('login_initiated');
-    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}`;
+    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}${appParam}`;
   }
 
   function logout() {
