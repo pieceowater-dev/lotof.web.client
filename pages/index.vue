@@ -101,17 +101,25 @@ onMounted(async () => {
 
   // 1) Wait a tick for cookies to be available after OAuth redirect
   await nextTick();
-  
-  // 2) Immediate auto-login if redirected with auth-needed flag
+
+  // 2) Resolve auth state BEFORE deciding whether auto-login is needed --
+  // on a fresh page load (e.g. arriving via a deep link) the readable
+  // `token` cookie is often absent even for a genuinely logged-in visitor
+  // (only the httpOnly refresh_token survives), and fetchUser() is what
+  // performs the silent refresh that repopulates it. Checking isLoggedIn
+  // before this ran incorrectly bounced already-logged-in users through a
+  // fresh OAuth flow.
+  await fetchUser();
+
+  // 2.1) Immediate auto-login if redirected with auth-needed flag and truly
+  // not logged in (post-fetchUser, so this reflects real auth state).
   const q0 = route.query;
   if (!isLoggedIn.value && (q0['auth-needed'] === 'true' || q0['authNeeded'] === 'true')) {
-    // Trigger login right away to avoid waiting on other async inits
     login();
     return;
   }
 
   // 3) Normal init flow
-  await fetchUser();
   if (user.value) {
     username.value = user.value.username;
     email.value = user.value.email;
@@ -120,8 +128,15 @@ onMounted(async () => {
   await refreshConsoleAccess();
   isLoading.value = false;
 
-  // Run app installation check in background so first paint is not blocked.
   if (user.value) {
+    // A deep link tagged a target app (see server/routes/l/[code].get.ts) --
+    // this covers both a brand-new signup landing back here after OAuth
+    // (cookie survives the round-trip) and an already-logged-in visitor who
+    // just clicked the link, which is the more common case in practice.
+    const navigated = await handlePendingTargetApp();
+    if (navigated) return;
+
+    // Run app installation check in background so first paint is not blocked.
     checkInstalledForVisibleApps().catch((error) => {
       logError('[apps] startup install check failed', error);
     });
@@ -325,6 +340,34 @@ function toCard(app: AppConfig) {
     installed: appInstalled[app.bundle] ?? false,
     canAdd: app.canAdd,
   };
+}
+
+// Consumes the target_app cookie set by a product-targeted deep link
+// (server/routes/l/[code].get.ts). Returns true if it navigated the visitor
+// away, so callers can skip the rest of the normal init flow.
+async function handlePendingTargetApp(): Promise<boolean> {
+  if (!process.client) return false;
+  const targetAppCookie = useCookie<string | null>('target_app');
+  const targetApp = targetAppCookie.value;
+  if (!targetApp) return false;
+  targetAppCookie.value = null; // consume once, whatever happens next
+
+  const app = ALL_APPS.find(a => a.bundle === targetApp);
+  const ns = selectedNS.value;
+  if (!app || !ns) return false;
+
+  try {
+    const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
+    const tokenValue = useCookie<string | null>(CookieKeys.TOKEN).value;
+    if (!tokenValue) return false;
+    const installedMap = await hubAreAppsInNamespace(tokenValue, ns, [targetApp]);
+    const dest = installedMap[targetApp] ? `/${ns}/${app.address}` : `/${ns}/${app.address}/plans`;
+    await router.replace(dest);
+    return true;
+  } catch (error) {
+    logError('[deep-link] handlePendingTargetApp failed', error);
+    return false;
+  }
 }
 
 async function checkInstalledForVisibleApps() {
