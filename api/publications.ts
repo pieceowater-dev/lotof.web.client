@@ -1199,6 +1199,21 @@ export async function capitalArchivePublication(token: string, slug: string, exp
   return true
 }
 
+// Un-archives back to draft rather than guessing the prior status (published
+// vs scheduled) -- the admin can explicitly re-publish from there.
+export async function capitalRestorePublication(token: string, slug: string, expectedVersion?: string): Promise<boolean> {
+  const current = await capitalGetPublicationBySlug(token, slug)
+  if (!current) return false
+
+  await capitalUpdatePublication(token, slug, {
+    ...current.article,
+    status: 'draft',
+    version: asString(expectedVersion) || current.article.version || undefined,
+  }, current.blocks)
+
+  return true
+}
+
 export async function capitalUploadPublicationImage(
   token: string,
   slug: string,

@@ -7,7 +7,7 @@ import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
@@ -649,7 +649,7 @@ async function submitOrder() {
   try {
     const result = await submitPublicOrder(nsSlug.value, {
       branchId: selectedBranchId.value || undefined,
-      phone: checkoutForm.phone.trim(),
+      phone: normalizePhoneForStorage(checkoutForm.phone.trim()),
       customerName: checkoutForm.customerName.trim() || undefined,
       type: checkoutForm.type,
       deliveryAddress: checkoutForm.type === 'delivery' ? checkoutForm.deliveryAddress.trim() : undefined,

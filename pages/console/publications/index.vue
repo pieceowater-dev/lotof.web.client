@@ -52,6 +52,25 @@
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>
+        <div class="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
+          <button
+            type="button"
+            class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="statusFilter === 'active' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'"
+            @click="selectStatusFilter('active')"
+          >
+            Активные
+          </button>
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="statusFilter === 'archived' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'"
+            @click="selectStatusFilter('archived')"
+          >
+            <Icon name="lucide:archive" class="h-3.5 w-3.5" />
+            Архив
+          </button>
+        </div>
         <button
           type="button"
           class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -123,6 +142,17 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-2">
                   <button
+                    v-if="row.status === 'archived'"
+                    type="button"
+                    class="inline-flex items-center gap-1 rounded-lg border border-emerald-200 px-2 py-1 text-[11px] text-emerald-700 hover:bg-emerald-50 dark:border-emerald-900/60 dark:text-emerald-300 dark:hover:bg-emerald-950/30"
+                    title="Восстановить"
+                    @click="restorePublication(row)"
+                  >
+                    <Icon name="lucide:rotate-ccw" class="h-3 w-3" />
+                    Восстановить
+                  </button>
+                  <button
+                    v-else
                     type="button"
                     class="inline-flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[11px] text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
                     title="Архивировать"
@@ -169,7 +199,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 import { useI18n } from '@/composables/useI18n';
-import { capitalArchivePublication, capitalListPublications, type PublicationListRow } from '@/api/publications';
+import { capitalArchivePublication, capitalRestorePublication, capitalListPublications, type PublicationListRow } from '@/api/publications';
 
 definePageMeta({ middleware: 'admin' });
 
@@ -237,6 +267,7 @@ const categories = computed(() => [
 ]);
 
 const selectedCategory = ref('all');
+const statusFilter = ref<'active' | 'archived'>('active');
 const search = ref('');
 const page = ref(1);
 const pageSize = ref(10);
@@ -342,12 +373,18 @@ function selectCategory(value: string) {
   page.value = 1;
 }
 
+function selectStatusFilter(value: 'active' | 'archived') {
+  statusFilter.value = value;
+  page.value = 1;
+}
+
 async function load() {
   loading.value = true;
   try {
     const token = String(authToken.value || legacyToken.value || '').trim();
     const res = await capitalListPublications(token, {
       category: selectedCategory.value === 'all' ? undefined : selectedCategory.value,
+      status: statusFilter.value === 'archived' ? 'archived' : undefined,
       search: search.value || undefined,
       page: page.value,
       pageSize: pageSize.value,
@@ -408,6 +445,30 @@ async function deletePublication(row: PublicationListRow) {
   }
 }
 
+async function restorePublication(row: PublicationListRow) {
+  try {
+    await capitalRestorePublication(String(authToken.value || legacyToken.value || '').trim(), row.slug, row.version);
+
+    toast.add({
+      title: 'Публикация восстановлена в черновики',
+      color: 'green',
+    });
+
+    if (rows.value.length === 1 && page.value > 1) {
+      page.value = page.value - 1;
+      return;
+    }
+
+    await load();
+  } catch (error: any) {
+    toast.add({
+      title: 'Не удалось восстановить публикацию',
+      description: error?.message || 'Проверьте права доступа',
+      color: 'red',
+    });
+  }
+}
+
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 watch(search, () => {
   page.value = 1;
@@ -415,7 +476,7 @@ watch(search, () => {
   searchTimer = setTimeout(() => load(), 250);
 });
 
-watch([selectedCategory, page], () => {
+watch([selectedCategory, statusFilter, page], () => {
   load();
 });
 

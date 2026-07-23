@@ -33,8 +33,8 @@ const PRECHECK_QUERY = /* GraphQL */ `
 `;
 
 const ADD_MUTATION = /* GraphQL */ `
-  mutation AddAppToNamespace($namespaceId: ID!, $appBundle: String!) {
-    addAppToNamespace(namespaceId: $namespaceId, appBundle: $appBundle) {
+  mutation AddAppToNamespace($namespaceId: ID!, $appBundle: String!, $leadSource: String) {
+    addAppToNamespace(namespaceId: $namespaceId, appBundle: $appBundle, leadSource: $leadSource) {
       id
       namespaceID
       appBundle
@@ -94,6 +94,13 @@ export async function hubAddAppToNamespace(
     throw new Error('Failed to resolve namespace ID from isAppInNamespace');
   }
 
-  const added = await hubClient.request<AddResp>(ADD_MUTATION, { namespaceId, appBundle });
+  // Attribution tag left by server/routes/l/[code].get.ts, if this visitor
+  // arrived via a deep link and hasn't converted yet.
+  let leadSource: string | null = null;
+  try {
+    leadSource = useCookie<string | null>('lead_ref').value;
+  } catch {}
+
+  const added = await hubClient.request<AddResp>(ADD_MUTATION, { namespaceId, appBundle, leadSource });
   return added.addAppToNamespace;
 }

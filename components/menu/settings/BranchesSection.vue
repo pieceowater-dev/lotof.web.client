@@ -7,7 +7,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import BranchModal from '@/components/menu/BranchModal.vue';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
@@ -66,8 +66,12 @@ function openEdit(b: MenuBranch) {
   isModalOpen.value = true;
 }
 
-async function handleSubmit(payload: Record<string, any>) {
+async function handleSubmit(rawPayload: Record<string, any>) {
   saving.value = true;
+  // Store in one canonical format regardless of how the number was typed.
+  const payload = rawPayload.phone
+    ? { ...rawPayload, phone: normalizePhoneForStorage(rawPayload.phone) }
+    : rawPayload;
   try {
     const { current } = useMenuToken();
     const menuToken = current();

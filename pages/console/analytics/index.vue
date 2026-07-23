@@ -170,12 +170,13 @@
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.slug') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.phone') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.leadSource') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!recentNamespaces.length">
-                    <td colspan="5" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
+                    <td colspan="6" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
                   </tr>
                   <tr
                     v-for="ns in recentNamespaces"
@@ -199,7 +200,131 @@
                       >{{ ns.ownerInfo.phone }}</a>
                       <span v-else class="text-slate-400">—</span>
                     </td>
+                    <td class="px-6 py-3">
+                      <span v-if="ns.leadSource" class="rounded-full bg-violet-50 px-2 py-0.5 font-mono text-[11px] text-violet-700 dark:bg-violet-900/20 dark:text-violet-300">{{ ns.leadSource }}</span>
+                      <span v-else class="text-slate-400">—</span>
+                    </td>
                     <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Deep links -->
+        <div>
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinks') }}</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.deepLinksDesc') }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                @click="openCreateCategory"
+              >
+                <Icon name="lucide:folder-plus" class="h-3.5 w-3.5" />
+                {{ t('admin.newDeepLinkCategory') }}
+              </button>
+              <button
+                class="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                @click="openCreateLink"
+              >
+                <Icon name="lucide:plus" class="h-3.5 w-3.5" />
+                {{ t('admin.newDeepLink') }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Category filter pills -->
+          <div class="mb-4 flex flex-wrap gap-2">
+            <button
+              class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+              :class="selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'"
+              @click="selectedCategoryId = null"
+            >
+              {{ t('admin.allCategories') }}
+            </button>
+            <div
+              v-for="cat in deepLinkCategories"
+              :key="cat.id"
+              class="group flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+              :class="selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'"
+            >
+              <button @click="selectedCategoryId = cat.id">{{ cat.name }}</button>
+              <button
+                class="opacity-50 hover:opacity-100"
+                :title="t('admin.editDeepLinkCategory')"
+                @click="openEditCategory(cat)"
+              >
+                <Icon name="lucide:pencil" class="h-3 w-3" />
+              </button>
+              <button
+                class="opacity-50 hover:opacity-100 hover:text-red-500"
+                :title="t('admin.deleteDeepLinkCategoryConfirmTitle')"
+                @click="deleteCategoryPrompt(cat)"
+              >
+                <Icon name="lucide:x" class="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[880px] text-left text-sm">
+                <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+                  <tr>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkCode') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkCategories') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkTarget') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkLabel') }}</th>
+                    <th class="px-6 py-3 text-right font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkClicks') }}</th>
+                    <th class="px-6 py-3 text-right font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkRegistrations') }}</th>
+                    <th class="px-6 py-3 text-right font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkInstalls') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="deepLinksLoading">
+                    <td colspan="8" class="px-6 py-6 text-center text-slate-500">
+                      <Icon name="svg-spinners:ring-resize" class="h-5 w-5 text-blue-600" />
+                    </td>
+                  </tr>
+                  <tr v-else-if="!filteredDeepLinks.length">
+                    <td colspan="8" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
+                  </tr>
+                  <tr
+                    v-for="link in filteredDeepLinks"
+                    :key="link.id"
+                    class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  >
+                    <td class="px-6 py-3">
+                      <button
+                        class="flex items-center gap-1.5 font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
+                        :title="t('admin.copyLink')"
+                        @click="copyDeepLink(link.code)"
+                      >
+                        {{ deepLinkUrl(link.code) }}
+                        <Icon name="lucide:copy" class="h-3 w-3 flex-shrink-0" />
+                      </button>
+                    </td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ categoryName(link.categoryId) }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ targetLabel(link.target) }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ link.label || '—' }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.clickCount }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.registrationCount }}</td>
+                    <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.appInstallCount }}</td>
+                    <td class="px-6 py-3">
+                      <div class="flex items-center gap-2">
+                        <button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800" @click="openEditLink(link)">
+                          <Icon name="lucide:pencil" class="h-3.5 w-3.5" />
+                        </button>
+                        <button class="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30" @click="deleteLinkPrompt(link)">
+                          <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -208,16 +333,143 @@
         </div>
       </div>
     </div>
+
+    <!-- Create/Edit category modal -->
+    <Teleport to="body">
+      <div
+        v-if="categoryModal.open"
+        class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
+        @click.self="closeCategoryModal"
+      >
+        <div class="mx-auto my-8 w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+              {{ categoryModal.mode === 'create' ? t('admin.newDeepLinkCategory') : t('admin.editDeepLinkCategory') }}
+            </h3>
+            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeCategoryModal">
+              <Icon name="lucide:x" class="h-4 w-4" />
+            </button>
+          </div>
+          <div class="space-y-4 p-5">
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategoryName') }} *</label>
+              <input
+                v-model="categoryForm.name"
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                placeholder="chekalka.kz"
+                @keyup.enter="submitCategoryModal"
+              />
+            </div>
+            <p v-if="categoryModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+              {{ categoryModal.error }}
+            </p>
+          </div>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
+            <button class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeCategoryModal">
+              {{ t('app.cancel') }}
+            </button>
+            <button
+              :disabled="categoryModal.saving"
+              class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              @click="submitCategoryModal"
+            >
+              <Icon v-if="categoryModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
+              {{ t('app.save') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Create/Edit deep link modal -->
+    <Teleport to="body">
+      <div
+        v-if="linkModal.open"
+        class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
+        @click.self="closeLinkModal"
+      >
+        <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+              {{ linkModal.mode === 'create' ? t('admin.newDeepLink') : t('admin.editDeepLink') }}
+            </h3>
+            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeLinkModal">
+              <Icon name="lucide:x" class="h-4 w-4" />
+            </button>
+          </div>
+          <div class="space-y-4 p-5">
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategories') }}</label>
+              <select
+                v-model="linkForm.categoryId"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option value="">{{ t('admin.uncategorized') }}</option>
+                <option v-for="cat in deepLinkCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkTarget') }} *</label>
+              <select
+                v-model="linkForm.target"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option v-for="opt in TARGET_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkLabel') }}</label>
+              <input
+                v-model="linkForm.label"
+                type="text"
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                placeholder="banner 1"
+                @keyup.enter="submitLinkModal"
+              />
+            </div>
+            <p v-if="linkModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+              {{ linkModal.error }}
+            </p>
+          </div>
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
+            <button class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeLinkModal">
+              {{ t('app.cancel') }}
+            </button>
+            <button
+              :disabled="linkModal.saving"
+              class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              @click="submitLinkModal"
+            >
+              <Icon v-if="linkModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
+              {{ t('app.save') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
+import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { hubGetAdminNamespaces, type AdminNamespaceRow } from '@/api/hub/admin';
 import { capitalGetAdminBillingInfo, type AdminBillingInfo } from '@/api/capital/admin';
 import { capitalListPublications } from '@/api/publications';
+import {
+  hubListDeepLinkCategories,
+  hubListDeepLinks,
+  hubCreateDeepLinkCategory,
+  hubUpdateDeepLinkCategory,
+  hubDeleteDeepLinkCategory,
+  hubCreateDeepLink,
+  hubUpdateDeepLink,
+  hubDeleteDeepLink,
+  type AdminDeepLinkCategory,
+  type AdminDeepLink,
+} from '@/api/hub/deeplinks';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -489,4 +741,220 @@ function formatDate(raw: string | null): string {
   if (Number.isNaN(parsed.getTime())) return raw;
   return parsed.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' });
 }
+
+// ─── Deep links (attribution short links) ─────────────────────────────────
+const toast = useToast();
+
+const TARGET_OPTIONS = computed(() => [
+  { value: 'home', label: t('admin.deepLinkTargetHome') || 'Главная' },
+  { value: 'pieceowater.atrace', label: 'A-Trace' },
+  { value: 'pieceowater.contacts', label: 'Contacts' },
+  { value: 'pieceowater.menu', label: 'Orders' },
+]);
+
+const deepLinkCategories = ref<AdminDeepLinkCategory[]>([]);
+const deepLinks = ref<AdminDeepLink[]>([]);
+const deepLinksLoading = ref(true);
+const selectedCategoryId = ref<string | null>(null);
+
+const filteredDeepLinks = computed(() => {
+  if (selectedCategoryId.value === null) return deepLinks.value;
+  return deepLinks.value.filter(l => l.categoryId === selectedCategoryId.value);
+});
+
+async function loadDeepLinks() {
+  if (!token.value) return;
+  deepLinksLoading.value = true;
+  try {
+    const [cats, links] = await Promise.all([
+      hubListDeepLinkCategories(token.value),
+      hubListDeepLinks(token.value),
+    ]);
+    deepLinkCategories.value = cats;
+    deepLinks.value = links;
+  } catch (e: any) {
+    toast.add({ title: t('admin.notEnoughData') || 'Не удалось загрузить диплинки', description: e?.message, color: 'red' });
+  } finally {
+    deepLinksLoading.value = false;
+  }
+}
+
+function categoryName(categoryId: string | null): string {
+  if (!categoryId) return t('admin.uncategorized') || 'Без категории';
+  return deepLinkCategories.value.find(c => c.id === categoryId)?.name || '—';
+}
+
+function targetLabel(target: string): string {
+  return TARGET_OPTIONS.value.find(o => o.value === target)?.label || target;
+}
+
+function deepLinkUrl(code: string): string {
+  const origin = process.client ? window.location.origin : '';
+  return `${origin}/l/${code}`;
+}
+
+async function copyDeepLink(code: string) {
+  try {
+    await navigator.clipboard.writeText(deepLinkUrl(code));
+    toast.add({ title: t('admin.linkCopied') || 'Ссылка скопирована', color: 'green' });
+  } catch {
+    toast.add({ title: t('admin.linkCopied') || 'Не удалось скопировать', color: 'red' });
+  }
+}
+
+// ─── Category modal ─────────────────────────────────────────────────────
+const categoryModal = reactive({
+  open: false,
+  mode: 'create' as 'create' | 'edit',
+  category: null as AdminDeepLinkCategory | null,
+  saving: false,
+  error: '',
+});
+const categoryForm = reactive({ name: '' });
+
+function openCreateCategory() {
+  categoryModal.mode = 'create';
+  categoryModal.category = null;
+  categoryModal.error = '';
+  categoryForm.name = '';
+  categoryModal.open = true;
+}
+
+function openEditCategory(cat: AdminDeepLinkCategory) {
+  categoryModal.mode = 'edit';
+  categoryModal.category = cat;
+  categoryModal.error = '';
+  categoryForm.name = cat.name;
+  categoryModal.open = true;
+}
+
+function closeCategoryModal() {
+  if (categoryModal.saving) return;
+  categoryModal.open = false;
+}
+
+async function submitCategoryModal() {
+  if (!token.value) return;
+  categoryModal.error = '';
+  if (!categoryForm.name.trim()) {
+    categoryModal.error = t('admin.deepLinkCategoryName') || 'Введите название категории';
+    return;
+  }
+  categoryModal.saving = true;
+  try {
+    if (categoryModal.mode === 'create') {
+      await hubCreateDeepLinkCategory(token.value, categoryForm.name.trim());
+    } else if (categoryModal.category) {
+      await hubUpdateDeepLinkCategory(token.value, categoryModal.category.id, categoryForm.name.trim());
+    }
+    categoryModal.open = false;
+    await loadDeepLinks();
+  } catch (e: any) {
+    categoryModal.error = e?.message || 'Не удалось сохранить категорию';
+  } finally {
+    categoryModal.saving = false;
+  }
+}
+
+async function deleteCategoryPrompt(cat: AdminDeepLinkCategory) {
+  if (!token.value) return;
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    title: t('admin.deleteDeepLinkCategoryConfirmTitle') || 'Удалить категорию?',
+    message: `«${cat.name}»`,
+    confirmLabel: t('common.delete') || 'Удалить',
+    color: 'red',
+    icon: 'lucide:trash-2',
+  });
+  if (!confirmed) return;
+  try {
+    await hubDeleteDeepLinkCategory(token.value, cat.id);
+    if (selectedCategoryId.value === cat.id) selectedCategoryId.value = null;
+    await loadDeepLinks();
+  } catch (e: any) {
+    toast.add({ title: 'Не удалось удалить категорию', description: e?.message, color: 'red' });
+  }
+}
+
+// ─── Deep link modal ─────────────────────────────────────────────────────
+const linkModal = reactive({
+  open: false,
+  mode: 'create' as 'create' | 'edit',
+  link: null as AdminDeepLink | null,
+  saving: false,
+  error: '',
+});
+const linkForm = reactive({ categoryId: '', target: 'home', label: '' });
+
+function openCreateLink() {
+  linkModal.mode = 'create';
+  linkModal.link = null;
+  linkModal.error = '';
+  linkForm.categoryId = selectedCategoryId.value || '';
+  linkForm.target = 'home';
+  linkForm.label = '';
+  linkModal.open = true;
+}
+
+function openEditLink(link: AdminDeepLink) {
+  linkModal.mode = 'edit';
+  linkModal.link = link;
+  linkModal.error = '';
+  linkForm.categoryId = link.categoryId || '';
+  linkForm.target = link.target;
+  linkForm.label = link.label || '';
+  linkModal.open = true;
+}
+
+function closeLinkModal() {
+  if (linkModal.saving) return;
+  linkModal.open = false;
+}
+
+async function submitLinkModal() {
+  if (!token.value) return;
+  linkModal.error = '';
+  linkModal.saving = true;
+  try {
+    const input = {
+      categoryId: linkForm.categoryId || null,
+      target: linkForm.target,
+      label: linkForm.label.trim() || null,
+    };
+    if (linkModal.mode === 'create') {
+      await hubCreateDeepLink(token.value, input);
+    } else if (linkModal.link) {
+      await hubUpdateDeepLink(token.value, linkModal.link.id, input);
+    }
+    linkModal.open = false;
+    await loadDeepLinks();
+  } catch (e: any) {
+    linkModal.error = e?.message || 'Не удалось сохранить ссылку';
+  } finally {
+    linkModal.saving = false;
+  }
+}
+
+async function deleteLinkPrompt(link: AdminDeepLink) {
+  if (!token.value) return;
+  const { confirm } = useConfirm();
+  const confirmed = await confirm({
+    title: t('admin.deleteDeepLinkConfirmTitle') || 'Удалить диплинк?',
+    message: deepLinkUrl(link.code),
+    confirmLabel: t('common.delete') || 'Удалить',
+    color: 'red',
+    icon: 'lucide:trash-2',
+  });
+  if (!confirmed) return;
+  try {
+    await hubDeleteDeepLink(token.value, link.id);
+    await loadDeepLinks();
+  } catch (e: any) {
+    toast.add({ title: 'Не удалось удалить ссылку', description: e?.message, color: 'red' });
+  }
+}
+
+onMounted(() => {
+  loadDeepLinks();
+});
 </script>

@@ -1,5 +1,6 @@
 import { gql } from 'graphql-request';
 import { contactsClient, setContactsAppToken } from '../clients';
+import { normalizePhoneForStorage } from '@/utils/phone';
 
 export interface ClientIdentity {
   id: string;
@@ -117,10 +118,13 @@ export async function createIdentity(
 ) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
+  // Store phone-like identities in one canonical format regardless of how
+  // the number was typed -- see utils/phone.ts's normalizePhoneForStorage.
+  const storedValue = (type === 'phone' || type === 'whatsapp') ? normalizePhoneForStorage(value) : value;
   return contactsClient.request<{ createIdentity: ClientIdentity }>(
     CREATE_IDENTITY_MUTATION,
     {
-      input: { clientId, type, value, isPrimary, comments },
+      input: { clientId, type, value: storedValue, isPrimary, comments },
     },
     {
       headers: { Namespace: namespaceSlug },

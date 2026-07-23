@@ -755,7 +755,8 @@ async function handleCreateOrder(payload: any) {
   try {
     const menuToken = await getToken();
     const { menuCreateOrder } = await import('@/api/menu/order/create');
-    await menuCreateOrder(menuToken, nsSlug.value, payload);
+    const { normalizePhoneForStorage } = await import('@/utils/phone');
+    await menuCreateOrder(menuToken, nsSlug.value, payload.phone ? { ...payload, phone: normalizePhoneForStorage(payload.phone) } : payload);
     useToast().add({ title: t('menu.orderCreated') || 'Order created', color: 'emerald' });
     isCreateOrderOpen.value = false;
     loadOrders();

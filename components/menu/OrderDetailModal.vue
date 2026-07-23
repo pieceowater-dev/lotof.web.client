@@ -5,7 +5,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
@@ -304,7 +304,7 @@ async function syncClientFromOrderEdit(customerName: string, phone: string) {
     const normalizedPhone = phone.replace(/\D/g, '');
     if (clientPhoneIdentity.value && clientPhoneIdentity.value.value.replace(/\D/g, '') !== normalizedPhone) {
       const { updateIdentity } = await import('@/api/contacts/identities');
-      await updateIdentity(contactsToken, nsSlug.value, clientPhoneIdentity.value.id, phone);
+      await updateIdentity(contactsToken, nsSlug.value, clientPhoneIdentity.value.id, normalizePhoneForStorage(phone));
     }
   } catch (e) {
     logError('[OrderDetailModal] syncClientFromOrderEdit failed', e);
@@ -667,7 +667,7 @@ async function saveEditOrder() {
     const { menuUpdateOrder } = await import('@/api/menu/order/update');
     const updated = await menuUpdateOrder(menuToken, nsSlug.value, {
       orderId: props.order.id,
-      phone: editForm.phone.trim(),
+      phone: normalizePhoneForStorage(editForm.phone.trim()),
       customerName: editForm.customerName.trim() || undefined,
       deliveryAddress: editForm.deliveryAddress.trim() || undefined,
       comment: editForm.comment.trim() || undefined,

@@ -84,10 +84,11 @@ async function addBranch() {
   try {
     const menuToken = await getToken();
     const { menuCreateBranch } = await import('@/api/menu/branch/create');
+    const { normalizePhoneForStorage } = await import('@/utils/phone');
     const created = await menuCreateBranch(menuToken, nsSlug.value, {
       name: branchForm.name.trim(),
       address: branchForm.address.trim(),
-      phone: branchForm.phone.trim() || undefined,
+      phone: branchForm.phone.trim() ? normalizePhoneForStorage(branchForm.phone.trim()) : undefined,
       isPrimary: addedBranches.value.length === 0,
     } as any);
     addedBranches.value.push({ name: created.name, address: created.address });

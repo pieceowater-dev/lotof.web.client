@@ -1,6 +1,7 @@
 import { hubClient, setGlobalAuthToken } from '../clients';
 import { hubMe } from './me';
 import { UpdateMyPhoneDocument, type UpdateMyPhoneMutation } from '@gql-hub';
+import { normalizePhoneForStorage } from '@/utils/phone';
 
 export async function hubUpdateMyPhone(token: string, phone: string): Promise<UpdateMyPhoneMutation['updateUser']> {
   setGlobalAuthToken(token);
@@ -12,7 +13,7 @@ export async function hubUpdateMyPhone(token: string, phone: string): Promise<Up
   const data = await hubClient.request<UpdateMyPhoneMutation>(UpdateMyPhoneDocument, {
     id: currentUser.id,
     username: currentUser.username,
-    phone,
+    phone: normalizePhoneForStorage(phone),
   });
   return data.updateUser;
 }
@@ -25,6 +26,9 @@ export async function hubUpdateProfile(
   input: { id: string; username: string; phone: string }
 ): Promise<UpdateMyPhoneMutation['updateUser']> {
   setGlobalAuthToken(token);
-  const data = await hubClient.request<UpdateMyPhoneMutation>(UpdateMyPhoneDocument, input);
+  const data = await hubClient.request<UpdateMyPhoneMutation>(UpdateMyPhoneDocument, {
+    ...input,
+    phone: normalizePhoneForStorage(input.phone),
+  });
   return data.updateUser;
 }

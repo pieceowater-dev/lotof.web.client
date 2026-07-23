@@ -9,6 +9,7 @@ import { contactsListClients } from '@/api/contacts/listClients';
 import { getClientsBatch } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
+import { normalizePhoneForStorage } from '@/utils/phone';
 import { listTags } from '@/api/contacts/tags';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import TourGuide from '@/components/TourGuide.vue';
@@ -444,8 +445,8 @@ async function handleInlineSaveName(payload: {
 async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: string }) {
   if (!token.value || !selectedNS.value) return;
 
-  const normalized = payload.phone.replace(/\D/g, '');
-  if (normalized.length < 8) {
+  const digitsOnly = payload.phone.replace(/\D/g, '');
+  if (digitsOnly.length < 8) {
     toast.add({ title: t('common.error'), description: t('contacts.invalidPhone'), color: 'red' });
     return;
   }
@@ -458,11 +459,12 @@ async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: 
     const row = clients.value.find((item) => item.client.id === payload.clientId);
     const identities = row?.contacts || [];
     const primaryPhone = identities.find((item) => item.type === 'phone' && item.isPrimary) || identities.find((item) => item.type === 'phone');
+    const storedPhone = normalizePhoneForStorage(payload.phone);
 
     if (primaryPhone) {
-      await updateIdentity(contactsToken, selectedNS.value, primaryPhone.id, normalized, primaryPhone.comments);
+      await updateIdentity(contactsToken, selectedNS.value, primaryPhone.id, storedPhone, primaryPhone.comments);
     } else {
-      await createIdentity(contactsToken, selectedNS.value, payload.clientId, 'phone', normalized, true);
+      await createIdentity(contactsToken, selectedNS.value, payload.clientId, 'phone', storedPhone, true);
     }
 
     await loadClients();

@@ -83,7 +83,15 @@ export function useAuth() {
     // Redirect to hub auth
     const base = getApiBasePath('hub');
     const redirect = encodeURIComponent(window.location.origin);
-    window.location.href = `${base}/google/auth?redirect_uri=${redirect}`;
+    // Carry a deep link's attribution code (set by server/routes/l/[code].get.ts
+    // as the `lead_ref` cookie) through the OAuth round-trip so a brand-new
+    // signup can be attributed back to it -- see GoogleCallbackState.LeadSource.
+    let leadParam = '';
+    try {
+      const leadRef = useCookie<string | null>('lead_ref').value;
+      if (leadRef) leadParam = `&lead=${encodeURIComponent(leadRef)}`;
+    } catch {}
+    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}`;
   }
 
   function logout() {
