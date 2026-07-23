@@ -5,17 +5,14 @@ import { usePhoneGate } from '@/composables/usePhoneGate';
 import { hubUpdateMyPhone } from '@/api/hub/updateMyPhone';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
-import { sanitizePhoneInput, isPhoneInputValid, formatDisplayPhoneUniversal } from '@/utils/phone';
+import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 
 const { t } = useI18n();
 const { state, onPhoneSaved, onDismiss } = usePhoneGate();
 const { fetchUser } = useAuth();
 const token = useCookie<string | null>(CookieKeys.TOKEN);
 
-type Step = 'phone' | 'sending' | 'code';
-const step = ref<Step>('phone');
 const phone = ref('');
-const code = ref('');
 const saving = ref(false);
 const error = ref('');
 
@@ -37,36 +34,16 @@ const phoneLooksInvalid = computed(() => Boolean(phone.value.trim()) && !isPhone
 
 watch(() => state.value.open, (open) => {
   if (!open) return;
-  step.value = 'phone';
   phone.value = '';
-  code.value = '';
   error.value = '';
 });
 
-const title = computed(() => {
-  if (step.value === 'code') return t('admin.phoneCodeTitle') || 'Подтвердите номер';
-  return t('admin.phoneGateTitle') || 'Подтвердите номер телефона';
-});
+const title = computed(() => t('admin.phoneGateTitle') || 'Подтвердите номер телефона');
 
-// No real SMS gateway yet -- this is an intentional, disclosed placeholder:
-// we show the familiar "code sent" step for a smoother, more trustworthy
-// feel, then accept whatever the user types as confirmation. Swap in a real
-// send/verify call here once SMS delivery is wired up.
-async function sendCode() {
+async function submitPhone() {
   const trimmed = phone.value.trim();
   if (!trimmed || !isPhoneInputValid(trimmed)) {
     error.value = t('admin.phoneInvalid') || 'Введите корректный номер телефона';
-    return;
-  }
-  error.value = '';
-  step.value = 'sending';
-  await new Promise((resolve) => setTimeout(resolve, 1100));
-  step.value = 'code';
-}
-
-async function confirmCode() {
-  if (!code.value.trim()) {
-    error.value = t('admin.phoneCodeInvalid') || 'Введите код из смс';
     return;
   }
   if (!token.value) {
@@ -77,7 +54,7 @@ async function confirmCode() {
   saving.value = true;
   error.value = '';
   try {
-    await hubUpdateMyPhone(token.value, phone.value.trim());
+    await hubUpdateMyPhone(token.value, trimmed);
     await fetchUser(true);
     onPhoneSaved();
   } catch (e: any) {
@@ -85,12 +62,6 @@ async function confirmCode() {
   } finally {
     saving.value = false;
   }
-}
-
-function backToPhone() {
-  step.value = 'phone';
-  code.value = '';
-  error.value = '';
 }
 </script>
 
@@ -104,14 +75,13 @@ function backToPhone() {
     <template #header>
       <div class="flex items-center gap-3">
         <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 text-white shadow-sm">
-          <Icon :name="step === 'code' ? 'lucide:message-circle' : 'lucide:phone'" class="h-5 w-5" />
+          <Icon name="lucide:phone" class="h-5 w-5" />
         </div>
         <span class="font-semibold">{{ title }}</span>
       </div>
     </template>
 
-    <!-- Step 1: phone entry -->
-    <div v-if="step === 'phone'" class="space-y-3">
+    <div class="space-y-3">
       <p class="text-sm text-gray-600 dark:text-gray-300">
         {{ state.blocking
           ? (t('admin.phoneGateBlockingDesc') || 'Подтвердите ваш номер телефона, чтобы завершить регистрацию.')
@@ -128,7 +98,7 @@ function backToPhone() {
             ? 'border-red-300 focus:border-red-400 focus:ring-red-500/30 dark:border-red-800'
             : 'border-gray-200 focus:border-blue-400 focus:ring-blue-500/30 dark:border-gray-700'"
           @input="onPhoneInput($event)"
-          @keyup.enter="sendCode"
+          @keyup.enter="submitPhone"
         />
         <p v-if="phoneLooksInvalid" class="mt-1.5 text-[11px] text-red-600 dark:text-red-400">
           {{ t('admin.phoneInvalid') || 'Введите корректный номер телефона' }}
@@ -141,63 +111,21 @@ function backToPhone() {
       <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
     </div>
 
-    <!-- Step 2: fake "sending code" -->
-    <div v-else-if="step === 'sending'" class="flex flex-col items-center gap-3 py-6 text-center">
-      <Icon name="svg-spinners:ring-resize" class="h-8 w-8 text-blue-600 dark:text-blue-400" />
-      <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ t('admin.phoneSendingCode') || 'Отправляем код подтверждения…' }}
-      </p>
-    </div>
-
-    <!-- Step 3: code entry -->
-    <div v-else class="space-y-3">
-      <p class="text-sm text-gray-600 dark:text-gray-300">
-        {{ t('admin.phoneCodeSentTo') || 'Мы отправили код подтверждения на номер' }}
-        <span class="font-semibold text-gray-900 dark:text-white">{{ formatDisplayPhoneUniversal(phone) }}</span>
-      </p>
-      <input
-        v-model="code"
-        type="text"
-        inputmode="numeric"
-        autocomplete="one-time-code"
-        maxlength="6"
-        :placeholder="t('admin.phoneCodePlaceholder') || 'Код из смс'"
-        class="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-center text-lg font-semibold tracking-[0.3em] outline-none transition-colors focus:border-blue-400 focus:ring-2 focus:ring-blue-500/30 dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-        @keyup.enter="confirmCode"
-      />
-      <button
-        type="button"
-        class="text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
-        @click="backToPhone"
-      >
-        {{ t('admin.phoneChangeNumber') || 'Изменить номер' }}
-      </button>
-      <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
-    </div>
-
     <template #footer>
       <div class="flex justify-end gap-2">
         <UButton
-          v-if="!state.blocking && step !== 'sending'"
+          v-if="!state.blocking"
           color="gray"
           variant="outline"
           :label="t('admin.phoneRemindLater') || 'Позже'"
           @click="onDismiss"
         />
         <UButton
-          v-if="step === 'phone'"
-          color="primary"
-          :disabled="!phone.trim() || phoneLooksInvalid"
-          :label="t('admin.phoneSendCode') || 'Подтвердить'"
-          trailing-icon="lucide:arrow-right"
-          @click="sendCode"
-        />
-        <UButton
-          v-else-if="step === 'code'"
           color="primary"
           :loading="saving"
+          :disabled="!phone.trim() || phoneLooksInvalid"
           :label="t('admin.phoneConfirm') || 'Подтвердить'"
-          @click="confirmCode"
+          @click="submitPhone"
         />
       </div>
     </template>
