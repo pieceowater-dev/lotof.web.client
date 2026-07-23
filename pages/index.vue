@@ -4,7 +4,9 @@ import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
 import { useRouter } from 'vue-router';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
-import { hubUpdateMe } from '@/api/hub/updateMe';
+import { hubUpdateProfile } from '@/api/hub/updateMyPhone';
+import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
+import { usePhoneGate } from '@/composables/usePhoneGate';
 import IntroSection from '@/components/IntroSection.vue';
 import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
@@ -16,6 +18,7 @@ import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, format
 // Composables
 const { user, token, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
+const { hasPhone: phoneGateHasPhone } = usePhoneGate();
 
 const router = useRouter();
 const route = useRoute();
@@ -29,6 +32,21 @@ const isDarkMode = computed({
 const isModalOpen = ref(false);
 const username = ref('');
 const email = ref('');
+const phone = ref('');
+const phoneLooksInvalid = computed(() => Boolean(phone.value.trim()) && !isPhoneInputValid(phone.value.trim()));
+const savingProfile = ref(false);
+
+// Forces the underlying native input's DOM value back in sync -- when a
+// stripped character (e.g. a letter) doesn't change the sanitized result vs.
+// the previous keystroke, the reactive `phone` ref sees no change and Vue
+// skips re-patching UInput's native element, leaving the raw character in
+// the DOM even though `phone` itself is clean.
+function onPhoneFieldInput(e: Event) {
+  const target = e.target as HTMLInputElement;
+  const sanitized = sanitizePhoneInput(target.value);
+  if (target.value !== sanitized) target.value = sanitized;
+  phone.value = sanitized;
+}
 const isLoading = ref(true);
 const namespaceAccordionOpen = ref(true);
 const settingsAccordionOpen = ref(false);
@@ -97,6 +115,7 @@ onMounted(async () => {
   if (user.value) {
     username.value = user.value.username;
     email.value = user.value.email;
+    phone.value = user.value.phone || '';
   }
   await refreshConsoleAccess();
   isLoading.value = false;
@@ -134,6 +153,7 @@ watch(user, (u) => {
   if (u) {
     username.value = u.username;
     email.value = u.email;
+    phone.value = u.phone || '';
   }
 });
 
@@ -213,15 +233,30 @@ async function handleGetApp(app: AppConfig) {
 
 const handleSaveProfile = async () => {
   const token = useCookie<string | null>(CookieKeys.TOKEN).value;
-  if (!token) return;
+  if (!token || !user.value) return;
 
+  const trimmedPhone = phone.value.trim();
+  if (trimmedPhone && !isPhoneInputValid(trimmedPhone)) {
+    toast.add({
+      title: t('app.error') || 'Ошибка',
+      description: t('admin.phoneInvalid') || 'Введите корректный номер телефона',
+      color: 'red',
+    });
+    return;
+  }
+
+  savingProfile.value = true;
   try {
-    const updatedUser = await hubUpdateMe(token, username.value);
+    const updatedUser = await hubUpdateProfile(token, {
+      id: user.value.id,
+      username: username.value,
+      phone: trimmedPhone,
+    });
     isModalOpen.value = false;
 
-    if (updatedUser?.username) {
-      username.value = updatedUser.username;
-    }
+    if (updatedUser?.username) username.value = updatedUser.username;
+    if (updatedUser) phone.value = updatedUser.phone || '';
+    await fetchUser(true);
   } catch (error) {
     logError('[profile] save failed', error);
     toast.add({
@@ -229,6 +264,8 @@ const handleSaveProfile = async () => {
       description: t('app.profileSaveFailed') || 'Не удалось сохранить профиль',
       color: 'red',
     });
+  } finally {
+    savingProfile.value = false;
   }
 };
 
@@ -859,8 +896,12 @@ watch([articlesSearch, selectedArticleTag], () => {
                 <UIcon name="i-lucide-user-round-check" class="w-4 h-4" />
                 {{ t('app.myPeople') }}
               </button>
-              <UButton variant="soft" size="sm" @click="isModalOpen = true">
+              <UButton variant="soft" size="sm" class="relative" @click="isModalOpen = true">
                 {{ t('app.configureProfile') }}
+                <span v-if="!phoneGateHasPhone" class="absolute -right-1 -top-1 flex h-3 w-3">
+                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                  <span class="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+                </span>
               </UButton>
             </div>
           </div>
@@ -928,22 +969,22 @@ watch([articlesSearch, selectedArticleTag], () => {
             :aria-expanded="namespaceAccordionOpen"
             @click="toggleNamespaceAccordion"
           >
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
+            <div class="flex min-w-0 items-center gap-3">
+              <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
                 <UIcon name="lucide:building-2" class="w-5 h-5" />
               </div>
-              <div>
-                <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <div class="min-w-0">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-600/80 dark:text-blue-400/80">
                   {{ t('app.currentNamespace') || 'Namespace' }}
-                </h3>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('app.selectNamespace') || 'Select active workspace' }}
                 </p>
+                <h3 class="truncate text-base md:text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {{ (selectedNS && (titleBySlug(selectedNS) || selectedNS)) || (t('app.selectNamespace') || 'Select active workspace') }}
+                </h3>
               </div>
             </div>
             <UIcon
               name="lucide:chevron-down"
-              class="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform"
+              class="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-gray-400 transition-transform"
               :class="namespaceAccordionOpen ? 'rotate-180' : ''"
             />
           </button>
@@ -1204,22 +1245,53 @@ watch([articlesSearch, selectedArticleTag], () => {
 
       <Modal
         v-model="isModalOpen"
-        :header="t('app.profileEditing')"
         :disable-autofocus="true"
-        :footer-buttons="[
-          { label: t('app.cancel'), color: 'primary', variant: 'soft', onClick: () => (isModalOpen = false) },
-          { label: t('app.save'), color: 'primary', variant: 'solid', onClick: handleSaveProfile }
-        ]"
       >
-        <div class="space-y-6">
-          <UFormGroup label="Имя пользователя">
-            <UInput v-model="username" />
+        <template #header>
+          <div class="flex items-center gap-3">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/80 text-lg font-semibold text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100">
+              {{ (username || '?').charAt(0).toUpperCase() }}
+            </div>
+            <span class="font-semibold">{{ t('app.profileEditing') }}</span>
+          </div>
+        </template>
+
+        <div class="space-y-5">
+          <UFormGroup :label="t('app.username') || 'Имя пользователя'">
+            <UInput v-model="username" icon="lucide:user" size="lg" />
           </UFormGroup>
 
-          <UFormGroup label="Email">
-            <UInput v-model="email" disabled type="email" />
+          <UFormGroup :label="t('app.email') || 'Email'">
+            <UInput v-model="email" disabled type="email" icon="lucide:mail" size="lg" />
+          </UFormGroup>
+
+          <UFormGroup
+            :label="t('admin.phone') || 'Телефон'"
+            :error="phoneLooksInvalid ? (t('admin.phoneInvalid') || 'Введите корректный номер телефона') : undefined"
+          >
+            <UInput
+              :model-value="phone"
+              type="tel"
+              autocomplete="tel"
+              icon="lucide:phone"
+              size="lg"
+              :color="phoneLooksInvalid ? 'red' : undefined"
+              :placeholder="t('admin.phonePlaceholder') || '+7 700 000 00 00'"
+              @input="onPhoneFieldInput"
+            />
+            <p v-if="!phoneLooksInvalid" class="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
+              <Icon name="lucide:shield-check" class="h-3.5 w-3.5" />
+              {{ t('admin.phonePrivacyHint') || 'Мы не передаём ваш номер третьим лицам' }}
+            </p>
           </UFormGroup>
         </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="soft" :label="t('app.cancel')" @click="isModalOpen = false" />
+            <UButton color="primary" :loading="savingProfile" :disabled="phoneLooksInvalid" :label="t('app.save')" @click="handleSaveProfile" />
+          </div>
+        </template>
       </Modal>
 
     </div>

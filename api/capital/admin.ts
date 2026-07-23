@@ -107,6 +107,8 @@ export type AdminBillingInfo = {
     accounts: Array<{
       id: string;
       namespace: string;
+      namespaceTitle?: string | null;
+      namespaceSlug?: string | null;
       displayName: string;
       billingEmail: string;
       status: string;
@@ -172,6 +174,8 @@ const GET_ADMIN_BILLING_INFO_QUERY = /* GraphQL */ `
       accounts {
         id
         namespace
+        namespaceTitle
+        namespaceSlug
         displayName
         billingEmail
         status

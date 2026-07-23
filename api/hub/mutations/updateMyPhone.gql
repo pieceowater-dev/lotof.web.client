@@ -1,0 +1,11 @@
+mutation UpdateMyPhone($id: ID!, $username: String!, $phone: String!) {
+  updateUser(
+    id: $id,
+    input: { username: $username, phone: $phone }
+  ) {
+    id
+    email
+    username
+    phone
+  }
+}

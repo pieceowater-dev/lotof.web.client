@@ -5,7 +5,7 @@
       :title="t('admin.billing')" 
       :description="t('admin.billingDesc')"
     >
-      <template #actions>
+      <template v-if="activeTab === 'plans'" #actions>
         <button
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
           @click="openCreatePlan"
@@ -27,7 +27,7 @@
         <!-- Project Selector -->
         <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
           <p class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
-            Для какого приложения вы настраиваете биллинг?
+            {{ t('admin.billingProjectSelector') }}
           </p>
           <div class="flex flex-wrap gap-3">
             <button
@@ -101,15 +101,16 @@
             {{ t('admin.billingAccounts') }}
           </h3>
           <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="w-full text-left text-sm">
+            <div class="overflow-x-auto">
+            <table class="w-full min-w-[900px] text-left text-sm">
               <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">ID</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">Owner</th>
+                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.displayName') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.email') }}</th>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">Plan</th>
+                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.plan') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.status') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
                 </tr>
@@ -121,7 +122,10 @@
                   class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
                   <td class="px-6 py-4 font-mono text-[10px] text-slate-500">{{ account.id }}</td>
-                  <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">{{ account.namespace }}</td>
+                  <td class="px-6 py-4">
+                    <div class="font-semibold text-slate-900 dark:text-white">{{ account.namespaceTitle || account.namespace }}</div>
+                    <div v-if="account.namespaceSlug" class="text-[10px] text-slate-500 font-mono">{{ account.namespaceSlug }}</div>
+                  </td>
                   <td class="px-6 py-4">
                     <div v-if="account.owner" class="flex flex-col">
                       <span class="text-xs font-medium text-slate-900 dark:text-white">{{ account.owner.username }}</span>
@@ -152,6 +156,7 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -161,13 +166,6 @@
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">
               {{ t('admin.pricingPlans') }} · {{ selectedProjectTitle }}
             </h3>
-            <button
-              class="flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 transition-colors"
-              @click="openCreatePlan"
-            >
-              <Icon name="lucide:plus" class="h-3.5 w-3.5" />
-              {{ t('admin.newPlan') }}
-            </button>
           </div>
 
           <div v-if="!selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
@@ -176,44 +174,51 @@
 
           <div v-else class="grid gap-6 md:grid-cols-3">
             <div
-              v-for="plan in selectedProjectPlans"
-              :key="plan.id"
-              class="relative rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
-              :class="plan.status === 'PLAN_ARCHIVED' ? 'opacity-50' : ''"
+              v-for="group in groupedProjectPlans"
+              :key="group.name"
+              class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
             >
-              <div class="flex items-start justify-between gap-2">
-                <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ plan.name }}</h4>
-                <span
-                  v-if="plan.status === 'PLAN_ARCHIVED'"
-                  class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
-                >{{ t('admin.archived') }}</span>
-              </div>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ resolvePlanDescription(plan) }}</p>
-              <div class="mt-4 text-3xl font-bold text-slate-900 dark:text-white">
-                {{ (plan.amountCents / 100).toFixed(0) }} {{ plan.currency }}
-                <span class="text-sm">/{{ t(`admin.interval.${plan.interval.toLowerCase()}`) }}</span>
-              </div>
-              <ul class="mt-4 space-y-2 text-sm text-slate-600 dark:text-slate-400">
-                <li>{{ t('admin.currency') }}: {{ plan.currency }}</li>
-                <li>{{ t('admin.trialDays') }}: {{ plan.trialDays }}</li>
-                <li class="font-mono text-[11px] text-slate-400">{{ plan.code }}</li>
-              </ul>
-              <div class="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
-                <button
-                  class="flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-                  @click="openEditPlan(plan)"
+              <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ group.name }}</h4>
+              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ resolvePlanDescription(group.plans[0]) }}</p>
+
+              <div class="mt-4 space-y-3">
+                <div
+                  v-for="plan in group.plans"
+                  :key="plan.id"
+                  class="rounded-lg border border-slate-100 p-3 dark:border-slate-800"
+                  :class="plan.status === 'PLAN_ARCHIVED' ? 'opacity-50' : ''"
                 >
-                  <Icon name="lucide:pencil" class="h-3 w-3" />
-                  {{ t('admin.edit') }}
-                </button>
-                <button
-                  v-if="plan.status !== 'PLAN_ARCHIVED'"
-                  class="flex items-center gap-1 rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
-                  @click="onArchivePlan(plan)"
-                >
-                  <Icon name="lucide:archive" class="h-3 w-3" />
-                  {{ t('admin.archive') }}
-                </button>
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="text-xl font-bold text-slate-900 dark:text-white">
+                      {{ (plan.amountCents / 100).toFixed(0) }} {{ plan.currency }}
+                      <span class="text-xs font-normal text-slate-500">/{{ t(`admin.interval.${plan.interval.toLowerCase()}`) }}</span>
+                    </div>
+                    <span
+                      v-if="plan.status === 'PLAN_ARCHIVED'"
+                      class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                    >{{ t('admin.archived') }}</span>
+                  </div>
+                  <div class="mt-2 flex flex-col gap-2">
+                    <span class="break-all font-mono text-[11px] text-slate-400">{{ plan.code }}</span>
+                    <div class="flex items-center gap-1.5">
+                      <button
+                        class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        @click="openEditPlan(plan)"
+                      >
+                        <Icon name="lucide:pencil" class="h-3 w-3" />
+                        {{ t('admin.edit') }}
+                      </button>
+                      <button
+                        v-if="plan.status !== 'PLAN_ARCHIVED'"
+                        class="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                        @click="onArchivePlan(plan)"
+                      >
+                        <Icon name="lucide:archive" class="h-3 w-3" />
+                        {{ t('admin.archive') }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -225,14 +230,14 @@
             {{ t('admin.activeSubscriptions') }} · {{ selectedProjectTitle }}
           </h3>
           <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="w-full text-left text-sm">
+            <div class="overflow-x-auto">
+            <table class="w-full min-w-[700px] text-left text-sm">
               <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.plan') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.status') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.periodEnd') }}</th>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.actions') }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -262,14 +267,10 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ subscription.periodEnd }}</td>
-                  <td class="px-6 py-4">
-                    <button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800">
-                      <Icon name="lucide:more-vertical" class="h-4 w-4" />
-                    </button>
-                  </td>
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
 
@@ -279,7 +280,8 @@
             {{ t('admin.invoices') }} · {{ selectedProjectTitle }}
           </h3>
           <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
-            <table class="w-full text-left text-sm">
+            <div class="overflow-x-auto">
+            <table class="w-full min-w-[760px] text-left text-sm">
               <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.invoice') }}</th>
@@ -296,7 +298,10 @@
                   class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
                   <td class="px-6 py-4 font-mono text-xs text-slate-900 dark:text-white">{{ invoice.id }}</td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ invoice.namespace }}</td>
+                  <td class="px-6 py-4">
+                    <div class="text-slate-700 dark:text-slate-300">{{ invoice.namespace }}</div>
+                    <div v-if="invoice.namespaceSlug" class="text-[10px] text-slate-500 font-mono">{{ invoice.namespaceSlug }}</div>
+                  </td>
                   <td class="px-6 py-4 font-bold text-slate-900 dark:text-white">{{ invoice.amount }}</td>
                   <td class="px-6 py-4">
                     <span
@@ -314,23 +319,9 @@
                 </tr>
               </tbody>
             </table>
+            </div>
           </div>
         </div>
-
-      <!-- Coming Soon Notice -->
-      <div class="mt-8 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20">
-        <div class="flex gap-3">
-          <Icon name="lucide:info" class="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 class="font-semibold text-amber-900 dark:text-amber-200">
-              {{ t('admin.billingIntegration') }}
-            </h4>
-            <p class="mt-1 text-sm text-amber-800 dark:text-amber-300">
-              {{ t('admin.billingIntegrationDesc') }}
-            </p>
-          </div>
-        </div>
-      </div>
     </div> <!-- End v-else -->
   </div> <!-- End mx-auto -->
 
@@ -569,6 +560,22 @@ const selectedProjectPlans = computed(() => {
   return billingData.value?.adminPlans || [];
 });
 
+// Plans are created in month/year pairs (see submitPlanModal) but come back
+// from the API as flat rows -- group by name so a tier's two intervals show
+// as one card instead of two disconnected, identically-titled cards.
+const groupedProjectPlans = computed(() => {
+  const groups = new Map<string, PlanRow[]>();
+  for (const plan of selectedProjectPlans.value) {
+    const key = plan.name;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(plan);
+  }
+  return Array.from(groups.entries()).map(([name, plans]) => ({
+    name,
+    plans: [...plans].sort((a, b) => (a.interval === b.interval ? 0 : a.interval === 'MONTH' ? -1 : 1)),
+  }));
+});
+
 // ─── Plan create/edit modal ────────────────────────────────────────────────
 type PlanRow = AdminBillingInfo['adminPlans'][number];
 
@@ -750,8 +757,8 @@ const selectedProjectSubscriptions = computed(() => {
       const acc = accounts.find(a => a.id === s.accountId);
       return {
         id: s.id,
-        namespace: acc?.displayName || acc?.namespace || s.accountId || 'unknown',
-        namespaceSlug: acc?.namespace,
+        namespace: acc?.namespaceTitle || acc?.displayName || acc?.namespace || s.accountId || 'unknown',
+        namespaceSlug: acc?.namespaceSlug,
         plan: plan?.name || plan?.code || 'unknown',
         status: s.status,
         periodEnd: s.currentPeriodEnd ? new Date(s.currentPeriodEnd).toLocaleDateString() : 'N/A'
@@ -778,8 +785,8 @@ const selectedProjectInvoices = computed(() => {
       const acc = accounts.find(a => a.id === inv.accountId);
       return {
         id: inv.number || inv.id,
-        namespace: acc?.displayName || acc?.namespace || inv.accountId || 'unknown',
-        namespaceSlug: acc?.namespace,
+        namespace: acc?.namespaceTitle || acc?.displayName || acc?.namespace || inv.accountId || 'unknown',
+        namespaceSlug: acc?.namespaceSlug,
         amount: `${inv.totalCents / 100} ${inv.currency || 'USD'}`,
         status: inv.status,
         date: inv.issueDate ? new Date(inv.issueDate).toLocaleDateString() : 'N/A'

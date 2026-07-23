@@ -58,11 +58,10 @@
           <div v-if="growthSeries.length < 2" class="py-10 text-center text-sm text-slate-400">
             {{ t('admin.notEnoughData') }}
           </div>
-          <div v-else class="relative">
+          <div v-else ref="growthChartContainer" class="relative">
             <svg
               :viewBox="`0 0 ${chartW} ${chartH}`"
               class="h-56 w-full overflow-visible"
-              preserveAspectRatio="none"
               @mousemove="onGrowthHover"
               @mouseleave="growthHoverIndex = null"
             >
@@ -163,29 +162,48 @@
             {{ t('admin.recentNamespaces') }}
           </h3>
           <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-            <table class="w-full text-left text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
-                <tr>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.slug') }}</th>
-                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-if="!recentNamespaces.length">
-                  <td colspan="3" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
-                </tr>
-                <tr
-                  v-for="ns in recentNamespaces"
-                  :key="ns.id"
-                  class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
-                >
-                  <td class="px-6 py-3 font-semibold text-slate-900 dark:text-white">{{ ns.title }}</td>
-                  <td class="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ ns.slug }}</td>
-                  <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[720px] text-left text-sm">
+                <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+                  <tr>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.slug') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.phone') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-if="!recentNamespaces.length">
+                    <td colspan="5" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
+                  </tr>
+                  <tr
+                    v-for="ns in recentNamespaces"
+                    :key="ns.id"
+                    class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  >
+                    <td class="px-6 py-3 font-semibold text-slate-900 dark:text-white">{{ ns.title }}</td>
+                    <td class="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ ns.slug }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                      <div v-if="ns.ownerInfo" class="flex flex-col">
+                        <span class="text-xs font-medium text-slate-900 dark:text-white">{{ ns.ownerInfo.username }}</span>
+                        <span class="text-[11px] text-slate-500">{{ ns.ownerInfo.email }}</span>
+                      </div>
+                      <span v-else class="text-slate-400">—</span>
+                    </td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                      <a
+                        v-if="ns.ownerInfo?.phone"
+                        :href="`tel:${ns.ownerInfo.phone}`"
+                        class="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                      >{{ ns.ownerInfo.phone }}</a>
+                      <span v-else class="text-slate-400">—</span>
+                    </td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -194,7 +212,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { hubGetAdminNamespaces, type AdminNamespaceRow } from '@/api/hub/admin';
@@ -293,12 +311,38 @@ const kpiCards = computed(() => [
 ]);
 
 // ─── Namespace growth chart (single series -> sequential blue, no legend) ─
-const chartW = 600;
+// chartW tracks the real rendered width of the SVG's container so the
+// viewBox always matches the actual pixel size 1:1 -- a fixed viewBox width
+// scaled to a fluid-width container (the previous `preserveAspectRatio="none"`
+// approach) stretched the line/markers non-uniformly on any screen wider
+// than the fixed 600px design width.
+const growthChartContainer = ref<HTMLElement | null>(null);
+const chartW = ref(600);
 const chartH = 220;
 const padL = 8;
 const padR = 8;
 const padT = 12;
 const padB = 24;
+
+// The container only exists once growthSeries has >= 2 points (v-else
+// branch), which happens after the async namespaces fetch resolves -- watch
+// the template ref itself rather than measuring once in onMounted, since it
+// starts out null and only becomes an element on a later render pass.
+let growthChartResizeObserver: ResizeObserver | null = null;
+watch(growthChartContainer, (el) => {
+  growthChartResizeObserver?.disconnect();
+  growthChartResizeObserver = null;
+  if (!el) return;
+  const measure = () => {
+    if (el.clientWidth) chartW.value = el.clientWidth;
+  };
+  measure();
+  growthChartResizeObserver = new ResizeObserver(measure);
+  growthChartResizeObserver.observe(el);
+});
+onBeforeUnmount(() => {
+  growthChartResizeObserver?.disconnect();
+});
 
 const growthSeries = computed(() => {
   const withDates = namespaces.value
@@ -344,7 +388,7 @@ const growthPointCoords = computed(() => {
   const series = growthSeries.value;
   if (series.length < 2) return [];
   const maxVal = Math.max(...series.map(s => s.value), 1);
-  const innerW = chartW - padL - padR;
+  const innerW = chartW.value - padL - padR;
   const innerH = chartH - padT - padB;
   return series.map((s, i) => ({
     x: padL + (innerW * i) / (series.length - 1),
@@ -357,7 +401,7 @@ const growthAreaPoints = computed(() => {
   const pts = growthPointCoords.value;
   if (!pts.length) return '';
   const base = chartH - padB;
-  return `${padL},${base} ` + pts.map(p => `${p.x},${p.y}`).join(' ') + ` ${chartW - padR},${base}`;
+  return `${padL},${base} ` + pts.map(p => `${p.x},${p.y}`).join(' ') + ` ${chartW.value - padR},${base}`;
 });
 
 const growthHoverIndex = ref<number | null>(null);
@@ -366,7 +410,7 @@ function onGrowthHover(e: MouseEvent) {
   if (!pts.length) return;
   const target = e.currentTarget as SVGSVGElement;
   const rect = target.getBoundingClientRect();
-  const relX = ((e.clientX - rect.left) / rect.width) * chartW;
+  const relX = ((e.clientX - rect.left) / rect.width) * chartW.value;
   let closest = 0;
   let closestDist = Infinity;
   pts.forEach((p, i) => {
@@ -381,7 +425,7 @@ function onGrowthHover(e: MouseEvent) {
 const growthTooltipStyle = computed(() => {
   if (growthHoverIndex.value === null || !growthPointCoords.value.length) return {};
   const p = growthPointCoords.value[growthHoverIndex.value];
-  const leftPct = (p.x / chartW) * 100;
+  const leftPct = (p.x / chartW.value) * 100;
   const topPct = (p.y / chartH) * 100;
   return {
     left: `calc(${leftPct}% + 8px)`,

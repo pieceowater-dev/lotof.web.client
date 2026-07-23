@@ -1,8 +1,8 @@
 
-query Members($namespaceId: ID, $page: Int, $length: PaginationLength) {
-  members(filter: { 
-    namespaceId: $namespaceId, 
-    pagination: { page: $page, length: $length }
+query Members($namespaceId: ID, $page: Int, $length: FilterPaginationLengthEnum) {
+  members(filter: {
+    namespaceId: $namespaceId,
+    filter: { pagination: { page: $page, length: $length } }
   }) {
     id
     userId

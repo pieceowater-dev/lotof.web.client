@@ -12,7 +12,7 @@ const hubApiBase = getApiBasePath('hub');
 export function useAuth() {
   // token cookie (Nuxt auto-imports useCookie in composables scope)
   const token = useCookie<string | null>(CookieKeys.TOKEN);
-  const user = useState<{ id: string; username: string; email: string } | null>('auth_user', () => null);
+  const user = useState<{ id: string; username: string; email: string; phone?: string | null } | null>('auth_user', () => null);
   const loading = useState<boolean>('auth_loading', () => false);
   const initialized = useState<boolean>('auth_initialized', () => false);
   const silentRefreshAttempted = useState<boolean>('auth_silent_refresh_attempted', () => false);

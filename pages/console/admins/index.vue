@@ -79,7 +79,8 @@
           {{ t('admin.users') }}
         </h3>
         <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
-          <table class="w-full text-left text-sm">
+          <div class="overflow-x-auto">
+          <table class="w-full min-w-[820px] text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
               <tr>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.name') }}</th>
@@ -152,6 +153,7 @@
               </tr>
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
+import { usePhoneGate } from '@/composables/usePhoneGate';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getContactsPlans, type Plan } from '@/api/contacts/plans/plans';
 import { subscribeToContactsPlan, type Subscription } from '@/api/contacts/plans/subscribe';
@@ -181,6 +182,8 @@ async function subscribePlan(plan: Plan) {
     });
     return;
   }
+
+  if (!(await usePhoneGate().requirePhone())) return;
 
   subscribingPlanCode.value = plan.code;
   try {

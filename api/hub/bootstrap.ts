@@ -7,6 +7,7 @@ const BOOTSTRAP_QUERY = /* GraphQL */ `
       id
       username
       email
+      phone
     }
     namespaces(filter: $filter) {
       rows {
@@ -24,7 +25,7 @@ const BOOTSTRAP_QUERY = /* GraphQL */ `
 `;
 
 export type BootstrapResponse = {
-  me: { id: string; username: string; email: string } | null;
+  me: { id: string; username: string; email: string; phone?: string | null } | null;
   namespaces: {
     rows: Array<{ id: string; title: string; slug: string; description?: string | null; owner: string }>;
     info?: { count?: number | null } | null;

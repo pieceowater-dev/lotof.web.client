@@ -5,6 +5,7 @@ export type AdminNamespaceRow = {
   title: string
   slug: string
   createdAt: string | null
+  ownerInfo: { username: string; email: string; phone?: string | null } | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
@@ -15,6 +16,11 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
         title
         slug
         createdAt
+        ownerInfo {
+          username
+          email
+          phone
+        }
       }
       info {
         count

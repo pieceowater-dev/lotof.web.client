@@ -8,7 +8,17 @@ export function sanitizePhoneInput(value: string): string {
 
 export function isPhoneInputValid(value: string): boolean {
   if (!value) return true;
-  return value.replace(/\D/g, '').length >= 10;
+
+  const input = String(value).trim();
+  const parsed = parsePhoneNumberFromString(input);
+  if (parsed && parsed.isValid()) return true;
+
+  // Numbers stored/typed as digits without a leading '+' -- retry with one,
+  // same fallback strategy formatDisplayPhoneUniversal uses.
+  const digitsOnly = input.replace(/\D/g, '');
+  if (digitsOnly.length < 8 || digitsOnly.length > 15) return false;
+  const parsedWithPlus = parsePhoneNumberFromString(`+${digitsOnly}`);
+  return Boolean(parsedWithPlus && parsedWithPlus.isValid());
 }
 
 function maskWithCountryCode(digitsOnly: string): string | null {

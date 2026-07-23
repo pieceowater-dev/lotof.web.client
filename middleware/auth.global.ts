@@ -2,6 +2,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { usePhoneGate } from '@/composables/usePhoneGate';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 export default defineNuxtRouteMiddleware(async (to) => {
@@ -41,6 +42,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (token && !user.value && !initialized.value && !loading.value) {
     await fetchUser();
   }
+
+  // Soft, self-throttled nudge to add a phone number -- a no-op if one is
+  // already on file, the gate is already open, or we nudged recently.
+  usePhoneGate().maybeNudge();
 
   if (isAtraceRoute) {
     const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';

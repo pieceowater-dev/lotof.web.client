@@ -6,7 +6,8 @@ const props = defineProps<{
   header?: string | object,
   content?: string | object,
   footerButtons?: { label: string, color?: string, variant?: 'link' | 'solid' | 'outline' | 'soft' | 'ghost', onClick?: () => void }[],
-  disableAutofocus?: boolean
+  disableAutofocus?: boolean,
+  preventClose?: boolean  // disable backdrop-click/Escape dismissal, for gates the user must complete
 }>();
 
 const emit = defineEmits(['update:modelValue']);
@@ -26,6 +27,7 @@ watch(() => props.modelValue, async (open) => {
 <template>
   <UModal
     :model-value="props.modelValue"
+    :prevent-close="props.preventClose"
     @update:model-value="emit('update:modelValue', $event)"
   >
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">

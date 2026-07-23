@@ -28,6 +28,13 @@ export type Scalars = {
   Float: { input: number; output: number };
 };
 
+export type CreateInviteInput = {
+  actions: Scalars["String"]["input"];
+  email: Scalars["String"]["input"];
+  expiresAt?: InputMaybe<Scalars["Int"]["input"]>;
+  namespaceSlug: Scalars["String"]["input"];
+};
+
 export type DefaultFilterInput = {
   pagination?: InputMaybe<DefaultFilterPaginationInput>;
   search?: InputMaybe<Scalars["String"]["input"]>;
@@ -76,6 +83,7 @@ export type Friendship = {
   __typename?: "Friendship";
   friend: User;
   id: Scalars["ID"]["output"];
+  initiatedByMe: Scalars["Boolean"]["output"];
   status: FriendshipStatus;
   userId: Scalars["ID"]["output"];
 };
@@ -91,10 +99,23 @@ export enum FriendshipStatus {
   Rejected = "REJECTED",
 }
 
+export type Invite = {
+  __typename?: "Invite";
+  actions?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["Int"]["output"];
+  email: Scalars["String"]["output"];
+  expiresAt: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  namespaceId: Scalars["ID"]["output"];
+  ownerUserId: Scalars["ID"]["output"];
+};
+
 export type Member = {
   __typename?: "Member";
+  email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   userId: Scalars["ID"]["output"];
+  username: Scalars["String"]["output"];
 };
 
 export type MemberToNamespaceInput = {
@@ -114,9 +135,13 @@ export type Mutation = {
   addAppToNamespace: NamespaceApp;
   addMemberToNamespace: Namespace;
   createFriendship: Friendship;
+  createInvite: Invite;
   createNamespace: Namespace;
+  deleteInvite: Scalars["Boolean"]["output"];
+  rejectFriendshipRequest: Friendship;
   removeFriendship: Scalars["Boolean"]["output"];
   removeMemberFromNamespace: Namespace;
+  updateInvite: Invite;
   updateNamespace: Namespace;
   updateUser: User;
 };
@@ -138,8 +163,20 @@ export type MutationCreateFriendshipArgs = {
   friendId: Scalars["ID"]["input"];
 };
 
+export type MutationCreateInviteArgs = {
+  input: CreateInviteInput;
+};
+
 export type MutationCreateNamespaceArgs = {
   input: NamespaceInput;
+};
+
+export type MutationDeleteInviteArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationRejectFriendshipRequestArgs = {
+  friendshipId: Scalars["ID"]["input"];
 };
 
 export type MutationRemoveFriendshipArgs = {
@@ -148,6 +185,11 @@ export type MutationRemoveFriendshipArgs = {
 
 export type MutationRemoveMemberFromNamespaceArgs = {
   input: MemberToNamespaceInput;
+};
+
+export type MutationUpdateInviteArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateInviteInput;
 };
 
 export type MutationUpdateNamespaceArgs = {
@@ -162,6 +204,7 @@ export type MutationUpdateUserArgs = {
 
 export type Namespace = {
   __typename?: "Namespace";
+  createdAt?: Maybe<Scalars["String"]["output"]>;
   description?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
   members?: Maybe<Array<Maybe<Member>>>;
@@ -206,9 +249,17 @@ export type PaginationInfo = {
   count: Scalars["Int"]["output"];
 };
 
+export type PaginationInput = {
+  length: Scalars["Int"]["input"];
+  page: Scalars["Int"]["input"];
+};
+
 export type Query = {
   __typename?: "Query";
   _placeholder?: Maybe<Scalars["String"]["output"]>;
+  adminNamespaces: PaginatedNamespaceList;
+  invite?: Maybe<Invite>;
+  invites: Array<Invite>;
   isAppInNamespace?: Maybe<NamespaceApp>;
   me?: Maybe<User>;
   member?: Maybe<Member>;
@@ -218,6 +269,21 @@ export type Query = {
   namespaces: PaginatedNamespaceList;
   user?: Maybe<User>;
   users: PaginatedUserList;
+};
+
+export type QueryAdminNamespacesArgs = {
+  filter?: InputMaybe<DefaultFilterInput>;
+};
+
+export type QueryInviteArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryInvitesArgs = {
+  namespaceSlug: Scalars["String"]["input"];
+  pagination?: InputMaybe<PaginationInput>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  sort?: InputMaybe<SortInput>;
 };
 
 export type QueryIsAppInNamespaceArgs = {
@@ -253,24 +319,62 @@ export type QueryUsersArgs = {
   filter?: InputMaybe<DefaultFilterInput>;
 };
 
+export type SortInput = {
+  direction: Scalars["String"]["input"];
+  field: Scalars["String"]["input"];
+};
+
+export type UpdateInviteInput = {
+  actions?: InputMaybe<Scalars["String"]["input"]>;
+  email?: InputMaybe<Scalars["String"]["input"]>;
+  expiresAt?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
 export type User = {
   __typename?: "User";
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  phone?: Maybe<Scalars["String"]["output"]>;
   username: Scalars["String"]["output"];
 };
 
 export type UserInput = {
+  phone?: InputMaybe<Scalars["String"]["input"]>;
   username: Scalars["String"]["input"];
 };
 
 export type MembersQueryVariables = Exact<{
   namespaceId?: InputMaybe<Scalars["ID"]["input"]>;
+  page?: InputMaybe<Scalars["Int"]["input"]>;
+  length?: InputMaybe<FilterPaginationLengthEnum>;
 }>;
 
 export type MembersQuery = {
   __typename?: "Query";
-  members: Array<{ __typename?: "Member"; id: string; userId: string }>;
+  members: Array<{
+    __typename?: "Member";
+    id: string;
+    userId: string;
+    username: string;
+    email: string;
+  }>;
+};
+
+export type UpdateMyPhoneMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  username: Scalars["String"]["input"];
+  phone: Scalars["String"]["input"];
+}>;
+
+export type UpdateMyPhoneMutation = {
+  __typename?: "Mutation";
+  updateUser: {
+    __typename?: "User";
+    id: string;
+    email: string;
+    username: string;
+    phone?: string | null;
+  };
 };
 
 export type MutateMeMutationVariables = Exact<{
@@ -332,6 +436,7 @@ export type MeQuery = {
     id: string;
     username: string;
     email: string;
+    phone?: string | null;
   } | null;
 };
 
@@ -374,6 +479,22 @@ export const MembersDocument = {
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
         },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "page" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "length" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "FilterPaginationLengthEnum" },
+          },
+        },
       ],
       selectionSet: {
         kind: "SelectionSet",
@@ -396,6 +517,40 @@ export const MembersDocument = {
                         name: { kind: "Name", value: "namespaceId" },
                       },
                     },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "filter" },
+                      value: {
+                        kind: "ObjectValue",
+                        fields: [
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "pagination" },
+                            value: {
+                              kind: "ObjectValue",
+                              fields: [
+                                {
+                                  kind: "ObjectField",
+                                  name: { kind: "Name", value: "page" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "page" },
+                                  },
+                                },
+                                {
+                                  kind: "ObjectField",
+                                  name: { kind: "Name", value: "length" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "length" },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
                   ],
                 },
               },
@@ -405,6 +560,8 @@ export const MembersDocument = {
               selections: [
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "userId" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
+                { kind: "Field", name: { kind: "Name", value: "email" } },
               ],
             },
           },
@@ -413,6 +570,110 @@ export const MembersDocument = {
     },
   ],
 } as unknown as DocumentNode<MembersQuery, MembersQueryVariables>;
+export const UpdateMyPhoneDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "UpdateMyPhone" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "id" } },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "username" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "phone" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "updateUser" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "id" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "id" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "input" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "username" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "username" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "phone" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "phone" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "email" } },
+                { kind: "Field", name: { kind: "Name", value: "username" } },
+                { kind: "Field", name: { kind: "Name", value: "phone" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  UpdateMyPhoneMutation,
+  UpdateMyPhoneMutationVariables
+>;
 export const MutateMeDocument = {
   kind: "Document",
   definitions: [
@@ -662,6 +923,7 @@ export const MeDocument = {
                 { kind: "Field", name: { kind: "Name", value: "id" } },
                 { kind: "Field", name: { kind: "Name", value: "username" } },
                 { kind: "Field", name: { kind: "Name", value: "email" } },
+                { kind: "Field", name: { kind: "Name", value: "phone" } },
               ],
             },
           },
