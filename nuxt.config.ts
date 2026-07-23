@@ -327,7 +327,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://lota.tools'
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://lota.tools',
+      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY || ''
     }
   },
 

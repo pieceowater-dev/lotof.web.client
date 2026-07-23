@@ -1144,6 +1144,8 @@
     "price": "Цена",
     "planCreatesBothIntervals": "Будут созданы сразу два тарифа: помесячный и годовой.",
     "planCode": "Код тарифа",
+    "planLimits": "Лимиты и фичи",
+    "planLimitUnlimited": "Без ограничений",
     "planNameRequired": "Введите название тарифа",
     "currencyRequired": "Укажите валюту",
     "planCreated": "Тариф создан",

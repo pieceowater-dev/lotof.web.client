@@ -48,6 +48,7 @@ export function useAuth() {
         if (data?.me) {
           console.log('[auth] User fetched successfully', { email: data.me.email });
           user.value = data.me;
+          useAnalytics().identifyUser(data.me);
         }
         if (data?.namespaces?.rows) {
           const { applyLoaded } = useNamespace();
@@ -91,13 +92,16 @@ export function useAuth() {
       const leadRef = useCookie<string | null>('lead_ref').value;
       if (leadRef) leadParam = `&lead=${encodeURIComponent(leadRef)}`;
     } catch {}
+    useAnalytics().track('login_initiated');
     window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}`;
   }
 
   function logout() {
+    useAnalytics().track('logout');
     token.value = null;
     user.value = null;
     setGlobalAuthToken(null);
+    useAnalytics().identifyUser(null);
     // Clean up per-user persisted state that should reset on logout
     if (process.client) {
       try {

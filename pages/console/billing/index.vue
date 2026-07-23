@@ -343,9 +343,15 @@
         </div>
 
         <div class="max-h-[70vh] space-y-4 overflow-y-auto p-5">
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            {{ t('admin.planForApp') }}: <strong>{{ selectedProjectTitle }}</strong>
-          </p>
+          <div class="flex items-center gap-3 rounded-xl border-2 border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-800 dark:bg-blue-900/20">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
+              <Icon :name="selectedProjectIcon" class="h-5 w-5" />
+            </div>
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-blue-600 dark:text-blue-400">{{ t('admin.planForApp') }}</div>
+              <div class="text-base font-bold text-slate-900 dark:text-white">{{ selectedProjectTitle }}</div>
+            </div>
+          </div>
 
           <div>
             <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planName') }} *</label>
@@ -435,6 +441,22 @@
             </div>
           </template>
 
+          <div v-if="currentLimitKeys.length" class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+            <div class="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planLimits') }}</div>
+            <div class="grid grid-cols-2 gap-3">
+              <div v-for="limit in currentLimitKeys" :key="limit.key">
+                <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-400">{{ limit.label }}</label>
+                <input
+                  v-model="planForm.limits[limit.key]"
+                  type="number"
+                  min="0"
+                  :placeholder="t('admin.planLimitUnlimited')"
+                  class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+
           <p v-if="planModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
             {{ planModal.error }}
           </p>
@@ -486,10 +508,39 @@ const projects = [
   { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' }
 ] as const;
 
+// Known usage-limit keys per app -- these are the exact keys product
+// services read to gate functionality (e.g. A-Trace checks max_employees
+// before letting a team member be activated, Contacts checks max_clients
+// before creating a new client). Keeping this list in sync with what each
+// service actually reads is what makes the admin-managed limits meaningful
+// instead of just decorative free-text.
+const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
+  atrace: [
+    { key: 'max_employees', label: 'Макс. сотрудников' },
+    { key: 'max_posts', label: 'Макс. постов' },
+  ],
+  contacts: [
+    { key: 'max_clients', label: 'Макс. клиентов' },
+    { key: 'max_custom_fields', label: 'Макс. доп. полей' },
+    { key: 'max_loyalty_programs', label: 'Макс. программ лояльности' },
+  ],
+  menu: [
+    { key: 'max_staff', label: 'Макс. персонала' },
+    { key: 'max_branches', label: 'Макс. филиалов' },
+    { key: 'max_menu_items', label: 'Макс. позиций меню' },
+    { key: 'max_promobanners', label: 'Макс. промо-баннеров' },
+    { key: 'max_badges', label: 'Макс. бейджей' },
+    { key: 'max_links', label: 'Макс. ссылок' },
+  ],
+};
+
 type ProjectId = (typeof projects)[number]['id'];
 const selectedProject = ref<ProjectId>('atrace');
 const selectedProjectTitle = computed(() => {
   return projects.find(p => p.id === selectedProject.value)?.title || selectedProject.value;
+});
+const selectedProjectIcon = computed(() => {
+  return projects.find(p => p.id === selectedProject.value)?.icon || 'lucide:box';
 });
 const selectedProjectAppCode = computed(() => {
   return projects.find(p => p.id === selectedProject.value)?.appCode || selectedProject.value;
@@ -595,7 +646,39 @@ const planForm = reactive({
   monthlyPrice: 0,
   yearlyPrice: 0,
   amount: 0,
+  // Keyed by limit key (e.g. "max_employees") -> numeric value as a string
+  // for v-model binding; serialized into metadataJson on save.
+  limits: {} as Record<string, string>,
 });
+
+const currentLimitKeys = computed(() => PLAN_LIMIT_KEYS[selectedProject.value] || []);
+
+// Always returns valid JSON ("{}" when no limits are set) -- matches the
+// shape the Go seeder writes (buildMetadataJSON in plan.svc.go), so product
+// services parsing metadata_json never have to handle an empty/invalid string.
+function buildMetadataJson(): string {
+  const features = currentLimitKeys.value
+    .filter(k => planForm.limits[k.key] !== '' && planForm.limits[k.key] !== undefined)
+    .map(k => ({ key: k.key, label: k.label, value: Number(planForm.limits[k.key]) }));
+  if (!features.length) return '{}';
+  return JSON.stringify({ features });
+}
+
+function loadLimitsFromMetadata(metadataJson: string | null | undefined) {
+  planForm.limits = {};
+  if (!metadataJson) return;
+  try {
+    const parsed = JSON.parse(metadataJson);
+    const features = Array.isArray(parsed?.features) ? parsed.features : [];
+    for (const f of features) {
+      if (f && typeof f.key === 'string' && f.value !== undefined) {
+        planForm.limits[f.key] = String(f.value);
+      }
+    }
+  } catch {
+    // Malformed/legacy metadata -- leave limits empty rather than crash the modal.
+  }
+}
 
 function slugifyPlanName(value: string): string {
   return String(value || '')
@@ -620,6 +703,7 @@ function openCreatePlan() {
   planForm.trialDays = 0;
   planForm.monthlyPrice = 0;
   planForm.yearlyPrice = 0;
+  planForm.limits = {};
   planModal.open = true;
 }
 
@@ -632,6 +716,7 @@ function openEditPlan(plan: PlanRow) {
   planForm.currency = plan.currency;
   planForm.trialDays = plan.trialDays;
   planForm.amount = plan.amountCents / 100;
+  loadLimitsFromMetadata(plan.metadataJson);
   planModal.open = true;
 }
 
@@ -657,6 +742,7 @@ async function submitPlanModal() {
   try {
     if (planModal.mode === 'create') {
       const codePrefix = generatedCodePrefix.value;
+      const metadataJson = buildMetadataJson();
       const monthlyResult: any = await capitalCreatePlan(token.value, {
         code: `${codePrefix}-monthly`,
         name: planForm.name.trim(),
@@ -666,6 +752,7 @@ async function submitPlanModal() {
         amountCents: Math.round(planForm.monthlyPrice * 100),
         trialDays: planForm.trialDays || 0,
         applicationCode: selectedProjectAppCode.value,
+        metadataJson,
       });
       const monthlyId = monthlyResult?.createPlan?.id;
 
@@ -679,6 +766,7 @@ async function submitPlanModal() {
           amountCents: Math.round(planForm.yearlyPrice * 100),
           trialDays: planForm.trialDays || 0,
           applicationCode: selectedProjectAppCode.value,
+          metadataJson,
         });
       } catch (yearlyError: any) {
         // The monthly leg already landed -- a "the pair" plan can't exist
@@ -702,6 +790,7 @@ async function submitPlanModal() {
         description: planForm.description.trim() || undefined,
         amountCents: Math.round(planForm.amount * 100),
         trialDays: planForm.trialDays || 0,
+        metadataJson: buildMetadataJson() ?? '',
       });
       toast.add({ title: t('admin.planUpdated') || 'Тариф обновлён', color: 'green' });
     }

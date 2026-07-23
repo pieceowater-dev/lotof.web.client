@@ -139,6 +139,7 @@ export type AdminBillingInfo = {
     amountCents: number;
     trialDays: number;
     status: string;
+    metadataJson?: string | null;
   }>;
   adminInvoices: {
     invoices: Array<{
@@ -206,6 +207,7 @@ const GET_ADMIN_BILLING_INFO_QUERY = /* GraphQL */ `
       amountCents
       trialDays
       status
+      metadataJson
     }
     adminInvoices(page: $page, pageSize: $pageSize, namespace: $namespace, applicationCode: $applicationCode) {
       invoices {
