@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
+import { useContactUsModal } from '@/composables/useContactUsModal';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getContactsPlans, type Plan } from '@/api/contacts/plans/plans';
 import { subscribeToContactsPlan, type Subscription } from '@/api/contacts/plans/subscribe';
@@ -183,6 +184,13 @@ async function subscribePlan(plan: Plan) {
     return;
   }
 
+  // No payment gateway yet -- paid plans go through manual sales contact
+  // instead of an actual checkout. Free tiers still subscribe directly.
+  if (plan.amountCents > 0) {
+    useContactUsModal().open({ app: 'pieceowater.contacts', planName: plan.name });
+    return;
+  }
+
   if (!(await usePhoneGate().requirePhone())) return;
 
   subscribingPlanCode.value = plan.code;
@@ -303,6 +311,8 @@ watch([plans, activeSubscription], () => {
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
       <!-- Interval Toggle -->
       <div class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">

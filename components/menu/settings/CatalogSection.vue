@@ -469,6 +469,11 @@ async function handleItemSubmit(payload: Record<string, any>) {
       totalItemCount.value += 1;
       useToast().add({ title: t('menu.itemCreated') || 'Item created', color: 'primary' });
     }
+    useAnalytics().track('menu_item_saved', {
+      itemId: savedItem.id,
+      action: editingItem.value ? 'updated' : 'created',
+      categoryId: selectedCategoryId.value,
+    });
     isItemModalOpen.value = false;
   } catch (e) {
     logError('[menu/settings/catalog] item save failed', e);

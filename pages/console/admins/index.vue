@@ -212,6 +212,53 @@
           </div>
         </div>
       </div>
+
+      <!-- Contact Settings (Обратная связь) -->
+      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <h4 class="font-bold text-slate-900 dark:text-white">{{ t('admin.contactSettingsTitle') }}</h4>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          {{ t('admin.contactSettingsDesc') }}
+        </p>
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {{ t('admin.contactPhone') }}
+            </label>
+            <input
+              v-model="contactPhone"
+              type="text"
+              placeholder="+7 700 000 00 00"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+          </div>
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {{ t('admin.contactWhatsapp') }}
+            </label>
+            <input
+              v-model="contactWhatsapp"
+              type="text"
+              placeholder="+7 700 000 00 00"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+          </div>
+        </div>
+        <div v-if="contactSettingsError" class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+          {{ contactSettingsError }}
+        </div>
+        <div class="mt-4 flex items-center gap-3">
+          <button
+            @click="saveContactSettings"
+            :disabled="contactSettingsSaving"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ contactSettingsSaving ? '...' : t('admin.save') }}
+          </button>
+          <span v-if="contactSettingsSavedAt" class="text-xs text-slate-500 dark:text-slate-400">
+            {{ t('admin.contactSettingsSaved') }}
+          </span>
+        </div>
+      </div>
     </div>
 
     <!-- Invite Modal -->
@@ -326,6 +373,8 @@ import {
   capitalInviteAdmin,
   capitalChangeAdminRole,
   capitalRemoveAdmin,
+  capitalGetContactSettings,
+  capitalUpdateContactSettings,
   type CapitalAdmin,
 } from '@/api/capital/admin';
 
@@ -505,10 +554,43 @@ async function removeAdmin(id: string) {
   }
 }
 
+const contactPhone = ref('');
+const contactWhatsapp = ref('');
+const contactSettingsSaving = ref(false);
+const contactSettingsSavedAt = ref('');
+const contactSettingsError = ref('');
+
+async function loadContactSettings() {
+  if (!token.value) return;
+  try {
+    const settings = await capitalGetContactSettings(token.value);
+    contactPhone.value = settings?.phone || '';
+    contactWhatsapp.value = settings?.whatsapp || '';
+  } catch (e: any) {
+    console.error('[admins] Failed to load contact settings', e);
+  }
+}
+
+async function saveContactSettings() {
+  if (!token.value) return;
+  contactSettingsSaving.value = true;
+  contactSettingsError.value = '';
+  contactSettingsSavedAt.value = '';
+  try {
+    await capitalUpdateContactSettings(token.value, contactPhone.value.trim(), contactWhatsapp.value.trim());
+    contactSettingsSavedAt.value = new Date().toISOString();
+  } catch (e: any) {
+    contactSettingsError.value = e?.message || t('admin.contactSettingsSaveFailed');
+  } finally {
+    contactSettingsSaving.value = false;
+  }
+}
+
 onMounted(async () => {
   if (!user.value?.id) {
     await fetchUser();
   }
   await loadAdmins();
+  await loadContactSettings();
 });
 </script>

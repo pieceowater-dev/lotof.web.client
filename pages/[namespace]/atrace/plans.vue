@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
+import { useContactUsModal } from '@/composables/useContactUsModal';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
 import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';
@@ -163,6 +164,13 @@ async function subscribePlan(plan: Plan) {
     return;
   }
 
+  // No payment gateway yet -- paid plans go through manual sales contact
+  // instead of an actual checkout. Free tiers still subscribe directly.
+  if (plan.amountCents > 0) {
+    useContactUsModal().open({ app: 'pieceowater.atrace', planName: plan.name });
+    return;
+  }
+
   if (!(await usePhoneGate().requirePhone())) return;
 
   subscribingPlanCode.value = plan.code;
@@ -270,6 +278,8 @@ watch([plans, activeSubscription], () => {
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
       <!-- Interval Toggle -->
       <div class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">

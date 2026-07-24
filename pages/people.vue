@@ -397,6 +397,7 @@ async function removeMember(member: { userId: string; username: string; email: s
   try {
     const { hubRemoveMember } = await import('@/api/hub/members/mutations');
     await hubRemoveMember(tok, nsId, member.userId);
+    useAnalytics().track('hub_member_removed', { removedUserId: member.userId });
     toast.add({ title: t('app.memberRemoved') || 'Removed from team', description: member.username, color: 'gray' });
     await loadMembers();
   } catch (e: any) {

@@ -417,6 +417,11 @@ async function exportToExcel() {
       dateRange.value.endDate,
       locale.value
     );
+    useAnalytics().track('atrace_report_exported', {
+      startDate: dateRange.value.startDate,
+      endDate: dateRange.value.endDate,
+      recordCount: records.length,
+    });
   } catch (e: any) {
     logError('[AttendanceStatsTable] export failed:', e);
     exportError.value = t('app.exportFailed');

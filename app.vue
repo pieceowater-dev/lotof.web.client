@@ -41,6 +41,7 @@
       @close="handleSubscriptionClose"
     />
     <PhoneRequiredModal />
+    <ContactUsModal />
   </ClientOnly>
 
   <UNotifications :ui="notificationsUi" />
@@ -57,6 +58,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
 import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
 import PhoneRequiredModal from '@/components/PhoneRequiredModal.vue';
+import ContactUsModal from '@/components/ContactUsModal.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();

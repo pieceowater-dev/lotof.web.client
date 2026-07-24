@@ -177,6 +177,7 @@ async function handleAddTag(tagId: string) {
     const tag = tags.value.find(t => t.id === tagId);
     if (tag) {
       emit('tagAdded', tag);
+      useAnalytics().track('contacts_tag_added', { clientId: props.clientId, tagId, tagName: tag.name });
     }
     
     emit('close');

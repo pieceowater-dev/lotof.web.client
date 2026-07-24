@@ -680,6 +680,7 @@ async function handleStatusChange(order: MenuOrder, status: string) {
     const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, order.id, status);
     const idx = orders.value.findIndex((o) => o.id === updated.id);
     if (idx !== -1) orders.value[idx] = updated;
+    useAnalytics().track('menu_order_status_changed', { orderId: order.id, fromStatus: order.status, toStatus: status });
     clearNewOrder(order.id);
     loadStatusCounts();
   } catch (e) {

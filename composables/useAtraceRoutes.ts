@@ -376,6 +376,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     try {
       const created = await createRoute(title, routeCreatePostIds.value);
       routes.value = sortRoutesByTitle([...routes.value, created]);
+      useAnalytics().track('atrace_route_created', { routeId: created.id, postCount: routeCreatePostIds.value.length });
       isRouteCreateOpen.value = false;
       resetRouteCreateForm();
     } catch (e) {

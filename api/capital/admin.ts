@@ -289,3 +289,42 @@ export async function capitalArchivePlan(token: string, id: string) {
   `;
   return await capitalClient.request(mutation, { id });
 }
+
+export type ContactSettings = {
+  phone?: string | null;
+  whatsapp?: string | null;
+  updatedAt?: string | null;
+};
+
+// contactSettings is @auth (any logged-in user, not namespace-scoped) --
+// used both by the admin console editor and by any plans page showing the
+// "contact us to subscribe" fallback.
+export async function capitalGetContactSettings(token: string): Promise<ContactSettings | null> {
+  setGlobalAuthToken(token);
+  const query = /* GraphQL */ `
+    query ContactSettings {
+      contactSettings {
+        phone
+        whatsapp
+        updatedAt
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ contactSettings: ContactSettings | null }>(query);
+  return res.contactSettings ?? null;
+}
+
+export async function capitalUpdateContactSettings(token: string, phone: string, whatsapp: string): Promise<ContactSettings> {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation UpdateContactSettings($phone: String, $whatsapp: String) {
+      updateContactSettings(phone: $phone, whatsapp: $whatsapp) {
+        phone
+        whatsapp
+        updatedAt
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ updateContactSettings: ContactSettings }>(mutation, { phone, whatsapp });
+  return res.updateContactSettings;
+}

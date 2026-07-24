@@ -92,6 +92,7 @@ async function handleSubmit(rawPayload: Record<string, any>) {
         branches.value = branches.value.map((b) => ({ ...b, isPrimary: false }));
       }
       branches.value = [...branches.value, created];
+      useAnalytics().track('menu_branch_created', { branchId: created.id, isPrimary: created.isPrimary });
       useToast().add({ title: t('menu.branchCreated') || 'Branch created', color: 'primary' });
     }
     isModalOpen.value = false;

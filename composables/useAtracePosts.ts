@@ -183,6 +183,7 @@ export function useAtracePosts(
       posts.value = [...posts.value, created].sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
       totalCount.value = totalCount.value + 1;
       selectedPostId.value = created.id;
+      useAnalytics().track('atrace_post_created', { postId: created.id, hasGeolocation: !!payload.location, hasPin: !!payload.phrase });
       isCreateOpen.value = false;
       // reset form
       form.title = '';
