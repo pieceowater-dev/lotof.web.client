@@ -184,9 +184,16 @@ async function subscribePlan(plan: Plan) {
     return;
   }
 
-  // No payment gateway yet -- paid plans go through manual sales contact
-  // instead of an actual checkout. Free tiers still subscribe directly.
-  if (plan.amountCents > 0) {
+  // No payment gateway yet -- paid plans without a usable trial go through
+  // manual sales contact instead of an actual checkout. A plan with an
+  // available trial (or any free tier) still subscribes directly; only once
+  // the trial for this app is already exhausted do we force contact-us.
+  const sub = activeSubscription.value;
+  const trialAlreadyUsed = !!sub && (
+    sub.status === 'EXPIRED' || sub.status === 'PAST_DUE' || sub.status === 'CANCELED' ||
+    (!!sub.trialEndDate && new Date(sub.trialEndDate).getTime() < Date.now())
+  );
+  if (plan.amountCents > 0 && (plan.trialDays === 0 || trialAlreadyUsed)) {
     useContactUsModal().open({ app: 'pieceowater.contacts', planName: plan.name });
     return;
   }
