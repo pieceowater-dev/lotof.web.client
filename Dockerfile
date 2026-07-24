@@ -13,6 +13,16 @@ RUN npm install
 # Copy the rest of the application files
 COPY . .
 
+# Public runtime config that also needs to be available at build time: the
+# home page and /feed are prerendered (see nuxt.config.ts prerender.routes),
+# so whatever these resolve to here gets baked into that static HTML
+# permanently -- unlike every other (SSR) route, they never re-read the
+# container's runtime env vars again after this build.
+ARG NUXT_PUBLIC_AMPLITUDE_API_KEY
+ENV NUXT_PUBLIC_AMPLITUDE_API_KEY=$NUXT_PUBLIC_AMPLITUDE_API_KEY
+ARG NUXT_PUBLIC_SITE_URL=https://lota.tools
+ENV NUXT_PUBLIC_SITE_URL=$NUXT_PUBLIC_SITE_URL
+
 # Build the Nuxt application (SSR with Nitro server)
 RUN npm run build
 

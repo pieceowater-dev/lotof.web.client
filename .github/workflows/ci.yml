@@ -54,6 +54,9 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.GIT_SHORT_SHA }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            NUXT_PUBLIC_AMPLITUDE_API_KEY=4f13a54e957d08dc4165a91a0d5640e7
+            NUXT_PUBLIC_SITE_URL=https://lota.tools
           secret-files: |
             gh_token=.gh_token
           cache-from: type=gha

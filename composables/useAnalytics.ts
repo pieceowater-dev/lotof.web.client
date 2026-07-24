@@ -63,6 +63,12 @@ export function useAnalytics() {
 
   function track(eventName: string, properties?: Record<string, unknown>) {
     if (!process.client) return;
+    // Self-heal: if init() didn't run yet (e.g. the app plugin fired before
+    // the SDK was ready) or failed silently (missing key), retry here so a
+    // single bad first attempt doesn't silence tracking for the whole
+    // session -- client-side route changes never re-run Nuxt plugins, so
+    // nothing else would ever retry this.
+    if (!initialized) init();
     let namespace: string | undefined;
     try {
       namespace = useNamespace().selected.value || undefined;

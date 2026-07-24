@@ -328,7 +328,14 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://lota.tools',
-      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY || ''
+      // Not a secret -- it's a write-only client key that ships embedded in
+      // every page's JS bundle either way. Same fallback pattern as siteUrl
+      // above: prerendered routes (home, /feed) bake this in at build time
+      // and never re-read the container's runtime env vars again, so a
+      // missing build-time env var previously meant those two pages sent
+      // zero analytics events for their entire session, permanently, until
+      // the next rebuild.
+      amplitudeApiKey: process.env.NUXT_PUBLIC_AMPLITUDE_API_KEY || '4f13a54e957d08dc4165a91a0d5640e7'
     }
   },
 
