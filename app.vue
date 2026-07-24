@@ -130,7 +130,7 @@ const notificationsUi = computed(() => {
     position: 'top-[unset] bottom-0'
   };
 });
-const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew']);
+const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew', 'blog', 'academy']);
 const isNamespacePrivateRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length < 2) return false;
@@ -142,11 +142,18 @@ const isPrivateRoute = computed(() => {
   return isConsoleRoute.value || isSharedNamespaceRoute.value || isNamespacePrivateRoute.value || isPeopleRoute.value;
 });
 
+// Despite the name, this is NOT "is this an individual article page" (those
+// are 2-segment /<category>/<slug> routes and set their own canonical in
+// pages/[category]/[slug].vue). This flags stray unhandled 1-segment paths
+// so app.vue doesn't stamp them with a canonical it can't actually vouch
+// for. Category *listing* pages (/news, /blog, ...) don't set their own
+// canonical, so they must NOT be in this skip-list -- they need app.vue's
+// self-referencing canonical like /feed already correctly gets.
 const isArticleRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length !== 1) return false;
   const first = segments[0];
-  return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'to';
+  return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'to' && !PUBLIC_CATEGORY_PREFIXES.has(first);
 });
 
 const queryLang = computed(() => {
