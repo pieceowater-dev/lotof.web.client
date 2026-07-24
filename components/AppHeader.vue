@@ -16,8 +16,17 @@ const { selected: selectedNS } = useNamespace();
 const routeNamespace = computed(() => (route.params.namespace as string) || '');
 const currentNamespace = computed(() => selectedNS.value || routeNamespace.value);
 
-const isWalter = Math.random() < 1 / 21;
-const homeText = computed(() => isWalter ? 'Домой, Уолтер' : t('app.home'));
+// Rolled client-side only, after mount: Math.random() evaluated during SSR
+// and again during client hydration are two independent rolls, and roughly
+// 1 in 11 page loads would land on different outcomes -- a real, frequent
+// hydration mismatch, not just a rare edge case. Defaulting to the normal
+// text through hydration and only swapping in the easter egg afterward
+// keeps the server/client render identical where it's compared.
+const isWalter = ref(false);
+onMounted(() => {
+  isWalter.value = Math.random() < 1 / 21;
+});
+const homeText = computed(() => isWalter.value ? 'Домой, Уолтер' : t('app.home'));
 const isAtraceRoute = computed(() => route.path.includes('/atrace'));
 const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
 const navApps = computed(() => ALL_APPS);

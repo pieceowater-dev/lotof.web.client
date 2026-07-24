@@ -34,9 +34,14 @@ type PublicationsAllResponse = {
   items?: PublicationArticleDoc[];
 };
 
-const { data: sidebarWhatsNewData } = await useFetch<PublicationsAllResponse>('/api/publications/all', {
+// Client-only: this only feeds the below-the-fold "what's new" sidebar
+// widget, not the article itself or its SEO metadata, so it shouldn't block
+// the server response -- fetching it during SSR was adding a whole extra
+// sequential round trip to time-to-first-byte for every article view.
+const { data: sidebarWhatsNewData } = useFetch<PublicationsAllResponse>('/api/publications/all', {
   query: { category: 'whatsnew', includeDraft: 'false' },
   default: () => ({ items: [] }),
+  server: false,
 });
 
 type DirectPublicByRouteResponse = {
@@ -1271,7 +1276,7 @@ onBeforeUnmount(() => {
     </section>
 
     <div class="relative z-10 mx-auto mt-10 w-full max-w-[1280px]">
-      <AppFooter />
+      <LazyAppFooter />
     </div>
   </main>
 </template>
