@@ -19,6 +19,11 @@ export const LSKeys = {
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',
+  // Non-httpOnly marker set after any successful login, so pages that want
+  // to opportunistically silent-refresh (e.g. public article pages, for a
+  // logged-in visitor whose access token expired) can skip the attempt --
+  // and its guaranteed 401 -- for a browser that has never had a session.
+  HAS_SESSION: 'lota_has_session',
 } as const;
 export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 

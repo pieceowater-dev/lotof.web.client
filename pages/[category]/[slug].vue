@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { capitalGetPublicPublicationByRoute, publicationBlocksToHtml } from '@/api/publications';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
+import { LSKeys } from '@/utils/storageKeys';
 import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
 import { toGqlCategory, fromGqlCategory, CATEGORY_TO_GQL } from '@/utils/publicationCategory';
 
@@ -367,7 +368,13 @@ if (process.client) {
     refreshedForAuth.value = true;
 
     let hasToken = !!String(authToken.value || legacyToken.value || '').trim();
-    if (!hasToken) {
+    // Only attempt a silent refresh if this browser has had a session before
+    // -- refresh_token is httpOnly so we can't check it directly, and for
+    // the vast majority of (anonymous) article readers this call would just
+    // be a guaranteed, wasted 401 on every single pageview.
+    let hadSessionBefore = false;
+    try { hadSessionBefore = localStorage.getItem(LSKeys.HAS_SESSION) === '1'; } catch {}
+    if (!hasToken && hadSessionBefore) {
       try {
         await refreshAccessToken();
       } catch {

@@ -49,6 +49,9 @@ export function useAuth() {
           console.log('[auth] User fetched successfully', { email: data.me.email });
           user.value = data.me;
           useAnalytics().identifyUser(data.me);
+          if (process.client) {
+            try { localStorage.setItem(LSKeys.HAS_SESSION, '1'); } catch {}
+          }
         }
         if (data?.namespaces?.rows) {
           const { applyLoaded } = useNamespace();
@@ -112,6 +115,7 @@ export function useAuth() {
     useAnalytics().identifyUser(null);
     // Clean up per-user persisted state that should reset on logout
     if (process.client) {
+      try { localStorage.removeItem(LSKeys.HAS_SESSION); } catch {}
       try {
         // Best-effort: ask backend to clear httpOnly refresh token cookie
         fetch(`${hubApiBase}/auth/logout`, { method: 'POST', credentials: 'include' }).catch(() => {});

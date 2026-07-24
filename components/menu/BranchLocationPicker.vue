@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import 'leaflet/dist/leaflet.css';
 
 const { t } = useI18n();
 
@@ -22,6 +21,7 @@ let map: any = null;
 let marker: any = null;
 
 async function initMap() {
+  await import('leaflet/dist/leaflet.css');
   const L = await import('leaflet');
   // Vite bundles Leaflet's default marker icon with relative paths that
   // break once bundled — point them at the actual asset URLs instead.
