@@ -42,6 +42,7 @@
     />
     <PhoneRequiredModal />
     <ContactUsModal />
+    <DowngradeBlockedModal />
   </ClientOnly>
 
   <UNotifications :ui="notificationsUi" />
@@ -59,6 +60,7 @@ import { ALL_APPS } from '@/config/apps';
 import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
 import PhoneRequiredModal from '@/components/PhoneRequiredModal.vue';
 import ContactUsModal from '@/components/ContactUsModal.vue';
+import DowngradeBlockedModal from '@/components/DowngradeBlockedModal.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();

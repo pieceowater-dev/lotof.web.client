@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
+import { useDowngradeBlockedModal, parseDowngradeRegressions } from '@/composables/useDowngradeBlockedModal';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
 import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';
@@ -214,25 +215,13 @@ async function subscribePlan(plan: Plan) {
   } catch (err) {
     console.error('Failed to subscribe:', err);
     const errorMsg = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
-    
-    // Check if it's a downgrade protection error
-    let title = t('common.error') || 'Error';
-    let description = errorMsg;
-    
-    if (errorMsg.includes('downgrade not allowed')) {
-      title = t('app.cannotDowngradePlan') || 'Cannot Downgrade Plan';
-      // Extract the user-friendly message from the error
-      const match = errorMsg.match(/downgrade not allowed:(.+?)(?:\.|$)/);
-      if (match) {
-        description = match[1].trim();
-      }
+
+    const regressions = parseDowngradeRegressions(errorMsg);
+    if (regressions) {
+      useDowngradeBlockedModal().open(regressions);
+    } else {
+      toast.add({ title: t('common.error') || 'Error', description: errorMsg, color: 'red' });
     }
-    
-    toast.add({
-      title,
-      description,
-      color: 'red'
-    });
   } finally {
     subscribingPlanCode.value = null;
   }
