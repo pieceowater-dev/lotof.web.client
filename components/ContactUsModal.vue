@@ -27,7 +27,7 @@
           @click="() => trackContactClick('call')"
         >
           <Icon name="lucide:phone" class="h-4 w-4" />
-          {{ t('billing.callUs') || 'Позвонить' }} {{ phone }}
+          {{ t('billing.callUs') || 'Позвонить' }} {{ formattedPhone }}
         </a>
         <a
           v-if="whatsappHref"
@@ -53,7 +53,7 @@ import { useContactSettings } from '@/composables/useContactSettings';
 
 const { t } = useI18n();
 const { isOpen, context, close } = useContactUsModal();
-const { phone, whatsapp, hasContact, telHref, whatsappHref, load } = useContactSettings();
+const { hasContact, telHref, whatsappHref, formattedPhone, load } = useContactSettings();
 
 onMounted(() => {
   load();
