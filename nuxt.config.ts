@@ -320,7 +320,17 @@ export default defineNuxtConfig({
   experimental: {
     payloadExtraction: false,
     renderJsonPayloads: false,
-    componentIslands: isProduction
+    componentIslands: isProduction,
+    // Nuxt's default "inline critical CSS into every page's HTML" ended up
+    // inlining ~200 KiB of <style> per page (most of this app's whole CSS
+    // footprint, not just what's critical for that one route) -- shipped
+    // uncached on every single page load. Serving it as the normal external
+    // stylesheet instead lets the browser cache it for a year (see the
+    // /_nuxt/** routeRule below) across the whole site.
+    // @ts-expect-error -- inlineSSRStyles is a real, functioning Nuxt option
+    // (resolved at runtime via nuxt/schema) that this Nuxt version's shipped
+    // type definitions just don't declare yet.
+    inlineSSRStyles: false
   },
 
   // Runtime config for performance

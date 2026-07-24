@@ -766,7 +766,10 @@ useHead(() => {
             rel="noopener"
             class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
           >
-            <img src="/assets/logo.png" alt="" class="w-3 h-3">
+            <picture>
+              <source srcset="/assets/logo.webp" type="image/webp">
+              <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
+            </picture>
             {{ t('menu.poweredBy') || 'Powered by' }} <span class="font-semibold">lota</span>
           </a>
         </div>
@@ -1111,7 +1114,10 @@ useHead(() => {
               rel="noopener"
               class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
             >
-              <img src="/assets/logo.png" alt="" class="w-3 h-3">
+              <picture>
+              <source srcset="/assets/logo.webp" type="image/webp">
+              <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
+            </picture>
               {{ t('menu.poweredByFooter') || 'Powered by lota' }}
             </a>
             <div class="flex items-center gap-0.5">

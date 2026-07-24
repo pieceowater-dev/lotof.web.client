@@ -1,11 +1,16 @@
 <template>
   <div class="flex flex-col items-center justify-center min-h-[65vh] text-center">
     <div class="flex flex-col items-center justify-center my-10">
-      <img
-        src="/assets/logo.png"
-        alt="Logo"
-        class="h-20 w-20"
-      >
+      <picture>
+        <source srcset="/assets/logo.webp" type="image/webp">
+        <img
+          src="/assets/logo.png"
+          alt="Logo"
+          width="80"
+          height="80"
+          class="h-20 w-20"
+        >
+      </picture>
       <span class="text-5xl font-thin text-primary">{{ title || t('app.title') }}</span>
     </div>
     <span class="text-3xl font-bold mr-2 ml-2 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text">{{ subtitle || t('app.tagline') }}</span>

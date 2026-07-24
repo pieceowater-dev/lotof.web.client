@@ -168,11 +168,16 @@ const goHome = () => {
         class="flex items-center space-x-1 cursor-pointer shrink-0"
         @click="goHome"
       >
-        <img
-          src="/assets/logo.png"
-          alt="Logo"
-          class="h-5 w-5"
-        >
+        <picture>
+          <source srcset="/assets/logo.webp" type="image/webp">
+          <img
+            src="/assets/logo.png"
+            alt="Logo"
+            width="20"
+            height="20"
+            class="h-5 w-5"
+          >
+        </picture>
         <span class="text-base md:text-lg">lota</span>
       </div>
 
