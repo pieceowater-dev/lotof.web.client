@@ -309,6 +309,7 @@ watch(() => allNamespaces.value, (list) => {
   }
   if (selectedNS.value && idBySlug(selectedNS.value)) {
     loadMembers();
+    loadReferrals();
   }
 });
 // When user loads (post-SSR), reapply stored namespace in case we initially used 'anon'
@@ -382,6 +383,74 @@ async function addMemberFromFriend(friendUserId: string) {
   }
 }
 
+// Referral program: the link is just the current namespace's slug -- no
+// backend round-trip needed to "generate" it (see server/routes/r/[code].get.ts
+// and useAuth.ts's login(), which carry it through signup).
+const referralLink = computed(() => {
+  if (!process.client || !selectedNS.value) return '';
+  return `${window.location.origin}/r/${selectedNS.value}`;
+});
+
+async function copyReferralLink() {
+  if (!referralLink.value) return;
+  try {
+    await navigator.clipboard.writeText(referralLink.value);
+    toast.add({ title: t('app.referralLinkCopied'), color: 'primary' });
+  } catch (e) {
+    logError('[people/referral] copyReferralLink failed', e);
+  }
+}
+
+type ReferralBonusState = 'pending' | 'banked' | 'applied';
+interface ReferralRow { id: string; title: string; slug: string; createdAt?: string | null; bonusState: ReferralBonusState }
+const referralRows = ref<ReferralRow[]>([]);
+const referralsLoading = ref(false);
+
+async function loadReferrals() {
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
+  const { idBySlug } = useNamespace();
+  const nsId = idBySlug(selectedNS.value);
+  if (!tok || !nsId || !selectedNS.value) { referralRows.value = []; return; }
+  referralsLoading.value = true;
+  try {
+    const [{ hubMyReferrals }, { capitalMyReferralBonuses }] = await Promise.all([
+      import('@/api/hub/referrals/list'),
+      import('@/api/capital/referrals/bonuses'),
+    ]);
+    const [referred, bonuses] = await Promise.all([
+      hubMyReferrals(tok, nsId),
+      capitalMyReferralBonuses(tok, selectedNS.value).catch(() => []),
+    ]);
+    // A referred friend can only ever earn one grant (applied or banked --
+    // see referral_grants' unique constraint on the backend), so this is at
+    // most one entry per referredNamespaceId.
+    const bonusByNamespaceId = new Map(bonuses.map(b => [b.referredNamespaceId, b]));
+    referralRows.value = referred.map(r => {
+      const bonus = bonusByNamespaceId.get(r.id);
+      const bonusState: ReferralBonusState = !bonus ? 'pending' : bonus.status === 'applied' ? 'applied' : 'banked';
+      return { ...r, bonusState };
+    });
+  } catch (e) {
+    logError('[people/referral] loadReferrals error', e);
+    referralRows.value = [];
+  } finally {
+    referralsLoading.value = false;
+  }
+}
+
+watch(() => selectedNS.value, () => { loadReferrals(); });
+
+function referralBadgeColor(state: ReferralBonusState) {
+  if (state === 'applied') return 'emerald';
+  if (state === 'banked') return 'amber';
+  return 'gray';
+}
+function referralBadgeLabel(state: ReferralBonusState) {
+  if (state === 'applied') return t('app.referralStatusPaid');
+  if (state === 'banked') return t('app.referralStatusBanked');
+  return t('app.referralStatusPending');
+}
+
 async function removeMember(member: { userId: string; username: string; email: string }) {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   const { idBySlug } = useNamespace();
@@ -418,6 +487,48 @@ async function removeMember(member: { userId: string; username: string; email: s
         {{ t('app.myPeopleSubtitle') }}
       </p>
     </div>
+
+    <!-- Referral program -->
+    <UCard class="mb-6 shadow-sm border border-emerald-100/70 dark:border-emerald-900/30">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
+          <UIcon name="lucide:gift" class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
+        </span>
+        <div class="min-w-0 flex-1">
+          <h2 class="text-base font-semibold">{{ t('app.referralTitle') }}</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.referralSubtitle') }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <UInput :model-value="referralLink" readonly size="sm" class="w-full sm:w-64" />
+          <UButton color="emerald" variant="soft" size="sm" icon="lucide:copy" @click="copyReferralLink">
+            {{ t('app.referralCopyLink') }}
+          </UButton>
+        </div>
+      </div>
+
+      <div v-if="referralsLoading" class="mt-4 flex flex-col gap-2 py-1">
+        <div v-for="i in 2" :key="i" class="flex items-center gap-3 animate-pulse">
+          <div class="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700" />
+          <div class="flex-1 h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
+        </div>
+      </div>
+      <p v-else-if="!referralRows.length" class="mt-3 text-xs text-gray-500 dark:text-gray-400">{{ t('app.referralListEmpty') }}</p>
+      <div v-else class="mt-4 flex flex-col gap-1.5 max-h-[240px] overflow-y-auto -mx-1">
+        <div
+          v-for="row in referralRows"
+          :key="row.id"
+          class="flex items-center gap-3 px-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+        >
+          <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+            {{ getInitials(row.title) }}
+          </span>
+          <span class="min-w-0 flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ row.title }}</span>
+          <UBadge :color="referralBadgeColor(row.bonusState)" variant="subtle" size="xs">
+            {{ referralBadgeLabel(row.bonusState) }}
+          </UBadge>
+        </div>
+      </div>
+    </UCard>
 
     <!-- Unified add-person bar -->
     <UCard class="mb-6 shadow-sm border border-blue-100/70 dark:border-blue-900/30">

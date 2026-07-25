@@ -103,8 +103,17 @@ export function useAuth() {
       const targetApp = useCookie<string | null>('target_app').value;
       if (targetApp) appParam = `&app=${encodeURIComponent(targetApp)}`;
     } catch {}
+    // Carry a referral link's referrer namespace slug (set by
+    // server/routes/r/[code].get.ts as the `referral_code` cookie) through the
+    // OAuth round-trip so a brand-new signup's namespace gets attributed back
+    // to its referrer -- see GoogleCallbackState.ReferralCode.
+    let refParam = '';
+    try {
+      const referralCode = useCookie<string | null>('referral_code').value;
+      if (referralCode) refParam = `&ref=${encodeURIComponent(referralCode)}`;
+    } catch {}
     useAnalytics().track('login_initiated');
-    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}${appParam}`;
+    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}${appParam}${refParam}`;
   }
 
   function logout() {
