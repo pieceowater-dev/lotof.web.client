@@ -290,6 +290,52 @@ export async function capitalArchivePlan(token: string, id: string) {
   return await capitalClient.request(mutation, { id });
 }
 
+export type ActivateSubscriptionPayload = {
+  success: boolean;
+  message: string;
+  error?: string | null;
+  subscription?: {
+    id: string;
+    accountId: string;
+    planId: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+  } | null;
+};
+
+export async function capitalConfirmCashPayment(
+  token: string,
+  namespace: string,
+  applicationCode: string,
+  planCode: string
+): Promise<ActivateSubscriptionPayload> {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation ConfirmCashPayment($namespace: String!, $applicationCode: String!, $planCode: String!) {
+      confirmCashPayment(namespace: $namespace, applicationCode: $applicationCode, planCode: $planCode) {
+        success
+        message
+        error
+        subscription {
+          id
+          accountId
+          planId
+          status
+          currentPeriodStart
+          currentPeriodEnd
+        }
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ confirmCashPayment: ActivateSubscriptionPayload }>(mutation, {
+    namespace,
+    applicationCode,
+    planCode,
+  });
+  return res.confirmCashPayment;
+}
+
 export type ContactSettings = {
   phone?: string | null;
   whatsapp?: string | null;

@@ -5,13 +5,22 @@
       :title="t('admin.billing')" 
       :description="t('admin.billingDesc')"
     >
-      <template v-if="activeTab === 'plans'" #actions>
+      <template v-if="activeTab === 'plans' || activeTab === 'subscriptions'" #actions>
         <button
+          v-if="activeTab === 'plans'"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
           @click="openCreatePlan"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span>{{ t('admin.newPlan') }}</span>
+        </button>
+        <button
+          v-if="activeTab === 'subscriptions'"
+          class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/30"
+          @click="openCashPaymentModal"
+        >
+          <Icon name="lucide:banknote" class="h-4 w-4" />
+          <span>{{ t('admin.confirmCashPayment') }}</span>
         </button>
       </template>
     </AdminHeader>
@@ -505,6 +514,82 @@
       </div>
     </div>
   </Teleport>
+
+  <!-- Confirm Cash Payment Modal -->
+  <Teleport to="body">
+    <div
+      v-if="cashPaymentModal.open"
+      class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
+      @click.self="closeCashPaymentModal"
+    >
+      <div class="mx-auto my-8 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+            {{ t('admin.confirmCashPayment') }}
+          </h3>
+          <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeCashPaymentModal">
+            <Icon name="lucide:x" class="h-4 w-4" />
+          </button>
+        </div>
+
+        <div class="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+          <div class="flex items-center gap-3 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/20">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+              <Icon :name="selectedProjectIcon" class="h-5 w-5" />
+            </div>
+            <div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{{ t('admin.planForApp') }}</div>
+              <div class="text-base font-bold text-slate-900 dark:text-white">{{ selectedProjectTitle }}</div>
+            </div>
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.namespaceSlug') }} *</label>
+            <input
+              v-model.trim="cashPaymentForm.namespace"
+              type="text"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              placeholder="ns_ab12cd"
+            />
+          </div>
+
+          <div>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.plan') }} *</label>
+            <select
+              v-model="cashPaymentForm.planCode"
+              class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            >
+              <option value="" disabled>{{ t('admin.selectPlan') }}</option>
+              <option v-for="plan in activeProjectPlans" :key="plan.id" :value="plan.code">
+                {{ plan.name }} ({{ plan.interval === 'YEAR' ? t('admin.interval.year') : t('admin.interval.month') }}) · {{ plan.amountCents / 100 }} {{ plan.currency }}
+              </option>
+            </select>
+          </div>
+
+          <p v-if="cashPaymentModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            {{ cashPaymentModal.error }}
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
+          <button
+            class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            @click="closeCashPaymentModal"
+          >
+            {{ t('app.cancel') || 'Отмена' }}
+          </button>
+          <button
+            :disabled="cashPaymentModal.saving"
+            class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            @click="submitCashPaymentModal"
+          >
+            <Icon v-if="cashPaymentModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
+            {{ t('admin.confirmCashPayment') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </div> <!-- End min-h-screen -->
 </template>
 
@@ -512,7 +597,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, type AdminBillingInfo } from '@/api/capital/admin';
+import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, type AdminBillingInfo } from '@/api/capital/admin';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -633,6 +718,10 @@ onMounted(async () => {
 const selectedProjectPlans = computed(() => {
   // Server already filters by the resolved applicationCode (see refreshData).
   return billingData.value?.adminPlans || [];
+});
+
+const activeProjectPlans = computed(() => {
+  return selectedProjectPlans.value.filter(p => p.status !== 'PLAN_ARCHIVED');
 });
 
 // Plans are created in month/year pairs (see submitPlanModal) but come back
@@ -850,6 +939,64 @@ async function onArchivePlan(plan: PlanRow) {
       description: e?.message,
       color: 'red',
     });
+  }
+}
+
+// ─── Confirm cash payment modal ────────────────────────────────────────────
+const cashPaymentModal = reactive({
+  open: false,
+  saving: false,
+  error: '',
+});
+const cashPaymentForm = reactive({
+  namespace: '',
+  planCode: '',
+});
+
+function openCashPaymentModal() {
+  cashPaymentForm.namespace = '';
+  cashPaymentForm.planCode = '';
+  cashPaymentModal.error = '';
+  cashPaymentModal.open = true;
+}
+
+function closeCashPaymentModal() {
+  if (cashPaymentModal.saving) return;
+  cashPaymentModal.open = false;
+}
+
+async function submitCashPaymentModal() {
+  if (!token.value) return;
+  cashPaymentModal.error = '';
+
+  if (!cashPaymentForm.namespace) {
+    cashPaymentModal.error = t('admin.namespaceSlugRequired') || 'Укажите слаг неймспейса';
+    return;
+  }
+  if (!cashPaymentForm.planCode) {
+    cashPaymentModal.error = t('admin.planRequired') || 'Выберите тариф';
+    return;
+  }
+
+  cashPaymentModal.saving = true;
+  try {
+    const result = await capitalConfirmCashPayment(
+      token.value,
+      cashPaymentForm.namespace,
+      selectedProjectAppCode.value,
+      cashPaymentForm.planCode
+    );
+    if (!result.success) {
+      cashPaymentModal.error = result.error || result.message || (t('admin.cashPaymentFailed') || 'Не удалось подтвердить оплату');
+      return;
+    }
+    toast.add({ title: t('admin.cashPaymentConfirmed') || 'Оплата наличными подтверждена', color: 'green' });
+    cashPaymentModal.open = false;
+    await refreshData();
+  } catch (e: any) {
+    cashPaymentModal.error = e?.message || (t('admin.cashPaymentFailed') || 'Не удалось подтвердить оплату');
+  } finally {
+    cashPaymentModal.saving = false;
   }
 }
 
