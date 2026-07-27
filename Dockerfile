@@ -1,5 +1,8 @@
 # Stage 1: Build the Nuxt application
-FROM node:18-alpine AS builder
+# Node 20+ required: sharp's linuxmusl-x64 prebuild (added for on-the-fly
+# publication image re-encoding) has no compatible build for Node 18 on
+# Alpine and throws at module load, 500ing every publication image in prod.
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -27,7 +30,7 @@ ENV NUXT_PUBLIC_SITE_URL=$NUXT_PUBLIC_SITE_URL
 RUN npm run build
 
 # Stage 2: Run Nitro server
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
