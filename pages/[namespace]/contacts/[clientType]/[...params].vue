@@ -56,7 +56,7 @@ const validPageSizes = [10, 20, 50, 100];
 
 // Parse client type from route
 const currentClientType = computed(() => {
-  const type = route.params.clientType as string;
+  const type = (route.params.clientType as string | undefined) || 'all';
   return type.toUpperCase() as 'ALL' | 'INDIVIDUAL' | 'LEGAL';
 });
 
