@@ -26,11 +26,17 @@ export function useAnalytics() {
       },
       // We don't use session replay or remote feature flags, so skip the
       // extra sr-client-cfg.amplitude.com fetch entirely, and silence the
-      // SDK's own console logging -- ad blockers/privacy extensions
-      // routinely block amplitude.com requests outright, which is an
-      // expected, unactionable condition for those users, not a real error.
+      // SDK's own console logging.
       fetchRemoteConfig: false,
       logLevel: amplitude.Types.LogLevel.None,
+      // Route event ingestion through our own origin instead of
+      // amplitude.com directly -- ad blockers/privacy extensions block
+      // amplitude.com by domain regardless of any client-side config, which
+      // showed up as "Resource blocked by content blocker" console errors
+      // (a native browser message, not something logLevel can suppress).
+      // server/api/analytics/collect.post.ts transparently forwards to
+      // Amplitude's real ingestion endpoint server-side.
+      serverUrl: '/api/analytics/collect',
     });
     initialized = true;
   }
