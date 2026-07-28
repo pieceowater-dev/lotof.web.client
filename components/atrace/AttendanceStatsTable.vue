@@ -402,6 +402,23 @@ async function calculateSalaryBackend() {
   salaryCalcLoading.value = true;
   salaryCalcError.value = null;
   try {
+    // The backend calculates from the persisted salary/overtime-rate/penalty
+    // assignment, not whatever's currently typed in this form -- save first
+    // so "Рассчитать" always reflects exactly what's on screen instead of
+    // whatever was last saved (or nothing at all, on the very first attempt
+    // for an employee with no salary configured yet, which came back as an
+    // all-zero result with no indication why).
+    const { atraceSetMemberSalary } = await import('@/api/atrace/salary/salary');
+    await atraceSetMemberSalary(
+      selectedUserId.value,
+      parseFloat(salaryInput.value) || 0,
+      salaryCurrency.value || 'KZT',
+      undefined,
+      salaryOvertimeRateId.value || null,
+      salaryPenaltyRuleIds.value,
+      namespaceSlug.value
+    );
+
     const { atraceCalculateSalary } = await import('@/api/atrace/salary/payroll');
     salaryCalcResult.value = await atraceCalculateSalary(
       dateRange.value.startDate,
@@ -410,7 +427,7 @@ async function calculateSalaryBackend() {
       namespaceSlug.value
     );
   } catch (e: any) {
-    salaryCalcError.value = isAtracePermissionError(e, 'tracker.salary.view')
+    salaryCalcError.value = isAtracePermissionError(e, 'tracker.salary.view') || isAtracePermissionError(e, 'tracker.salary.manage')
       ? (t('app.salaryPermissionError') || 'Недостаточно прав')
       : (t('app.saveFailed') || 'Не удалось рассчитать');
   } finally {
