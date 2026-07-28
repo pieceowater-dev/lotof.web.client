@@ -13,6 +13,7 @@ import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
 import { withRetry } from '@/utils/retry';
 import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHours';
+import { buildTableTag, formatTableNumber } from '@/utils/tableTag';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -26,6 +27,12 @@ const router = useRouter();
 const nsSlug = computed(() => route.params.namespace as string);
 const branchParam = computed(() => (route.query.b as string) || '');
 const sourceTag = computed(() => (route.query.t as string) || '');
+// Table QR ordering: a table's QR code links here with both ?b= (the
+// branch, resolved by the watcher below) and ?table= (a "000"-style table
+// number printed on the sticker). Presence of ?table= puts the whole
+// checkout into table-service mode — see checkoutForm.type below.
+const tableParam = computed(() => (route.query.table as string) || '');
+const isTableOrder = computed(() => !!tableParam.value);
 
 // Cart + branch selection survive a page reload/return visit, scoped per
 // tenant so switching storefronts never leaks one tenant's cart into
@@ -545,7 +552,7 @@ function openCheckout() {
 const checkoutForm = reactive({
   customerName: '',
   phone: '',
-  type: 'delivery' as 'pickup' | 'delivery',
+  type: (isTableOrder.value ? 'table' : 'delivery') as 'pickup' | 'delivery' | 'table',
   deliveryAddress: '',
   comment: '',
   scheduled: false,
@@ -571,6 +578,61 @@ const scheduledWindowLabel = computed(() => {
 const todayDateInputValue = computed(() => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+});
+
+// Hourly time-SLOT picker for scheduled orders — plain free-text time entry
+// was error-prone (easy to end up with a value that never resolves to a
+// valid Date, silently keeping the "Place order" button disabled with no
+// clear reason why). Slots are generated from the active branch's actual
+// working hours for the selected weekday when configured, falling back to a
+// generic 09:00–21:00 window otherwise (same default as
+// utils/workingHours.ts's defaultWorkingHours()). checkoutForm.scheduledTime
+// still just stores the slot's start ("HH:MM"), unchanged from before.
+function minutesSinceMidnightLocal(hhmm: string): number {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+function hhmmFromMinutes(mins: number): string {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+const timeSlots = computed(() => {
+  if (!checkoutForm.scheduledDate) return [];
+  let openMin = 9 * 60;
+  let closeMin = 21 * 60;
+  if (activeBranchHours.value) {
+    const d = new Date(`${checkoutForm.scheduledDate}T00:00:00`);
+    const dayKey = (['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const)[(d.getDay() + 6) % 7];
+    const day = activeBranchHours.value[dayKey];
+    if (!day || day.closed) return [];
+    const dayOpen = minutesSinceMidnightLocal(day.open);
+    const dayClose = minutesSinceMidnightLocal(day.close);
+    // Overnight ranges (close < open) aren't worth the complexity for a
+    // pre-order slot picker — fall back to the generic window instead of
+    // trying to span across midnight.
+    if (dayClose > dayOpen) {
+      openMin = dayOpen;
+      closeMin = dayClose;
+    }
+  }
+  const slots: { value: string; label: string }[] = [];
+  for (let m = openMin; m < closeMin; m += 60) {
+    slots.push({ value: hhmmFromMinutes(m), label: `${hhmmFromMinutes(m)}–${hhmmFromMinutes(m + 60)}` });
+  }
+  if (checkoutForm.scheduledDate === todayDateInputValue.value) {
+    const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+    return slots.filter((s) => minutesSinceMidnightLocal(s.value) > nowMin);
+  }
+  return slots;
+});
+// If the date changes (or the branch's hours rule the previously-picked slot
+// out for that day), drop a now-invalid selection instead of silently
+// keeping the "Place order" button disabled with no visible cause.
+watch(timeSlots, (slots) => {
+  if (checkoutForm.scheduledTime && !slots.some((s) => s.value === checkoutForm.scheduledTime)) {
+    checkoutForm.scheduledTime = '';
+  }
 });
 
 // Contact details (name + phone only — not address/comment, those are
@@ -602,6 +664,15 @@ function updatePhoneValue(value: string) {
   checkoutForm.phone = sanitizePhoneInput(value);
 }
 const isPhoneValid = computed(() => checkoutForm.phone.replace(/\D/g, '').length >= 10);
+// Table orders are the one case where phone isn't needed to fulfil the
+// order (staff just bring it to the table) — so it's optional there, unlike
+// pickup/delivery where it's the only way to reach the customer. If they do
+// type something for a table order it's still validated as a real phone,
+// just not required to be non-empty.
+const isPhoneOk = computed(() => {
+  if (!checkoutForm.phone.trim()) return isTableOrder.value;
+  return isPhoneValid.value;
+});
 
 // "Previous orders" — fetched from the backend (myOrders query), matched by
 // the phone currently in the form. Debounced so it doesn't fire a request on
@@ -636,9 +707,9 @@ watch(() => checkoutForm.phone, (phone) => {
 });
 
 const isCheckoutValid = computed(() => {
-  if (!isPhoneValid.value) return false;
+  if (!isPhoneOk.value) return false;
   if (checkoutForm.type === 'delivery' && !checkoutForm.deliveryAddress.trim()) return false;
-  if (checkoutForm.type === 'pickup' && !selectedBranchId.value) return false;
+  if ((checkoutForm.type === 'pickup' || checkoutForm.type === 'table') && !selectedBranchId.value) return false;
   if (checkoutForm.scheduled && !scheduledDateTime.value) return false;
   return cart.value.length > 0;
 });
@@ -655,7 +726,7 @@ async function submitOrder() {
       deliveryAddress: checkoutForm.type === 'delivery' ? checkoutForm.deliveryAddress.trim() : undefined,
       deliveryAt: scheduledDateTime.value ? scheduledDateTime.value.toISOString() : undefined,
       comment: checkoutForm.comment.trim() || undefined,
-      sourceTag: sourceTag.value || undefined,
+      sourceTag: isTableOrder.value ? buildTableTag(tableParam.value) : (sourceTag.value || undefined),
       totalAmount: cartTotal.value,
       items: cart.value.map((l) => ({
         menuItemId: l.menuItemId,
@@ -821,6 +892,14 @@ useHead(() => {
             <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
             <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
           </a>
+          <span
+            v-if="isTableOrder"
+            class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium flex-shrink-0"
+            :style="{ color: onPrimaryText }"
+          >
+            <Icon name="lucide:utensils" class="w-3.5 h-3.5 flex-shrink-0" />
+            {{ t('menu.tableNumber', { number: formatTableNumber(tableParam) }) || `Table ${formatTableNumber(tableParam)}` }}
+          </span>
           <span
             v-if="activeBranch && activeBranchHours"
             class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium flex-shrink-0"
@@ -1429,6 +1508,7 @@ useHead(() => {
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('menu.orderReceivedDesc') || "We'll be in touch shortly to confirm the details." }}</p>
 
           <a
+            v-if="checkoutForm.phone.trim()"
             :href="orderStatusHref(smartOrderNumber(orderResult), checkoutForm.phone)"
             target="_blank"
             rel="noopener"
@@ -1439,6 +1519,9 @@ useHead(() => {
             {{ t('menu.viewOrder') || 'View order' }}
             <Icon name="lucide:arrow-right" class="w-4 h-4" />
           </a>
+          <p v-else class="mt-6 text-xs text-gray-400 dark:text-gray-500">
+            {{ t('menu.noPhoneNoTrackingHint') || "No phone on file, so there's no order-status link — ask staff at your table if you need an update." }}
+          </p>
         </div>
 
         <div v-else class="space-y-4">
@@ -1466,7 +1549,7 @@ useHead(() => {
             </div>
           </div>
 
-          <UFormGroup :label="t('menu.phone') || 'Phone'" required :error="!!(checkoutForm.phone && !isPhoneValid)">
+          <UFormGroup :label="t('menu.phone') || 'Phone'" :required="!isTableOrder" :error="!!(checkoutForm.phone && !isPhoneValid)">
             <UInput
               :model-value="checkoutForm.phone"
               type="tel"
@@ -1477,6 +1560,9 @@ useHead(() => {
               :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
               @update:model-value="updatePhoneValue"
             />
+            <p v-if="isTableOrder && !checkoutForm.phone.trim()" class="text-xs text-amber-600 dark:text-amber-400 mt-1.5">
+              {{ t('menu.tablePhoneRecommendedHint') || "Optional, but without it you won't be able to track your order status later." }}
+            </p>
           </UFormGroup>
 
           <div v-if="myPastOrders.length" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 space-y-2">
@@ -1509,7 +1595,13 @@ useHead(() => {
           <UFormGroup :label="t('menu.yourName') || 'Your name'">
             <UInput v-model="checkoutForm.customerName" autocomplete="name" size="lg" />
           </UFormGroup>
-          <div class="flex gap-2">
+          <div v-if="isTableOrder" class="rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 flex items-center gap-2 text-sm">
+            <Icon name="lucide:utensils" class="w-4 h-4 flex-shrink-0" :style="{ color: secondaryColor }" />
+            <span class="text-gray-700 dark:text-gray-300">
+              {{ t('menu.orderingFromTable', { number: formatTableNumber(tableParam) }) || `Ordering from Table ${formatTableNumber(tableParam)}` }}
+            </span>
+          </div>
+          <div v-else class="flex gap-2">
             <UButton
               size="sm"
               :variant="checkoutForm.type === 'delivery' ? 'solid' : 'soft'"
@@ -1533,7 +1625,7 @@ useHead(() => {
             </UFormGroup>
             <p class="text-xs text-gray-400 -mt-2">{{ t('menu.deliveryFeeNote') || 'Delivery fee is calculated separately and not included in the order total.' }}</p>
           </template>
-          <UFormGroup v-else-if="activeBranch" :label="t('menu.pickupFrom') || 'Pickup from'">
+          <UFormGroup v-else-if="checkoutForm.type === 'pickup' && activeBranch" :label="t('menu.pickupFrom') || 'Pickup from'">
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ activeBranch.name }} — {{ activeBranch.address }}</div>
             <div v-if="activeBranch.lat && activeBranch.lng" class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 h-40 mb-2">
               <iframe :src="osmEmbedSrc(activeBranch.lat, activeBranch.lng)" class="w-full h-full border-0" loading="lazy" title="Branch location" />
@@ -1542,7 +1634,7 @@ useHead(() => {
               {{ t('menu.openIn2gis') || 'Open in 2GIS' }}
             </UButton>
           </UFormGroup>
-          <UFormGroup :label="t('menu.when') || 'When'">
+          <UFormGroup v-if="!isTableOrder" :label="t('menu.when') || 'When'">
             <div class="flex gap-2">
               <UButton size="sm" :variant="!checkoutForm.scheduled ? 'solid' : 'soft'" color="gray" @click="checkoutForm.scheduled = false">
                 {{ t('menu.asap') || 'As soon as possible' }}
@@ -1552,9 +1644,26 @@ useHead(() => {
               </UButton>
             </div>
             <div v-if="checkoutForm.scheduled" class="mt-2 space-y-2">
-              <div class="flex gap-2">
-                <UInput v-model="checkoutForm.scheduledDate" type="date" :min="todayDateInputValue" size="lg" class="flex-1" />
-                <UInput v-model="checkoutForm.scheduledTime" type="time" size="lg" class="flex-1" />
+              <UInput v-model="checkoutForm.scheduledDate" type="date" :min="todayDateInputValue" size="lg" />
+              <div v-if="checkoutForm.scheduledDate">
+                <div v-if="timeSlots.length" class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="slot in timeSlots"
+                    :key="slot.value"
+                    type="button"
+                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
+                    :class="checkoutForm.scheduledTime === slot.value
+                      ? 'text-white border-transparent'
+                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'"
+                    :style="checkoutForm.scheduledTime === slot.value ? { backgroundColor: primaryColor } : {}"
+                    @click="checkoutForm.scheduledTime = slot.value"
+                  >
+                    {{ slot.label }}
+                  </button>
+                </div>
+                <p v-else class="text-xs text-amber-600 dark:text-amber-400">
+                  {{ t('menu.noSlotsForDate') || 'No time slots available for that date — try another day.' }}
+                </p>
               </div>
               <p v-if="scheduledWindowLabel" class="text-xs text-gray-500 dark:text-gray-400">
                 {{ t('menu.scheduledWindowHint') || 'We\'ll aim to have it ready between' }} {{ scheduledWindowLabel }}

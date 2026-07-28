@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuShareLink } from '@/api/menu/sharelink/list';
 import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
+import { parseTableTag } from '@/utils/tableTag';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -81,6 +82,13 @@ async function loadBranches() {
     logError('[menu/settings/share] loadBranches failed', e);
   }
 }
+
+// Table QR links (see TableQrSection.vue) are saved via this exact same
+// ShareLink resource, tagged "table:NNN" — they get their own management UI
+// there, so this list (and its "no saved links" empty state) only ever
+// shows the marketing-attribution ones. isAtLimit below still counts the
+// FULL savedLinks list (both kinds share one plan cap), not this filtered view.
+const marketingLinks = computed(() => savedLinks.value.filter((l) => !parseTableTag(l.sourceTag)));
 
 async function loadSavedLinks() {
   loading.value = true;
@@ -195,11 +203,11 @@ onMounted(async () => {
       <div v-if="loading" class="flex items-center justify-center py-8">
         <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
       </div>
-      <div v-else-if="!savedLinks.length" class="text-sm text-gray-400 px-5 pb-5">
+      <div v-else-if="!marketingLinks.length" class="text-sm text-gray-400 px-5 pb-5">
         {{ t('menu.noSavedLinks') || 'No saved links yet — generate one above.' }}
       </div>
       <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="link in savedLinks" :key="link.id" class="flex items-center gap-3 px-5 py-3">
+        <div v-for="link in marketingLinks" :key="link.id" class="flex items-center gap-3 px-5 py-3">
           <div class="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/30 flex items-center justify-center flex-shrink-0">
             <Icon name="lucide:link" class="h-4 w-4 text-primary-600 dark:text-primary-400" />
           </div>

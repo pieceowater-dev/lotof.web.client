@@ -14,13 +14,14 @@ const ORDER_STATUS_TRANSITIONS: Record<string, string[]> = {
   COMPLETED: [],
   CANCELLED: [],
 };
-// DELIVERING only means something for a delivery order — a pickup order has
-// no courier leg, so READY may skip straight to COMPLETED for pickup
-// instead of being forced through a status that doesn't apply to it.
-// Mirrors the same exception in the backend's CanTransitionTo.
+// DELIVERING only means something for a delivery order — pickup and table
+// (dine-in) orders have no courier leg, so READY may skip straight to
+// COMPLETED for either instead of being forced through a status that
+// doesn't apply to them. Mirrors the same exception in the backend's
+// CanTransitionTo.
 export function nextStatuses(current: string, orderType?: string): string[] {
   const base = ORDER_STATUS_TRANSITIONS[current] || [];
-  if (current === 'READY' && orderType === 'pickup' && !base.includes('COMPLETED')) {
+  if (current === 'READY' && (orderType === 'pickup' || orderType === 'table') && !base.includes('COMPLETED')) {
     return [...base, 'COMPLETED'];
   }
   return base;

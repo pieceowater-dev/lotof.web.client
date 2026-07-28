@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
+import { buildTableTag } from '@/utils/tableTag';
 
 const { t } = useI18n();
 
@@ -29,11 +30,15 @@ const isOpen = computed({
 type CartLine = { menuItemId: string; name: string; price: number; quantity: number };
 
 const form = reactive({
-  type: 'delivery' as 'pickup' | 'delivery',
+  type: 'delivery' as 'pickup' | 'delivery' | 'table',
   branchId: '',
   phone: '',
   customerName: '',
   deliveryAddress: '',
+  // UInput coerces a type="number" v-model to an actual JS number once the
+  // user types a digit (Nuxt UI's looseToNumber) — only the initial empty
+  // state is a string, so this can't be treated as always-string (no .trim()).
+  tableNumber: '' as number | string,
   comment: '',
 });
 
@@ -155,6 +160,7 @@ watch(() => props.modelValue, (open) => {
   form.phone = '';
   form.customerName = '';
   form.deliveryAddress = '';
+  form.tableNumber = '';
   form.comment = '';
   cart.value = [];
   itemSearch.value = '';
@@ -164,7 +170,7 @@ watch(() => props.modelValue, (open) => {
 const isFormValid = computed(() => {
   if (!isPhoneValid.value) return false;
   if (form.type === 'delivery' && !form.deliveryAddress.trim()) return false;
-  if (form.type === 'pickup' && !form.branchId) return false;
+  if ((form.type === 'pickup' || form.type === 'table') && !form.branchId) return false;
   return cart.value.length > 0;
 });
 
@@ -181,7 +187,7 @@ function handleSubmit() {
     type: form.type,
     deliveryAddress: form.type === 'delivery' ? form.deliveryAddress.trim() : undefined,
     comment: form.comment.trim() || undefined,
-    sourceTag: 'manual',
+    sourceTag: form.type === 'table' && form.tableNumber !== '' ? buildTableTag(form.tableNumber) : 'manual',
     totalAmount: cartTotal.value,
     items: cart.value.map((l) => ({
       menuItemId: l.menuItemId,
@@ -230,6 +236,16 @@ function handleSubmit() {
             <Icon name="lucide:truck" class="h-4 w-4" />
             {{ t('menu.delivery') || 'Delivery' }}
           </button>
+          <button
+            class="flex-1 flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200"
+            :class="form.type === 'table'
+              ? 'border-primary-300 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-700 dark:bg-primary-950/30 dark:text-primary-300'
+              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400'"
+            @click="form.type = 'table'"
+          >
+            <Icon name="lucide:utensils" class="h-4 w-4" />
+            {{ t('menu.tableService') || 'Table' }}
+          </button>
         </div>
 
         <!-- Contact section -->
@@ -265,8 +281,11 @@ function handleSubmit() {
           <UFormGroup v-if="form.type === 'delivery'" :label="t('menu.address') || 'Address'" required>
             <UInput v-model="form.deliveryAddress" icon="lucide:home" :ui="{ rounded: 'rounded-xl' }" />
           </UFormGroup>
+          <UFormGroup v-if="form.type === 'table'" :label="t('menu.tableNumberLabel') || 'Table number'">
+            <UInput v-model="form.tableNumber" icon="lucide:utensils" type="number" min="0" max="999" :ui="{ rounded: 'rounded-xl' }" />
+          </UFormGroup>
 
-          <UFormGroup :label="t('menu.branch') || 'Branch'" :required="form.type === 'pickup'">
+          <UFormGroup :label="t('menu.branch') || 'Branch'" :required="form.type === 'pickup' || form.type === 'table'">
             <USelectMenu
               v-model="form.branchId"
               icon="lucide:map-pin"

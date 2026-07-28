@@ -11,6 +11,8 @@ import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
+import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
+import { parseTableTag } from '@/utils/tableTag';
 import OrderHistoryTimeline from '@/components/menu/OrderHistoryTimeline.vue';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';
@@ -75,7 +77,14 @@ const branchById = computed(() => {
 // A tag that doesn't match any current share link (e.g. one that's since
 // been deleted) falls back to the raw value rather than disappearing silently.
 function sourceTagLabel(tag: string): string {
-  return props.sourceTagOptions?.find((s) => s.sourceTag === tag)?.label || tag;
+  const saved = props.sourceTagOptions?.find((s) => s.sourceTag === tag)?.label;
+  if (saved) return saved;
+  // Table QR orders always carry a sourceTag of "table:NNN" (see
+  // utils/tableTag.ts) — show it as "Table 007" even when the admin never
+  // saved that specific table as a ShareLink.
+  const tableNumber = parseTableTag(tag);
+  if (tableNumber) return `${t('menu.table') || 'Table'} ${tableNumber}`;
+  return tag;
 }
 
 const items = ref<MenuOrderItem[]>([]);
@@ -633,7 +642,7 @@ const callHref = computed(() => telHref(props.order?.phone));
 const waHref = computed(() => whatsappHref(props.order?.phone));
 const mapHref = computed(() => {
   if (!props.order) return '';
-  if (props.order.type === 'pickup' && props.order.branchId) {
+  if ((props.order.type === 'pickup' || props.order.type === 'table') && props.order.branchId) {
     const b = branchById.value[props.order.branchId];
     return b?.address ? twoGisSearchHref(b.address) : '';
   }
@@ -867,13 +876,13 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
           <!-- Delivery / pickup card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-2.5">
             <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              <Icon :name="order.type === 'pickup' ? 'lucide:store' : 'lucide:truck'" class="w-3.5 h-3.5" />
-              {{ order.type === 'pickup' ? (t('menu.pickup') || 'Pickup') : (t('menu.delivery') || 'Delivery') }}
+              <Icon :name="orderTypeIcon(order.type)" class="w-3.5 h-3.5" />
+              {{ t(orderTypeLabelInfo(order.type).key) || orderTypeLabelInfo(order.type).fallback }}
             </div>
 
             <template v-if="!isEditingOrder">
               <div class="flex items-start justify-between gap-2">
-                <div v-if="order.type === 'pickup' && order.branchId" class="flex items-start gap-2 text-sm min-w-0">
+                <div v-if="(order.type === 'pickup' || order.type === 'table') && order.branchId" class="flex items-start gap-2 text-sm min-w-0">
                   <Icon name="lucide:map-pin" class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                   <span class="min-w-0">{{ branchById[order.branchId]?.name || '—' }} — {{ branchById[order.branchId]?.address || '' }}</span>
                 </div>
@@ -903,7 +912,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
               <UFormGroup v-if="order.type === 'delivery'" :label="t('menu.address') || 'Delivery address'">
                 <UInput v-model="editForm.deliveryAddress" size="sm" />
               </UFormGroup>
-              <p v-else class="text-xs text-gray-400">{{ branchById[order.branchId || '']?.name }} — {{ t('menu.pickupBranchNotEditable') || 'pickup branch can\'t be changed here' }}</p>
+              <p v-else class="text-xs text-gray-400">{{ branchById[order.branchId || '']?.name }} — {{ t('menu.pickupBranchNotEditable') || 'branch can\'t be changed here' }}</p>
               <UFormGroup :label="t('menu.comment') || 'Comment'">
                 <UTextarea v-model="editForm.comment" :rows="2" />
               </UFormGroup>

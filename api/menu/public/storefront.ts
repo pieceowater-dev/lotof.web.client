@@ -202,7 +202,7 @@ export type PublicOrderInput = {
   branchId?: string;
   phone: string;
   customerName?: string;
-  type: 'delivery' | 'pickup';
+  type: 'delivery' | 'pickup' | 'table';
   deliveryAddress?: string;
   deliveryAt?: string; // ISO start of a scheduled window (pre-order) — omitted means ASAP
   comment?: string;
@@ -253,6 +253,7 @@ export type PublicOrderStatus = {
   customerName?: string | null;
   deliveryAddress?: string | null;
   deliveryAt?: string | null;
+  sourceTag?: string | null;
   totalAmount: number;
   createdAt: string;
   closedAt?: string | null;
@@ -261,7 +262,7 @@ export type PublicOrderStatus = {
 const OrderStatusDocument = /* GraphQL */ `
   query PublicOrderStatus($number: Int!, $phone: String!, $createdFrom: String!, $createdTo: String!) {
     orderStatus(number: $number, phone: $phone, createdFrom: $createdFrom, createdTo: $createdTo) {
-      id number branchId type status customerName deliveryAddress deliveryAt totalAmount createdAt closedAt
+      id number branchId type status customerName deliveryAddress deliveryAt sourceTag totalAmount createdAt closedAt
     }
   }
 `;

@@ -10,6 +10,8 @@ import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
+import { orderTypeLabelInfo } from '@/utils/orderType';
+import { parseTableTag } from '@/utils/tableTag';
 import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { PaginationLength } from '@/utils/constants';
@@ -153,7 +155,7 @@ const statusCounts = ref<Record<string, number>>({});
 // are separate — those are for building a report over a period, not for
 // everyday triage, so they live behind an explicit "More filters" toggle
 // instead of competing for space in the always-visible bar.
-const selectedType = ref<'' | 'delivery' | 'pickup'>('');
+const selectedType = ref<'' | 'delivery' | 'pickup' | 'table'>('');
 const isFilterPanelOpen = ref(false);
 const sourceTagFilter = ref('');
 const createdFrom = ref('');
@@ -256,7 +258,7 @@ function restoreQuickFilters() {
     restoringFilters = true;
     if (Array.isArray(saved.selectedStatuses)) selectedStatuses.value = saved.selectedStatuses;
     if (Array.isArray(saved.selectedBranchIds)) selectedBranchIds.value = saved.selectedBranchIds;
-    if (saved.selectedType === '' || saved.selectedType === 'delivery' || saved.selectedType === 'pickup') {
+    if (saved.selectedType === '' || saved.selectedType === 'delivery' || saved.selectedType === 'pickup' || saved.selectedType === 'table') {
       selectedType.value = saved.selectedType;
     }
   } catch (e) {
@@ -795,6 +797,18 @@ async function handleCreateOrder(payload: any) {
           {{ t('menu.storefront') || 'Storefront' }}
         </UButton>
         <UButton
+          icon="lucide:monitor"
+          size="xs"
+          color="violet"
+          variant="soft"
+          class="min-w-fit whitespace-nowrap gap-2"
+          :ui="{ rounded: 'rounded-xl' }"
+          :to="`/to/${nsSlug}/menu/board`"
+          target="_blank"
+        >
+          {{ t('menu.kitchenBoard') || 'Kitchen board' }}
+        </UButton>
+        <UButton
           v-if="isOwnerOrManager"
           icon="lucide:settings"
           size="xs"
@@ -913,7 +927,7 @@ async function handleCreateOrder(payload: any) {
       />
       <div class="flex rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex-shrink-0">
         <button
-          v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }]"
+          v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }, { value: 'table', label: t('menu.tableService') || 'Table' }]"
           :key="opt.value"
           type="button"
           class="px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors"
@@ -984,7 +998,8 @@ async function handleCreateOrder(payload: any) {
         </template>
         <template #type-data="{ row }">
           <UBadge color="gray" variant="subtle">
-            {{ row.type === 'pickup' ? (t('menu.pickup') || 'Pickup') : (t('menu.delivery') || 'Delivery') }}
+            <template v-if="parseTableTag(row.sourceTag)">{{ t('menu.tableNumber', { number: parseTableTag(row.sourceTag) || '' }) || `Table ${parseTableTag(row.sourceTag)}` }}</template>
+            <template v-else>{{ t(orderTypeLabelInfo(row.type).key) || orderTypeLabelInfo(row.type).fallback }}</template>
           </UBadge>
         </template>
         <template #status-data="{ row }">

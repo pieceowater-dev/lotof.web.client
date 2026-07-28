@@ -6,6 +6,7 @@ import BranchesSection from '@/components/menu/settings/BranchesSection.vue';
 import CatalogSection from '@/components/menu/settings/CatalogSection.vue';
 import PromoBannersSection from '@/components/menu/settings/PromoBannersSection.vue';
 import ShareLinkSection from '@/components/menu/settings/ShareLinkSection.vue';
+import TableQrSection from '@/components/menu/settings/TableQrSection.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -31,7 +32,7 @@ const goBack = () => {
   navigateTo(`/${nsSlug.value}/menu`);
 };
 
-type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'share';
+type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'share' | 'tableqr';
 
 const tabs = computed(() => [
   { key: 'staff' as TabKey, label: t('menu.staff') || 'Staff', icon: 'lucide:users' },
@@ -40,6 +41,7 @@ const tabs = computed(() => [
   { key: 'catalog' as TabKey, label: t('menu.catalog') || 'Catalog', icon: 'lucide:layout-grid' },
   { key: 'promobanners' as TabKey, label: t('menu.attraction') || 'Attraction', icon: 'lucide:megaphone' },
   { key: 'share' as TabKey, label: t('menu.shareTab') || 'Share', icon: 'lucide:link' },
+  { key: 'tableqr' as TabKey, label: t('menu.tableQrTab') || 'Table QR', icon: 'lucide:qr-code' },
 ]);
 
 const activeTab = ref<TabKey>((route.query.tab as TabKey) || 'staff');
@@ -104,6 +106,7 @@ watch(activeTab, (tab) => {
       <CatalogSection v-else-if="activeTab === 'catalog'" />
       <PromoBannersSection v-else-if="activeTab === 'promobanners'" />
       <ShareLinkSection v-else-if="activeTab === 'share'" />
+      <TableQrSection v-else-if="activeTab === 'tableqr'" />
     </div>
   </div>
 </template>

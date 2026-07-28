@@ -10,6 +10,8 @@ import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseOrderStatusKey } from '@/utils/orderNumber';
 import { withRetry } from '@/utils/retry';
 import { statusBadgeStyle, ORDER_STATUSES } from '@/utils/orderStatus';
+import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
+import { parseTableTag } from '@/utils/tableTag';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref } from '@/utils/phoneLinks';
 
@@ -50,11 +52,13 @@ const statusLabel = (s: string) => ({
 }[s] || s);
 
 // The visible step track — DELIVERING only makes sense for delivery orders,
-// so a pickup order's track skips straight from READY to COMPLETED.
+// so a pickup/table order's track skips straight from READY to COMPLETED.
 const trackedStatuses = computed(() => {
-  if (order.value?.type === 'pickup') return ORDER_STATUSES.filter((s) => s !== 'DELIVERING' && s !== 'CANCELLED');
+  if (order.value?.type === 'pickup' || order.value?.type === 'table') return ORDER_STATUSES.filter((s) => s !== 'DELIVERING' && s !== 'CANCELLED');
   return ORDER_STATUSES.filter((s) => s !== 'CANCELLED');
 });
+
+const tableTag = computed(() => parseTableTag(order.value?.sourceTag));
 const currentStepIndex = computed(() => {
   if (!order.value) return -1;
   return (trackedStatuses.value as readonly string[]).indexOf(order.value.status);
@@ -259,10 +263,11 @@ useHead(() => ({
             <div class="space-y-2.5 pt-1 border-t border-gray-100 dark:border-gray-800">
               <div class="flex items-center justify-between text-sm pt-3">
                 <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Icon :name="order.type === 'pickup' ? 'lucide:store' : 'lucide:truck'" class="w-4 h-4" />
-                  {{ order.type === 'pickup' ? (t('menu.pickup') || 'Pickup') : (t('menu.delivery') || 'Delivery') }}
+                  <Icon :name="orderTypeIcon(order.type)" class="w-4 h-4" />
+                  {{ t(orderTypeLabelInfo(order.type).key) || orderTypeLabelInfo(order.type).fallback }}
                 </span>
-                <span v-if="order.deliveryAddress" class="text-gray-700 dark:text-gray-300 text-right max-w-[60%] truncate">{{ order.deliveryAddress }}</span>
+                <span v-if="tableTag" class="text-gray-700 dark:text-gray-300 text-right max-w-[60%] truncate">{{ t('menu.tableNumber', { number: tableTag }) || `Table ${tableTag}` }}</span>
+                <span v-else-if="order.deliveryAddress" class="text-gray-700 dark:text-gray-300 text-right max-w-[60%] truncate">{{ order.deliveryAddress }}</span>
               </div>
               <div class="flex items-center justify-between text-sm">
                 <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
