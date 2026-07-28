@@ -443,7 +443,7 @@ onMounted(async () => {
 
           <div
             v-else
-            class="grid grid-cols-3 gap-3"
+            class="grid grid-cols-1 sm:grid-cols-3 gap-3"
           >
             <UFormGroup :label="t('app.rotationWorkDays') || 'Рабочих дней'">
               <UInput
@@ -468,7 +468,7 @@ onMounted(async () => {
             </UFormGroup>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UFormGroup :label="t('app.shiftStartTime') || 'Начало смены'">
               <UInput
                 v-model="patternForm.shiftStartTime"
@@ -483,7 +483,7 @@ onMounted(async () => {
             </UFormGroup>
           </div>
 
-          <div class="grid grid-cols-2 gap-3">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UFormGroup :label="t('app.lateArrivalAfter') + ' (' + (t('common.optional') || 'опционально') + ')'">
               <UInput
                 v-model="patternForm.lateThreshold"

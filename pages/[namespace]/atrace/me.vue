@@ -305,7 +305,7 @@ onMounted(load);
         </div>
         <div
           v-else
-          class="overflow-auto"
+          class="h-[300px]"
         >
           <AppTable
             :rows="summaryHistoryRows"
@@ -321,7 +321,7 @@ onMounted(load);
         <h2 class="text-base font-medium mb-3">
           {{ t('app.salaryHistory') || 'История зарплаты' }}
         </h2>
-        <div class="overflow-auto">
+        <div class="h-[300px]">
           <AppTable
             :rows="salaryHistoryRows"
             :columns="salaryColumns"

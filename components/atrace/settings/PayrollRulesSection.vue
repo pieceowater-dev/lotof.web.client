@@ -298,7 +298,7 @@ onMounted(load);
           <UFormGroup v-if="overtimeForm.calcType === 'multiplier'" :label="t('app.multiplier') || 'Множитель (например, 1.5 = x1.5 от часовой ставки)'">
             <UInput v-model.number="overtimeForm.multiplier" type="number" min="0" step="0.1" />
           </UFormGroup>
-          <div v-else class="grid grid-cols-2 gap-3">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UFormGroup :label="t('app.amountPerHour') || 'Сумма за час'">
               <UInput v-model.number="overtimeForm.fixedAmountPerHour" type="number" min="0" step="0.01" />
             </UFormGroup>
@@ -346,7 +346,7 @@ onMounted(load);
           <UFormGroup v-if="penaltyForm.calcType === 'percent'" :label="t('app.percentOfSalary') || 'Процент от зарплаты, %'">
             <UInput v-model.number="penaltyForm.percentOfSalary" type="number" min="0" max="100" step="1" />
           </UFormGroup>
-          <div v-else class="grid grid-cols-2 gap-3">
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <UFormGroup :label="t('app.penaltyAmount') || 'Сумма штрафа'">
               <UInput v-model.number="penaltyForm.amount" type="number" min="0" step="0.01" />
             </UFormGroup>

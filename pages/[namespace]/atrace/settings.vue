@@ -157,11 +157,13 @@ onUnmounted(() => {
 
     <template v-else>
       <PlanLimitsBanner />
-      <UTabs
-        v-model="selectedTab"
-        :items="tabs"
-        class="mb-3 flex-shrink-0"
-      />
+      <div class="mb-3 flex-shrink-0 overflow-x-auto">
+        <UTabs
+          v-model="selectedTab"
+          :items="tabs"
+          :ui="{ list: { width: 'w-full min-w-[640px]' } }"
+        />
+      </div>
       <div class="flex-1 min-h-0 flex flex-col">
         <MembersSection v-if="selectedTab === 0" />
         <RoutesSection v-else-if="selectedTab === 1" />

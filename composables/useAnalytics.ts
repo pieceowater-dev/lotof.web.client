@@ -24,6 +24,13 @@ export function useAnalytics() {
         formInteractions: false,
         fileDownloads: false,
       },
+      // We don't use session replay or remote feature flags, so skip the
+      // extra sr-client-cfg.amplitude.com fetch entirely, and silence the
+      // SDK's own console logging -- ad blockers/privacy extensions
+      // routinely block amplitude.com requests outright, which is an
+      // expected, unactionable condition for those users, not a real error.
+      fetchRemoteConfig: false,
+      logLevel: amplitude.Types.LogLevel.None,
     });
     initialized = true;
   }
