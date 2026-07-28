@@ -58,9 +58,9 @@ async function loadAttendanceDetails() {
       props.endDate,
       namespaceSlug.value
     );
-    log('[UserAttendanceDetails] Loaded', result.length, 'records:', result);
-    attendanceRecords.value = result;
-    totalRecords.value = result.length;
+    log('[UserAttendanceDetails] Loaded', result.attendances.length, 'records:', result.attendances);
+    attendanceRecords.value = result.attendances;
+    totalRecords.value = result.attendances.length;
   } catch (e: any) {
     logError('[UserAttendanceDetails] Failed to load attendance details:', e);
     error.value = t('app.failedToLoadDetails');

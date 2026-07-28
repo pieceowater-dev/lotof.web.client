@@ -12,6 +12,7 @@ import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
+import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
@@ -50,8 +51,7 @@ function onPhoneFieldInput(e: Event) {
 const isLoading = ref(true);
 const namespaceAccordionOpen = ref(true);
 const settingsAccordionOpen = ref(false);
-const appInstalled: Record<string, boolean> = reactive({}); // key by bundle
-let appsCheckSeq = 0; // sequence guard to avoid race conditions
+const { appInstalled, appRoutePath: sharedAppRoutePath, ensureAppInstallStatus } = useAppInstallStatus();
 const installingBundles = new Set<string>(); // prevent double-installs per app
 
 const DASHBOARD_ACCORDIONS_LS_KEY = 'dashboard_accordions_state_v1';
@@ -322,7 +322,7 @@ const comingSoonApps = computed(() => ALL_APPS.filter(a => !a.canAdd));
 function appRoutePath(app: AppConfig): string | null {
   const ns = selectedNS.value;
   if (!ns) return null;
-  return app.address === 'atrace' ? `/${ns}/atrace/attendance/all` : `/${ns}/${app.address}`;
+  return sharedAppRoutePath(app, ns);
 }
 
 function toCard(app: AppConfig) {
@@ -371,20 +371,8 @@ async function handlePendingTargetApp(): Promise<boolean> {
 }
 
 async function checkInstalledForVisibleApps() {
-  const seq = ++appsCheckSeq;
-  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
-  if (!token || !selectedNS.value) return;
-  const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
-  const bundles = ALL_APPS.map(a => a.bundle);
-  const installedMap = await hubAreAppsInNamespace(token, selectedNS.value, bundles);
-  console.debug('[apps] installedMap', installedMap);
-  // Only apply the latest result
-  if (seq === appsCheckSeq) {
-    for (const b of bundles) appInstalled[b] = !!installedMap[b];
-    console.debug('[apps] appInstalled reactive', JSON.parse(JSON.stringify(appInstalled)));
-  } else {
-    console.debug('[apps] skipped outdated result', { seq, appsCheckSeq });
-  }
+  if (!selectedNS.value) return;
+  await ensureAppInstallStatus(selectedNS.value);
 }
 
 function handleSwitchNamespace(ns: string) {

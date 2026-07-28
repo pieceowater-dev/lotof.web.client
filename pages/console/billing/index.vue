@@ -408,13 +408,12 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.currency') }} *</label>
-              <input
+              <select
                 v-model="planForm.currency"
-                type="text"
-                maxlength="3"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm uppercase outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                placeholder="KZT"
-              />
+                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              >
+                <option v-for="c in CURRENCIES" :key="c.code" :value="c.code">{{ c.symbol }} {{ c.code }}</option>
+              </select>
             </div>
             <div>
               <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.trialDays') }}</label>
@@ -599,6 +598,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, type AdminBillingInfo } from '@/api/capital/admin';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
+import { CURRENCIES } from '@/utils/currency';
 
 definePageMeta({
   middleware: 'admin',

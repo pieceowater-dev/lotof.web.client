@@ -24,11 +24,15 @@ export async function getActiveSubscription(
   hubToken?: string | null
 ): Promise<Subscription | null> {
   const resolvedHubToken = hubToken ?? useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+  const atraceToken = useCookie<string | null>(CookieKeys.ATRACE_TOKEN, { path: '/' }).value;
   const headers: Record<string, string> = {
     Namespace: namespaceSlug,
   };
   if (resolvedHubToken) {
     headers.Authorization = `Bearer ${resolvedHubToken}`;
+  }
+  if (atraceToken) {
+    headers.AtraceAuthorization = `Bearer ${atraceToken}`;
   }
 
   try {

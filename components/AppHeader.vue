@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { atraceTour, contactsTour } from '@/config/tours';
+import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -15,6 +16,14 @@ const { isLoggedIn, login } = useAuth();
 const { selected: selectedNS } = useNamespace();
 const routeNamespace = computed(() => (route.params.namespace as string) || '');
 const currentNamespace = computed(() => selectedNS.value || routeNamespace.value);
+// Same source of truth the home page dashboard uses -- a header button for
+// an app the namespace hasn't subscribed to must land on that app's plan
+// picker, exactly like clicking the dashboard tile does, not straight into
+// a half-broken unsubscribed app page.
+const { resolveAppDestination, ensureAppInstallStatus } = useAppInstallStatus();
+watch(currentNamespace, (ns) => {
+  if (ns) ensureAppInstallStatus(ns);
+}, { immediate: true });
 
 // Rolled client-side only, after mount: Math.random() evaluated during SSR
 // and again during client hydration are two independent rolls, and roughly
@@ -77,13 +86,7 @@ function handleMenuSelect(app: AppConfig) {
   if (!ns) return;
 
   isMobileMenuOpen.value = false;
-  router.push(`/${ns}/${app.address}`);
-}
-
-function appRoutePath(app: AppConfig): string | null {
-  const ns = currentNamespace.value;
-  if (!ns || !app.canAdd) return null;
-  return app.address === 'atrace' ? `/${ns}/atrace/attendance/all` : `/${ns}/${app.address}`;
+  router.push(resolveAppDestination(app, ns));
 }
 
 function isAppActive(app: AppConfig) {
@@ -200,39 +203,26 @@ const goHome = () => {
             <span class="truncate">{{ homeText }}</span>
           </button>
 
-          <template v-for="app in navApps" :key="app.bundle">
-            <NuxtLink
-              v-if="appRoutePath(app)"
-              :to="appRoutePath(app) || '/'"
-              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-              :class="isAppActive(app)
+          <button
+            v-for="app in navApps"
+            :key="app.bundle"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="[
+              isAppActive(app)
                 ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary-300'
-                : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
-            >
-              <UIcon
-                :name="app.icon"
-                class="h-4 w-4"
-              />
-              <span class="truncate">{{ t(app.titleKey) }}</span>
-            </NuxtLink>
-
-            <button
-              v-else
-              type="button"
-              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-              :class="app.canAdd
-                ? 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'
-                : 'border-transparent bg-transparent text-gray-400 dark:text-gray-500'"
-              :aria-disabled="!app.canAdd"
-              @click="handleMenuSelect(app)"
-            >
-              <UIcon
-                :name="app.icon"
-                class="h-4 w-4"
-              />
-              <span class="truncate">{{ t(app.titleKey) }}</span>
-            </button>
-          </template>
+                : 'border-transparent bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/60',
+              !isAppActive(app) && (app.canAdd ? 'text-gray-700 hover:text-primary dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'),
+            ]"
+            :aria-disabled="!app.canAdd"
+            @click="handleMenuSelect(app)"
+          >
+            <UIcon
+              :name="app.icon"
+              class="h-4 w-4"
+            />
+            <span class="truncate">{{ t(app.titleKey) }}</span>
+          </button>
         </nav>
 
         <UButton
@@ -365,35 +355,21 @@ const goHome = () => {
           <span class="text-sm font-medium truncate">{{ homeText }}</span>
         </button>
 
-        <template v-for="app in navApps" :key="app.bundle">
-          <NuxtLink
-            v-if="appRoutePath(app)"
-            :to="appRoutePath(app) || '/'"
-            class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-            @click="isMobileMenuOpen = false"
-          >
-            <UIcon
-              :name="app.icon"
-              class="h-5 w-5 text-primary flex-shrink-0"
-            />
-            <span class="flex-1 text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
-          </NuxtLink>
-
-          <button
-            v-else
-            type="button"
-            class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-            :class="{ 'text-gray-400 dark:text-gray-500': !app.canAdd }"
-            :aria-disabled="!app.canAdd"
-            @click="handleMenuSelect(app)"
-          >
-            <UIcon
-              :name="app.icon"
-              class="h-5 w-5 text-primary flex-shrink-0"
-            />
-            <span class="flex-1 text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
-          </button>
-        </template>
+        <button
+          v-for="app in navApps"
+          :key="app.bundle"
+          type="button"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          :class="{ 'text-gray-400 dark:text-gray-500': !app.canAdd }"
+          :aria-disabled="!app.canAdd"
+          @click="handleMenuSelect(app)"
+        >
+          <UIcon
+            :name="app.icon"
+            class="h-5 w-5 text-primary flex-shrink-0"
+          />
+          <span class="flex-1 text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
+        </button>
       </div>
     </div>
   </UModal>

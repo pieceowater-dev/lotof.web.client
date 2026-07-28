@@ -12,8 +12,6 @@ const props = defineProps<{
   userId: string;
   startDate: string;
   endDate: string;
-  lateArrivalTime: string;
-  earlyLeaveTime: string;
 }>();
 
 const route = useRoute();
@@ -24,12 +22,6 @@ const error = ref<string | null>(null);
 const showReasonModal = ref(false);
 const selectedDate = ref<string | null>(null);
 const reason = ref('');
-
-// Salary calculation state will be managed by parent via props
-const showSalaryModal = ref(false);
-const salaryInput = ref('');
-const userName = ref('');
-const userSchedule = ref<any>(null);
 
 // All records and daily attendance
 const allRecords = ref<AtraceRecord[]>([]);
@@ -46,8 +38,11 @@ type DailyAttendance = {
   lastCheckOut: number;
   workedHours: number;
   requiredHours: number;
+  late: boolean;
+  earlyLeave: boolean;
 };
 const dailyAttendance = ref<DailyAttendance[]>([]);
+const missedDates = ref<string[]>([]);
 const dailyAttendanceMap = computed(() => {
   const map = new Map<string, DailyAttendance>();
   dailyAttendance.value.forEach(da => map.set(da.date, da));
@@ -94,7 +89,8 @@ async function loadData() {
     // Load daily attendance
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
     const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate, namespaceSlug.value);
-    dailyAttendance.value = result;
+    dailyAttendance.value = result.attendances;
+    missedDates.value = result.missedDates;
   } catch (e: unknown) {
     logError('[UserDayRecordsAccordion] failed to load:', e);
     error.value = t('app.failedToLoadDetails');
@@ -208,42 +204,18 @@ function getDayStyle(date: string): string {
   return 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700';
 }
 
-function getTimeParts(timestamp: number, timeZone?: string | null) {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timeZone || undefined,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).formatToParts(new Date(timestamp * 1000));
-    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? '0');
-    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
-    return { hour, minute };
-  } catch {
-    const d = new Date(timestamp * 1000);
-    return { hour: d.getHours(), minute: d.getMinutes() };
-  }
-}
-
-function isLateArrival(timestamp: number, timeZone?: string | null): boolean {
-  if (!props.lateArrivalTime) return false;
-  const [h, m] = props.lateArrivalTime.split(':').map(Number);
-  const t = getTimeParts(timestamp, timeZone);
-  return t.hour > h || (t.hour === h && t.minute > m);
-}
-
-function isEarlyLeave(timestamp: number, timeZone?: string | null): boolean {
-  if (!props.earlyLeaveTime) return false;
-  const [h, m] = props.earlyLeaveTime.split(':').map(Number);
-  const t = getTimeParts(timestamp, timeZone);
-  return t.hour < h || (t.hour === h && t.minute < m);
-}
-
+// Late-arrival / early-leave highlighting reads the backend-computed flags
+// directly (evaluated server-side against the namespace's/shift pattern's
+// thresholds in the check's own local timezone) rather than recomputing
+// client-side against a locally-cached threshold string.
 function getRecordHighlight(record: AtraceRecord, dayRecords: AtraceRecord[]): string {
   const firstOfDay = dayRecords[0];
   const lastOfDay = dayRecords[dayRecords.length - 1];
-  if (record.id === firstOfDay.id && isLateArrival(record.timestamp, record.timezone)) return 'bg-orange-50 dark:bg-orange-900/20';
-  if (record.id === lastOfDay.id && isEarlyLeave(record.timestamp, record.timezone)) return 'bg-orange-50 dark:bg-orange-900/20';
+  const date = getRecordDate(record);
+  const da = dailyAttendanceMap.value.get(date);
+  if (!da) return '';
+  if (record.id === firstOfDay.id && da.late) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === lastOfDay.id && da.earlyLeave) return 'bg-orange-50 dark:bg-orange-900/20';
   return '';
 }
 
@@ -312,12 +284,6 @@ function openReasonModal(date: string) {
   showReasonModal.value = true;
 }
 
-function saveSalary() {
-  if (salaryInput.value) {
-    localStorage.setItem(`salary_${props.userId}`, salaryInput.value);
-  }
-}
-
 async function markDayAsLegitimate() {
   if (!selectedDate.value || !reason.value.trim()) return;
   
@@ -347,8 +313,6 @@ const workingDaysInMonth = computed(() => {
 const totalWorkedHours = computed(() => {
   return dailyAttendance.value.reduce((sum, da) => sum + (da.workedHours || 0), 0);
 });
-
-// Salary calculations moved to parent component
 
 onMounted(() => {
   loadData();

@@ -33,26 +33,14 @@ type DailyAttendance = {
   lastCheckOut: number;
   workedHours: number;
   requiredHours: number;
+  late: boolean;
+  earlyLeave: boolean;
 };
 const dailyAttendance = ref<DailyAttendance[]>([]);
 const dailyAttendanceMap = computed(() => {
   const map = new Map<string, DailyAttendance>();
   dailyAttendance.value.forEach(da => map.set(da.date, da));
   return map;
-});
-
-// Time thresholds for highlighting (localStorage)
-const LATE_ARRIVAL_KEY = 'atrace-late-arrival-time';
-const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
-const lateArrivalTime = ref(localStorage.getItem(LATE_ARRIVAL_KEY) || '09:15');
-const earlyLeaveTime = ref(localStorage.getItem(EARLY_LEAVE_KEY) || '18:15');
-const showSettings = ref(false);
-
-watch(lateArrivalTime, (val) => {
-  if (typeof window !== 'undefined') localStorage.setItem(LATE_ARRIVAL_KEY, val);
-});
-watch(earlyLeaveTime, (val) => {
-  if (typeof window !== 'undefined') localStorage.setItem(EARLY_LEAVE_KEY, val);
 });
 
 // Pagination
@@ -115,7 +103,7 @@ async function loadDailyAttendance() {
   try {
     const { atraceGetAttendanceReport } = await import('@/api/atrace/attendance/stats');
     const result = await atraceGetAttendanceReport(props.userId, props.startDate, props.endDate, namespaceSlug.value);
-    dailyAttendance.value = result;
+    dailyAttendance.value = result.attendances;
   } catch (e) {
     logError('[PostRecordsDetails] failed to load daily attendance:', e);
     dailyAttendance.value = [];
@@ -150,49 +138,24 @@ function isLegitimateDay(record: AtraceRecord): boolean {
   return da?.legitimate || false;
 }
 
-function getTimeParts(timestamp: number, timeZone?: string | null) {
-  try {
-    const parts = new Intl.DateTimeFormat('en-US', {
-      timeZone: timeZone || undefined,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    }).formatToParts(new Date(timestamp * 1000));
-    const hour = Number(parts.find(p => p.type === 'hour')?.value ?? '0');
-    const minute = Number(parts.find(p => p.type === 'minute')?.value ?? '0');
-    return { hour, minute };
-  } catch {
-    const d = new Date(timestamp * 1000);
-    return { hour: d.getHours(), minute: d.getMinutes() };
-  }
-}
-
-function isLateArrival(record: AtraceRecord): boolean {
-  if (!lateArrivalTime.value) return false;
-  const [h, m] = lateArrivalTime.value.split(':').map(Number);
-  const t = getTimeParts(record.timestamp, record.timezone);
-  return t.hour > h || (t.hour === h && t.minute > m);
-}
-
-function isEarlyLeave(record: AtraceRecord): boolean {
-  if (!earlyLeaveTime.value) return false;
-  const [h, m] = earlyLeaveTime.value.split(':').map(Number);
-  const t = getTimeParts(record.timestamp, record.timezone);
-  return t.hour < h || (t.hour === h && t.minute < m);
-}
-
+// Late-arrival / early-leave highlighting reads the backend-computed flags
+// directly (evaluated server-side against the namespace's/shift pattern's
+// thresholds) rather than recomputing client-side against a locally-cached
+// threshold string.
 function getRecordStyle(record: AtraceRecord): string {
   // Priority: violation day > legitimate day > time-based highlights
   if (isViolationDay(record)) return 'bg-red-50 dark:bg-red-900/20';
   if (isLegitimateDay(record)) return 'bg-emerald-50 dark:bg-emerald-900/20';
   // Check if first/last record of the day for time highlighting
   const date = getRecordDate(record);
+  const da = dailyAttendanceMap.value.get(date);
+  if (!da) return '';
   const dayRecords = filteredRecords.value.filter(r => getRecordDate(r) === date);
   if (dayRecords.length === 0) return '';
   const firstOfDay = dayRecords.reduce((min, r) => r.timestamp < min.timestamp ? r : min);
   const lastOfDay = dayRecords.reduce((max, r) => r.timestamp > max.timestamp ? r : max);
-  if (record.id === firstOfDay.id && isLateArrival(record)) return 'bg-orange-50 dark:bg-orange-900/20';
-  if (record.id === lastOfDay.id && isEarlyLeave(record)) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === firstOfDay.id && da.late) return 'bg-orange-50 dark:bg-orange-900/20';
+  if (record.id === lastOfDay.id && da.earlyLeave) return 'bg-orange-50 dark:bg-orange-900/20';
   return '';
 }
 
@@ -299,7 +262,7 @@ watch(itemsPerPage, () => {
     </div>
 
     <div v-else>
-      <!-- Settings & Legend -->
+      <!-- Legend -->
       <div class="mb-3 flex items-start justify-between gap-3">
         <div class="flex flex-wrap gap-2 text-xs">
           <div class="flex items-center gap-1">
@@ -317,42 +280,6 @@ watch(itemsPerPage, () => {
           <div class="flex items-center gap-1">
             <div class="w-3 h-3 rounded bg-yellow-100 dark:bg-yellow-900/40 border border-yellow-300 dark:border-yellow-700" />
             <span>{{ t('common.suspicious') }}</span>
-          </div>
-        </div>
-        <UButton
-          size="xs"
-          variant="ghost"
-          icon="i-heroicons-cog-6-tooth"
-          @click="showSettings = !showSettings"
-        >
-          {{ t('app.settings') }}
-        </UButton>
-      </div>
-
-      <!-- Settings Panel -->
-      <div
-        v-if="showSettings"
-        class="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-      >
-        <div class="text-sm font-medium mb-2">
-          {{ t('app.timeThresholds') }}
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.lateArrivalAfter') }}</label>
-            <input
-              v-model="lateArrivalTime"
-              type="time"
-              class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-            >
-          </div>
-          <div>
-            <label class="block mb-1 text-xs text-gray-600 dark:text-gray-400">{{ t('app.earlyLeaveBefore') }}</label>
-            <input
-              v-model="earlyLeaveTime"
-              type="time"
-              class="w-full px-2 py-1 border rounded dark:bg-gray-700 dark:border-gray-600"
-            >
           </div>
         </div>
       </div>

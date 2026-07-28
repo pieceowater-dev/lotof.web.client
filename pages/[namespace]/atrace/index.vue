@@ -200,16 +200,27 @@ onBeforeUnmount(() => {
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
       </div>
-      <div data-tour="settings-btn">
+      <div class="flex items-center gap-2">
         <UButton
-          icon="lucide:settings"
+          icon="lucide:user-round"
           size="xs"
-          color="primary"
+          color="gray"
           variant="soft"
-          :to="`/${nsSlug}/atrace/settings`"
+          :to="`/${nsSlug}/atrace/me`"
         >
-          {{ t('common.settings.title') }}
+          {{ t('app.myStats') || 'Моя статистика' }}
         </UButton>
+        <div data-tour="settings-btn">
+          <UButton
+            icon="lucide:settings"
+            size="xs"
+            color="primary"
+            variant="soft"
+            :to="`/${nsSlug}/atrace/settings`"
+          >
+            {{ t('common.settings.title') }}
+          </UButton>
+        </div>
       </div>
     </div>
 

@@ -96,6 +96,18 @@ async function fetchActiveSubscription() {
   const token = useCookie<string | null>('token', { path: '/' }).value;
   if (!token) return;
 
+  // getActiveSubscription (like subscribePlan below) requires AtraceAuthorization,
+  // not just the hub token -- and this page is deliberately excluded from the
+  // global middleware that otherwise ensures an app token exists (so it stays
+  // viewable before a user has app access at all). Fetch/cache one here so the
+  // GraphQL call actually has a token to send.
+  try {
+    const { ensure } = useAtraceToken();
+    await ensure(nsSlug.value, token);
+  } catch (e) {
+    console.error('Failed to ensure atrace token on plans page:', e);
+  }
+
   try {
     activeSubscription.value = await getActiveSubscription(nsSlug.value, 'pieceowater.atrace', token);
     console.log('Active subscription:', activeSubscription.value);
@@ -183,16 +195,27 @@ async function subscribePlan(plan: Plan) {
 
   subscribingPlanCode.value = plan.code;
   try {
+    // subscribePlan requires AtraceAuthorization -- make sure a token is
+    // cached before calling it (see the same ensure() call in
+    // fetchActiveSubscription for why this page can't rely on the global
+    // middleware to have done this already). Minting a token only proves
+    // namespace membership and provisions the tenant schema as a side effect
+    // (see msvc.tracker's ReleaseToken) -- it must NOT be confused with
+    // installing the app, which stays gated on a successful subscribe below.
+    const { ensure } = useAtraceToken();
+    await ensure(nsSlug.value, token);
+
     // Subscribe to plan
     await subscribeToPlan(nsSlug.value, plan.code, 'pieceowater.atrace', token);
-    
+
     toast.add({
       title: t('common.success') || 'Success',
       description: t('app.subscribedToPlan', { plan: plan.name }) || `Subscribed to ${plan.name}`,
       color: 'emerald'
     });
 
-    // Add app to namespace (trigger real installation)
+    // Add app to namespace (trigger real installation) -- only now, after a
+    // confirmed subscription, is the app considered actually installed.
     const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
     try {
       await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.atrace');
@@ -203,8 +226,7 @@ async function subscribePlan(plan: Plan) {
       }
     }
 
-    // Ensure app token is ready before entering protected atrace routes.
-    const { ensure } = useAtraceToken();
+    // Ensure app token is fresh before entering protected atrace routes.
     await ensure(nsSlug.value, token);
 
     useAnalytics().track('plan_subscribed', { app: 'pieceowater.atrace', plan: plan.code });

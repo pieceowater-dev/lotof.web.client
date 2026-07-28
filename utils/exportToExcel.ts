@@ -12,6 +12,8 @@ interface UserStats {
   violationDays: number;
   legitimateAbsences: number;
   totalWorkedHours: number;
+  lateDays?: number;
+  earlyLeaveDays?: number;
 }
 
 interface UserDailyRecord {
@@ -51,6 +53,11 @@ interface Locale {
   dailyTitle: string;
   yes: string;
   no: string;
+  summaryTitle: string;
+  summarySheetName: string;
+  pivotSheetName: string;
+  lateDays: string;
+  earlyLeaveDays: string;
 }
 
 const locales: { [key: string]: Locale } = {
@@ -79,6 +86,11 @@ const locales: { [key: string]: Locale } = {
     dailyTitle: 'Daily Attendance Report',
     yes: 'Yes',
     no: 'No',
+    summaryTitle: 'Attendance Summary',
+    summarySheetName: 'Summary',
+    pivotSheetName: 'Daily Detail',
+    lateDays: 'Late Arrivals',
+    earlyLeaveDays: 'Early Leaves',
   },
   ru: {
     title: 'Отчет о посещаемости',
@@ -105,6 +117,11 @@ const locales: { [key: string]: Locale } = {
     dailyTitle: 'Отчет о ежедневной посещаемости',
     yes: 'Да',
     no: 'Нет',
+    summaryTitle: 'Сводка по посещаемости',
+    summarySheetName: 'Сводка',
+    pivotSheetName: 'По дням',
+    lateDays: 'Опоздания',
+    earlyLeaveDays: 'Ранние уходы',
   },
 };
 
@@ -242,12 +259,37 @@ function applyPivotTableStyling(worksheet: XLSX.WorkSheet, headers: string[], pi
   }
 }
 
+function buildSummarySheet(stats: UserStats[], locale: Locale): XLSX.WorkSheet {
+  const headers = [
+    locale.username, locale.workDays, locale.attendedDays, locale.violationDays,
+    locale.legitimateAbsences, locale.lateDays, locale.earlyLeaveDays, locale.totalWorkedHours,
+  ];
+  const rows = [...stats]
+    .sort((a, b) => (b.violationDays || 0) - (a.violationDays || 0))
+    .map(s => ({
+      [locale.username]: s.username || s.email || s.userId,
+      [locale.workDays]: s.workDays,
+      [locale.attendedDays]: s.attendedDays,
+      [locale.violationDays]: s.violationDays,
+      [locale.legitimateAbsences]: s.legitimateAbsences,
+      [locale.lateDays]: s.lateDays ?? 0,
+      [locale.earlyLeaveDays]: s.earlyLeaveDays ?? 0,
+      [locale.totalWorkedHours]: Number((s.totalWorkedHours || 0).toFixed(2)),
+    }));
+
+  const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+  worksheet['!cols'] = headers.map((_, i) => ({ wch: i === 0 ? 24 : 16 }));
+  applyPivotTableStyling(worksheet, headers, rows.length, []);
+  return worksheet;
+}
+
 export async function exportPivotTableToExcel(
     data: UserDailyRecord[],
     startDate: string,
     endDate: string,
     language: string = 'en',
-    filename?: string
+    filename?: string,
+    summaryStats?: UserStats[]
   ): Promise<void> {
     const locale = getLocale(language);
 
@@ -259,6 +301,15 @@ export async function exportPivotTableToExcel(
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
+
+    // Summary sheet first (per-employee totals: required/attended/missed/late/early-leave/hours)
+    // -- this is the "adequate and clear" overview a manager actually wants at a glance, with the
+    // day-by-day check-in/check-out pivot as supporting detail on the second sheet.
+    if (summaryStats && summaryStats.length > 0) {
+      const summarySheet = buildSummarySheet(summaryStats, locale);
+      XLSX.utils.book_append_sheet(workbook, summarySheet, locale.summarySheetName);
+    }
+
     const worksheet = XLSX.utils.json_to_sheet(pivotData, { header: headers });
 
     // Set column widths
@@ -272,10 +323,10 @@ export async function exportPivotTableToExcel(
     // Apply styling
     applyPivotTableStyling(worksheet, headers, pivotData.length, dates);
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Pivot');
+    XLSX.utils.book_append_sheet(workbook, worksheet, locale.pivotSheetName);
 
     const exportFilename =
-      filename || `attendance_pivot_${startDate}_to_${endDate}_${new Date().getTime()}.xlsx`;
+      filename || `attendance_report_${startDate}_to_${endDate}_${new Date().getTime()}.xlsx`;
 
     XLSX.writeFile(workbook, exportFilename);
   }

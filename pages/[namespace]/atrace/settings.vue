@@ -8,6 +8,10 @@ import PlanLimitsBanner from '@/components/atrace/settings/PlanLimitsBanner.vue'
 import RoutesSection from '@/components/atrace/settings/RoutesSection.vue';
 import MembersSection from '@/components/atrace/settings/MembersSection.vue';
 import InviteMemberModal from '@/components/atrace/settings/InviteMemberModal.vue';
+import AttendanceThresholdsSection from '@/components/atrace/settings/AttendanceThresholdsSection.vue';
+import ScheduleSection from '@/components/atrace/settings/ScheduleSection.vue';
+import ShiftCoverageSection from '@/components/atrace/settings/ShiftCoverageSection.vue';
+import PayrollRulesSection from '@/components/atrace/settings/PayrollRulesSection.vue';
 
 const { t } = useI18n();
 
@@ -28,6 +32,16 @@ const { ensure: ensureAtraceToken } = useAtraceToken();
 const accessDenied = ref(false);
 const accessDeniedMessage = ref<string | null>(null);
 const isInviteOpen = ref(false);
+
+const selectedTab = ref(0);
+const tabs = computed(() => ([
+  { label: t('app.members') || 'Участники', icon: 'lucide:users' },
+  { label: t('app.routes') || 'Маршруты', icon: 'lucide:route' },
+  { label: t('app.timeThresholds') || 'Пороги времени', icon: 'lucide:clock' },
+  { label: t('app.shiftPatterns') || 'Графики работы', icon: 'lucide:calendar-days' },
+  { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat' },
+  { label: t('app.payrollRules') || 'Переработки и штрафы', icon: 'lucide:banknote' },
+]));
 
 onMounted(async () => {
     // Redirect to index on atrace token unauthorized
@@ -143,8 +157,19 @@ onUnmounted(() => {
 
     <template v-else>
       <PlanLimitsBanner />
-      <RoutesSection />
-      <MembersSection />
+      <UTabs
+        v-model="selectedTab"
+        :items="tabs"
+        class="mb-3 flex-shrink-0"
+      />
+      <div class="flex-1 min-h-0 flex flex-col">
+        <MembersSection v-if="selectedTab === 0" />
+        <RoutesSection v-else-if="selectedTab === 1" />
+        <AttendanceThresholdsSection v-else-if="selectedTab === 2" />
+        <ScheduleSection v-else-if="selectedTab === 3" />
+        <ShiftCoverageSection v-else-if="selectedTab === 4" />
+        <PayrollRulesSection v-else-if="selectedTab === 5" />
+      </div>
     </template>
   </div>
 

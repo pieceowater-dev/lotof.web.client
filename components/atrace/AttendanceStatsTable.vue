@@ -2,10 +2,18 @@
 import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
+import ShiftCoverageRequestModal from '@/components/atrace/ShiftCoverageRequestModal.vue';
 import { useRoute } from 'vue-router';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
+import { CURRENCIES, formatMoney } from '@/utils/currency';
 
 const { t, locale } = useI18n();
+
+const currencyOptions = CURRENCIES.map((c) => ({ label: `${c.symbol}  ${c.code}`, value: c.code }));
+
+function overtimeRateLabel(r: { calcType: string; multiplier: number; fixedAmountPerHour: number; currency: string }): string {
+  return r.calcType === 'fixed' ? formatMoney(r.fixedAmountPerHour, r.currency) : `x${r.multiplier}`;
+}
 
 const props = defineProps<{
   postId: string | null;
@@ -24,6 +32,9 @@ type UserStats = {
   violationDays: number;
   legitimateAbsences: number;
   totalWorkedHours: number;
+  lateDays: number;
+  earlyLeaveDays: number;
+  hasScheduleAssignment: boolean;
 };
 
 const stats = ref<UserStats[]>([]);
@@ -45,22 +56,37 @@ const sortedStats = computed(() => {
     .map((item) => item.user);
 });
 
-// Time thresholds for highlighting (localStorage) - GLOBAL SETTINGS
-const LATE_ARRIVAL_KEY = 'atrace-late-arrival-time';
-const EARLY_LEAVE_KEY = 'atrace-early-leave-time';
-const lateArrivalTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(LATE_ARRIVAL_KEY) || '09:15') : '09:15');
-const earlyLeaveTime = ref(typeof window !== 'undefined' ? (localStorage.getItem(EARLY_LEAVE_KEY) || '18:15') : '18:15');
+// Time thresholds for highlighting -- persisted server-side (namespace-wide),
+// not localStorage: this needs to be consistent for every manager viewing
+// the same company's data, and mutating it is permission-gated
+// (tracker.attendance.manage) same as the rest of attendance settings.
+const lateArrivalTime = ref('09:15');
+const earlyLeaveTime = ref('18:15');
+// Preserved (not editable from this quick panel) so saving thresholds here
+// doesn't silently clobber the sit-out toggle configured on the Settings page.
+const allowLatenessMakeup = ref(false);
 const showSettings = ref(false);
 const lateArrivalDraft = ref(lateArrivalTime.value);
 const earlyLeaveDraft = ref(earlyLeaveTime.value);
 const timeSettingsError = ref<string | null>(null);
+const timeSettingsLoading = ref(false);
+const timeSettingsSaving = ref(false);
 
-watch(lateArrivalTime, (val) => {
-  if (typeof window !== 'undefined') localStorage.setItem(LATE_ARRIVAL_KEY, val);
-});
-watch(earlyLeaveTime, (val) => {
-  if (typeof window !== 'undefined') localStorage.setItem(EARLY_LEAVE_KEY, val);
-});
+async function loadTimeSettings() {
+  if (!namespaceSlug.value) return;
+  timeSettingsLoading.value = true;
+  try {
+    const { atraceGetAttendanceSettings } = await import('@/api/atrace/attendance/settings');
+    const settings = await atraceGetAttendanceSettings(namespaceSlug.value);
+    lateArrivalTime.value = settings.lateArrivalThreshold;
+    earlyLeaveTime.value = settings.earlyLeaveThreshold;
+    allowLatenessMakeup.value = settings.allowLatenessMakeup;
+  } catch (e) {
+    logError('[AttendanceStatsTable] failed to load attendance settings:', e);
+  } finally {
+    timeSettingsLoading.value = false;
+  }
+}
 
 function openSettings() {
   showSettings.value = !showSettings.value;
@@ -71,7 +97,7 @@ function openSettings() {
   }
 }
 
-function applyTimeSettings() {
+async function applyTimeSettings() {
   const isValidTime = (val: string) => /^\d{2}:\d{2}$/.test(val) && (() => {
     const [h, m] = val.split(':').map((v) => Number(v));
     return h >= 0 && h < 24 && m >= 0 && m < 60;
@@ -82,10 +108,26 @@ function applyTimeSettings() {
     return;
   }
 
-  lateArrivalTime.value = lateArrivalDraft.value;
-  earlyLeaveTime.value = earlyLeaveDraft.value;
+  timeSettingsSaving.value = true;
   timeSettingsError.value = null;
-  showSettings.value = false;
+  try {
+    const { atraceUpdateAttendanceSettings } = await import('@/api/atrace/attendance/settings');
+    const settings = await atraceUpdateAttendanceSettings(lateArrivalDraft.value, earlyLeaveDraft.value, allowLatenessMakeup.value, namespaceSlug.value);
+    lateArrivalTime.value = settings.lateArrivalThreshold;
+    earlyLeaveTime.value = settings.earlyLeaveThreshold;
+    allowLatenessMakeup.value = settings.allowLatenessMakeup;
+    showSettings.value = false;
+    // Late/earlyLeave flags on already-loaded records were computed against
+    // the previous thresholds server-side -- reload so the table/accordions
+    // reflect the new setting immediately.
+    safeLoadStats();
+  } catch (e: any) {
+    timeSettingsError.value = isAtracePermissionError(e, 'tracker.attendance.manage')
+      ? (t('app.attendancePermissionError') || 'Недостаточно прав')
+      : (t('app.saveFailed') || 'Не удалось сохранить');
+  } finally {
+    timeSettingsSaving.value = false;
+  }
 }
 
 // Date filter state
@@ -124,6 +166,7 @@ const customStartDate = ref(customDates.start);
 const customEndDate = ref(customDates.end);
 const showDateModal = ref(false);
 const showLegendModal = ref(false);
+const showCoverageModal = ref(false);
 const dateModalError = ref<string | null>(null);
 
 const isStartInvalid = computed(() => {
@@ -154,12 +197,28 @@ const canApplyRange = computed(() => {
 // Accordion state - track expanded user IDs
 const expandedUserIds = ref<Set<string>>(new Set());
 
-// Salary calculator state
+// Salary calculator state -- backed by the server-side, permission-gated
+// salary entity (tracker.salary.view/manage), not localStorage: this is the
+// only way "an employee can't see/edit someone else's salary" can actually
+// be enforced.
 const showSalaryModal = ref(false);
 const selectedUserId = ref<string | null>(null);
 const salaryInput = ref('');
+const salaryCurrency = ref('KZT');
 const workingDaysInMonth = ref(0);
 const totalWorkedHours = ref(0);
+const salaryLoading = ref(false);
+const salarySaving = ref(false);
+const salaryError = ref<string | null>(null);
+
+// Overtime/penalty assignment + backend-computed pay breakdown
+const overtimeRates = ref<Array<{ id: string; name: string; calcType: string; multiplier: number; fixedAmountPerHour: number; currency: string }>>([]);
+const penaltyRules = ref<Array<{ id: string; name: string; type: string }>>([]);
+const salaryOvertimeRateId = ref<string>('');
+const salaryPenaltyRuleIds = ref<string[]>([]);
+const salaryCalcResult = ref<import('@/api/atrace/salary/payroll').AtraceSalaryCalculationResult | null>(null);
+const salaryCalcLoading = ref(false);
+const salaryCalcError = ref<string | null>(null);
 
 // Calculate date range based on selected period
 const dateRange = computed(() => {
@@ -260,24 +319,102 @@ function isExpanded(userId: string): boolean {
   return expandedUserIds.value.has(userId);
 }
 
-function openSalaryCalculator(userId: string) {
+async function openSalaryCalculator(userId: string) {
   selectedUserId.value = userId;
-  const savedSalary = typeof window !== 'undefined' ? localStorage.getItem(`salary_${userId}`) : null;
-  salaryInput.value = savedSalary || '';
-  
+  salaryInput.value = '';
+  salaryCurrency.value = 'KZT';
+  salaryError.value = null;
+  salaryOvertimeRateId.value = '';
+  salaryPenaltyRuleIds.value = [];
+  salaryCalcResult.value = null;
+  salaryCalcError.value = null;
+
   // Calculate working days and hours for the user from stats
   const user = stats.value.find(u => u.userId === userId);
   if (user) {
     workingDaysInMonth.value = user.attendedDays + user.legitimateAbsences;
     totalWorkedHours.value = user.totalWorkedHours;
   }
-  
+
   showSalaryModal.value = true;
+  salaryLoading.value = true;
+  try {
+    const [{ atraceGetMemberSalary }, { atraceGetOvertimeRates, atraceGetPenaltyRules }] = await Promise.all([
+      import('@/api/atrace/salary/salary'),
+      import('@/api/atrace/salary/payroll'),
+    ]);
+    const [salary, rates, rules] = await Promise.all([
+      atraceGetMemberSalary(userId, namespaceSlug.value),
+      atraceGetOvertimeRates(namespaceSlug.value).catch(() => []),
+      atraceGetPenaltyRules(namespaceSlug.value).catch(() => []),
+    ]);
+    overtimeRates.value = rates;
+    penaltyRules.value = rules;
+    if (salary) {
+      salaryInput.value = String(salary.amount);
+      salaryCurrency.value = salary.currency || 'KZT';
+      salaryOvertimeRateId.value = salary.overtimeRateId || '';
+      salaryPenaltyRuleIds.value = salary.penaltyRuleIds || [];
+    }
+  } catch (e: any) {
+    salaryError.value = isAtracePermissionError(e, 'tracker.salary.view')
+      ? (t('app.salaryPermissionError') || 'Недостаточно прав для просмотра зарплаты')
+      : (t('app.attendanceLoadFailed') || 'Не удалось загрузить');
+  } finally {
+    salaryLoading.value = false;
+  }
 }
 
-function saveSalary() {
-  if (selectedUserId.value && salaryInput.value) {
-    localStorage.setItem(`salary_${selectedUserId.value}`, salaryInput.value);
+async function saveSalary() {
+  if (!selectedUserId.value) return;
+  const amount = parseFloat(salaryInput.value) || 0;
+  salarySaving.value = true;
+  salaryError.value = null;
+  try {
+    const { atraceSetMemberSalary } = await import('@/api/atrace/salary/salary');
+    await atraceSetMemberSalary(
+      selectedUserId.value,
+      amount,
+      salaryCurrency.value || 'KZT',
+      undefined,
+      salaryOvertimeRateId.value || null,
+      salaryPenaltyRuleIds.value,
+      namespaceSlug.value
+    );
+    showSalaryModal.value = false;
+  } catch (e: any) {
+    salaryError.value = isAtracePermissionError(e, 'tracker.salary.manage')
+      ? (t('app.salaryPermissionError') || 'Недостаточно прав для изменения зарплаты')
+      : (t('app.saveFailed') || 'Не удалось сохранить');
+  } finally {
+    salarySaving.value = false;
+  }
+}
+
+function togglePenaltyRule(id: string) {
+  const idx = salaryPenaltyRuleIds.value.indexOf(id);
+  if (idx >= 0) salaryPenaltyRuleIds.value.splice(idx, 1);
+  else salaryPenaltyRuleIds.value.push(id);
+}
+
+async function calculateSalaryBackend() {
+  if (!selectedUserId.value) return;
+  salaryCalcLoading.value = true;
+  salaryCalcError.value = null;
+  try {
+    const { atraceCalculateSalary } = await import('@/api/atrace/salary/payroll');
+    salaryCalcResult.value = await atraceCalculateSalary(
+      dateRange.value.startDate,
+      dateRange.value.endDate,
+      selectedUserId.value,
+      namespaceSlug.value
+    );
+  } catch (e: any) {
+    salaryCalcError.value = isAtracePermissionError(e, 'tracker.salary.view')
+      ? (t('app.salaryPermissionError') || 'Недостаточно прав')
+      : (t('app.saveFailed') || 'Не удалось рассчитать');
+  } finally {
+    salaryCalcLoading.value = false;
   }
 }
 
@@ -373,6 +510,7 @@ watch([() => props.postId, () => props.ready], () => {
 
 onMounted(() => {
   safeLoadStats();
+  loadTimeSettings();
 });
 
 // Export functionality
@@ -403,7 +541,8 @@ async function exportToExcel() {
     const { atraceExportDailyAttendance } = await import('@/api/atrace/attendance/stats');
     const records = await atraceExportDailyAttendance(
       dateRange.value.startDate,
-      dateRange.value.endDate
+      dateRange.value.endDate,
+      namespaceSlug.value
     );
     if (records.length === 0) {
       exportError.value = t('app.noDataToExport');
@@ -415,7 +554,9 @@ async function exportToExcel() {
       records,
       dateRange.value.startDate,
       dateRange.value.endDate,
-      locale.value
+      locale.value,
+      undefined,
+      stats.value
     );
     useAnalytics().track('atrace_report_exported', {
       startDate: dateRange.value.startDate,
@@ -518,6 +659,14 @@ function formatNumber(val: number, fractionDigits = 0) {
         >
           {{ t('app.configureTime') }}
         </UButton>
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="lucide:repeat"
+          @click="showCoverageModal = true"
+        >
+          {{ t('app.requestCoverage') || 'Запросить подмену' }}
+        </UButton>
       </div>
 
       <!-- Legend - full on desktop -->
@@ -574,6 +723,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           color="primary"
           variant="solid"
           icon="i-heroicons-check"
+          :loading="timeSettingsSaving"
           @click="applyTimeSettings"
         >
           {{ t('common.apply') || 'Применить' }}
@@ -586,6 +736,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             type="time"
             size="sm"
             icon="i-heroicons-clock"
+            :disabled="timeSettingsLoading"
             :ui="{ base: 'font-mono' }"
           />
         </UFormGroup>
@@ -595,6 +746,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             type="time"
             size="sm"
             icon="i-heroicons-clock"
+            :disabled="timeSettingsLoading"
             :ui="{ base: 'font-mono' }"
           />
         </UFormGroup>
@@ -670,6 +822,12 @@ function formatNumber(val: number, fractionDigits = 0) {
             <th class="px-3 py-2 text-center font-medium">
               {{ t('app.exceptions') }}
             </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.lateArrivals') || 'Опоздания' }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.earlyLeaves') || 'Ранние уходы' }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -735,11 +893,35 @@ function formatNumber(val: number, fractionDigits = 0) {
                 >0</span>
               </td>
               <td class="px-3 py-2 text-center">
-                <span 
+                <span
                   v-if="user.legitimateAbsences > 0"
                   class="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded"
                 >
                   {{ user.legitimateAbsences }}
+                </span>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >0</span>
+              </td>
+              <td class="px-3 py-2 text-center">
+                <span
+                  v-if="user.lateDays > 0"
+                  class="px-1.5 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded"
+                >
+                  {{ user.lateDays }}
+                </span>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >0</span>
+              </td>
+              <td class="px-3 py-2 text-center">
+                <span
+                  v-if="user.earlyLeaveDays > 0"
+                  class="px-1.5 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded"
+                >
+                  {{ user.earlyLeaveDays }}
                 </span>
                 <span
                   v-else
@@ -754,21 +936,19 @@ function formatNumber(val: number, fractionDigits = 0) {
               class="bg-gray-50 dark:bg-gray-900"
             >
               <td
-                :colspan="6"
+                :colspan="8"
                 class="px-3 py-3"
               >
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
                   <h4 class="text-sm font-semibold mb-2">
                     {{ t('app.attendanceDetails') }}
                   </h4>
-                  <UserDayRecordsAccordion 
+                  <UserDayRecordsAccordion
                     v-if="postId"
                     :post-id="postId"
                     :user-id="user.userId"
                     :start-date="dateRange.startDate"
                     :end-date="dateRange.endDate"
-                    :late-arrival-time="lateArrivalTime"
-                    :early-leave-time="earlyLeaveTime"
                   />
                 </div>
               </td>
@@ -962,18 +1142,75 @@ function formatNumber(val: number, fractionDigits = 0) {
         </template>
 
         <div class="flex flex-col gap-6">
+          <div
+            v-if="salaryError"
+            class="p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200"
+          >
+            {{ salaryError }}
+          </div>
+
           <!-- Salary Input -->
-          <div>
-            <label class="text-sm font-medium mb-2 block">{{ t('app.salary') }}</label>
-            <input
-              v-model="salaryInput"
-              type="number"
-              class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700"
-              :placeholder="t('app.enterSalary')"
-            >
-            <p class="text-xs text-gray-500 mt-1">
-              {{ t('app.salaryStoredLocally') }}
-            </p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2">
+              <label class="text-sm font-medium mb-2 block">{{ t('app.salary') }}</label>
+              <input
+                v-model="salaryInput"
+                type="number"
+                :disabled="salaryLoading"
+                class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700"
+                :placeholder="t('app.enterSalary')"
+              >
+            </div>
+            <div>
+              <label class="text-sm font-medium mb-2 block">{{ t('app.currency') || 'Валюта' }}</label>
+              <USelectMenu
+                v-model="salaryCurrency"
+                :options="currencyOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :disabled="salaryLoading"
+              />
+            </div>
+          </div>
+
+          <!-- Overtime rate + penalty rules assignment -->
+          <div
+            v-if="overtimeRates.length > 0 || penaltyRules.length > 0"
+            class="grid grid-cols-1 sm:grid-cols-2 gap-3"
+          >
+            <div v-if="overtimeRates.length > 0">
+              <label class="text-sm font-medium mb-2 block">{{ t('app.overtimeRate') || 'Ставка переработки' }}</label>
+              <select
+                v-model="salaryOvertimeRateId"
+                class="w-full px-3 py-2 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
+              >
+                <option value="">
+                  {{ t('common.none') || 'Нет' }}
+                </option>
+                <option
+                  v-for="r in overtimeRates"
+                  :key="r.id"
+                  :value="r.id"
+                >
+                  {{ r.name }} ({{ overtimeRateLabel(r) }})
+                </option>
+              </select>
+            </div>
+            <div v-if="penaltyRules.length > 0">
+              <label class="text-sm font-medium mb-2 block">{{ t('app.penaltyRules') || 'Штрафы' }}</label>
+              <div class="flex flex-wrap gap-1.5">
+                <UButton
+                  v-for="rule in penaltyRules"
+                  :key="rule.id"
+                  size="xs"
+                  :color="salaryPenaltyRuleIds.includes(rule.id) ? 'primary' : 'gray'"
+                  :variant="salaryPenaltyRuleIds.includes(rule.id) ? 'solid' : 'soft'"
+                  @click="togglePenaltyRule(rule.id)"
+                >
+                  {{ rule.name }}
+                </UButton>
+              </div>
+            </div>
           </div>
 
           <!-- Calculation Results Grid -->
@@ -1032,6 +1269,68 @@ function formatNumber(val: number, fractionDigits = 0) {
               </div>
             </div>
           </div>
+
+          <!-- Backend-computed pay breakdown: base (prorated by hours) + overtime - penalties -->
+          <div class="border rounded-lg p-4 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-3">
+              <p class="text-sm font-medium text-gray-900 dark:text-white">
+                {{ t('app.payrollBreakdown') || 'Расчёт с учётом переработок и штрафов' }}
+              </p>
+              <UButton
+                size="xs"
+                variant="soft"
+                color="primary"
+                icon="lucide:calculator"
+                :loading="salaryCalcLoading"
+                @click="calculateSalaryBackend"
+              >
+                {{ t('app.calculate') || 'Рассчитать' }}
+              </UButton>
+            </div>
+            <div
+              v-if="salaryCalcError"
+              class="text-sm text-red-500 mb-2"
+            >
+              {{ salaryCalcError }}
+            </div>
+            <div
+              v-if="salaryCalcResult"
+              class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm"
+            >
+              <div>
+                <p class="text-xs text-gray-500">
+                  {{ t('app.baseAmount') || 'База' }}
+                </p>
+                <p class="font-semibold">
+                  {{ formatNumber(salaryCalcResult.baseAmount, 2) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">
+                  {{ t('app.overtimeAmount') || 'Переработка' }} ({{ formatNumber(salaryCalcResult.overtimeHours, 1) }}ч)
+                </p>
+                <p class="font-semibold text-emerald-600 dark:text-emerald-400">
+                  +{{ formatNumber(salaryCalcResult.overtimeAmount, 2) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">
+                  {{ t('app.penaltyAmount') || 'Штрафы' }}
+                </p>
+                <p class="font-semibold text-red-600 dark:text-red-400">
+                  -{{ formatNumber(salaryCalcResult.penaltyAmount, 2) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">
+                  {{ t('app.totalAmount') || 'Итого' }}
+                </p>
+                <p class="font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                  {{ formatNumber(salaryCalcResult.totalAmount, 2) }} {{ salaryCalcResult.currency }}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
 
         <template #footer>
@@ -1048,7 +1347,8 @@ function formatNumber(val: number, fractionDigits = 0) {
               <UButton
                 size="sm"
                 color="primary"
-                @click="saveSalary(); showSalaryModal = false"
+                :loading="salarySaving"
+                @click="saveSalary"
               >
                 {{ t('app.save') }}
               </UButton>
@@ -1104,6 +1404,11 @@ function formatNumber(val: number, fractionDigits = 0) {
         </template>
       </UCard>
     </UModal>
+
+    <ShiftCoverageRequestModal
+      v-model="showCoverageModal"
+      :ns-slug="namespaceSlug || ''"
+    />
   </div>
 </template>
 <style scoped>

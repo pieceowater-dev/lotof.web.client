@@ -203,16 +203,25 @@ async function subscribePlan(plan: Plan) {
 
   subscribingPlanCode.value = plan.code;
   try {
+    // subscribePlan requires ContactsAuthorization -- make sure a token is
+    // cached before calling it. Minting a token only proves namespace
+    // membership and provisions the tenant schema as a side effect; it must
+    // NOT be confused with installing the app, which stays gated on a
+    // successful subscribe below.
+    const { ensure } = useContactsToken();
+    await ensure(nsSlug.value, token);
+
     // Subscribe to plan
     await subscribeToContactsPlan(nsSlug.value, plan.code, 'pieceowater.contacts', token);
-    
+
     toast.add({
       title: t('common.success') || 'Success',
       description: t('app.subscribedToPlan', { plan: plan.name }) || `Subscribed to ${plan.name}`,
       color: 'emerald'
     });
 
-    // Add app to namespace (trigger real installation)
+    // Add app to namespace (trigger real installation) -- only now, after a
+    // confirmed subscription, is the app considered actually installed.
     const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
     try {
       await hubAddAppToNamespace(token, nsSlug.value, 'pieceowater.contacts');
@@ -223,8 +232,7 @@ async function subscribePlan(plan: Plan) {
       }
     }
 
-    // Ensure app token is ready before entering protected contacts routes.
-    const { ensure } = useContactsToken();
+    // Ensure app token is fresh before entering protected contacts routes.
     await ensure(nsSlug.value, token);
 
     useAnalytics().track('plan_subscribed', { app: 'pieceowater.contacts', plan: plan.code });

@@ -14,6 +14,9 @@ type UserAttendanceStats = {
   violationDays: number;
   legitimateAbsences: number;
   totalWorkedHours: number;
+  lateDays: number;
+  earlyLeaveDays: number;
+  hasScheduleAssignment: boolean;
 };
 
 const GET_ALL_USERS_STATS = `
@@ -26,6 +29,9 @@ const GET_ALL_USERS_STATS = `
       violationDays
       legitimateAbsences
       totalWorkedHours
+      lateDays
+      earlyLeaveDays
+      hasScheduleAssignment
     }
   }
 `;
@@ -36,6 +42,7 @@ const GET_ATTENDANCE_REPORT = `
       userId
       startDate
       endDate
+      missedDates
       attendances {
         id
         userId
@@ -51,6 +58,8 @@ const GET_ATTENDANCE_REPORT = `
         checkCount
         firstRecordId
         lastRecordId
+        late
+        earlyLeave
       }
     }
   }
@@ -78,6 +87,8 @@ const EXPORT_DAILY_ATTENDANCE = `
       attended
       legitimate
       reason
+      late
+      earlyLeave
     }
   }
 `;
@@ -143,6 +154,9 @@ export async function atraceGetAllUsersStats(
         violationDays: number;
         legitimateAbsences: number;
         totalWorkedHours: number;
+        lateDays: number;
+        earlyLeaveDays: number;
+        hasScheduleAssignment: boolean;
       }>;
     }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
       headers: {
@@ -169,6 +183,8 @@ export async function atraceExportDailyAttendance(
   attended: boolean;
   legitimate: boolean;
   reason?: string;
+  late: boolean;
+  earlyLeave: boolean;
 }>> {
   const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
@@ -184,6 +200,8 @@ export async function atraceExportDailyAttendance(
         attended: boolean;
         legitimate: boolean;
         reason?: string;
+        late: boolean;
+        earlyLeave: boolean;
       }>
     }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
       headers: {
@@ -195,12 +213,7 @@ export async function atraceExportDailyAttendance(
   }, namespace);
 }
 
-export async function atraceGetAttendanceReport(
-  userId: string,
-  startDate: string,
-  endDate: string,
-  nsSlug?: string
-): Promise<Array<{
+export type AtraceDailyAttendanceRecord = {
   id: string;
   date: string;
   firstCheckIn: number; // unix timestamp
@@ -210,7 +223,16 @@ export async function atraceGetAttendanceReport(
   attended: boolean;
   legitimate: boolean;
   reason?: string;
-}>> {
+  late: boolean;
+  earlyLeave: boolean;
+};
+
+export async function atraceGetAttendanceReport(
+  userId: string,
+  startDate: string,
+  endDate: string,
+  nsSlug?: string
+): Promise<{ attendances: AtraceDailyAttendanceRecord[]; missedDates: string[] }> {
   const namespace = resolveNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
@@ -219,6 +241,7 @@ export async function atraceGetAttendanceReport(
         userId: string;
         startDate: string;
         endDate: string;
+        missedDates: string[] | null;
         attendances: Array<{
           id: string;
           userId: string;
@@ -234,6 +257,8 @@ export async function atraceGetAttendanceReport(
           checkCount: number;
           firstRecordId: string;
           lastRecordId: string;
+          late: boolean;
+          earlyLeave: boolean;
         }>;
       };
     }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate }, {
@@ -243,7 +268,10 @@ export async function atraceGetAttendanceReport(
       },
     });
 
-    return response.getAttendanceReport.attendances;
+    return {
+      attendances: response.getAttendanceReport.attendances,
+      missedDates: response.getAttendanceReport.missedDates ?? [],
+    };
   }, namespace);
 }
 
