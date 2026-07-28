@@ -37,6 +37,20 @@ WORKDIR /app
 # Copy built application from builder
 COPY --from=builder /app/.output /app/.output
 
+# Nitro's static file-tracer resolves sharp's *code* into
+# .output/server/node_modules but can't statically follow its runtime
+# platform-detection lookup (it picks its native binary package, e.g.
+# @img/sharp-linuxmusl-x64, based on process.platform/arch/libc at
+# require-time, not via a literal require() call a tracer can see) -- so
+# the copied node_modules/sharp ends up present but incomplete, and a
+# fresh `npm install` layered on top of it treats the package as already
+# satisfied instead of fixing it. .output/server/package.json (which
+# Nitro also generates) is accurate though, so wipe the partial trace and
+# install for real, in the actual target platform, from that.
+RUN rm -rf /app/.output/server/node_modules \
+  && cd /app/.output/server \
+  && npm install --omit=dev
+
 # Expose port 3000 (Nitro default)
 EXPOSE 3000
 
