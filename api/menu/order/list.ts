@@ -108,3 +108,36 @@ export async function menuOrdersSummary(menuToken: string, namespaceSlug: string
     return res.ordersSummary;
   }, namespaceSlug);
 }
+
+// One grouped call for every status's count — replaces the previous
+// pattern of one menuOrdersList call per status (7 concurrent requests on
+// every poll tick).
+const STATUS_COUNT_FILTER_VARS = `
+  $branchIds: [String!], $search: String, $types: [String!], $sourceTag: String,
+  $createdFrom: String, $createdTo: String, $closedFrom: String, $closedTo: String, $participantUserId: String
+`;
+const STATUS_COUNT_FILTER_ARGS = `
+  branchIds: $branchIds, search: $search, types: $types, sourceTag: $sourceTag,
+  createdFrom: $createdFrom, createdTo: $createdTo, closedFrom: $closedFrom, closedTo: $closedTo,
+  participantUserId: $participantUserId
+`;
+const OrderStatusCountsDocument = /* GraphQL */ `
+  query OrderStatusCounts(${STATUS_COUNT_FILTER_VARS}) {
+    orderStatusCounts(${STATUS_COUNT_FILTER_ARGS}) {
+      status
+      count
+    }
+  }
+`;
+
+export async function menuOrderStatusCounts(menuToken: string, namespaceSlug: string, params: OrdersFilter = {}): Promise<Record<string, number>> {
+  const devHeaders = await getDeviceHeaders();
+  return menuRequestWithRefresh(async () => {
+    const res = await menuClient.request<{ orderStatusCounts: { status: string; count: number }[] }>(
+      OrderStatusCountsDocument,
+      filterVars(params),
+      { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return Object.fromEntries(res.orderStatusCounts.map((c) => [c.status, c.count]));
+  }, namespaceSlug);
+}

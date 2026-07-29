@@ -386,18 +386,15 @@ async function loadSummary() {
 async function loadStatusCounts() {
   try {
     const menuToken = await getToken();
-    const { menuOrdersList } = await import('@/api/menu/order/list');
-    const results = await Promise.all(
-      STATUSES.map((s) =>
-        menuOrdersList(menuToken, nsSlug.value, {
-          statuses: [s],
-          branchIds: selectedBranchIds.value,
-          types: selectedType.value ? [selectedType.value] : undefined,
-          length: 'TEN',
-        }).then((r) => [s, r.count] as const).catch(() => [s, 0] as const)
-      )
-    );
-    statusCounts.value = Object.fromEntries(results);
+    const { menuOrderStatusCounts } = await import('@/api/menu/order/list');
+    // One grouped call for every status's count, instead of the previous
+    // one-menuOrdersList-call-per-status fan-out (7 concurrent requests
+    // every poll tick) — see menu.gtw's orderStatusCounts.
+    const counts = await menuOrderStatusCounts(menuToken, nsSlug.value, {
+      branchIds: selectedBranchIds.value,
+      types: selectedType.value ? [selectedType.value] : undefined,
+    });
+    statusCounts.value = Object.fromEntries(STATUSES.map((s) => [s, counts[s] || 0]));
   } catch (e) {
     logError('[menu/index] loadStatusCounts failed', e);
   }
@@ -636,7 +633,7 @@ function playNewOrderChime() {
 }
 
 async function pollTick() {
-  if (isDetailOpen.value || !liveUpdatesEnabled.value) return;
+  if (document.hidden || isDetailOpen.value || !liveUpdatesEnabled.value) return;
   const previousIds = new Set(orders.value.map((o) => o.id));
   await loadOrders({ silent: true });
   const freshIds = orders.value.filter((o) => !previousIds.has(o.id)).map((o) => o.id);

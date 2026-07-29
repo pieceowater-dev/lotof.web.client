@@ -129,7 +129,11 @@ async function pollTick() {
 
 onMounted(async () => {
   await load();
-  pollTimer = setInterval(pollTick, 8000);
+  // This is the most-replicated poller in the app — every customer with an
+  // order open runs their own copy, unlike the admin/board pages where
+  // there's normally just one watcher per venue — so it's worth erring
+  // toward a slightly longer interval here specifically.
+  pollTimer = setInterval(pollTick, 12000);
 });
 
 // This page always opens in a fresh tab (checkout's "View order" / the "My

@@ -104,10 +104,17 @@ function isStale(createdAt: string): boolean {
 }
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+// Skips the fetch when the tab/window isn't visible — harmless in the
+// normal always-on kitchen-TV case, but avoids polling for nothing if this
+// is left open in a background browser tab (e.g. during testing).
+function pollTickIfVisible() {
+  if (document.hidden) return;
+  loadBoard();
+}
 onMounted(async () => {
   await loadBrand();
   await loadBoard();
-  pollTimer = setInterval(loadBoard, 5000);
+  pollTimer = setInterval(pollTickIfVisible, 8000);
   clockTimer = setInterval(() => { now.value = Date.now(); }, 1000);
 });
 onBeforeUnmount(() => {
