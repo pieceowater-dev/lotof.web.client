@@ -38,6 +38,7 @@ const form = reactive({
   currencyCode: 'KZT',
   seoTitle: '',
   seoDescription: '',
+  autoAcceptOrders: false,
 });
 const socialLinksList = ref<SocialLink[]>([]);
 
@@ -53,6 +54,7 @@ function applySettings(s: MenuBrandSettings | null) {
   socialLinksList.value = parseSocialLinks(s.socialLinks);
   form.seoTitle = s.seoTitle || '';
   form.seoDescription = s.seoDescription || '';
+  form.autoAcceptOrders = s.autoAcceptOrders || false;
 }
 
 function addSocialLink() {
@@ -115,6 +117,7 @@ async function save() {
       socialLinks: serializeSocialLinks(socialLinksList.value),
       seoTitle: form.seoTitle.trim() || undefined,
       seoDescription: form.seoDescription.trim() || undefined,
+      autoAcceptOrders: form.autoAcceptOrders,
     });
     applySettings(settings);
     useToast().add({ title: t('menu.brandSettingsSaved') || 'Saved', color: 'primary' });
@@ -194,6 +197,14 @@ onMounted(load);
           <UFormGroup :label="t('menu.currencyCode') || 'Currency'">
             <USelectMenu v-model="form.currencyCode" :options="currencyOptions" value-attribute="value" option-attribute="label" size="lg" class="max-w-[180px]" :popper="{ strategy: 'fixed' }" />
           </UFormGroup>
+
+          <div class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-gray-800 p-3.5">
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t('menu.autoAcceptOrders') || 'Auto-accept orders' }}</div>
+              <p class="text-xs text-gray-400 mt-0.5">{{ t('menu.autoAcceptOrdersHint') || "New orders move to \"Accepted\" on their own after 30 seconds, instead of waiting for staff to accept them." }}</p>
+            </div>
+            <UToggle v-model="form.autoAcceptOrders" class="flex-shrink-0" />
+          </div>
         </div>
 
         <!-- Colors -->

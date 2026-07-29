@@ -6,7 +6,6 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuShareLink } from '@/api/menu/sharelink/list';
-import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 import { buildTableTag, formatTableNumber, parseTableTag } from '@/utils/tableTag';
 
 const { t } = useI18n();
@@ -142,19 +141,8 @@ async function loadLinks() {
 
 const isFormValid = computed(() => !!genBranchId.value && isQrNumberValid(genQrNumber.value));
 
-// QR codes and marketing share links are the same underlying resource
-// (ShareLink), so the plan's max_links cap has to be checked against the
-// FULL list, not just the QR-tagged subset shown below — otherwise this
-// section and ShareLinkSection could each think there's room left while
-// together they're already over the limit.
-const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
-
 async function createQr() {
   if (!isFormValid.value || creating.value) return;
-  if (isAtLimit('max_links', allLinks.value.length)) {
-    useToast().add({ title: t('menu.planLimitLinks') || 'Share link limit reached for your plan — upgrade to add more.', color: 'amber' });
-    return;
-  }
   creating.value = true;
   try {
     const menuToken = await getToken();
@@ -243,10 +231,9 @@ async function removeLink(link: MenuShareLink) {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   loadBranches();
   loadLinks();
-  loadPlanLimits(await getToken(), nsSlug.value);
 });
 </script>
 

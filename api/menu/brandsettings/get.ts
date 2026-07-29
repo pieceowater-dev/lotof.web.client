@@ -14,12 +14,13 @@ export type MenuBrandSettings = {
   logoAlt?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  autoAcceptOrders: boolean;
 };
 
 const BrandSettingsDocument = /* GraphQL */ `
   query BrandSettings {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
     }
   }
 `;

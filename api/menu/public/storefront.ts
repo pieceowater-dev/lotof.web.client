@@ -55,7 +55,7 @@ async function withMigrationRetry<T>(fn: () => Promise<T>, attempts = 4, delayMs
 const StorefrontDocument = /* GraphQL */ `
   query Storefront {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
     }
     branches(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id name address phone lat lng workingHours isActive city isPrimary slug }

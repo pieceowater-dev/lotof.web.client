@@ -86,8 +86,9 @@ async function loadBranches() {
 // Table QR links (see TableQrSection.vue) are saved via this exact same
 // ShareLink resource, tagged "table:NNN" — they get their own management UI
 // there, so this list (and its "no saved links" empty state) only ever
-// shows the marketing-attribution ones. isAtLimit below still counts the
-// FULL savedLinks list (both kinds share one plan cap), not this filtered view.
+// shows the marketing-attribution ones. isAtLimit below is also scoped to
+// this filtered count, not the full savedLinks list — QR codes are
+// unlimited regardless of plan, only marketing share links are capped.
 const marketingLinks = computed(() => savedLinks.value.filter((l) => !parseTableTag(l.sourceTag)));
 
 async function loadSavedLinks() {
@@ -109,7 +110,7 @@ const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
 
 async function saveLink() {
   if (!isFormValid.value) return;
-  if (isAtLimit('max_links', savedLinks.value.length)) {
+  if (isAtLimit('max_links', marketingLinks.value.length)) {
     useToast().add({ title: t('menu.planLimitLinks') || 'Share link limit reached for your plan — upgrade to add more.', color: 'amber' });
     return;
   }

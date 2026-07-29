@@ -36,7 +36,7 @@ type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'sha
 
 const tabs = computed(() => [
   { key: 'staff' as TabKey, label: t('menu.staff') || 'Staff', icon: 'lucide:users' },
-  { key: 'brand' as TabKey, label: t('menu.brand') || 'Brand', icon: 'lucide:palette' },
+  { key: 'brand' as TabKey, label: t('menu.businessTab') || 'Business', icon: 'lucide:palette' },
   { key: 'branches' as TabKey, label: t('menu.branches') || 'Branches', icon: 'lucide:map-pin' },
   { key: 'catalog' as TabKey, label: t('menu.catalog') || 'Catalog', icon: 'lucide:layout-grid' },
   { key: 'promobanners' as TabKey, label: t('menu.attraction') || 'Attraction', icon: 'lucide:megaphone' },

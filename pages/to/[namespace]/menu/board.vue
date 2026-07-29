@@ -36,12 +36,19 @@ const loading = ref(true);
 const error = ref('');
 
 type ColumnKey = 'NEW' | 'ACCEPTED' | 'IN_PREPARATION' | 'READY';
-const BOARD_COLUMNS: { status: ColumnKey; labelKey: string; fallback: string }[] = [
+const ALL_BOARD_COLUMNS: { status: ColumnKey; labelKey: string; fallback: string }[] = [
   { status: 'NEW', labelKey: 'menu.statusNew', fallback: 'New' },
   { status: 'ACCEPTED', labelKey: 'menu.statusAccepted', fallback: 'Accepted' },
   { status: 'IN_PREPARATION', labelKey: 'menu.statusInPreparation', fallback: 'Preparing' },
   { status: 'READY', labelKey: 'menu.statusReady', fallback: 'Ready' },
 ];
+// With auto-accept on, orders never meaningfully sit in NEW long enough for
+// the column to be useful — they're accepted automatically within 30s (see
+// menu.msvc.core's autoaccept sweep) — so it's dropped entirely rather than
+// showing a column that's always empty.
+const BOARD_COLUMNS = computed(() => (
+  brand.value?.autoAcceptOrders ? ALL_BOARD_COLUMNS.filter((c) => c.status !== 'NEW') : ALL_BOARD_COLUMNS
+));
 
 const ordersByColumn = computed(() => {
   const map: Record<ColumnKey, BoardOrder[]> = { NEW: [], ACCEPTED: [], IN_PREPARATION: [], READY: [] };
@@ -133,22 +140,34 @@ useHead(() => ({
 
 <template>
   <div class="h-screen w-screen overflow-hidden bg-gray-950 text-white flex flex-col">
-    <header class="flex-shrink-0 flex items-center justify-between gap-3 px-5 py-3 border-b border-gray-800">
-      <div class="flex items-center gap-3 min-w-0">
-        <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.name" class="w-8 h-8 rounded-lg object-contain bg-white flex-shrink-0">
-        <Icon v-else name="lucide:store" class="w-6 h-6 text-gray-500 flex-shrink-0" />
-        <h1 class="text-lg font-bold truncate">{{ brand?.name || nsSlug }}</h1>
-        <span v-if="activeBranch" class="text-sm text-gray-400 truncate">— {{ activeBranch.name }}</span>
+    <header class="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-800">
+      <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+        <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.name" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-contain bg-white flex-shrink-0">
+        <Icon v-else name="lucide:store" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 flex-shrink-0" />
+        <h1 class="text-sm sm:text-lg font-bold truncate">{{ brand?.name || nsSlug }}</h1>
+        <span v-if="activeBranch" class="hidden sm:inline text-sm text-gray-400 truncate">— {{ activeBranch.name }}</span>
       </div>
-      <div class="flex items-center gap-3 flex-shrink-0">
+      <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <span v-if="error" class="text-xs text-amber-400 flex items-center gap-1">
           <Icon name="lucide:wifi-off" class="w-3.5 h-3.5" />
-          {{ error }}
+          <span class="hidden sm:inline">{{ error }}</span>
         </span>
-        <span class="text-2xl font-mono tabular-nums text-gray-300">{{ new Date(now).toLocaleTimeString() }}</span>
+        <span class="text-base sm:text-2xl font-mono tabular-nums text-gray-300">{{ new Date(now).toLocaleTimeString() }}</span>
+        <a
+          href="https://lota.tools"
+          target="_blank"
+          rel="noopener"
+          class="hidden md:inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
+        >
+          <picture>
+            <source srcset="/assets/logo.webp" type="image/webp">
+            <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
+          </picture>
+          {{ t('menu.poweredBy') || 'Powered by' }} <span class="font-semibold">lota</span>
+        </a>
         <button
           type="button"
-          class="w-9 h-9 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors"
+          class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
           :aria-label="t('menu.toggleFullscreen') || 'Toggle fullscreen'"
           @click="toggleFullscreen"
         >
@@ -161,10 +180,19 @@ useHead(() => ({
       <UIcon name="lucide:loader-2" class="w-10 h-10 animate-spin text-gray-600" />
     </div>
 
-    <div v-else class="flex-1 min-h-0 grid grid-cols-4 gap-px bg-gray-800">
-      <div v-for="col in BOARD_COLUMNS" :key="col.status" class="min-h-0 flex flex-col bg-gray-950">
+    <!-- Mobile/tablet: one continuous scroll through stacked column
+         sections (each header stays sticky for orientation). Desktop/TV
+         (sm and up): columns sit side by side, each scrolling
+         independently within the fixed board height — see the sm:flex-1
+         sm:min-h-0 sm:overflow-y-auto split below. -->
+    <div
+      v-else
+      class="flex-1 min-h-0 grid grid-cols-1 gap-px bg-gray-800 overflow-y-auto sm:overflow-hidden sm:grid-cols-2"
+      :class="BOARD_COLUMNS.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'"
+    >
+      <div v-for="col in BOARD_COLUMNS" :key="col.status" class="flex flex-col bg-gray-950 sm:min-h-0">
         <div
-          class="flex-shrink-0 flex items-center justify-between px-4 py-2.5"
+          class="flex-shrink-0 sticky top-0 z-10 sm:static flex items-center justify-between px-4 py-2 sm:py-2.5"
           :style="{ backgroundColor: statusBadgeStyle(col.status).bg }"
         >
           <span class="text-sm font-bold uppercase tracking-wide flex items-center gap-2">
@@ -174,7 +202,7 @@ useHead(() => ({
           <span class="text-sm font-bold tabular-nums bg-black/25 rounded-full px-2 py-0.5">{{ ordersByColumn[col.status].length }}</span>
         </div>
 
-        <div class="flex-1 min-h-0 overflow-y-auto p-2 space-y-2">
+        <div class="sm:flex-1 sm:min-h-0 sm:overflow-y-auto p-2 grid grid-cols-1 gap-2">
           <div
             v-for="order in ordersByColumn[col.status]"
             :key="order.id"
@@ -182,7 +210,7 @@ useHead(() => ({
             :class="isStale(order.createdAt) ? 'border-red-600' : 'border-gray-800'"
           >
             <div class="flex items-center justify-between">
-              <span class="text-3xl font-black tabular-nums">#{{ order.number }}</span>
+              <span class="text-2xl sm:text-3xl font-black tabular-nums">#{{ order.number }}</span>
               <span
                 class="text-xs font-medium tabular-nums"
                 :class="isStale(order.createdAt) ? 'text-red-400' : 'text-gray-500'"

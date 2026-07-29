@@ -1791,6 +1791,9 @@
     "qrEditCleanupFailed": "Updated, but the old QR code could not be removed — delete it manually.",
     "tablePhoneRecommendedHint": "Optional, but without it you won't be able to track your order status later.",
     "noPhoneNoTrackingHint": "No phone on file, so there's no order-status link — ask staff at your table if you need an update.",
-    "noSlotsForDate": "No time slots available for that date — try another day."
+    "noSlotsForDate": "No time slots available for that date — try another day.",
+    "autoAcceptOrders": "Auto-accept orders",
+    "autoAcceptOrdersHint": "New orders move to \"Accepted\" on their own after 30 seconds, instead of waiting for staff to accept them.",
+    "businessTab": "Business"
   }
 }
