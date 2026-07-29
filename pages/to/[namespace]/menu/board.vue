@@ -114,7 +114,7 @@ function pollTickIfVisible() {
 onMounted(async () => {
   await loadBrand();
   await loadBoard();
-  pollTimer = setInterval(pollTickIfVisible, 8000);
+  pollTimer = setInterval(pollTickIfVisible, 10000);
   clockTimer = setInterval(() => { now.value = Date.now(); }, 1000);
 });
 onBeforeUnmount(() => {

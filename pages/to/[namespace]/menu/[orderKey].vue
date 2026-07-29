@@ -133,7 +133,7 @@ onMounted(async () => {
   // order open runs their own copy, unlike the admin/board pages where
   // there's normally just one watcher per venue — so it's worth erring
   // toward a slightly longer interval here specifically.
-  pollTimer = setInterval(pollTick, 12000);
+  pollTimer = setInterval(pollTick, 10000);
 });
 
 // This page always opens in a fresh tab (checkout's "View order" / the "My

@@ -16,6 +16,7 @@ import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
+import { subscribeOrderChanged } from '@/api/menu/subscriptions';
 
 const { t } = useI18n();
 const { isOwnerOrManager } = useMenuStaffRole();
@@ -543,15 +544,36 @@ async function openFromQuery() {
   }
 }
 
-// Soft "live" refresh: poll the list (and summary) on a short interval so
-// new/updated orders show up without a manual reload — a full GraphQL
-// subscription would need a new pub/sub + WebSocket transport on the
-// backend for a single-tenant admin table, so this gets the same
-// user-facing result more cheaply. Skipped entirely while the detail modal
-// is open so an in-progress status change/comment edit never gets
-// clobbered by a background refresh, and skipped when the user has turned
-// the toggle off.
+// Live refresh: a namespace-scoped GraphQL subscription (orderChanged) tells
+// every connected staff member's browser exactly when an order in their
+// tenant changed, so refetches fire on real activity instead of a fixed
+// timer — the thing that matters once many staff hold this page open at
+// once. The interval below is now just a safety net in case the socket
+// silently drops (network blip, server restart) and never reconnects, so
+// it's slow. Both paths funnel through pollTick(), which is skipped
+// entirely while the detail modal is open (an in-progress status
+// change/comment edit must never get clobbered by a background refresh)
+// or while the user has turned the toggle off.
 let pollTimer: ReturnType<typeof setInterval> | null = null;
+let disposeOrderSubscription: (() => void) | null = null;
+let orderChangedDebounce: ReturnType<typeof setTimeout> | null = null;
+
+function onOrderChangedEvent() {
+  if (orderChangedDebounce) clearTimeout(orderChangedDebounce);
+  // Collapse bursts (e.g. several statuses updated back to back) into one refetch.
+  orderChangedDebounce = setTimeout(() => { pollTick(); }, 300);
+}
+
+async function startOrderSubscription() {
+  try {
+    const menuToken = await getToken();
+    disposeOrderSubscription = subscribeOrderChanged(menuToken, nsSlug.value, onOrderChangedEvent, (e) => {
+      logError('[menu/index] order subscription error', e);
+    });
+  } catch (e) {
+    logError('[menu/index] startOrderSubscription failed', e);
+  }
+}
 
 const liveUpdatesEnabled = ref(true);
 const LIVE_UPDATES_STORAGE_KEY = computed(() => `menu:liveUpdates:${nsSlug.value}`);
@@ -657,12 +679,15 @@ onMounted(async () => {
   loadStatusCounts();
   loadSummary();
   openFromQuery();
-  pollTimer = setInterval(pollTick, 8000);
+  startOrderSubscription();
+  pollTimer = setInterval(pollTick, 45000);
   window.addEventListener('pointerdown', unlockAudio, { once: true });
 });
 
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer);
+  if (orderChangedDebounce) clearTimeout(orderChangedDebounce);
+  disposeOrderSubscription?.();
   window.removeEventListener('pointerdown', unlockAudio);
 });
 
