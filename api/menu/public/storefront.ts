@@ -99,21 +99,74 @@ export async function getPublicStorefront(namespaceSlug: string): Promise<Storef
   };
 }
 
-const PublicMenuItemsDocument = /* GraphQL */ `
-  query PublicMenuItems($categoryId: String) {
-    menuItems(categoryId: $categoryId, filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+// Same data as getPublicStorefront() plus the full catalog (every menu item
+// across every category in one shot, plus modifier groups) — one round trip
+// instead of the ordering page's previous pattern of one brandSettings/etc
+// request + one separate menuItems(categoryId) request PER CATEGORY + one
+// modifierGroups request. Omitting categoryId on the backend already means
+// "every item for this tenant" (see menu.gtw's menuitem ctrl), so grouping by
+// categoryId client-side gets the same result in a single gRPC round trip
+// instead of N. Only the ordering page needs the catalog — board.vue and
+// [orderKey].vue keep using the lighter getPublicStorefront() above.
+const StorefrontWithCatalogDocument = /* GraphQL */ `
+  query StorefrontWithCatalog {
+    brandSettings {
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
+    }
+    branches(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id name address phone lat lng workingHours isActive city isPrimary slug }
+    }
+    categories(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id parentId name sortOrder isActive availableFrom availableTo availableDays }
+    }
+    badges(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id text bgColor textColor icon }
+    }
+    promoBanners(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id title description imageUrl imageAlt targetUrl startDate endDate isActive }
+    }
+    menuItems(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id categoryId name description price imageUrl isActive sortOrder imageAlt badgeIds excludedBranchIds modifierGroupIds }
+    }
+    modifierGroups(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
+      rows { id name type minSelect maxSelect isRequired }
     }
   }
 `;
 
-export async function getPublicMenuItems(namespaceSlug: string, categoryId: string): Promise<MenuItem[]> {
+export type StorefrontWithCatalogData = StorefrontData & {
+  itemsByCategory: Record<string, MenuItem[]>;
+  modifierGroups: PublicModifierGroup[];
+};
+
+export async function getPublicStorefrontWithCatalog(namespaceSlug: string): Promise<StorefrontWithCatalogData> {
   const client = await freshClient(namespaceSlug);
-  const res = await withMigrationRetry(() => client.request<{ menuItems: { rows: MenuItem[] } }>(
-    PublicMenuItemsDocument,
-    { categoryId }
-  ));
-  return res.menuItems.rows.filter((i) => i.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+  const res = await withMigrationRetry(() => client.request<{
+    brandSettings: MenuBrandSettings | null;
+    branches: { rows: MenuBranch[] };
+    categories: { rows: MenuCategory[] };
+    badges: { rows: MenuBadge[] };
+    promoBanners: { rows: MenuPromoBanner[] };
+    menuItems: { rows: MenuItem[] };
+    modifierGroups: { rows: PublicModifierGroup[] };
+  }>(StorefrontWithCatalogDocument, {}));
+
+  const itemsByCategory: Record<string, MenuItem[]> = {};
+  for (const item of res.menuItems.rows) {
+    if (!item.isActive) continue;
+    (itemsByCategory[item.categoryId] ||= []).push(item);
+  }
+  for (const items of Object.values(itemsByCategory)) items.sort((a, b) => a.sortOrder - b.sortOrder);
+
+  return {
+    brandSettings: res.brandSettings,
+    branches: res.branches.rows,
+    categories: res.categories.rows.filter((c) => c.isActive).sort((a, b) => a.sortOrder - b.sortOrder),
+    badges: res.badges.rows,
+    promoBanners: res.promoBanners.rows.filter((b) => b.isActive),
+    itemsByCategory,
+    modifierGroups: res.modifierGroups.rows,
+  };
 }
 
 // Item ids temporarily unavailable at one branch (stock ran out today, etc.)
@@ -149,23 +202,6 @@ export type PublicModifierOption = {
   price: number;
   sortOrder: number;
 };
-
-const PublicModifierGroupsDocument = /* GraphQL */ `
-  query PublicModifierGroups {
-    modifierGroups(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
-      rows { id name type minSelect maxSelect isRequired }
-    }
-  }
-`;
-
-export async function getPublicModifierGroups(namespaceSlug: string): Promise<PublicModifierGroup[]> {
-  const client = await freshClient(namespaceSlug);
-  const res = await withMigrationRetry(() => client.request<{ modifierGroups: { rows: PublicModifierGroup[] } }>(
-    PublicModifierGroupsDocument,
-    {}
-  ));
-  return res.modifierGroups.rows;
-}
 
 const PublicModifierOptionsDocument = /* GraphQL */ `
   query PublicModifierOptions($groupId: String!) {

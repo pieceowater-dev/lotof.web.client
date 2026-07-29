@@ -71,16 +71,10 @@ async function loadItems() {
     const { current } = useMenuToken();
     const menuToken = current();
     if (!menuToken) return;
-    const [{ menuMenuItemsList }, { menuCategoriesList }] = await Promise.all([
-      import('@/api/menu/menuitem/list'),
-      import('@/api/menu/category/list'),
-    ]);
-    const [itemsRes, categoriesRes] = await Promise.all([
-      menuMenuItemsList(menuToken, props.nsSlug),
-      menuCategoriesList(menuToken, props.nsSlug),
-    ]);
-    items.value = itemsRes.items.filter((i) => i.isActive);
-    categories.value = categoriesRes.categories.filter((c) => c.isActive);
+    const { menuCatalogBundle } = await import('@/api/menu/catalogBundle');
+    const bundle = await menuCatalogBundle(menuToken, props.nsSlug);
+    items.value = bundle.items.filter((i) => i.isActive);
+    categories.value = bundle.categories.filter((c) => c.isActive);
     itemsLoaded.value = true;
   } catch (e) {
     logError('[CreateOrderModal] loadItems failed', e);

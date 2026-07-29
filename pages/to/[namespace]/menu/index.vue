@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getPublicStorefront, getPublicMenuItems, getPublicModifierGroups, getPublicModifierOptions, submitPublicOrder, getMyOrders, getPublicOrderStatus, getPublicStopList } from '@/api/menu/public/storefront';
+import { getPublicStorefrontWithCatalog, getPublicModifierOptions, submitPublicOrder, getMyOrders, getPublicOrderStatus, getPublicStopList } from '@/api/menu/public/storefront';
 import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '@/api/menu/public/storefront';
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
@@ -49,12 +49,12 @@ const lastOrderStorageKey = computed(() => `lota-menu-last-order-${nsSlug.value}
 const { data, pending: loading, error: fetchError } = await useAsyncData(
   `storefront-${nsSlug.value}`,
   () => withRetry(async () => {
-    const storefront = await getPublicStorefront(nsSlug.value);
-    const [entries, modifierGroups] = await Promise.all([
-      Promise.all(storefront.categories.map(async (c) => [c.id, await getPublicMenuItems(nsSlug.value, c.id)] as const)),
-      getPublicModifierGroups(nsSlug.value),
-    ]);
-    return { storefront, itemsByCategory: Object.fromEntries(entries) as Record<string, MenuItem[]>, modifierGroups };
+    // One combined request for everything the ordering page needs (brand,
+    // branches, categories, badges, promo banners, the full item catalog,
+    // and modifier groups) instead of one request per category's item list
+    // plus separate brand/modifier-group requests — see getPublicStorefrontWithCatalog.
+    const { itemsByCategory, modifierGroups, ...storefront } = await getPublicStorefrontWithCatalog(nsSlug.value);
+    return { storefront, itemsByCategory, modifierGroups };
   })
 );
 

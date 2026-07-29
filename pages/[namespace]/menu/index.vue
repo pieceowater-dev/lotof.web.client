@@ -305,8 +305,7 @@ function applyFilterPanel() {
   appliedFilterPanel.participantUserId = participantFilter.value;
   isFilterPanelOpen.value = false;
   page.value = 1;
-  loadOrders();
-  loadSummary();
+  loadOrdersBundle();
 }
 
 function clearFilterPanel() {
@@ -374,14 +373,37 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
   }
 }
 
-async function loadSummary() {
+// Combines orders + summary + status-counts into one GraphQL request (see
+// menuOrdersBundle) — used everywhere all three (or orders+summary) used to
+// be fetched as 2-3 separate round trips: initial load, every live-update
+// event/poll tick, branch/type/search/filter-panel changes, closing the
+// detail modal, ... loadOrders()/loadStatusCounts() below stay as standalone
+// single-purpose functions for the few spots that only ever wanted one of
+// these (pagination-only reload; a status change already updates its row
+// in place and just needs fresh counts, not a full list refetch).
+async function loadOrdersBundle(opts: { silent?: boolean } = {}) {
+  if (!opts.silent) loading.value = true;
+  error.value = null;
   try {
     const menuToken = await getToken();
-    const { menuOrdersSummary } = await import('@/api/menu/order/list');
-    summary.value = await menuOrdersSummary(menuToken, nsSlug.value, currentFilterParams.value);
+    const { menuOrdersBundle } = await import('@/api/menu/order/list');
+    const res = await menuOrdersBundle(menuToken, nsSlug.value, {
+      ...currentFilterParams.value,
+      page: page.value,
+      length: PAGE_LENGTH_BY_COUNT[pageCount.value] || PaginationLength.FIFTY,
+    });
+    orders.value = res.orders;
+    totalCount.value = res.count;
+    summary.value = res.summary;
+    statusCounts.value = Object.fromEntries(STATUSES.map((s) => [s, res.statusCounts[s] || 0]));
+    if (!opts.silent) selectedOrders.value = [];
   } catch (e) {
-    logError('[menu/index] loadSummary failed', e);
+    logError('[menu/index] loadOrdersBundle failed', e);
+    if (!opts.silent) error.value = getErrorMessage(e, t) || 'Failed to load orders';
+  } finally {
+    if (!opts.silent) loading.value = false;
   }
+  loadMyOrdersCount();
 }
 
 async function loadStatusCounts() {
@@ -433,8 +455,7 @@ function toggleMyOrdersFilter() {
   participantFilter.value = next;
   appliedFilterPanel.participantUserId = next;
   page.value = 1;
-  loadOrders();
-  loadSummary();
+  loadOrdersBundle();
 }
 
 function toggleStatus(s: string) {
@@ -442,34 +463,28 @@ function toggleStatus(s: string) {
   if (idx === -1) selectedStatuses.value = [...selectedStatuses.value, s];
   else selectedStatuses.value = selectedStatuses.value.filter((v) => v !== s);
   page.value = 1;
-  loadOrders();
-  loadSummary();
+  loadOrdersBundle();
 }
 
 function clearStatuses() {
   selectedStatuses.value = [];
   page.value = 1;
-  loadOrders();
-  loadSummary();
+  loadOrdersBundle();
 }
 
 watch(selectedBranchIds, () => {
   page.value = 1;
-  loadOrders();
-  loadStatusCounts();
-  loadSummary();
+  loadOrdersBundle();
 });
 
 watch(selectedType, () => {
   page.value = 1;
-  loadOrders();
-  loadStatusCounts();
-  loadSummary();
+  loadOrdersBundle();
 });
 
 watch(search, () => {
   if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(() => { page.value = 1; loadOrders(); loadSummary(); }, 400);
+  searchDebounce = setTimeout(() => { page.value = 1; loadOrdersBundle(); }, 400);
 });
 
 watch([page, pageCount], () => {
@@ -657,15 +672,13 @@ function playNewOrderChime() {
 async function pollTick() {
   if (document.hidden || isDetailOpen.value || !liveUpdatesEnabled.value) return;
   const previousIds = new Set(orders.value.map((o) => o.id));
-  await loadOrders({ silent: true });
+  await loadOrdersBundle({ silent: true });
   const freshIds = orders.value.filter((o) => !previousIds.has(o.id)).map((o) => o.id);
   if (freshIds.length) {
     freshIds.forEach((id) => newOrderIds.value.add(id));
     newOrderIds.value = new Set(newOrderIds.value);
     playNewOrderChime();
   }
-  loadStatusCounts();
-  loadSummary();
 }
 
 onMounted(async () => {
@@ -675,9 +688,7 @@ onMounted(async () => {
   loadSourceTagOptions();
   loadParticipantOptions();
   fetchUser().then(() => { loadMyOrdersCount(); checkOnboarding(); });
-  await loadOrders();
-  loadStatusCounts();
-  loadSummary();
+  await loadOrdersBundle();
   openFromQuery();
   startOrderSubscription();
   pollTimer = setInterval(pollTick, 45000);
@@ -761,9 +772,7 @@ async function handleOpenOrderById(orderId: string) {
 // active filters (e.g. filtered to NEW and the order was just accepted).
 watch(isDetailOpen, (isOpen, wasOpen) => {
   if (!isOpen && wasOpen) {
-    loadOrders();
-    loadStatusCounts();
-    loadSummary();
+    loadOrdersBundle();
   }
 });
 
@@ -785,8 +794,7 @@ async function handleCreateOrder(payload: any) {
     useAnalytics().track('menu_order_created_staff');
     useToast().add({ title: t('menu.orderCreated') || 'Order created', color: 'emerald' });
     isCreateOrderOpen.value = false;
-    loadOrders();
-    loadStatusCounts();
+    loadOrdersBundle();
   } catch (e) {
     logError('[menu/index] handleCreateOrder failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to create order', color: 'red' });

@@ -141,3 +141,61 @@ export async function menuOrderStatusCounts(menuToken: string, namespaceSlug: st
     return Object.fromEntries(res.orderStatusCounts.map((c) => [c.status, c.count]));
   }, namespaceSlug);
 }
+
+// Combines orders + ordersSummary + orderStatusCounts into one request —
+// these three are always refetched together (initial load, every live-update
+// event/poll tick, branch/type filter changes, ...), so what used to be 3
+// round trips per refresh is now 1. orderStatusCounts deliberately only
+// references $branchIds/$types here (not the fuller search/date-range/
+// sourceTag/participant vars, even though this one query declares them for
+// orders/ordersSummary) — matching the status cards' existing "quick filter
+// only" scope, unaffected by the "more filters" report panel.
+const OrdersBundleDocument = /* GraphQL */ `
+  query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
+    orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
+      rows {
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+      }
+      info { count }
+    }
+    ordersSummary(${ORDER_FILTER_ARGS}) {
+      count
+      totalAmount
+    }
+    orderStatusCounts(branchIds: $branchIds, types: $types) {
+      status
+      count
+    }
+  }
+`;
+
+export type OrdersBundle = {
+  orders: MenuOrder[];
+  count: number;
+  summary: OrdersSummary;
+  statusCounts: Record<string, number>;
+};
+
+export async function menuOrdersBundle(menuToken: string, namespaceSlug: string, params: OrdersFilter = {}): Promise<OrdersBundle> {
+  const devHeaders = await getDeviceHeaders();
+  return menuRequestWithRefresh(async () => {
+    const res = await menuClient.request<{
+      orders: { rows: MenuOrder[]; info: { count: number } };
+      ordersSummary: OrdersSummary;
+      orderStatusCounts: { status: string; count: number }[];
+    }>(
+      OrdersBundleDocument,
+      {
+        filter: { pagination: { page: params.page || 1, length: params.length || 'FIFTY' } },
+        ...filterVars(params),
+      },
+      { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return {
+      orders: res.orders.rows,
+      count: res.orders.info.count,
+      summary: res.ordersSummary,
+      statusCounts: Object.fromEntries(res.orderStatusCounts.map((c) => [c.status, c.count])),
+    };
+  }, namespaceSlug);
+}

@@ -147,19 +147,11 @@ const catalogLoaded = ref(false);
 async function loadCatalog() {
   try {
     const menuToken = await getToken();
-    const [{ menuMenuItemsList }, { menuCategoriesList }, { menuBadgesList }] = await Promise.all([
-      import('@/api/menu/menuitem/list'),
-      import('@/api/menu/category/list'),
-      import('@/api/menu/badge/list'),
-    ]);
-    const [itemsRes, categoriesRes, badgesRes] = await Promise.all([
-      menuMenuItemsList(menuToken, nsSlug.value),
-      menuCategoriesList(menuToken, nsSlug.value),
-      menuBadgesList(menuToken, nsSlug.value),
-    ]);
-    catalogItems.value = itemsRes.items.filter((i) => i.isActive);
-    catalogCategories.value = categoriesRes.categories.filter((c) => c.isActive);
-    catalogBadges.value = badgesRes.badges;
+    const { menuCatalogBundle } = await import('@/api/menu/catalogBundle');
+    const bundle = await menuCatalogBundle(menuToken, nsSlug.value);
+    catalogItems.value = bundle.items.filter((i) => i.isActive);
+    catalogCategories.value = bundle.categories.filter((c) => c.isActive);
+    catalogBadges.value = bundle.badges;
     catalogLoaded.value = true;
   } catch (e) {
     logError('[OrderDetailModal] loadCatalog failed', e);
@@ -181,14 +173,11 @@ async function loadDetails() {
   loading.value = true;
   try {
     const menuToken = await getToken();
-    const [itemsRes, historyRes, membersRes] = await Promise.all([
-      import('@/api/menu/order/items').then((m) => m.menuOrderItems(menuToken, nsSlug.value, props.order!.id)),
-      import('@/api/menu/order/history').then((m) => m.menuOrderHistory(menuToken, nsSlug.value, props.order!.id)),
-      import('@/api/menu/order/members').then((m) => m.menuOrderMembers(menuToken, nsSlug.value, props.order!.id)),
-    ]);
-    items.value = itemsRes;
-    history.value = historyRes.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-    members.value = membersRes;
+    const { menuOrderDetailsBundle } = await import('@/api/menu/order/detailsBundle');
+    const bundle = await menuOrderDetailsBundle(menuToken, nsSlug.value, props.order!.id);
+    items.value = bundle.items;
+    history.value = bundle.history.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    members.value = bundle.members;
   } catch (e) {
     logError('[OrderDetailModal] loadDetails failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load order details', color: 'red' });
