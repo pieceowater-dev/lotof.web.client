@@ -1,6 +1,6 @@
 import { hubBootstrap } from '@/api/hub/bootstrap';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
-import { logWarn } from '@/utils/logger';
+import { log, logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
@@ -46,7 +46,7 @@ export function useAuth() {
         setGlobalAuthToken(token.value);
         const data = await hubBootstrap(token.value);
         if (data?.me) {
-          console.log('[auth] User fetched successfully', { email: data.me.email });
+          log('[auth] User fetched successfully');
           user.value = data.me;
           useAnalytics().identifyUser(data.me);
           if (process.client) {
@@ -68,11 +68,9 @@ export function useAuth() {
           messages.some((m) => m.includes('unauthorized') && m.includes('token'));
 
         if (isUnauthorized) {
-          console.warn('[auth] fetchUser unauthorized, logging out', { error: String(e) });
           logWarn('[auth] fetchUser unauthorized, logging out');
           logout();
         } else {
-          console.warn('[auth] fetchUser failed, keeping session', { error: String(e) });
           logWarn('[auth] fetchUser failed, keeping session');
         }
       } finally {
@@ -182,13 +180,13 @@ export function useAuth() {
   if (process.client && !useState<boolean>('auth_handler_registered', () => false).value) {
     const reg = useState<boolean>('auth_handler_registered', () => false);
     setUnauthorizedHandler(async () => {
-      console.log('[auth] Unauthorized detected, attempting token refresh');
+      log('[auth] Unauthorized detected, attempting token refresh');
       const refreshed = await refreshAccessToken();
       if (!refreshed) {
-        console.log('[auth] Token refresh failed, logging out');
+        log('[auth] Token refresh failed, logging out');
         logout();
       } else {
-        console.log('[auth] Token refreshed successfully');
+        log('[auth] Token refreshed successfully');
       }
     });
     reg.value = true;

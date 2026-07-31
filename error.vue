@@ -6,6 +6,7 @@ const props = defineProps<{ error?: NuxtError }>()
 const handleError = () => clearError({ redirect: '/' })
 
 import { useI18n } from '@/composables/useI18n';
+import { log } from '@/utils/logger';
 const { t, tm } = useI18n();
 
 useHead(() => ({
@@ -34,7 +35,7 @@ function retryAfterResume() {
 // Auto-handle 401 errors (expired tokens) by clearing cookies and redirecting
 onMounted(() => {
   if (props.error?.statusCode === 401) {
-    console.log('[error.vue] 401 detected, clearing auth state and redirecting');
+    log('[error.vue] 401 detected, clearing auth state and redirecting');
     try {
       // Clear cookies
       const cookies = ['token', 'atrace-token'];

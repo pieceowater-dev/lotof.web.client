@@ -46,5 +46,11 @@ export function useContactsPlanLimits() {
     }
   }
 
-  return { planLimits, planName, planLimitsLoading, loadPlanLimits };
+  // undefined limit = unlimited (no cap configured for this plan/feature).
+  function isAtLimit(key: keyof ContactsPlanLimitsValue, currentCount: number): boolean {
+    const limit = planLimits.value?.[key];
+    return typeof limit === 'number' && currentCount >= limit;
+  }
+
+  return { planLimits, planName, planLimitsLoading, loadPlanLimits, isAtLimit };
 }

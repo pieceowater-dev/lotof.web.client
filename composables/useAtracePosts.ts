@@ -3,6 +3,8 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useI18n } from '@/composables/useI18n';
 import { getErrorMessage } from '@/utils/types/errors';
+import { localizeAtraceErrorMessage } from '@/utils/atrace/localizeError';
+import { log, logError } from '@/utils/logger';
 import { getBrowserTimezone } from '@/utils/timezones';
 import { PaginationLength } from '@/utils/constants';
 import { mapPaginationLength } from '@/utils/atrace/paginationLength';
@@ -117,7 +119,7 @@ export function useAtracePosts(
 
       // Retry once with fresh token if auth error
       if (isAuthError && retryCount === 0) {
-        console.log('[loadPosts] Auth error detected, retrying with fresh token');
+        log('[loadPosts] Auth error detected, retrying with fresh token');
         await loadPosts(1);
         return;
       }
@@ -206,6 +208,12 @@ export function useAtracePosts(
         isLimitModalOpen.value = true;
         return;
       }
+      logError('[useAtracePosts] handleCreate failed', e);
+      useToast().add({
+        title: t('app.notification') || 'Notification',
+        description: localizeAtraceErrorMessage(e, t) || msg || 'Failed to create post',
+        color: 'red',
+      });
     }
   }
 
@@ -226,8 +234,13 @@ export function useAtracePosts(
         isEditOpen.value = false;
         editingPost.value = null;
       }
-    } catch {
-      // noop
+    } catch (e) {
+      logError('[useAtracePosts] handleDelete failed', e);
+      useToast().add({
+        title: t('app.notification') || 'Notification',
+        description: localizeAtraceErrorMessage(e, t) || 'Failed to delete post',
+        color: 'red',
+      });
     }
   }
 

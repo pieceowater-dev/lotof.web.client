@@ -22,6 +22,7 @@ import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/types/errors';
 import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
+const formRef = ref<HTMLFormElement | null>(null);
 const router = useRouter();
 const route = useRoute();
 const { t } = useI18n();
@@ -513,8 +514,8 @@ function addPhone() {
   if (phones.value.length >= 5) return;
   phones.value.push('');
   nextTick(() => {
-    const inputs = document.querySelectorAll('input[data-phone-input]');
-    const lastInput = inputs[inputs.length - 1];
+    const inputs = formRef.value?.querySelectorAll('input[data-phone-input]');
+    const lastInput = inputs?.[inputs.length - 1];
     if (lastInput) (lastInput as HTMLInputElement).focus();
   });
 }
@@ -529,8 +530,8 @@ function addEmail() {
   if (emails.value.length >= 5) return;
   emails.value.push('');
   nextTick(() => {
-    const inputs = document.querySelectorAll('input[data-email-input]');
-    const lastInput = inputs[inputs.length - 1];
+    const inputs = formRef.value?.querySelectorAll('input[data-email-input]');
+    const lastInput = inputs?.[inputs.length - 1];
     if (lastInput) (lastInput as HTMLInputElement).focus();
   });
 }
@@ -544,7 +545,7 @@ function removeEmail(index: number) {
 async function handleSubmit() {
   if (!token.value || !selectedNS.value || !isFormValid.value) {
     // Scroll to first error
-    const form = document.querySelector('form');
+    const form = formRef.value;
     if (form) {
       const errorElement = form.querySelector('[class*="error"]') || form.querySelector('input:invalid');
       if (errorElement) {
@@ -897,7 +898,7 @@ useHead(() => ({
     <!-- Content -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <form class="space-y-6 p-6">
+        <form ref="formRef" class="space-y-6 p-6">
           <!-- 0. Client Type Selection -->
           <div class="space-y-3">
             <label class="block text-base font-semibold text-gray-900 dark:text-white">

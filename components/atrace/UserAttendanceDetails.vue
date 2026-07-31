@@ -109,13 +109,11 @@ function prevPage() {
 
 // Load data when component is mounted
 onMounted(() => {
-  console.log('[UserAttendanceDetails] Component mounted for user:', props.userId);
   loadAttendanceDetails();
 });
 
 // Reload when props change
 watch(() => [props.userId, props.startDate, props.endDate], () => {
-  console.log('[UserAttendanceDetails] Props changed, reloading...');
   currentPage.value = 1;
   loadAttendanceDetails();
 });

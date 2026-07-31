@@ -136,7 +136,7 @@ function resetWsRetry() {
 
 function stopWs() {
   if (ws) {
-    console.log('[WS] Closing WebSocket');
+    log('[WS] Closing WebSocket');
     try { 
       ws.close(); 
     } catch {}
@@ -152,7 +152,7 @@ function stopWs() {
 function startWs() {
   if (!process.client) return;
   if (!wsEnabled) {
-    console.log('[WS] startWs called but wsEnabled=false, ignoring');
+    log('[WS] startWs called but wsEnabled=false, ignoring');
     return;
   }
   stopWs();
@@ -172,7 +172,7 @@ function startWs() {
     secret,
   });
   
-  console.log('[WS] Creating new WebSocket:', wsUrl);
+  log('[WS] Creating new WebSocket:', wsUrl);
   ws = new WebSocket(wsUrl);
 
   lastWsAt = Date.now();
@@ -180,7 +180,7 @@ function startWs() {
     wsWatchdogTimer = setInterval(() => {
       if (!ws) return;
       if (Date.now() - lastWsAt > computeWatchdogMs()) {
-        console.log('[WS] Watchdog timeout, closing connection');
+        log('[WS] Watchdog timeout, closing connection');
         try { ws.close(); } catch {}
         ws = null;
         scheduleWsRetry();
@@ -219,21 +219,21 @@ function startWs() {
   };
 
   ws.onerror = (error) => {
-    console.log('[WS] WebSocket error:', error);
+    logWarn('[WS] WebSocket error:', error);
     if (!qrBase64.value) polling.value = false;
     qrError.value = t('app.loading') || 'Loading...';
     lastWsAt = Date.now();
   };
 
   ws.onclose = () => {
-    console.log('[WS] WebSocket closed');
+    log('[WS] WebSocket closed');
     ws = null;
     if (!qrBase64.value) polling.value = false;
     scheduleWsRetry();
   };
 
   ws.onopen = () => {
-    console.log('[WS] WebSocket opened');
+    log('[WS] WebSocket opened');
     resetWsRetry();
   };
 }

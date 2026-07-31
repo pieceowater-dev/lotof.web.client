@@ -63,6 +63,20 @@ function addSocialLink() {
 function removeSocialLink(idx: number) {
   socialLinksList.value.splice(idx, 1);
 }
+// Social links have no id of their own, and keying the v-for by array index
+// (while removeSocialLink splices) reassigns each row's underlying DOM/input
+// state to the wrong link whenever one above it is removed. Give every link
+// object a stable identity for :key instead, independent of its position.
+const socialLinkKeys = new WeakMap<SocialLink, number>();
+let socialLinkKeySeq = 0;
+function keyForSocialLink(link: SocialLink): number {
+  let key = socialLinkKeys.get(link);
+  if (key === undefined) {
+    key = socialLinkKeySeq++;
+    socialLinkKeys.set(link, key);
+  }
+  return key;
+}
 const platformOptions = SOCIAL_PLATFORMS.map((p) => ({ label: p.label, value: p.value, icon: p.icon }));
 function placeholderFor(name: number): string {
   return SOCIAL_PLATFORMS.find((p) => p.value === name)?.placeholder || 'https://...';
@@ -235,7 +249,7 @@ onMounted(load);
             </UButton>
           </div>
           <div v-if="!socialLinksList.length" class="text-sm text-gray-400">{{ t('menu.noSocialLinks') || 'No social links yet' }}</div>
-          <div v-for="(link, idx) in socialLinksList" :key="idx" class="flex flex-col sm:flex-row sm:items-center gap-2">
+          <div v-for="(link, idx) in socialLinksList" :key="keyForSocialLink(link)" class="flex flex-col sm:flex-row sm:items-center gap-2">
             <div class="flex items-center gap-2">
               <USelectMenu
                 v-model="link.name"
@@ -312,8 +326,8 @@ onMounted(load);
             </div>
             <div v-if="socialLinksList.length" class="mt-3 flex items-center gap-1.5">
               <span
-                v-for="(link, idx) in socialLinksList.slice(0, 5)"
-                :key="idx"
+                v-for="link in socialLinksList.slice(0, 5)"
+                :key="keyForSocialLink(link)"
                 class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center"
                 :style="{ color: previewOnPrimaryText }"
               >

@@ -239,8 +239,8 @@ async function deleteTier(tier: Tier) {
           class="flex flex-wrap gap-1"
         >
           <span
-            v-for="(benefit, idx) in tier.benefits"
-            :key="idx"
+            v-for="benefit in tier.benefits"
+            :key="benefit"
             class="inline-block px-2 py-1 text-xs rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 truncate"
           >
             {{ benefit }}
@@ -392,7 +392,7 @@ async function deleteTier(tier: Tier) {
           >
             <span
               v-for="(benefit, idx) in formData.benefits"
-              :key="idx"
+              :key="benefit"
               class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600"
             >
               <span>{{ benefit }}</span>

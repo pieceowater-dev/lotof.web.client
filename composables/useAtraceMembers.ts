@@ -380,9 +380,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
 
   function buildActionsJson(): string {
     const ops: Array<any> = [];
-    console.log('[buildActionsJson] inviteRoleId:', inviteRoleId.value);
     const roleIdNum = inviteRoleId.value ? parseInt(inviteRoleId.value, 10) : NaN;
-    console.log('[buildActionsJson] roleIdNum:', roleIdNum);
     if (!Number.isNaN(roleIdNum)) {
       ops.push({ op: 'assign_role', params: { roleId: roleIdNum } });
     }
@@ -390,7 +388,6 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
     const d = Math.max(0, Math.round(inviteDays.value));
     const h = Math.max(0, Math.round(inviteHours.value));
     ops.push({ op: 'create_schedule', params: { workDays: d, hoursPerDay: h } });
-    console.log('[buildActionsJson] final ops:', ops);
     return JSON.stringify({ version: 1, 'pieceowater.atrace': ops });
   }
 
@@ -411,7 +408,6 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
       inviteSubmitting.value = true;
       const { hubCreateInvite } = await import('@/api/hub/invite/create');
       const actions = buildActionsJson();
-      console.log('[submitInvite] actions:', actions);
       // default expiresAt: 30 days
       const expiresAt = Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60;
       await hubCreateInvite(hubToken, {

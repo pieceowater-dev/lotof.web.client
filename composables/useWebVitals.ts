@@ -2,13 +2,15 @@
  * Web Vitals monitoring composable
  * Tracks Core Web Vitals for performance monitoring
  */
+import { log, logWarn } from '@/utils/logger';
+
 export const useWebVitals = () => {
   if (import.meta.server) return
 
   const reportWebVital = (metric: any) => {
     // Log in development
     if (import.meta.dev) {
-      console.log(`[Web Vitals] ${metric.name}:`, {
+      log(`[Web Vitals] ${metric.name}:`, {
         value: metric.value,
         rating: metric.rating,
         delta: metric.delta
@@ -45,7 +47,7 @@ export const useWebVitals = () => {
       })
       lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true })
     } catch (e) {
-      console.warn('LCP observation failed:', e)
+      logWarn('LCP observation failed:', e)
     }
 
     // First Input Delay (FID)
@@ -65,7 +67,7 @@ export const useWebVitals = () => {
       })
       fidObserver.observe({ type: 'first-input', buffered: true })
     } catch (e) {
-      console.warn('FID observation failed:', e)
+      logWarn('FID observation failed:', e)
     }
 
     // Cumulative Layout Shift (CLS)
@@ -88,7 +90,7 @@ export const useWebVitals = () => {
       })
       clsObserver.observe({ type: 'layout-shift', buffered: true })
     } catch (e) {
-      console.warn('CLS observation failed:', e)
+      logWarn('CLS observation failed:', e)
     }
   }
 

@@ -54,6 +54,7 @@ import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { setAtraceUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
+import { log } from '@/utils/logger';
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
@@ -268,7 +269,7 @@ onMounted(() => {
   // Register handler for atrace token expiration - just clear the token
   // The page will automatically retry with a fresh token
   setAtraceUnauthorizedHandler(() => {
-    console.log('[app.vue] Atrace token expired, clearing for refresh');
+    log('[app.vue] Atrace token expired, clearing for refresh');
     try {
       const cookie = useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' });
       cookie.value = null;

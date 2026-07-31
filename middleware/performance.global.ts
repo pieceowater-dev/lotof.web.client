@@ -2,6 +2,8 @@
  * Performance monitoring middleware
  * Tracks page navigation performance
  */
+import { log } from '@/utils/logger';
+
 export default defineNuxtRouteMiddleware((to, from) => {
   if (import.meta.client) {
     // Start performance measurement
@@ -14,7 +16,7 @@ export default defineNuxtRouteMiddleware((to, from) => {
       
       // Only log in development
       if (import.meta.dev) {
-        console.log(`[Performance] Navigation to ${to.path}: ${duration.toFixed(2)}ms`)
+        log(`[Performance] Navigation to ${to.path}: ${duration.toFixed(2)}ms`)
       }
       
       // Send to analytics in production (if available)

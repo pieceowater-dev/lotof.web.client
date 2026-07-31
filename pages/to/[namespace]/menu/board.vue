@@ -135,8 +135,14 @@ function toggleFullscreen() {
     document.exitFullscreen?.().catch(() => {});
   }
 }
+function onFullscreenChange() {
+  isFullscreen.value = !!document.fullscreenElement;
+}
 onMounted(() => {
-  document.addEventListener('fullscreenchange', () => { isFullscreen.value = !!document.fullscreenElement; });
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
 });
 
 useHead(() => ({

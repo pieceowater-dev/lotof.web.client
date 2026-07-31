@@ -82,7 +82,6 @@ async function fetchPlans() {
   try {
     const result = await getPlans(nsSlug.value, false);
     plans.value = result.plans;
-    console.log('Fetched plans:', result.plans.length, result.plans);
   } catch (err) {
     error.value = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
     console.error('Failed to fetch plans:', err);
@@ -110,8 +109,7 @@ async function fetchActiveSubscription() {
 
   try {
     activeSubscription.value = await getActiveSubscription(nsSlug.value, 'pieceowater.atrace', token);
-    console.log('Active subscription:', activeSubscription.value);
-    
+
     // Auto-switch tab to match active subscription interval
     if (activeSubscription.value && plans.value.length > 0) {
       const activePlan = plans.value.find(p => p.id === activeSubscription.value!.planId);

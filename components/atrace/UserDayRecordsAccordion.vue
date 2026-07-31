@@ -127,13 +127,6 @@ async function loadMoreRecords() {
     hasMoreRecords.value = totalFetched < res.paginationInfo.count && res.records.length > 0;
     
     currentPage.value++;
-    
-    console.log('[UserDayRecordsAccordion] Loaded page:', {
-      page: currentPage.value - 1,
-      recordsLoaded: newRecords.length,
-      totalRecords: allRecords.value.length,
-      hasMore: hasMoreRecords.value,
-    });
   } catch (e: unknown) {
     logError('[UserDayRecordsAccordion] failed to load more records:', e);
     error.value = t('app.failedToLoadDetails');

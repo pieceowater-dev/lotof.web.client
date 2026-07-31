@@ -684,19 +684,12 @@ async function refreshData() {
   }
   loading.value = true;
   try {
-    console.log('[billing] Fetching data for project:', selectedProject.value);
-    // Explicitly pass an empty namespace if we want to list all, 
+    // Explicitly pass an empty namespace if we want to list all,
     // but the backend is currently set to filter by prefix in computed properties anyway.
     // However, if we want to list *only* specific namespace on backend:
     // billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, selectedNamespace.value);
-    
+
     billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, undefined, selectedProjectAppCode.value);
-    console.log('[billing] Data received:', {
-      accounts: billingData.value?.adminAccounts?.accounts?.length,
-      plans: billingData.value?.adminPlans?.length,
-      subs: billingData.value?.adminSubscriptions?.subscriptions?.length,
-      invoices: billingData.value?.adminInvoices?.invoices?.length
-    });
   } catch (e) {
     console.error('[billing] Failed to fetch billing data', e);
   } finally {

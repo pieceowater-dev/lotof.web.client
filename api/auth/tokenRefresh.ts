@@ -1,4 +1,4 @@
-import { logWarn } from '@/utils/logger';
+import { log, logWarn } from '@/utils/logger';
 import { getApiBasePath } from '@/utils/api-base';
 import { CookieKeys } from '@/utils/storageKeys';
 
@@ -24,7 +24,7 @@ export async function refreshAccessToken(): Promise<boolean> {
     }
 
     const data = await response.json();
-    console.log('[auth] Access token refreshed successfully');
+    log('[auth] Access token refreshed successfully');
     
     // If server returns new token in response body, use it directly
     if (data?.token) {

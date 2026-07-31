@@ -96,17 +96,24 @@ export function useContactsToken() {
       const { contactsGetAppToken } = await import('@/api/contacts/auth/getAppToken')
       let token: string | null = null
       let lastError: any = null
-      
-      // Try up to 2 times with a small delay to handle transient DB errors
-      for (let attempt = 1; attempt <= 2; attempt++) {
+
+      // Retry transient failures. A brand-new namespace's tenant schema is
+      // provisioned asynchronously on first access (contacts.msvc.core's
+      // TenantReadiness middleware triggers a background warmup and replies
+      // "tenant migration in progress, retry later") — that can take a few
+      // seconds, so it gets more attempts and a longer backoff than other
+      // transient errors like "cached plan must not change result type".
+      const maxAttempts = 6
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           token = await contactsGetAppToken(hubToken, nsSlug)
           if (token) break
         } catch (e) {
           lastError = e
-          logError(`[useContactsToken] attempt ${attempt}/2 failed`, e)
-          if (attempt < 2) {
-            await sleep(300)
+          logError(`[useContactsToken] attempt ${attempt}/${maxAttempts} failed`, e)
+          if (attempt < maxAttempts) {
+            const isTenantWarmup = String((e as any)?.message || '').includes('tenant migration in progress')
+            await sleep(isTenantWarmup ? 1500 : 300)
           }
         }
       }

@@ -1,6 +1,7 @@
 import type { ComputedRef } from 'vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { getPlanLimits } from '@/api/atrace/plans/getLimits';
+import { logError } from '@/utils/logger';
 import type { PlanLimits } from '@/types/atrace';
 
 function parseLimitsJson(raw?: string | null): PlanLimits {
@@ -35,20 +36,21 @@ export function useAtracePlanLimits(nsSlug: ComputedRef<string>) {
     try {
       const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
       const res = await getPlanLimits(nsSlug.value, 'pieceowater.atrace', hubToken);
-      console.log('[loadPlanLimits] Response:', res);
       planName.value = res?.planName || '';
-      const limits = parseLimitsJson(res?.limitsJson);
-      console.log('[loadPlanLimits] Parsed limits:', limits);
-      planLimits.value = limits;
-      console.log('[loadPlanLimits] planLimits.value:', planLimits.value);
+      planLimits.value = parseLimitsJson(res?.limitsJson);
     } catch (err) {
-      console.error('[loadPlanLimits] Error:', err);
+      logError('[useAtracePlanLimits] loadPlanLimits failed', err);
       planLimits.value = null;
     } finally {
       planLimitsLoading.value = false;
-      console.log('[loadPlanLimits] Final state - planLimits:', planLimits.value, 'loading:', planLimitsLoading.value);
     }
   }
 
-  return { planLimits, planName, planLimitsLoading, loadPlanLimits };
+  // undefined limit = unlimited (no cap configured for this plan/feature).
+  function isAtLimit(key: keyof PlanLimits, currentCount: number): boolean {
+    const limit = planLimits.value?.[key];
+    return typeof limit === 'number' && currentCount >= limit;
+  }
+
+  return { planLimits, planName, planLimitsLoading, loadPlanLimits, isAtLimit };
 }
