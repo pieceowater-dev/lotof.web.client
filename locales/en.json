@@ -1102,6 +1102,16 @@
       }
     }
   },
+  "landing": {
+    "getStarted": "Get started",
+    "seeFeatures": "See features",
+    "freeTierHint": "Free plan forever — no card required",
+    "featuresTitle": "Everything you need, out of the box",
+    "howItWorksTitle": "How it works",
+    "whoForTitle": "Who it's for",
+    "ctaTitle": "Try {name} for free",
+    "ctaSubtitle": "Set up in a couple of minutes, free plan with no time limit."
+  },
   "admin": {
     "billingLoadFailed": "Failed to load billing data",
     "panel": "Console",
