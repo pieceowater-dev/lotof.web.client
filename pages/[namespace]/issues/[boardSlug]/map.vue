@@ -9,7 +9,6 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { GeoLocation } from '@/api/tasks/geotrack/location';
-import { FilterPaginationLengthEnum } from '@gql-hub';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean }
 
@@ -88,19 +87,9 @@ async function loadTaskTypes() {
 }
 async function loadMembers() {
   if (!hubToken.value) return;
-  const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
-  const { hubMembersList } = await import('@/api/hub/members/list');
-  const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
-  if (!namespace?.id) return;
-  const collected: Array<{ userId: string; username: string; email: string }> = [];
-  let page = 1;
-  let batch: Array<{ userId: string; username: string; email: string }>;
-  do {
-    batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
-    collected.push(...batch);
-    page += 1;
-  } while (batch.length >= 50);
-  memberOptions.value = collected.map((m) => ({ label: m.username || m.email, value: m.userId }));
+  const token = await getToken();
+  const { loadIssuesStaffMemberOptions } = await import('@/utils/issuesMembers');
+  memberOptions.value = await loadIssuesStaffMemberOptions(hubToken.value, token, nsSlug.value);
 }
 async function loadTasks() {
   if (!boardId.value) return;

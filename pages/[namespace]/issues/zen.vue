@@ -277,7 +277,10 @@ function taskCode(task: TaskItem): string {
 // install-app flow. Kept to just these two since there's nothing else here
 // yet that needs a settings surface.
 const menuItems = computed(() => [[
-  { label: t('tasks.zenBackToBoard') || 'Back to main view', icon: 'lucide:layout-grid', click: () => navigateTo(`/${nsSlug.value}/issues`) },
+  // ?pick=1 opts out of the index page's own auto-redirects (straight into
+  // the only board, or -- on mobile -- straight back into Zen), otherwise
+  // this link would just bounce the user right back here.
+  { label: t('tasks.zenBackToBoard') || 'Back to main view', icon: 'lucide:layout-grid', click: () => navigateTo(`/${nsSlug.value}/issues?pick=1`) },
   ...(!isStandalone.value ? [{ label: t('tasks.installApp') || 'Install app', icon: 'lucide:download', click: () => { isPwaModalOpen.value = true; } }] : []),
 ]]);
 

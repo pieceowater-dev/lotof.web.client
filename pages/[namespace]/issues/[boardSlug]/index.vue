@@ -17,7 +17,6 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { Cycle } from '@/api/tasks/cycle/list';
-import { FilterPaginationLengthEnum } from '@gql-hub';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string }
 
@@ -276,27 +275,15 @@ async function loadTaskTypes() {
   }
 }
 
-// Namespace members, for assignee pickers/labels — same pattern as Menu's
-// participant filter (hub members + local staff records joined by userId).
+// Namespace members who actually have an Issues role -- assigning a task to
+// someone who's never been granted access here would just be a dead end.
 const memberOptions = ref<{ label: string; value: string }[]>([]);
 async function loadMembers() {
   try {
     if (!hubToken.value) return;
-    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
-    const { hubMembersList } = await import('@/api/hub/members/list');
-    const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
-    if (!namespace?.id) return;
-    const collected: Array<{ userId: string; username: string; email: string }> = [];
-    let page = 1;
-    let batch: Array<{ userId: string; username: string; email: string }>;
-    do {
-      batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
-      collected.push(...batch);
-      page += 1;
-    } while (batch.length >= 50);
-    memberOptions.value = collected
-      .map((m) => ({ label: m.username || m.email, value: m.userId }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+    const token = await getToken();
+    const { loadIssuesStaffMemberOptions } = await import('@/utils/issuesMembers');
+    memberOptions.value = await loadIssuesStaffMemberOptions(hubToken.value, token, nsSlug.value);
   } catch (e) {
     logError('[tasks/board] loadMembers failed', e);
   }

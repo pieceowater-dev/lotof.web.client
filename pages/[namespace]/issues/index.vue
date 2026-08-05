@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
+import { useIssuesPlanLimits } from '@/composables/useIssuesPlanLimits';
 import { useTasksStaffRole } from '@/composables/useTasksStaffRole';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
@@ -82,8 +83,13 @@ async function load() {
 
 const isModalOpen = ref(false);
 const saving = ref(false);
+const { isAtLimit, loadPlanLimits } = useIssuesPlanLimits();
 
 function openCreate() {
+  if (isAtLimit('max_boards', boards.value.length)) {
+    useToast().add({ title: t('tasks.planLimitBoards') || 'Board limit reached for your plan — upgrade to add more.', color: 'amber' });
+    return;
+  }
   isModalOpen.value = true;
 }
 function openSettings(board: TaskBoard, ev: Event) {
@@ -125,7 +131,12 @@ async function handleDelete(board: TaskBoard, ev: Event) {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  const { current } = useTasksToken();
+  const token = current();
+  if (token) loadPlanLimits(token, nsSlug.value);
+});
 </script>
 
 <template>

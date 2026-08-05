@@ -11,9 +11,24 @@ import TaskTypeModal from '@/components/tasks/TaskTypeModal.vue';
 import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
-import { FilterPaginationLengthEnum } from '@gql-hub';
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string }
+
+// Menu's actual order-status enum (order.ent.go orderStatusLabels) -- a
+// status here must match one of these exactly, or UpdateOrderStatus rejects
+// it with "unknown order status" (case-sensitive, no normalization). Labels
+// reuse Menu's own translations (pages/menu/index.vue's statusLabel) so the
+// two apps describe the same status the same way.
+const ORDER_STATUS_OPTIONS = computed(() => [
+  { value: '', label: '—' },
+  { value: 'NEW', label: t('menu.statusNew') || 'New' },
+  { value: 'ACCEPTED', label: t('menu.statusAccepted') || 'Accepted' },
+  { value: 'IN_PREPARATION', label: t('menu.statusInPreparation') || 'Preparing' },
+  { value: 'READY', label: t('menu.statusReady') || 'Ready' },
+  { value: 'DELIVERING', label: t('menu.statusDelivering') || 'On the way' },
+  { value: 'COMPLETED', label: t('menu.statusCompleted') || 'Completed' },
+  { value: 'CANCELLED', label: t('menu.statusCancelled') || 'Cancelled' },
+]);
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -57,8 +72,12 @@ const automationTriggerOptions = computed<{ value: string; label: string }[]>(()
   try {
     const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
     if (!Array.isArray(arr)) return [];
+    // Any column can drive an automation now, not just terminal ones -- e.g.
+    // "left the first column" (entered the second) maps to DELIVERING so a
+    // courier picking up a task marks the linked order as on the way, while
+    // reaching a terminal column still maps to COMPLETED.
     return arr
-      .filter((s: any) => s.is_terminal && s.maps_to)
+      .filter((s: any) => s.maps_to)
       .map((s: any) => ({ value: s.maps_to, label: s.label || s.key }));
   } catch {
     return [];
@@ -72,21 +91,9 @@ const memberOptions = ref<{ label: string; value: string }[]>([]);
 async function loadMembers() {
   try {
     if (!hubToken.value) return;
-    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
-    const { hubMembersList } = await import('@/api/hub/members/list');
-    const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
-    if (!namespace?.id) return;
-    const collected: Array<{ userId: string; username: string; email: string }> = [];
-    let page = 1;
-    let batch: Array<{ userId: string; username: string; email: string }>;
-    do {
-      batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
-      collected.push(...batch);
-      page += 1;
-    } while (batch.length >= 50);
-    memberOptions.value = collected
-      .map((m) => ({ label: m.username || m.email, value: m.userId }))
-      .sort((a, b) => a.label.localeCompare(b.label));
+    const token = await getToken();
+    const { loadIssuesStaffMemberOptions } = await import('@/utils/issuesMembers');
+    memberOptions.value = await loadIssuesStaffMemberOptions(hubToken.value, token, nsSlug.value);
   } catch (e) {
     logError('[issues/board-settings] loadMembers failed', e);
   }
@@ -235,7 +242,15 @@ function parseFlags(json?: string): Record<string, boolean> {
 function parseStatuses(json?: string): StatusRow[] {
   try {
     const arr = json ? JSON.parse(json) : [];
-    return arr.map((s: any) => ({ key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || '') }));
+    return arr.map((s: any) => {
+      // 'delivered' was a hardcoded, never-configurable default that never
+      // actually matched Menu's order-status enum (it wants "COMPLETED",
+      // uppercase) -- silently upgrade it rather than leave a permanently
+      // broken automation target sitting in old boards.
+      let mapsTo = String(s.maps_to || '');
+      if (mapsTo === 'delivered') mapsTo = 'COMPLETED';
+      return { key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), mapsTo };
+    });
   } catch {
     return [];
   }
@@ -281,11 +296,11 @@ async function load() {
 }
 
 function addStatus() {
-  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '' }];
+  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '' }];
 }
 function insertStatusAfter(idx: number) {
   const arr = [...statuses.value];
-  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '' });
+  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '' });
   statuses.value = arr;
 }
 async function removeStatus(idx: number) {
@@ -325,7 +340,7 @@ async function handleSave() {
     let key = s.key.trim() || slugifyKey(s.label);
     while (usedKeys.has(key)) key += '_2';
     usedKeys.add(key);
-    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.isTerminal ? 'delivered' : '', color: s.color || '' };
+    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.mapsTo || '', color: s.color || '' };
   });
   saving.value = true;
   try {
@@ -518,6 +533,21 @@ onMounted(load);
                   <UCheckbox v-model="s.isRequired" />
                   {{ t('tasks.statusRequired') || 'Required' }}
                 </label>
+                <USelectMenu
+                  v-if="menuIntegrationEnabled"
+                  v-model="s.mapsTo"
+                  :options="ORDER_STATUS_OPTIONS"
+                  value-attribute="value"
+                  option-attribute="label"
+                  size="sm"
+                  class="w-36 flex-shrink-0"
+                  :popper="{ strategy: 'fixed' }"
+                  :title="t('tasks.statusMapsToHint') || 'When an issue enters this column, set the linked Menu order to this status'"
+                >
+                  <template #label>
+                    <span class="truncate">{{ ORDER_STATUS_OPTIONS.find((o) => o.value === s.mapsTo)?.label || (t('tasks.statusMapsTo') || 'Order status') }}</span>
+                  </template>
+                </USelectMenu>
                 <UButton icon="lucide:plus" size="2xs" color="gray" variant="ghost" class="flex-shrink-0" :title="t('tasks.insertColumnAfter') || 'Insert column here'" @click="insertStatusAfter(idx)" />
                 <UButton icon="lucide:x" size="2xs" color="gray" variant="ghost" class="flex-shrink-0" :disabled="statuses.length <= 1" @click="removeStatus(idx)" />
               </div>

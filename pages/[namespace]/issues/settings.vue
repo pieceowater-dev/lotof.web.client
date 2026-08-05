@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
+import { useIssuesPlanLimits } from '@/composables/useIssuesPlanLimits';
 import { useTasksStaffRole } from '@/composables/useTasksStaffRole';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
@@ -114,6 +115,7 @@ async function load() {
   }
 }
 
+const { isAtLimit, loadPlanLimits } = useIssuesPlanLimits();
 const isModalOpen = ref(false);
 const editingRow = ref<StaffRow | null>(null);
 const saving = ref(false);
@@ -144,6 +146,11 @@ async function handleSubmit(payload: { userId: string; role: TasksStaffRoleValue
     } finally {
       saving.value = false;
     }
+    return;
+  }
+
+  if (!editingRow.value?.staffId && isAtLimit('max_staff', staff.value.length)) {
+    useToast().add({ title: t('tasks.planLimitStaff') || 'Staff limit reached for your plan — upgrade to add more.', color: 'amber' });
     return;
   }
 
@@ -189,6 +196,9 @@ async function handleRemove(row: StaffRow) {
 onMounted(() => {
   load();
   loadMemberNames();
+  const { current } = useTasksToken();
+  const token = current();
+  if (token) loadPlanLimits(token, nsSlug.value);
 });
 </script>
 

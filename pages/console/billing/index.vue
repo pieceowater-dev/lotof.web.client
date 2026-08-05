@@ -642,6 +642,10 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
     { key: 'max_badges', label: 'Макс. бейджей' },
     { key: 'max_links', label: 'Макс. ссылок' },
   ],
+  issues: [
+    { key: 'max_boards', label: 'Макс. досок' },
+    { key: 'max_staff', label: 'Макс. сотрудников' },
+  ],
 };
 
 type ProjectId = (typeof projects)[number]['id'];
