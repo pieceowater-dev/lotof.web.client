@@ -693,6 +693,12 @@ async function refreshData() {
     billingData.value = await capitalGetAdminBillingInfo(token.value, 1, 100, undefined, selectedProjectAppCode.value);
   } catch (e) {
     console.error('[billing] Failed to fetch billing data', e);
+    // Clear rather than leave stale data on screen -- otherwise a failed
+    // fetch after switching projects (e.g. an app with no plans yet, or a
+    // transient backend error) silently keeps showing the PREVIOUS
+    // project's plans instead of an empty/error state.
+    billingData.value = null;
+    toast.add({ title: t('admin.billingLoadFailed') || 'Не удалось загрузить данные биллинга', color: 'red' });
   } finally {
     loading.value = false;
   }

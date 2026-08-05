@@ -1103,6 +1103,7 @@
     }
   },
   "admin": {
+    "billingLoadFailed": "Failed to load billing data",
     "panel": "Console",
     "manageOperations": "Manage console modules, billing, and your team",
     "logout": "Log out",
