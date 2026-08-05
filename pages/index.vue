@@ -374,8 +374,29 @@ async function handlePendingTargetApp(): Promise<boolean> {
     const tokenValue = useCookie<string | null>(CookieKeys.TOKEN).value;
     if (!tokenValue) return false;
     const installedMap = await hubAreAppsInNamespace(tokenValue, ns, [targetApp]);
-    const dest = installedMap[targetApp] ? `/${ns}/${app.address}` : `/${ns}/${app.address}/plans`;
-    await router.replace(dest);
+
+    if (!installedMap[targetApp]) {
+      await router.replace(`/${ns}/${app.address}/plans`);
+      return true;
+    }
+
+    // Landing directly on an app's routes (as opposed to clicking its
+    // dashboard tile, see handleAppClick) relies on the global auth
+    // middleware to exchange for that app's own token mid-navigation --
+    // but for apps that need one, fetching it proactively here first (same
+    // as handleAppClick does) avoids a race where the destination page
+    // renders before the middleware's async token exchange has resolved.
+    if (app.address === 'atrace') {
+      const { ensure } = useAtraceToken();
+      await ensure(ns, tokenValue);
+      await router.replace(`/${ns}/atrace/attendance/all`);
+      return true;
+    }
+    if (app.address === 'contacts') {
+      const { ensure } = useContactsToken();
+      await ensure(ns, tokenValue);
+    }
+    await router.replace(`/${ns}/${app.address}`);
     return true;
   } catch (error) {
     logError('[deep-link] handlePendingTargetApp failed', error);
