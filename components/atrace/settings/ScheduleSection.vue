@@ -46,10 +46,17 @@ const patternForm = ref<AtraceShiftPattern>(emptyPatternForm());
 
 // -- Assignment modal --
 const showAssignModal = ref(false);
-const formUserId = ref('');
+const formUserIds = ref<string[]>([]);
 const formPatternId = ref('');
 const formEffectiveFrom = ref(new Date().toISOString().split('T')[0]);
 const formComment = ref('');
+
+const allMembersSelected = computed({
+  get: () => members.value.length > 0 && formUserIds.value.length === members.value.length,
+  set: (val: boolean) => {
+    formUserIds.value = val ? members.value.map((m) => m.userId) : [];
+  },
+});
 
 const patternColumns = computed(() => ([
   { key: 'name', label: t('common.name') || 'Название' },
@@ -191,7 +198,7 @@ function summary(p: AtraceShiftPattern): string {
 }
 
 function openAssign(pattern?: AtraceShiftPattern) {
-  formUserId.value = '';
+  formUserIds.value = [];
   formPatternId.value = pattern?.id || patterns.value[0]?.id || '';
   formEffectiveFrom.value = new Date().toISOString().split('T')[0];
   formComment.value = '';
@@ -199,12 +206,16 @@ function openAssign(pattern?: AtraceShiftPattern) {
 }
 
 async function assign() {
-  if (!formUserId.value || !formPatternId.value) return;
+  if (!formUserIds.value.length || !formPatternId.value) return;
   saving.value = true;
   error.value = null;
   try {
     const { atraceAssignSchedule } = await import('@/api/atrace/schedule/schedule');
-    await atraceAssignSchedule(formUserId.value, formPatternId.value, formEffectiveFrom.value, undefined, formComment.value, nsSlug.value);
+    // No bulk-assign mutation on the backend -- fan out one call per selected
+    // employee instead. Fine at this scale (a namespace's whole staff list).
+    await Promise.all(formUserIds.value.map((userId) =>
+      atraceAssignSchedule(userId, formPatternId.value, formEffectiveFrom.value, undefined, formComment.value, nsSlug.value)
+    ));
     showAssignModal.value = false;
     await load();
   } catch (e: any) {
@@ -547,13 +558,26 @@ onMounted(async () => {
 
         <div class="flex flex-col gap-3">
           <UFormGroup :label="t('app.user') || 'Сотрудник'">
-            <USelectMenu
-              v-model="formUserId"
-              :options="members.map(m => ({ value: m.userId, label: m.username || m.email }))"
-              value-attribute="value"
-              option-attribute="label"
-              searchable
-            />
+            <div class="flex flex-col gap-1.5">
+              <USelectMenu
+                v-model="formUserIds"
+                multiple
+                :options="members.map(m => ({ value: m.userId, label: m.username || m.email }))"
+                value-attribute="value"
+                option-attribute="label"
+                searchable
+              >
+                <template #label>
+                  <span class="truncate">
+                    {{ formUserIds.length ? `${formUserIds.length} ${t('app.selected') || 'выбрано'}` : (t('app.user') || 'Сотрудник') }}
+                  </span>
+                </template>
+              </USelectMenu>
+              <UCheckbox
+                v-model="allMembersSelected"
+                :label="t('app.selectAllEmployees') || 'Выбрать всех'"
+              />
+            </div>
           </UFormGroup>
           <UFormGroup :label="t('app.shiftPattern') || 'График'">
             <USelectMenu
@@ -587,7 +611,7 @@ onMounted(async () => {
             <UButton
               color="primary"
               :loading="saving"
-              :disabled="!formUserId || !formPatternId"
+              :disabled="!formUserIds.length || !formPatternId"
               @click="assign"
             >
               {{ t('app.save') }}

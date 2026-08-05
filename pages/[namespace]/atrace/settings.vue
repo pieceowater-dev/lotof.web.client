@@ -19,6 +19,8 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
+useHead({ title: 'Настройки — A-Trace' });
+
 const goBack = () => {
     if (process.client) {
         window.history.back();

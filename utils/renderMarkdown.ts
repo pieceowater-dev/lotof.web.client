@@ -24,3 +24,21 @@ export function renderMarkdownSafe(source: string): string {
   const rawHtml = md.render(source);
   return getDOMPurify().sanitize(rawHtml, { ADD_ATTR: ['target', 'rel'] });
 }
+
+// For compact, single-line previews (kanban cards) where rendering actual
+// HTML doesn't make sense -- strips the markdown syntax instead so a "#
+// Heading" or "**bold**" description reads as its plain text, not literal
+// hashes and asterisks.
+export function stripMarkdownPreview(source: string): string {
+  return source
+    .replace(/^#{1,6}\s+/, '')
+    .replace(/^>\s?/, '')
+    .replace(/^[-*+]\s+/, '')
+    .replace(/^\d+[.)]\s+/, '')
+    .replace(/(\*\*\*|___)(.+?)\1/g, '$2')
+    .replace(/(\*\*|__)(.+?)\1/g, '$2')
+    .replace(/(\*|_)(.+?)\1/g, '$2')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+}

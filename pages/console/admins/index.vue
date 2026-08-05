@@ -383,6 +383,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: `Консоль — ${t('admin.team') || 'Команда'}` });
 const { user, token, fetchUser } = useAuth();
 
 const currentUserId = computed(() => user.value?.id || '');

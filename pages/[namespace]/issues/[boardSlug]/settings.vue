@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useConfirm } from '@/composables/useConfirm';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useTasksStaffRole } from '@/composables/useTasksStaffRole';
+import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getApiBasePath } from '@/utils/api-base';
@@ -55,7 +56,13 @@ async function getToken(): Promise<string> {
   return token;
 }
 
+const { titleBySlug } = useNamespace();
 const board = ref<TaskBoard | null>(null);
+useHead(() => ({
+  title: board.value?.name
+    ? `Настройки — ${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
+    : 'Настройки — Issues',
+}));
 const loading = ref(false);
 const saving = ref(false);
 

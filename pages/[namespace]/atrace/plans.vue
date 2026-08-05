@@ -21,6 +21,8 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const toast = useToast();
 
+useHead({ title: 'Тарифы — A-Trace' });
+
 const goBack = () => {
   if (process.client) {
     window.history.back();

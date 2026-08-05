@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage, isPermissionError } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -50,6 +51,11 @@ async function checkOnboarding() {
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { user: currentUser, fetchUser, token: hubToken } = useAuth();
+const { titleBySlug } = useNamespace();
+
+useHead(() => ({
+  title: titleBySlug(nsSlug.value) ? `Orders — ${titleBySlug(nsSlug.value)}` : 'Orders',
+}));
 
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
 

@@ -17,6 +17,8 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { token: hubToken } = useAuth();
 
+useHead({ title: 'Сотрудники — Issues' });
+
 // Defense in depth: the Settings link itself is already hidden for
 // assignee/viewer, but a direct URL visit would otherwise land on a page
 // whose every action the backend rejects anyway (@issuesAuth(roles: [OWNER,

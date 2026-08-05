@@ -4,6 +4,7 @@ import { useTasksToken } from '@/composables/useTasksToken';
 import { useIssuesPlanLimits } from '@/composables/useIssuesPlanLimits';
 import { useTasksStaffRole } from '@/composables/useTasksStaffRole';
 import { useConfirm } from '@/composables/useConfirm';
+import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { dynamicLS } from '@/utils/storageKeys';
@@ -15,6 +16,11 @@ const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { isOwnerOrManager } = useTasksStaffRole();
+const { titleBySlug } = useNamespace();
+
+useHead(() => ({
+  title: titleBySlug(nsSlug.value) ? `Issues — ${titleBySlug(nsSlug.value)}` : 'Issues',
+}));
 
 const boards = ref<TaskBoard[]>([]);
 const loading = ref(false);

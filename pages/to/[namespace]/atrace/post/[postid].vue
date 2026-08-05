@@ -100,6 +100,10 @@ const qrError = ref('');
 const qrPostTitle = ref('');
 const qrPostAddress = ref('');
 const polling = ref(false);
+
+useHead(() => ({
+  title: qrPostTitle.value ? `${qrPostTitle.value} — A-Trace` : 'Отметка — A-Trace',
+}));
 let ws: WebSocket | null = null;
 let wsRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let wsRetryAttempt = 0;

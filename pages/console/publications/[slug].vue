@@ -50,6 +50,10 @@ const loadError = ref('');
 const initialArticle = ref<Record<string, any>>({});
 const initialBlocks = ref<EditorBlock[]>([]);
 
+useHead(() => ({
+  title: initialArticle.value?.title ? `${initialArticle.value.title} — Консоль` : 'Редактирование публикации — Консоль',
+}));
+
 async function loadPublication() {
   loading.value = true;
   loadError.value = '';

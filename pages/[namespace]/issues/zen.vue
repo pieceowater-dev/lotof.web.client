@@ -23,6 +23,8 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { user: currentUser } = useAuth();
 
+useHead({ title: 'Zen — Issues' });
+
 async function getToken(): Promise<string> {
   const { current } = useTasksToken();
   const token = current();
@@ -460,4 +462,17 @@ onBeforeUnmount(() => {
 <style scoped>
 .zen-md :deep(p) { margin: 0; }
 .zen-md :deep(a) { color: rgb(var(--color-primary-500)); text-decoration: underline; }
+.zen-md :deep(strong) { font-weight: 600; }
+.zen-md :deep(code) { background: rgba(128, 128, 128, 0.15); padding: 0 0.25em; border-radius: 0.2em; }
+.zen-md :deep(ul),
+.zen-md :deep(ol) { margin: 0; padding-left: 1em; }
+/* This is a 3-line clamped preview, not the full reading view -- headings
+   stay body-sized (just bolder) so a "# Title" description doesn't blow up
+   the card's height budget the way it correctly does in the full detail view. */
+.zen-md :deep(h1),
+.zen-md :deep(h2),
+.zen-md :deep(h3),
+.zen-md :deep(h4),
+.zen-md :deep(h5),
+.zen-md :deep(h6) { font-size: inherit; font-weight: 600; margin: 0; }
 </style>

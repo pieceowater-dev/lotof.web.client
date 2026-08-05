@@ -143,6 +143,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: `Консоль — ${t('admin.namespaces') || 'Неймспейсы'}` });
 const { token } = useAuth();
 
 const rows = ref<AdminNamespaceRow[]>([]);
@@ -170,6 +171,7 @@ const APP_LABELS: Record<string, string> = {
   'pieceowater.atrace': 'A-Trace',
   'pieceowater.contacts': 'Contacts',
   'pieceowater.menu': 'Orders',
+  'pieceowater.issues': 'Issues',
 };
 function appLabel(bundle: string): string {
   return APP_LABELS[bundle] || bundle;

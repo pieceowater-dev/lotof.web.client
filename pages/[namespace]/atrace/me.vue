@@ -16,6 +16,8 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { user } = useAuth();
 const { ensure: ensureAtraceToken } = useAtraceToken();
 
+useHead({ title: 'Моя посещаемость — A-Trace' });
+
 const goBack = () => {
   if (process.client) {
     window.history.back();

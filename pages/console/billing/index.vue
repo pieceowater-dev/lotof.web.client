@@ -605,6 +605,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: `Консоль — ${t('admin.billing') || 'Биллинг'}` });
 const { token } = useAuth();
 const toast = useToast();
 const activeTab = ref('plans');

@@ -829,5 +829,18 @@ async function handleDelete() {
 .md-content :deep(ol) { list-style: decimal; padding-left: 1.25em; margin-bottom: 0.5em; }
 .md-content :deep(a) { color: rgb(var(--color-primary-500)); text-decoration: underline; }
 .md-content :deep(code) { background: rgba(128, 128, 128, 0.15); padding: 0.1em 0.3em; border-radius: 0.25em; font-size: 0.9em; }
+.md-content :deep(pre) { background: rgba(128, 128, 128, 0.15); padding: 0.5em 0.75em; border-radius: 0.375em; overflow-x: auto; margin-bottom: 0.5em; }
+.md-content :deep(pre code) { background: none; padding: 0; }
 .md-content :deep(strong) { font-weight: 600; }
+.md-content :deep(blockquote) { border-left: 3px solid rgba(128, 128, 128, 0.35); padding-left: 0.75em; color: rgb(107 114 128); margin-bottom: 0.5em; }
+.md-content :deep(hr) { border: none; border-top: 1px solid rgba(128, 128, 128, 0.25); margin: 0.75em 0; }
+.md-content :deep(h1) { font-size: 1.5em; font-weight: 700; margin: 0.6em 0 0.4em; line-height: 1.25; }
+.md-content :deep(h2) { font-size: 1.3em; font-weight: 700; margin: 0.6em 0 0.4em; line-height: 1.3; }
+.md-content :deep(h3) { font-size: 1.15em; font-weight: 600; margin: 0.5em 0 0.35em; line-height: 1.3; }
+.md-content :deep(h4),
+.md-content :deep(h5),
+.md-content :deep(h6) { font-size: 1em; font-weight: 600; margin: 0.5em 0 0.3em; }
+.md-content :deep(h1:first-child),
+.md-content :deep(h2:first-child),
+.md-content :deep(h3:first-child) { margin-top: 0; }
 </style>

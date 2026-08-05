@@ -23,6 +23,7 @@ const isValidEmail = computed(() => {
 });
 
 const { t } = useI18n();
+useHead({ title: t('app.myPeopleHeading') || 'Мои люди' });
 const buttonText = computed(() => {
   if (!isValidEmail.value) return '';
   if (userFound.value === true) return t('app.sendRequest');

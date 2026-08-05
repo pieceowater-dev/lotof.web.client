@@ -23,6 +23,10 @@ const isWaiting = computed(() => {
   return v.toLowerCase?.() === 'wait' && parseInt(route.query.wait as string) > 0;
 });
 const waitSecondsInitial = computed(() => Math.max(1, parseInt((route.query.wait as string) || '0') || 0));
+
+useHead(() => ({
+  title: ok.value ? 'Отметка принята — A-Trace' : 'Не удалось отметиться — A-Trace',
+}));
 const targetUrl = computed(() => {
   const u = route.query.u as string | undefined;
   if (!u) return null;

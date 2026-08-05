@@ -2,11 +2,13 @@
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useTasksStaffRole } from '@/composables/useTasksStaffRole';
+import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { dynamicLS } from '@/utils/storageKeys';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import { usePwaInstall } from '@/composables/usePwaInstall';
+import { stripMarkdownPreview } from '@/utils/renderMarkdown';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { issuesTour } from '@/config/tours';
 import TourGuide from '@/components/TourGuide.vue';
@@ -29,6 +31,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const boardSlug = computed(() => route.params.boardSlug as string);
 const { isOwnerOrManager } = useTasksStaffRole();
 const { user: currentUser, token: hubToken } = useAuth();
+const { titleBySlug } = useNamespace();
 
 async function getToken(): Promise<string> {
   const { current } = useTasksToken();
@@ -38,6 +41,11 @@ async function getToken(): Promise<string> {
 }
 
 const board = ref<TaskBoard | null>(null);
+useHead(() => ({
+  title: board.value?.name
+    ? `${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
+    : 'Issues',
+}));
 // The real DB id -- every gRPC/GraphQL call downstream still identifies the
 // board by id, only the URL uses the human-friendly slug.
 const boardId = computed(() => board.value?.id || '');
@@ -255,7 +263,8 @@ async function loadBoard() {
 
 function firstLine(text?: string | null): string {
   if (!text) return '';
-  return text.split('\n').find((l) => l.trim().length > 0)?.trim() || '';
+  const line = text.split('\n').find((l) => l.trim().length > 0)?.trim() || '';
+  return stripMarkdownPreview(line);
 }
 function formatDueDate(iso: string) {
   try {

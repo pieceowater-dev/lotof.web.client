@@ -204,6 +204,7 @@ import { capitalArchivePublication, capitalRestorePublication, capitalListPublic
 definePageMeta({ middleware: 'admin' });
 
 const { t } = useI18n();
+useHead({ title: `Консоль — ${t('admin.publications') || 'Публикации'}` });
 const router = useRouter();
 const config = useRuntimeConfig();
 const authToken = useCookie<string | null>('auth_token');

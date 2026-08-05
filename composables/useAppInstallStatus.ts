@@ -35,6 +35,13 @@ function resolveAppDestination(app: AppConfig, ns: string): string {
  * subscribe) -- a sequence guard drops stale responses if calls overlap.
  */
 async function ensureAppInstallStatus(ns: string): Promise<void> {
+  // Client-only: this feeds header/dashboard UI gating, not the initial SSR
+  // render, and firing it from AppHeader's immediate watcher during SSR races
+  // the request's Nuxt instance being torn down once the response is sent --
+  // the async work here resumes after that point and throws "[nuxt] instance
+  // unavailable" (an unhandled rejection on the server, seen intermittently
+  // in prod logs for any logged-in visitor on a namespaced page).
+  if (process.server) return;
   if (!ns) return;
   const token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) return;

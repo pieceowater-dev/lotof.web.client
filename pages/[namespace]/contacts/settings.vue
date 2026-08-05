@@ -22,6 +22,10 @@ const { titleBySlug } = useNamespace();
 const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 
+useHead(() => ({
+  title: nsTitle.value ? `Настройки — Contacts — ${nsTitle.value}` : 'Настройки — Contacts',
+}));
+
 const loading = ref(true);
 const error = ref<string | null>(null);
 const contactsToken = ref<string | null>(null);

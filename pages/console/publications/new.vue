@@ -16,6 +16,8 @@ definePageMeta({
   middleware: 'admin'
 })
 
+useHead({ title: 'Новая публикация — Консоль' })
+
 const router = useRouter()
 const toast = useToast()
 const authToken = useCookie<string | null>('auth_token')

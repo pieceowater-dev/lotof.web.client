@@ -113,6 +113,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: 'Консоль' });
 const { user } = useAuth();
 
 const username = computed(() => user.value?.username || 'Admin');

@@ -17,6 +17,8 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
+useHead({ title: 'Отметка по QR — A-Trace' });
+
 const { isLoggedIn, token: hubToken, fetchUser, login } = useAuth();
 
 // Parse incoming query params

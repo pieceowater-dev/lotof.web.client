@@ -494,6 +494,7 @@ definePageMeta({
 });
 
 const { t } = useI18n();
+useHead({ title: `Консоль — ${t('admin.analytics') || 'Аналитика'}` });
 const { token, fetchUser, initialized } = useAuth();
 
 const loading = ref(true);

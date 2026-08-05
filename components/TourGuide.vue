@@ -203,9 +203,15 @@ function calculatePopupPosition(
     break;
   }
 
-  // Constrain to viewport
+  // Constrain to viewport -- every placement branch above can still produce
+  // an out-of-bounds top (e.g. a tall target like a kanban board fails both
+  // the 'top' and 'bottom' vertical fit checks and falls through to the
+  // left/right branches, which never checked the vertical axis at all),
+  // so clamp top the same way left already is.
   const maxLeft = viewport.offsetLeft + viewportWidth - popupWidth - 16;
   left = Math.max(viewport.offsetLeft + 16, Math.min(left, maxLeft));
+  const maxTop = viewport.offsetTop + viewportHeight - estimatedHeight - 16;
+  top = Math.max(viewport.offsetTop + 16, Math.min(top, maxTop));
 
   popupRect.value = { top, left, width: popupWidth, placement: picked };
 }

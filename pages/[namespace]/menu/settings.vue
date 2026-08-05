@@ -12,6 +12,8 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
+useHead({ title: 'Настройки — Orders' });
+
 // Defense in depth: the Settings link itself is already hidden for
 // cook/operator/courier (see [namespace]/menu/index.vue), but a direct URL
 // visit would otherwise land on a page whose every action the backend is
