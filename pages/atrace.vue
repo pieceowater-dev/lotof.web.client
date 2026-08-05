@@ -2,6 +2,13 @@
 import { useI18n } from '@/composables/useI18n';
 import ProductLanding from '@/components/marketing/ProductLanding.vue';
 
+// Explicit name required: pages/[namespace]/atrace/index.vue also sets
+// name: 'atrace' via its own definePageMeta, and Nuxt's auto-generated name
+// for this top-level file would collide with it -- a duplicate route name
+// corrupts Vue Router's matcher for BOTH routes, not just one, which is
+// what broke /:namespace/atrace/:type?/:id? navigation entirely.
+definePageMeta({ name: 'landing-atrace' });
+
 const { t } = useI18n();
 
 useHead({
