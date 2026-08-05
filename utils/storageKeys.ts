@@ -6,6 +6,7 @@ export const CookieKeys = {
   ATRACE_TOKEN: 'atrace-token',
   CONTACTS_TOKEN: 'contacts-token',
   MENU_TOKEN: 'menu-token',
+  TASKS_TOKEN: 'tasks-token',
 } as const;
 export type CookieKey = (typeof CookieKeys)[keyof typeof CookieKeys];
 
@@ -16,6 +17,7 @@ export const LSKeys = {
   ATRACE_TOKEN_NS: 'atraceTokenNs',
   CONTACTS_TOKEN_NS: 'contactsTokenNs',
   MENU_TOKEN_NS: 'menuTokenNs',
+  TASKS_TOKEN_NS: 'tasksTokenNs',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',
@@ -31,4 +33,6 @@ export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 export const dynamicLS = {
   atraceSelectedPostId: (namespaceSlug: string) => `atrace-selected-post-id:${namespaceSlug}`,
   atracePostPin: (namespaceSlug: string, postId: string) => `atrace-post-pin:${namespaceSlug}:${postId}`,
+  tasksSelectedBoardSlug: (namespaceSlug: string) => `tasks-selected-board-slug:${namespaceSlug}`,
+  tasksSelectedCycleId: (boardId: string) => `tasks-selected-cycle-id:${boardId}`,
 } as const;

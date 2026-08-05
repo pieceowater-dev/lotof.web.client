@@ -614,7 +614,8 @@ const billingData = ref<AdminBillingInfo | null>(null);
 const projects = [
   { id: 'atrace', appCode: 'pieceowater.atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', appCode: 'pieceowater.contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
-  { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' }
+  { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' },
+  { id: 'issues', appCode: 'pieceowater.issues', title: 'Lota Issues', icon: 'lucide:clipboard-check' }
 ] as const;
 
 // Known usage-limit keys per app -- these are the exact keys product
@@ -786,9 +787,23 @@ function loadLimitsFromMetadata(metadataJson: string | null | undefined) {
   }
 }
 
+// Cyrillic (Russian + Kazakh) -> Latin, so a plan named entirely in Cyrillic
+// doesn't get stripped down to nothing by the ASCII-only cleanup below --
+// that was silently collapsing every Cyrillic name to the same "plan"
+// fallback, causing a duplicate-code error on the second such plan.
+const CYRILLIC_TRANSLIT: Record<string, string> = {
+  а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i',
+  й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't',
+  у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '',
+  э: 'e', ю: 'yu', я: 'ya',
+  ә: 'a', ғ: 'g', қ: 'q', ң: 'n', ө: 'o', ұ: 'u', ү: 'u', һ: 'h', і: 'i',
+};
+function transliterate(value: string): string {
+  return value.replace(/[а-яёәғқңөұүһі]/g, (c) => CYRILLIC_TRANSLIT[c] ?? c);
+}
+
 function slugifyPlanName(value: string): string {
-  return String(value || '')
-    .toLowerCase()
+  return transliterate(String(value || '').toLowerCase())
     .replace(/[^a-z0-9\s-]/g, '')
     .trim()
     .replace(/\s+/g, '-')

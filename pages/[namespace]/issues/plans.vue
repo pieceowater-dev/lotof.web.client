@@ -1,0 +1,446 @@
+<script lang="ts" setup>
+import { useI18n } from '@/composables/useI18n';
+import { useTasksToken } from '@/composables/useTasksToken';
+import { usePhoneGate } from '@/composables/usePhoneGate';
+import { useContactUsModal } from '@/composables/useContactUsModal';
+import { useDowngradeBlockedModal, parseDowngradeRegressions } from '@/composables/useDowngradeBlockedModal';
+import { getErrorMessage } from '@/utils/types/errors';
+import { tasksPlansList, type TaskPlan } from '@/api/tasks/plans/plans';
+import { tasksSubscribePlan } from '@/api/tasks/plans/subscribe';
+import { tasksActiveSubscription, type TaskBillingSubscription } from '@/api/tasks/plans/getActiveSubscription';
+
+interface PlanFeature {
+  key: string;
+  value: number | string;
+  label: string;
+}
+
+const APP_BUNDLE = 'pieceowater.issues';
+
+const { t } = useI18n();
+const router = useRouter();
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
+const toast = useToast();
+
+const goBack = () => {
+  if (process.client) {
+    window.history.back();
+    return;
+  }
+  router.back();
+};
+
+const plans = ref<TaskPlan[]>([]);
+const loading = ref(false);
+const error = ref<string | null>(null);
+const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
+const subscribingPlanCode = ref<string | null>(null);
+const activeSubscription = ref<TaskBillingSubscription | null>(null);
+const redirectingAfterReturn = ref(false);
+
+const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
+const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
+
+const displayedPlans = computed(() =>
+  selectedInterval.value === 'monthly' ? monthlyPlans.value : yearlyPlans.value
+);
+
+function isPlanActive(plan: TaskPlan): boolean {
+  if (!activeSubscription.value) return false;
+  return activeSubscription.value.planId === plan.id;
+}
+
+function getPlanFeatures(plan: TaskPlan): PlanFeature[] {
+  if (!plan.metadataJson) return [];
+  try {
+    const metadata = JSON.parse(plan.metadataJson);
+    if (Array.isArray(metadata.features)) return metadata.features;
+  } catch (e) {
+    console.error('Failed to parse plan metadata:', e);
+  }
+  return [];
+}
+
+async function fetchPlans() {
+  loading.value = true;
+  error.value = null;
+  try {
+    const result = await tasksPlansList(nsSlug.value, false);
+    plans.value = result.plans;
+  } catch (err) {
+    error.value = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
+    console.error('Failed to fetch plans:', err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function fetchActiveSubscription() {
+  const { current } = useTasksToken();
+  const tasksToken = current();
+  if (!tasksToken) return;
+
+  try {
+    activeSubscription.value = await tasksActiveSubscription(tasksToken, nsSlug.value);
+    if (activeSubscription.value && plans.value.length > 0) {
+      const activePlan = plans.value.find(p => p.id === activeSubscription.value!.planId);
+      if (activePlan) {
+        selectedInterval.value = activePlan.interval === 'YEAR' ? 'yearly' : 'monthly';
+      }
+    }
+  } catch (err) {
+    // OWNER-only query -- a non-owner staff member or a namespace with no
+    // subscription yet both land here, and neither is a page-load failure.
+    console.error('Failed to fetch active subscription:', err);
+  }
+}
+
+async function redirectIfAlreadySubscribed() {
+  if (redirectingAfterReturn.value) return;
+  if (!activeSubscription.value) return;
+  // Explicit "manage/change plan" entry point (e.g. from Settings) — let the
+  // user view and change their plan instead of bouncing them straight back.
+  if (route.query.manage) return;
+
+  const returnTo = resolveReturnTo();
+  if (returnTo === route.path) return;
+
+  const hubToken = useCookie<string | null>('token', { path: '/' }).value;
+  if (!hubToken) return;
+
+  redirectingAfterReturn.value = true;
+  try {
+    const { ensure } = useTasksToken();
+    await ensure(nsSlug.value, hubToken);
+    await navigateTo(returnTo, { replace: true });
+  } finally {
+    redirectingAfterReturn.value = false;
+  }
+}
+
+function formatPrice(amountCents: number, currency: string): string {
+  const amount = amountCents / 100;
+  if (currency === 'KZT') {
+    return `${amount.toLocaleString('ru-KZ')}₸`;
+  }
+  return `${currency} ${amount.toLocaleString()}`;
+}
+
+function formatPlanFeature(feature: PlanFeature): string {
+  const localizedLabel = t('tasks.' + feature.label) || feature.label || feature.key;
+  return `${localizedLabel}: ${feature.value}`;
+}
+
+function resolveReturnTo(): string {
+  const raw = route.query.returnTo;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')) {
+    return value;
+  }
+  return `/${nsSlug.value}/issues`;
+}
+
+// Onboarding should never make someone click through a plan picker just to
+// reach a tier that costs nothing -- if a genuinely free plan (not just a
+// trial) exists and nothing's subscribed yet, provision it automatically.
+async function autoSelectFreePlanIfNeeded() {
+  if (activeSubscription.value) return;
+  if (route.query.manage) return;
+  const freePlan = plans.value.find((p) => p.amountCents === 0);
+  if (!freePlan) return;
+  await subscribePlan(freePlan);
+}
+
+async function subscribePlan(plan: TaskPlan) {
+  const hubToken = useCookie<string | null>('token', { path: '/' }).value;
+  if (!hubToken) {
+    toast.add({
+      title: t('common.error') || 'Error',
+      description: t('common.notAuthenticated') || 'Not authenticated',
+      color: 'red'
+    });
+    return;
+  }
+
+  // No payment gateway yet -- paid plans without a usable trial go through
+  // manual sales contact instead of an actual checkout. A plan with an
+  // available trial (or any free tier) still subscribes directly; only once
+  // the trial for this app is already exhausted do we force contact-us.
+  const sub = activeSubscription.value;
+  const trialAlreadyUsed = !!sub && (
+    sub.status === 'EXPIRED' || sub.status === 'PAST_DUE' || sub.status === 'CANCELED' ||
+    (!!sub.trialEndsAt && new Date(sub.trialEndsAt).getTime() < Date.now())
+  );
+  if (plan.amountCents > 0 && (plan.trialDays === 0 || trialAlreadyUsed)) {
+    useContactUsModal().open({ app: APP_BUNDLE, planName: plan.name });
+    return;
+  }
+
+  if (!(await usePhoneGate().requirePhone())) return;
+
+  subscribingPlanCode.value = plan.code;
+  try {
+    // subscribePlan requires IssuesAuthorization -- make sure a token is
+    // cached before calling it. Minting a token only proves namespace
+    // membership and provisions the tenant schema as a side effect; it must
+    // NOT be confused with installing the app, which stays gated on a
+    // successful subscribe below.
+    const { ensure } = useTasksToken();
+    const tasksToken = await ensure(nsSlug.value, hubToken);
+    if (!tasksToken) throw new Error('Failed to get tasks token');
+
+    activeSubscription.value = await tasksSubscribePlan(tasksToken, nsSlug.value, plan.code);
+
+    toast.add({
+      title: t('common.success') || 'Success',
+      description: t('app.subscribedToPlan', { plan: plan.name }) || `Subscribed to ${plan.name}`,
+      color: 'emerald'
+    });
+
+    // Add app to namespace (trigger real installation) -- only now, after a
+    // confirmed subscription, is the app considered actually installed.
+    const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+    try {
+      await hubAddAppToNamespace(hubToken, nsSlug.value, APP_BUNDLE);
+    } catch (installErr) {
+      const msg = getErrorMessage(installErr, t).toLowerCase();
+      if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
+        throw installErr;
+      }
+    }
+
+    // Ensure app token is fresh before entering protected issues routes.
+    await ensure(nsSlug.value, hubToken);
+
+    useAnalytics().track('plan_subscribed', { app: APP_BUNDLE, plan: plan.code });
+
+    // Navigate to app
+    const returnTo = resolveReturnTo();
+    await navigateTo(returnTo, { replace: true });
+  } catch (err) {
+    console.error('Failed to subscribe:', err);
+    const errorMsg = getErrorMessage(err, t) || (t('common.genericError') || 'Something went wrong. Please try again.');
+
+    const regressions = parseDowngradeRegressions(errorMsg);
+    if (regressions) {
+      useDowngradeBlockedModal().open(regressions);
+    } else {
+      toast.add({ title: t('common.error') || 'Error', description: errorMsg, color: 'red' });
+    }
+  } finally {
+    subscribingPlanCode.value = null;
+  }
+}
+
+onMounted(async () => {
+  const hubToken = useCookie<string | null>('token', { path: '/' }).value;
+  if (!hubToken) {
+    error.value = t('common.notAuthenticated') || 'Not authenticated';
+    return;
+  }
+
+  const { ensure } = useTasksToken();
+  const tasksToken = await ensure(nsSlug.value, hubToken);
+  if (!tasksToken) {
+    error.value = t('common.notAuthenticated') || 'Not authenticated';
+    return;
+  }
+
+  await fetchPlans();
+  await fetchActiveSubscription();
+  await redirectIfAlreadySubscribed();
+  await autoSelectFreePlanIfNeeded();
+});
+
+watch([plans, activeSubscription], () => {
+  if (activeSubscription.value && plans.value.length > 0) {
+    const activePlan = plans.value.find(p => p.id === activeSubscription.value!.planId);
+    if (activePlan) {
+      selectedInterval.value = activePlan.interval === 'YEAR' ? 'yearly' : 'monthly';
+    }
+  }
+});
+</script>
+
+<template>
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ t('app.subscriptionPlans') || 'Subscription Plans' }}
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('app.choosePlanDescription') || 'Choose a plan that works best for your team' }}
+            </p>
+          </div>
+          <UButton
+            icon="lucide:arrow-left"
+            size="xs"
+            color="primary"
+            variant="soft"
+            class="min-w-fit gap-2"
+            @click="goBack"
+          >
+            <span class="hidden sm:inline">{{ t('app.back') }}</span>
+          </UButton>
+        </div>
+      </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
+      <div class="flex justify-center mb-8">
+        <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+          <button
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'monthly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+            @click="selectedInterval = 'monthly'"
+          >
+            {{ t('app.monthly') || 'Monthly' }}
+          </button>
+          <button
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'yearly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+            @click="selectedInterval = 'yearly'"
+          >
+            <span>{{ t('app.yearly') || 'Yearly' }}</span>
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+              <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
+              {{ t('app.bestPrice') || 'Best price' }}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
+      </div>
+
+      <UAlert
+        v-else-if="error"
+        icon="i-heroicons-exclamation-triangle"
+        color="red"
+        variant="soft"
+        :title="t('common.error') || 'Error'"
+        :description="error"
+        class="mb-6"
+      />
+
+      <div v-else class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div
+          v-for="plan in displayedPlans"
+          :key="plan.id"
+          class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+        >
+          <div v-if="plan.trialDays > 0" class="absolute top-0 right-0">
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
+              <div class="flex items-center gap-1.5">
+                <UIcon name="i-heroicons-gift" class="w-4 h-4" />
+                <span class="text-xs font-bold">{{ plan.trialDays }} {{ t('app.daysTrial') || 'days trial' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="p-6 pt-12">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              {{ plan.name }}
+            </h3>
+
+            <div class="mb-6">
+              <div class="flex items-baseline gap-2">
+                <span class="text-4xl font-bold text-gray-900 dark:text-white">
+                  {{ plan.trialDays > 0 ? '0' : formatPrice(plan.amountCents, plan.currency) }}
+                </span>
+                <span class="text-lg text-gray-500 dark:text-gray-400">
+                  / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
+                </span>
+              </div>
+              <div v-if="plan.trialDays > 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                {{ t('app.afterTrial') || 'После триала' }}:
+                <span class="font-semibold">{{ formatPrice(plan.amountCents, plan.currency) }}</span>
+                / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
+              </div>
+            </div>
+
+            <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+              <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  <template v-if="plan.trialDays === 0">
+                    <span class="font-semibold">{{ t('app.freeForever') || 'Free forever' }}</span>
+                  </template>
+                  <template v-else>
+                    <span class="font-semibold">{{ plan.trialDays }}</span> {{ t('app.daysFreeTrial') || 'days free trial' }}
+                  </template>
+                </span>
+              </div>
+
+              <div
+                v-for="feature in getPlanFeatures(plan)"
+                :key="feature.key"
+                class="flex items-start gap-3"
+              >
+                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                </div>
+                <span class="text-sm text-gray-700 dark:text-gray-300">
+                  {{ formatPlanFeature(feature) }}
+                </span>
+              </div>
+            </div>
+
+            <UButton
+              v-if="!isPlanActive(plan)"
+              block
+              size="lg"
+              :color="plan.code.includes('start') ? 'primary' : 'gray'"
+              :variant="plan.code.includes('start') ? 'solid' : 'outline'"
+              :disabled="subscribingPlanCode !== null"
+              class="font-semibold dark:hover:bg-primary-900/30 dark:hover:border-primary-500 dark:hover:text-primary-100"
+              @click="subscribePlan(plan)"
+            >
+              <template v-if="subscribingPlanCode === plan.code">
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                {{ t('app.connecting') || 'Connecting...' }}
+              </template>
+              <template v-else>
+                {{ t('app.selectPlan') || 'Select Plan' }}
+              </template>
+            </UButton>
+
+            <div
+              v-else
+              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+            >
+              <div class="flex items-center justify-center gap-2">
+                <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
+                <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-if="!loading && !error && displayedPlans.length === 0" class="text-center py-12">
+        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p class="text-gray-500 dark:text-gray-400">
+          {{ t('app.noPlansAvailable') || 'No plans available' }}
+        </p>
+      </div>
+    </div>
+  </div>
+</template>

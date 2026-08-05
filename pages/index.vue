@@ -13,6 +13,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
+import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
@@ -394,50 +395,12 @@ function handleLogout() {
   isModalOpen.value = false;
 }
 
-const dashboardApps = computed(() => [
-  ...activeApps.value,
-  ...possibleApps.value,
-  ...comingSoonApps.value,
-]);
+// Fixed order everywhere (see config/apps.ts) -- not grouped by install
+// status, so the header nav and this dashboard grid always agree, and an
+// app's position doesn't shuffle depending on what's installed.
+const dashboardApps = computed(() => ALL_APPS);
 
-const canSeeConsoleCard = ref(false);
-
-async function refreshConsoleAccess() {
-  if (process.server || !isLoggedIn.value) {
-    canSeeConsoleCard.value = false;
-    return;
-  }
-
-  const authToken = token.value || useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
-  if (!authToken) {
-    canSeeConsoleCard.value = false;
-    return;
-  }
-
-  let currentUserId = user.value?.id;
-  if (!currentUserId) {
-    await fetchUser();
-    currentUserId = user.value?.id;
-  }
-
-  if (!currentUserId) {
-    canSeeConsoleCard.value = false;
-    return;
-  }
-
-  try {
-    const { capitalGetAdminByUserId } = await import('@/api/capital/admin');
-    const admin = await capitalGetAdminByUserId(authToken, currentUserId);
-    const role = Number(admin?.role ?? -1);
-    canSeeConsoleCard.value = !!admin && (role === 0 || role === 1);
-  } catch (e) {
-    // This used to fail silently, which made "the Console card disappeared"
-    // indistinguishable from "you're not a capital admin" — log it so a
-    // real backend/network failure is visible instead of just hiding the card.
-    logError('[home] refreshConsoleAccess failed', e);
-    canSeeConsoleCard.value = false;
-  }
-}
+const { canSeeConsole: canSeeConsoleCard, refreshConsoleAccess } = useConsoleAccess();
 
 function openConsole() {
   router.push('/console');

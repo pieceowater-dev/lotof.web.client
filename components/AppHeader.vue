@@ -6,13 +6,14 @@ import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { atraceTour, contactsTour } from '@/config/tours';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
+import { useConsoleAccess } from '@/composables/useConsoleAccess';
 
 const { t } = useI18n();
 const toast = useToast();
 const router = useRouter();
 const route = useRoute();
 
-const { isLoggedIn, login } = useAuth();
+const { isLoggedIn, login, user, token } = useAuth();
 const { selected: selectedNS } = useNamespace();
 const routeNamespace = computed(() => (route.params.namespace as string) || '');
 const currentNamespace = computed(() => selectedNS.value || routeNamespace.value);
@@ -24,6 +25,17 @@ const { resolveAppDestination, ensureAppInstallStatus } = useAppInstallStatus();
 watch(currentNamespace, (ns) => {
   if (ns) ensureAppInstallStatus(ns);
 }, { immediate: true });
+
+const { canSeeConsole, refreshConsoleAccess } = useConsoleAccess();
+watch(
+  () => [isLoggedIn.value, user.value?.id, token.value],
+  () => refreshConsoleAccess(),
+  { immediate: true }
+);
+function handleConsoleClick() {
+  isMobileMenuOpen.value = false;
+  router.push('/console');
+}
 
 // Rolled client-side only, after mount: Math.random() evaluated during SSR
 // and again during client hydration are two independent rolls, and roughly
@@ -38,8 +50,14 @@ onMounted(() => {
 const homeText = computed(() => isWalter.value ? 'Домой, Уолтер' : t('app.home'));
 const isAtraceRoute = computed(() => route.path.includes('/atrace'));
 const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
+// Fixed order everywhere (see config/apps.ts) -- matches the home
+// dashboard's tile order exactly, regardless of what's installed.
 const navApps = computed(() => ALL_APPS);
-const showHomeItem = computed(() => route.path !== '/');
+// The Home button used to disappear once you were already on '/' -- now it
+// just stays put and highlights instead, so the nav bar doesn't visibly
+// reflow depending on which page you're on.
+const showHomeItem = computed(() => true);
+const isHomeActive = computed(() => route.path === '/');
 const isMobileMenuOpen = ref(false);
 const shouldUseBurger = ref(true);
 const headerInnerRef = ref<HTMLElement | null>(null);
@@ -145,7 +163,7 @@ onBeforeUnmount(() => {
 });
 
 watch(
-  () => [route.fullPath, showHomeItem.value, showHelpButton.value],
+  () => [route.fullPath, showHomeItem.value, showHelpButton.value, canSeeConsole.value],
   () => {
     syncMenuMode();
   }
@@ -193,7 +211,9 @@ const goHome = () => {
             v-if="showHomeItem"
             type="button"
             class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+            :class="isHomeActive
+              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
             @click="handleHomeClick"
           >
             <UIcon
@@ -201,6 +221,19 @@ const goHome = () => {
               class="h-4 w-4"
             />
             <span class="truncate">{{ homeText }}</span>
+          </button>
+
+          <button
+            v-if="canSeeConsole"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60"
+            @click="handleConsoleClick"
+          >
+            <UIcon
+              name="lucide:terminal-square"
+              class="h-4 w-4"
+            />
+            <span class="truncate">Console</span>
           </button>
 
           <button
@@ -284,6 +317,18 @@ const goHome = () => {
           </button>
 
           <button
+            v-if="canSeeConsole"
+            type="button"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+          >
+            <UIcon
+              name="lucide:terminal-square"
+              class="h-4 w-4"
+            />
+            <span>Console</span>
+          </button>
+
+          <button
             v-for="app in navApps"
             :key="`measure-${app.bundle}`"
             type="button"
@@ -345,14 +390,28 @@ const goHome = () => {
         <button
           v-if="showHomeItem"
           type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left"
+          :class="isHomeActive ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
           @click="handleHomeClick"
         >
           <UIcon
             name="i-lucide-home"
             class="h-5 w-5 text-primary flex-shrink-0"
           />
-          <span class="text-sm font-medium truncate">{{ homeText }}</span>
+          <span class="text-sm font-medium truncate" :class="isHomeActive && 'text-primary'">{{ homeText }}</span>
+        </button>
+
+        <button
+          v-if="canSeeConsole"
+          type="button"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          @click="handleConsoleClick"
+        >
+          <UIcon
+            name="lucide:terminal-square"
+            class="h-5 w-5 text-primary flex-shrink-0"
+          />
+          <span class="flex-1 text-sm font-medium truncate">Console</span>
         </button>
 
         <button

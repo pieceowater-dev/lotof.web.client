@@ -1,4 +1,4 @@
-export type ApiService = 'hub' | 'atrace' | 'contacts' | 'capital' | 'menu';
+export type ApiService = 'hub' | 'atrace' | 'contacts' | 'capital' | 'menu' | 'tasks';
 
 type QueryValue = string | number | boolean;
 
@@ -8,6 +8,7 @@ const API_BASE_PATHS: Record<ApiService, string> = {
   contacts: '/api-contacts',
   capital: '/api-capital',
   menu: '/api-menu',
+  tasks: '/api-tasks',
 };
 
 const API_BASE_OVERRIDES: Record<ApiService, string | undefined> = {
@@ -16,6 +17,7 @@ const API_BASE_OVERRIDES: Record<ApiService, string | undefined> = {
   contacts: import.meta.env.VITE_API_CONTACTS,
   capital: import.meta.env.VITE_API_CAPITAL,
   menu: import.meta.env.VITE_API_MENU,
+  tasks: import.meta.env.VITE_API_TASKS,
 };
 
 function normalizeOverride(service: ApiService, raw: string): string {

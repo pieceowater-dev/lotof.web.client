@@ -138,6 +138,17 @@ function resolveReturnTo(): string {
   return `/${nsSlug.value}/menu`;
 }
 
+// Onboarding should never make someone click through a plan picker just to
+// reach a tier that costs nothing -- if a genuinely free plan (not just a
+// trial) exists and nothing's subscribed yet, provision it automatically.
+async function autoSelectFreePlanIfNeeded() {
+  if (activeSubscription.value) return;
+  if (route.query.manage) return;
+  const freePlan = plans.value.find((p) => p.amountCents === 0);
+  if (!freePlan) return;
+  await subscribePlan(freePlan);
+}
+
 async function subscribePlan(plan: Plan) {
   const token = useCookie<string | null>('token', { path: '/' }).value;
   if (!token) {
@@ -235,6 +246,7 @@ onMounted(async () => {
   await fetchPlans();
   await fetchActiveSubscription();
   await redirectIfAlreadySubscribed();
+  await autoSelectFreePlanIfNeeded();
 });
 
 watch([plans, activeSubscription], () => {

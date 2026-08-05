@@ -6,7 +6,7 @@ import ru from '@/locales/ru.json';
 
 type Locale = 'en' | 'ru' | 'kk';
 const SUPPORTED_LOCALES: Locale[] = ['en', 'ru', 'kk'];
-const DEFAULT_LOCALE: Locale = 'en';
+const DEFAULT_LOCALE: Locale = 'ru';
 
 function normalizeLocale(value?: string | null): Locale | undefined {
   if (!value) return undefined;
