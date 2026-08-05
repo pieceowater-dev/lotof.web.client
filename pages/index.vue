@@ -354,8 +354,20 @@ async function handlePendingTargetApp(): Promise<boolean> {
   targetAppCookie.value = null; // consume once, whatever happens next
 
   const app = ALL_APPS.find(a => a.bundle === targetApp);
-  const ns = selectedNS.value;
-  if (!app || !ns) return false;
+  if (!app) return false;
+
+  // Namespace state is normally populated by middleware/namespace.global.ts,
+  // but that only runs for /{namespace}/... routes -- a visitor arriving via
+  // a landing page (/issues, /menu, ...) or any other top-level route never
+  // triggers it, so selectedNS can still be empty here even though the user
+  // is fully logged in. Load it directly rather than silently giving up.
+  let ns = selectedNS.value;
+  if (!ns) {
+    const { load } = useNamespace();
+    await load();
+    ns = selectedNS.value;
+  }
+  if (!ns) return false;
 
   try {
     const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
