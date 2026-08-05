@@ -36,6 +36,14 @@ function redirectToBoard(target: TaskBoard) {
   navigateTo(`/${nsSlug.value}/issues/${target.slug}`, { replace: true });
 }
 
+function boardHasZenMode(b: TaskBoard): boolean {
+  try {
+    return !!(b.featureFlags ? JSON.parse(b.featureFlags).zen_mode : false);
+  } catch {
+    return false;
+  }
+}
+
 async function load() {
   loading.value = true;
   error.value = null;
@@ -45,6 +53,14 @@ async function load() {
     const res = await tasksBoardsList(token, nsSlug.value);
     boards.value = res.boards;
     if (route.query.pick !== '1' && boards.value.length) {
+      // On a phone, "manage boards" isn't the useful landing view -- if Zen
+      // Mode is available on any board, a courier/field worker almost
+      // certainly wants their personal task queue instead of the desktop
+      // kanban/board picker.
+      if (process.client && window.innerWidth < 768 && boards.value.some(boardHasZenMode)) {
+        navigateTo(`/${nsSlug.value}/issues/zen`, { replace: true });
+        return;
+      }
       if (boards.value.length === 1) {
         redirectToBoard(boards.value[0]);
         return;

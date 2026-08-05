@@ -55,6 +55,10 @@ const estimateLabel = computed(() => {
 // fields on screen unless the board's Map & location module is on, or the
 // issue type specifically requires a location.
 const showContactSection = ref(false);
+// The Leaflet map picker alone adds a lot of height -- keep it collapsed
+// until asked for, even when the rest of the Contact section is expanded,
+// so the modal doesn't open enormous by default.
+const showMapPicker = ref(false);
 
 watch(() => props.modelValue, (open) => {
   if (!open) return;
@@ -73,6 +77,7 @@ watch(() => props.modelValue, (open) => {
   form.dueAt = '';
   form.estimateValue = undefined;
   showContactSection.value = !!(props.geoMapEnabled || selectedTaskType.value?.requiresLocation);
+  showMapPicker.value = false;
 }, { immediate: true });
 
 watch(selectedTaskType, (tt) => {
@@ -217,14 +222,22 @@ function handleSubmit() {
             <UFormGroup :label="t('tasks.address') || 'Contact address'">
               <UInput v-model="form.textAddress" size="lg" :placeholder="t('tasks.addressPlaceholder') || 'Free-text address'" />
             </UFormGroup>
-            <UFormGroup
-              :label="t('tasks.mapPin') || 'Map pin (optional)'"
-              :hint="t('tasks.mapPinHint') || 'Independent from the address above — set both if you have them'"
-            >
-              <ClientOnly>
-                <BranchLocationPicker :lat="form.lat" :lng="form.lng" @update="(lat: number, lng: number) => { form.lat = lat; form.lng = lng; }" />
-              </ClientOnly>
-            </UFormGroup>
+            <div>
+              <button
+                type="button"
+                class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                @click="showMapPicker = !showMapPicker"
+              >
+                <UIcon name="lucide:map-pin" class="w-3.5 h-3.5" />
+                {{ form.lat != null ? (t('tasks.mapPinSet') || 'Map pin set') : (t('tasks.mapPin') || 'Map pin (optional)') }}
+                <UIcon :name="showMapPicker ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="w-3.5 h-3.5" />
+              </button>
+              <UFormGroup v-if="showMapPicker" :hint="t('tasks.mapPinHint') || 'Independent from the address above — set both if you have them'" class="mt-2">
+                <ClientOnly>
+                  <BranchLocationPicker :lat="form.lat" :lng="form.lng" @update="(lat: number, lng: number) => { form.lat = lat; form.lng = lng; }" />
+                </ClientOnly>
+              </UFormGroup>
+            </div>
           </div>
         </div>
       </div>

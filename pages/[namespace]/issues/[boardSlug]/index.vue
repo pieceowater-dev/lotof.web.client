@@ -9,7 +9,6 @@ import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, bloc
 import { usePwaInstall } from '@/composables/usePwaInstall';
 import TaskModal from '@/components/tasks/TaskModal.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
-import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vue';
 import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
 import CycleModal from '@/components/tasks/CycleModal.vue';
 import CloseCycleModal from '@/components/tasks/CloseCycleModal.vue';
@@ -44,27 +43,6 @@ const boardStatuses = computed<StatusRow[]>(() => {
   try {
     const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
     return Array.isArray(arr) ? arr.map((s: any) => ({ key: s.key, label: s.label || s.key, isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || '') })) : [];
-  } catch {
-    return [];
-  }
-});
-
-// Menu integration (plan §6.1/§6.2) — gates both the automations manager
-// button and which terminal-status "maps_to" values a rule can trigger on.
-const menuIntegrationEnabled = computed(() => {
-  try {
-    return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).menu : false);
-  } catch {
-    return false;
-  }
-});
-const automationTriggerOptions = computed<{ value: string; label: string }[]>(() => {
-  try {
-    const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .filter((s: any) => s.is_terminal && s.maps_to)
-      .map((s: any) => ({ value: s.maps_to, label: s.label || s.key }));
   } catch {
     return [];
   }
@@ -465,8 +443,6 @@ onBeforeUnmount(() => {
   disposeTaskSubscription?.();
 });
 
-const isAutomationsOpen = ref(false);
-
 // Create task modal — editing an existing one happens inline in
 // TaskDetailSlideover instead (see openDetail below), so this is
 // create-only now.
@@ -683,9 +659,6 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <h1 class="text-2xl font-semibold truncate">{{ board?.name || '...' }}</h1>
       </div>
       <div class="flex items-center gap-2 self-start flex-wrap">
-        <UButton v-if="isOwnerOrManager && menuIntegrationEnabled" icon="lucide:zap" size="xs" color="gray" variant="soft" @click="isAutomationsOpen = true">
-          {{ t('tasks.automations') || 'Automations' }}
-        </UButton>
         <UButton v-if="geoMapEnabled" icon="lucide:map" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/map`">
           {{ t('tasks.mapView') || 'Map view' }}
         </UButton>
@@ -906,12 +879,6 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       </div>
     </div>
 
-    <AutomationRulesManager
-      v-model="isAutomationsOpen"
-      :board-id="boardId"
-      :ns-slug="nsSlug"
-      :trigger-options="automationTriggerOptions"
-    />
     <OpenOnPhoneModal v-model="isOpenZenQrModalOpen" :url="zenModeUrl" />
     <TaskModal
       v-model="isTaskModalOpen"

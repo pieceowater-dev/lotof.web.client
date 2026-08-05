@@ -707,6 +707,7 @@ const APPS = [
   { key: 'atrace', label: 'A-Trace', applicationCode: 'pieceowater.atrace', colorClass: 'bg-blue-600 dark:bg-blue-500' },
   { key: 'contacts', label: 'Contacts', applicationCode: 'pieceowater.contacts', colorClass: 'bg-orange-500 dark:bg-orange-500' },
   { key: 'menu', label: 'Orders', applicationCode: 'pieceowater.menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
+  { key: 'issues', label: 'Issues', applicationCode: 'pieceowater.issues', colorClass: 'bg-indigo-500 dark:bg-indigo-400' },
 ] as const;
 
 const appBars = computed(() => {
@@ -767,6 +768,7 @@ const TARGET_OPTIONS = computed(() => [
   { value: 'pieceowater.atrace', label: 'A-Trace' },
   { value: 'pieceowater.contacts', label: 'Contacts' },
   { value: 'pieceowater.menu', label: 'Orders' },
+  { value: 'pieceowater.issues', label: 'Issues' },
 ]);
 
 const deepLinkCategories = ref<AdminDeepLinkCategory[]>([]);

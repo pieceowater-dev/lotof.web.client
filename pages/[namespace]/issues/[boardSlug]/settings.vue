@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { getApiBasePath } from '@/utils/api-base';
 import { COLUMN_COLOR_PRESETS } from '@/utils/taskDisplay';
 import TaskTypeModal from '@/components/tasks/TaskTypeModal.vue';
+import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import { FilterPaginationLengthEnum } from '@gql-hub';
@@ -42,6 +43,28 @@ async function getToken(): Promise<string> {
 const board = ref<TaskBoard | null>(null);
 const loading = ref(false);
 const saving = ref(false);
+
+// Menu integration (plan §6.1/§6.2) — gates both the automations manager
+// and which terminal-status "maps_to" values a rule can trigger on.
+const menuIntegrationEnabled = computed(() => {
+  try {
+    return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).menu : false);
+  } catch {
+    return false;
+  }
+});
+const automationTriggerOptions = computed<{ value: string; label: string }[]>(() => {
+  try {
+    const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .filter((s: any) => s.is_terminal && s.maps_to)
+      .map((s: any) => ({ value: s.maps_to, label: s.label || s.key }));
+  } catch {
+    return [];
+  }
+});
+const isAutomationsOpen = ref(false);
 
 // Namespace members -- needed for the "escalate to" picker on each issue
 // type's SLA settings.
@@ -121,6 +144,10 @@ async function handleTaskTypeSubmit(payload: Record<string, any>) {
   }
 }
 async function handleDeleteTaskType(tt: TaskType) {
+  if (taskTypes.value.length <= 1) {
+    useToast().add({ title: t('tasks.cannotDeleteLastTaskType') || 'A board needs at least one issue type', color: 'amber' });
+    return;
+  }
   if (!(await confirm({ message: t('tasks.confirmDeleteTaskType') || 'Delete this issue type?' }))) return;
   try {
     const token = await getToken();
@@ -418,7 +445,7 @@ onMounted(load);
                     </div>
                   </div>
                   <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEditTaskType(tt)" />
-                  <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDeleteTaskType(tt)" />
+                  <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" :disabled="taskTypes.length <= 1" :title="taskTypes.length <= 1 ? (t('tasks.cannotDeleteLastTaskType') || 'A board needs at least one issue type') : undefined" @click="handleDeleteTaskType(tt)" />
                 </div>
               </div>
             </UCard>
@@ -514,6 +541,18 @@ onMounted(load);
               </p>
             </UCard>
 
+            <UCard v-if="menuIntegrationEnabled" :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+              <div class="flex items-start justify-between gap-3">
+                <span>
+                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:zap" class="w-4 h-4 text-gray-400" />{{ t('tasks.automations') || 'Automations' }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue reaches a final column.' }}</span>
+                </span>
+                <UButton icon="lucide:zap" size="2xs" color="gray" variant="soft" class="flex-shrink-0" @click="isAutomationsOpen = true">
+                  {{ t('tasks.manageAutomations') || 'Manage' }}
+                </UButton>
+              </div>
+            </UCard>
+
             <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
               <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                 <UIcon name="lucide:webhook" class="w-3.5 h-3.5" />
@@ -552,6 +591,13 @@ onMounted(load);
       :member-options="memberOptions"
       :saving="savingTaskType"
       @submit="handleTaskTypeSubmit"
+    />
+    <AutomationRulesManager
+      v-if="board"
+      v-model="isAutomationsOpen"
+      :board-id="board.id"
+      :ns-slug="nsSlug"
+      :trigger-options="automationTriggerOptions"
     />
   </div>
 </template>
