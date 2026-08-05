@@ -17,6 +17,9 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
 import { subscribeOrderChanged } from '@/api/menu/subscriptions';
+import TourGuide from '@/components/TourGuide.vue';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { menuTour } from '@/config/tours';
 
 const { t } = useI18n();
 const { isOwnerOrManager } = useMenuStaffRole();
@@ -693,6 +696,17 @@ onMounted(async () => {
   startOrderSubscription();
   pollTimer = setInterval(pollTick, 45000);
   window.addEventListener('pointerdown', unlockAudio, { once: true });
+
+  if (process.client) {
+    const { isCompleted, startTour } = useOnboarding();
+    if (orders.value.length === 0 && !isCompleted(menuTour.id)) {
+      // Checked inside the timeout, not before scheduling it: checkOnboarding()
+      // (triggered above via fetchUser().then(...), not awaited) may still be
+      // resolving at this point, and the setup wizard modal should never
+      // fight with the tour's spotlight for the screen.
+      setTimeout(() => { if (!showOnboarding.value) startTour(menuTour); }, 1000);
+    }
+  }
 });
 
 onBeforeUnmount(() => {
@@ -805,9 +819,11 @@ async function handleCreateOrder(payload: any) {
 </script>
 
 <template>
+  <TourGuide />
+
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-      <div class="text-left">
+      <div class="text-left" data-tour="menu-title">
         <h1 class="text-2xl font-semibold">
           {{ t('menu.title') || 'Orders' }}
         </h1>
@@ -835,6 +851,7 @@ async function handleCreateOrder(payload: any) {
           :ui="{ rounded: 'rounded-xl' }"
           :to="`/to/${nsSlug}/menu/board`"
           target="_blank"
+          data-tour="menu-kitchen-board-btn"
         >
           {{ t('menu.kitchenBoard') || 'Kitchen board' }}
         </UButton>
@@ -847,6 +864,7 @@ async function handleCreateOrder(payload: any) {
           class="min-w-fit whitespace-nowrap gap-2"
           :ui="{ rounded: 'rounded-xl' }"
           :to="`/${nsSlug}/menu/settings`"
+          data-tour="menu-settings-btn"
         >
           {{ t('menu.settings') || 'Settings' }}
         </UButton>
@@ -986,6 +1004,7 @@ async function handleCreateOrder(payload: any) {
         variant="soft"
         class="w-full sm:w-auto justify-center flex-shrink-0"
         :ui="{ rounded: 'rounded-xl' }"
+        data-tour="menu-create-btn"
         @click="isCreateOrderOpen = true"
       >
         {{ t('menu.createOrder') || 'Create order' }}
@@ -1002,6 +1021,7 @@ async function handleCreateOrder(payload: any) {
     <div class="flex-1 min-h-0">
       <AppTable
         v-model:selected="selectedOrders"
+        data-tour="menu-orders-table"
         v-model:page="page"
         v-model:page-count="pageCount"
         :rows="displayRows"

@@ -7,6 +7,9 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { dynamicLS } from '@/utils/storageKeys';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import { usePwaInstall } from '@/composables/usePwaInstall';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { issuesTour } from '@/config/tours';
+import TourGuide from '@/components/TourGuide.vue';
 import TaskModal from '@/components/tasks/TaskModal.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
@@ -421,6 +424,12 @@ onMounted(async () => {
   startTaskSubscription();
   pollTimer = setInterval(pollTick, 45000);
   nowTimer = setInterval(() => { now.value = Date.now(); }, 30000);
+  if (process.client) {
+    const { isCompleted, startTour } = useOnboarding();
+    if (tasks.value.length === 0 && !isCompleted(issuesTour.id)) {
+      setTimeout(() => startTour(issuesTour), 1000);
+    }
+  }
 });
 onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer);
@@ -637,13 +646,14 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
 </script>
 
 <template>
+  <TourGuide />
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="flex items-center gap-2 min-w-0">
         <UButton icon="lucide:layout-grid" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues?pick=1`">
           {{ t('tasks.boards') || 'Boards' }}
         </UButton>
-        <h1 class="text-2xl font-semibold truncate">{{ board?.name || '...' }}</h1>
+        <h1 class="text-2xl font-semibold truncate" data-tour="issues-title">{{ board?.name || '...' }}</h1>
       </div>
       <div class="flex items-center gap-2 self-start flex-wrap">
         <UButton v-if="geoMapEnabled" icon="lucide:map" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/map`">
@@ -652,10 +662,10 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <UButton v-if="zenModeEnabled" icon="lucide:smartphone" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/zen`" target="_blank" @click="handleOpenZenClick">
           {{ t('tasks.openZenMode') || 'Zen Mode' }}
         </UButton>
-        <UButton v-if="isOwnerOrManager" icon="lucide:settings" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/settings`">
+        <UButton v-if="isOwnerOrManager" icon="lucide:settings" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/settings`" data-tour="issues-settings-btn">
           {{ t('tasks.configure') || 'Configure' }}
         </UButton>
-        <UButton icon="lucide:plus" size="xs" color="primary" variant="soft" @click="openCreateTask">
+        <UButton icon="lucide:plus" size="xs" color="primary" variant="soft" data-tour="issues-create-btn" @click="openCreateTask">
           {{ t('tasks.createTask') || 'Create issue' }}
         </UButton>
       </div>
@@ -753,7 +763,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
          further). On mobile a 20% column would be unusably narrow, so each
          one takes ~85% of the viewport instead -- effectively one at a time,
          swipe/scroll for the rest. -->
-    <div v-else class="flex-1 min-h-0 overflow-x-auto">
+    <div v-else class="flex-1 min-h-0 overflow-x-auto" data-tour="issues-board">
       <div class="flex gap-3 h-full">
         <div
           v-for="(col, idx) in boardStatuses"

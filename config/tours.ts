@@ -69,6 +69,106 @@ export const atraceTour: TourConfig = {
   ],
 };
 
+export const menuTour: TourConfig = {
+  id: 'menu-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="menu-title"]',
+      titleKey: 'app.tourMenuWelcomeTitle',
+      contentKey: 'app.tourMenuWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'create-order',
+      target: '[data-tour="menu-create-btn"]',
+      titleKey: 'app.tourMenuCreateTitle',
+      contentKey: 'app.tourMenuCreateContent',
+      placement: 'left',
+      highlightPadding: 10,
+    },
+    {
+      id: 'kitchen-board',
+      target: '[data-tour="menu-kitchen-board-btn"]',
+      titleKey: 'app.tourMenuKitchenTitle',
+      contentKey: 'app.tourMenuKitchenContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'orders-table',
+      target: '[data-tour="menu-orders-table"]',
+      titleKey: 'app.tourMenuTableTitle',
+      contentKey: 'app.tourMenuTableContent',
+      placement: 'top',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="menu-settings-btn"]',
+      titleKey: 'app.tourMenuSettingsTitle',
+      contentKey: 'app.tourMenuSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourMenuHelpTitle',
+      contentKey: 'app.tourMenuHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};
+
+export const issuesTour: TourConfig = {
+  id: 'issues-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="issues-title"]',
+      titleKey: 'app.tourIssuesWelcomeTitle',
+      contentKey: 'app.tourIssuesWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'create-issue',
+      target: '[data-tour="issues-create-btn"]',
+      titleKey: 'app.tourIssuesCreateTitle',
+      contentKey: 'app.tourIssuesCreateContent',
+      placement: 'left',
+      highlightPadding: 10,
+    },
+    {
+      id: 'board',
+      target: '[data-tour="issues-board"]',
+      titleKey: 'app.tourIssuesBoardTitle',
+      contentKey: 'app.tourIssuesBoardContent',
+      placement: 'top',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="issues-settings-btn"]',
+      titleKey: 'app.tourIssuesSettingsTitle',
+      contentKey: 'app.tourIssuesSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourIssuesHelpTitle',
+      contentKey: 'app.tourIssuesHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};
+
 export const contactsTour: TourConfig = {
   id: 'contacts-intro',
   steps: [

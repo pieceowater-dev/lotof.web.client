@@ -4,7 +4,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useOnboarding } from '@/composables/useOnboarding';
-import { atraceTour, contactsTour } from '@/config/tours';
+import { atraceTour, contactsTour, menuTour, issuesTour } from '@/config/tours';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
 
@@ -50,6 +50,11 @@ onMounted(() => {
 const homeText = computed(() => isWalter.value ? 'Домой, Уолтер' : t('app.home'));
 const isAtraceRoute = computed(() => route.path.includes('/atrace'));
 const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
+// Matches only the orders index page (/{ns}/menu), not /menu/settings or /menu/plans.
+const isMenuRoute = computed(() => /^\/[^/]+\/menu\/?$/.test(route.path));
+// Matches only a board page (/{ns}/issues/{boardSlug}), not the reserved
+// top-level slugs (boards list, plans, settings, zen) or board sub-pages.
+const isIssuesRoute = computed(() => /^\/[^/]+\/issues\/(?!plans$|settings$|zen$)[^/]+\/?$/.test(route.path));
 // Fixed order everywhere (see config/apps.ts) -- matches the home
 // dashboard's tile order exactly, regardless of what's installed.
 const navApps = computed(() => ALL_APPS);
@@ -70,7 +75,7 @@ let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 // Onboarding
 const { startTour, reset } = useOnboarding();
 const showHelpButton = computed(() => {
-  return isAtraceRoute.value || isContactsListRoute.value;
+  return isAtraceRoute.value || isContactsListRoute.value || isMenuRoute.value || isIssuesRoute.value;
 });
 
 function handleHelpClick() {
@@ -83,6 +88,18 @@ function handleHelpClick() {
   if (isContactsListRoute.value) {
     reset(contactsTour.id);
     startTour(contactsTour, 0);
+    return;
+  }
+
+  if (isMenuRoute.value) {
+    reset(menuTour.id);
+    startTour(menuTour, 0);
+    return;
+  }
+
+  if (isIssuesRoute.value) {
+    reset(issuesTour.id);
+    startTour(issuesTour, 0);
   }
 }
 
