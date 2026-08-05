@@ -156,6 +156,18 @@ async function initMap() {
   }).addTo(map);
   syncMarkers();
   syncCourierMarkers();
+
+  // Popup content is raw HTML outside Vue's reactivity, so the "Open issue"
+  // button inside it can't have a @click handler -- delegate via Leaflet's
+  // own popupopen event instead, matching whichever task is currently open.
+  map.on('popupopen', (e: any) => {
+    const btn = e.popup?.getElement()?.querySelector('.map-popup-open-btn') as HTMLElement | null;
+    if (!btn) return;
+    const taskId = btn.getAttribute('data-task-id');
+    const task = openLocatedTasks.value.find((t) => t.id === taskId);
+    if (!task) return;
+    btn.addEventListener('click', () => openDetail(task), { once: true });
+  });
 }
 
 // Priority color, as plain hex rather than Tailwind classes -- this HTML is
@@ -183,7 +195,10 @@ function syncMarkers() {
     bounds.push(pos);
     const num = routeNumber.value.get(task.id) || 0;
     const marker = L.marker(pos, { icon: numberedIcon(num, task.priority, selectedTaskId.value === task.id) }).addTo(map);
-    marker.bindPopup(`<b>#${num} · ${escapeHtml(taskShortCode(boardSlug.value, task.taskNumber))}</b><br>${escapeHtml(task.title)}`);
+    marker.bindPopup(
+      `<b>#${num} · ${escapeHtml(taskShortCode(boardSlug.value, task.taskNumber))}</b><br>${escapeHtml(task.title)}` +
+      `<button type="button" class="map-popup-open-btn" data-task-id="${task.id}" style="margin-top:6px;width:100%;background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:4px 8px;font:600 12px sans-serif;cursor:pointer;">${escapeHtml(t('tasks.mapOpenTask') || 'Open issue')}</button>`,
+    );
     marker.on('click', () => { selectedTaskId.value = task.id; });
     markers.set(task.id, marker);
   }

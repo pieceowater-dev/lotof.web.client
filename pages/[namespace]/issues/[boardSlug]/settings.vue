@@ -60,14 +60,10 @@ const loading = ref(false);
 const saving = ref(false);
 
 // Menu integration (plan §6.1/§6.2) — gates both the automations manager
-// and which terminal-status "maps_to" values a rule can trigger on.
-const menuIntegrationEnabled = computed(() => {
-  try {
-    return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).menu : false);
-  } catch {
-    return false;
-  }
-});
+// and which columns can have a "maps to order status" value. Reads the
+// live form state (not the persisted board), so flipping the toggle
+// reveals/hides both immediately instead of only after a save+reload.
+const menuIntegrationEnabled = computed(() => form.menuIntegration && menuAppInstalled.value);
 const automationTriggerOptions = computed<{ value: string; label: string }[]>(() => {
   try {
     const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
@@ -501,7 +497,8 @@ onMounted(load);
             </UCard>
           </template>
 
-          <UCard v-else-if="activeTab === 'columns'" :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+          <template v-else-if="activeTab === 'columns'">
+          <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
             <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
               <UIcon name="lucide:columns-3" class="w-3.5 h-3.5" />
               {{ t('tasks.statuses') || 'Kanban columns' }}
@@ -557,6 +554,19 @@ onMounted(load);
             </div>
           </UCard>
 
+          <UCard v-if="menuIntegrationEnabled" :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <div class="flex items-start justify-between gap-3">
+              <span>
+                <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:zap" class="w-4 h-4 text-gray-400" />{{ t('tasks.automations') || 'Automations' }}</span>
+                <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue enters a mapped column.' }}</span>
+              </span>
+              <UButton icon="lucide:zap" size="2xs" color="gray" variant="soft" class="flex-shrink-0" @click="isAutomationsOpen = true">
+                {{ t('tasks.manageAutomations') || 'Manage' }}
+              </UButton>
+            </div>
+          </UCard>
+          </template>
+
           <template v-else-if="activeTab === 'integrations'">
             <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
               <label class="flex items-start gap-3 cursor-pointer" :class="!menuAppInstalled && 'opacity-50'">
@@ -569,18 +579,6 @@ onMounted(load);
               <p v-if="!menuAppInstalled" class="text-xs text-gray-400 mt-2">
                 {{ t('tasks.menuNotInstalled') || 'lota Orders is not installed in this namespace' }}
               </p>
-            </UCard>
-
-            <UCard v-if="menuIntegrationEnabled" :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
-              <div class="flex items-start justify-between gap-3">
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:zap" class="w-4 h-4 text-gray-400" />{{ t('tasks.automations') || 'Automations' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue reaches a final column.' }}</span>
-                </span>
-                <UButton icon="lucide:zap" size="2xs" color="gray" variant="soft" class="flex-shrink-0" @click="isAutomationsOpen = true">
-                  {{ t('tasks.manageAutomations') || 'Manage' }}
-                </UButton>
-              </div>
             </UCard>
 
             <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
