@@ -766,10 +766,14 @@ const toast = useToast();
 
 const TARGET_OPTIONS = computed(() => [
   { value: 'home', label: t('admin.deepLinkTargetHome') || 'Главная' },
-  { value: 'pieceowater.atrace', label: 'A-Trace' },
-  { value: 'pieceowater.contacts', label: 'Contacts' },
-  { value: 'pieceowater.menu', label: 'Orders' },
-  { value: 'pieceowater.issues', label: 'Issues' },
+  { value: 'pieceowater.atrace', label: 'A-Trace (в приложение)' },
+  { value: 'pieceowater.contacts', label: 'Contacts (в приложение)' },
+  { value: 'pieceowater.menu', label: 'Orders (в приложение)' },
+  { value: 'pieceowater.issues', label: 'Issues (в приложение)' },
+  { value: 'landing:atrace', label: 'A-Trace (лендинг)' },
+  { value: 'landing:contacts', label: 'Contacts (лендинг)' },
+  { value: 'landing:menu', label: 'Orders (лендинг)' },
+  { value: 'landing:issues', label: 'Issues (лендинг)' },
 ]);
 
 const deepLinkCategories = ref<AdminDeepLinkCategory[]>([]);

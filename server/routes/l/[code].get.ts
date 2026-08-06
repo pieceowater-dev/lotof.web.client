@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '../../../utils/api-base';
+import { ALL_APPS } from '../../../config/apps';
 
 type ResolveDeepLinkResponse = {
   data?: {
@@ -76,6 +77,20 @@ export default defineEventHandler(async (event) => {
     sameSite: 'lax',
     httpOnly: false, // read by client-side login() to carry through the OAuth redirect
   });
+
+  // A "landing:<address>" target sends anonymous traffic straight to that
+  // app's public marketing page (/atrace, /issues, ...) -- no auth, no
+  // target_app cookie, since there's no app to auto-enter yet. This is
+  // distinct from a bare app bundle target below, which assumes the visitor
+  // will log in and land inside the product itself.
+  if (target.startsWith('landing:')) {
+    const address = target.slice('landing:'.length);
+    const app = ALL_APPS.find((a) => a.address === address);
+    if (app) {
+      return sendRedirect(event, `/${app.address}?ref=${encodeURIComponent(code)}`, 307);
+    }
+    return sendRedirect(event, `/?ref=${encodeURIComponent(code)}`, 307);
+  }
 
   // A product target (vs. "home"/empty) means the visitor should land in
   // that app -- since every product route requires a logged-in namespace,
