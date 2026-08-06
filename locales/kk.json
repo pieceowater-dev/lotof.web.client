@@ -1156,7 +1156,7 @@
     "guideIcon": "Иконка",
     "guideSortOrder": "Сұрыптау реті",
     "guideActive": "Белсенді",
-    "guideCategoryValidation": "Slug пен орыс тіліндегі атауын енгізіңіз",
+    "guideCategoryValidation": "Орыс тіліндегі атауын енгізіңіз",
     "guideDeleteCategory": "Санатты жою",
     "guideDeleteCategoryConfirm": "Санат жойылады. Оның ішінде мақалалар мен ішкі санаттар жоқ екеніне көз жеткізіңіз.",
     "guideDeleteArticle": "Мақаланы жою",
@@ -1170,7 +1170,7 @@
     "guideExcerpt": "Қысқаша сипаттама",
     "guideContent": "Мазмұны",
     "guideIsFaq": "Жиі қойылатын сұрақтарда көрсету",
-    "guideArticleValidation": "Slug пен орыс тіліндегі тақырыбын енгізіңіз",
+    "guideArticleValidation": "Орыс тіліндегі тақырыбын енгізіңіз",
     "editor": {
       "settings": "Жариялау",
       "seoTab": "SEO",

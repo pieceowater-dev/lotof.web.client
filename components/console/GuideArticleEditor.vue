@@ -41,10 +41,6 @@
             />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">Slug</label>
-            <UInput :model-value="form.slug" placeholder="how-to-create-order" @update:model-value="onSlugManualEdit" />
-          </div>
-          <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
             <UInput v-model.number="form.sortOrder" type="number" />
           </div>
@@ -141,7 +137,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
-import { slugify } from '@/utils/slug';
+import { slugFromNames } from '@/utils/slug';
 import type { GuideApp, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import type { GuideArticleInput } from '@/api/guide/admin';
 import { consoleListGuideCategories } from '@/api/guide/admin';
@@ -213,24 +209,15 @@ function onAppChange() {
   loadCategories();
 }
 
-// Auto-generate the slug from the English title, unless the user has typed
-// into the slug field directly -- mirrors the category form's behavior.
-const slugManuallyEdited = ref(Boolean(props.initialArticle?.slug));
-
-function onSlugManualEdit(value: string) {
-  slugManuallyEdited.value = true;
-  form.slug = slugify(value);
-}
-
-watch(() => form.titleEn, (titleEn) => {
-  if (slugManuallyEdited.value) return;
-  form.slug = slugify(titleEn || '');
+// Slug is never shown or typed directly -- always derived from the English
+// title, falling back to a transliterated Russian title.
+watch([() => form.titleEn, () => form.titleRu], ([titleEn, titleRu]) => {
+  form.slug = slugFromNames(titleEn || '', titleRu || '');
 });
 
 watch(() => props.initialArticle, (next) => {
   if (!next) return;
   Object.assign(form, next);
-  slugManuallyEdited.value = Boolean(next.slug);
   loadCategories();
 }, { deep: true });
 

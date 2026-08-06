@@ -81,7 +81,6 @@
               <Icon v-if="row.depth > 0" name="lucide:corner-down-right" class="h-3.5 w-3.5 flex-shrink-0 text-slate-300 dark:text-slate-700" />
               <Icon :name="row.category.icon || 'lucide:book-open'" class="h-4 w-4 flex-shrink-0 text-slate-400" />
               <span class="truncate text-sm font-medium text-slate-900 dark:text-white">{{ row.category.nameRu || row.category.slug }}</span>
-              <span class="text-xs text-slate-400 truncate">/{{ row.category.slug }}</span>
               <span v-if="!row.category.isActive" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">
                 {{ t('admin.guideInactive') }}
               </span>
@@ -162,7 +161,6 @@
                   {{ article.status === 'PUBLISHED' ? t('admin.guidePublished') : t('admin.guideDraft') }}
                 </span>
               </div>
-              <div class="text-xs text-slate-400 truncate">/{{ article.slug }}</div>
             </div>
             <div class="flex items-center gap-1 flex-shrink-0" @click.stop>
               <UButton size="xs" variant="ghost" icon="lucide:pencil" @click="editArticle(article.id)" />
@@ -198,10 +196,6 @@
             <UInput v-model="categoryForm.nameEn" />
           </div>
         </div>
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-500">Slug</label>
-          <UInput :model-value="categoryForm.slug" placeholder="getting-started" @update:model-value="onSlugManualEdit" />
-        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideIcon') }}</label>
@@ -230,7 +224,7 @@ import { useRouter } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useConfirm } from '@/composables/useConfirm';
-import { slugify } from '@/utils/slug';
+import { slugFromNames } from '@/utils/slug';
 import GuideIconPicker from '@/components/guide/GuideIconPicker.vue';
 import type { GuideApp, GuideArticleListItem, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import {
@@ -321,7 +315,6 @@ const categoryModalOpen = ref(false);
 const categorySaving = ref(false);
 const editingCategoryId = ref<string | null>(null);
 const categoryModalTitle = computed(() => (editingCategoryId.value ? t('admin.guideEditCategory') : t('admin.guideAddCategory')));
-const categorySlugManuallyEdited = ref(false);
 
 const categoryForm = reactive({
   parentId: '',
@@ -334,14 +327,10 @@ const categoryForm = reactive({
   isActive: true,
 });
 
-function onSlugManualEdit(value: string) {
-  categorySlugManuallyEdited.value = true;
-  categoryForm.slug = slugify(value);
-}
-
-watch(() => categoryForm.nameEn, (nameEn) => {
-  if (categorySlugManuallyEdited.value) return;
-  categoryForm.slug = slugify(nameEn);
+// Slug is never shown or typed directly -- always derived from the English
+// name, falling back to a transliterated Russian name.
+watch([() => categoryForm.nameEn, () => categoryForm.nameRu], ([nameEn, nameRu]) => {
+  categoryForm.slug = slugFromNames(nameEn, nameRu);
 });
 
 function resetCategoryForm() {
@@ -357,14 +346,12 @@ function resetCategoryForm() {
 
 function openCreateCategory() {
   editingCategoryId.value = null;
-  categorySlugManuallyEdited.value = false;
   resetCategoryForm();
   categoryModalOpen.value = true;
 }
 
 function openEditCategory(category: GuideCategory) {
   editingCategoryId.value = category.id;
-  categorySlugManuallyEdited.value = true;
   categoryForm.parentId = category.parentId || '';
   categoryForm.slug = category.slug;
   categoryForm.nameRu = category.nameRu;
