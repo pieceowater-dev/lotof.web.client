@@ -38,7 +38,6 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
-import { ALL_APPS } from '@/config/apps';
 import { guideAppFromParam } from '@/composables/useGuideContext';
 import { guideListArticles, guideListCategories } from '@/api/guide/public';
 import type { GuideArticleListItem, GuideCategory } from '@/api/guide/public';

@@ -151,7 +151,7 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useOnboarding } from '@/composables/useOnboarding';
-import { GUIDE_APP_BY_ID, GUIDE_APP_IDS, useGuideContext, type GuideAppId } from '@/composables/useGuideContext';
+import { GUIDE_APP_BY_ID, GUIDE_APP_IDS, useGuideContext } from '@/composables/useGuideContext';
 import { ALL_APPS } from '@/config/apps';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { guideGetArticleBySlug, guideListArticles, guideListCategories } from '@/api/guide/public';
