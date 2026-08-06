@@ -12,7 +12,6 @@ import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { normalizePhoneForStorage } from '@/utils/phone';
 import { listTags } from '@/api/contacts/tags';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
-import TourGuide from '@/components/TourGuide.vue';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import SegmentsModal from '@/components/contacts/SegmentsModal.vue';
@@ -553,8 +552,6 @@ async function handleRefreshFromRemote() {
 </script>
 
 <template>
-  <TourGuide />
-
   <div class="flex flex-col">
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div class="text-left" data-tour="contacts-title">

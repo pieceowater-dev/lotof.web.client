@@ -2,7 +2,6 @@
 import CreatePostModal from '@/components/atrace/CreatePostModal.vue';
 import EditPostModal from '@/components/atrace/EditPostModal.vue';
 import FilterModal from '@/components/atrace/FilterModal.vue';
-import TourGuide from '@/components/TourGuide.vue';
 import AtraceTabsBar from '@/components/atrace/AtraceTabsBar.vue';
 import RouteStatsCard from '@/components/atrace/RouteStatsCard.vue';
 import RouteEmployeeProgress from '@/components/atrace/RouteEmployeeProgress.vue';
@@ -185,8 +184,6 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <TourGuide />
-
   <FilterModal v-model="isFilterOpen" />
 
   <div class="flex flex-col">

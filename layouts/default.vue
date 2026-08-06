@@ -4,5 +4,6 @@
     <main class="main-scroll flex-1 min-h-0 overflow-auto w-full pt-20 pb-safe-or-4">
       <slot />
     </main>
+    <TourGuide />
   </div>
 </template>

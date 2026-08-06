@@ -18,7 +18,6 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
 import { subscribeOrderChanged } from '@/api/menu/subscriptions';
-import TourGuide from '@/components/TourGuide.vue';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { menuTour } from '@/config/tours';
 
@@ -825,8 +824,6 @@ async function handleCreateOrder(payload: any) {
 </script>
 
 <template>
-  <TourGuide />
-
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left" data-tour="menu-title">

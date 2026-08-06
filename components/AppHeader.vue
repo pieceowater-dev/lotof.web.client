@@ -3,10 +3,9 @@ import { useRouter, useRoute } from 'vue-router';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
-import { useOnboarding } from '@/composables/useOnboarding';
-import { atraceTour, contactsTour, menuTour, issuesTour } from '@/config/tours';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
+import GuideWidget from '@/components/guide/GuideWidget.vue';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -48,13 +47,6 @@ onMounted(() => {
   isWalter.value = Math.random() < 1 / 21;
 });
 const homeText = computed(() => isWalter.value ? 'Домой, Уолтер' : t('app.home'));
-const isAtraceRoute = computed(() => route.path.includes('/atrace'));
-const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
-// Matches only the orders index page (/{ns}/menu), not /menu/settings or /menu/plans.
-const isMenuRoute = computed(() => /^\/[^/]+\/menu\/?$/.test(route.path));
-// Matches only a board page (/{ns}/issues/{boardSlug}), not the reserved
-// top-level slugs (boards list, plans, settings, zen) or board sub-pages.
-const isIssuesRoute = computed(() => /^\/[^/]+\/issues\/(?!plans$|settings$|zen$)[^/]+\/?$/.test(route.path));
 // Fixed order everywhere (see config/apps.ts) -- matches the home
 // dashboard's tile order exactly, regardless of what's installed.
 const navApps = computed(() => ALL_APPS);
@@ -72,35 +64,13 @@ const desktopHelpMeasureRef = ref<HTMLElement | null>(null);
 let headerResizeObserver: ResizeObserver | null = null;
 let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 
-// Onboarding
-const { startTour, reset } = useOnboarding();
-const showHelpButton = computed(() => {
-  return isAtraceRoute.value || isContactsListRoute.value || isMenuRoute.value || isIssuesRoute.value;
-});
+// Гид -- единая кнопка на всех страницах, открывает GuideWidget (тур
+// запускается изнутри виджета, а не напрямую по клику на кнопку).
+const showHelpButton = computed(() => true);
+const isGuideOpen = ref(false);
 
 function handleHelpClick() {
-  if (isAtraceRoute.value) {
-    reset(atraceTour.id);
-    startTour(atraceTour, 0);
-    return;
-  }
-
-  if (isContactsListRoute.value) {
-    reset(contactsTour.id);
-    startTour(contactsTour, 0);
-    return;
-  }
-
-  if (isMenuRoute.value) {
-    reset(menuTour.id);
-    startTour(menuTour, 0);
-    return;
-  }
-
-  if (isIssuesRoute.value) {
-    reset(issuesTour.id);
-    startTour(issuesTour, 0);
-  }
+  isGuideOpen.value = true;
 }
 
 function handleHomeClick() {
@@ -280,8 +250,8 @@ const goHome = () => {
           data-tour="help-button"
           variant="ghost"
           size="sm"
-          :aria-label="t('app.startTour') || 'Start interactive tutorial'"
-          :title="t('app.startTour') || 'Start interactive tutorial'"
+          :aria-label="t('guide.openGuide') || 'Open lota Гид'"
+          :title="t('guide.openGuide') || 'Open lota Гид'"
           @click="handleHelpClick"
         >
           <UIcon name="i-lucide-life-buoy" />
@@ -297,8 +267,8 @@ const goHome = () => {
           data-tour="help-button"
           variant="ghost"
           size="sm"
-          :aria-label="t('app.startTour') || 'Start interactive tutorial'"
-          :title="t('app.startTour') || 'Start interactive tutorial'"
+          :aria-label="t('guide.openGuide') || 'Open lota Гид'"
+          :title="t('guide.openGuide') || 'Open lota Гид'"
           @click="handleHelpClick"
         >
           <UIcon name="i-lucide-life-buoy" />
@@ -449,4 +419,6 @@ const goHome = () => {
       </div>
     </div>
   </UModal>
+
+  <GuideWidget v-model="isGuideOpen" />
 </template>

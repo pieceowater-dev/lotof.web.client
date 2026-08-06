@@ -38,65 +38,80 @@
           {{ t('admin.modules') }}
         </h2>
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <!-- Analytics Module -->
+          <!-- Guide Module -- visible to Owner/Admin and the restricted
+               Editor ("marketer") role alike -->
           <AdminModuleCard
-            :title="t('admin.analytics')"
-            :description="t('admin.analyticsDesc')"
-            icon="lucide:bar-chart-2"
+            :title="t('admin.guide')"
+            :description="t('admin.guideDesc')"
+            icon="lucide:book-open"
             status="active"
-            href="/console/analytics"
+            href="/console/guide"
             bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-blue-100 dark:bg-blue-900/30"
-            icon-color="text-blue-600 dark:text-blue-400"
+            icon-bg="bg-sky-100 dark:bg-sky-900/30"
+            icon-color="text-sky-600 dark:text-sky-400"
           />
 
-          <!-- Billing Module -->
-          <AdminModuleCard
-            :title="t('admin.billing')"
-            :description="t('admin.billingDesc')"
-            icon="lucide:credit-card"
-            status="active"
-            href="/console/billing"
-            bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-emerald-100 dark:bg-emerald-900/30"
-            icon-color="text-emerald-600 dark:text-emerald-400"
-          />
+          <template v-if="isFullConsoleAdmin">
+            <!-- Analytics Module -->
+            <AdminModuleCard
+              :title="t('admin.analytics')"
+              :description="t('admin.analyticsDesc')"
+              icon="lucide:bar-chart-2"
+              status="active"
+              href="/console/analytics"
+              bg-gradient="bg-white dark:bg-slate-900"
+              icon-bg="bg-blue-100 dark:bg-blue-900/30"
+              icon-color="text-blue-600 dark:text-blue-400"
+            />
 
-          <!-- Publications Module -->
-          <AdminModuleCard
-            :title="t('admin.publications')"
-            :description="t('admin.publicationsDesc')"
-            icon="lucide:newspaper"
-            status="active"
-            href="/console/publications"
-            bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-orange-100 dark:bg-orange-900/30"
-            icon-color="text-orange-600 dark:text-orange-400"
-          />
+            <!-- Billing Module -->
+            <AdminModuleCard
+              :title="t('admin.billing')"
+              :description="t('admin.billingDesc')"
+              icon="lucide:credit-card"
+              status="active"
+              href="/console/billing"
+              bg-gradient="bg-white dark:bg-slate-900"
+              icon-bg="bg-emerald-100 dark:bg-emerald-900/30"
+              icon-color="text-emerald-600 dark:text-emerald-400"
+            />
 
-          <!-- Namespaces Module -->
-          <AdminModuleCard
-            :title="t('admin.namespaces')"
-            :description="t('admin.namespacesDesc')"
-            icon="lucide:building-2"
-            status="active"
-            href="/console/namespaces"
-            bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-purple-100 dark:bg-purple-900/30"
-            icon-color="text-purple-600 dark:text-purple-400"
-          />
+            <!-- Publications Module -->
+            <AdminModuleCard
+              :title="t('admin.publications')"
+              :description="t('admin.publicationsDesc')"
+              icon="lucide:newspaper"
+              status="active"
+              href="/console/publications"
+              bg-gradient="bg-white dark:bg-slate-900"
+              icon-bg="bg-orange-100 dark:bg-orange-900/30"
+              icon-color="text-orange-600 dark:text-orange-400"
+            />
 
-          <!-- Team Module -->
-          <AdminModuleCard
-            :title="t('admin.team')"
-            :description="t('admin.teamDesc')"
-            icon="lucide:users"
-            status="active"
-            href="/console/people"
-            bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-rose-100 dark:bg-rose-900/30"
-            icon-color="text-rose-600 dark:text-rose-400"
-          />
+            <!-- Namespaces Module -->
+            <AdminModuleCard
+              :title="t('admin.namespaces')"
+              :description="t('admin.namespacesDesc')"
+              icon="lucide:building-2"
+              status="active"
+              href="/console/namespaces"
+              bg-gradient="bg-white dark:bg-slate-900"
+              icon-bg="bg-purple-100 dark:bg-purple-900/30"
+              icon-color="text-purple-600 dark:text-purple-400"
+            />
+
+            <!-- Team Module -->
+            <AdminModuleCard
+              :title="t('admin.team')"
+              :description="t('admin.teamDesc')"
+              icon="lucide:users"
+              status="active"
+              href="/console/people"
+              bg-gradient="bg-white dark:bg-slate-900"
+              icon-bg="bg-rose-100 dark:bg-rose-900/30"
+              icon-color="text-rose-600 dark:text-rose-400"
+            />
+          </template>
         </div>
       </div>
     </div>
@@ -104,20 +119,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import { useConsoleAccess } from '@/composables/useConsoleAccess';
 
 definePageMeta({
-  middleware: 'admin',
+  middleware: 'console-access',
 });
 
 const { t } = useI18n();
 useHead({ title: 'Консоль' });
-const { user } = useAuth();
+const { user, isLoggedIn, token } = useAuth();
 
 const username = computed(() => user.value?.username || 'Admin');
 const userEmail = computed(() => user.value?.email || 'unknown@lota.tools');
+
+const { isFullConsoleAdmin, refreshConsoleAccess } = useConsoleAccess();
+watch(
+  () => [isLoggedIn.value, user.value?.id, token.value],
+  () => refreshConsoleAccess(),
+  { immediate: true },
+);
 </script>
 
 <style scoped>

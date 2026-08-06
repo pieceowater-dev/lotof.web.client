@@ -11,7 +11,6 @@ import { usePwaInstall } from '@/composables/usePwaInstall';
 import { stripMarkdownPreview } from '@/utils/renderMarkdown';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { issuesTour } from '@/config/tours';
-import TourGuide from '@/components/TourGuide.vue';
 import TaskModal from '@/components/tasks/TaskModal.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
@@ -655,7 +654,6 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
 </script>
 
 <template>
-  <TourGuide />
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="flex items-center gap-2 min-w-0">
