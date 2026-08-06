@@ -18,27 +18,42 @@
       </div>
     </div>
 
-    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-8">
-      <div class="flex flex-wrap items-center gap-2">
-        <UButton
-          v-for="app in APPS"
-          :key="app"
-          size="sm"
-          :variant="selectedApp === app ? 'solid' : 'soft'"
-          :color="selectedApp === app ? 'primary' : 'gray'"
-          @click="selectedApp = app"
-        >
-          {{ appLabel(app) }}
-        </UButton>
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-10 space-y-6">
+      <div>
+        <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+          {{ t('admin.guideProduct') }}
+        </label>
+        <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+          {{ t('admin.guideProductHint') }}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          <UButton
+            v-for="app in APPS"
+            :key="app"
+            size="sm"
+            :variant="selectedApp === app ? 'solid' : 'soft'"
+            :color="selectedApp === app ? 'primary' : 'gray'"
+            @click="selectedApp = app"
+          >
+            {{ appLabel(app) }}
+          </UButton>
+        </div>
       </div>
 
+      <UTabs v-model="selectedSection" :items="sections" />
+
       <!-- Categories -->
-      <UCard>
+      <UCard v-if="selectedSection === 0">
         <template #header>
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
-              {{ t('admin.guideCategories') }}
-            </h2>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                {{ t('admin.guideCategories') }}
+              </h2>
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {{ t('admin.guideCategoriesHint') }}
+              </p>
+            </div>
             <UButton size="sm" icon="lucide:plus" @click="openCreateCategory">
               {{ t('admin.guideAddCategory') }}
             </UButton>
@@ -48,8 +63,12 @@
         <div v-if="categoriesLoading" class="py-6 text-sm text-slate-500">
           {{ t('app.loading') }}
         </div>
-        <div v-else-if="!orderedCategories.length" class="py-6 text-sm text-slate-500">
-          {{ t('admin.guideNoCategories') }}
+        <div v-else-if="!orderedCategories.length" class="py-10 text-center">
+          <UIcon name="lucide:folder-tree" class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-700" />
+          <p class="text-sm text-slate-500">{{ t('admin.guideNoCategories') }}</p>
+          <UButton class="mt-3" size="sm" variant="soft" icon="lucide:plus" @click="openCreateCategory">
+            {{ t('admin.guideAddCategory') }}
+          </UButton>
         </div>
         <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
           <div
@@ -59,7 +78,8 @@
             :style="{ paddingLeft: `${row.depth * 1.5}rem` }"
           >
             <div class="flex items-center gap-2 min-w-0">
-              <Icon v-if="row.category.icon" :name="row.category.icon" class="h-4 w-4 flex-shrink-0 text-slate-400" />
+              <Icon v-if="row.depth > 0" name="lucide:corner-down-right" class="h-3.5 w-3.5 flex-shrink-0 text-slate-300 dark:text-slate-700" />
+              <Icon :name="row.category.icon || 'lucide:book-open'" class="h-4 w-4 flex-shrink-0 text-slate-400" />
               <span class="truncate text-sm font-medium text-slate-900 dark:text-white">{{ row.category.nameRu || row.category.slug }}</span>
               <span class="text-xs text-slate-400 truncate">/{{ row.category.slug }}</span>
               <span v-if="!row.category.isActive" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">
@@ -75,12 +95,17 @@
       </UCard>
 
       <!-- Articles -->
-      <UCard>
+      <UCard v-if="selectedSection === 1">
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
-              {{ t('admin.guideArticles') }}
-            </h2>
+            <div>
+              <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                {{ t('admin.guideArticles') }}
+              </h2>
+              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                {{ t('admin.guideArticlesHint') }}
+              </p>
+            </div>
             <UButton size="sm" icon="lucide:plus" @click="goToNewArticle">
               {{ t('admin.guideAddArticle') }}
             </UButton>
@@ -110,14 +135,19 @@
         <div v-if="articlesLoading" class="py-6 text-sm text-slate-500">
           {{ t('app.loading') }}
         </div>
-        <div v-else-if="!articles.length" class="py-6 text-sm text-slate-500">
-          {{ t('admin.guideNoArticles') }}
+        <div v-else-if="!articles.length" class="py-10 text-center">
+          <UIcon name="lucide:file-text" class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-700" />
+          <p class="text-sm text-slate-500">{{ t('admin.guideNoArticles') }}</p>
+          <UButton class="mt-3" size="sm" variant="soft" icon="lucide:plus" @click="goToNewArticle">
+            {{ t('admin.guideAddArticle') }}
+          </UButton>
         </div>
         <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
           <div
             v-for="article in articles"
             :key="article.id"
-            class="flex items-center justify-between py-3 gap-3"
+            class="flex items-center justify-between py-3 gap-3 cursor-pointer"
+            @click="editArticle(article.id)"
           >
             <div class="min-w-0">
               <div class="flex items-center gap-2">
@@ -134,7 +164,7 @@
               </div>
               <div class="text-xs text-slate-400 truncate">/{{ article.slug }}</div>
             </div>
-            <div class="flex items-center gap-1 flex-shrink-0">
+            <div class="flex items-center gap-1 flex-shrink-0" @click.stop>
               <UButton size="xs" variant="ghost" icon="lucide:pencil" @click="editArticle(article.id)" />
               <UButton size="xs" variant="ghost" color="red" icon="lucide:trash-2" @click="confirmDeleteArticle(article)" />
             </div>
@@ -154,10 +184,6 @@
             option-attribute="label"
           />
         </div>
-        <div>
-          <label class="mb-1 block text-xs font-medium text-slate-500">Slug</label>
-          <UInput v-model="categoryForm.slug" placeholder="getting-started" />
-        </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">Название (RU)</label>
@@ -172,10 +198,14 @@
             <UInput v-model="categoryForm.nameEn" />
           </div>
         </div>
+        <div>
+          <label class="mb-1 block text-xs font-medium text-slate-500">Slug</label>
+          <UInput :model-value="categoryForm.slug" placeholder="getting-started" @update:model-value="onSlugManualEdit" />
+        </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideIcon') }}</label>
-            <UInput v-model="categoryForm.icon" placeholder="lucide:book-open" />
+            <GuideIconPicker v-model="categoryForm.icon" />
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
@@ -200,6 +230,8 @@ import { useRouter } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useConfirm } from '@/composables/useConfirm';
+import { slugify } from '@/utils/slug';
+import GuideIconPicker from '@/components/guide/GuideIconPicker.vue';
 import type { GuideApp, GuideArticleListItem, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import {
   consoleListGuideArticles,
@@ -222,6 +254,12 @@ const { token } = useAuth();
 
 const APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE'];
 const selectedApp = ref<GuideApp>('GLOBAL');
+
+const selectedSection = ref(0);
+const sections = computed(() => [
+  { label: t('admin.guideCategories'), icon: 'lucide:folder-tree' },
+  { label: t('admin.guideArticles'), icon: 'lucide:file-text' },
+]);
 
 function appLabel(app: GuideApp): string {
   switch (app) {
@@ -283,6 +321,7 @@ const categoryModalOpen = ref(false);
 const categorySaving = ref(false);
 const editingCategoryId = ref<string | null>(null);
 const categoryModalTitle = computed(() => (editingCategoryId.value ? t('admin.guideEditCategory') : t('admin.guideAddCategory')));
+const categorySlugManuallyEdited = ref(false);
 
 const categoryForm = reactive({
   parentId: '',
@@ -293,6 +332,16 @@ const categoryForm = reactive({
   icon: '',
   sortOrder: 0,
   isActive: true,
+});
+
+function onSlugManualEdit(value: string) {
+  categorySlugManuallyEdited.value = true;
+  categoryForm.slug = slugify(value);
+}
+
+watch(() => categoryForm.nameEn, (nameEn) => {
+  if (categorySlugManuallyEdited.value) return;
+  categoryForm.slug = slugify(nameEn);
 });
 
 function resetCategoryForm() {
@@ -308,12 +357,14 @@ function resetCategoryForm() {
 
 function openCreateCategory() {
   editingCategoryId.value = null;
+  categorySlugManuallyEdited.value = false;
   resetCategoryForm();
   categoryModalOpen.value = true;
 }
 
 function openEditCategory(category: GuideCategory) {
   editingCategoryId.value = category.id;
+  categorySlugManuallyEdited.value = true;
   categoryForm.parentId = category.parentId || '';
   categoryForm.slug = category.slug;
   categoryForm.nameRu = category.nameRu;

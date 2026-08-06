@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
+import GuideArticleEditor from '@/components/console/GuideArticleEditor.vue';
 import type { GuideApp } from '@/api/guide/public';
 import { guideCreateArticle, type GuideArticleInput } from '@/api/guide/admin';
 

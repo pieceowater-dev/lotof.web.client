@@ -42,7 +42,7 @@
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">Slug</label>
-            <UInput v-model="form.slug" placeholder="how-to-create-order" />
+            <UInput :model-value="form.slug" placeholder="how-to-create-order" @update:model-value="onSlugManualEdit" />
           </div>
           <div>
             <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
@@ -72,23 +72,63 @@
           </UButton>
         </div>
 
-        <div v-for="locale in LOCALES" v-show="activeLocale === locale.code" :key="locale.code" class="space-y-4">
+        <div v-show="activeLocale === 'Ru'" class="space-y-4">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} ({{ locale.label }})</label>
-            <UInput v-model="form[`title${locale.suffix}` as 'titleRu']" />
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Русский)</label>
+            <UInput v-model="form.titleRu" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} ({{ locale.label }})</label>
-            <UTextarea v-model="form[`excerpt${locale.suffix}` as 'excerptRu']" :rows="2" />
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Русский)</label>
+            <UTextarea v-model="form.excerptRu" :rows="2" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} ({{ locale.label }}, Markdown)</label>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Русский, Markdown)</label>
             <div
               v-if="preview"
               class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
-              v-html="renderedContent(locale.suffix)"
+              v-html="renderMarkdownSafe(form.contentRu || '')"
             />
-            <UTextarea v-else v-model="form[`content${locale.suffix}` as 'contentRu']" :rows="16" class="font-mono text-sm" />
+            <UTextarea v-else v-model="form.contentRu" :rows="16" class="font-mono text-sm" />
+          </div>
+        </div>
+
+        <div v-show="activeLocale === 'Kk'" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Қазақша)</label>
+            <UInput v-model="form.titleKk" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Қазақша)</label>
+            <UTextarea v-model="form.excerptKk" :rows="2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Қазақша, Markdown)</label>
+            <div
+              v-if="preview"
+              class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
+              v-html="renderMarkdownSafe(form.contentKk || '')"
+            />
+            <UTextarea v-else v-model="form.contentKk" :rows="16" class="font-mono text-sm" />
+          </div>
+        </div>
+
+        <div v-show="activeLocale === 'En'" class="space-y-4">
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (English)</label>
+            <UInput v-model="form.titleEn" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (English)</label>
+            <UTextarea v-model="form.excerptEn" :rows="2" />
+          </div>
+          <div>
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (English, Markdown)</label>
+            <div
+              v-if="preview"
+              class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
+              v-html="renderMarkdownSafe(form.contentEn || '')"
+            />
+            <UTextarea v-else v-model="form.contentEn" :rows="16" class="font-mono text-sm" />
           </div>
         </div>
       </UCard>
@@ -101,6 +141,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
+import { slugify } from '@/utils/slug';
 import type { GuideApp, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import type { GuideArticleInput } from '@/api/guide/admin';
 import { consoleListGuideCategories } from '@/api/guide/admin';
@@ -120,10 +161,10 @@ const saving = ref(false);
 const preview = ref(false);
 const activeLocale = ref<'Ru' | 'Kk' | 'En'>('Ru');
 
-const LOCALES: Array<{ code: 'Ru' | 'Kk' | 'En'; suffix: 'Ru' | 'Kk' | 'En'; label: string }> = [
-  { code: 'Ru', suffix: 'Ru', label: 'Русский' },
-  { code: 'Kk', suffix: 'Kk', label: 'Қазақша' },
-  { code: 'En', suffix: 'En', label: 'English' },
+const LOCALES: Array<{ code: 'Ru' | 'Kk' | 'En'; label: string }> = [
+  { code: 'Ru', label: 'Русский' },
+  { code: 'Kk', label: 'Қазақша' },
+  { code: 'En', label: 'English' },
 ];
 
 const appOptions: Array<{ value: GuideApp; label: string }> = [
@@ -172,18 +213,28 @@ function onAppChange() {
   loadCategories();
 }
 
+// Auto-generate the slug from the English title, unless the user has typed
+// into the slug field directly -- mirrors the category form's behavior.
+const slugManuallyEdited = ref(Boolean(props.initialArticle?.slug));
+
+function onSlugManualEdit(value: string) {
+  slugManuallyEdited.value = true;
+  form.slug = slugify(value);
+}
+
+watch(() => form.titleEn, (titleEn) => {
+  if (slugManuallyEdited.value) return;
+  form.slug = slugify(titleEn || '');
+});
+
 watch(() => props.initialArticle, (next) => {
   if (!next) return;
   Object.assign(form, next);
+  slugManuallyEdited.value = Boolean(next.slug);
   loadCategories();
 }, { deep: true });
 
 loadCategories();
-
-function renderedContent(suffix: 'Ru' | 'Kk' | 'En'): string {
-  const key = `content${suffix}` as 'contentRu';
-  return renderMarkdownSafe(String(form[key] || ''));
-}
 
 async function handleSave(status: GuideArticleStatus) {
   if (!form.slug.trim() || !form.titleRu.trim()) {

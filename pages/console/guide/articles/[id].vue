@@ -20,6 +20,7 @@
 import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
+import GuideArticleEditor from '@/components/console/GuideArticleEditor.vue';
 import { consoleGetGuideArticle, guideDeleteArticle, guideUpdateArticle, type GuideArticleInput } from '@/api/guide/admin';
 
 definePageMeta({ middleware: 'console-access' });

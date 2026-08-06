@@ -38,19 +38,6 @@
           {{ t('admin.modules') }}
         </h2>
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <!-- Guide Module -- visible to Owner/Admin and the restricted
-               Editor ("marketer") role alike -->
-          <AdminModuleCard
-            :title="t('admin.guide')"
-            :description="t('admin.guideDesc')"
-            icon="lucide:book-open"
-            status="active"
-            href="/console/guide"
-            bg-gradient="bg-white dark:bg-slate-900"
-            icon-bg="bg-sky-100 dark:bg-sky-900/30"
-            icon-color="text-sky-600 dark:text-sky-400"
-          />
-
           <template v-if="isFullConsoleAdmin">
             <!-- Analytics Module -->
             <AdminModuleCard
@@ -99,7 +86,24 @@
               icon-bg="bg-purple-100 dark:bg-purple-900/30"
               icon-color="text-purple-600 dark:text-purple-400"
             />
+          </template>
 
+          <!-- Guide Module -- visible to Owner/Admin and the restricted
+               Editor ("marketer") role alike. Kept second-to-last so it
+               still shows up front for Editor (the only card that role
+               ever sees) while sitting just before Team for full admins. -->
+          <AdminModuleCard
+            :title="t('admin.guide')"
+            :description="t('admin.guideDesc')"
+            icon="lucide:book-open"
+            status="active"
+            href="/console/guide"
+            bg-gradient="bg-white dark:bg-slate-900"
+            icon-bg="bg-sky-100 dark:bg-sky-900/30"
+            icon-color="text-sky-600 dark:text-sky-400"
+          />
+
+          <template v-if="isFullConsoleAdmin">
             <!-- Team Module -->
             <AdminModuleCard
               :title="t('admin.team')"

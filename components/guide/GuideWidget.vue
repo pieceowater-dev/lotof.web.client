@@ -3,7 +3,16 @@
     <div class="flex h-full flex-col bg-white dark:bg-gray-900">
       <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
         <div class="flex items-center gap-2">
-          <UIcon name="lucide:life-buoy" class="h-5 w-5 text-primary" />
+          <picture>
+            <source srcset="/assets/logo.webp" type="image/webp">
+            <img
+              src="/assets/logo.png"
+              alt="lota"
+              width="20"
+              height="20"
+              class="h-5 w-5"
+            >
+          </picture>
           <h2 class="text-base font-semibold text-gray-900 dark:text-white">lota {{ t('guide.title') }}</h2>
         </div>
         <UButton variant="ghost" size="sm" icon="lucide:x" :aria-label="t('app.cancel')" @click="isOpen = false" />
