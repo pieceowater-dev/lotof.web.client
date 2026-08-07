@@ -1,7 +1,9 @@
 <template>
   <div
     v-if="phone || whatsapp"
-    class="border-t border-gray-100 bg-gray-50 px-5 py-3 dark:border-gray-800 dark:bg-gray-900/50"
+    :class="variant === 'bar'
+      ? 'border-t border-gray-100 bg-gray-50 px-5 py-3 dark:border-gray-800 dark:bg-gray-900/50'
+      : 'bg-gray-50 px-5 py-4 dark:bg-gray-900/50'"
   >
     <p class="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
       {{ t('guide.stillHaveQuestions') }}
@@ -34,6 +36,8 @@ import { ref, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { capitalGetContactSettings } from '@/api/capital/admin';
+
+withDefaults(defineProps<{ variant?: 'bar' | 'card' }>(), { variant: 'bar' });
 
 const { t } = useI18n();
 const { token } = useAuth();

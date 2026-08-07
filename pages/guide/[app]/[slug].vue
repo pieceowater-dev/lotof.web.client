@@ -6,17 +6,25 @@
     <p class="text-gray-500">{{ t('guide.notFound') }}</p>
     <NuxtLink :to="`/guide/${appParam}`" class="mt-3 inline-block text-primary hover:underline">{{ t('guide.title') }}</NuxtLink>
   </div>
-  <div v-else>
-    <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
-      <NuxtLink :to="`/guide/${appParam}`" class="mb-6 inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">
-        <UIcon name="lucide:arrow-left" class="h-3.5 w-3.5" />
-        {{ resolvedAppLabel }}
-      </NuxtLink>
-      <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">{{ localeTitle }}</h1>
-      <div class="prose prose-sm dark:prose-invert max-w-none" v-html="localeContentHtml" />
-    </article>
-    <div class="mx-auto max-w-2xl px-4 pb-12 sm:px-6 lg:px-8">
-      <GuideContactBar />
+  <div v-else class="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div class="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+      <div class="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+        <NuxtLink :to="`/guide/${appParam}`" class="inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">
+          <UIcon name="lucide:arrow-left" class="h-3.5 w-3.5" />
+          {{ resolvedAppLabel }}
+        </NuxtLink>
+      </div>
+    </div>
+
+    <div class="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <article class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 sm:p-8">
+        <h1 class="mb-5 text-xl font-bold leading-snug text-gray-900 dark:text-white sm:text-2xl">{{ localeTitle }}</h1>
+        <div class="prose prose-sm dark:prose-invert max-w-none sm:prose-base" v-html="localeContentHtml" />
+      </article>
+
+      <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800">
+        <GuideContactBar variant="card" />
+      </div>
     </div>
   </div>
 </template>
@@ -88,5 +96,10 @@ async function load() {
   }
 }
 
-watch([appParam, slug], load, { immediate: true });
+// Awaited at the top level (not via watch immediate) so Nuxt's automatic
+// page-level <Suspense> waits for it during SSR -- otherwise the server
+// sends down the loading skeleton and real content only appears after
+// client hydration fetches it.
+watch([appParam, slug], load);
+await load();
 </script>

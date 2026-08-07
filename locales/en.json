@@ -2166,6 +2166,9 @@
     "openGuideFor": "Guide for",
     "appLanding": "Home page",
     "appGlobal": "General",
+    "homeTagline": "Answers and how-tos for every lota product.",
+    "landingDesc": "What lota is and where to start.",
+    "globalDesc": "Account, plans, billing, and frequently asked questions.",
     "notFound": "Article not found",
     "uncategorized": "Uncategorized"
   },
