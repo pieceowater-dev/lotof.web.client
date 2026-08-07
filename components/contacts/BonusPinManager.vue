@@ -70,32 +70,32 @@ function validatePin(pin: string): boolean {
 
 function validateForm(): boolean {
   if (hasOldPin.value && !formData.value.oldPin.trim()) {
-    formError.value = t('common.error.currentPinRequired');
+    formError.value = t('common.errorDetails.currentPinRequired');
     return false;
   }
 
   if (hasOldPin.value && !validatePin(formData.value.oldPin)) {
-    formError.value = t('common.error.currentPinInvalid');
+    formError.value = t('common.errorDetails.currentPinInvalid');
     return false;
   }
 
   if (!formData.value.newPin.trim()) {
-    formError.value = t('common.error.newPinRequired');
+    formError.value = t('common.errorDetails.newPinRequired');
     return false;
   }
 
   if (!validatePin(formData.value.newPin)) {
-    formError.value = t('common.error.newPinInvalid');
+    formError.value = t('common.errorDetails.newPinInvalid');
     return false;
   }
 
   if (formData.value.newPin !== formData.value.confirmPin) {
-    formError.value = t('common.error.pinsMustMatch');
+    formError.value = t('common.errorDetails.pinsMustMatch');
     return false;
   }
 
   if (hasOldPin.value && formData.value.oldPin === formData.value.newPin) {
-    formError.value = t('common.error.newPinSameAsOld');
+    formError.value = t('common.errorDetails.newPinSameAsOld');
     return false;
   }
 
@@ -125,11 +125,11 @@ async function savePin() {
       emit('success', t('common.pinChanged'));
       closeModal();
     } else {
-      formError.value = result.message || t('common.error.pinChangeFailed');
+      formError.value = result.message || t('common.errorDetails.pinChangeFailed');
       emit('error', formError.value);
     }
   } catch (error: any) {
-    const errorMessage = error?.message || t('common.error.pinChangeFailed');
+    const errorMessage = error?.message || t('common.errorDetails.pinChangeFailed');
     formError.value = errorMessage;
     emit('error', errorMessage);
   } finally {

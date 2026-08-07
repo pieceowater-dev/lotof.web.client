@@ -45,7 +45,7 @@ async function loadSettings() {
     error.value = null;
 
     if (!hubToken.value || !nsSlug.value) {
-      error.value = t('common.error.missingCredentials');
+      error.value = t('common.errorDetails.missingCredentials');
       return;
     }
 

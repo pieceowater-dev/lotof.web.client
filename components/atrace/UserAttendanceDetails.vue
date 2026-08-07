@@ -245,7 +245,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
         class="flex items-center justify-between mt-4 text-sm"
       >
         <div class="text-gray-600 dark:text-gray-400">
-          {{ t('app.showing') }} {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, totalRecords) }} {{ t('app.of') }} {{ totalRecords }}
+          {{ t('common.showing') }} {{ (currentPage - 1) * itemsPerPage + 1 }}-{{ Math.min(currentPage * itemsPerPage, totalRecords) }} {{ t('common.of') }} {{ totalRecords }}
         </div>
         <div class="flex gap-2">
           <UButton 

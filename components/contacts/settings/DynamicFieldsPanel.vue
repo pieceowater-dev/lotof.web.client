@@ -446,7 +446,7 @@ async function handleRestoreDynamicField(id: string) {
 onMounted(async () => {
   const token = await ensureToken();
   if (!token) {
-    dynamicFieldsError.value = t('common.error.missingCredentials') || 'Not authenticated';
+    dynamicFieldsError.value = t('common.errorDetails.missingCredentials') || 'Not authenticated';
     return;
   }
   await loadDynamicFieldsData(token);

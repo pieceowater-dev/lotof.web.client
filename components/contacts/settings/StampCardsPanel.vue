@@ -192,7 +192,7 @@ const handleCreateStampCard = async () => {
   }
 
   if (data.stampPin !== data.confirmStampPin) {
-    createFormError.value = t('common.error.pinsMustMatch') || 'PIN codes do not match';
+    createFormError.value = t('common.errorDetails.pinsMustMatch') || 'PIN codes do not match';
     return;
   }
 
@@ -268,7 +268,7 @@ const handleUpdateStampCard = async () => {
   }
 
   if (data.stampPin !== data.confirmStampPin) {
-    editFormError.value = t('common.error.pinsMustMatch') || 'PIN codes do not match';
+    editFormError.value = t('common.errorDetails.pinsMustMatch') || 'PIN codes do not match';
     return;
   }
 
@@ -358,7 +358,7 @@ async function confirmDeleteStampCard(id: string) {
 onMounted(async () => {
   const token = await ensureToken();
   if (!token) {
-    stampCardsError.value = t('common.error.missingCredentials') || 'Not authenticated';
+    stampCardsError.value = t('common.errorDetails.missingCredentials') || 'Not authenticated';
     return;
   }
   await loadStampCards(token);
