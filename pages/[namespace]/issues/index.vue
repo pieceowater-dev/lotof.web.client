@@ -16,7 +16,8 @@ const { confirm } = useConfirm();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { isOwnerOrManager } = useTasksStaffRole();
-const { titleBySlug } = useNamespace();
+const { titleBySlug, idBySlug } = useNamespace();
+const namespaceId = computed(() => idBySlug(nsSlug.value));
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `Issues — ${titleBySlug(nsSlug.value)}` : 'Issues',
@@ -219,6 +220,12 @@ onMounted(() => {
       </NuxtLink>
     </div>
 
-    <BoardModal v-model="isModalOpen" :saving="saving" @submit="handleSubmit" />
+    <BoardModal
+      v-model="isModalOpen"
+      :saving="saving"
+      :is-first-board="boards.length === 0"
+      :namespace-id="namespaceId"
+      @submit="handleSubmit"
+    />
   </div>
 </template>

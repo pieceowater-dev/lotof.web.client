@@ -4,10 +4,15 @@ import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import type { AtraceShiftPattern, AtraceScheduleAssignment } from '@/api/atrace/schedule/schedule';
+import { useNamespace } from '@/composables/useNamespace';
+import QuickSetupButton from '@/components/onboarding/QuickSetupButton.vue';
+import type { BusinessType } from '@/config/businessTypes';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const { idBySlug } = useNamespace();
+const namespaceId = computed(() => idBySlug(nsSlug.value));
 
 const { members, loadMembers } = useAtraceMembers(nsSlug);
 const patterns = ref<AtraceShiftPattern[]>([]);
@@ -126,6 +131,12 @@ async function load() {
   } finally {
     loading.value = false;
   }
+}
+
+async function applyShiftPatternPreset(businessType: BusinessType) {
+  const { atraceApplyShiftPatternPreset } = await import('@/api/atrace/schedule/schedule');
+  await atraceApplyShiftPatternPreset(businessType, locale.value, nsSlug.value);
+  await load();
 }
 
 function openCreatePattern() {
@@ -279,9 +290,12 @@ onMounted(async () => {
       </div>
       <div
         v-else-if="patterns.length === 0"
-        class="text-gray-500 text-center py-8 border border-dashed rounded-lg dark:border-gray-700"
+        class="text-gray-500 text-center py-8 border border-dashed rounded-lg dark:border-gray-700 space-y-3"
       >
-        {{ t('app.noSchedules') || 'Графики ещё не созданы' }}
+        <p>{{ t('app.noSchedules') || 'Графики ещё не созданы' }}</p>
+        <div v-if="namespaceId" class="flex justify-center">
+          <QuickSetupButton :namespace-id="namespaceId" :on-apply="applyShiftPatternPreset" />
+        </div>
       </div>
       <div
         v-else

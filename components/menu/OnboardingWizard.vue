@@ -6,14 +6,18 @@ import { getErrorMessage } from '@/utils/types/errors';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
 import { getContrastTextColor } from '@/utils/color';
 import { CURRENCIES } from '@/utils/currency';
+import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
+import { useNamespace } from '@/composables/useNamespace';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const { idBySlug } = useNamespace();
+const namespaceId = computed(() => idBySlug(nsSlug.value));
 
 const emit = defineEmits<{ (e: 'completed'): void }>();
 
-const step = ref<1 | 2>(1);
+const step = ref<1 | 2 | 3>(1);
 
 // A handful of ready-made primary/secondary combos so picking a palette is
 // one click instead of an intimidating blank color picker — still fully
@@ -103,6 +107,34 @@ async function addBranch() {
   }
 }
 
+// --- Catalog preset (optional) ---
+const selectedBusinessType = ref<BusinessType | null>(null);
+const catalogSaving = ref(false);
+
+async function applyCatalogPresetAndFinish() {
+  if (!selectedBusinessType.value) {
+    finish();
+    return;
+  }
+  catalogSaving.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuApplyCatalogPreset } = await import('@/api/menu/category/applyPreset');
+    await menuApplyCatalogPreset(menuToken, nsSlug.value, selectedBusinessType.value, locale.value);
+    if (namespaceId.value) {
+      const { hubSetNamespaceBusinessType } = await import('@/api/hub/namespaces/businessType');
+      const { token } = useAuth();
+      if (token.value) await hubSetNamespaceBusinessType(token.value, namespaceId.value, selectedBusinessType.value).catch(() => {});
+    }
+    finish();
+  } catch (e) {
+    logError('[onboarding] applyCatalogPresetAndFinish failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to set up catalog', color: 'red' });
+  } finally {
+    catalogSaving.value = false;
+  }
+}
+
 function finish() {
   emit('completed');
 }
@@ -125,6 +157,11 @@ function finish() {
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 2 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
           <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 2 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">2</span>
           {{ t('menu.onboardingStepBranches') || 'Branches' }}
+        </span>
+        <span class="w-8 h-0.5" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'" />
+        <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 3 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
+          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">3</span>
+          {{ t('menu.onboardingStepCatalog') || 'Catalog' }}
         </span>
       </div>
 
@@ -179,7 +216,7 @@ function finish() {
       </div>
 
       <!-- Step 2: Branches (optional) -->
-      <div v-else class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-else-if="step === 2" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('menu.onboardingBranchesHint') || 'Add at least one branch so customers know where to find you — you can always add more later.' }}</p>
 
         <div v-if="addedBranches.length" class="space-y-1.5">
@@ -206,8 +243,40 @@ function finish() {
         </div>
 
         <div class="flex justify-end pt-1">
-          <UButton color="primary" @click="finish">
-            {{ addedBranches.length ? (t('menu.onboardingFinish') || 'Go to my store') : (t('menu.onboardingSkip') || 'Skip for now') }}
+          <UButton color="primary" @click="step = 3">
+            {{ t('app.continue') || 'Continue' }}
+          </UButton>
+        </div>
+      </div>
+
+      <!-- Step 3: Catalog preset (optional) -->
+      <div v-else class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t('onboarding.quickSetupHint') || "Pick your business type and we'll pre-fill your catalog with a starting set of categories and items — fully editable afterward." }}
+        </p>
+
+        <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <button
+            v-for="option in BUSINESS_TYPES"
+            :key="option.value"
+            type="button"
+            class="flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors"
+            :class="selectedBusinessType === option.value
+              ? 'border-primary bg-primary-50 text-primary dark:bg-primary-900/20 dark:text-primary-300'
+              : 'border-gray-200 hover:border-primary/50 dark:border-gray-700'"
+            @click="selectedBusinessType = option.value"
+          >
+            <UIcon :name="option.icon" class="h-5 w-5" />
+            <span class="text-xs font-medium">{{ t(option.titleKey) }}</span>
+          </button>
+        </div>
+
+        <div class="flex justify-between pt-1">
+          <UButton color="gray" variant="ghost" :disabled="catalogSaving" @click="finish">
+            {{ t('menu.onboardingSkip') || 'Skip for now' }}
+          </UButton>
+          <UButton color="primary" :loading="catalogSaving" :disabled="catalogSaving" @click="applyCatalogPresetAndFinish">
+            {{ selectedBusinessType ? (t('onboarding.applyPreset') || 'Apply and finish') : (t('menu.onboardingFinish') || 'Go to my store') }}
           </UButton>
         </div>
       </div>

@@ -107,6 +107,30 @@ export async function atraceCreateShiftPattern(
   }, namespace);
 }
 
+const APPLY_SHIFT_PATTERN_PRESET = `
+  mutation ApplyShiftPatternPreset($businessType: String!, $locale: String!) {
+    applyShiftPatternPreset(businessType: $businessType, locale: $locale) {
+      patterns { ${SHIFT_PATTERN_FIELDS} }
+    }
+  }
+`;
+
+export async function atraceApplyShiftPatternPreset(
+  businessType: string,
+  locale: string,
+  nsSlug?: string
+): Promise<AtraceShiftPattern[]> {
+  const namespace = resolveNsSlug(nsSlug);
+  return atraceRequestWithRefresh(async () => {
+    const response = await atraceClient.request<{ applyShiftPatternPreset: { patterns: AtraceShiftPattern[] } }>(
+      APPLY_SHIFT_PATTERN_PRESET,
+      { businessType, locale },
+      { headers: await headers(namespace) }
+    );
+    return response.applyShiftPatternPreset.patterns;
+  }, namespace);
+}
+
 const UPDATE_SHIFT_PATTERN = `
   mutation UpdateShiftPattern($input: UpdateShiftPatternInput!) {
     updateShiftPattern(input: $input) { ${SHIFT_PATTERN_FIELDS} }

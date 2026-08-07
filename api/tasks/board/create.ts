@@ -17,6 +17,8 @@ export interface CreateBoardInput {
   integrationFlags?: string;
   deliveryConfirmationMode?: string;
   statuses?: string;
+  businessType?: string;
+  locale?: string;
 }
 
 export async function tasksCreateBoard(tasksToken: string, namespaceSlug: string, input: CreateBoardInput) {
