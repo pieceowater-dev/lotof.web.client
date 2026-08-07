@@ -1,25 +1,29 @@
-// Static (locally-persisted) namespace member roles for the contacts app.
-// The hub doesn't yet expose per-app roles, so we derive a role map from
-// membership + a localStorage cache, scoped per namespace.
+// Namespace member roles for the Contacts app. OWNER is always derived live
+// from namespace ownership (never stored); ADMIN/OPERATOR/VIEWER are real,
+// backend-persisted per-member roles (contacts.msvc.core's MemberRole),
+// enforced server-side by contacts.gtw when it mints a Contacts app token --
+// not just a label. "OPERATOR" here is the Editor role on the backend.
 import { logError } from '@/utils/logger';
 import { hubNamespaceBySlug } from '@/api/hub/namespaces/get';
 import { hubMembersList } from '@/api/hub/members/list';
 import { FilterPaginationLengthEnum } from '@gql-hub';
+import { contactsListMemberRoles, contactsSetMemberRole, type ContactsMemberAccessRole } from '@/api/contacts/memberRoles';
 
 export type StaticAccessRole = 'OWNER' | 'ADMIN' | 'OPERATOR' | 'VIEWER';
+
+function toBackendRole(role: StaticAccessRole): ContactsMemberAccessRole {
+  return role === 'OPERATOR' ? 'EDITOR' : (role === 'ADMIN' ? 'ADMIN' : 'VIEWER');
+}
+
+function fromBackendRole(role: ContactsMemberAccessRole): StaticAccessRole {
+  return role === 'EDITOR' ? 'OPERATOR' : (role === 'ADMIN' ? 'ADMIN' : 'VIEWER');
+}
 
 export interface NamespaceMember {
   id: string;
   userId: string;
   username: string;
   email: string;
-}
-
-function normalizeRole(raw?: string | null): StaticAccessRole {
-  if (raw === 'OWNER' || raw === 'ADMIN' || raw === 'OPERATOR' || raw === 'VIEWER') return raw;
-  // Backward compatibility for old saved role.
-  if (raw === 'EDITOR') return 'OPERATOR';
-  return 'VIEWER';
 }
 
 export function roleTone(role: StaticAccessRole): string {
@@ -36,36 +40,16 @@ export function roleLabel(role: StaticAccessRole): string {
   return 'Наблюдатель';
 }
 
-function storageKey(nsSlug: string): string {
-  return `contacts:roles:${nsSlug}`;
-}
-
-function loadPersistedRoles(nsSlug: string): Record<string, StaticAccessRole> {
-  if (!process.client) return {};
-  try {
-    const raw = localStorage.getItem(storageKey(nsSlug));
-    if (!raw) return {};
-    const parsed = JSON.parse(raw) as Record<string, string>;
-    const normalized: Record<string, StaticAccessRole> = {};
-    for (const [memberId, role] of Object.entries(parsed || {})) {
-      normalized[memberId] = normalizeRole(role);
-    }
-    return normalized;
-  } catch {
-    return {};
-  }
-}
-
-function persistRoles(nsSlug: string, next: Record<string, StaticAccessRole>) {
-  if (!process.client) return;
-  localStorage.setItem(storageKey(nsSlug), JSON.stringify(next));
-}
-
 export function useNamespaceStaticRoles() {
   const namespaceMembers = ref<NamespaceMember[]>([]);
   const memberRoles = ref<Record<string, StaticAccessRole>>({});
   const rolesLoading = ref(false);
   const roleSavingMemberId = ref<string | null>(null);
+
+  // The UI keys everything by membership id (member.id), but the backend
+  // (and the concept of "this user's role") is keyed by hub user id -- kept
+  // here to translate assignStaticRole's memberId back to a userId.
+  let userIdByMemberId: Record<string, string> = {};
 
   async function loadMembersAndRoles(nsSlug: string, hubToken?: string | null) {
     if (!hubToken || !nsSlug) return;
@@ -75,6 +59,7 @@ export function useNamespaceStaticRoles() {
       if (!namespace?.id) {
         namespaceMembers.value = [];
         memberRoles.value = {};
+        userIdByMemberId = {};
         return;
       }
 
@@ -88,11 +73,17 @@ export function useNamespaceStaticRoles() {
       } while (batch.length >= 50);
 
       namespaceMembers.value = members;
+      userIdByMemberId = Object.fromEntries(members.map((m) => [m.id, m.userId]));
 
-      const persisted = loadPersistedRoles(nsSlug);
+      const backendRoles = await contactsListMemberRoles(hubToken, nsSlug);
+      const roleByUserId: Record<string, StaticAccessRole> = {};
+      for (const row of backendRoles) {
+        roleByUserId[row.userId] = fromBackendRole(row.role);
+      }
+
       const nextRoles: Record<string, StaticAccessRole> = {};
       for (const member of members) {
-        nextRoles[member.id] = normalizeRole(persisted[member.id]);
+        nextRoles[member.id] = roleByUserId[member.userId] || 'VIEWER';
       }
       const ownerMember = members.find((member) => member.userId === namespace.owner);
       if (ownerMember) {
@@ -100,7 +91,6 @@ export function useNamespaceStaticRoles() {
       }
 
       memberRoles.value = nextRoles;
-      persistRoles(nsSlug, nextRoles);
     } catch (e) {
       logError('Failed to load members/roles in contacts settings:', e);
     } finally {
@@ -108,12 +98,16 @@ export function useNamespaceStaticRoles() {
     }
   }
 
-  async function assignStaticRole(nsSlug: string, memberId: string, role: StaticAccessRole) {
+  async function assignStaticRole(nsSlug: string, memberId: string, role: StaticAccessRole, hubToken?: string | null) {
+    const userId = userIdByMemberId[memberId];
+    if (!hubToken || !nsSlug || !userId || role === 'OWNER') return;
     try {
       roleSavingMemberId.value = memberId;
-      const next = { ...memberRoles.value, [memberId]: role };
-      memberRoles.value = next;
-      persistRoles(nsSlug, next);
+      await contactsSetMemberRole(hubToken, nsSlug, userId, toBackendRole(role));
+      memberRoles.value = { ...memberRoles.value, [memberId]: role };
+    } catch (e) {
+      logError('Failed to assign Contacts member role:', e);
+      throw e;
     } finally {
       roleSavingMemberId.value = null;
     }

@@ -54,13 +54,21 @@ function closeRoleModal() {
 
 async function confirmRoleModal() {
   if (!roleModalMemberId.value) return;
-  await assignStaticRole(nsSlug.value, roleModalMemberId.value, roleModalValue.value);
-  toast.add({
-    title: 'Успех',
-    description: 'Сохранено',
-    color: 'emerald',
-  });
-  closeRoleModal();
+  try {
+    await assignStaticRole(nsSlug.value, roleModalMemberId.value, roleModalValue.value, hubToken.value);
+    toast.add({
+      title: 'Успех',
+      description: 'Сохранено',
+      color: 'emerald',
+    });
+    closeRoleModal();
+  } catch {
+    toast.add({
+      title: 'Ошибка',
+      description: 'Не удалось сохранить роль',
+      color: 'red',
+    });
+  }
 }
 
 onMounted(async () => {
@@ -189,6 +197,7 @@ onMounted(async () => {
               </td>
               <td class="px-4 py-3">
                 <UButton
+                  v-if="memberRoles[member.id] !== 'OWNER'"
                   size="xs"
                   variant="soft"
                   color="primary"
@@ -198,6 +207,12 @@ onMounted(async () => {
                 >
                   Изменить роль
                 </UButton>
+                <span
+                  v-else
+                  class="text-xs text-gray-400"
+                >
+                  Владелец — роль фиксирована
+                </span>
               </td>
             </tr>
           </tbody>

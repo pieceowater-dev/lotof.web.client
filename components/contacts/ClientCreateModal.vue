@@ -2,6 +2,7 @@
 import { ref, computed, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
+import { getErrorMessage } from '@/utils/types/errors';
 import {
   contactsCreateIndividualClient,
   contactsCreateLegalEntityClient,
@@ -224,7 +225,7 @@ async function handleSubmit() {
     logError('Failed to create client:', error);
     toast.add({
       title: t('common.error'),
-      description: t('contacts.createError'),
+      description: getErrorMessage(error, t) || t('contacts.createError'),
       color: 'red',
     });
   } finally {

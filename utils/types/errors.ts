@@ -28,9 +28,13 @@ export function isNetworkError(error: unknown): error is NetworkErrorLike {
 
 function extractRawMessage(e: unknown): string {
   if (typeof e === 'string') return e
-  if (e instanceof Error) return e.message
 
-  // Check for GraphQL response structure: response.errors[0].message
+  // Checked before the `instanceof Error` fallback below: graphql-request's
+  // ClientError IS an Error, but its own .message is
+  // "<real message>: {"response":...,"request":...}" (see ClientError's
+  // constructor) — the entire request/response JSON-dumped inline. Reading
+  // response.errors[0].message directly skips that dump and gets the actual
+  // backend message every other branch here is trying to surface.
   if (typeof e === 'object' && e !== null) {
     const obj = e as any
     if (obj.response?.errors && Array.isArray(obj.response.errors) && obj.response.errors.length > 0) {
@@ -38,6 +42,7 @@ function extractRawMessage(e: unknown): string {
     }
   }
 
+  if (e instanceof Error) return e.message
   if (isGraphQLError(e)) return e.message
   return ''
 }
@@ -102,6 +107,9 @@ const PERMISSION_PATTERNS = [
   /permission denied/i,
   /not authorized/i,
   /not allowed to/i,
+  // contacts.gtw's @accessRequired directive (AccessRequiredDirective),
+  // e.g. "access denied: missing permission contacts.client.create".
+  /^access denied:/i,
 ]
 
 export function isPermissionError(e: unknown): boolean {
