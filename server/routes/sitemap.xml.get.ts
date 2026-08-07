@@ -54,6 +54,55 @@ function xmlUrl(loc: string, lastmod: string, changefreq: string, priority: stri
   return lines.join('\n');
 }
 
+type GuideArticlesResponse = {
+  data?: {
+    guideArticles?: Array<{
+      slug?: string;
+      updatedAtUnix?: string;
+    }>;
+  };
+  errors?: Array<{ message?: string }>;
+};
+
+const GUIDE_ARTICLES_QUERY = `
+  query GuideArticles($app: GuideApp!) {
+    guideArticles(app: $app) {
+      slug
+      updatedAtUnix
+    }
+  }
+`;
+
+// Same six values as GuideApp in the GraphQL schema / ALL_GUIDE_APPS on the
+// client (composables/useGuideContext.ts) -- duplicated here since server
+// routes don't share that module's Vue-only import graph. Route param is
+// just the lowercased enum value (guideAppToParam).
+const GUIDE_APPS = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE'] as const;
+
+async function fetchAllGuideArticles(capitalEndpoint: string): Promise<Array<{ app: string; slug: string; lastmod: string }>> {
+  const results: Array<{ app: string; slug: string; lastmod: string }> = [];
+
+  for (const app of GUIDE_APPS) {
+    const response = await $fetch<GuideArticlesResponse>(capitalEndpoint, {
+      method: 'POST',
+      body: { query: GUIDE_ARTICLES_QUERY, variables: { app } },
+    });
+
+    if (response?.errors?.length) {
+      throw new Error(`guideArticles(${app}) returned errors: ${response.errors.map((e) => e?.message).join('; ')}`);
+    }
+
+    const items = Array.isArray(response?.data?.guideArticles) ? response!.data!.guideArticles! : [];
+    for (const item of items) {
+      const slug = String(item?.slug || '').trim().toLowerCase();
+      if (!slug) continue;
+      results.push({ app: app.toLowerCase(), slug, lastmod: unixToIsoDate(item?.updatedAtUnix) });
+    }
+  }
+
+  return results;
+}
+
 async function fetchAllPublishedArticles(capitalEndpoint: string): Promise<Array<{ category: string; slug: string; lastmod: string }>> {
   const results: Array<{ category: string; slug: string; lastmod: string }> = [];
   let page = 1;
@@ -123,12 +172,14 @@ export default defineEventHandler(async (event) => {
 
   const today = new Date().toISOString().slice(0, 10);
   let articles: Array<{ category: string; slug: string; lastmod: string }> = [];
+  let workingEndpoint = '';
   let lastError: unknown = null;
   let succeeded = false;
 
   for (const endpoint of endpointCandidates) {
     try {
       articles = await fetchAllPublishedArticles(endpoint);
+      workingEndpoint = endpoint;
       succeeded = true;
       break;
     } catch (err) {
@@ -147,12 +198,37 @@ export default defineEventHandler(async (event) => {
     });
   }
 
+  // Guide lives on the same gateway as publications, so the endpoint that
+  // already worked above is reused rather than re-probing candidates.
+  let guideArticles: Array<{ app: string; slug: string; lastmod: string }> = [];
+  if (workingEndpoint) {
+    try {
+      guideArticles = await fetchAllGuideArticles(workingEndpoint);
+    } catch (err) {
+      console.error('[sitemap.xml] fetchAllGuideArticles failed', {
+        endpoint: workingEndpoint,
+        error: err instanceof Error ? err.message : err,
+      });
+    }
+  }
+  const guideAppsWithContent = new Set(guideArticles.map((a) => a.app));
+
   const urls = [
     xmlUrl(`${siteUrl}/`, today, 'daily', '1.0'),
     xmlUrl(`${siteUrl}/feed`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/news`, today, 'daily', '0.9'),
+    xmlUrl(`${siteUrl}/guide`, today, 'weekly', '0.9'),
     ...articles.map((article) =>
       xmlUrl(`${siteUrl}/${article.category}/${article.slug}`, article.lastmod || today, 'monthly', '0.8')
+    ),
+    // One hub-listing URL per app that actually has published content --
+    // apps with zero articles would just be an empty listing page, not worth
+    // a crawler visit.
+    ...Array.from(guideAppsWithContent).map((app) =>
+      xmlUrl(`${siteUrl}/guide/${app}`, today, 'weekly', '0.7')
+    ),
+    ...guideArticles.map((article) =>
+      xmlUrl(`${siteUrl}/guide/${article.app}/${article.slug}`, article.lastmod || today, 'monthly', '0.7')
     ),
   ];
 

@@ -135,7 +135,12 @@ const notificationsUi = computed(() => {
     position: 'top-[unset] bottom-0'
   };
 });
-const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew', 'blog', 'academy']);
+// "guide" behaves like a category prefix here (public root listing +
+// /guide/<app>/<slug> detail pages, both fully public) even though it isn't
+// an article category -- without this, isNamespacePrivateRoute below reads
+// /guide/<app> and /guide/<app>/<slug> as a private /<namespace>/<app> route
+// and stamps every Guide hub and article page with noindex.
+const PUBLIC_CATEGORY_PREFIXES = new Set(['news', 'articles', 'whatsnew', 'blog', 'academy', 'guide']);
 const isNamespacePrivateRoute = computed(() => {
   const segments = routeSegments.value;
   if (segments.length < 2) return false;
