@@ -15,6 +15,10 @@ export function useAuth() {
   const user = useState<{ id: string; username: string; email: string; phone?: string | null } | null>('auth_user', () => null);
   const loading = useState<boolean>('auth_loading', () => false);
   const initialized = useState<boolean>('auth_initialized', () => false);
+  // Set the instant a sign-in click fires, before the (possibly slow) redirect
+  // to Google actually happens -- lets sign-in buttons show a spinner so a
+  // click on a bad connection doesn't look like it did nothing.
+  const loginRedirecting = useState<boolean>('auth_login_redirecting', () => false);
   const silentRefreshAttempted = useState<boolean>('auth_silent_refresh_attempted', () => false);
 
   async function fetchUser(force = false) {
@@ -82,6 +86,8 @@ export function useAuth() {
   }
 
   function login() {
+    if (loginRedirecting.value) return;
+    loginRedirecting.value = true;
     // Redirect to hub auth
     const base = getApiBasePath('hub');
     const redirect = encodeURIComponent(window.location.origin);
@@ -192,5 +198,5 @@ export function useAuth() {
     reg.value = true;
   }
 
-  return { token, user, loading, initialized, isLoggedIn, fetchUser, login, logout };
+  return { token, user, loading, initialized, isLoggedIn, loginRedirecting, fetchUser, login, logout };
 }

@@ -34,11 +34,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue';
+import { ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 
 const { t } = useI18n();
-const isLoading = ref(false);
+const { loginRedirecting } = useAuth();
+// login() itself is synchronous -- it just kicks off window.location.href --
+// so a local isLoading reset in a finally block would flip straight back to
+// false before the (possibly slow) navigation to Google actually happens,
+// making the spinner flash for a single frame. loginRedirecting is shared
+// auth state that login() sets and never resets, so it correctly stays true
+// until the page actually navigates away.
+const localLoading = ref(false);
 
 const props = defineProps({
   title: { type: String, default: '' },
@@ -48,13 +55,14 @@ const props = defineProps({
   onAction: { type: Function as PropType<(...args: any[]) => void>, default: () => { } }
 });
 
+const isLoading = computed(() => localLoading.value || loginRedirecting.value);
+
 const handleClick = async () => {
-  isLoading.value = true;
-  await nextTick(); // Дайте DOM время перерендериться и показать спиннер
+  localLoading.value = true;
   try {
     await props.onAction();
   } finally {
-    isLoading.value = false;
+    localLoading.value = false;
   }
 };
 </script>
