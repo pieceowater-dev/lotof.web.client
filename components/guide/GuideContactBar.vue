@@ -42,9 +42,9 @@ const phone = ref('');
 const whatsapp = ref('');
 
 onMounted(async () => {
-  // Anonymous visitors on the public /guide pages have no token --
-  // contactSettings is @auth, so they just don't see the bar.
-  if (!token.value) return;
+  // contactSettings is public -- the Гид must work fully without
+  // authorization, including for anonymous visitors on /guide. token is
+  // passed along when we happen to have one, but isn't required.
   try {
     const settings = await capitalGetContactSettings(token.value);
     phone.value = settings?.phone || '';

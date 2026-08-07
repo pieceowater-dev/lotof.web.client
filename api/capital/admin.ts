@@ -342,11 +342,12 @@ export type ContactSettings = {
   updatedAt?: string | null;
 };
 
-// contactSettings is @auth (any logged-in user, not namespace-scoped) --
-// used both by the admin console editor and by any plans page showing the
-// "contact us to subscribe" fallback.
-export async function capitalGetContactSettings(token: string): Promise<ContactSettings | null> {
-  setGlobalAuthToken(token);
+// contactSettings is public (no auth directive) -- it's shown on the fully
+// anonymous public /guide pages, plus the admin console editor and any
+// plans page showing the "contact us to subscribe" fallback. token is
+// optional and only set when the caller happens to have one.
+export async function capitalGetContactSettings(token?: string | null): Promise<ContactSettings | null> {
+  if (token) setGlobalAuthToken(token);
   const query = /* GraphQL */ `
     query ContactSettings {
       contactSettings {

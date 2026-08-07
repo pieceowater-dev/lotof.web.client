@@ -8,6 +8,13 @@ import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 export default defineNuxtRouteMiddleware(async (to) => {
   if (to.path === '/') return;
+  // lota Гид must work fully without authorization -- every /guide page
+  // is public. Without this, the isAtraceRoute/isContactsRoute/isMenuRoute/
+  // isTasksRoute regexes below match on the substring "/atrace", "/contacts"
+  // etc. ANYWHERE in the path, so /guide/atrace, /guide/contacts, /guide/menu
+  // and /guide/issues were wrongly caught by the app-token guards and bounced
+  // an anonymous visitor to "/" with auth-needed=true.
+  if (to.path === '/guide' || to.path.startsWith('/guide/')) return;
   const routeName = typeof to.name === 'string' ? to.name : '';
   // Public content pages
   if (routeName === 'feed' || routeName === 'slug' || routeName === 'news' || routeName === 'category-slug' || to.path === '/feed' || to.path === '/news') return;

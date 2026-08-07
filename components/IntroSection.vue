@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 
 const { t } = useI18n();
@@ -59,6 +59,11 @@ const isLoading = computed(() => localLoading.value || loginRedirecting.value);
 
 const handleClick = async () => {
   localLoading.value = true;
+  // login() ends by synchronously setting window.location.href, which can
+  // start tearing the page down before Vue gets a chance to flush this
+  // reactive update to the DOM -- without yielding here first, the spinner
+  // never actually paints, it just looks like the Google icon vanished.
+  await nextTick();
   try {
     await props.onAction();
   } finally {
