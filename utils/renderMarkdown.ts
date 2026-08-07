@@ -4,9 +4,7 @@ import DOMPurifyImport from 'dompurify';
 // html:false means raw HTML in the source is escaped as text rather than
 // passed through -- task descriptions are user input, and this is the
 // primary XSS guard. DOMPurify below is defense in depth against anything
-// markdown-it's own renderer produces (e.g. link targets). DOMPurify needs a
-// real DOM (it's a no-op factory under SSR), so rendering only ever happens
-// client-side -- which matches how task data already loads in this app.
+// markdown-it's own renderer produces (e.g. link targets).
 const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
 // Depending on how the bundler resolves the ESM/CJS export conditions,
@@ -19,9 +17,26 @@ function getDOMPurify(): { sanitize: (html: string, opts?: any) => string } {
   return mod(window);
 }
 
+// DOMPurify needs a real DOM and is a no-op factory under SSR (Node has no
+// window). With html:false already blocking literal <script>/onerror etc in
+// the source, the one realistic gap DOMPurify would otherwise catch here is
+// a dangerous URL scheme on a markdown link/image target (e.g.
+// "[x](javascript:...)"), since that's markdown syntax, not raw HTML, so
+// html:false doesn't touch it. Stripped manually so pages that render this
+// server-side (public Guide articles) still ship real content on first
+// paint instead of an empty node until client hydration re-renders it.
+const DANGEROUS_URL_SCHEME = /^\s*(javascript|vbscript|data(?!:image\/(?:png|gif|jpe?g|webp|svg\+xml)))\s*:/i;
+
+function stripDangerousUrlSchemes(html: string): string {
+  return html.replace(/\s(href|src)=(["'])(.*?)\2/gi, (match, attr, quote, url) => (
+    DANGEROUS_URL_SCHEME.test(url) ? '' : match
+  ));
+}
+
 export function renderMarkdownSafe(source: string): string {
-  if (!source || typeof window === 'undefined') return '';
+  if (!source) return '';
   const rawHtml = md.render(source);
+  if (typeof window === 'undefined') return stripDangerousUrlSchemes(rawHtml);
   return getDOMPurify().sanitize(rawHtml, { ADD_ATTR: ['target', 'rel'] });
 }
 
