@@ -18,7 +18,7 @@ import {
 } from '@/api/contacts/dynamicFields';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
-import { formatDisplayPhoneUniversal } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 import { getErrorMessage } from '@/utils/types/errors';
 import DynamicFieldInput from '@/components/contacts/DynamicFieldInput.vue';
 
@@ -150,10 +150,6 @@ const legalEntityOptions = ref<ClientRow[]>([]);
 const legalEntityLoading = ref(false);
 const selectedExistingLegalEntity = ref<ClientRow | null>(null);
 let legalEntitySearchTimeout: ReturnType<typeof setTimeout> | null = null;
-
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
 
 function updatePhoneValue(index: number, value: string) {
   phones.value[index] = sanitizePhoneInput(value);
@@ -311,11 +307,7 @@ watch(legalCompanySearch, (value) => {
 });
 
 // Validation
-const isPhoneValid = (phone: string) => {
-  if (!phone) return true;
-  const digits = phone.replace(/\D/g, '');
-  return digits.length >= 10 && digits.length <= 12;
-};
+const isPhoneValid = (phone: string) => isPhoneInputValid(phone);
 
 const isEmailValid = (email: string) => {
   if (!email) return true;
@@ -628,7 +620,7 @@ async function handleSubmit() {
           selectedNS.value,
           clientId,
           'phone',
-          phone.replace(/\D/g, ''),
+          normalizePhoneForStorage(phone),
           i === 0,
           i === 0 ? comments.value.trim() || undefined : undefined,
         );
@@ -646,7 +638,7 @@ async function handleSubmit() {
         await createIdentity(contactsToken, selectedNS.value, clientId, 'telegram', telegram.value.trim());
       }
       if (whatsapp.value.trim()) {
-        await createIdentity(contactsToken, selectedNS.value, clientId, 'whatsapp', whatsapp.value.trim());
+        await createIdentity(contactsToken, selectedNS.value, clientId, 'whatsapp', normalizePhoneForStorage(whatsapp.value.trim()));
       }
       if (website.value.trim()) {
         await createIdentity(contactsToken, selectedNS.value, clientId, 'website', website.value.trim());

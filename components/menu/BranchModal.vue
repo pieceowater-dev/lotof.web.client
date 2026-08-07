@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { DAY_KEYS, defaultWorkingHours, parseWorkingHours, serializeWorkingHours, type WorkingHours } from '@/utils/workingHours';
+import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const { t } = useI18n();
 
@@ -62,18 +63,10 @@ watch(() => [props.modelValue, props.branch], () => {
   DAY_KEYS.forEach((k) => { workingHours[k] = { ...wh[k] }; });
 }, { immediate: true });
 
-// Same phone sanitize/validate rules as the Contacts app's client-create form.
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
 function updatePhoneValue(value: string) {
   form.phone = sanitizePhoneInput(value);
 }
-const isPhoneValid = computed(() => {
-  if (!form.phone) return true;
-  const digits = form.phone.replace(/\D/g, '');
-  return digits.length >= 10;
-});
+const isPhoneValid = computed(() => isPhoneInputValid(form.phone));
 
 const isFormValid = computed(() => form.name.trim().length > 0 && form.address.trim().length > 0 && isPhoneValid.value);
 
@@ -86,7 +79,7 @@ function handleSubmit() {
   emit('submit', {
     name: form.name.trim(),
     address: form.address.trim(),
-    phone: form.phone.trim() || undefined,
+    phone: form.phone.trim() ? normalizePhoneForStorage(form.phone.trim()) : undefined,
     city: form.city.trim() || undefined,
     slug: form.slug.trim() || undefined,
     lat: form.lat,

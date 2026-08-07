@@ -7,7 +7,7 @@ import type { PublicModifierGroup, PublicModifierOption, MyOrderSummary } from '
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
-import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
@@ -657,13 +657,10 @@ watch([() => checkoutForm.customerName, () => checkoutForm.phone], ([customerNam
   localStorage.setItem(contactStorageKey.value, JSON.stringify({ customerName, phone }));
 });
 
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
 function updatePhoneValue(value: string) {
   checkoutForm.phone = sanitizePhoneInput(value);
 }
-const isPhoneValid = computed(() => checkoutForm.phone.replace(/\D/g, '').length >= 10);
+const isPhoneValid = computed(() => isPhoneInputValid(checkoutForm.phone));
 // Table orders are the one case where phone isn't needed to fulfil the
 // order (staff just bring it to the table) — so it's optional there, unlike
 // pickup/delivery where it's the only way to reach the customer. If they do

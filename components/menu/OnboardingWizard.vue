@@ -8,6 +8,7 @@ import { getContrastTextColor } from '@/utils/color';
 import { CURRENCIES } from '@/utils/currency';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
 import { useNamespace } from '@/composables/useNamespace';
+import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const { t, locale } = useI18n();
 const route = useRoute();
@@ -81,19 +82,10 @@ const branchForm = reactive({ name: '', address: '', phone: '' });
 const addedBranches = ref<{ name: string; address: string }[]>([]);
 const branchSaving = ref(false);
 
-// Same phone sanitize/validate rules as BranchModal.vue and the Contacts
-// client-create form.
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
 function updateBranchPhone(value: string) {
   branchForm.phone = sanitizePhoneInput(value);
 }
-const isBranchPhoneValid = computed(() => {
-  if (!branchForm.phone) return true;
-  const digits = branchForm.phone.replace(/\D/g, '');
-  return digits.length >= 10;
-});
+const isBranchPhoneValid = computed(() => isPhoneInputValid(branchForm.phone));
 
 const isBranchValid = computed(() => branchForm.name.trim().length > 0 && branchForm.address.trim().length > 0 && isBranchPhoneValid.value);
 
@@ -103,7 +95,6 @@ async function addBranch() {
   try {
     const menuToken = await getToken();
     const { menuCreateBranch } = await import('@/api/menu/branch/create');
-    const { normalizePhoneForStorage } = await import('@/utils/phone');
     const created = await menuCreateBranch(menuToken, nsSlug.value, {
       name: branchForm.name.trim(),
       address: branchForm.address.trim(),

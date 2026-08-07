@@ -7,6 +7,7 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import { buildTableTag } from '@/utils/tableTag';
+import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const { t } = useI18n();
 
@@ -42,17 +43,13 @@ const form = reactive({
   comment: '',
 });
 
-// Same phone sanitize/validate rules as the Contacts app's client-create form.
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
 function updatePhoneValue(value: string) {
   form.phone = sanitizePhoneInput(value);
 }
-const isPhoneValid = computed(() => {
-  const digits = form.phone.replace(/\D/g, '');
-  return digits.length >= 10;
-});
+// Phone is required in this form, unlike most other phone-input call sites --
+// isPhoneInputValid alone treats an empty value as valid, so that's paired
+// with an explicit non-empty check here.
+const isPhoneValid = computed(() => Boolean(form.phone.trim()) && isPhoneInputValid(form.phone));
 
 const cart = ref<CartLine[]>([]);
 const itemSearch = ref('');
@@ -176,7 +173,7 @@ function handleSubmit() {
   if (!isFormValid.value) return;
   emit('submit', {
     branchId: form.branchId || undefined,
-    phone: form.phone.trim(),
+    phone: normalizePhoneForStorage(form.phone.trim()),
     customerName: form.customerName.trim() || undefined,
     type: form.type,
     deliveryAddress: form.type === 'delivery' ? form.deliveryAddress.trim() : undefined,

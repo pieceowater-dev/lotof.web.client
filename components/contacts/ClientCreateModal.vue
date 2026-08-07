@@ -10,6 +10,7 @@ import {
 } from '@/api/contacts/mutations';
 import { createIdentity } from '@/api/contacts/identities';
 import { useContactsToken } from '@/composables/useContactsToken';
+import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const emit = defineEmits<{
   created: [];
@@ -82,21 +83,13 @@ const statusOptions = [
   { value: 'ARCHIVED', label: t('contacts.archived') },
 ];
 
-function sanitizePhoneInput(value: string): string {
-  return value.replace(/[^\d+()\s-]/g, '');
-}
-
 function updatePhoneValue(index: number, value: string) {
   phones.value[index] = sanitizePhoneInput(value);
 }
 
-// Validation
-const isPhoneValid = (phone: string) => {
-  if (!phone) return true; // Empty is ok for additional phones
-  // Basic phone validation - at least 10 digits
-  const digits = phone.replace(/\D/g, '');
-  return digits.length >= 10;
-};
+// Validation -- empty is ok for the additional (non-primary) phone rows,
+// enforced separately by hasValidPrimaryPhone below.
+const isPhoneValid = (phone: string) => isPhoneInputValid(phone);
 
 const isEmailValid = (email: string) => {
   if (!email) return true; // Empty is ok for additional emails
@@ -212,7 +205,7 @@ async function handleSubmit() {
       for (let i = 0; i < phones.value.length; i++) {
         const phone = phones.value[i].trim();
         if (phone && isPhoneValid(phone)) {
-          await createIdentity(contactsToken, selectedNS.value, clientId, 'phone', phone, i === 0);
+          await createIdentity(contactsToken, selectedNS.value, clientId, 'phone', normalizePhoneForStorage(phone), i === 0);
         }
       }
 

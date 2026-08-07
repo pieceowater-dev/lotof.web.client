@@ -9,7 +9,7 @@ import { contactsListClients } from '@/api/contacts/listClients';
 import { getClientsBatch } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
-import { normalizePhoneForStorage } from '@/utils/phone';
+import { normalizePhoneForStorage, isPhoneInputValid } from '@/utils/phone';
 import { listTags, applyContactTagsPreset } from '@/api/contacts/tags';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
@@ -455,8 +455,7 @@ async function handleInlineSaveName(payload: {
 async function handleInlineSavePrimaryPhone(payload: { clientId: string; phone: string }) {
   if (!token.value || !selectedNS.value) return;
 
-  const digitsOnly = payload.phone.replace(/\D/g, '');
-  if (digitsOnly.length < 8) {
+  if (!payload.phone.trim() || !isPhoneInputValid(payload.phone)) {
     toast.add({ title: t('common.error'), description: t('contacts.invalidPhone'), color: 'red' });
     return;
   }

@@ -5,7 +5,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
@@ -655,7 +655,7 @@ function startEditOrder() {
 function cancelEditOrder() {
   isEditingOrder.value = false;
 }
-const isEditFormValid = computed(() => editForm.phone.replace(/\D/g, '').length >= 10);
+const isEditFormValid = computed(() => Boolean(editForm.phone.trim()) && isPhoneInputValid(editForm.phone));
 
 async function saveEditOrder() {
   if (!props.order || !isEditFormValid.value) return;
@@ -817,7 +817,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                   inputmode="tel"
                   pattern="[0-9+()\s-]*"
                   size="sm"
-                  @update:model-value="(v: string) => (editForm.phone = v.replace(/[^\d+()\s-]/g, ''))"
+                  @update:model-value="(v: string) => (editForm.phone = sanitizePhoneInput(v))"
                 />
               </UFormGroup>
             </div>

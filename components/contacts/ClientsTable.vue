@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
-import { formatDisplayPhoneUniversal, sanitizePhoneInput } from '@/utils/phone';
+import { formatDisplayPhoneUniversal, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import FinderStyleSearch from './FinderStyleSearch.vue';
 
 const { t } = useI18n();
@@ -361,7 +361,10 @@ function updateEditPhone(value: string) {
   editPhone.value = sanitizePhoneInput(value);
 }
 
+const isEditPhoneValid = computed(() => Boolean(editPhone.value.trim()) && isPhoneInputValid(editPhone.value));
+
 function saveEditPrimaryPhone(clientId: string) {
+  if (!isEditPhoneValid.value) return;
   emit('savePrimaryPhone', { clientId, phone: editPhone.value });
   editingPhoneClientId.value = null;
 }
@@ -684,16 +687,23 @@ function addTagToFilter(tagId: string, tagName: string) {
                     @update:model-value="updateEditPhone"
                   />
                   <p
-                    v-if="editPhone.trim()"
+                    v-if="editPhone.trim() && isEditPhoneValid"
                     class="text-xs text-gray-500 dark:text-gray-400"
                   >
                     {{ t('contacts.phonePreview') }}: {{ formatDisplayPhoneUniversal(editPhone) }}
+                  </p>
+                  <p
+                    v-else-if="editPhone.trim() && !isEditPhoneValid"
+                    class="text-xs text-red-500"
+                  >
+                    {{ t('contacts.invalidPhone') || 'Invalid phone format' }}
                   </p>
                   <div class="flex items-center gap-2">
                     <UButton
                       size="xs"
                       color="primary"
                       variant="soft"
+                      :disabled="!isEditPhoneValid"
                       @click.stop="saveEditPrimaryPhone(client.client.id)"
                     >
                       {{ t('common.save') }}

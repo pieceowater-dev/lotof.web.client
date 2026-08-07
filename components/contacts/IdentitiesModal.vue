@@ -13,7 +13,7 @@ import {
   verifyIdentity,
   setPrimaryIdentity
 } from '@/api/contacts/identities';
-import { sanitizePhoneInput } from '@/utils/phone';
+import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -44,6 +44,11 @@ function updateNewValue(value: string) {
   newValue.value = isPhoneLikeType.value ? sanitizePhoneInput(value) : value;
 }
 
+const isNewValueValid = computed(() => {
+  if (!isPhoneLikeType.value) return true;
+  return isPhoneInputValid(newValue.value);
+});
+
 async function loadIdentities() {
   if (!token.value || !selectedNS.value) return;
   try {
@@ -64,18 +69,19 @@ async function loadIdentities() {
 }
 
 async function handleCreateIdentity() {
-  if (!newValue.value.trim() || !token.value || !selectedNS.value) return;
-  
+  if (!newValue.value.trim() || !token.value || !selectedNS.value || !isNewValueValid.value) return;
+
   try {
     isCreating.value = true;
     const contactsToken = await ensure(selectedNS.value, token.value);
     if (!contactsToken) return;
+    const valueToSave = isPhoneLikeType.value ? normalizePhoneForStorage(newValue.value.trim()) : newValue.value.trim();
     const newIdentity = await createIdentity(
       contactsToken,
       selectedNS.value,
       props.clientId,
       newType.value,
-      newValue.value.trim()
+      valueToSave
     );
     identities.value.push(newIdentity.createIdentity);
     newValue.value = '';
@@ -192,17 +198,22 @@ watch(() => props.isOpen, (newVal) => {
           :pattern="isPhoneLikeType ? '[0-9+()\\s-]*' : undefined"
           :placeholder="`Enter ${newType}...`"
           size="sm"
+          :color="!isNewValueValid && newValue ? 'red' : undefined"
           @update:model-value="updateNewValue"
           @keyup.enter="handleCreateIdentity"
         />
         <UButton
           :loading="isCreating"
+          :disabled="!newValue.trim() || !isNewValueValid"
           size="sm"
           @click="handleCreateIdentity"
         >
           {{ t('common.add') }}
         </UButton>
       </div>
+      <p v-if="!isNewValueValid && newValue" class="text-xs text-red-500">
+        {{ t('contacts.invalidPhone') || 'Invalid phone format' }}
+      </p>
 
       <!-- Identities list -->
       <div
