@@ -96,6 +96,17 @@ const REMOVE_TAG_FROM_CLIENT_MUTATION = gql`
   }
 `;
 
+const APPLY_CONTACT_TAGS_PRESET_MUTATION = gql`
+  mutation ApplyContactTagsPreset($businessType: String!, $locale: String!) {
+    applyContactTagsPreset(businessType: $businessType, locale: $locale) {
+      tags {
+        id
+        name
+      }
+    }
+  }
+`;
+
 export async function listTags(token: string, namespaceSlug: string, search?: string) {
   if (!token) throw new Error('Token is required');
   setContactsAppToken(token);
@@ -178,6 +189,18 @@ export async function removeTagFromClient(token: string, namespaceSlug: string, 
     {
       input: { clientId, tagId },
     },
+    {
+      headers: { Namespace: namespaceSlug },
+    }
+  );
+}
+
+export async function applyContactTagsPreset(token: string, namespaceSlug: string, businessType: string, locale: string) {
+  if (!token) throw new Error('Token is required');
+  setContactsAppToken(token);
+  return contactsClient.request<{ applyContactTagsPreset: { tags: Tag[] } }>(
+    APPLY_CONTACT_TAGS_PRESET_MUTATION,
+    { businessType, locale },
     {
       headers: { Namespace: namespaceSlug },
     }

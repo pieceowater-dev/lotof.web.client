@@ -10,7 +10,7 @@ import { getClientsBatch } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
 import { normalizePhoneForStorage } from '@/utils/phone';
-import { listTags } from '@/api/contacts/tags';
+import { listTags, applyContactTagsPreset } from '@/api/contacts/tags';
 import { subscribeClientChanged } from '@/api/contacts/subscriptions';
 import ClientsTable from '@/components/contacts/ClientsTable.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
@@ -20,13 +20,15 @@ import { useNamespace } from '@/composables/useNamespace';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { contactsTour } from '@/config/tours';
 import { mockClients } from '@/mock/contacts-clients';
+import QuickSetupButton from '@/components/onboarding/QuickSetupButton.vue';
+import type { BusinessType } from '@/config/businessTypes';
 
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { token, user } = useAuth();
-const { selected: selectedNS, titleBySlug } = useNamespace();
+const { selected: selectedNS, titleBySlug, idBySlug } = useNamespace();
 const { isCompleted, startTour } = useOnboarding();
 
 const clients = ref<ClientRow[]>([]);
@@ -49,6 +51,7 @@ const hasRemoteChanges = ref(false);
 let stopClientsSubscription: (() => void) | null = null;
 
 const nsSlug = computed(() => route.params.namespace as string);
+const namespaceId = computed(() => idBySlug(nsSlug.value));
 
 // Valid page sizes
 const validPageSizes = [10, 20, 50, 100];
@@ -329,6 +332,14 @@ async function resolveRelatedClientNames(contactsToken: string, namespace: strin
   } catch {
     // ignore
   }
+}
+
+async function applyTagsPreset(businessType: BusinessType) {
+  if (!token.value || !selectedNS.value) throw new Error('Not authenticated');
+  const { ensure } = useContactsToken();
+  const contactsToken = await ensure(selectedNS.value, token.value);
+  if (!contactsToken) throw new Error('Not authenticated');
+  await applyContactTagsPreset(contactsToken, selectedNS.value, businessType, locale.value);
 }
 
 async function loadClients() {
@@ -679,7 +690,7 @@ async function handleRefreshFromRemote() {
             {{ t('contacts.noClientsDescription') || 'Создавайте новых клиентов и управляйте всеми деталями их контактной информации в одном месте' }}
           </p>
 
-          <div class="flex justify-center">
+          <div class="flex flex-wrap justify-center gap-3">
             <UButton
               icon="lucide:plus"
               size="md"
@@ -690,6 +701,11 @@ async function handleRefreshFromRemote() {
             >
               {{ t('contacts.createFirstClient') || t('contacts.createClient') }}
             </UButton>
+            <QuickSetupButton
+              v-if="namespaceId"
+              :namespace-id="namespaceId"
+              :on-apply="applyTagsPreset"
+            />
           </div>
         </div>
       </div>
