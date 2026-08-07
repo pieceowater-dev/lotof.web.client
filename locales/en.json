@@ -2163,5 +2163,18 @@
     "appGlobal": "General",
     "notFound": "Article not found",
     "uncategorized": "Uncategorized"
+  },
+  "onboarding": {
+    "needHelp": "Need help setting up?",
+    "quickSetupTitle": "Quick Setup",
+    "quickSetupHint": "Pick your business type — we'll fill in typical starter data you can edit or delete afterward.",
+    "applyPreset": "Set up",
+    "quickSetupSuccess": "Done! Data added.",
+    "quickSetupError": "Quick Setup failed",
+    "businessTypeRestaurantCafe": "Restaurant / cafe",
+    "businessTypeRetail": "Retail",
+    "businessTypeServices": "Services",
+    "businessTypeDeliveryLogistics": "Delivery / logistics",
+    "businessTypeOther": "Other"
   }
 }

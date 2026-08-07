@@ -2198,5 +2198,18 @@
     "appGlobal": "Общее",
     "notFound": "Статья не найдена",
     "uncategorized": "Без категории"
+  },
+  "onboarding": {
+    "needHelp": "Нужна помощь в настройке?",
+    "quickSetupTitle": "Быстрая настройка",
+    "quickSetupHint": "Выберите тип бизнеса — мы сразу заполним типовые данные, которые потом можно отредактировать или удалить.",
+    "applyPreset": "Настроить",
+    "quickSetupSuccess": "Готово! Данные добавлены.",
+    "quickSetupError": "Не удалось выполнить быструю настройку",
+    "businessTypeRestaurantCafe": "Кафе / ресторан",
+    "businessTypeRetail": "Розничная торговля",
+    "businessTypeServices": "Услуги",
+    "businessTypeDeliveryLogistics": "Доставка / логистика",
+    "businessTypeOther": "Другое"
   }
 }

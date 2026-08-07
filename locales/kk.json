@@ -1684,5 +1684,18 @@
     "appGlobal": "Жалпы",
     "notFound": "Мақала табылмады",
     "uncategorized": "Санатсыз"
+  },
+  "onboarding": {
+    "needHelp": "Баптауда көмек керек пе?",
+    "quickSetupTitle": "Жылдам баптау",
+    "quickSetupHint": "Бизнес түрін таңдаңыз — біз бірден типтік деректерді толтырамыз, оларды кейін өңдеуге немесе жоюға болады.",
+    "applyPreset": "Баптау",
+    "quickSetupSuccess": "Дайын! Деректер қосылды.",
+    "quickSetupError": "Жылдам баптауды орындау мүмкін болмады",
+    "businessTypeRestaurantCafe": "Кафе / мейрамхана",
+    "businessTypeRetail": "Бөлшек сауда",
+    "businessTypeServices": "Қызметтер",
+    "businessTypeDeliveryLogistics": "Жеткізу / логистика",
+    "businessTypeOther": "Басқа"
   }
 }
