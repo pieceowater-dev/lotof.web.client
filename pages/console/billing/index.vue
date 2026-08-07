@@ -255,6 +255,7 @@
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.plan') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.status') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.periodEnd') }}</th>
+                  <th class="px-6 py-3 font-bold text-slate-900 dark:text-white"></th>
                 </tr>
               </thead>
               <tbody>
@@ -271,10 +272,10 @@
                     <span class="font-medium text-slate-700 dark:text-slate-300">{{ subscription.plan }}</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span 
+                    <span
                       :class="[
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                        subscription.status === 'ACTIVE' 
+                        subscription.status === 'ACTIVE'
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
                           : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
                       ]"
@@ -284,6 +285,16 @@
                     </span>
                   </td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ subscription.periodEnd }}</td>
+                  <td class="px-6 py-4 text-right">
+                    <button
+                      v-if="subscription.status === 'ACTIVE' || subscription.status === 'TRIALING'"
+                      :disabled="cancelingSubscriptionId === subscription.id"
+                      class="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                      @click="cancelSubscriptionPrompt(subscription)"
+                    >
+                      {{ t('admin.cancelSubscription') || 'Отменить' }}
+                    </button>
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -596,7 +607,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, type AdminBillingInfo } from '@/api/capital/admin';
+import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, capitalCancelSubscription, type AdminBillingInfo } from '@/api/capital/admin';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 import { CURRENCIES } from '@/utils/currency';
 
@@ -1016,6 +1027,37 @@ async function submitCashPaymentModal() {
     cashPaymentModal.error = e?.message || (t('admin.cashPaymentFailed') || 'Не удалось подтвердить оплату');
   } finally {
     cashPaymentModal.saving = false;
+  }
+}
+
+// ─── Cancel subscription ───────────────────────────────────────────────────
+const cancelingSubscriptionId = ref<string | null>(null);
+
+async function cancelSubscriptionPrompt(sub: { id: string; namespaceSlug?: string | null; namespace: string }) {
+  if (!token.value || !sub.namespaceSlug) return;
+  const { confirm } = useConfirm();
+  const ok = await confirm({
+    title: t('admin.cancelSubscriptionConfirmTitle') || 'Отменить подписку?',
+    message: t('admin.cancelSubscriptionConfirmMessage') || `${sub.namespace} немедленно потеряет доступ к этому приложению.`,
+    confirmLabel: t('admin.cancelSubscription') || 'Отменить подписку',
+    color: 'red',
+    icon: 'lucide:ban',
+  });
+  if (!ok) return;
+
+  cancelingSubscriptionId.value = sub.id;
+  try {
+    const result = await capitalCancelSubscription(token.value, sub.namespaceSlug, selectedProjectAppCode.value);
+    if (!result.success) {
+      toast.add({ title: result.error || result.message || (t('admin.cancelSubscriptionFailed') || 'Не удалось отменить подписку'), color: 'red' });
+      return;
+    }
+    toast.add({ title: t('admin.subscriptionCanceled') || 'Подписка отменена', color: 'green' });
+    await refreshData();
+  } catch (e: any) {
+    toast.add({ title: e?.message || (t('admin.cancelSubscriptionFailed') || 'Не удалось отменить подписку'), color: 'red' });
+  } finally {
+    cancelingSubscriptionId.value = null;
   }
 }
 

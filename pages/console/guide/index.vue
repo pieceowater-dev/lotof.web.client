@@ -249,7 +249,7 @@ const { token } = useAuth();
 const APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE'];
 const selectedApp = ref<GuideApp>('GLOBAL');
 
-const selectedSection = ref(0);
+const selectedSection = ref(1); // Articles by default -- Categories is the less common starting point
 const sections = computed(() => [
   { label: t('admin.guideCategories'), icon: 'lucide:folder-tree' },
   { label: t('admin.guideArticles'), icon: 'lucide:file-text' },

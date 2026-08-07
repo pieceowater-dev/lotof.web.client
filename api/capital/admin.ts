@@ -336,6 +336,36 @@ export async function capitalConfirmCashPayment(
   return res.confirmCashPayment;
 }
 
+export async function capitalCancelSubscription(
+  token: string,
+  namespace: string,
+  applicationCode: string
+): Promise<ActivateSubscriptionPayload> {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation CancelSubscription($namespace: String!, $applicationCode: String!) {
+      cancelSubscription(namespace: $namespace, applicationCode: $applicationCode) {
+        success
+        message
+        error
+        subscription {
+          id
+          accountId
+          planId
+          status
+          currentPeriodStart
+          currentPeriodEnd
+        }
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ cancelSubscription: ActivateSubscriptionPayload }>(mutation, {
+    namespace,
+    applicationCode,
+  });
+  return res.cancelSubscription;
+}
+
 export type ContactSettings = {
   phone?: string | null;
   whatsapp?: string | null;

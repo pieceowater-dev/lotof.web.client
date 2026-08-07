@@ -22,7 +22,7 @@
         <div class="prose prose-sm dark:prose-invert max-w-none sm:prose-base" v-html="localeContentHtml" />
       </article>
 
-      <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800">
+      <div class="mt-6">
         <GuideContactBar variant="card" />
       </div>
     </div>

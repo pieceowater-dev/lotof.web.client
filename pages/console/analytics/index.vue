@@ -108,50 +108,25 @@
           </div>
         </div>
 
-        <div class="grid gap-6 lg:grid-cols-2">
-          <!-- Per-app breakdown -->
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.activeSubscriptionsByApp') }}</h3>
-            <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.activeSubscriptionsByAppDesc') }}</p>
-            <div v-if="!appBars.some(b => b.value > 0)" class="py-10 text-center text-sm text-slate-400">
-              {{ t('admin.notEnoughData') }}
-            </div>
-            <div v-else class="flex h-48 items-end gap-6 px-2">
-              <div v-for="bar in appBars" :key="bar.key" class="group flex flex-1 flex-col items-center">
-                <div class="mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ bar.value }}</div>
-                <div class="flex h-36 w-full items-end">
-                  <div
-                    class="w-full rounded-t-md transition-all"
-                    :class="bar.colorClass"
-                    :style="{ height: barHeightPct(bar.value, appBarsMax) + '%' }"
-                    :title="`${bar.label}: ${bar.value}`"
-                  />
-                </div>
-                <span class="mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">{{ bar.label }}</span>
-              </div>
-            </div>
+        <!-- Per-app breakdown -->
+        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.activeSubscriptionsByApp') }}</h3>
+          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.activeSubscriptionsByAppDesc') }}</p>
+          <div v-if="!appBars.some(b => b.value > 0)" class="py-10 text-center text-sm text-slate-400">
+            {{ t('admin.notEnoughData') }}
           </div>
-
-          <!-- Publications by category -->
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
-            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.publicationsByCategory') }}</h3>
-            <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.publicationsByCategoryDesc') }}</p>
-            <div v-if="!pubBars.some(b => b.value > 0)" class="py-10 text-center text-sm text-slate-400">
-              {{ t('admin.notEnoughData') }}
-            </div>
-            <div v-else class="flex h-48 items-end gap-3 px-2">
-              <div v-for="bar in pubBars" :key="bar.key" class="group flex flex-1 flex-col items-center">
-                <div class="mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ bar.value }}</div>
-                <div class="flex h-36 w-full items-end">
-                  <div
-                    class="w-full rounded-t-md transition-all"
-                    :class="bar.colorClass"
-                    :style="{ height: barHeightPct(bar.value, pubBarsMax) + '%' }"
-                    :title="`${bar.label}: ${bar.value}`"
-                  />
-                </div>
-                <span class="mt-2 text-center text-[11px] font-medium leading-tight text-slate-600 dark:text-slate-400">{{ bar.label }}</span>
+          <div v-else class="flex h-48 items-end gap-6 px-2">
+            <div v-for="bar in appBars" :key="bar.key" class="group flex flex-1 flex-col items-center">
+              <div class="mb-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200">{{ bar.value }}</div>
+              <div class="flex h-36 w-full items-end">
+                <div
+                  class="w-full rounded-t-md transition-all"
+                  :class="bar.colorClass"
+                  :style="{ height: barHeightPct(bar.value, appBarsMax) + '%' }"
+                  :title="`${bar.label}: ${bar.value}`"
+                />
               </div>
+              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">{{ bar.label }}</span>
             </div>
           </div>
         </div>
@@ -571,13 +546,6 @@ const kpiCards = computed(() => [
     iconBg: 'bg-violet-50 dark:bg-violet-900/20',
     iconColor: 'text-violet-600 dark:text-violet-400',
   },
-  {
-    label: t('admin.publications'),
-    value: String(publicationCounts.value.all ?? 0),
-    icon: 'lucide:newspaper',
-    iconBg: 'bg-rose-50 dark:bg-rose-900/20',
-    iconColor: 'text-rose-600 dark:text-rose-400',
-  },
 ]);
 
 // ─── Namespace growth chart (single series -> sequential blue, no legend) ─
@@ -723,23 +691,6 @@ const appBars = computed(() => {
   });
 });
 const appBarsMax = computed(() => Math.max(...appBars.value.map(b => b.value), 1));
-
-// ─── Publications by category (categorical slots 1-5) ────────────────────
-const PUB_CATEGORIES = [
-  { key: 'news', label: 'News', colorClass: 'bg-blue-600 dark:bg-blue-500' },
-  { key: 'blog', label: 'Blog', colorClass: 'bg-orange-500 dark:bg-orange-500' },
-  { key: 'whatsnew', label: "What's new", colorClass: 'bg-teal-500 dark:bg-teal-400' },
-  { key: 'articles', label: 'Articles', colorClass: 'bg-amber-500 dark:bg-amber-400' },
-  { key: 'academy', label: 'Academy', colorClass: 'bg-pink-500 dark:bg-pink-400' },
-] as const;
-
-const pubBars = computed(() => PUB_CATEGORIES.map(cat => ({
-  key: cat.key,
-  label: cat.label,
-  value: Number(publicationCounts.value[cat.key] || 0),
-  colorClass: cat.colorClass,
-})));
-const pubBarsMax = computed(() => Math.max(...pubBars.value.map(b => b.value), 1));
 
 function barHeightPct(value: number, max: number): number {
   if (max <= 0) return 0;

@@ -45,7 +45,7 @@
         </NuxtLink>
       </div>
 
-      <div class="mt-6 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800">
+      <div class="mt-6">
         <GuideContactBar variant="card" />
       </div>
     </div>
