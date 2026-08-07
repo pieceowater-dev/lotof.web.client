@@ -229,3 +229,49 @@ export const contactsTour: TourConfig = {
     },
   ],
 };
+
+export const peopleTour: TourConfig = {
+  id: 'people-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="people-title"]',
+      titleKey: 'app.tourPeopleWelcomeTitle',
+      contentKey: 'app.tourPeopleWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'add-bar',
+      target: '[data-tour="people-add-bar"]',
+      titleKey: 'app.tourPeopleAddBarTitle',
+      contentKey: 'app.tourPeopleAddBarContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'team',
+      target: '[data-tour="people-team"]',
+      titleKey: 'app.tourPeopleTeamTitle',
+      contentKey: 'app.tourPeopleTeamContent',
+      placement: 'right',
+      highlightPadding: 10,
+    },
+    {
+      id: 'friends',
+      target: '[data-tour="people-friends"]',
+      titleKey: 'app.tourPeopleFriendsTitle',
+      contentKey: 'app.tourPeopleFriendsContent',
+      placement: 'left',
+      highlightPadding: 10,
+    },
+    {
+      id: 'referral',
+      target: '[data-tour="people-referral"]',
+      titleKey: 'app.tourPeopleReferralTitle',
+      contentKey: 'app.tourPeopleReferralContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+  ],
+};

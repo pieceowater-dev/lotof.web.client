@@ -6,8 +6,11 @@ import { FriendshipStatus, FilterPaginationLengthEnum } from '@gql-hub';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getInitials, getAvatarPalette } from '@/utils/avatar';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { peopleTour } from '@/config/tours';
 
 const { token, user } = useAuth();
+const { isCompleted, startTour, reset } = useOnboarding();
 const { rows: friends, applyLoaded: applyLoadedFriends, load, loading, currentStatus } = useFriendships();
 const { confirm } = useConfirm();
 
@@ -182,6 +185,10 @@ onMounted(async () => {
   if (!selectedNS.value && allNamespaces.value.length > 0) {
     selectedNS.value = allNamespaces.value[0];
   }
+
+  if (process.client && !isCompleted(peopleTour.id) && !friends.value.length && !nsMembers.value.length) {
+    setTimeout(() => startTour(peopleTour), 1000);
+  }
 });
 
 interface FriendRow { id: string; status: FriendshipStatus; initiatedByMe?: boolean; friend: { id: string; username: string; email: string } }
@@ -330,6 +337,14 @@ const friendPage = ref(1);
 const friendHasMore = ref(true);
 const friendLoading = ref(false);
 const friendToAdd = ref<string>('');
+// USelectMenu's v-model can come back as either the raw option value or the
+// whole {label, value} option object depending on how it resolves the
+// current search text -- normalize both shapes to a plain id.
+const friendToAddId = computed(() => {
+  const val = friendToAdd.value as any;
+  if (!val) return '';
+  return typeof val === 'string' ? val : (val.value || '');
+});
 
 async function loadMoreFriends(reset = false) {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
@@ -368,6 +383,13 @@ watch(friendSearch, () => {
   friendSearchDebounce = setTimeout(() => loadMoreFriends(true), 400);
 });
 // onMounted будет заменен на bootstrap загрузку ниже
+async function confirmAddMemberFromFriend() {
+  const id = friendToAddId.value;
+  if (!id) return;
+  await addMemberFromFriend(id);
+  friendToAdd.value = '';
+}
+
 async function addMemberFromFriend(friendUserId: string) {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   const { idBySlug } = useNamespace();
@@ -480,17 +502,29 @@ async function removeMember(member: { userId: string; username: string; email: s
 <template>
   <div class="p-4 md:p-6 lg:p-8 min-h-screen max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="mb-6">
-      <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text">
-        {{ t('app.myPeopleHeading') }}
-      </h1>
-      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ t('app.myPeopleSubtitle') }}
-      </p>
+    <div class="mb-6 flex items-start justify-between gap-3">
+      <div data-tour="people-title">
+        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text">
+          {{ t('app.myPeopleHeading') }}
+        </h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          {{ t('app.myPeopleSubtitle') }}
+        </p>
+      </div>
+      <UButton
+        variant="ghost"
+        color="gray"
+        size="sm"
+        icon="lucide:play-circle"
+        class="flex-shrink-0"
+        @click="() => { reset(peopleTour.id); startTour(peopleTour); }"
+      >
+        {{ t('app.tourStart') }}
+      </UButton>
     </div>
 
     <!-- Referral program -->
-    <UCard class="mb-6 shadow-sm border border-emerald-100/70 dark:border-emerald-900/30">
+    <UCard data-tour="people-referral" class="mb-6 shadow-sm border border-emerald-100/70 dark:border-emerald-900/30">
       <div class="flex flex-col sm:flex-row sm:items-center gap-3">
         <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
           <UIcon name="lucide:gift" class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
@@ -532,7 +566,7 @@ async function removeMember(member: { userId: string; username: string; email: s
     </UCard>
 
     <!-- Unified add-person bar -->
-    <UCard class="mb-6 shadow-sm border border-blue-100/70 dark:border-blue-900/30">
+    <UCard data-tour="people-add-bar" class="mb-6 shadow-sm border border-blue-100/70 dark:border-blue-900/30">
       <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
         <UInput
           v-model="search"
@@ -572,7 +606,7 @@ async function removeMember(member: { userId: string; username: string; email: s
     <!-- Two-column: Team (primary) + Friends -->
     <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 items-start">
       <!-- Team card -->
-      <UCard class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
+      <UCard data-tour="people-team" class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
         <template #header>
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div class="flex items-center gap-2">
@@ -591,23 +625,34 @@ async function removeMember(member: { userId: string; username: string; email: s
         </template>
 
         <div class="flex flex-col gap-3">
-          <USelectMenu
-            v-model="friendToAdd"
-            searchable
-            :options="friendOptions"
-            :searchable-placeholder="t('app.search')"
-            :search-value="friendSearch"
-            :loading="friendLoading"
-            :placeholder="t('app.selectFriend')"
-            size="md"
-            @update:search-value="(val: string) => friendSearch = val as any"
-            @scroll-bottom="() => loadMoreFriends(false)"
-            @change="(val: any) => { const id = typeof val === 'string' ? val : (val && (val as any).value); if (id) { addMemberFromFriend(id); friendToAdd = ''; } }"
-          >
-            <template #leading>
-              <UIcon name="lucide:user-plus" class="w-5 h-5 text-blue-500" />
-            </template>
-          </USelectMenu>
+          <div class="flex items-center gap-2">
+            <USelectMenu
+              v-model="friendToAdd"
+              searchable
+              :options="friendOptions"
+              :searchable-placeholder="t('app.search')"
+              :search-value="friendSearch"
+              :loading="friendLoading"
+              :placeholder="t('app.selectFriend')"
+              size="md"
+              class="min-w-0 flex-1"
+              @update:search-value="(val: string) => friendSearch = val as any"
+              @scroll-bottom="() => loadMoreFriends(false)"
+            >
+              <template #leading>
+                <UIcon name="lucide:user-plus" class="w-5 h-5 text-blue-500" />
+              </template>
+            </USelectMenu>
+            <UButton
+              size="md"
+              color="blue"
+              :disabled="!friendToAddId"
+              class="flex-shrink-0"
+              @click="confirmAddMemberFromFriend"
+            >
+              {{ t('app.add') }}
+            </UButton>
+          </div>
 
           <UInput
             v-if="nsMembers.length > 6"
@@ -669,7 +714,7 @@ async function removeMember(member: { userId: string; username: string; email: s
       </UCard>
 
       <!-- Friends card -->
-      <UCard class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
+      <UCard data-tour="people-friends" class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
         <template #header>
           <div class="flex items-center gap-2">
             <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
