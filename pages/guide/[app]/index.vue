@@ -31,6 +31,10 @@
       </section>
       <p v-if="!groups.length" class="text-sm text-gray-400">{{ t('guide.noArticles') }}</p>
     </div>
+
+    <div class="mt-10">
+      <GuideContactBar />
+    </div>
   </div>
 </template>
 

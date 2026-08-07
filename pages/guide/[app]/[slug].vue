@@ -6,14 +6,19 @@
     <p class="text-gray-500">{{ t('guide.notFound') }}</p>
     <NuxtLink :to="`/guide/${appParam}`" class="mt-3 inline-block text-primary hover:underline">{{ t('guide.title') }}</NuxtLink>
   </div>
-  <article v-else class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
-    <NuxtLink :to="`/guide/${appParam}`" class="mb-6 inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">
-      <UIcon name="lucide:arrow-left" class="h-3.5 w-3.5" />
-      {{ resolvedAppLabel }}
-    </NuxtLink>
-    <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">{{ localeTitle }}</h1>
-    <div class="prose prose-sm dark:prose-invert max-w-none" v-html="localeContentHtml" />
-  </article>
+  <div v-else>
+    <article class="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+      <NuxtLink :to="`/guide/${appParam}`" class="mb-6 inline-flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-white">
+        <UIcon name="lucide:arrow-left" class="h-3.5 w-3.5" />
+        {{ resolvedAppLabel }}
+      </NuxtLink>
+      <h1 class="mb-6 text-2xl font-bold text-gray-900 dark:text-white">{{ localeTitle }}</h1>
+      <div class="prose prose-sm dark:prose-invert max-w-none" v-html="localeContentHtml" />
+    </article>
+    <div class="mx-auto max-w-2xl px-4 pb-12 sm:px-6 lg:px-8">
+      <GuideContactBar />
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">

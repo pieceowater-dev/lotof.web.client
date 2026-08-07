@@ -27,6 +27,10 @@
         <UIcon name="lucide:arrow-up-right" class="h-4 w-4 text-gray-400" />
       </NuxtLink>
     </div>
+
+    <div class="mt-10">
+      <GuideContactBar />
+    </div>
   </div>
 </template>
 

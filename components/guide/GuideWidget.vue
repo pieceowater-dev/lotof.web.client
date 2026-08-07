@@ -56,12 +56,24 @@
               v-for="app in browsableApps"
               :key="app.id"
               type="button"
-              class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
+              class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm"
+              :class="app.isCurrent
+                ? 'bg-primary-50 dark:bg-primary-900/20'
+                : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
               @click="openCategories(app)"
             >
-              <span class="flex items-center gap-2 font-medium text-gray-800 dark:text-gray-100">
+              <span
+                class="flex items-center gap-2 font-medium"
+                :class="app.isCurrent ? 'text-primary' : 'text-gray-800 dark:text-gray-100'"
+              >
                 <UIcon :name="app.icon" class="h-4 w-4 text-primary" />
                 {{ app.label }}
+                <span
+                  v-if="app.isCurrent"
+                  class="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary dark:bg-primary-900/40"
+                >
+                  {{ t('guide.currentApp') }}
+                </span>
               </span>
               <UIcon name="lucide:chevron-right" class="h-4 w-4 text-gray-400" />
             </button>
@@ -120,8 +132,8 @@
               <div class="prose prose-sm dark:prose-invert max-w-none" v-html="localeContentHtml(currentArticle)" />
               <NuxtLink
                 :to="`/guide/${level.app.toLowerCase()}/${currentArticle.slug}`"
+                target="_blank"
                 class="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                @click="isOpen = false"
               >
                 {{ t('guide.openFullPage') }}
                 <UIcon name="lucide:arrow-up-right" class="h-3.5 w-3.5" />
@@ -131,7 +143,7 @@
         </div>
       </div>
 
-      <div class="border-t border-gray-100 px-5 py-4 dark:border-gray-800 space-y-2">
+      <div class="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
         <NuxtLink
           :to="`/guide/${currentGuideApp.toLowerCase()}`"
           class="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30"
@@ -140,18 +152,9 @@
           {{ t('guide.openGuideFor') }} {{ currentAppName || appLabel(currentGuideApp) }}
           <UIcon name="lucide:arrow-up-right" class="h-4 w-4" />
         </NuxtLink>
-        <div class="flex flex-wrap gap-2">
-          <NuxtLink
-            v-for="app in otherApps"
-            :key="app.id"
-            :to="`/guide/${app.id}`"
-            class="rounded-full border border-gray-200 px-3 py-1 text-xs text-gray-600 hover:border-primary hover:text-primary dark:border-gray-700 dark:text-gray-300"
-            @click="isOpen = false"
-          >
-            {{ app.label }}
-          </NuxtLink>
-        </div>
       </div>
+
+      <GuideContactBar />
     </div>
   </USlideover>
 </template>
@@ -212,15 +215,14 @@ function appLabel(app: GuideApp): string {
 
 const browsableApps = computed(() => GUIDE_APP_IDS.map((id) => {
   const app = ALL_APPS.find((a) => a.address === id);
-  return { id, guideApp: GUIDE_APP_BY_ID[id], label: app ? t(app.titleKey) : id, icon: app?.icon || 'lucide:layout-grid' };
+  return {
+    id,
+    guideApp: GUIDE_APP_BY_ID[id],
+    label: app ? t(app.titleKey) : id,
+    icon: app?.icon || 'lucide:layout-grid',
+    isCurrent: GUIDE_APP_BY_ID[id] === currentGuideApp.value,
+  };
 }));
-
-const otherApps = computed(() => GUIDE_APP_IDS
-  .filter((id) => GUIDE_APP_BY_ID[id] !== currentGuideApp.value)
-  .map((id) => {
-    const app = ALL_APPS.find((a) => a.address === id);
-    return { id, label: app ? t(app.titleKey) : id };
-  }));
 
 function startCurrentTour() {
   if (!currentTour.value) return;

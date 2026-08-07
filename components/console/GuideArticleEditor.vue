@@ -136,6 +136,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import { useConfirm } from '@/composables/useConfirm';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { slugFromNames } from '@/utils/slug';
 import type { GuideApp, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
@@ -152,6 +153,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const { token } = useAuth();
 const toast = useToast();
+const { confirm } = useConfirm();
 
 const saving = ref(false);
 const preview = ref(false);
@@ -239,6 +241,7 @@ async function handleSave(status: GuideArticleStatus) {
 
 async function handleDelete() {
   if (!props.onDelete) return;
+  if (!(await confirm({ message: t('admin.guideConfirmDeleteArticle') }))) return;
   await props.onDelete();
 }
 </script>
