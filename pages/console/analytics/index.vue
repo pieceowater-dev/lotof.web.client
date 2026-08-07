@@ -449,7 +449,6 @@ import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { hubGetAdminNamespaces, type AdminNamespaceRow } from '@/api/hub/admin';
 import { capitalGetAdminBillingInfo, type AdminBillingInfo } from '@/api/capital/admin';
-import { capitalListPublications } from '@/api/publications';
 import {
   hubListDeepLinkCategories,
   hubListDeepLinks,
@@ -476,21 +475,18 @@ const loading = ref(true);
 const loadError = ref('');
 const namespaces = ref<AdminNamespaceRow[]>([]);
 const billingData = ref<AdminBillingInfo | null>(null);
-const publicationCounts = ref<Record<string, number>>({});
 
 async function load() {
   if (!token.value) return;
   loading.value = true;
   loadError.value = '';
   try {
-    const [nsResult, billingResult, pubResult] = await Promise.all([
+    const [nsResult, billingResult] = await Promise.all([
       hubGetAdminNamespaces(token.value),
       capitalGetAdminBillingInfo(token.value, 1, 500),
-      capitalListPublications(token.value, { page: 1, pageSize: 1, includeDraft: true }),
     ]);
     namespaces.value = nsResult.rows;
     billingData.value = billingResult;
-    publicationCounts.value = pubResult.counts || {};
   } catch (e: any) {
     loadError.value = e?.message || 'Не удалось загрузить аналитику';
   } finally {
