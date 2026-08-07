@@ -80,7 +80,22 @@ async function saveBrandAndContinue() {
 const branchForm = reactive({ name: '', address: '', phone: '' });
 const addedBranches = ref<{ name: string; address: string }[]>([]);
 const branchSaving = ref(false);
-const isBranchValid = computed(() => branchForm.name.trim().length > 0 && branchForm.address.trim().length > 0);
+
+// Same phone sanitize/validate rules as BranchModal.vue and the Contacts
+// client-create form.
+function sanitizePhoneInput(value: string): string {
+  return value.replace(/[^\d+()\s-]/g, '');
+}
+function updateBranchPhone(value: string) {
+  branchForm.phone = sanitizePhoneInput(value);
+}
+const isBranchPhoneValid = computed(() => {
+  if (!branchForm.phone) return true;
+  const digits = branchForm.phone.replace(/\D/g, '');
+  return digits.length >= 10;
+});
+
+const isBranchValid = computed(() => branchForm.name.trim().length > 0 && branchForm.address.trim().length > 0 && isBranchPhoneValid.value);
 
 async function addBranch() {
   if (!isBranchValid.value) return;
@@ -229,13 +244,27 @@ function finish() {
 
         <div class="space-y-3">
           <UFormGroup :label="t('menu.name') || 'Name'">
-            <UInput v-model="branchForm.name" size="lg" :placeholder="t('menu.onboardingBranchNamePlaceholder') || 'e.g. Downtown'" />
+            <UInput v-model="branchForm.name" size="lg" :placeholder="t('menu.onboardingBranchNamePlaceholder') || 'e.g. Downtown'" @keyup.enter="addBranch" />
           </UFormGroup>
           <UFormGroup :label="t('menu.address') || 'Address'">
-            <UInput v-model="branchForm.address" size="lg" />
+            <UInput v-model="branchForm.address" size="lg" @keyup.enter="addBranch" />
           </UFormGroup>
-          <UFormGroup :label="t('menu.phone') || 'Phone'">
-            <UInput v-model="branchForm.phone" type="tel" size="lg" />
+          <UFormGroup
+            :label="t('menu.phone') || 'Phone'"
+            :help="!isBranchPhoneValid ? (t('contacts.invalidPhone') || 'Invalid phone format') : ''"
+            :error="!isBranchPhoneValid"
+          >
+            <UInput
+              :model-value="branchForm.phone"
+              type="tel"
+              inputmode="tel"
+              pattern="[0-9+()\s-]*"
+              icon="lucide:phone"
+              size="lg"
+              :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
+              @update:model-value="updateBranchPhone"
+              @keyup.enter="addBranch"
+            />
           </UFormGroup>
           <UButton color="gray" variant="soft" icon="lucide:plus" :loading="branchSaving" :disabled="!isBranchValid || branchSaving" @click="addBranch">
             {{ t('menu.addBranch') || 'Add branch' }}
