@@ -501,6 +501,14 @@ async function removeMember(member: { userId: string; username: string; email: s
 
 <template>
   <div class="p-4 md:p-6 lg:p-8 min-h-screen max-w-7xl mx-auto">
+    <NuxtLink
+      to="/"
+      class="mb-4 inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+    >
+      <UIcon name="lucide:home" class="h-3.5 w-3.5" />
+      {{ t('app.home') }}
+    </NuxtLink>
+
     <!-- Header -->
     <div class="mb-6 flex items-start justify-between gap-3">
       <div data-tour="people-title">
@@ -650,7 +658,7 @@ async function removeMember(member: { userId: string; username: string; email: s
               class="flex-shrink-0"
               @click="confirmAddMemberFromFriend"
             >
-              {{ t('app.add') }}
+              {{ t('common.add') }}
             </UButton>
           </div>
 
