@@ -783,9 +783,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
 
             <template v-if="!isEditingOrder">
               <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-sm font-semibold text-gray-600 dark:text-gray-300 flex-shrink-0">
-                  {{ (order.customerName || order.phone || '?').slice(0, 1).toUpperCase() }}
-                </span>
+                <UserAvatar :name="order.customerName || order.phone" size="lg" />
                 <div class="min-w-0">
                   <NuxtLink
                     v-if="order.clientId"

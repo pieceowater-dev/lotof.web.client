@@ -522,10 +522,6 @@ function formatDate(iso: string) {
   }
 }
 
-function initialFor(order: MenuOrder): string {
-  return (order.customerName || order.phone || '?').slice(0, 1).toUpperCase();
-}
-
 async function copyOrderLink(order: MenuOrder) {
   const url = `${window.location.origin}/${nsSlug.value}/menu?order=${smartOrderNumber(order)}`;
   try {
@@ -1040,9 +1036,7 @@ async function handleCreateOrder(payload: any) {
         </template>
         <template #customerName-data="{ row }">
           <div class="flex items-center gap-2 min-w-0">
-            <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-600 dark:text-gray-300">
-              {{ initialFor(row) }}
-            </span>
+            <UserAvatar :name="row.customerName || row.phone" size="sm" />
             <span class="truncate">{{ row.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
           </div>
         </template>

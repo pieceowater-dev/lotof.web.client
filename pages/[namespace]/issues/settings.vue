@@ -244,9 +244,7 @@ onMounted(() => {
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:users">
         <template #userId-data="{ row }">
           <button type="button" class="group flex items-center gap-2 text-left" :class="row.role === 'OWNER' && 'cursor-default'" @click="row.role !== 'OWNER' && openRoleModal(row)">
-            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold uppercase text-gray-600 dark:text-gray-300 flex-shrink-0">
-              {{ (row.username || row.email || '?').slice(0, 2) }}
-            </span>
+            <UserAvatar :name="row.username || row.email" :seed="row.email" size="sm" />
             <span class="font-medium text-gray-900 dark:text-gray-100" :class="row.role !== 'OWNER' && 'group-hover:text-primary-600 dark:group-hover:text-primary-400'">{{ row.username }}</span>
           </button>
         </template>

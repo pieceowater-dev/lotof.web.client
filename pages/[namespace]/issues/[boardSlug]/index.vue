@@ -712,9 +712,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
           <span class="truncate">{{ memberOptions.find((m) => m.value === selectedAssignee)?.label || (t('tasks.anyAssignee') || 'Any assignee') }}</span>
         </template>
         <template #option="{ option }">
-          <span v-if="option.value" class="flex h-5 w-5 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-[10px] font-semibold text-gray-600 dark:text-gray-300 flex-shrink-0">
-            {{ (option.label || '?').slice(0, 1).toUpperCase() }}
-          </span>
+          <UserAvatar v-if="option.value" :name="option.label" size="xs" />
           <UIcon v-else name="lucide:users" class="w-4 h-4 flex-shrink-0" />
           <span class="truncate">{{ option.label }}</span>
         </template>

@@ -210,17 +210,13 @@ useHead(() => ({
       </div>
 
       <!-- Invalid link / not found -->
-      <div v-else-if="invalidLink || notFound" class="text-center py-16 space-y-3">
-        <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-          <Icon name="lucide:search-x" class="w-6 h-6 text-gray-400" />
-        </span>
-        <p class="text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('menu.orderStatusNotFound') || "We couldn't find that order" }}
-        </p>
-        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
-          {{ t('menu.orderStatusNotFoundHint') || 'Double-check the order number and phone it was placed under.' }}
-        </p>
-      </div>
+      <EmptyState
+        v-else-if="invalidLink || notFound"
+        icon="lucide:search-x"
+        size="lg"
+        :title="t('menu.orderStatusNotFound') || `We couldn't find that order`"
+        :description="t('menu.orderStatusNotFoundHint') || 'Double-check the order number and phone it was placed under.'"
+      />
 
       <!-- Order status -->
       <template v-else-if="order">

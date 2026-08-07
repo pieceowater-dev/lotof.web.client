@@ -5,7 +5,7 @@ import { logError } from '@/utils/logger';
 import { FriendshipStatus, FilterPaginationLengthEnum } from '@gql-hub';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { getErrorMessage } from '@/utils/types/errors';
-import { getInitials, getAvatarPalette } from '@/utils/avatar';
+import { getInitials } from '@/utils/avatar';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { peopleTour } from '@/config/tours';
 
@@ -680,13 +680,7 @@ async function removeMember(member: { userId: string; username: string; email: s
             </div>
           </div>
 
-          <div v-else-if="!filteredMembers.length" class="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <span class="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-              <UIcon name="lucide:users" class="w-5 h-5 text-gray-400" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('app.noTeamYet') }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400 max-w-[220px]">{{ t('app.noTeamYetHint') }}</p>
-          </div>
+          <EmptyState v-else-if="!filteredMembers.length" icon="lucide:users" :title="t('app.noTeamYet')" :description="t('app.noTeamYetHint')" />
 
           <div v-else class="flex flex-col max-h-[420px] overflow-y-auto -mx-1">
             <div
@@ -694,12 +688,7 @@ async function removeMember(member: { userId: string; username: string; email: s
               :key="m.id"
               class="group flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
             >
-              <span
-                class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase"
-                :class="[getAvatarPalette(m.email).bg, getAvatarPalette(m.email).text]"
-              >
-                {{ getInitials(m.username) }}
-              </span>
+              <UserAvatar :name="m.username" :seed="m.email" />
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
                   <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{{ m.username }}</span>
@@ -753,15 +742,12 @@ async function removeMember(member: { userId: string; username: string; email: s
             </div>
           </div>
 
-          <div v-else-if="!filteredFriends.length" class="flex flex-col items-center justify-center gap-2 py-10 text-center">
-            <span class="flex h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
-              <UIcon :name="tabs[selectedTab]?.icon || 'lucide:users'" class="w-5 h-5 text-gray-400" />
-            </span>
-            <p class="text-sm font-medium text-gray-700 dark:text-gray-200">
-              {{ selectedTab === 0 ? t('app.noContactsYet') : selectedTab === 1 ? t('app.noRequestsYet') : t('app.noRejectedYet') }}
-            </p>
-            <p v-if="selectedTab === 0" class="text-xs text-gray-500 dark:text-gray-400 max-w-[220px]">{{ t('app.noContactsYetHint') }}</p>
-          </div>
+          <EmptyState
+            v-else-if="!filteredFriends.length"
+            :icon="tabs[selectedTab]?.icon || 'lucide:users'"
+            :title="selectedTab === 0 ? t('app.noContactsYet') : selectedTab === 1 ? t('app.noRequestsYet') : t('app.noRejectedYet')"
+            :description="selectedTab === 0 ? t('app.noContactsYetHint') : undefined"
+          />
 
           <div v-else class="flex flex-col max-h-[420px] overflow-y-auto -mx-1">
             <div
@@ -769,12 +755,7 @@ async function removeMember(member: { userId: string; username: string; email: s
               :key="row.id"
               class="group flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
             >
-              <span
-                class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase"
-                :class="[getAvatarPalette(row.friend.email).bg, getAvatarPalette(row.friend.email).text]"
-              >
-                {{ getInitials(row.friend.username) }}
-              </span>
+              <UserAvatar :name="row.friend.username" :seed="row.friend.email" />
               <div class="min-w-0 flex-1">
                 <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate block">{{ row.friend.username }}</span>
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
