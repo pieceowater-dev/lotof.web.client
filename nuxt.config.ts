@@ -157,9 +157,6 @@ export default defineNuxtConfig({
         { name: "referrer", content: "strict-origin-when-cross-origin" },
       ],
       link: [
-        // Canonical URL (will be set dynamically per page)
-        { rel: "canonical", href: "" },
-        
         // Standard favicon
         { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
         { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

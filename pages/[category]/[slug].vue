@@ -828,9 +828,6 @@ useSeoMeta({
 
 useHead(() => ({
   title: articleTitle.value,
-  link: [
-    { rel: 'canonical', href: articleCanonical.value },
-  ],
   meta: [
     { name: 'robots', content: articleRobots.value },
     { name: 'author', content: articleAuthor.value },

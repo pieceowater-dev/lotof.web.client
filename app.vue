@@ -166,6 +166,12 @@ const isArticleRoute = computed(() => {
   return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'to' && !PUBLIC_CATEGORY_PREFIXES.has(first);
 });
 
+// Guide stays out of isPrivateRoute/isArticleRoute (see PUBLIC_CATEGORY_PREFIXES
+// above -- that's what keeps it indexable), but Search Console flagged
+// canonical/hreflang tags on Guide's own URLs, so those are suppressed here
+// specifically rather than by touching the indexability fix.
+const isGuideRoute = computed(() => routeSegments.value[0] === 'guide');
+
 const queryLang = computed(() => {
   const raw = route.query.lang;
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -182,7 +188,7 @@ watch(
 );
 
 const canonicalUrl = computed(() => {
-  if (isPrivateRoute.value || isArticleRoute.value) return '';
+  if (isPrivateRoute.value || isArticleRoute.value || isGuideRoute.value) return '';
 
   const base = normalizedSiteUrl.value;
   const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '');
@@ -196,7 +202,7 @@ const canonicalUrl = computed(() => {
 });
 
 const hreflangLinks = computed(() => {
-  if (!canonicalUrl.value || isPrivateRoute.value || isArticleRoute.value) return [];
+  if (!canonicalUrl.value || isPrivateRoute.value || isArticleRoute.value || isGuideRoute.value) return [];
 
   const base = normalizedSiteUrl.value;
   const path = route.path === '/' ? '/' : route.path.replace(/\/$/, '');
