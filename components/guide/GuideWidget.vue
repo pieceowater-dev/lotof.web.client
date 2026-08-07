@@ -165,7 +165,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { GUIDE_APP_BY_ID, GUIDE_APP_IDS, useGuideContext } from '@/composables/useGuideContext';
 import { ALL_APPS } from '@/config/apps';
-import { renderMarkdownSafe } from '@/utils/renderMarkdown';
+import { renderMarkdownSafe, stripLeadingHeading } from '@/utils/renderMarkdown';
 import { guideGetArticleBySlug, guideListArticles, guideListCategories } from '@/api/guide/public';
 import type { GuideApp, GuideArticle, GuideArticleListItem, GuideCategory } from '@/api/guide/public';
 
@@ -199,7 +199,7 @@ function localeExcerpt(article: GuideArticleListItem): string {
 function localeContentHtml(article: GuideArticle): string {
   const suffix = localeSuffix();
   const raw = (article[`content${suffix}` as 'contentRu'] || article.contentRu || '') as string;
-  return renderMarkdownSafe(raw);
+  return renderMarkdownSafe(stripLeadingHeading(raw));
 }
 
 function appLabel(app: GuideApp): string {

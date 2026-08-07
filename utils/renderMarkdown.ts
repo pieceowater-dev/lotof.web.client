@@ -25,6 +25,15 @@ export function renderMarkdownSafe(source: string): string {
   return getDOMPurify().sanitize(rawHtml, { ADD_ATTR: ['target', 'rel'] });
 }
 
+// Guide articles are authored with a leading "## Title" line that restates
+// the article's own title (kept for readability in the console editor and
+// for content copied elsewhere). Reader-facing views already render the
+// title separately as its own heading, so pass content through this first
+// to avoid showing the same heading twice back to back.
+export function stripLeadingHeading(source: string): string {
+  return source.replace(/^\s*#{1,6}[^\n]*\n?/, '');
+}
+
 // For compact, single-line previews (kanban cards) where rendering actual
 // HTML doesn't make sense -- strips the markdown syntax instead so a "#
 // Heading" or "**bold**" description reads as its plain text, not literal

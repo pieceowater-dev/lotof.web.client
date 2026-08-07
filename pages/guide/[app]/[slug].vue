@@ -36,7 +36,7 @@ import { useI18n } from '@/composables/useI18n';
 import { guideAppFromParam } from '@/composables/useGuideContext';
 import { guideGetArticleBySlug } from '@/api/guide/public';
 import type { GuideArticle } from '@/api/guide/public';
-import { renderMarkdownSafe } from '@/utils/renderMarkdown';
+import { renderMarkdownSafe, stripLeadingHeading } from '@/utils/renderMarkdown';
 
 const route = useRoute();
 const { t, locale } = useI18n();
@@ -75,7 +75,7 @@ const localeContentHtml = computed(() => {
   if (!article.value) return '';
   const suffix = localeSuffix();
   const raw = (article.value[`content${suffix}` as 'contentRu'] || article.value.contentRu || '') as string;
-  return renderMarkdownSafe(raw);
+  return renderMarkdownSafe(stripLeadingHeading(raw));
 });
 
 useHead(() => ({ title: article.value ? `${localeTitle.value} — lota Гид` : 'lota Гид' }));
