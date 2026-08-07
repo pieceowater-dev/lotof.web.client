@@ -19,15 +19,23 @@
       </div>
 
       <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-        <UButton
+        <button
           v-if="currentTour"
-          block
-          size="lg"
-          icon="lucide:play-circle"
+          type="button"
+          class="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
           @click="startCurrentTour"
         >
-          {{ t('guide.startTour') }} — {{ currentAppName }}
-        </UButton>
+          <span class="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
+          <span class="absolute -bottom-6 right-10 h-16 w-16 rounded-full bg-white/10" />
+          <span class="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+            <UIcon name="lucide:play-circle" class="h-6 w-6" />
+          </span>
+          <span class="relative min-w-0 flex-1">
+            <span class="block text-sm font-semibold text-white">{{ t('guide.startTour') }}</span>
+            <span class="block truncate text-xs text-white/80">{{ currentAppName }}</span>
+          </span>
+          <UIcon name="lucide:chevron-right" class="relative h-4 w-4 flex-shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5" />
+        </button>
 
         <div v-if="faqItems.length">
           <h3 class="mb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('guide.faqTitle') }}</h3>
