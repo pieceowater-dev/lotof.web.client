@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -100,7 +101,7 @@ onMounted(() => {
               size="lg"
               :options="[
                 { label: t('app.noRole') || 'No role', value: '' },
-                ...roles.map(r => ({ label: r.name, value: r.id }))
+                ...roles.map(r => ({ label: atraceRoleLabel(r.name, t), value: r.id }))
               ]"
               option-attribute="label"
               value-attribute="value"

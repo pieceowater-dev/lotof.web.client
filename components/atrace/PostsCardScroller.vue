@@ -8,6 +8,7 @@ const props = defineProps<{
   showSkeletons: boolean;
   loadingMore: boolean;
   selectedPostId: string | null;
+  canCreate?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -116,6 +117,7 @@ onBeforeUnmount(() => {
           />
         </div>
         <button
+          v-if="canCreate"
           data-tour="create-post-btn"
           class="bg-gradient-to-r from-emerald-400 to-emerald-600 dark:from-emerald-900 dark:to-emerald-700 text-white shadow-lg p-4 rounded-xl w-60 min-h-[100px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-emerald-500 hover:to-emerald-700 dark:hover:from-emerald-800 dark:hover:to-emerald-600 transition-all duration-200 flex-shrink-0"
           @click="emit('create')"

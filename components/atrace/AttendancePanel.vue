@@ -8,6 +8,7 @@ defineProps<{
   selectedPostLocationLine: string;
   loading: boolean;
   error: string | null;
+  canCreate?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -55,6 +56,7 @@ const { t } = useI18n();
         </p>
       </div>
       <UButton
+        v-if="canCreate"
         data-tour="create-post-btn-empty"
         color="primary"
         size="md"

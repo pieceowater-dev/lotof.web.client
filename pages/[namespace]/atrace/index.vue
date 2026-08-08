@@ -21,6 +21,7 @@ import { useAtracePosts } from '@/composables/useAtracePosts';
 import { useAtraceTabRouting } from '@/composables/useAtraceTabRouting';
 import { useAtraceRoutes } from '@/composables/useAtraceRoutes';
 import { useStaleRefresh } from '@/composables/useStaleRefresh';
+import { useAtracePermissions } from '@/composables/useAtracePermissions';
 
 const { t } = useI18n();
 const { titleBySlug } = useNamespace();
@@ -92,6 +93,11 @@ useHead(() => ({
 
 const isFilterOpen = ref(false);
 
+// Gates action buttons a plain Teammate has no rights for (e.g. creating a
+// new location) instead of showing them and erroring only after the click.
+const { can: canDo, loadPermissions } = useAtracePermissions(nsSlug);
+const canCreatePost = computed(() => canDo('tracker.post.create'));
+
 async function openCreateRouteModal() {
     resetRouteCreateForm();
     isRouteCreateOpen.value = true;
@@ -126,6 +132,7 @@ onMounted(async () => {
 
     applyRouteParamsFromUrl();
     await loadInitialData();
+    loadPermissions();
 
     if (process.client) {
         staleRefresh.start();
@@ -258,6 +265,7 @@ onBeforeUnmount(() => {
       :show-skeletons="showSkeletons"
       :loading-more="loadingMore"
       :selected-post-id="selectedPostId"
+      :can-create="canCreatePost"
       @select="(id) => (selectedPostId = id)"
       @edit="openEdit"
       @create="isCreateOpen = true"
@@ -270,6 +278,7 @@ onBeforeUnmount(() => {
       :posts="posts"
       :selected-post-id="selectedPostId"
       :show-skeletons="showSkeletons"
+      :can-create="canCreatePost"
       @update:selected-post-id="(id) => (selectedPostId = id)"
       @create="isCreateOpen = true"
     />
@@ -281,6 +290,7 @@ onBeforeUnmount(() => {
       :selected-post-location-line="selectedPostLocationLine"
       :loading="loading"
       :error="error"
+      :can-create="canCreatePost"
       @create="isCreateOpen = true"
     />
   </div>

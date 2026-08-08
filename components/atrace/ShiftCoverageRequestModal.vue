@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { useAuth } from '@/composables/useAuth';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { user } = useAuth();
 const nsSlugRef = computed(() => props.nsSlug);
 const { members, loadMembers } = useAtraceMembers(nsSlugRef);
 // Only active employees can cover or be covered -- an inactive/deactivated
@@ -35,7 +37,11 @@ const error = ref<string | null>(null);
 watch(isOpen, async (open) => {
   if (!open) return;
   formDate.value = new Date().toISOString().split('T')[0];
-  formOriginalUserId.value = '';
+  // The common case by far is someone requesting coverage for their own
+  // shift -- default "who's being covered" to the current user instead of
+  // making them find themselves in the list every time. Still just a
+  // default: a manager filing this on someone else's behalf can change it.
+  formOriginalUserId.value = user.value?.id || '';
   formCoveringUserId.value = '';
   formComment.value = '';
   error.value = null;

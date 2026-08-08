@@ -6,6 +6,7 @@ const props = defineProps<{
   posts: Post[];
   selectedPostId: string | null;
   showSkeletons: boolean;
+  canCreate?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -56,6 +57,7 @@ const menuOptions = computed(() => [
           :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
         />
         <UButton
+          v-if="canCreate"
           data-tour="create-post-btn-mobile"
           icon="lucide:plus"
           size="sm"

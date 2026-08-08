@@ -3,6 +3,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import EditMemberModal from '@/components/atrace/settings/EditMemberModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -75,7 +76,7 @@ onMounted(async () => {
             v-if="row.roleName"
             class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 rounded-md"
           >
-            {{ row.roleName }}
+            {{ atraceRoleLabel(row.roleName, t) }}
           </span>
           <span
             v-else
