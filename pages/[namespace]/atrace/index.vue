@@ -99,6 +99,10 @@ const { can: canDo, loadPermissions } = useAtracePermissions(nsSlug);
 const canCreatePost = computed(() => canDo('tracker.post.create'));
 const canEditPost = computed(() => canDo('tracker.post.edit'));
 const canCreateRoute = computed(() => canDo('tracker.route.create'));
+// The whole Settings page is member/role/schedule-pattern management --
+// nothing in it a plain Teammate (no role.* permissions at all) can act on,
+// so the entry point itself is hidden rather than just the actions inside it.
+const canSeeSettings = computed(() => canDo('tracker.role.view'));
 
 async function openCreateRouteModal() {
     resetRouteCreateForm();
@@ -216,7 +220,10 @@ onBeforeUnmount(() => {
         >
           {{ t('app.myStats') || 'Моя статистика' }}
         </UButton>
-        <div data-tour="settings-btn">
+        <div
+          v-if="canSeeSettings"
+          data-tour="settings-btn"
+        >
           <UButton
             icon="lucide:settings"
             size="xs"
