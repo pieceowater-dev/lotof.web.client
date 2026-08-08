@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
 import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
+import { useAtracePermissions } from '@/composables/useAtracePermissions';
 
 const { t, locale } = useI18n();
 
@@ -50,6 +51,14 @@ const error = ref<string | null>(null);
 // schedule per member (one extra GraphQL call *per member*, N+1 over the
 // whole namespace) which this view has no use for -- only isActive.
 const { activeUserIds, loaded: activeMembersLoaded, loadActiveMembers } = useAtraceActiveMembers(computed(() => namespaceSlug.value || ''));
+
+// Gates the per-row "Расчёт зарплаты" button -- it opens a modal that both
+// reads and sets pay (tracker.salary.manage), not just views it, so a
+// Teammate (who at most has salary/view for their own pay, via the /me page)
+// must never see it, and neither should a Manager (salary is deliberately
+// kept off that role entirely, see role.seeder.go).
+const { can: canDo, loadPermissions } = useAtracePermissions(computed(() => namespaceSlug.value || ''));
+const canManageSalary = computed(() => canDo('tracker.salary.manage'));
 
 // Gated on both stats and active-members being loaded, rather than filtering
 // as each one resolves independently: otherwise the table would briefly
@@ -556,6 +565,7 @@ onMounted(() => {
   safeLoadStats();
   loadTimeSettings();
   loadActiveMembers();
+  loadPermissions();
 });
 
 // Export functionality
@@ -894,7 +904,7 @@ function formatNumber(val: number, fractionDigits = 0) {
             >
               <td class="px-3 py-2 text-center">
                 <UButton
-                  v-if="!postId"
+                  v-if="!postId && canManageSalary"
                   data-tour="calculate-btn"
                   size="xs"
                   variant="soft"
