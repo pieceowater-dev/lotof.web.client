@@ -59,6 +59,12 @@ const { activeUserIds, loaded: activeMembersLoaded, loadActiveMembers } = useAtr
 // kept off that role entirely, see role.seeder.go).
 const { can: canDo, loadPermissions } = useAtracePermissions(computed(() => namespaceSlug.value || ''));
 const canManageSalary = computed(() => canDo('tracker.salary.manage'));
+// Gates Export and the late/early-threshold Settings button: both write
+// paths (exportDailyAttendance, updateAttendanceSettings) require
+// attendance/manage server-side even though getAttendanceSettings itself
+// only needs attendance/view -- a Teammate could open the settings panel
+// and see current values, but Apply would always fail for them.
+const canManageAttendance = computed(() => canDo('tracker.attendance.manage'));
 
 // Gated on both stats and active-members being loaded, rather than filtering
 // as each one resolves independently: otherwise the table would briefly
@@ -700,9 +706,10 @@ function formatNumber(val: number, fractionDigits = 0) {
 
       <!-- Export and Settings Buttons -->
       <div class="flex flex-col md:flex-row gap-2 md:gap-1.5 md:items-center">
-        <UButton 
-          size="xs" 
-          variant="ghost" 
+        <UButton
+          v-if="canManageAttendance"
+          size="xs"
+          variant="ghost"
           icon="i-heroicons-arrow-down-tray"
           :loading="isExportingExcel"
           @click="exportToExcel"
@@ -710,6 +717,7 @@ function formatNumber(val: number, fractionDigits = 0) {
           {{ t('app.exportToExcel') || 'Export' }}
         </UButton>
         <UButton
+          v-if="canManageAttendance"
           size="xs"
           variant="ghost"
           icon="i-heroicons-cog-6-tooth"

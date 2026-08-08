@@ -7,6 +7,7 @@ const props = defineProps<{
   routes: Route[];
   routesLoading: boolean;
   routesError: string | null;
+  canCreateRoute?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -46,6 +47,7 @@ const activeTabModel = computed({
         {{ r.title || (t('app.route.label') || 'Маршрут') }}
       </button>
       <UButton
+        v-if="canCreateRoute"
         icon="lucide:plus"
         size="xs"
         color="emerald"

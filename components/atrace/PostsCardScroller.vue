@@ -9,6 +9,7 @@ const props = defineProps<{
   loadingMore: boolean;
   selectedPostId: string | null;
   canCreate?: boolean;
+  canEdit?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -112,6 +113,7 @@ onBeforeUnmount(() => {
             :post="post"
             :selected="post.id === selectedPostId"
             :can-delete="false"
+            :can-edit="canEdit"
             @select="() => emit('select', post.id)"
             @edit="() => emit('edit', post)"
           />

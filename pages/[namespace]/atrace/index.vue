@@ -97,6 +97,8 @@ const isFilterOpen = ref(false);
 // new location) instead of showing them and erroring only after the click.
 const { can: canDo, loadPermissions } = useAtracePermissions(nsSlug);
 const canCreatePost = computed(() => canDo('tracker.post.create'));
+const canEditPost = computed(() => canDo('tracker.post.edit'));
+const canCreateRoute = computed(() => canDo('tracker.route.create'));
 
 async function openCreateRouteModal() {
     resetRouteCreateForm();
@@ -233,6 +235,7 @@ onBeforeUnmount(() => {
       :routes="routes"
       :routes-loading="routesLoading"
       :routes-error="routesError"
+      :can-create-route="canCreateRoute"
       @add-route="openCreateRouteModal"
     />
 
@@ -266,6 +269,7 @@ onBeforeUnmount(() => {
       :loading-more="loadingMore"
       :selected-post-id="selectedPostId"
       :can-create="canCreatePost"
+      :can-edit="canEditPost"
       @select="(id) => (selectedPostId = id)"
       @edit="openEdit"
       @create="isCreateOpen = true"

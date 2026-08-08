@@ -15,7 +15,7 @@ type Post = {
         location?: { address?: string | null; city?: string | null; country?: string | null } | null;
 };
 
-const props = withDefaults(defineProps<{ post: Post; canDelete?: boolean; selected?: boolean }>(), { canDelete: false, selected: false });
+const props = withDefaults(defineProps<{ post: Post; canDelete?: boolean; canEdit?: boolean; selected?: boolean }>(), { canDelete: false, canEdit: true, selected: false });
 const emit = defineEmits<{ (e: 'edit', post: Post): void; (e: 'delete', post: Post): void; (e: 'select', post: Post): void }>();
 
 function onEdit(e: MouseEvent) {
@@ -280,6 +280,7 @@ const dropdownItems = [
           />
         </UDropdown>
         <UButton
+          v-if="canEdit"
           icon="i-lucide-pencil"
           size="xs"
           color="primary"
