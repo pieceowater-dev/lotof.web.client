@@ -377,6 +377,8 @@
     "atraceRoleManager": "Manager",
     "atraceRoleAdmin": "Admin",
     "atraceManagement": "Management",
+    "coverageApprovedTitle": "Coverage approved",
+    "coverageApprovedDesc": "Your shift coverage by {name} on {date} has been approved.",
     "timezone": "Timezone",
     "timezoneHint": "Select your timezone or leave as browser default",
     "workingRequirements": "Working Requirements",

@@ -349,6 +349,8 @@
     "atraceRoleManager": "Менеджер",
     "atraceRoleAdmin": "Әкімші",
     "atraceManagement": "Басқару",
+    "coverageApprovedTitle": "Ауыстыру келісілді",
+    "coverageApprovedDesc": "{date} күні {name} қызметкерімен ауыстыруыңыз сәтті келісілді.",
     "timezone": "Уақыт белдеуі",
     "timezoneHint": "Уақыт белдеуін таңдаңыз",
     "selectFriend": "Қосу үшін досыңызды таңдаңыз",

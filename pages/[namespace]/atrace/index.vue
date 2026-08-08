@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import CreatePostModal from '@/components/atrace/CreatePostModal.vue';
+import CoverageApprovalBanner from '@/components/atrace/CoverageApprovalBanner.vue';
 import EditPostModal from '@/components/atrace/EditPostModal.vue';
 import FilterModal from '@/components/atrace/FilterModal.vue';
 import AtraceTabsBar from '@/components/atrace/AtraceTabsBar.vue';
@@ -23,6 +24,7 @@ import { useAtraceRoutes } from '@/composables/useAtraceRoutes';
 import { useStaleRefresh } from '@/composables/useStaleRefresh';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
+import { useAtraceCoverageApprovalBanners } from '@/composables/useAtraceCoverageApprovalBanners';
 
 const { t } = useI18n();
 const { titleBySlug } = useNamespace();
@@ -44,7 +46,7 @@ definePageMeta({
 const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
-const { fetchUser } = useAuth();
+const { user, fetchUser } = useAuth();
 const { ensure: ensureAtraceToken } = useAtraceToken();
 
 // Tab/URL routing (activeTab <-> /:type/:id sync)
@@ -109,6 +111,10 @@ const canSeeSettings = computed(() => canDo('tracker.role.view'));
 // sits unnoticed until someone happens to open the Подмены смен tab.
 const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
 
+// Full-width "your shift is covered" banner for the employee who requested
+// it, once a manager approves -- persists across visits until dismissed.
+const { banners: coverageApprovalBanners, load: loadCoverageApprovalBanners, dismiss: dismissCoverageApprovalBanner } = useAtraceCoverageApprovalBanners(nsSlug);
+
 async function openCreateRouteModal() {
     resetRouteCreateForm();
     isRouteCreateOpen.value = true;
@@ -145,6 +151,7 @@ onMounted(async () => {
     await loadInitialData();
     loadPermissions();
     loadPendingCoverageCount();
+    if (user.value?.id) loadCoverageApprovalBanners(user.value.id);
 
     if (process.client) {
         staleRefresh.start();
@@ -206,6 +213,10 @@ onBeforeUnmount(() => {
   <FilterModal v-model="isFilterOpen" />
 
   <div class="flex flex-col">
+    <CoverageApprovalBanner
+      :banners="coverageApprovalBanners"
+      @dismiss="dismissCoverageApprovalBanner"
+    />
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div
         class="text-left"

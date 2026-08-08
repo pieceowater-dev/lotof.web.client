@@ -373,6 +373,8 @@
     "atraceRoleManager": "Менеджер",
     "atraceRoleAdmin": "Администратор",
     "atraceManagement": "Управление",
+    "coverageApprovedTitle": "Подмена согласована",
+    "coverageApprovedDesc": "Ваша подмена сотрудником {name} на {date} успешно согласована.",
     "timezone": "Часовой пояс",
     "timezoneHint": "Выберите ваш часовой пояс или оставьте по умолчанию",
     "selectFriend": "Выберите друга для добавления",
