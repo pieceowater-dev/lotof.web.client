@@ -55,6 +55,10 @@ function fmtDay(d: Date): string {
 function roundNice(v: number): number {
   return Math.round(v * 10) / 10;
 }
+function isWeekend(d: Date): boolean {
+  const day = d.getDay();
+  return day === 0 || day === 6;
+}
 
 const points = computed(() => {
   if (!props.cycle?.startsAt || !props.cycle?.endsAt) return null;
@@ -76,34 +80,61 @@ const points = computed(() => {
   const lastActualOffset = Math.min(totalDays - 1, Math.max(0, todayOffset));
 
   const dayDates: Date[] = [];
-  const ideal: number[] = [];
-  const actual: (number | null)[] = [];
   for (let i = 0; i < totalDays; i++) {
-    const day = new Date(start.getTime() + i * 86400000);
-    dayDates.push(day);
-    ideal.push(totalDays > 1 ? scope * (1 - i / (totalDays - 1)) : scope);
-    if (i <= lastActualOffset) {
-      const remaining = weighted.reduce((sum, x) => {
-        if (new Date(x.task.createdAt) > day) return sum;
-        if (x.task.closedAt && new Date(x.task.closedAt) <= day) return sum;
-        return sum + x.weight;
-      }, 0);
-      actual.push(remaining);
-    } else {
-      actual.push(null);
-    }
+    dayDates.push(new Date(start.getTime() + i * 86400000));
   }
 
-  const denom = scope || 1;
+  // Planned (red): cumulative scope as of each day -- every task already
+  // added to the sprint by then, closed or not. Flat unless scope actually
+  // changes (an issue added mid-sprint shows up as a step here, same as
+  // Jira), instead of that growth being silently absorbed into "progress".
+  // Completed (green): cumulative weight of tasks closed by that day.
+  // Both are only known up to today; future days are left unset.
+  const planned: (number | null)[] = [];
+  const completed: (number | null)[] = [];
+  for (let i = 0; i < totalDays; i++) {
+    const day = dayDates[i];
+    if (i > lastActualOffset) {
+      planned.push(null);
+      completed.push(null);
+      continue;
+    }
+    let plannedAsOf = 0;
+    let doneAsOf = 0;
+    for (const x of weighted) {
+      if (new Date(x.task.createdAt) > day) continue;
+      plannedAsOf += x.weight;
+      if (x.task.closedAt && new Date(x.task.closedAt) <= day) doneAsOf += x.weight;
+    }
+    planned.push(plannedAsOf);
+    completed.push(doneAsOf);
+  }
+
+  // Guideline: the ideal completion trend, rising from 0 to the sprint's
+  // volume -- flat across Sat/Sun since no progress is expected to land on
+  // a weekend, so it doesn't keep climbing through them like a naive linear
+  // guideline would.
+  const maxScope = Math.max(scope, ...planned.filter((v): v is number => v != null));
+  const workingSteps = dayDates.slice(0, -1).filter((d) => !isWeekend(d)).length;
+  const increment = workingSteps > 0 ? maxScope / workingSteps : 0;
+  const ideal: number[] = [0];
+  for (let i = 1; i < totalDays; i++) {
+    ideal.push(ideal[i - 1] + (isWeekend(dayDates[i - 1]) ? 0 : increment));
+  }
+
+  const denom = maxScope || 1;
   const toX = (i: number) => PAD_LEFT + (i / (totalDays - 1 || 1)) * PLOT_W;
   const toY = (v: number) => PAD_TOP + (1 - v / denom) * PLOT_H;
   const toXY = (arr: number[]) => arr.map((v, i) => `${toX(i).toFixed(1)},${toY(v).toFixed(1)}`).join(' ');
+  const toMarkers = (series: (number | null)[]) => series
+    .map((v, i) => (v == null ? null : { x: toX(i), y: toY(v), date: fmtDay(dayDates[i]), value: roundNice(v) }))
+    .filter((p): p is { x: number; y: number; date: string; value: number } => p !== null);
 
   // Non-working days (Sat/Sun) get a faint vertical band behind the grid --
-  // Jira shades weekends the same way since "remaining work" naturally
-  // plateaus over them.
+  // Jira shades weekends the same way since progress naturally plateaus
+  // over them.
   const weekendBands = dayDates
-    .map((d, i) => ({ i, isWeekend: d.getDay() === 0 || d.getDay() === 6 }))
+    .map((d, i) => ({ i, isWeekend: isWeekend(d) }))
     .filter((d) => d.isWeekend)
     .map((d) => ({ x: toX(d.i) - (PLOT_W / (totalDays - 1 || 1)) / 2, w: PLOT_W / (totalDays - 1 || 1) }));
 
@@ -116,28 +147,30 @@ const points = computed(() => {
   }));
 
   const yGrid = [0, 0.25, 0.5, 0.75, 1].map((f) => ({
-    y: toY(scope * f),
-    label: roundNice(scope * (1 - f)),
+    y: toY(denom * f),
+    label: roundNice(denom * f),
   }));
 
-  const actualMarkers = actual
-    .map((v, i) => (v == null ? null : { x: toX(i), y: toY(v), date: fmtDay(dayDates[i]), value: roundNice(v) }))
-    .filter((p): p is { x: number; y: number; date: string; value: number } => p !== null);
+  const plannedMarkers = toMarkers(planned);
+  const completedMarkers = toMarkers(completed);
 
   const showTodayMarker = todayOffset >= 0 && todayOffset <= totalDays - 1 && todayOffset < totalDays - 1;
-  const lastActual = actualMarkers[actualMarkers.length - 1];
+  const lastCompleted = completedMarkers[completedMarkers.length - 1];
 
   return {
     scope,
+    maxScope,
     taskCount: weighted.length,
     idealPath: toXY(ideal),
-    actualPath: actualMarkers.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
-    actualMarkers,
+    plannedPath: plannedMarkers.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
+    completedPath: completedMarkers.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
+    plannedMarkers,
+    completedMarkers,
     weekendBands,
     dayGrid,
     yGrid,
     todayX: showTodayMarker ? toX(todayOffset) : null,
-    remaining: lastActual?.value ?? scope,
+    completedValue: lastCompleted?.value ?? 0,
   };
 });
 </script>
@@ -148,7 +181,7 @@ const points = computed(() => {
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold flex items-center gap-2">
-            <UIcon name="lucide:trending-down" class="w-5 h-5 text-gray-400" />
+            <UIcon name="lucide:trending-up" class="w-5 h-5 text-gray-400" />
             {{ t('tasks.burndown') || 'Burndown' }}
           </h3>
           <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
@@ -166,7 +199,7 @@ const points = computed(() => {
       </div>
       <div v-else>
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-gray-500">{{ points.remaining }} / {{ points.scope }} {{ unitLabel }} {{ t('tasks.burndownRemaining') || 'remaining' }}</span>
+          <span class="text-xs text-gray-500">{{ points.completedValue }} / {{ points.maxScope }} {{ unitLabel }} {{ t('tasks.burndownRemaining') || 'done' }}</span>
         </div>
         <svg :viewBox="`0 0 ${VIEW_W} ${VIEW_H}`" class="w-full h-64 overflow-visible">
           <!-- Weekend shading, drawn first so everything else sits on top -->
@@ -192,18 +225,25 @@ const points = computed(() => {
             class="stroke-amber-500" stroke-width="1.5" stroke-dasharray="3 3"
           />
           <text v-if="points.todayX != null" :x="points.todayX" :y="PAD_TOP - 3" text-anchor="middle" class="fill-amber-500 text-[9px] font-medium">{{ t('tasks.burndownToday') || 'Today' }}</text>
-          <!-- Guideline (ideal) + remaining-values (actual) series -->
+          <!-- Guideline (ideal completion trend) + planned (scope) + completed series -->
           <polyline :points="points.idealPath" fill="none" stroke="currentColor" class="text-gray-300 dark:text-gray-700" stroke-width="2" stroke-dasharray="5 4" />
-          <polyline :points="points.actualPath" fill="none" stroke="currentColor" class="text-primary-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
-          <g v-for="(p, i) in points.actualMarkers" :key="`m${i}`">
-            <circle :cx="p.x" :cy="p.y" r="3" class="fill-white dark:fill-gray-900 stroke-primary-500" stroke-width="2">
+          <polyline :points="points.plannedPath" fill="none" stroke="currentColor" class="text-red-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <polyline :points="points.completedPath" fill="none" stroke="currentColor" class="text-emerald-500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+          <g v-for="(p, i) in points.plannedMarkers" :key="`p${i}`">
+            <circle :cx="p.x" :cy="p.y" r="3" class="fill-white dark:fill-gray-900 stroke-red-500" stroke-width="2">
+              <title>{{ p.date }} — {{ p.value }} {{ unitLabel }}</title>
+            </circle>
+          </g>
+          <g v-for="(p, i) in points.completedMarkers" :key="`c${i}`">
+            <circle :cx="p.x" :cy="p.y" r="3" class="fill-white dark:fill-gray-900 stroke-emerald-500" stroke-width="2">
               <title>{{ p.date }} — {{ p.value }} {{ unitLabel }}</title>
             </circle>
           </g>
         </svg>
         <div class="flex items-center justify-center gap-4 text-[11px] text-gray-400 mt-1">
           <span class="flex items-center gap-1"><span class="h-0.5 w-3 bg-gray-300 dark:bg-gray-700 inline-block" />{{ t('tasks.burndownIdeal') || 'Guideline' }}</span>
-          <span class="flex items-center gap-1"><span class="h-0.5 w-3 bg-primary-500 inline-block" />{{ t('tasks.burndownActual') || 'Remaining values' }}</span>
+          <span class="flex items-center gap-1"><span class="h-0.5 w-3 bg-red-500 inline-block" />{{ t('tasks.burndownPlanned') || 'Planned' }}</span>
+          <span class="flex items-center gap-1"><span class="h-0.5 w-3 bg-emerald-500 inline-block" />{{ t('tasks.burndownActual') || 'Completed' }}</span>
         </div>
       </div>
     </UCard>
