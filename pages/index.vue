@@ -18,7 +18,7 @@ import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
 // Composables
-const { user, token, isLoggedIn, initialized, fetchUser, login, logout } = useAuth();
+const { user, token, isLoggedIn, initialized, justLoggedOut, fetchUser, login, logout } = useAuth();
 const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
 const { hasPhone: phoneGateHasPhone } = usePhoneGate();
 
@@ -116,6 +116,20 @@ onMounted(async () => {
   // not logged in (post-fetchUser, so this reflects real auth state).
   const q0 = route.query;
   if (!isLoggedIn.value && (q0['auth-needed'] === 'true' || q0['authNeeded'] === 'true')) {
+    if (justLoggedOut.value) {
+      // The user just hit Logout -- if auth-needed=true is on the URL again
+      // this fast (stale history entry, address-bar autocomplete, a tab that
+      // didn't fully unload), firing login() here would silently sign them
+      // back in via their still-active Google session and make Logout look
+      // like it does nothing. Consume the flag once and just drop the query
+      // param instead of auto-triggering a fresh login.
+      justLoggedOut.value = false;
+      const cleaned = { ...route.query } as any;
+      delete cleaned['auth-needed'];
+      delete cleaned['authNeeded'];
+      router.replace({ path: route.path, query: cleaned });
+      return;
+    }
     login();
     return;
   }

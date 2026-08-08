@@ -20,6 +20,14 @@ export function useAuth() {
   // click on a bad connection doesn't look like it did nothing.
   const loginRedirecting = useState<boolean>('auth_login_redirecting', () => false);
   const silentRefreshAttempted = useState<boolean>('auth_silent_refresh_attempted', () => false);
+  // Set by logout(), consumed once by the homepage's auto-login effect. Guards
+  // against re-firing login() on the very next '/' mount after an intentional
+  // logout: if an auth-needed=true query param resurfaces right after (stale
+  // browser history entry, autocomplete, a tab that didn't fully unload --
+  // whatever the source), auto-login would otherwise silently sign the user
+  // back in via their still-active Google session, making Logout look like a
+  // no-op. See pages/index.vue's onMounted.
+  const justLoggedOut = useState<boolean>('auth_just_logged_out', () => false);
 
   async function fetchUser(force = false) {
     try {
@@ -122,6 +130,7 @@ export function useAuth() {
 
   function logout() {
     useAnalytics().track('logout');
+    justLoggedOut.value = true;
     token.value = null;
     user.value = null;
     setGlobalAuthToken(null);
@@ -198,5 +207,5 @@ export function useAuth() {
     reg.value = true;
   }
 
-  return { token, user, loading, initialized, isLoggedIn, loginRedirecting, fetchUser, login, logout };
+  return { token, user, loading, initialized, isLoggedIn, loginRedirecting, justLoggedOut, fetchUser, login, logout };
 }
