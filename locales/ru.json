@@ -372,6 +372,7 @@
     "atraceRoleTeammate": "Сотрудник",
     "atraceRoleManager": "Менеджер",
     "atraceRoleAdmin": "Администратор",
+    "atraceManagement": "Управление",
     "timezone": "Часовой пояс",
     "timezoneHint": "Выберите ваш часовой пояс или оставьте по умолчанию",
     "selectFriend": "Выберите друга для добавления",

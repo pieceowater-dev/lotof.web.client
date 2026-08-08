@@ -12,6 +12,7 @@ import AttendanceThresholdsSection from '@/components/atrace/settings/Attendance
 import ScheduleSection from '@/components/atrace/settings/ScheduleSection.vue';
 import ShiftCoverageSection from '@/components/atrace/settings/ShiftCoverageSection.vue';
 import PayrollRulesSection from '@/components/atrace/settings/PayrollRulesSection.vue';
+import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 
 const { t } = useI18n();
 
@@ -36,12 +37,16 @@ const accessDeniedMessage = ref<string | null>(null);
 const isInviteOpen = ref(false);
 
 const selectedTab = ref(0);
+// Badge on the Подмены смен tab -- same signal as the "Управление" red dot
+// on the main Atrace page, so a manager notices a pending request whether
+// they spot it before or after opening Settings.
+const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
 const tabs = computed(() => ([
   { label: t('app.members') || 'Участники', icon: 'lucide:users' },
   { label: t('app.routes') || 'Маршруты', icon: 'lucide:route' },
   { label: t('app.timeThresholds') || 'Пороги времени', icon: 'lucide:clock' },
   { label: t('app.shiftPatterns') || 'Графики работы', icon: 'lucide:calendar-days' },
-  { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat' },
+  { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat', badge: pendingCoverageCount.value > 0 },
   { label: t('app.payrollRules') || 'Переработки и штрафы', icon: 'lucide:banknote' },
 ]));
 
@@ -69,6 +74,7 @@ onMounted(async () => {
 
         const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
         await atraceGetRoles(atraceToken, nsSlug.value);
+        loadPendingCoverageCount();
     } catch (e: any) {
         if (isAtracePermissionError(e)) {
             accessDenied.value = true;
@@ -90,7 +96,7 @@ onUnmounted(() => {
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
         <h1 class="text-2xl font-semibold">
-          {{ t('common.settings.title') }}
+          {{ t('app.atraceManagement') || 'Управление' }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
       </div>
@@ -164,7 +170,20 @@ onUnmounted(() => {
           v-model="selectedTab"
           :items="tabs"
           :ui="{ list: { width: 'w-full min-w-[640px]' } }"
-        />
+        >
+          <template #default="{ item }">
+            <span class="flex items-center gap-1.5">
+              <span class="truncate">{{ item.label }}</span>
+              <span
+                v-if="item.badge"
+                class="relative flex h-2 w-2 flex-shrink-0"
+              >
+                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+                <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+              </span>
+            </span>
+          </template>
+        </UTabs>
       </div>
       <div class="flex-1 min-h-0 flex flex-col">
         <MembersSection v-if="selectedTab === 0" />

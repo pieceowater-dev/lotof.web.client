@@ -376,6 +376,7 @@
     "atraceRoleTeammate": "Teammate",
     "atraceRoleManager": "Manager",
     "atraceRoleAdmin": "Admin",
+    "atraceManagement": "Management",
     "timezone": "Timezone",
     "timezoneHint": "Select your timezone or leave as browser default",
     "workingRequirements": "Working Requirements",

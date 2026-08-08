@@ -22,6 +22,7 @@ import { useAtraceTabRouting } from '@/composables/useAtraceTabRouting';
 import { useAtraceRoutes } from '@/composables/useAtraceRoutes';
 import { useStaleRefresh } from '@/composables/useStaleRefresh';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
+import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 
 const { t } = useI18n();
 const { titleBySlug } = useNamespace();
@@ -104,6 +105,10 @@ const canCreateRoute = computed(() => canDo('tracker.route.create'));
 // so the entry point itself is hidden rather than just the actions inside it.
 const canSeeSettings = computed(() => canDo('tracker.role.view'));
 
+// Red badge on "Управление" -- a pending shift-coverage request otherwise
+// sits unnoticed until someone happens to open the Подмены смен tab.
+const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
+
 async function openCreateRouteModal() {
     resetRouteCreateForm();
     isRouteCreateOpen.value = true;
@@ -139,6 +144,7 @@ onMounted(async () => {
     applyRouteParamsFromUrl();
     await loadInitialData();
     loadPermissions();
+    loadPendingCoverageCount();
 
     if (process.client) {
         staleRefresh.start();
@@ -229,9 +235,17 @@ onBeforeUnmount(() => {
             size="xs"
             color="primary"
             variant="soft"
+            class="relative"
             :to="`/${nsSlug}/atrace/settings`"
           >
-            {{ t('common.settings.title') }}
+            {{ t('app.atraceManagement') || 'Управление' }}
+            <span
+              v-if="pendingCoverageCount > 0"
+              class="absolute -right-1 -top-1 flex h-3 w-3"
+            >
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span class="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+            </span>
           </UButton>
         </div>
       </div>
