@@ -8,6 +8,7 @@ import { isAtracePermissionError } from '@/utils/atracePermissions';
 import type { Route, RouteMilestone } from '@/api/atrace/route/list';
 import type { RoutePass, RouteMilestoneDetail } from '@/api/atrace/route/validatePass';
 import type { Post, RouteProgressRow } from '@/types/atrace';
+import { useAtraceMembers } from '@/composables/useAtraceMembers';
 
 function getTodayDateString(): string {
   const now = new Date();
@@ -43,6 +44,14 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
   const { user } = useAuth();
 
   const routeIdRef = activeRouteId ?? computed(() => null);
+
+  // routeMembers (below) comes from Hub's namespace member list, which has
+  // no notion of Atrace's own active/inactive status -- this is a separate
+  // source purely for that isActive flag, cross-referenced into
+  // routeProgressRows so route progress doesn't surface people who no
+  // longer work here.
+  const { members: atraceMembers, loadMembers: loadAtraceMembers } = useAtraceMembers(nsSlug);
+  const activeUserIds = computed(() => new Set(atraceMembers.value.filter((m) => m.isActive).map((m) => m.userId)));
 
   const routes = ref<Route[]>([]);
   const routesLoading = ref(false);
@@ -259,7 +268,8 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
   async function loadRouteData() {
     await Promise.all([
       loadRouteMembers(),
-      loadRouteAtraceBundle(true)
+      loadRouteAtraceBundle(true),
+      loadAtraceMembers()
     ]);
   }
 
@@ -300,6 +310,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     // Build rows
     const rows: RouteProgressRow[] = [];
     for (const [userId, passes] of grouped.entries()) {
+      if (atraceMembers.value.length > 0 && !activeUserIds.value.has(userId)) continue;
       const sortedPasses = [...passes].sort((a, b) => b.date.localeCompare(a.date));
       const lastPass = sortedPasses[0];
       const member = membersById.get(userId);

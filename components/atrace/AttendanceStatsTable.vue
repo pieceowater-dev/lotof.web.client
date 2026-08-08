@@ -6,6 +6,7 @@ import ShiftCoverageRequestModal from '@/components/atrace/ShiftCoverageRequestM
 import { useRoute } from 'vue-router';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
+import { useAtraceMembers } from '@/composables/useAtraceMembers';
 
 const { t, locale } = useI18n();
 
@@ -41,8 +42,18 @@ const stats = ref<UserStats[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
+// getAllUsersStats has no isActive field of its own (it's sourced from Hub's
+// member list on the backend, not Atrace's), so active-only filtering is
+// cross-referenced client-side against useAtraceMembers -- an inactive
+// employee shouldn't clutter attendance stats for managers/admins.
+const { members, loadMembers } = useAtraceMembers(computed(() => namespaceSlug.value || ''));
+const activeUserIds = computed(() => new Set(members.value.filter((m) => m.isActive).map((m) => m.userId)));
+
 const sortedStats = computed(() => {
-  return stats.value
+  const visible = members.value.length > 0
+    ? stats.value.filter((u) => activeUserIds.value.has(u.userId))
+    : stats.value;
+  return visible
     .map((user, index) => ({ user, index }))
     .sort((a, b) => {
       const diff = (b.user.violationDays || 0) - (a.user.violationDays || 0);
@@ -528,6 +539,7 @@ watch([() => props.postId, () => props.ready], () => {
 onMounted(() => {
   safeLoadStats();
   loadTimeSettings();
+  loadMembers();
 });
 
 // Export functionality
@@ -556,11 +568,14 @@ async function exportToExcel() {
   try {
     // Use atrace client to call the gateway with proper token
     const { atraceExportDailyAttendance } = await import('@/api/atrace/attendance/stats');
-    const records = await atraceExportDailyAttendance(
+    const rawRecords = await atraceExportDailyAttendance(
       dateRange.value.startDate,
       dateRange.value.endDate,
       namespaceSlug.value
     );
+    const records = members.value.length > 0
+      ? rawRecords.filter((r) => activeUserIds.value.has(r.userId))
+      : rawRecords;
     if (records.length === 0) {
       exportError.value = t('app.noDataToExport');
       return;
@@ -573,7 +588,7 @@ async function exportToExcel() {
       dateRange.value.endDate,
       locale.value,
       undefined,
-      stats.value
+      sortedStats.value
     );
     useAnalytics().track('atrace_report_exported', {
       startDate: dateRange.value.startDate,

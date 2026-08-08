@@ -15,6 +15,9 @@ const { idBySlug } = useNamespace();
 const namespaceId = computed(() => idBySlug(nsSlug.value));
 
 const { members, loadMembers } = useAtraceMembers(nsSlug);
+// Schedules only make sense for people currently working -- an inactive
+// member shouldn't be assignable a new shift pattern.
+const activeMembers = computed(() => members.value.filter((m) => m.isActive));
 const patterns = ref<AtraceShiftPattern[]>([]);
 const assignments = ref<AtraceScheduleAssignment[]>([]);
 const loading = ref(false);
@@ -57,9 +60,9 @@ const formEffectiveFrom = ref(new Date().toISOString().split('T')[0]);
 const formComment = ref('');
 
 const allMembersSelected = computed({
-  get: () => members.value.length > 0 && formUserIds.value.length === members.value.length,
+  get: () => activeMembers.value.length > 0 && formUserIds.value.length === activeMembers.value.length,
   set: (val: boolean) => {
-    formUserIds.value = val ? members.value.map((m) => m.userId) : [];
+    formUserIds.value = val ? activeMembers.value.map((m) => m.userId) : [];
   },
 });
 
@@ -576,7 +579,7 @@ onMounted(async () => {
               <USelectMenu
                 v-model="formUserIds"
                 multiple
-                :options="members.map(m => ({ value: m.userId, label: m.username || m.email }))"
+                :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
                 value-attribute="value"
                 option-attribute="label"
                 searchable

@@ -15,6 +15,10 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const nsSlugRef = computed(() => props.nsSlug);
 const { members, loadMembers } = useAtraceMembers(nsSlugRef);
+// Only active employees can cover or be covered -- an inactive/deactivated
+// member showing up here would let someone request a swap involving
+// someone who no longer works here.
+const activeMembers = computed(() => members.value.filter((m) => m.isActive));
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -84,7 +88,7 @@ async function submitRequest() {
         <UFormGroup :label="t('app.coverageOriginal') || 'Кого подменяют'">
           <USelectMenu
             v-model="formOriginalUserId"
-            :options="members.map(m => ({ value: m.userId, label: m.username || m.email }))"
+            :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
             value-attribute="value"
             option-attribute="label"
             searchable
@@ -93,7 +97,7 @@ async function submitRequest() {
         <UFormGroup :label="t('app.coverageCovering') || 'Кто подменяет'">
           <USelectMenu
             v-model="formCoveringUserId"
-            :options="members.map(m => ({ value: m.userId, label: m.username || m.email }))"
+            :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
             value-attribute="value"
             option-attribute="label"
             searchable
