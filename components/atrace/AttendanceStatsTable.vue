@@ -277,9 +277,15 @@ const dateRange = computed(() => {
       startDate = new Date(today.getFullYear(), today.getMonth(), 1);
   }
 
+  // formatDateYMD (not startDate.toISOString() directly) -- toISOString()
+  // converts to UTC first, which rolls back to the previous day for any
+  // timezone ahead of UTC (e.g. UTC+5) whenever "today" is still early
+  // morning locally. That silently dropped today from the "this month"/
+  // "this week"/"3 months" quick filters -- the custom-range presets already
+  // used formatDateYMD and didn't have this problem.
   return {
-    startDate: startDate.toISOString().split('T')[0],
-    endDate: endDate.toISOString().split('T')[0]
+    startDate: formatDateYMD(startDate),
+    endDate: formatDateYMD(endDate)
   };
 });
 
