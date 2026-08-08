@@ -6,7 +6,7 @@ import ShiftCoverageRequestModal from '@/components/atrace/ShiftCoverageRequestM
 import { useRoute } from 'vue-router';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
-import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
 
 const { t, locale } = useI18n();
 
@@ -44,15 +44,25 @@ const error = ref<string | null>(null);
 
 // getAllUsersStats has no isActive field of its own (it's sourced from Hub's
 // member list on the backend, not Atrace's), so active-only filtering is
-// cross-referenced client-side against useAtraceMembers -- an inactive
-// employee shouldn't clutter attendance stats for managers/admins.
-const { members, loadMembers } = useAtraceMembers(computed(() => namespaceSlug.value || ''));
-const activeUserIds = computed(() => new Set(members.value.filter((m) => m.isActive).map((m) => m.userId)));
+// cross-referenced client-side against a dedicated active-members lookup --
+// an inactive employee shouldn't clutter attendance stats for managers/
+// admins. Deliberately NOT useAtraceMembers(): that also joins role +
+// schedule per member (one extra GraphQL call *per member*, N+1 over the
+// whole namespace) which this view has no use for -- only isActive.
+const { activeUserIds, loaded: activeMembersLoaded, loadActiveMembers } = useAtraceActiveMembers(computed(() => namespaceSlug.value || ''));
+
+// Gated on both stats and active-members being loaded, rather than filtering
+// as each one resolves independently: otherwise the table would briefly
+// render the full unfiltered list the instant stats arrive, then visibly
+// shrink down once active-members catches up a moment later. A stats error
+// short-circuits this (shown as soon as it happens) rather than waiting on
+// active-members too, since the error view doesn't depend on it.
+const statsReady = computed(() => !loading.value && (error.value !== null || activeMembersLoaded.value));
 
 const sortedStats = computed(() => {
-  const visible = members.value.length > 0
+  const visible = statsReady.value
     ? stats.value.filter((u) => activeUserIds.value.has(u.userId))
-    : stats.value;
+    : [];
   return visible
     .map((user, index) => ({ user, index }))
     .sort((a, b) => {
@@ -539,7 +549,7 @@ watch([() => props.postId, () => props.ready], () => {
 onMounted(() => {
   safeLoadStats();
   loadTimeSettings();
-  loadMembers();
+  loadActiveMembers();
 });
 
 // Export functionality
@@ -573,7 +583,7 @@ async function exportToExcel() {
       dateRange.value.endDate,
       namespaceSlug.value
     );
-    const records = members.value.length > 0
+    const records = activeMembersLoaded.value
       ? rawRecords.filter((r) => activeUserIds.value.has(r.userId))
       : rawRecords;
     if (records.length === 0) {
@@ -794,7 +804,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     <!-- Stats Table -->
     <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
       <div
-        v-if="loading"
+        v-if="!statsReady"
         class="flex flex-col items-center justify-center py-6"
       >
         <UIcon
@@ -821,7 +831,7 @@ function formatNumber(val: number, fractionDigits = 0) {
         </div>
       </div>
       <div
-        v-else-if="stats.length === 0"
+        v-else-if="sortedStats.length === 0"
         class="text-gray-500 py-6 text-center flex flex-col items-center justify-center"
       >
         <UIcon

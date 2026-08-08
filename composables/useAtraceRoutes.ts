@@ -8,7 +8,7 @@ import { isAtracePermissionError } from '@/utils/atracePermissions';
 import type { Route, RouteMilestone } from '@/api/atrace/route/list';
 import type { RoutePass, RouteMilestoneDetail } from '@/api/atrace/route/validatePass';
 import type { Post, RouteProgressRow } from '@/types/atrace';
-import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
 
 function getTodayDateString(): string {
   const now = new Date();
@@ -46,12 +46,13 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
   const routeIdRef = activeRouteId ?? computed(() => null);
 
   // routeMembers (below) comes from Hub's namespace member list, which has
-  // no notion of Atrace's own active/inactive status -- this is a separate
-  // source purely for that isActive flag, cross-referenced into
+  // no notion of Atrace's own active/inactive status -- this is a separate,
+  // lightweight source purely for that isActive flag (a single
+  // getActiveMembers query, not the full useAtraceMembers() role+schedule
+  // N+1 join, which this has no use for), cross-referenced into
   // routeProgressRows so route progress doesn't surface people who no
   // longer work here.
-  const { members: atraceMembers, loadMembers: loadAtraceMembers } = useAtraceMembers(nsSlug);
-  const activeUserIds = computed(() => new Set(atraceMembers.value.filter((m) => m.isActive).map((m) => m.userId)));
+  const { activeUserIds, loaded: activeMembersLoaded, loadActiveMembers, resetActiveMembers } = useAtraceActiveMembers(nsSlug);
 
   const routes = ref<Route[]>([]);
   const routesLoading = ref(false);
@@ -262,6 +263,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
   function resetRouteMembersCache() {
     routeMembers.value = [];
     cachedNamespaceId.value = null;
+    resetActiveMembers();
   }
 
   // Load both members and passes in parallel
@@ -269,7 +271,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     await Promise.all([
       loadRouteMembers(),
       loadRouteAtraceBundle(true),
-      loadAtraceMembers()
+      loadActiveMembers()
     ]);
   }
 
@@ -295,6 +297,10 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
 
   const routeProgressRows = computed<RouteProgressRow[]>(() => {
     if (!routeIdRef.value || routePasses.value.length === 0) return [];
+    // Wait for active-members before producing any rows -- otherwise this
+    // would briefly include inactive members' passes on the first render,
+    // then visibly drop them a moment later once the active list resolves.
+    if (!activeMembersLoaded.value) return [];
 
     // Group passes by userId
     const grouped = new Map<string, RoutePass[]>();
@@ -310,7 +316,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
     // Build rows
     const rows: RouteProgressRow[] = [];
     for (const [userId, passes] of grouped.entries()) {
-      if (atraceMembers.value.length > 0 && !activeUserIds.value.has(userId)) continue;
+      if (!activeUserIds.value.has(userId)) continue;
       const sortedPasses = [...passes].sort((a, b) => b.date.localeCompare(a.date));
       const lastPass = sortedPasses[0];
       const member = membersById.get(userId);
