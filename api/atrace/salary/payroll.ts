@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceOvertimeCalcType = 'multiplier' | 'fixed';
 
@@ -45,15 +44,6 @@ export type AtraceSalaryCalculationResult = {
   currency: string;
 };
 
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) return routeNs;
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
-
 async function headers(namespace: string) {
   const devHeaders = await getDeviceHeaders();
   return { Namespace: namespace, ...devHeaders };
@@ -69,7 +59,7 @@ const GET_OVERTIME_RATES = `
 `;
 
 export async function atraceGetOvertimeRates(nsSlug?: string): Promise<AtraceOvertimeRate[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getOvertimeRates: { rates: AtraceOvertimeRate[] } }>(
       GET_OVERTIME_RATES,
@@ -97,7 +87,7 @@ const DELETE_OVERTIME_RATE = `
 `;
 
 export async function atraceCreateOvertimeRate(input: Omit<AtraceOvertimeRate, 'id'>, nsSlug?: string): Promise<AtraceOvertimeRate> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ createOvertimeRate: AtraceOvertimeRate }>(
       CREATE_OVERTIME_RATE, { input }, { headers: await headers(namespace) }
@@ -107,7 +97,7 @@ export async function atraceCreateOvertimeRate(input: Omit<AtraceOvertimeRate, '
 }
 
 export async function atraceUpdateOvertimeRate(input: AtraceOvertimeRate, nsSlug?: string): Promise<AtraceOvertimeRate> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ updateOvertimeRate: AtraceOvertimeRate }>(
       UPDATE_OVERTIME_RATE, { input }, { headers: await headers(namespace) }
@@ -117,7 +107,7 @@ export async function atraceUpdateOvertimeRate(input: AtraceOvertimeRate, nsSlug
 }
 
 export async function atraceDeleteOvertimeRate(id: string, nsSlug?: string): Promise<void> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     await atraceClient.request(DELETE_OVERTIME_RATE, { id }, { headers: await headers(namespace) });
   }, namespace);
@@ -130,7 +120,7 @@ const GET_PENALTY_RULES = `
 `;
 
 export async function atraceGetPenaltyRules(nsSlug?: string): Promise<AtracePenaltyRule[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getPenaltyRules: { rules: AtracePenaltyRule[] } }>(
       GET_PENALTY_RULES,
@@ -158,7 +148,7 @@ const DELETE_PENALTY_RULE = `
 `;
 
 export async function atraceCreatePenaltyRule(input: Omit<AtracePenaltyRule, 'id'>, nsSlug?: string): Promise<AtracePenaltyRule> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ createPenaltyRule: AtracePenaltyRule }>(
       CREATE_PENALTY_RULE, { input }, { headers: await headers(namespace) }
@@ -168,7 +158,7 @@ export async function atraceCreatePenaltyRule(input: Omit<AtracePenaltyRule, 'id
 }
 
 export async function atraceUpdatePenaltyRule(input: AtracePenaltyRule, nsSlug?: string): Promise<AtracePenaltyRule> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ updatePenaltyRule: AtracePenaltyRule }>(
       UPDATE_PENALTY_RULE, { input }, { headers: await headers(namespace) }
@@ -178,7 +168,7 @@ export async function atraceUpdatePenaltyRule(input: AtracePenaltyRule, nsSlug?:
 }
 
 export async function atraceDeletePenaltyRule(id: string, nsSlug?: string): Promise<void> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     await atraceClient.request(DELETE_PENALTY_RULE, { id }, { headers: await headers(namespace) });
   }, namespace);
@@ -209,7 +199,7 @@ export async function atraceCalculateSalary(
   userId?: string,
   nsSlug?: string
 ): Promise<AtraceSalaryCalculationResult> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ calculateSalary: AtraceSalaryCalculationResult }>(
       CALCULATE_SALARY,
@@ -267,7 +257,7 @@ export async function atraceGetSalaryHistory(
   userId?: string,
   nsSlug?: string
 ): Promise<AtraceSalaryHistoryEntry[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getSalaryHistory: AtraceSalaryHistoryEntry[] }>(
       GET_SALARY_HISTORY,

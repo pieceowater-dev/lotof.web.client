@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceMemberSalary = {
   id: string;
@@ -39,24 +38,13 @@ const SET_MEMBER_SALARY = `
   }
 `;
 
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) {
-      return routeNs;
-    }
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
-
 // userId omitted/undefined resolves to "my own salary" server-side.
 // Returns null if no salary has been set yet for that member (the backend
 // errors with "record not found" rather than returning null, since the
 // schema's getMemberSalary is non-nullable -- treat that specific case as
 // an empty state, not a failure).
 export async function atraceGetMemberSalary(userId?: string, nsSlug?: string): Promise<AtraceMemberSalary | null> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     try {
       const devHeaders = await getDeviceHeaders();
@@ -85,7 +73,7 @@ export async function atraceSetMemberSalary(
   penaltyRuleIds?: string[],
   nsSlug?: string
 ): Promise<AtraceMemberSalary> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{ setMemberSalary: AtraceMemberSalary }>(

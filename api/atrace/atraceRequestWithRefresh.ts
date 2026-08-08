@@ -5,6 +5,29 @@ import { useAuth } from '@/composables/useAuth';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 
 /**
+ * Resolves the namespace slug for an Atrace API call. Prefers an explicit
+ * nsSlug; when omitted, parses it directly from the URL path rather than
+ * calling useRoute() -- these API functions are routinely invoked from deep
+ * inside async action handlers (modal confirm callbacks, etc.), well past
+ * the await boundaries that break Vue's implicit "current component
+ * instance" tracking, where useRoute() silently returns undefined params
+ * instead of throwing. Every Atrace page is namespace-scoped at
+ * /<namespace>/atrace/..., so the first path segment is always the slug,
+ * and reading it from window.location works regardless of Vue's internal
+ * state.
+ */
+export function resolveAtraceNsSlug(nsSlug?: string): string {
+  if (nsSlug) return nsSlug;
+
+  if (typeof window !== 'undefined') {
+    const first = window.location.pathname.split('/').filter(Boolean)[0];
+    if (first) return first;
+  }
+
+  throw new Error('Namespace slug is required');
+}
+
+/**
  * Universal wrapper for atraceClient requests with auto-refresh on AtraceAuthorization error.
  * Usage: await atraceRequestWithRefresh(() => atraceClient.request(...), nsSlug)
  */

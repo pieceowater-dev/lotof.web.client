@@ -111,6 +111,7 @@ async function loadMoreRecords() {
       length: 'THIRTY' as any,
       sortField: 'timestamp',
       sortBy: 'DESC',
+      nsSlug: namespaceSlug.value,
     });
     
     const newRecords = res.records.filter(r => 
@@ -283,7 +284,7 @@ async function markDayAsLegitimate() {
   loading.value = true;
   try {
     const { atraceMarkDayLegitimate } = await import('@/api/atrace/attendance/stats');
-    await atraceMarkDayLegitimate(props.userId, selectedDate.value, reason.value.trim());
+    await atraceMarkDayLegitimate(props.userId, selectedDate.value, reason.value.trim(), namespaceSlug.value);
     
     showReasonModal.value = false;
     reason.value = '';

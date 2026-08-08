@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceAttendanceSummary = {
   id: string;
@@ -51,17 +50,6 @@ const GET_SUMMARY_RANGE = `
   }
 `;
 
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) {
-      return routeNs;
-    }
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
-
 // userId: pass '' (or omit) to mean "my own" -- the backend resolves that
 // from the caller's token and only requires tracker.attendance.view, not
 // .manage, for the self case.
@@ -71,7 +59,7 @@ export async function atraceGetMonthlySummary(
   month: number,
   nsSlug?: string
 ): Promise<AtraceAttendanceSummary> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{ getMonthlySummary: AtraceAttendanceSummary }>(
@@ -92,7 +80,7 @@ export async function atraceGetSummaryRange(
   endMonth: number,
   nsSlug?: string
 ): Promise<AtraceAttendanceSummary[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{ getSummaryRange: AtraceAttendanceSummary[] }>(

@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceShiftPatternType = 'FIXED_WEEKDAYS' | 'ROTATING';
 
@@ -29,15 +28,6 @@ export type AtraceScheduleAssignment = {
   effectiveTo?: string | null;
   comment?: string | null;
 };
-
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) return routeNs;
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
 
 async function headers(namespace: string) {
   const devHeaders = await getDeviceHeaders();
@@ -73,7 +63,7 @@ export async function atraceGetShiftPatterns(
   search?: string,
   nsSlug?: string
 ): Promise<AtraceShiftPattern[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const filter: any = { pagination: { page: 1, length: 'ONE_HUNDRED' }, sort: { by: 'ASC', field: 'name' } };
     if (search) filter.search = search;
@@ -96,7 +86,7 @@ export async function atraceCreateShiftPattern(
   input: Omit<AtraceShiftPattern, 'id'>,
   nsSlug?: string
 ): Promise<AtraceShiftPattern> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ createShiftPattern: AtraceShiftPattern }>(
       CREATE_SHIFT_PATTERN,
@@ -120,7 +110,7 @@ export async function atraceApplyShiftPatternPreset(
   locale: string,
   nsSlug?: string
 ): Promise<AtraceShiftPattern[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ applyShiftPatternPreset: { patterns: AtraceShiftPattern[] } }>(
       APPLY_SHIFT_PATTERN_PRESET,
@@ -141,7 +131,7 @@ export async function atraceUpdateShiftPattern(
   input: AtraceShiftPattern,
   nsSlug?: string
 ): Promise<AtraceShiftPattern> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ updateShiftPattern: AtraceShiftPattern }>(
       UPDATE_SHIFT_PATTERN,
@@ -159,7 +149,7 @@ const DELETE_SHIFT_PATTERN = `
 `;
 
 export async function atraceDeleteShiftPattern(id: string, nsSlug?: string): Promise<void> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     await atraceClient.request(DELETE_SHIFT_PATTERN, { id }, { headers: await headers(namespace) });
   }, namespace);
@@ -187,7 +177,7 @@ export async function atraceGetScheduleAssignments(
   userId?: string,
   nsSlug?: string
 ): Promise<AtraceScheduleAssignment[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getScheduleAssignments: { assignments: AtraceScheduleAssignment[] } }>(
       GET_SCHEDULE_ASSIGNMENTS,
@@ -209,7 +199,7 @@ export async function atraceGetActiveScheduleAssignment(
   date?: string,
   nsSlug?: string
 ): Promise<AtraceScheduleAssignment | null> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     try {
       const response = await atraceClient.request<{ getActiveScheduleAssignment: AtraceScheduleAssignment | null }>(
@@ -242,7 +232,7 @@ export async function atraceAssignSchedule(
   comment?: string,
   nsSlug?: string
 ): Promise<AtraceScheduleAssignment> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ assignSchedule: AtraceScheduleAssignment }>(
       ASSIGN_SCHEDULE,
@@ -264,7 +254,7 @@ export async function atraceEndScheduleAssignment(
   effectiveTo: string,
   nsSlug?: string
 ): Promise<AtraceScheduleAssignment> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ endScheduleAssignment: AtraceScheduleAssignment }>(
       END_SCHEDULE_ASSIGNMENT,

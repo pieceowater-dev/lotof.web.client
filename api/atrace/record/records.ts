@@ -2,6 +2,7 @@ import { atraceClient, setAtraceAppToken } from '@/api/clients';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
+import { resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceRecord = {
   id: string;
@@ -86,10 +87,7 @@ export async function atraceGetRecordsByPostId(
     nsSlug?: string;
   }
 ): Promise<PaginatedRecordList> {
-  let nsSlug = options?.nsSlug;
-  if (!nsSlug) {
-    try { nsSlug = useRoute().params.namespace as string; } catch {}
-  }
+  const nsSlug = resolveAtraceNsSlug(options?.nsSlug);
   const userId = options?.userId ?? null;
   const page = options?.page ?? 1;
   const length = options?.length ?? 'TEN';
@@ -107,5 +105,5 @@ export async function atraceGetRecordsByPostId(
       }
     );
     return response.getRecordByPostId;
-  }, nsSlug!);
+  }, nsSlug);
 }

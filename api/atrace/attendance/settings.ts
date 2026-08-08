@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceAttendanceSettings = {
   lateArrivalThreshold: string; // HH:MM
@@ -29,19 +28,8 @@ const UPDATE_ATTENDANCE_SETTINGS = `
   }
 `;
 
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) {
-      return routeNs;
-    }
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
-
 export async function atraceGetAttendanceSettings(nsSlug?: string): Promise<AtraceAttendanceSettings> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{ getAttendanceSettings: AtraceAttendanceSettings }>(
@@ -59,7 +47,7 @@ export async function atraceUpdateAttendanceSettings(
   allowLatenessMakeup: boolean,
   nsSlug?: string
 ): Promise<AtraceAttendanceSettings> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{ updateAttendanceSettings: AtraceAttendanceSettings }>(

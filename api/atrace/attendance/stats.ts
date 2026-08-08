@@ -3,7 +3,7 @@ import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { getDeviceHeaders } from '@/utils/device';
-import { useRoute } from 'vue-router';
+import { resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 type UserAttendanceStats = {
   userId: string;
@@ -123,26 +123,13 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
   }
 }
 
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) {
-      return routeNs;
-    }
-  } catch {}
-
-  throw new Error('Namespace slug is required');
-}
-
 export async function atraceGetAllUsersStats(
   startDate: string,
   endDate: string,
   postId?: string | null,
   nsSlug?: string
 ): Promise<UserAttendanceStats[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -186,7 +173,7 @@ export async function atraceExportDailyAttendance(
   late: boolean;
   earlyLeave: boolean;
 }>> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -233,7 +220,7 @@ export async function atraceGetAttendanceReport(
   endDate: string,
   nsSlug?: string
 ): Promise<{ attendances: AtraceDailyAttendanceRecord[]; missedDates: string[] }> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     const response = await atraceClient.request<{
@@ -294,7 +281,7 @@ export async function atraceMarkDayLegitimate(
   reason: string,
   nsSlug?: string
 ): Promise<boolean> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const devHeaders = await getDeviceHeaders();
     await atraceClient.request(MARK_DAY_LEGITIMATE, { userId, date, reason }, {

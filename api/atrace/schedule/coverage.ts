@@ -1,7 +1,6 @@
 import { atraceClient } from '@/api/clients';
 import { getDeviceHeaders } from '@/utils/device';
-import { atraceRequestWithRefresh } from '@/api/atrace/atraceRequestWithRefresh';
-import { useRoute } from 'vue-router';
+import { atraceRequestWithRefresh, resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
 
 export type AtraceShiftCoverageStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
 
@@ -14,15 +13,6 @@ export type AtraceShiftCoverage = {
   comment?: string | null;
   requestedByUserId: string;
 };
-
-function resolveNsSlug(nsSlug?: string): string {
-  if (nsSlug) return nsSlug;
-  try {
-    const routeNs = useRoute().params.namespace;
-    if (typeof routeNs === 'string' && routeNs) return routeNs;
-  } catch {}
-  throw new Error('Namespace slug is required');
-}
 
 async function headers(namespace: string) {
   const devHeaders = await getDeviceHeaders();
@@ -54,7 +44,7 @@ export async function atraceGetShiftCoverages(
   endDate?: string,
   nsSlug?: string
 ): Promise<AtraceShiftCoverage[]> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ getShiftCoverages: { coverages: AtraceShiftCoverage[] } }>(
       GET_SHIFT_COVERAGES,
@@ -85,7 +75,7 @@ export async function atraceRequestShiftCoverage(
   comment?: string,
   nsSlug?: string
 ): Promise<AtraceShiftCoverage> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<{ requestShiftCoverage: AtraceShiftCoverage }>(
       REQUEST_SHIFT_COVERAGE,
@@ -109,7 +99,7 @@ async function setCoverageStatus(
   id: string,
   nsSlug?: string
 ): Promise<AtraceShiftCoverage> {
-  const namespace = resolveNsSlug(nsSlug);
+  const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
     const response = await atraceClient.request<Record<string, AtraceShiftCoverage>>(
       statusMutation(name),
