@@ -11,8 +11,10 @@ import InviteMemberModal from '@/components/atrace/settings/InviteMemberModal.vu
 import AttendanceThresholdsSection from '@/components/atrace/settings/AttendanceThresholdsSection.vue';
 import ScheduleSection from '@/components/atrace/settings/ScheduleSection.vue';
 import ShiftCoverageSection from '@/components/atrace/settings/ShiftCoverageSection.vue';
+import LeaveRequestsSection from '@/components/atrace/settings/LeaveRequestsSection.vue';
 import PayrollRulesSection from '@/components/atrace/settings/PayrollRulesSection.vue';
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
+import { useAtracePendingLeaveCount } from '@/composables/useAtracePendingLeave';
 
 const { t } = useI18n();
 
@@ -37,16 +39,18 @@ const accessDeniedMessage = ref<string | null>(null);
 const isInviteOpen = ref(false);
 
 const selectedTab = ref(0);
-// Badge on the Подмены смен tab -- same signal as the "Управление" red dot
-// on the main Atrace page, so a manager notices a pending request whether
-// they spot it before or after opening Settings.
+// Badge on the Подмены смен / Отгулы и отпуска tabs -- same signal as the
+// "Управление" red dot on the main Atrace page, so a manager notices a
+// pending request whether they spot it before or after opening Settings.
 const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
+const { pendingCount: pendingLeaveCount, loadPendingLeaveCount } = useAtracePendingLeaveCount(nsSlug);
 const tabs = computed(() => ([
   { label: t('app.members') || 'Участники', icon: 'lucide:users' },
   { label: t('app.routes') || 'Маршруты', icon: 'lucide:route' },
   { label: t('app.timeThresholds') || 'Пороги времени', icon: 'lucide:clock' },
   { label: t('app.shiftPatterns') || 'Графики работы', icon: 'lucide:calendar-days' },
   { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat', badge: pendingCoverageCount.value > 0 },
+  { label: t('app.leaveRequests') || 'Отгулы и отпуска', icon: 'lucide:calendar-off', badge: pendingLeaveCount.value > 0 },
   { label: t('app.payrollRules') || 'Переработки и штрафы', icon: 'lucide:banknote' },
 ]));
 
@@ -75,6 +79,7 @@ onMounted(async () => {
         const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
         await atraceGetRoles(atraceToken, nsSlug.value);
         loadPendingCoverageCount();
+        loadPendingLeaveCount();
     } catch (e: any) {
         if (isAtracePermissionError(e)) {
             accessDenied.value = true;
@@ -191,7 +196,8 @@ onUnmounted(() => {
         <AttendanceThresholdsSection v-else-if="selectedTab === 2" />
         <ScheduleSection v-else-if="selectedTab === 3" />
         <ShiftCoverageSection v-else-if="selectedTab === 4" />
-        <PayrollRulesSection v-else-if="selectedTab === 5" />
+        <LeaveRequestsSection v-else-if="selectedTab === 5" />
+        <PayrollRulesSection v-else-if="selectedTab === 6" />
       </div>
     </template>
   </div>

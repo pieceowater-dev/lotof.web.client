@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
 import UserDayRecordsAccordion from '@/components/atrace/UserDayRecordsAccordion.vue';
 import ShiftCoverageRequestModal from '@/components/atrace/ShiftCoverageRequestModal.vue';
+import LeaveRequestModal from '@/components/atrace/LeaveRequestModal.vue';
 import { useRoute } from 'vue-router';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
@@ -203,6 +204,7 @@ const customEndDate = ref(customDates.end);
 const showDateModal = ref(false);
 const showLegendModal = ref(false);
 const showCoverageModal = ref(false);
+const showLeaveModal = ref(false);
 const dateModalError = ref<string | null>(null);
 
 const isStartInvalid = computed(() => {
@@ -732,6 +734,14 @@ function formatNumber(val: number, fractionDigits = 0) {
           @click="showCoverageModal = true"
         >
           {{ t('app.requestCoverage') || 'Запросить подмену' }}
+        </UButton>
+        <UButton
+          size="xs"
+          variant="ghost"
+          icon="lucide:calendar-off"
+          @click="showLeaveModal = true"
+        >
+          {{ t('app.requestLeave') || 'Запросить отгул/отпуск' }}
         </UButton>
       </div>
 
@@ -1473,6 +1483,10 @@ function formatNumber(val: number, fractionDigits = 0) {
 
     <ShiftCoverageRequestModal
       v-model="showCoverageModal"
+      :ns-slug="namespaceSlug || ''"
+    />
+    <LeaveRequestModal
+      v-model="showLeaveModal"
       :ns-slug="namespaceSlug || ''"
     />
   </div>

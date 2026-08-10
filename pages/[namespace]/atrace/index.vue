@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import CreatePostModal from '@/components/atrace/CreatePostModal.vue';
 import CoverageApprovalBanner from '@/components/atrace/CoverageApprovalBanner.vue';
+import LeaveApprovalBanner from '@/components/atrace/LeaveApprovalBanner.vue';
 import EditPostModal from '@/components/atrace/EditPostModal.vue';
 import FilterModal from '@/components/atrace/FilterModal.vue';
 import AtraceTabsBar from '@/components/atrace/AtraceTabsBar.vue';
@@ -25,6 +26,8 @@ import { useStaleRefresh } from '@/composables/useStaleRefresh';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 import { useAtraceCoverageApprovalBanners } from '@/composables/useAtraceCoverageApprovalBanners';
+import { useAtracePendingLeaveCount } from '@/composables/useAtracePendingLeave';
+import { useAtraceLeaveApprovalBanners } from '@/composables/useAtraceLeaveApprovalBanners';
 
 const { t } = useI18n();
 const { titleBySlug } = useNamespace();
@@ -107,13 +110,17 @@ const canCreateRoute = computed(() => canDo('tracker.route.create'));
 // so the entry point itself is hidden rather than just the actions inside it.
 const canSeeSettings = computed(() => canDo('tracker.role.view'));
 
-// Red badge on "Управление" -- a pending shift-coverage request otherwise
-// sits unnoticed until someone happens to open the Подмены смен tab.
+// Red badge on "Управление" -- a pending shift-coverage or leave request
+// otherwise sits unnoticed until someone happens to open the relevant tab.
 const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
+const { pendingCount: pendingLeaveCount, loadPendingLeaveCount } = useAtracePendingLeaveCount(nsSlug);
+const pendingApprovalCount = computed(() => pendingCoverageCount.value + pendingLeaveCount.value);
 
-// Full-width "your shift is covered" banner for the employee who requested
-// it, once a manager approves -- persists across visits until dismissed.
+// Full-width "your shift is covered" / "your leave is approved" banners for
+// the employee who requested it, once a manager approves -- persists across
+// visits until dismissed.
 const { banners: coverageApprovalBanners, load: loadCoverageApprovalBanners, dismiss: dismissCoverageApprovalBanner } = useAtraceCoverageApprovalBanners(nsSlug);
+const { banners: leaveApprovalBanners, load: loadLeaveApprovalBanners, dismiss: dismissLeaveApprovalBanner } = useAtraceLeaveApprovalBanners(nsSlug);
 
 async function openCreateRouteModal() {
     resetRouteCreateForm();
@@ -151,7 +158,11 @@ onMounted(async () => {
     await loadInitialData();
     loadPermissions();
     loadPendingCoverageCount();
-    if (user.value?.id) loadCoverageApprovalBanners(user.value.id);
+    loadPendingLeaveCount();
+    if (user.value?.id) {
+        loadCoverageApprovalBanners(user.value.id);
+        loadLeaveApprovalBanners(user.value.id);
+    }
 
     if (process.client) {
         staleRefresh.start();
@@ -217,6 +228,10 @@ onBeforeUnmount(() => {
       :banners="coverageApprovalBanners"
       @dismiss="dismissCoverageApprovalBanner"
     />
+    <LeaveApprovalBanner
+      :banners="leaveApprovalBanners"
+      @dismiss="dismissLeaveApprovalBanner"
+    />
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div
         class="text-left"
@@ -251,7 +266,7 @@ onBeforeUnmount(() => {
           >
             {{ t('app.atraceManagement') || 'Управление' }}
             <span
-              v-if="pendingCoverageCount > 0"
+              v-if="pendingApprovalCount > 0"
               class="absolute -right-1 -top-1 flex h-3 w-3"
             >
               <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
