@@ -1231,11 +1231,16 @@ export async function capitalUploadPublicationImage(
     },
   }
 
+  // The file part is named "file", not a numeric string like "0" -- Safari's
+  // FormData has been observed serializing purely-numeric field names out of
+  // insertion order (integer-key semantics leaking into multipart encoding),
+  // which put the file part before "operations" on the wire and made
+  // gqlgen's strict first-part-must-be-operations parser reject the request.
   const buildForm = () => {
     const form = new FormData()
     form.append('operations', JSON.stringify(operations))
-    form.append('map', JSON.stringify({ '0': ['variables.file'] }))
-    form.append('0', file, file.name)
+    form.append('map', JSON.stringify({ file: ['variables.file'] }))
+    form.append('file', file, file.name)
     return form
   }
 
