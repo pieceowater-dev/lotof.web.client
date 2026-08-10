@@ -309,7 +309,7 @@ useSeoMeta({
   ogTitle: () => t('app.title') || 'lota',
   ogDescription: () => t('app.description') || 'Платформа автоматизации для современного бизнеса.',
   ogType: 'website',
-  ogUrl: siteUrl,
+  ogUrl: `${siteUrl}/`,
   ogImage: () => `${siteUrl}/og-image.png`,
   twitterCard: 'summary_large_image',
   twitterTitle: () => t('app.title') || 'lota',

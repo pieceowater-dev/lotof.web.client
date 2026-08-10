@@ -8,11 +8,27 @@ definePageMeta({ name: 'landing-menu' });
 
 const { t } = useI18n();
 
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = 'lota Orders — онлайн-меню и приём заказов по QR';
+const pageDescription = 'Меню, заказы и кухонный дисплей в реальном времени — lota Orders для кафе, ресторанов и доставки.';
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  ogUrl: `${siteUrl}/menu`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: `${siteUrl}/og-image.png`,
+});
+
 useHead({
-  title: 'lota Orders — онлайн-меню и приём заказов по QR',
-  meta: [
-    { name: 'description', content: 'Меню, заказы и кухонный дисплей в реальном времени — lota Orders для кафе, ресторанов и доставки.' },
-  ],
+  link: [{ rel: 'canonical', href: `${siteUrl}/menu` }],
 });
 
 const features = [

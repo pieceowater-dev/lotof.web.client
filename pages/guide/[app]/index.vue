@@ -89,7 +89,30 @@ const resolvedAppIcon = computed(() => {
   }
 });
 
-useHead(() => ({ title: app.value ? `${resolvedAppLabel.value} — lota Гид` : 'lota Гид' }));
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = computed(() => app.value ? `${resolvedAppLabel.value} — lota Гид` : 'lota Гид');
+const pageDescription = computed(() => app.value
+  ? `Инструкции и ответы на вопросы по ${resolvedAppLabel.value} в lota.`
+  : (t('guide.homeTagline') || 'Ответы на вопросы и инструкции по каждому продукту lota.'));
+
+useSeoMeta({
+  title: () => pageTitle.value,
+  description: () => pageDescription.value,
+  ogTitle: () => pageTitle.value,
+  ogDescription: () => pageDescription.value,
+  ogType: 'website',
+  ogUrl: () => `${siteUrl}/guide/${appParam.value}`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+});
+
+useHead(() => ({
+  link: app.value ? [{ rel: 'canonical', href: `${siteUrl}/guide/${appParam.value}` }] : [],
+  // An unknown app param renders a "not found" placeholder, not real
+  // content -- indexing that page would be a soft-404.
+  meta: !app.value ? [{ name: 'robots', content: 'noindex, follow' }] : [],
+}));
 
 const loading = ref(true);
 const categories = ref<GuideCategory[]>([]);
@@ -129,6 +152,13 @@ async function load() {
     ]);
     categories.value = cats;
     articles.value = arts;
+  } catch {
+    // A backend hiccup should render the existing "no articles" empty state
+    // (see pages/guide/[app]/[slug].vue's load(), which already does this),
+    // not crash SSR to a 500 -- a page that's supposed to be in the sitemap
+    // must never hard-fail just because the upstream gateway blipped.
+    categories.value = [];
+    articles.value = [];
   } finally {
     loading.value = false;
   }

@@ -215,6 +215,12 @@ export default defineEventHandler(async (event) => {
 
   const urls = [
     xmlUrl(`${siteUrl}/`, today, 'daily', '1.0'),
+    // Public product landing pages -- top-of-funnel marketing pages, no
+    // dynamic content behind them so a fixed weekly changefreq is enough.
+    xmlUrl(`${siteUrl}/atrace`, today, 'weekly', '0.9'),
+    xmlUrl(`${siteUrl}/issues`, today, 'weekly', '0.9'),
+    xmlUrl(`${siteUrl}/contacts`, today, 'weekly', '0.9'),
+    xmlUrl(`${siteUrl}/menu`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/feed`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/news`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/guide`, today, 'weekly', '0.9'),

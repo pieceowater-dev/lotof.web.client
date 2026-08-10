@@ -152,15 +152,21 @@ const isPrivateRoute = computed(() => {
   return isConsoleRoute.value || isSharedNamespaceRoute.value || isNamespacePrivateRoute.value || isPeopleRoute.value;
 });
 
-// Despite the name, this is NOT "is this an individual article page" (those
-// are 2-segment /<category>/<slug> routes and set their own canonical in
-// pages/[category]/[slug].vue). This flags stray unhandled 1-segment paths
-// so app.vue doesn't stamp them with a canonical it can't actually vouch
-// for. Category *listing* pages (/news, /blog, ...) don't set their own
-// canonical, so they must NOT be in this skip-list -- they need app.vue's
-// self-referencing canonical like /feed already correctly gets.
+// True for routes this file must NOT stamp a canonical/hreflang on because
+// the page itself is responsible: stray unhandled 1-segment paths (so
+// app.vue doesn't vouch for something it doesn't understand), and 2-segment
+// /<category>/<slug> article detail routes -- restricted to this exact list
+// in pages/[category]/[slug].vue's `path` page meta -- which set their own
+// canonical from the article's resolved category / CMS override
+// (articleCanonical). A naive route.path self-reference here would silently
+// clobber that for a stale/aliased category link or a syndicated article's
+// custom canonical. Category *listing* pages (/news, /blog, ...) don't set
+// their own canonical, so they must NOT be in either skip-list -- they need
+// app.vue's self-referencing canonical like /feed already correctly gets.
+const ARTICLE_CATEGORY_PREFIXES = new Set(['blog', 'whatsnew', 'articles', 'academy', 'news']);
 const isArticleRoute = computed(() => {
   const segments = routeSegments.value;
+  if (segments.length === 2) return ARTICLE_CATEGORY_PREFIXES.has(segments[0]);
   if (segments.length !== 1) return false;
   const first = segments[0];
   return first !== 'feed' && first !== 'people' && first !== 'console' && first !== 'to' && !PUBLIC_CATEGORY_PREFIXES.has(first);

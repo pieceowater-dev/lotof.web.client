@@ -8,11 +8,27 @@ definePageMeta({ name: 'landing-issues' });
 
 const { t } = useI18n();
 
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = 'lota Issues — таск-трекер для команд в поле и в офисе';
+const pageDescription = 'Канбан-доски, спринты, SLA и живая карта курьеров — lota Issues держит задачи под контролем от постановки до закрытия.';
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  ogUrl: `${siteUrl}/issues`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: `${siteUrl}/og-image.png`,
+});
+
 useHead({
-  title: 'lota Issues — таск-трекер для команд в поле и в офисе',
-  meta: [
-    { name: 'description', content: 'Канбан-доски, спринты, SLA и живая карта курьеров — lota Issues держит задачи под контролем от постановки до закрытия.' },
-  ],
+  link: [{ rel: 'canonical', href: `${siteUrl}/issues` }],
 });
 
 const features = [

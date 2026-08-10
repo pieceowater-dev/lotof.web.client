@@ -58,8 +58,24 @@ import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS } from '@/config/apps';
 import { GUIDE_APP_IDS, guideAppToParam } from '@/composables/useGuideContext';
 
-useHead({ title: 'lota Гид' });
 const { t } = useI18n();
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+
+useSeoMeta({
+  title: 'lota Гид',
+  description: () => t('guide.homeTagline') || 'Ответы на вопросы и инструкции по каждому продукту lota.',
+  ogTitle: 'lota Гид',
+  ogDescription: () => t('guide.homeTagline') || 'Ответы на вопросы и инструкции по каждому продукту lota.',
+  ogType: 'website',
+  ogUrl: `${siteUrl}/guide`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+});
+
+useHead({
+  link: [{ rel: 'canonical', href: `${siteUrl}/guide` }],
+});
 
 const entries = computed(() => [
   ...GUIDE_APP_IDS.map((id) => {

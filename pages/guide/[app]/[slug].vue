@@ -78,7 +78,35 @@ const localeContentHtml = computed(() => {
   return renderMarkdownSafe(stripLeadingHeading(raw));
 });
 
-useHead(() => ({ title: article.value ? `${localeTitle.value} — lota Гид` : 'lota Гид' }));
+const localeExcerpt = computed(() => {
+  if (!article.value) return '';
+  const suffix = localeSuffix();
+  return (article.value[`excerpt${suffix}` as 'excerptRu'] || article.value.excerptRu || '') as string;
+});
+
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = computed(() => article.value ? `${localeTitle.value} — lota Гид` : 'lota Гид');
+const pageDescription = computed(() => localeExcerpt.value || (article.value ? `${localeTitle.value} — инструкция lota Гид.` : ''));
+const pageCanonical = computed(() => `${siteUrl}/guide/${appParam.value}/${slug.value}`);
+
+useSeoMeta({
+  title: () => pageTitle.value,
+  description: () => pageDescription.value || undefined,
+  ogTitle: () => pageTitle.value,
+  ogDescription: () => pageDescription.value || undefined,
+  ogType: 'article',
+  ogUrl: () => pageCanonical.value,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+});
+
+useHead(() => ({
+  link: article.value ? [{ rel: 'canonical', href: pageCanonical.value }] : [],
+  // A missing/unknown slug renders a "not found" placeholder, not real
+  // content -- indexing that page would be a soft-404.
+  meta: (!loading.value && !article.value) ? [{ name: 'robots', content: 'noindex, follow' }] : [],
+}));
 
 async function load() {
   if (!app.value || !slug.value) {

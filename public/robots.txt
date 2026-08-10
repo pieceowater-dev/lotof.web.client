@@ -9,10 +9,14 @@ Allow: /feed
 Disallow: /*/atrace/
 # /[namespace]/contacts/*
 Disallow: /*/contacts/
+# /[namespace]/issues/*
+Disallow: /*/issues/
+# /[namespace]/menu/*
+Disallow: /*/menu/
 # /console/*
 Disallow: /console/
-# /shared/[namespace]/*
-Disallow: /shared/
+# /to/[namespace]/* (shared namespace views)
+Disallow: /to/
 
 # Disallow technical endpoints/files
 Disallow: /api/

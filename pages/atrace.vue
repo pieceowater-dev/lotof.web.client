@@ -11,11 +11,27 @@ definePageMeta({ name: 'landing-atrace' });
 
 const { t } = useI18n();
 
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = 'lota A-Trace — учёт рабочего времени по QR';
+const pageDescription = 'QR-отметки на входе, графики смен и расчёт зарплаты по факту отработанного — lota A-Trace вместо бумажных табелей.';
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  ogUrl: `${siteUrl}/atrace`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: `${siteUrl}/og-image.png`,
+});
+
 useHead({
-  title: 'lota A-Trace — учёт рабочего времени по QR',
-  meta: [
-    { name: 'description', content: 'QR-отметки на входе, графики смен и расчёт зарплаты по факту отработанного — lota A-Trace вместо бумажных табелей.' },
-  ],
+  link: [{ rel: 'canonical', href: `${siteUrl}/atrace` }],
 });
 
 const features = [

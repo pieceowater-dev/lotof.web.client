@@ -8,11 +8,27 @@ definePageMeta({ name: 'landing-contacts' });
 
 const { t } = useI18n();
 
+const config = useRuntimeConfig();
+const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const pageTitle = 'lota Contacts — CRM для клиентской базы';
+const pageDescription = 'Единая карточка клиента, программы лояльности и история обращений — lota Contacts вместо разрозненных таблиц и блокнотов.';
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: pageTitle,
+  ogDescription: pageDescription,
+  ogType: 'website',
+  ogUrl: `${siteUrl}/contacts`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
+  twitterTitle: pageTitle,
+  twitterDescription: pageDescription,
+  twitterImage: `${siteUrl}/og-image.png`,
+});
+
 useHead({
-  title: 'lota Contacts — CRM для клиентской базы',
-  meta: [
-    { name: 'description', content: 'Единая карточка клиента, программы лояльности и история обращений — lota Contacts вместо разрозненных таблиц и блокнотов.' },
-  ],
+  link: [{ rel: 'canonical', href: `${siteUrl}/contacts` }],
 });
 
 const features = [

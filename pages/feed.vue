@@ -357,8 +357,18 @@ watch([articlesSearch, selectedArticleTag], () => {
   mobileFeedVisibleCount.value = Math.min(MOBILE_INITIAL_FEED_LIMIT, maxFeedCards.value);
 });
 
-useHead({
-  title: 'Feed',
+const config = useRuntimeConfig();
+const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+
+useSeoMeta({
+  title: () => t('app.feed') || 'Feed',
+  description: 'Статьи, новости и обновления продуктов lota в одной ленте.',
+  ogTitle: () => t('app.feed') || 'Feed',
+  ogDescription: 'Статьи, новости и обновления продуктов lota в одной ленте.',
+  ogType: 'website',
+  ogUrl: `${siteUrl}/feed`,
+  ogImage: `${siteUrl}/og-image.png`,
+  twitterCard: 'summary_large_image',
 });
 
 </script>
