@@ -217,6 +217,12 @@ export default defineEventHandler(async (event) => {
     xmlUrl(`${siteUrl}/`, today, 'daily', '1.0'),
     // Public product landing pages -- top-of-funnel marketing pages, no
     // dynamic content behind them so a fixed weekly changefreq is enough.
+    // /chekalka is deliberately excluded here: it's a noindex, follow
+    // conversion page dedicated to chekalka.kz-sourced traffic only (see
+    // pages/chekalka.vue) -- chekalka.kz is the real SEO asset for that
+    // funnel, and listing an intentionally-noindexed URL in the sitemap is
+    // a contradictory signal. /atrace itself is the general-purpose "lota
+    // A-Trace" page (every other traffic source) and stays indexable.
     xmlUrl(`${siteUrl}/atrace`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/issues`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/contacts`, today, 'weekly', '0.9'),

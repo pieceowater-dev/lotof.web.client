@@ -85,6 +85,12 @@ export default defineEventHandler(async (event) => {
   // will log in and land inside the product itself.
   if (target.startsWith('landing:')) {
     const address = target.slice('landing:'.length);
+    // Special case: not a real app bundle, just a standalone conversion
+    // page for chekalka.kz-sourced traffic (pages/chekalka.vue) -- doesn't
+    // exist in ALL_APPS, so it can't go through the generic lookup below.
+    if (address === 'chekalka') {
+      return sendRedirect(event, `/chekalka?ref=${encodeURIComponent(code)}`, 307);
+    }
     const app = ALL_APPS.find((a) => a.address === address);
     if (app) {
       return sendRedirect(event, `/${app.address}?ref=${encodeURIComponent(code)}`, 307);

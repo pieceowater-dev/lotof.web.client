@@ -40,7 +40,12 @@ const features = [
   { icon: 'lucide:wallet', title: t('landing.atrace.f3Title') || 'Зарплата по факту', description: t('landing.atrace.f3Desc') || 'Начисления считаются по реально отработанным часам, а не на глаз.' },
   { icon: 'lucide:repeat', title: t('landing.atrace.f4Title') || 'Подмена смен', description: t('landing.atrace.f4Desc') || 'Сотрудник сам находит замену, а вы просто подтверждаете.' },
   { icon: 'lucide:alarm-clock', title: t('landing.atrace.f5Title') || 'Пороги опозданий', description: t('landing.atrace.f5Desc') || 'Настройте, с какой минуты опоздание считается нарушением.' },
-  { icon: 'lucide:megaphone', title: t('landing.atrace.f6Title') || 'Публикации для команды', description: t('landing.atrace.f6Desc') || 'Объявления и новости для смены — в том же приложении, что и учёт.' },
+  // "Публикации для команды" (announcements) was removed here -- the audit
+  // for the chekalka.kz landing rebuild confirmed this feature doesn't
+  // exist anywhere in Atrace ("Post" is a physical check-in location, not
+  // a content/publication concept), so it shouldn't be claimed on any
+  // landing page, not just the chekalka.kz-specific one.
+  { icon: 'lucide:repeat-2', title: t('landing.atrace.f7Title') || 'Отгулы и отпуска', description: t('landing.atrace.f7Desc') || 'Заявки согласуются в системе и сразу учитываются в статистике и зарплате.' },
 ];
 
 const steps = [

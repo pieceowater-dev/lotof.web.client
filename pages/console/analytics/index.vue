@@ -721,6 +721,11 @@ const TARGET_OPTIONS = computed(() => [
   { value: 'landing:contacts', label: 'Contacts (лендинг)' },
   { value: 'landing:menu', label: 'Orders (лендинг)' },
   { value: 'landing:issues', label: 'Issues (лендинг)' },
+  // Not a real app bundle -- /chekalka is a standalone conversion page for
+  // chekalka.kz-sourced traffic only (see pages/chekalka.vue), so it's
+  // special-cased in server/routes/l/[code].get.ts rather than resolved
+  // through ALL_APPS like the landing:<address> options above.
+  { value: 'landing:chekalka', label: 'Чекалка (lota.tools/chekalka)' },
 ]);
 
 const deepLinkCategories = ref<AdminDeepLinkCategory[]>([]);
