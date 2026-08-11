@@ -96,9 +96,15 @@ function trackWhatsAppClick(location: 'header' | 'final') {
 // Header CTA is hidden until the visitor scrolls past the hero -- the hero
 // already carries the primary button, a second one pinned in the header
 // from the first pixel is just visual noise on a page this short.
+//
+// This page is its own scroll container (see the root <div>'s
+// h-screen/overflow-y-auto, required because layout:false opts out of the
+// app's usual ".main-scroll" element) -- so the scroll event fires on that
+// div, not on `window`, and progress is read from its scrollTop.
 const isScrolled = ref(false);
+const scrollRoot = ref<HTMLElement | null>(null);
 function onScroll() {
-  isScrolled.value = window.scrollY > 480;
+  isScrolled.value = (scrollRoot.value?.scrollTop ?? 0) > 480;
 }
 
 // Instagram/WhatsApp/Facebook's built-in browsers commonly block Google's
@@ -110,12 +116,12 @@ function onScroll() {
 const isInAppBrowser = ref(false);
 
 onMounted(() => {
-  window.addEventListener('scroll', onScroll, { passive: true });
+  scrollRoot.value?.addEventListener('scroll', onScroll, { passive: true });
   const ua = navigator.userAgent || '';
   isInAppBrowser.value = /Instagram|FBAN|FBAV|FB_IAB|WhatsApp|Line\//i.test(ua);
 });
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onScroll);
+  scrollRoot.value?.removeEventListener('scroll', onScroll);
 });
 
 const WHATSAPP_URL = 'https://wa.me/77089621804';
@@ -213,18 +219,32 @@ const faqItems = [
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+  <!-- h-screen + overflow-y-auto: this page uses layout: false (see script),
+       so it never gets layouts/default.vue's own scroll container
+       (".main-scroll"). assets/css/global.css sets `html, body { overflow:
+       hidden }` globally and delegates scrolling to that container -- pages
+       that opt out of the default layout have to provide their own, or the
+       page is simply unscrollable outside the accidental ".ios" class hook
+       (added for a different reason: status-bar tap-to-scroll), which is
+       why this scrolled on iOS Safari but not desktop mouse wheel. -->
+  <div
+    ref="scrollRoot"
+    class="h-screen overflow-y-auto bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100"
+  >
     <!-- BLOCK 0: header -->
     <header class="sticky top-0 z-40 border-b border-gray-100 bg-white/90 backdrop-blur dark:border-gray-800 dark:bg-gray-950/90">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
         <div class="flex items-center gap-2 font-semibold">
-          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-600 to-blue-600 text-white">
+          <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-emerald-600 text-white">
             <UIcon
               name="lucide:qr-code"
               class="h-4.5 w-4.5"
             />
           </span>
-          <span class="text-lg">Чекалка</span>
+          <span class="flex flex-col leading-tight">
+            <span class="text-lg">Чекалка</span>
+            <span class="hidden text-[11px] font-normal text-gray-400 dark:text-gray-500 sm:block">Честный учёт — в один QR-код</span>
+          </span>
         </div>
         <div class="flex items-center gap-2">
           <UButton
@@ -250,7 +270,7 @@ const faqItems = [
               v-if="isScrolled"
               color="primary"
               size="sm"
-              class="bg-gradient-to-r from-violet-600 to-blue-600"
+              class="bg-gradient-to-r from-blue-600 to-emerald-600"
               @click="handleGetStarted('hero')"
             >
               Начать бесплатно
@@ -272,7 +292,7 @@ const faqItems = [
     <!-- BLOCK 1: hero -->
     <section class="relative overflow-hidden">
       <div class="pointer-events-none absolute inset-0 -z-10">
-        <div class="absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-violet-500/15 to-blue-500/10 blur-3xl" />
+        <div class="absolute -top-32 left-1/2 h-[36rem] w-[36rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-blue-500/15 to-emerald-500/10 blur-3xl" />
       </div>
       <div class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-5 pb-14 pt-10 sm:pt-14 lg:grid-cols-2 lg:gap-12 lg:pb-20">
         <div>
@@ -294,7 +314,7 @@ const faqItems = [
             <UButton
               size="xl"
               color="primary"
-              class="bg-gradient-to-r from-violet-600 to-blue-600 px-7 py-3.5 text-base font-semibold shadow-lg shadow-blue-600/20"
+              class="bg-gradient-to-r from-blue-600 to-emerald-600 px-7 py-3.5 text-base font-semibold shadow-lg shadow-emerald-600/20"
               @click="handleGetStarted('hero')"
             >
               Начать бесплатно
@@ -445,7 +465,7 @@ const faqItems = [
             v-for="(s, idx) in steps"
             :key="s.title"
           >
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-blue-600 text-sm font-bold text-white">
+            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-emerald-600 text-sm font-bold text-white">
               {{ idx + 1 }}
             </div>
             <p
@@ -480,7 +500,7 @@ const faqItems = [
           :key="f.title"
           class="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900"
         >
-          <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-blue-600">
+          <div class="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-emerald-600">
             <UIcon
               :name="f.icon"
               class="h-5 w-5 text-white"
@@ -552,7 +572,7 @@ const faqItems = [
           Тарифы
         </h2>
 
-        <div class="mt-4 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-sm font-semibold text-violet-900 dark:border-violet-900/40 dark:bg-violet-900/10 dark:text-violet-200">
+        <div class="mt-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
           Цена за всю компанию, а не за каждого сотрудника. Штат растёт — счёт не меняется.
         </div>
 
@@ -562,12 +582,12 @@ const faqItems = [
             :key="tier.size"
             class="rounded-2xl border p-5"
             :class="tier.highlight
-              ? 'border-violet-300 bg-white shadow-lg shadow-violet-600/10 ring-2 ring-violet-500 dark:border-violet-700 dark:bg-gray-900'
+              ? 'border-blue-300 bg-white shadow-lg shadow-blue-600/10 ring-2 ring-blue-500 dark:border-blue-700 dark:bg-gray-900'
               : 'border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900'"
           >
             <span
               v-if="tier.highlight"
-              class="mb-2 inline-block rounded-full bg-violet-600 px-2.5 py-0.5 text-xs font-medium text-white"
+              class="mb-2 inline-block rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-medium text-white"
             >
               Чаще всего выбирают
             </span>
@@ -643,7 +663,7 @@ const faqItems = [
                     :href="l.href"
                     target="_blank"
                     rel="noopener noreferrer"
-                    class="text-violet-600 hover:underline dark:text-violet-400"
+                    class="text-blue-600 hover:underline dark:text-blue-400"
                   >
                     {{ l.text }}
                   </a>
@@ -657,7 +677,7 @@ const faqItems = [
 
     <!-- BLOCK 7: final CTA -->
     <section class="mx-auto max-w-4xl px-5 py-16 sm:py-20">
-      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 to-blue-600 px-8 py-14 text-center sm:py-16">
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-600 to-emerald-600 px-8 py-14 text-center sm:py-16">
         <h2 class="text-2xl font-bold text-white sm:text-3xl">
           Попробуйте Чекалку бесплатно
         </h2>
@@ -688,10 +708,9 @@ const faqItems = [
             :to="WHATSAPP_URL"
             target="_blank"
             rel="noopener noreferrer"
-            variant="outline"
-            color="white"
             size="sm"
             icon="lucide:message-circle"
+            class="border border-white/50 bg-transparent text-white hover:bg-white/10"
             @click="trackWhatsAppClick('final')"
           >
             Не хотите разбираться сами — напишите в WhatsApp, поможем настроить
