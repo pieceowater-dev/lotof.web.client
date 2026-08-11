@@ -68,7 +68,7 @@ async function handlePrint() {
     let ns = '';
     // Try to parse from publicUrl
     try {
-        const match = publicUrl.value.match(/\/shared\/(.*?)\//);
+        const match = publicUrl.value.match(/\/to\/([^/]+)\//);
         if (match && match[1]) ns = match[1];
     } catch {}
     // skip props.post.namespace (not in type)
