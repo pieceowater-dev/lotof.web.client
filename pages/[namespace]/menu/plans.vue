@@ -106,9 +106,13 @@ async function fetchActiveSubscription() {
 async function redirectIfAlreadySubscribed() {
   if (redirectingAfterReturn.value) return;
   if (!activeSubscription.value) return;
-  // Explicit "manage/change plan" entry point (e.g. from Settings) — let the
-  // user view and change their plan instead of bouncing them straight back.
-  if (route.query.manage) return;
+  // Only bounce back when something explicitly sent the user here to pick
+  // a plan and resume elsewhere afterwards (?returnTo=...) -- direct
+  // navigation to this page (typed URL, "Upgrade Plan" link, a plan-limit
+  // modal) has no returnTo at all and wants the plans grid to actually
+  // render, even though the namespace already has an active plan (true
+  // for almost every namespace once the default Free tier auto-applies).
+  if (!route.query.returnTo) return;
 
   const returnTo = resolveReturnTo();
   if (returnTo === route.path) return;
