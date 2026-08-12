@@ -20,7 +20,7 @@ const showModal = ref(false);
 
 const memberNameById = computed(() => {
   const map = new Map<string, string>();
-  members.value.forEach(m => map.set(m.userId, m.username || m.email || m.userId));
+  members.value.forEach(m => map.set(m.userId, m.nickname || m.username || m.email || m.userId));
   return map;
 });
 

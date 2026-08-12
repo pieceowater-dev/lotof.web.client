@@ -2,6 +2,7 @@
 import { useAuth } from '@/composables/useAuth';
 import { useNamespaceStaticRoles, roleTone, roleLabel, type StaticAccessRole } from '@/composables/useNamespaceStaticRoles';
 import { staticRoleOptions, rolesPageSizeOptions } from '@/utils/constants/contactsSettings';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const route = useRoute();
 const toast = useToast();
@@ -182,7 +183,7 @@ onMounted(async () => {
               class="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50/60 dark:hover:bg-gray-800/40 transition-colors"
             >
               <td class="px-4 py-3 text-gray-900 dark:text-gray-100 font-medium">
-                {{ member.username }}
+                {{ memberDisplayName(member) }}
               </td>
               <td class="px-4 py-3 text-gray-600 dark:text-gray-300">
                 {{ member.email }}
@@ -258,7 +259,7 @@ onMounted(async () => {
                 v-if="roleModalMember"
                 class="text-sm text-gray-500 dark:text-gray-400 mt-1"
               >
-                {{ roleModalMember.username }} · {{ roleModalMember.email }}
+                {{ memberDisplayName(roleModalMember) }} · {{ roleModalMember.email }}
               </p>
             </div>
             <UButton

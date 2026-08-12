@@ -24,6 +24,7 @@ export interface NamespaceMember {
   userId: string;
   username: string;
   email: string;
+  nickname?: string | null;
 }
 
 export function roleTone(role: StaticAccessRole): string {

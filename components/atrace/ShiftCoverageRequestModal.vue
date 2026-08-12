@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { useAuth } from '@/composables/useAuth';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -94,7 +95,7 @@ async function submitRequest() {
         <UFormGroup :label="t('app.coverageOriginal') || 'Кого подменяют'">
           <USelectMenu
             v-model="formOriginalUserId"
-            :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
+            :options="activeMembers.map(m => ({ value: m.userId, label: memberDisplayName(m) || m.email }))"
             value-attribute="value"
             option-attribute="label"
             searchable
@@ -103,7 +104,7 @@ async function submitRequest() {
         <UFormGroup :label="t('app.coverageCovering') || 'Кто подменяет'">
           <USelectMenu
             v-model="formCoveringUserId"
-            :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
+            :options="activeMembers.map(m => ({ value: m.userId, label: memberDisplayName(m) || m.email }))"
             value-attribute="value"
             option-attribute="label"
             searchable

@@ -12,6 +12,7 @@ export type AtraceMember = {
   userId: string;
   username: string;
   email: string;
+  nickname?: string | null;
   roleId?: string | null;
   roleName?: string | null;
   requiredWorkingDays?: number;

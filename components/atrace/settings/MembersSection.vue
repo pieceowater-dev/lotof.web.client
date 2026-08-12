@@ -4,6 +4,7 @@ import EditMemberModal from '@/components/atrace/settings/EditMemberModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -71,6 +72,9 @@ onMounted(async () => {
         :total="members.length"
         :pagination="true"
       >
+        <template #username-data="{ row }">
+          {{ memberDisplayName(row) }}
+        </template>
         <template #roleName-data="{ row }">
           <span
             v-if="row.roleName"

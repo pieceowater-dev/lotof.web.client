@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import type { Role } from '@/api/atrace/role/getRoles';
 import type { AtraceMember } from '@/composables/useAtraceMembers';
 import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -58,7 +59,7 @@ const isOpen = computed({
                 {{ t('common.username') }}
               </span>
               <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                {{ member.username }}
+                {{ memberDisplayName(member) }}
               </p>
             </div>
             <div>

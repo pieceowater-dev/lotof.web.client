@@ -95,9 +95,9 @@ const updatingStatus = ref(false);
 const isMobileTimelineOpen = ref(false);
 
 // --- Real names for participants (namespace members, hub-resolved) ---
-const hubMembers = ref<Array<{ userId: string; username: string; email: string }>>([]);
+const hubMembers = ref<Array<{ userId: string; username: string; email: string; nickname?: string | null }>>([]);
 const memberNameById = computed<Record<string, string>>(() =>
-  Object.fromEntries(hubMembers.value.map((m) => [m.userId, m.username || m.email]))
+  Object.fromEntries(hubMembers.value.map((m) => [m.userId, m.nickname || m.username || m.email]))
 );
 function memberDisplayName(userId: string): string {
   return memberNameById.value[userId] || (t('menu.unknownMember') || 'Unknown member');
@@ -109,9 +109,9 @@ async function loadHubMembers() {
     const { hubMembersList } = await import('@/api/hub/members/list');
     const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
     if (!namespace?.id) return;
-    const collected: Array<{ userId: string; username: string; email: string }> = [];
+    const collected: Array<{ userId: string; username: string; email: string; nickname?: string | null }> = [];
     let page = 1;
-    let batch: Array<{ userId: string; username: string; email: string }>;
+    let batch: Array<{ userId: string; username: string; email: string; nickname?: string | null }>;
     do {
       batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
       collected.push(...batch);
@@ -437,7 +437,7 @@ const memberOptions = computed(() => {
     return 0;
   });
   return sorted.map((m) => ({
-    label: `${m.username || m.email || (t('menu.unknownMember') || 'Unknown member')} — ${roleLabel(staffRoleByUserId.value[m.userId])}`,
+    label: `${m.nickname || m.username || m.email || (t('menu.unknownMember') || 'Unknown member')} — ${roleLabel(staffRoleByUserId.value[m.userId])}`,
     value: m.userId,
   }));
 });

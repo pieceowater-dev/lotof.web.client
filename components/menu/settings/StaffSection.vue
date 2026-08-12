@@ -9,6 +9,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import StaffModal from '@/components/menu/StaffModal.vue';
 import type { MenuStaff, StaffRole } from '@/api/menu/staff/list';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -20,7 +21,7 @@ const { isAtLimit, loadPlanLimits } = useMenuPlanLimits();
 const staff = ref<MenuStaff[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const members = ref<Array<{ userId: string; username: string; email: string }>>([]);
+const members = ref<Array<{ userId: string; username: string; email: string; nickname?: string | null }>>([]);
 
 const roleLabel = (r: StaffRole) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
@@ -63,12 +64,12 @@ const showRoleLegend = ref(false);
 // an already-visible row instead of a separate "add" step. Mirrors lota
 // Contacts' member/role table, but backed by Menu's real staff records
 // (create/update/delete) rather than a display-only local label.
-type StaffRow = { userId: string; username: string; email: string; staffId: string | null; role: StaffRole | null };
+type StaffRow = { userId: string; username: string; email: string; nickname?: string | null; staffId: string | null; role: StaffRole | null };
 const rows = computed<StaffRow[]>(() => {
   const byUserId = new Map(staff.value.map((s) => [s.userId, s]));
   return members.value.map((m) => {
     const existing = byUserId.get(m.userId);
-    return { userId: m.userId, username: m.username, email: m.email, staffId: existing?.id || null, role: existing?.role || null };
+    return { userId: m.userId, username: m.username, email: m.email, nickname: m.nickname, staffId: existing?.id || null, role: existing?.role || null };
   });
 });
 
@@ -80,9 +81,9 @@ async function loadMemberNames() {
     const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
     if (!namespace?.id) return;
 
-    const collected: Array<{ userId: string; username: string; email: string }> = [];
+    const collected: Array<{ userId: string; username: string; email: string; nickname?: string | null }> = [];
     let page = 1;
-    let batch: Array<{ userId: string; username: string; email: string }>;
+    let batch: Array<{ userId: string; username: string; email: string; nickname?: string | null }>;
     do {
       batch = await hubMembersList(hubToken.value, namespace.id, page, FilterPaginationLengthEnum.Fifty);
       collected.push(...batch);
@@ -260,11 +261,11 @@ onMounted(async () => {
             :class="row.role === 'OWNER' && 'cursor-default'"
             @click="row.role !== 'OWNER' && openRoleModal(row)"
           >
-            <UserAvatar :name="row.username || row.email" :seed="row.email" size="sm" />
+            <UserAvatar :name="memberDisplayName(row) || row.email" :seed="row.email" size="sm" />
             <span
               class="font-medium text-gray-900 dark:text-gray-100 transition-colors"
               :class="row.role !== 'OWNER' && 'group-hover:text-primary-600 dark:group-hover:text-primary-400'"
-            >{{ row.username }}</span>
+            >{{ memberDisplayName(row) }}</span>
           </button>
         </template>
         <template #email-data="{ row }">

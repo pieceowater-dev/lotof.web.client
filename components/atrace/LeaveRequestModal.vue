@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { useAuth } from '@/composables/useAuth';
 import type { AtraceLeaveType } from '@/api/atrace/schedule/leave';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -98,7 +99,7 @@ async function submitRequest() {
         <UFormGroup :label="t('app.leaveEmployee') || 'Сотрудник'">
           <USelectMenu
             v-model="formUserId"
-            :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
+            :options="activeMembers.map(m => ({ value: m.userId, label: memberDisplayName(m) || m.email }))"
             value-attribute="value"
             option-attribute="label"
             searchable

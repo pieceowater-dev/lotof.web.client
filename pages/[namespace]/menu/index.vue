@@ -190,15 +190,15 @@ async function loadParticipantOptions() {
     const { hubMembersList } = await import('@/api/hub/members/list');
     const namespace = await hubNamespaceBySlug(hubToken.value, nsSlug.value);
     if (!namespace?.id) return;
-    const collected: Array<{ userId: string; username: string; email: string }> = [];
+    const collected: Array<{ userId: string; username: string; email: string; nickname?: string | null }> = [];
     let page2 = 1;
-    let batch: Array<{ userId: string; username: string; email: string }>;
+    let batch: Array<{ userId: string; username: string; email: string; nickname?: string | null }>;
     do {
       batch = await hubMembersList(hubToken.value, namespace.id, page2, FilterPaginationLengthEnum.Fifty);
       collected.push(...batch);
       page2 += 1;
     } while (batch.length >= 50);
-    const nameByUserId = new Map(collected.map((m) => [m.userId, m.username || m.email]));
+    const nameByUserId = new Map(collected.map((m) => [m.userId, m.nickname || m.username || m.email]));
     participantOptions.value = staffRes.staff
       .map((s) => ({ label: nameByUserId.get(s.userId) || (t('menu.unknownMember') || 'Unknown member'), value: s.userId }))
       .sort((a, b) => a.label.localeCompare(b.label));

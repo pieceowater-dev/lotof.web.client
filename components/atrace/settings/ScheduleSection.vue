@@ -85,7 +85,7 @@ const assignmentColumns = computed(() => ([
 
 const memberNameById = computed(() => {
   const map = new Map<string, string>();
-  members.value.forEach(m => map.set(m.userId, m.username || m.email || m.userId));
+  members.value.forEach(m => map.set(m.userId, m.nickname || m.username || m.email || m.userId));
   return map;
 });
 const patternNameById = computed(() => {
@@ -579,7 +579,7 @@ onMounted(async () => {
               <USelectMenu
                 v-model="formUserIds"
                 multiple
-                :options="activeMembers.map(m => ({ value: m.userId, label: m.username || m.email }))"
+                :options="activeMembers.map(m => ({ value: m.userId, label: m.nickname || m.username || m.email }))"
                 value-attribute="value"
                 option-attribute="label"
                 searchable

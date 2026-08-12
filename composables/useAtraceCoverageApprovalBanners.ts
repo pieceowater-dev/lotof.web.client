@@ -72,7 +72,7 @@ export function useAtraceCoverageApprovalBanners(nsSlug: ComputedRef<string>) {
         const ns = await hubNamespaceBySlug(hubToken, nsSlug.value);
         if (ns?.id) {
           const members = await hubMembersList(hubToken, ns.id, 1, FilterPaginationLengthEnum.Fifty);
-          for (const m of members) nameById.set(m.userId, m.username);
+          for (const m of members) nameById.set(m.userId, m.nickname || m.username);
         }
       } catch (e) {
         logError('[useAtraceCoverageApprovalBanners] failed to resolve names:', e);

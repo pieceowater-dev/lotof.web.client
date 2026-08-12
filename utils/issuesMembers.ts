@@ -16,9 +16,9 @@ export async function loadIssuesStaffMemberOptions(
   const namespace = await hubNamespaceBySlug(hubToken, nsSlug);
   if (!namespace?.id) return [];
 
-  const collected: Array<{ userId: string; username: string; email: string }> = [];
+  const collected: Array<{ userId: string; username: string; email: string; nickname?: string | null }> = [];
   let page = 1;
-  let batch: Array<{ userId: string; username: string; email: string }>;
+  let batch: Array<{ userId: string; username: string; email: string; nickname?: string | null }>;
   do {
     batch = await hubMembersList(hubToken, namespace.id, page, FilterPaginationLengthEnum.Fifty);
     collected.push(...batch);
@@ -30,6 +30,6 @@ export async function loadIssuesStaffMemberOptions(
 
   return collected
     .filter((m) => staffUserIds.has(m.userId))
-    .map((m) => ({ label: m.username || m.email, value: m.userId }))
+    .map((m) => ({ label: m.nickname || m.username || m.email, value: m.userId }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }

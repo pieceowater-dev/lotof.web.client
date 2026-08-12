@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import type { TasksStaffRoleValue } from '@/api/tasks/staff/list';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const { t } = useI18n();
 
 const props = defineProps<{
   modelValue: boolean;
-  member?: { userId: string; username: string; email: string } | null;
+  member?: { userId: string; username: string; email: string; nickname?: string | null } | null;
   currentRole?: TasksStaffRoleValue | null;
   saving?: boolean;
 }>();
@@ -62,7 +63,7 @@ function handleSubmit() {
             {{ t('tasks.changeRole') || 'Change role' }}
           </h3>
           <p v-if="member" class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {{ member.username }} · {{ member.email }}
+            {{ memberDisplayName(member) }} · {{ member.email }}
           </p>
         </div>
       </template>

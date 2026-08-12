@@ -6,6 +6,7 @@ import { FriendshipStatus, FilterPaginationLengthEnum } from '@gql-hub';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getInitials } from '@/utils/avatar';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { peopleTour } from '@/config/tours';
 
@@ -279,14 +280,46 @@ function applyStoredNamespace() {
     }
   } catch {}
 }
-const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string }>>([]);
+const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string; nickname?: string | null }>>([]);
 const membersLoading = ref(false);
 const teamFilter = ref('');
 const filteredMembers = computed(() => {
   const q = teamFilter.value.trim().toLowerCase();
   if (!q) return nsMembers.value;
-  return nsMembers.value.filter(m => m.username?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q));
+  return nsMembers.value.filter(m => m.username?.toLowerCase().includes(q) || m.email?.toLowerCase().includes(q) || m.nickname?.toLowerCase().includes(q));
 });
+
+// ---- Nickname editing ----
+const nicknameModalOpen = ref(false);
+const nicknameEditing = ref<{ userId: string; username: string } | null>(null);
+const nicknameInput = ref('');
+const nicknameSaving = ref(false);
+
+function openNicknameEdit(member: { userId: string; username: string; nickname?: string | null }) {
+  nicknameEditing.value = { userId: member.userId, username: member.username };
+  nicknameInput.value = member.nickname || '';
+  nicknameModalOpen.value = true;
+}
+
+async function submitNickname() {
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
+  const nsId = selectedNS.value ? useNamespace().idBySlug(selectedNS.value) : null;
+  if (!tok || !nsId || !nicknameEditing.value) return;
+
+  nicknameSaving.value = true;
+  try {
+    const { hubSetMemberNickname } = await import('@/api/hub/members/list');
+    const updated = await hubSetMemberNickname(tok, nsId, nicknameEditing.value.userId, nicknameInput.value.trim());
+    const idx = nsMembers.value.findIndex(m => m.userId === nicknameEditing.value!.userId);
+    if (idx !== -1) nsMembers.value[idx] = { ...nsMembers.value[idx], nickname: updated.nickname };
+    toast.add({ title: t('app.nicknameSaved') || 'Никнейм сохранён', color: 'emerald' });
+    nicknameModalOpen.value = false;
+  } catch (e) {
+    toast.add({ title: getErrorMessage(e, t) || (t('common.genericError') || 'Что-то пошло не так'), color: 'red' });
+  } finally {
+    nicknameSaving.value = false;
+  }
+}
 const loadMembers = async () => {
   const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
   if (!tok || !selectedNS.value) { nsMembers.value = []; return; }
@@ -688,14 +721,23 @@ async function removeMember(member: { userId: string; username: string; email: s
               :key="m.id"
               class="group flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
             >
-              <UserAvatar :name="m.username" :seed="m.email" />
+              <UserAvatar :name="memberDisplayName(m)" :seed="m.email" />
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
-                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{{ m.username }}</span>
+                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{{ memberDisplayName(m) }}</span>
                   <UBadge v-if="m.userId === user?.id" size="xs" color="blue" variant="subtle">{{ t('app.you') }}</UBadge>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.email }}</p>
               </div>
+              <UButton
+                color="gray"
+                variant="ghost"
+                size="xs"
+                icon="lucide:pencil"
+                :title="t('app.setNickname') || 'Задать никнейм'"
+                class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                @click="openNicknameEdit(m)"
+              />
               <UButton
                 v-if="m.userId !== user?.id"
                 color="gray"
@@ -800,5 +842,37 @@ async function removeMember(member: { userId: string; username: string; email: s
         </div>
       </UCard>
     </div>
+
+    <UModal v-model="nicknameModalOpen">
+      <UCard>
+        <template #header>
+          <h3 class="text-base font-semibold">{{ t('app.setNickname') || 'Задать никнейм' }}</h3>
+        </template>
+        <div class="space-y-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ nicknameEditing?.username }}
+          </p>
+          <UInput
+            v-model="nicknameInput"
+            :placeholder="t('app.nicknamePlaceholder') || 'Например, Асель К.'"
+            maxlength="64"
+            @keyup.enter="submitNickname"
+          />
+          <p class="text-xs text-gray-400 dark:text-gray-500">
+            {{ t('app.nicknameHint') || 'Виден только внутри этой компании. Оставьте пустым, чтобы вернуть исходное имя аккаунта.' }}
+          </p>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="ghost" :disabled="nicknameSaving" @click="nicknameModalOpen = false">
+              {{ t('app.cancel') || 'Отмена' }}
+            </UButton>
+            <UButton color="primary" :loading="nicknameSaving" @click="submitNickname">
+              {{ t('app.save') || 'Сохранить' }}
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>

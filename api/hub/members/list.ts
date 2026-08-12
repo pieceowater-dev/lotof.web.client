@@ -9,17 +9,19 @@ const MEMBERS_QUERY = /* GraphQL */ `
       userId
       username
       email
+      nickname
     }
   }
 `;
 
+export type HubMember = { id: string; userId: string; username: string; email: string; nickname?: string | null };
 
 export async function hubMembersList(
   token: string,
   namespaceId?: string,
   page: number = 1,
   length: FilterPaginationLengthEnum = FilterPaginationLengthEnum.Ten
-): Promise<Array<{ id: string; userId: string; username: string; email: string }>> {
+): Promise<HubMember[]> {
   setGlobalAuthToken(token);
   const filter = {
     namespaceId,
@@ -31,5 +33,32 @@ export async function hubMembersList(
     MEMBERS_QUERY as any,
     { filter }
   );
-  return data.members as Array<{ id: string; userId: string; username: string; email: string }>;
+  return data.members as HubMember[];
+}
+
+const SET_MEMBER_NICKNAME_MUTATION = /* GraphQL */ `
+  mutation SetMemberNickname($input: SetMemberNicknameInput!) {
+    setMemberNickname(input: $input) {
+      id
+      userId
+      username
+      email
+      nickname
+    }
+  }
+`;
+
+// Empty nickname clears the override back to the account's own username.
+export async function hubSetMemberNickname(
+  token: string,
+  namespaceId: string,
+  userId: string,
+  nickname: string
+): Promise<HubMember> {
+  setGlobalAuthToken(token);
+  const data = await hubClient.request<{ setMemberNickname: HubMember }>(
+    SET_MEMBER_NICKNAME_MUTATION as any,
+    { input: { namespaceId, userId, nickname } }
+  );
+  return data.setMemberNickname;
 }
