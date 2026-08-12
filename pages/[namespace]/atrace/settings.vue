@@ -170,25 +170,43 @@ onUnmounted(() => {
 
     <template v-else>
       <PlanLimitsBanner />
+      <!--
+        UTabs forces a `grid-template-columns: repeat(n, minmax(0, 1fr))`
+        inline style for horizontal orientation (see @nuxt/ui Tabs.vue) --
+        with 7 tabs that squeezes every label to ~1/7th of the row no matter
+        how wide the container is, so on a narrow phone viewport most labels
+        get clipped to 2-3 letters even with `truncate`. A plain content-sized
+        button row (same pattern as the deep-link category pills elsewhere in
+        the console) sizes each tab to its own label instead, so the row
+        naturally overflows and scrolls horizontally with every label fully
+        readable once scrolled into view.
+      -->
       <div class="mb-3 flex-shrink-0 overflow-x-auto">
-        <UTabs
-          v-model="selectedTab"
-          :items="tabs"
-          :ui="{ list: { width: 'w-full min-w-[640px]' } }"
-        >
-          <template #default="{ item }">
-            <span class="flex items-center gap-1.5">
-              <span class="truncate">{{ item.label }}</span>
-              <span
-                v-if="item.badge"
-                class="relative flex h-2 w-2 flex-shrink-0"
-              >
-                <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
-                <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
-              </span>
+        <div class="inline-flex min-w-full items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+          <button
+            v-for="(tab, index) in tabs"
+            :key="index"
+            type="button"
+            class="relative flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 h-8 text-sm font-medium transition-colors duration-200 ease-out"
+            :class="selectedTab === index
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            @click="selectedTab = index"
+          >
+            <UIcon
+              :name="tab.icon"
+              class="h-4 w-4 flex-shrink-0"
+            />
+            <span>{{ tab.label }}</span>
+            <span
+              v-if="tab.badge"
+              class="relative flex h-2 w-2 flex-shrink-0"
+            >
+              <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
+              <span class="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
             </span>
-          </template>
-        </UTabs>
+          </button>
+        </div>
       </div>
       <div class="flex-1 min-h-0 flex flex-col">
         <MembersSection v-if="selectedTab === 0" />

@@ -370,7 +370,7 @@
   </div> <!-- End mx-auto -->
 
 
-  <PlanModal
+  <ConsoleBillingPlanModal
     v-model:plan-modal="planModal"
     v-model:plan-form="planForm"
     :current-limit-keys="currentLimitKeys"
@@ -380,7 +380,7 @@
     @close="closePlanModal"
     @submit="submitPlanModal"
   />
-  <CashPaymentModal
+  <ConsoleBillingCashPaymentModal
     v-model:cash-payment-modal="cashPaymentModal"
     v-model:cash-payment-form="cashPaymentForm"
     :active-project-plans="activeProjectPlans"
@@ -396,7 +396,7 @@
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { capitalGetAdminBillingInfo, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, capitalCancelSubscription, type AdminBillingInfo } from '@/api/capital/admin';
+import { capitalGetAdminBillingInfo, capitalGetAllAdminPlans, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, capitalCancelSubscription, type AdminBillingInfo } from '@/api/capital/admin';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -460,10 +460,18 @@ const selectedProjectAppCode = computed(() => {
   return projects.find(p => p.id === selectedProject.value)?.appCode || selectedProject.value;
 });
 
+// Plans across every project (not just the currently selected one) -- an
+// account's subscriptions can span multiple apps, but billingData.adminPlans
+// is always filtered to the selected project (see refreshData), so a
+// cross-project subscription's plan would otherwise never resolve to a name.
+// Fetched once; project-independent, so no need to refetch on tab switches.
+const allPlans = ref<AdminBillingInfo['adminPlans']>([]);
+
 function getPlanName(planId: string) {
-  if (!billingData.value) return planId;
-  const plan = billingData.value.adminPlans?.find(p => p.id === planId);
-  return plan ? plan.name : planId;
+  const inProject = billingData.value?.adminPlans?.find(p => p.id === planId);
+  if (inProject) return inProject.name;
+  const anyProject = allPlans.value.find(p => p.id === planId);
+  return anyProject ? anyProject.name : planId;
 }
 
 // Legacy plans seeded via cfg.go store `description` as an i18n key suffix
@@ -517,6 +525,11 @@ onMounted(async () => {
     }
   }
   refreshData();
+  if (token.value) {
+    capitalGetAllAdminPlans(token.value)
+      .then((plans) => { allPlans.value = plans; })
+      .catch((e) => console.error('[billing] Failed to fetch all-project plans', e));
+  }
 });
 
 const selectedProjectPlans = computed(() => {

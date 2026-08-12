@@ -185,7 +185,14 @@
                       <span v-else class="text-slate-400">—</span>
                     </td>
                     <td class="px-6 py-3">
-                      <span v-if="ns.leadSource" class="rounded-full bg-violet-50 px-2 py-0.5 font-mono text-[11px] text-violet-700 dark:bg-violet-900/20 dark:text-violet-300">{{ ns.leadSource }}</span>
+                      <a
+                        v-if="ns.leadSource"
+                        :href="deepLinkUrl(ns.leadSource)"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        :title="deepLinkUrl(ns.leadSource)"
+                        class="rounded-full bg-violet-50 px-2 py-0.5 font-mono text-[11px] text-violet-700 hover:underline dark:bg-violet-900/20 dark:text-violet-300"
+                      >{{ leadSourceLabel(ns.leadSource) }}</a>
                       <span v-else class="text-slate-400">—</span>
                     </td>
                     <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
@@ -775,6 +782,14 @@ function targetLabel(target: string): string {
 function deepLinkUrl(code: string): string {
   const origin = process.client ? window.location.origin : '';
   return `${origin}/l/${code}`;
+}
+
+// A namespace's leadSource is the deep-link *code* it signed up through
+// (see server/routes/l/[code].get.ts's lead_ref cookie) -- show the link's
+// own label when it's still around instead of the bare code, which reads
+// like a meaningless id on its own.
+function leadSourceLabel(code: string): string {
+  return deepLinks.value.find(l => l.code === code)?.label || code;
 }
 
 async function copyDeepLink(code: string) {

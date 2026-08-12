@@ -38,6 +38,11 @@ const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 const subscribingPlanCode = ref<string | null>(null);
 const activeSubscription = ref<Subscription | null>(null);
 const redirectingAfterReturn = ref(false);
+// Set when fetchActiveSubscription() throws -- distinguishes "confirmed no
+// subscription" from "couldn't tell", so a transient fetch error can't make
+// autoSelectFreePlanIfNeeded() treat an already-paying namespace as if it had
+// nothing active and silently provision/downgrade it to the free tier.
+const subscriptionFetchFailed = ref(false);
 
 const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
 const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
@@ -121,7 +126,9 @@ async function fetchActiveSubscription() {
     }
   } catch (err) {
     console.error('Failed to fetch active subscription:', err);
-    // Silently fail - no active subscription is not an error state
+    // A fetch failure is NOT the same as "confirmed no subscription" --
+    // see subscriptionFetchFailed.
+    subscriptionFetchFailed.value = true;
   }
 }
 
@@ -171,6 +178,7 @@ function resolveReturnTo(): string {
 // trial) exists and nothing's subscribed yet, provision it automatically.
 async function autoSelectFreePlanIfNeeded() {
   if (activeSubscription.value) return;
+  if (subscriptionFetchFailed.value) return;
   if (route.query.manage) return;
   const freePlan = plans.value.find((p) => p.amountCents === 0);
   if (!freePlan) return;

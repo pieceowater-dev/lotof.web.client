@@ -200,6 +200,15 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
 
       const { atraceGetRoles } = await import('@/api/atrace/role/getRoles');
       roles.value = await atraceGetRoles(atraceToken, nsSlug.value);
+
+      // Default the invite form to the base "Teammate" (Сотрудник) role
+      // rather than "No role" -- that's who most invites are actually for,
+      // and only touches the field while it's still untouched so it never
+      // clobbers a selection the person invited already made.
+      if (!inviteRoleId.value) {
+        const teammate = roles.value.find(r => r.name === 'Teammate');
+        if (teammate) inviteRoleId.value = teammate.id;
+      }
     } catch (e) {
       logError('Failed to load roles:', e);
       // Fallback to empty array on error

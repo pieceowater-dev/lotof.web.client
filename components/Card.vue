@@ -1,253 +1,221 @@
 <script lang="ts" setup>
 import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { QRMethod } from '@/utils/constants';
-const { t } = useI18n();
 import { useClipboard } from '@vueuse/core';
-import { dynamicLS } from '@/utils/storageKeys';
 import PinPrompt from '@/components/PinPrompt.vue';
 import QRPrintCard from '@/components/QRPrintCard.vue';
 
 type Post = {
-        id: string;
-        title: string;
-        description?: string | null;
-        location?: { address?: string | null; city?: string | null; country?: string | null } | null;
+  id: string;
+  title: string;
+  description?: string | null;
+  location?: { address?: string | null; city?: string | null; country?: string | null } | null;
 };
 
-const props = withDefaults(defineProps<{ post: Post; canDelete?: boolean; canEdit?: boolean; selected?: boolean }>(), { canDelete: false, canEdit: true, selected: false });
-const emit = defineEmits<{ (e: 'edit', post: Post): void; (e: 'delete', post: Post): void; (e: 'select', post: Post): void }>();
+const props = withDefaults(
+  defineProps<{ post: Post; canDelete?: boolean; canEdit?: boolean; selected?: boolean }>(),
+  { canDelete: false, canEdit: true, selected: false }
+);
+
+const emit = defineEmits<{
+  (e: 'edit', post: Post): void;
+  (e: 'delete', post: Post): void;
+  (e: 'select', post: Post): void;
+}>();
+
+const { t } = useI18n();
+const { copy } = useClipboard();
+const toast = useToast();
+const route = useRoute();
+
+const namespace = computed(() => {
+  return (route.params.namespace as string) || 'ns';
+});
+
+const publicUrl = computed(() => {
+  return `${window.location.origin}/to/${namespace.value}/atrace/post/${props.post.id}`;
+});
 
 function onEdit(e: MouseEvent) {
-        e.stopPropagation();
-        emit('edit', props.post);
+  e.stopPropagation();
+  emit('edit', props.post);
 }
+
 function onDelete(e: MouseEvent) {
-        e.stopPropagation();
-        emit('delete', props.post);
+  e.stopPropagation();
+  emit('delete', props.post);
 }
+
 const locationText = computed(() => {
-        const parts = [props.post.location?.address || '', props.post.location?.city || ''].filter(Boolean)
-        return parts.join(', ')
+  const parts = [props.post.location?.address || '', props.post.location?.city || ''].filter(Boolean);
+  return parts.join(', ');
 });
 
 const hasDescription = computed(() => !!(props.post.description && props.post.description.trim().length > 0));
 
-const { copy } = useClipboard();
-const toast = useToast();
-const qrPrintDialog = ref(false);
 const qrImage = ref<string | null>(null);
-
-const publicUrl = computed(() => {
-    // Attempt to get namespace from current router
-    let ns = '';
-    try {
-        const route = useRoute();
-        ns = route.params.namespace as string || '';
-    } catch {}
-    // Fallback if not found
-    if (!ns) ns = 'ns';
-    return `${window.location.origin}/to/${ns}/atrace/post/${props.post.id}`;
-});
+const showPrintPinPrompt = ref(false);
+const pendingPrint = ref<{ ns: string; postId: string } | null>(null);
+const showQRPrintCard = ref(false);
+const qrPrintCardTitle = ref('');
+const qrPrintCardAddress = ref('');
+const qrPrintCardLoading = ref(false);
 
 async function handleCopy() {
-    await copy(publicUrl.value);
-    toast.add({
-        title: t('app.notification'),
-        description: t('app.linkCopied'),
-        color: 'primary',
-        timeout: 1500
-    });
+  await copy(publicUrl.value);
+  toast.add({
+    title: t('app.notification'),
+    description: t('app.linkCopied'),
+    color: 'primary',
+    timeout: 1500,
+  });
 }
+
 function handleOpen() {
-    window.open(publicUrl.value, '_blank');
+  window.open(publicUrl.value, '_blank');
 }
+
 async function handlePrint() {
-    const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
-    // Try to extract namespace from publicUrl or props if available
-    let ns = '';
-    // Try to parse from publicUrl
-    try {
-        const match = publicUrl.value.match(/\/to\/([^/]+)\//);
-        if (match && match[1]) ns = match[1];
-    } catch {}
-    // skip props.post.namespace (not in type)
-    if (!ns) ns = 'ns'; // fallback, but should be dynamic
-
-    // Always open modal for PIN entry
-    showPrintPinPrompt.value = true;
-    pendingPrint.value = { ns, postId: props.post.id };
+  showPrintPinPrompt.value = true;
+  pendingPrint.value = { ns: namespace.value, postId: props.post.id };
 }
 
-    const showPrintPinPrompt = ref(false);
-    const pendingPrint = ref<{ ns: string; postId: string } | null>(null);
-    const showQRPrintCard = ref(false);
-    const qrPrintCardTitle = ref('');
-    const qrPrintCardAddress = ref('');
-    const qrPrintCardLoading = ref(false);
+async function handlePrintPinSubmit(val: string) {
+  if (!pendingPrint.value) return;
+  await doPrintWithPin(val, pendingPrint.value.ns);
+  showPrintPinPrompt.value = false;
+  pendingPrint.value = null;
+}
 
-    async function handlePrintPinSubmit(val: string) {
-        if (!pendingPrint.value) return;
-        await doPrintWithPin(val, pendingPrint.value.ns);
-        showPrintPinPrompt.value = false;
-        pendingPrint.value = null;
-    }
+function closePrintCard() {
+  showQRPrintCard.value = false;
+  qrImage.value = null;
+  qrPrintCardLoading.value = false;
+}
 
-    function closePrintCard() {
-        showQRPrintCard.value = false;
-        qrImage.value = null;
-        qrPrintCardLoading.value = false;
-    }
+// Post title/address are free text an admin typed when creating the post,
+// not app-controlled strings -- openPrintDialog used to splice them straight
+// into an HTML string handed to document.write() unescaped, so a post titled
+// e.g. `<img src=x onerror=alert(1)>` would execute in the print popup.
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-    function openPrintDialog() {
-        if (qrImage.value) {
-            const printWindow = window.open('', '_blank');
-            if (printWindow) {
-                const title = qrPrintCardTitle.value || props.post.title || '';
-                const address = qrPrintCardAddress.value || '';
-                const imgSrc = qrImage.value;
-                const postId = props.post.id || '';
-                const html = `
-                    <!DOCTYPE html>
-                    <html>
-                    <head>
-                        <meta charset="UTF-8">
-                        <title>QR Code</title>
-                        <style>
-                            * { margin: 0; padding: 0; box-sizing: border-box; }
-                            body {
-                                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                min-height: 100vh;
-                                background: #f5f5f5;
-                                padding: 20px;
-                            }
-                            .container {
-                                background: white;
-                                padding: 40px;
-                                border-radius: 12px;
-                                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-                                text-align: center;
-                                max-width: 400px;
-                            }
-                            .title {
-                                font-size: 24px;
-                                font-weight: 600;
-                                margin-bottom: 12px;
-                                color: #1a1a1a;
-                                word-wrap: break-word;
-                            }
-                            .address {
-                                font-size: 14px;
-                                color: #666;
-                                margin-bottom: 28px;
-                                word-wrap: break-word;
-                                min-height: 24px;
-                            }
-                            .qr-wrapper {
-                                display: flex;
-                                align-items: center;
-                                justify-content: center;
-                                margin: 20px 0;
-                            }
-                            .qr-image {
-                                width: 360px;
-                                height: 360px;
-                                object-fit: contain;
-                            }
-                            .post-id {
-                                margin-top: 20px;
-                                font-size: 12px;
-                                color: #666;
-                                font-family: monospace;
-                            }
-                            @media print {
-                                body {
-                                    background: white;
-                                    padding: 0;
-                                }
-                                .container {
-                                    box-shadow: none;
-                                    padding: 30px;
-                                    border-radius: 0;
-                                    max-width: 100%;
-                                }
-                                .qr-image {
-                                    width: 300px;
-                                    height: 300px;
-                                }
-                                .post-id {
-                                    font-size: 14pt;
-                                    font-weight: normal;
-                                    color: #000;
-                                }
-                            }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container">
-                            <div class="title">${title}</div>
-                            <div class="address">${address}</div>
-                            <div class="qr-wrapper">
-                                <img src='${imgSrc}' alt='QR Code' class='qr-image' />
-                            </div>
-                            <div class="post-id">ID: ${postId}</div>
-                        </div>
-                    </body>
-                    </html>
-                `;
-                printWindow.document.write(html);
-                printWindow.document.close();
-                printWindow.focus();
-                setTimeout(() => {
-                    printWindow.print();
-                    setTimeout(() => {
-                      printWindow.close();
-                    }, 500);
-                }, 100);
-            }
-        }
-    }
+function openPrintDialog() {
+  if (!qrImage.value) return;
 
-    async function doPrintWithPin(pin: string, ns: string) {
-        const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
-        const CryptoJS = (await import('crypto-js')).default;
-        const secret = CryptoJS.MD5(pin).toString();
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
 
-        qrPrintCardLoading.value = true;
-        const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
-        
-        // If res.qr is a base64 PNG string, explicitly add data:image/png;base64, prefix
-        const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
-        
-        qrImage.value = imgSrc;
-        qrPrintCardTitle.value = res?.postTitle || props.post.title || '';
-        qrPrintCardAddress.value = res?.postFullAddress || '';
-        qrPrintCardLoading.value = false;
-        
-        showQRPrintCard.value = true;
-    }
+  const title = escapeHtml(qrPrintCardTitle.value || props.post.title || '');
+  const address = escapeHtml(qrPrintCardAddress.value || '');
+  const imgSrc = qrImage.value;
+  const postId = escapeHtml(props.post.id || '');
+
+  const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="UTF-8">
+          <title>QR Code</title>
+          <style>
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              body {
+                  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  min-height: 100vh;
+                  background: #f5f5f5;
+                  padding: 20px;
+              }
+              .container {
+                  background: white;
+                  padding: 40px;
+                  border-radius: 12px;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                  text-align: center;
+                  max-width: 400px;
+              }
+              .title { font-size: 24px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a; word-wrap: break-word; }
+              .address { font-size: 14px; color: #666; margin-bottom: 28px; word-wrap: break-word; min-height: 24px; }
+              .qr-wrapper { display: flex; align-items: center; justify-content: center; margin: 20px 0; }
+              .qr-image { width: 360px; height: 360px; object-fit: contain; }
+              .post-id { margin-top: 20px; font-size: 12px; color: #666; font-family: monospace; }
+              @media print {
+                  body { background: white; padding: 0; }
+                  .container { box-shadow: none; padding: 30px; border-radius: 0; max-width: 100%; }
+                  .qr-image { width: 300px; height: 300px; }
+                  .post-id { font-size: 14pt; font-weight: normal; color: #000; }
+              }
+          </style>
+      </head>
+      <body>
+          <div class="container">
+              <div class="title">${title}</div>
+              <div class="address">${address}</div>
+              <div class="qr-wrapper">
+                  <img src='${imgSrc}' alt='QR Code' class='qr-image' />
+              </div>
+              <div class="post-id">ID: ${postId}</div>
+          </div>
+      </body>
+      </html>
+  `;
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => {
+    printWindow.print();
+    setTimeout(() => {
+      printWindow.close();
+    }, 500);
+  }, 100);
+}
+
+async function doPrintWithPin(pin: string, ns: string) {
+  const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
+  const CryptoJS = (await import('crypto-js')).default;
+  const secret = CryptoJS.MD5(pin).toString();
+
+  qrPrintCardLoading.value = true;
+  const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
+
+  const imgSrc = res?.qr && !res.qr.startsWith('data:') ? `data:image/png;base64,${res.qr}` : res?.qr || null;
+
+  qrImage.value = imgSrc;
+  qrPrintCardTitle.value = res?.postTitle || props.post.title || '';
+  qrPrintCardAddress.value = res?.postFullAddress || '';
+  qrPrintCardLoading.value = false;
+
+  showQRPrintCard.value = true;
+}
 
 const dropdownItems = [
-    [
-        {
-            label: t('app.copyLink'),
-            icon: 'i-lucide-copy',
-            click: handleCopy,
-        },
-        {
-            label: t('app.openInNewTab'),
-            icon: 'i-lucide-external-link',
-            click: handleOpen,
-        },
-        {
-            label: t('app.printQr'),
-            icon: 'i-lucide-printer',
-            click: handlePrint,
-        },
-    ],
+  [
+    {
+      label: t('app.copyLink'),
+      icon: 'i-lucide-copy',
+      click: handleCopy,
+    },
+    {
+      label: t('app.openInNewTab'),
+      icon: 'i-lucide-external-link',
+      click: handleOpen,
+    },
+    {
+      label: t('app.printQr'),
+      icon: 'i-lucide-printer',
+      click: handlePrint,
+    },
+  ],
 ];
 </script>
 

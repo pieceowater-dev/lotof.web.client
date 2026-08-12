@@ -239,19 +239,49 @@ const GET_ADMIN_BILLING_INFO_QUERY = /* GraphQL */ `
 `;
 
 export async function capitalGetAdminBillingInfo(
-  token: string, 
-  page: number = 1, 
-  pageSize: number = 20, 
-  namespace?: string, 
+  token: string,
+  page: number = 1,
+  pageSize: number = 20,
+  namespace?: string,
   applicationCode?: string
 ): Promise<AdminBillingInfo> {
   setGlobalAuthToken(token);
-  return await capitalClient.request<AdminBillingInfo>(GET_ADMIN_BILLING_INFO_QUERY, { 
-    page, 
-    pageSize, 
+  return await capitalClient.request<AdminBillingInfo>(GET_ADMIN_BILLING_INFO_QUERY, {
+    page,
+    pageSize,
     namespace: namespace || null,
     applicationCode: applicationCode || null
   });
+}
+
+const GET_ALL_ADMIN_PLANS_QUERY = /* GraphQL */ `
+  query GetAllAdminPlans {
+    adminPlans {
+      id
+      code
+      name
+      description
+      applicationCode
+      currency
+      interval
+      amountCents
+      trialDays
+      status
+      metadataJson
+    }
+  }
+`;
+
+// Unfiltered (no applicationCode) so a plan-name lookup works for any
+// subscription regardless of which project is currently selected -- an
+// account's `subscriptions` list can include plans from apps other than the
+// one the billing page currently has selected (see billing/index.vue's
+// getPlanName), and adminPlans(applicationCode: X) only ever returns that
+// one app's plans.
+export async function capitalGetAllAdminPlans(token: string): Promise<AdminBillingInfo['adminPlans']> {
+  setGlobalAuthToken(token);
+  const res = await capitalClient.request<{ adminPlans: AdminBillingInfo['adminPlans'] }>(GET_ALL_ADMIN_PLANS_QUERY);
+  return res.adminPlans ?? [];
 }
 
 export async function capitalCreatePlan(token: string, input: any) {

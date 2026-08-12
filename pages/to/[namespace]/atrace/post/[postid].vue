@@ -59,6 +59,7 @@ function askPin() {
   showPinPrompt.value = true;
 }
 function handlePinSubmit(val: string) {
+  pinError.value = '';
   savePin(val);
   pin.value = val;
   requestWakeLock();
@@ -212,8 +213,20 @@ function startWs() {
         updateCountdown();
         resetWsRetry();
       } else if (data.type === 'error') {
-        qrError.value = data.message || t('app.loadingError');
         polling.value = false;
+        if (data.code === 'PermissionDenied') {
+          // Wrong PIN: the stored value will never start working on its own
+          // (no retry loop can fix it), so clear it and send the visitor
+          // straight back to the PIN prompt instead of leaving the kiosk
+          // stuck on this error forever -- the only previous recovery path
+          // was clearing localStorage in devtools, not viable on a tablet.
+          stopWs();
+          clearPin();
+          pinError.value = data.error || t('app.pinInvalid') || 'Неверный PIN, попробуйте снова';
+          askPin();
+        } else {
+          qrError.value = data.error || t('app.loadingError');
+        }
       } else if (data.type === 'ping') {
         // Server ping, connection is alive
       }
@@ -361,6 +374,12 @@ onBeforeUnmount(() => {
         v-if="!pin"
         class="w-full flex flex-col items-center"
       >
+        <div
+          v-if="pinError"
+          class="text-red-500 text-sm mb-2 text-center"
+        >
+          {{ pinError }}
+        </div>
         <UButton
           color="primary"
           icon="i-lucide-key"
