@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { useAuth } from '@/composables/useAuth';
 import { atraceCheck } from '@/api/atrace/record/check';
+import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
+import { atraceRequestOnboarding } from '@/api/atrace/onboarding/onboarding';
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
@@ -19,7 +21,33 @@ const nsSlug = computed(() => route.params.namespace as string);
 
 useHead({ title: 'Отметка по QR — A-Trace' });
 
-const { isLoggedIn, token: hubToken, fetchUser, login } = useAuth();
+const { isLoggedIn, token: hubToken, user, fetchUser, login } = useAuth();
+
+// A hub-authenticated user who scans a post's QR but isn't an active atrace
+// member of this namespace yet (never joined, or joined but not activated)
+// gets offered an onboarding request instead of a bare failure -- see
+// tracker's ReleaseToken, which is the source of both distinguishing error
+// messages checked below.
+function needsOnboarding(err: unknown): boolean {
+  const msg = String((err as any)?.message || err || '').toLowerCase();
+  return msg.includes('not a member of the namespace') || msg.includes('not active in atrace');
+}
+
+async function tryRequestOnboarding(): Promise<boolean> {
+  try {
+    await atraceRequestOnboarding(
+      hubToken.value as string,
+      nsSlug.value,
+      qPid.value || undefined,
+      user.value?.username || '',
+      user.value?.email || undefined
+    );
+    return true;
+  } catch (e) {
+    logError('[atrace/qr] requestOnboarding failed', e);
+    return false;
+  }
+}
 
 // Parse incoming query params
 const qPid = computed(() => (route.query.pid as string) || '');
@@ -83,6 +111,23 @@ async function runCheck() {
     // Ensure A-Trace app token
     const at = await ensureAtraceToken(nsSlug.value, hubToken.value);
     if (!at) {
+      // ensureAtraceToken swallows the underlying error after retrying
+      // transient failures; make one direct call to see whether this was
+      // specifically "not a member" / "not active" (not transient, tracker
+      // fails these immediately) before treating it as a hard failure.
+      try {
+        await atraceGetAppToken(hubToken.value as string, nsSlug.value);
+      } catch (e) {
+        if (needsOnboarding(e)) {
+          const submitted = await tryRequestOnboarding();
+          router.replace({
+            name: 'namespace-atrace-recorded',
+            params: { namespace: nsSlug.value },
+            query: { ok: submitted ? 'pending' : '0' }
+          });
+          return;
+        }
+      }
       router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
       return;
     }

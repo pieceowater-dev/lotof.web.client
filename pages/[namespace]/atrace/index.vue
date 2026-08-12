@@ -27,6 +27,7 @@ import { useAtracePermissions } from '@/composables/useAtracePermissions';
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 import { useAtraceCoverageApprovalBanners } from '@/composables/useAtraceCoverageApprovalBanners';
 import { useAtracePendingLeaveCount } from '@/composables/useAtracePendingLeave';
+import { useAtracePendingOnboardingCount } from '@/composables/useAtracePendingOnboardingCount';
 import { useAtraceLeaveApprovalBanners } from '@/composables/useAtraceLeaveApprovalBanners';
 
 const { t } = useI18n();
@@ -114,7 +115,8 @@ const canSeeSettings = computed(() => canDo('tracker.role.view'));
 // otherwise sits unnoticed until someone happens to open the relevant tab.
 const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
 const { pendingCount: pendingLeaveCount, loadPendingLeaveCount } = useAtracePendingLeaveCount(nsSlug);
-const pendingApprovalCount = computed(() => pendingCoverageCount.value + pendingLeaveCount.value);
+const { pendingCount: pendingOnboardingCount, loadPendingOnboardingCount } = useAtracePendingOnboardingCount(nsSlug);
+const pendingApprovalCount = computed(() => pendingCoverageCount.value + pendingLeaveCount.value + pendingOnboardingCount.value);
 
 // Full-width "your shift is covered" / "your leave is approved" banners for
 // the employee who requested it, once a manager approves -- persists across
@@ -159,6 +161,7 @@ onMounted(async () => {
     loadPermissions();
     loadPendingCoverageCount();
     loadPendingLeaveCount();
+    loadPendingOnboardingCount();
     if (user.value?.id) {
         loadCoverageApprovalBanners(user.value.id);
         loadLeaveApprovalBanners(user.value.id);

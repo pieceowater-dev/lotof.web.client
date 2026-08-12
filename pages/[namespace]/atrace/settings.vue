@@ -13,8 +13,10 @@ import ScheduleSection from '@/components/atrace/settings/ScheduleSection.vue';
 import ShiftCoverageSection from '@/components/atrace/settings/ShiftCoverageSection.vue';
 import LeaveRequestsSection from '@/components/atrace/settings/LeaveRequestsSection.vue';
 import PayrollRulesSection from '@/components/atrace/settings/PayrollRulesSection.vue';
+import OnboardingRequestsSection from '@/components/atrace/settings/OnboardingRequestsSection.vue';
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 import { useAtracePendingLeaveCount } from '@/composables/useAtracePendingLeave';
+import { useAtracePendingOnboardingCount } from '@/composables/useAtracePendingOnboardingCount';
 
 const { t } = useI18n();
 
@@ -44,6 +46,7 @@ const selectedTab = ref(0);
 // pending request whether they spot it before or after opening Settings.
 const { pendingCount: pendingCoverageCount, loadPendingCoverageCount } = useAtracePendingCoverageCount(nsSlug);
 const { pendingCount: pendingLeaveCount, loadPendingLeaveCount } = useAtracePendingLeaveCount(nsSlug);
+const { pendingCount: pendingOnboardingCount, loadPendingOnboardingCount } = useAtracePendingOnboardingCount(nsSlug);
 const tabs = computed(() => ([
   { label: t('app.members') || 'Участники', icon: 'lucide:users' },
   { label: t('app.routes') || 'Маршруты', icon: 'lucide:route' },
@@ -52,6 +55,7 @@ const tabs = computed(() => ([
   { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat', badge: pendingCoverageCount.value > 0 },
   { label: t('app.leaveRequests') || 'Отгулы и отпуска', icon: 'lucide:calendar-off', badge: pendingLeaveCount.value > 0 },
   { label: t('app.payrollRules') || 'Переработки и штрафы', icon: 'lucide:banknote' },
+  { label: t('app.onboardingRequests') || 'Запросы на онбординг', icon: 'lucide:qr-code', badge: pendingOnboardingCount.value > 0 },
 ]));
 
 onMounted(async () => {
@@ -80,6 +84,7 @@ onMounted(async () => {
         await atraceGetRoles(atraceToken, nsSlug.value);
         loadPendingCoverageCount();
         loadPendingLeaveCount();
+        loadPendingOnboardingCount();
     } catch (e: any) {
         if (isAtracePermissionError(e)) {
             accessDenied.value = true;
@@ -216,6 +221,7 @@ onUnmounted(() => {
         <ShiftCoverageSection v-else-if="selectedTab === 4" />
         <LeaveRequestsSection v-else-if="selectedTab === 5" />
         <PayrollRulesSection v-else-if="selectedTab === 6" />
+        <OnboardingRequestsSection v-else-if="selectedTab === 7" />
       </div>
     </template>
   </div>

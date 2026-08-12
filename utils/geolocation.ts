@@ -9,7 +9,17 @@ export type GeoPoint = {
  */
 export const GEO_CONFIRM_RADIUS_M = 50;
 
-// Returns coords if permission is granted or prompted once; skips if denied or already prompted and still not granted.
+const GEO_PROMPT_SKIP_KEY = 'geoPromptedAt';
+// Re-offer the native prompt after this long, rather than never again --
+// staying in 'prompt' state just means the user hasn't made a permanent
+// choice yet (dismissed the dialog, or it's a fresh tab/session), and a
+// bare one-time flag with no expiry locked out geolocation for that device
+// forever after the first skip, even though the browser itself would happily
+// show the prompt again on request.
+const GEO_PROMPT_SKIP_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+// Returns coords if permission is granted or prompted once; skips if denied
+// or already prompted very recently and still not decided.
 export async function getGeolocationOnce(options?: PositionOptions): Promise<GeoPoint> {
   if (typeof window === 'undefined') return {};
   if (!('geolocation' in navigator)) return {};
@@ -23,11 +33,14 @@ export async function getGeolocationOnce(options?: PositionOptions): Promise<Geo
         return {};
       }
       if (permissionState === 'prompt') {
-        // Avoid re-prompting on every visit if the user already saw the prompt
-        if (localStorage.getItem('geoPrompted') === '1') {
+        // Avoid re-prompting on every visit if the user very recently saw
+        // the prompt and didn't decide -- but only for a bounded window, so
+        // a later visit still gets a chance to actually ask again.
+        const lastPromptedAt = Number(localStorage.getItem(GEO_PROMPT_SKIP_KEY) || 0);
+        if (lastPromptedAt && Date.now() - lastPromptedAt < GEO_PROMPT_SKIP_TTL_MS) {
           return {};
         }
-        localStorage.setItem('geoPrompted', '1');
+        localStorage.setItem(GEO_PROMPT_SKIP_KEY, String(Date.now()));
       }
     } catch {
       // If permissions API fails, fall back to requesting once

@@ -22,10 +22,13 @@ const isWaiting = computed(() => {
   const v = (route.query.ok as string) || '';
   return v.toLowerCase?.() === 'wait' && parseInt(route.query.wait as string) > 0;
 });
+const isPendingOnboarding = computed(() => ((route.query.ok as string) || '').toLowerCase?.() === 'pending');
 const waitSecondsInitial = computed(() => Math.max(1, parseInt((route.query.wait as string) || '0') || 0));
 
 useHead(() => ({
-  title: ok.value ? 'Отметка принята — A-Trace' : 'Не удалось отметиться — A-Trace',
+  title: isPendingOnboarding.value
+    ? 'Запрос отправлен — A-Trace'
+    : (ok.value ? 'Отметка принята — A-Trace' : 'Не удалось отметиться — A-Trace'),
 }));
 const targetUrl = computed(() => {
   const u = route.query.u as string | undefined;
@@ -136,6 +139,35 @@ onBeforeUnmount(() => {
           <div class="flex flex-col items-center gap-4">
             <div class="h-16 w-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center animate-pulse">
               <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700" />
+            </div>
+          </div>
+        </template>
+        <template v-else-if="isPendingOnboarding">
+          <div class="flex flex-col items-center gap-4">
+            <div class="h-16 w-16 rounded-full bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+              <UIcon
+                name="i-heroicons-paper-airplane"
+                class="h-9 w-9 text-blue-600"
+              />
+            </div>
+            <p class="text-xl font-semibold text-blue-600">
+              {{ t('app.atraceRecordedPending') }}
+            </p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm">
+              {{ t('app.atraceRecordedPendingSub') }}
+            </p>
+            <div class="mt-2">
+              <UButton
+                color="primary"
+                variant="outline"
+                @click="tryCloseTabOrGoHome"
+              >
+                <UIcon
+                  name="i-heroicons-home"
+                  class="h-5 w-5 mr-2"
+                />
+                {{ t('common.close') }}
+              </UButton>
             </div>
           </div>
         </template>
