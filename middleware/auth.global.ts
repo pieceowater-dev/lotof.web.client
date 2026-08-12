@@ -18,10 +18,14 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const routeName = typeof to.name === 'string' ? to.name : '';
   // Public content pages
   if (routeName === 'feed' || routeName === 'slug' || routeName === 'news' || routeName === 'category-slug' || to.path === '/feed' || to.path === '/news') return;
-  // Public product landing pages (/issues, /menu, /contacts, /atrace) --
-  // exact top-level paths only, so this doesn't also swallow the namespaced
-  // /{ns}/issues etc. below, which do need the token checks.
-  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace') return;
+  // Public product landing pages (/issues, /menu, /contacts, /atrace,
+  // /chekalka) -- exact top-level paths only, so this doesn't also swallow
+  // the namespaced /{ns}/issues etc. below, which do need the token checks.
+  // /chekalka was missing from this list for a while: every anonymous
+  // chekalka.kz visitor with no token got silently bounced to "/" before
+  // ever seeing the page, since nothing below exempts it either -- it has
+  // no "/atrace" substring, so isAtraceRoute never applied to save it.
+  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/chekalka') return;
   // Allow public access to public post page
   if (/^\/to\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
   // Allow public, unauthenticated access to the public storefront page
