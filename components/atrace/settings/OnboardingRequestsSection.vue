@@ -22,6 +22,7 @@ const rows = computed(() => requests.value.slice().sort((a, b) => b.requestedAt.
 
 const columns = computed(() => ([
   { key: 'username', label: t('app.onboardingUser') || 'Пользователь' },
+  { key: 'email', label: t('common.email') || 'Email' },
   { key: 'postTitle', label: t('app.onboardingPost') || 'Точка' },
   { key: 'status', label: t('common.status') || 'Статус' },
   { key: 'actions', label: t('common.actions') },
@@ -148,6 +149,9 @@ onMounted(async () => {
         :total="rows.length"
         :pagination="false"
       >
+        <template #email-data="{ row }">
+          {{ row.email || '—' }}
+        </template>
         <template #postTitle-data="{ row }">
           {{ row.postTitle || '—' }}
         </template>
@@ -161,7 +165,7 @@ onMounted(async () => {
         </template>
         <template #actions-data="{ row }">
           <div
-            v-if="row.status === 'pending'"
+            v-if="row.status !== 'approved'"
             class="flex justify-end gap-1"
           >
             <UButton
@@ -173,9 +177,10 @@ onMounted(async () => {
               :disabled="decidingId !== null"
               @click="approve(row)"
             >
-              {{ t('app.approve') || 'Согласовать' }}
+              {{ t('app.acceptOnboarding') || 'Принять' }}
             </UButton>
             <UButton
+              v-if="row.status === 'pending'"
               size="xs"
               variant="soft"
               color="red"

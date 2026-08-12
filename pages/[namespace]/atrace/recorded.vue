@@ -25,6 +25,24 @@ const isWaiting = computed(() => {
 const isPendingOnboarding = computed(() => ((route.query.ok as string) || '').toLowerCase?.() === 'pending');
 const waitSecondsInitial = computed(() => Math.max(1, parseInt((route.query.wait as string) || '0') || 0));
 
+// Reason codes set by qr.vue's classifyCheckFailure -- a bare "не удалось
+// отметиться" gave no clue whether to rescan (expired code), ask a manager
+// (not active), or something else. Falls back to the generic message for
+// unrecognized/absent codes rather than showing nothing.
+const FAILURE_REASON_KEYS: Record<string, string> = {
+  expired: 'atraceRecordedReasonExpired',
+  invalid_code: 'atraceRecordedReasonInvalidCode',
+  not_active: 'atraceRecordedReasonNotActive',
+  not_member: 'atraceRecordedReasonNotMember',
+  post_not_found: 'atraceRecordedReasonPostNotFound',
+  invalid_link: 'atraceRecordedReasonInvalidLink',
+};
+const failureReason = computed(() => {
+  const code = (route.query.reason as string) || '';
+  const key = FAILURE_REASON_KEYS[code];
+  return key ? t(`app.${key}`) : '';
+});
+
 useHead(() => ({
   title: isPendingOnboarding.value
     ? 'Запрос отправлен — A-Trace'
@@ -298,6 +316,12 @@ onBeforeUnmount(() => {
             </div>
             <p class="text-xl font-semibold text-red-600">
               {{ t('app.atraceRecordedFail') }}
+            </p>
+            <p
+              v-if="failureReason"
+              class="text-sm text-gray-500 dark:text-gray-400 max-w-sm"
+            >
+              {{ failureReason }}
             </p>
             <div class="mt-2">
               <UButton

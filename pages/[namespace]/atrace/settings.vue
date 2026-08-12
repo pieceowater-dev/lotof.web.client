@@ -40,7 +40,21 @@ const accessDenied = ref(false);
 const accessDeniedMessage = ref<string | null>(null);
 const isInviteOpen = ref(false);
 
-const selectedTab = ref(0);
+// Stable per-tab key so a link can deep-link straight to one (?tab=onboarding)
+// instead of only ever landing on the first tab -- plain array index would
+// also work for this page as it stands, but breaks the moment a tab gets
+// reordered or removed, silently pointing old links at the wrong section.
+const TAB_KEYS = ['members', 'routes', 'thresholds', 'schedule', 'coverage', 'leave', 'payroll', 'onboarding'] as const;
+function tabIndexFromQuery(): number {
+  const key = route.query.tab as string | undefined;
+  const idx = key ? TAB_KEYS.indexOf(key as typeof TAB_KEYS[number]) : -1;
+  return idx >= 0 ? idx : 0;
+}
+const selectedTab = ref(tabIndexFromQuery());
+function selectTab(index: number) {
+  selectedTab.value = index;
+  router.replace({ query: { ...route.query, tab: TAB_KEYS[index] } });
+}
 // Badge on the Подмены смен / Отгулы и отпуска tabs -- same signal as the
 // "Управление" red dot on the main Atrace page, so a manager notices a
 // pending request whether they spot it before or after opening Settings.
@@ -196,7 +210,7 @@ onUnmounted(() => {
             :class="selectedTab === index
               ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white'
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
-            @click="selectedTab = index"
+            @click="selectTab(index)"
           >
             <UIcon
               :name="tab.icon"

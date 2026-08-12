@@ -33,6 +33,22 @@ function needsOnboarding(err: unknown): boolean {
   return msg.includes('not a member of the namespace') || msg.includes('not active in atrace');
 }
 
+// Maps a raw backend error to a short reason code recorded.vue can localize
+// -- a bare ok=0 gave no indication of what actually went wrong (expired
+// code vs. no access vs. a bad link), so people had no idea whether to
+// rescan, ask their manager, or just try again. Substring-matched against
+// the exact wrapped messages tracker's record.svc.Check / ctrl.Check
+// produce (see record.ctrl.go's "failed to check record: %w").
+function classifyCheckFailure(err: unknown): string {
+  const msg = String((err as any)?.message || err || '').toLowerCase();
+  if (msg.includes('invalid totp code')) return 'expired';
+  if (msg.includes('invalid static code') || msg.includes('invalid phrase')) return 'invalid_code';
+  if (msg.includes('access denied') || msg.includes('not active in atrace')) return 'not_active';
+  if (msg.includes('not a member of the namespace')) return 'not_member';
+  if (msg.includes('failed to get post')) return 'post_not_found';
+  return '';
+}
+
 async function tryRequestOnboarding(): Promise<boolean> {
   try {
     await atraceRequestOnboarding(
@@ -104,7 +120,7 @@ async function runCheck() {
     const methodEnum = decodeMethod(qMethodNum.value);
     if (!qPid.value || !methodEnum || !qSecret.value) {
       // Redirect to recorded page with failure
-      router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
+      router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0', reason: 'invalid_link' } });
       return;
     }
 
@@ -127,6 +143,8 @@ async function runCheck() {
           });
           return;
         }
+        router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0', reason: classifyCheckFailure(e) } });
+        return;
       }
       router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
       return;
@@ -161,7 +179,7 @@ async function runCheck() {
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: ok ? '1' : '0' } });
   } catch (e: unknown) {
     logError('[atrace/qr] runCheck failed', e);
-    router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0' } });
+    router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0', reason: classifyCheckFailure(e) } });
   } finally {
     // no-op
   }
