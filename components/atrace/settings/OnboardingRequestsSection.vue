@@ -111,11 +111,11 @@ onMounted(async () => {
   <div class="flex-1 min-h-0 flex flex-col">
     <div class="flex items-center justify-between mb-1">
       <h2 class="text-base font-medium">
-        {{ t('app.onboardingRequests') || 'Запросы на онбординг' }}
+        {{ t('app.onboardingRequests') || 'Заявки на вступление' }}
       </h2>
     </div>
     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-      {{ t('app.onboardingRequestsHint') || 'Сотрудник отсканировал QR, но ещё не состоит в активных сотрудниках A-Trace -- подтвердите или отклоните запрос' }}
+      {{ t('app.onboardingRequestsHint') || 'Сотрудник отсканировал QR, но ещё не в команде A-Trace -- подтвердите или отклоните заявку' }}
     </p>
 
     <div
@@ -135,7 +135,7 @@ onMounted(async () => {
       v-else-if="rows.length === 0"
       class="text-gray-500 text-center py-8"
     >
-      {{ t('app.noOnboardingRequests') || 'Запросов на онбординг пока нет' }}
+      {{ t('app.noOnboardingRequests') || 'Заявок на вступление пока нет' }}
     </div>
     <div
       v-else

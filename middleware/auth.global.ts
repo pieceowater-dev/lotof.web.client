@@ -71,8 +71,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (isAtraceRoute) {
     const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
-    // Skip token check for plans page - it doesn't require app token
-    if (to.path.includes('/atrace/plans')) {
+    // Skip token check for plans page - it doesn't require app token.
+    // Same for the QR check-in page: a scanner who isn't an active member
+    // yet is exactly the case that page needs to detect itself and turn
+    // into an onboarding request (see qr.vue's runCheck) -- failing here
+    // first would bounce them to the login page before that logic ever
+    // runs, even though they're already logged in.
+    if (to.path.includes('/atrace/plans') || to.path.includes('/atrace/qr')) {
       return;
     }
     const { ensure, current } = useAtraceToken();

@@ -55,7 +55,7 @@ const tabs = computed(() => ([
   { label: t('app.shiftCoverage') || 'Подмены смен', icon: 'lucide:repeat', badge: pendingCoverageCount.value > 0 },
   { label: t('app.leaveRequests') || 'Отгулы и отпуска', icon: 'lucide:calendar-off', badge: pendingLeaveCount.value > 0 },
   { label: t('app.payrollRules') || 'Переработки и штрафы', icon: 'lucide:banknote' },
-  { label: t('app.onboardingRequests') || 'Запросы на онбординг', icon: 'lucide:qr-code', badge: pendingOnboardingCount.value > 0 },
+  { label: t('app.onboardingRequests') || 'Заявки на вступление', icon: 'lucide:qr-code', badge: pendingOnboardingCount.value > 0 },
 ]));
 
 onMounted(async () => {
