@@ -116,7 +116,7 @@ onUnmounted(() => {
           size="xs"
           color="amber"
           variant="soft"
-          :to="`/${nsSlug}/atrace/plans`"
+          :to="`/${nsSlug}/atrace/plans?manage=1`"
           class="min-w-fit whitespace-nowrap"
         >
           {{ t('app.upgradePlan') || 'Upgrade Plan' }}

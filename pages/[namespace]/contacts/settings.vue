@@ -84,7 +84,7 @@ onMounted(async () => {
           size="xs"
           color="amber"
           variant="soft"
-          :to="`/${nsSlug}/contacts/plans`"
+          :to="`/${nsSlug}/contacts/plans?manage=1`"
         >
           {{ t('app.upgradePlan') || 'Upgrade Plan' }}
         </UButton>

@@ -381,6 +381,6 @@ onBeforeUnmount(() => {
   <PostLimitModal
     v-model="isLimitModalOpen"
     :message="limitErrorMessage"
-    :plans-path="`/${nsSlug}/atrace/plans`"
+    :plans-path="`/${nsSlug}/atrace/plans?manage=1`"
   />
 </template>

@@ -125,6 +125,10 @@ async function fetchActiveSubscription() {
 async function redirectIfAlreadySubscribed() {
   if (redirectingAfterReturn.value) return;
   if (!activeSubscription.value) return;
+  // Explicit "manage/change plan" entry point (e.g. from Settings) — let the
+  // user view and change their plan instead of bouncing them straight back.
+  // Same guard menu/issues plans pages already use.
+  if (route.query.manage) return;
 
   const returnTo = resolveReturnTo();
   if (returnTo === route.path) return;

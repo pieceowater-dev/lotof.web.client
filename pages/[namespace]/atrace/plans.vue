@@ -135,6 +135,13 @@ async function fetchActiveSubscription() {
 async function redirectIfAlreadySubscribed() {
   if (redirectingAfterReturn.value) return;
   if (!activeSubscription.value) return;
+  // Explicit "manage/change plan" entry point (e.g. from Settings) — let the
+  // user view and change their plan instead of bouncing them straight back.
+  // Same guard menu/issues plans pages already use; atrace/contacts didn't
+  // have it, so having even the default Free plan already active (true for
+  // almost every namespace) instantly redirected every visitor straight
+  // back out before they could see the plans grid at all.
+  if (route.query.manage) return;
 
   const returnTo = resolveReturnTo();
   if (returnTo === route.path) return;

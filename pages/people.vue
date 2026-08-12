@@ -187,6 +187,11 @@ onMounted(async () => {
     selectedNS.value = allNamespaces.value[0];
   }
 
+  // The watch on selectedNS only fires on a genuine value change -- if it
+  // was already restored from localStorage before this bootstrap ran, that
+  // watch never fires, so the owner check has to be kicked off here too.
+  if (selectedNS.value) loadSelectedNsOwner();
+
   if (process.client && !isCompleted(peopleTour.id) && !friends.value.length && !nsMembers.value.length) {
     setTimeout(() => startTour(peopleTour), 1000);
   }
@@ -263,6 +268,7 @@ const tabs = computed(() => ([
 
 // Namespace switcher + Members table
 const { selected: selectedNS, all: allNamespaces, titleBySlug, load: loadNamespaces } = useNamespace();
+const namespaceOptions = computed(() => allNamespaces.value.map(slug => ({ label: titleBySlug(slug) || slug, value: slug })));
 function applyStoredNamespace() {
   if (!process.client) return;
   try {
@@ -282,6 +288,25 @@ function applyStoredNamespace() {
 }
 const nsMembers = ref<Array<{ id: string; userId: string; username: string; email: string; nickname?: string | null }>>([]);
 const membersLoading = ref(false);
+// Nicknames can only be set by the namespace owner -- setMemberNickname
+// already enforces this server-side (see hub.msvc.namespaces
+// SetMemberNickname/IsNamespaceOwner), but the edit button should be hidden
+// from everyone else too rather than being a dead end that fails on submit.
+const selectedNsOwnerId = ref<string | null>(null);
+const canEditNicknames = computed(() => !!selectedNsOwnerId.value && selectedNsOwnerId.value === user.value?.id);
+
+async function loadSelectedNsOwner() {
+  selectedNsOwnerId.value = null;
+  const tok = useCookie<string | null>(CookieKeys.TOKEN).value;
+  if (!tok || !selectedNS.value) return;
+  try {
+    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+    const ns = await hubNamespaceBySlug(tok, selectedNS.value);
+    selectedNsOwnerId.value = ns?.owner || null;
+  } catch (e) {
+    logError('[people] loadSelectedNsOwner failed', e);
+  }
+}
 const teamFilter = ref('');
 const filteredMembers = computed(() => {
   const q = teamFilter.value.trim().toLowerCase();
@@ -338,7 +363,7 @@ const loadMembers = async () => {
   }
 };
 
-watch(() => selectedNS.value, () => { loadMembers(); });
+watch(() => selectedNS.value, () => { loadMembers(); loadSelectedNsOwner(); });
 // When namespaces arrive (e.g., after full page reload), ensure selection is valid and load members
 watch(() => allNamespaces.value, (list) => {
   const { idBySlug } = useNamespace();
@@ -350,6 +375,7 @@ watch(() => allNamespaces.value, (list) => {
   }
   if (selectedNS.value && idBySlug(selectedNS.value)) {
     loadMembers();
+    loadSelectedNsOwner();
     loadReferrals();
   }
 });
@@ -656,9 +682,11 @@ async function removeMember(member: { userId: string; username: string; email: s
               </span>
               <h2 class="text-lg font-semibold">{{ t('app.team') }}</h2>
             </div>
-            <USelect
+            <USelectMenu
               v-model="selectedNS"
-              :options="allNamespaces.map(slug => ({ label: titleBySlug(slug) || slug, value: slug }))"
+              value-attribute="value"
+              option-attribute="label"
+              :options="namespaceOptions"
               size="sm"
               class="w-full sm:w-auto sm:min-w-[220px]"
             />
@@ -730,6 +758,7 @@ async function removeMember(member: { userId: string; username: string; email: s
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.email }}</p>
               </div>
               <UButton
+                v-if="canEditNicknames"
                 color="gray"
                 variant="ghost"
                 size="xs"
