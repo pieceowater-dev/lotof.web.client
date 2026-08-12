@@ -44,7 +44,7 @@ function handleConsoleClick() {
 // keeps the server/client render identical where it's compared.
 const isWalter = ref(false);
 onMounted(() => {
-  isWalter.value = Math.random() < 1 / 21;
+  isWalter.value = Math.random() < 1 / 1000;
 });
 const homeText = computed(() => isWalter.value ? 'Домой, Уолтер' : t('app.home'));
 // Fixed order everywhere (see config/apps.ts) -- matches the home
