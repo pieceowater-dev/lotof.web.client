@@ -9,6 +9,7 @@ import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
 import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
+import { CookieKeys } from '@/utils/storageKeys';
 
 const { t, locale } = useI18n();
 
@@ -43,6 +44,39 @@ type UserStats = {
 const stats = ref<UserStats[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+
+// getAllUsersStats' username/email come from tracker's own hub lookup and
+// don't carry the per-namespace nickname (that lives in hub.msvc.namespaces
+// only) -- cross-referenced client-side here, same idea as
+// LeaveRequestsSection's memberNameById, so this table doesn't show a raw
+// Google account name a manager already renamed everywhere else.
+const nicknameByUserId = ref<Map<string, string>>(new Map());
+
+async function loadNicknames() {
+  if (!namespaceSlug.value) return;
+  try {
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    if (!hubToken) return;
+    const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+    const namespace = await hubNamespaceBySlug(hubToken, namespaceSlug.value);
+    if (!namespace) return;
+    const { hubMembersList } = await import('@/api/hub/members/list');
+    const { FilterPaginationLengthEnum } = await import('@/api/__generated__/hub-types');
+    const members = await hubMembersList(hubToken, namespace.id, 1, FilterPaginationLengthEnum.OneHundred);
+    const map = new Map<string, string>();
+    for (const m of members) {
+      if (m.nickname?.trim()) map.set(m.userId, m.nickname.trim());
+    }
+    nicknameByUserId.value = map;
+  } catch (e) {
+    logError('[AttendanceStatsTable] loadNicknames failed', e);
+  }
+}
+
+function statUserDisplayName(user: { userId: string; username?: string; email?: string }): string {
+  const nickname = nicknameByUserId.value.get(user.userId);
+  return (nickname || user.username || user.email || user.userId);
+}
 
 // getAllUsersStats has no isActive field of its own (it's sourced from Hub's
 // member list on the backend, not Atrace's), so active-only filtering is
@@ -84,8 +118,8 @@ const sortedStats = computed(() => {
     .sort((a, b) => {
       const diff = (b.user.violationDays || 0) - (a.user.violationDays || 0);
       if (diff !== 0) return diff;
-      const nameA = (a.user.username || a.user.email || a.user.userId || '').toLowerCase();
-      const nameB = (b.user.username || b.user.email || b.user.userId || '').toLowerCase();
+      const nameA = statUserDisplayName(a.user).toLowerCase();
+      const nameB = statUserDisplayName(b.user).toLowerCase();
       if (nameA < nameB) return -1;
       if (nameA > nameB) return 1;
       return a.index - b.index;
@@ -574,6 +608,7 @@ onMounted(() => {
   loadTimeSettings();
   loadActiveMembers();
   loadPermissions();
+  loadNicknames();
 });
 
 // Export functionality
@@ -607,13 +642,19 @@ async function exportToExcel() {
       dateRange.value.endDate,
       namespaceSlug.value
     );
-    const records = activeMembersLoaded.value
+    const filteredRecords = activeMembersLoaded.value
       ? rawRecords.filter((r) => activeUserIds.value.has(r.userId))
       : rawRecords;
-    if (records.length === 0) {
+    if (filteredRecords.length === 0) {
       exportError.value = t('app.noDataToExport');
       return;
     }
+
+    // exportDailyAttendance/getAllUsersStats resolve username server-side
+    // without the per-namespace nickname (see nicknameByUserId above) --
+    // override it here so the exported sheet matches what the table shows.
+    const records = filteredRecords.map((r) => ({ ...r, username: statUserDisplayName(r) }));
+    const statsForExport = sortedStats.value.map((s) => ({ ...s, username: statUserDisplayName(s) }));
 
     const { exportPivotTableToExcel } = await import('@/utils/exportToExcel');
     await exportPivotTableToExcel(
@@ -622,7 +663,7 @@ async function exportToExcel() {
       dateRange.value.endDate,
       locale.value,
       undefined,
-      sortedStats.value
+      statsForExport
     );
     useAnalytics().track('atrace_report_exported', {
       startDate: dateRange.value.startDate,
@@ -939,7 +980,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               </td>
               <td class="px-3 py-2">
                 <div class="font-medium leading-tight">
-                  {{ user.username || user.email || user.userId }}
+                  {{ statUserDisplayName(user) }}
                 </div>
                 <div
                   v-if="user.username && user.email"

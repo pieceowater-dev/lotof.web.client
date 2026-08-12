@@ -17,13 +17,14 @@ const NAMESPACE_AND_MEMBERS_QUERY = /* GraphQL */ `
       userId
       username
       email
+      nickname
     }
   }
 `;
 
 export type RouteDataResponse = {
   namespace: Namespace | null;
-  members: Array<{ id: string; userId: string; username: string; email: string }>;
+  members: Array<{ id: string; userId: string; username: string; email: string; nickname?: string | null }>;
 };
 
 export async function hubGetNamespaceAndMembers(

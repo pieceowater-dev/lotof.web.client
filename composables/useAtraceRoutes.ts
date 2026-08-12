@@ -9,6 +9,7 @@ import type { Route, RouteMilestone } from '@/api/atrace/route/list';
 import type { RoutePass, RouteMilestoneDetail } from '@/api/atrace/route/validatePass';
 import type { Post, RouteProgressRow } from '@/types/atrace';
 import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 function getTodayDateString(): string {
   const now = new Date();
@@ -128,7 +129,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
   const routePasses = ref<RoutePass[]>([]);
   const routePassesLoading = ref(false);
   const routePassesError = ref<string | null>(null);
-  const routeMembers = ref<Array<{ userId: string; username: string; email: string }>>([]);
+  const routeMembers = ref<Array<{ userId: string; username: string; email: string; nickname?: string | null }>>([]);
   const routeMembersLoading = ref(false);
   const cachedNamespaceId = ref<string | null>(null);
 
@@ -174,7 +175,8 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
       routeMembers.value = (result.members || []).map((m: any) => ({
         userId: m.userId,
         username: m.username || m.email || m.userId,
-        email: m.email || ''
+        email: m.email || '',
+        nickname: m.nickname || null
       }));
     } catch {
       routeMembers.value = [];
@@ -336,7 +338,7 @@ export function useAtraceRoutes(nsSlug: ComputedRef<string>, activeRouteId?: Com
 
       rows.push({
         userId,
-        username: member?.username || member?.email || userId.substring(0, 8),
+        username: (member && memberDisplayName(member)) || member?.email || userId.substring(0, 8),
         email: member?.email || '',
         lastDate: lastPass?.date || null,
         lastStatus: lastPass?.status || null,

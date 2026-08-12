@@ -369,7 +369,15 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
       // Reload members to reflect changes from backend
       await loadMembers();
     } catch (e: unknown) {
-      error.value = localizeAtraceErrorMessage(e, t) || 'Failed to update member';
+      // Toast, not the shared list `error` -- that ref also gates whether
+      // MembersSection renders the table at all (v-else-if="error"), so
+      // reusing it here would blank out the whole table behind this modal
+      // over a save failure that has nothing to do with loading the list.
+      useToast().add({
+        title: t('app.notification'),
+        description: localizeAtraceErrorMessage(e, t) || 'Failed to update member',
+        color: 'red'
+      });
     }
   }
 
