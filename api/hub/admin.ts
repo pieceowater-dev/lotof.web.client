@@ -18,6 +18,9 @@ export type AdminNamespaceRow = {
   // The other namespace(s) the owner actually belongs to, when
   // ownerOtherNamespaceCount > 0 -- i.e. which company they work for.
   ownerEmployerNamespaces: Array<{ id: string; title: string; slug: string }> | null
+  // The namespace whose referral link (see /people) this signup came
+  // through, null if it wasn't referred.
+  referredByNamespace: { id: string; title: string; slug: string } | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
@@ -47,6 +50,11 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
         }
         ownerOtherNamespaceCount
         ownerEmployerNamespaces {
+          id
+          title
+          slug
+        }
+        referredByNamespace {
           id
           title
           slug

@@ -28,7 +28,7 @@
 
       <div v-else class="space-y-10">
         <!-- KPI cards -->
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
           <div
             v-for="card in kpiCards"
             :key="card.label"
@@ -181,9 +181,18 @@
                             <Icon name="lucide:user" class="h-2.5 w-2.5" />
                             {{ t('admin.employeeBadge') }}
                           </span>
+                          <span
+                            v-if="ns.referredByNamespace"
+                            :title="`${t('admin.referredByLabel')} ${ns.referredByNamespace.title}`"
+                            class="inline-flex items-center gap-1 rounded-full bg-teal-50 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/20 dark:text-teal-300"
+                          >
+                            <Icon name="lucide:link" class="h-2.5 w-2.5" />
+                            {{ t('admin.referredBadge') }}
+                          </span>
                         </div>
                         <span class="text-[11px] text-slate-500">{{ ns.ownerInfo.email }}</span>
                         <span v-if="employerLabel(ns)" class="text-[11px] text-rose-600 dark:text-rose-400">{{ t('admin.employeeOf') }} {{ employerLabel(ns) }}</span>
+                        <span v-if="ns.referredByNamespace" class="text-[11px] text-teal-600 dark:text-teal-400">{{ t('admin.referredByLabel') }} {{ ns.referredByNamespace.title }}</span>
                       </div>
                       <span v-else class="text-slate-400">—</span>
                     </td>
@@ -543,6 +552,7 @@ function isEmployeeNamespace(n: AdminNamespaceRow): boolean {
 }
 const companyNamespaceCount = computed(() => namespaces.value.filter(isCompanyNamespace).length);
 const employeeNamespaceCount = computed(() => namespaces.value.filter(isEmployeeNamespace).length);
+const referredNamespaceCount = computed(() => namespaces.value.filter((n) => !!n.referredByNamespace).length);
 
 function employerLabel(n: AdminNamespaceRow): string {
   return (n.ownerEmployerNamespaces || []).map((e) => e.title).join(', ');
@@ -597,6 +607,14 @@ const kpiCards = computed(() => [
     icon: 'lucide:user',
     iconBg: 'bg-rose-50 dark:bg-rose-900/20',
     iconColor: 'text-rose-600 dark:text-rose-400',
+  },
+  {
+    label: t('admin.referredNamespaces'),
+    value: String(referredNamespaceCount.value),
+    sub: t('admin.referredNamespacesDesc'),
+    icon: 'lucide:link',
+    iconBg: 'bg-teal-50 dark:bg-teal-900/20',
+    iconColor: 'text-teal-600 dark:text-teal-400',
   },
 ]);
 
