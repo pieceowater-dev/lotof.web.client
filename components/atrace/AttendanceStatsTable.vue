@@ -10,6 +10,7 @@ import { CURRENCIES, formatMoney } from '@/utils/currency';
 import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
 import { CookieKeys } from '@/utils/storageKeys';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 
 const { t, locale } = useI18n();
 
@@ -75,7 +76,7 @@ async function loadNicknames() {
 
 function statUserDisplayName(user: { userId: string; username?: string; email?: string }): string {
   const nickname = nicknameByUserId.value.get(user.userId);
-  return (nickname || user.username || user.email || user.userId);
+  return memberDisplayNameWithFallback({ nickname, username: user.username }, user.email, user.userId);
 }
 
 // getAllUsersStats has no isActive field of its own (it's sourced from Hub's

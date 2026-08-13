@@ -247,13 +247,31 @@ async function loadPage() {
   }
 }
 
-watch(page, loadPage);
+// Resetting page.value to 1 on search also trips this watcher, which then
+// duplicates the loadPage() call the search handler already makes below --
+// same shape of race as menu/index.vue's order list, though here both
+// watchers call the same function so the only cost is a wasted duplicate
+// request (and, if the user types again before the first pair settles,
+// no guarantee the most recent one wins). suppressPageWatch skips the
+// watcher once; the search handler always clears it back via nextTick so
+// a reset that's a no-op (already on page 1) can't leave it stuck.
+let suppressPageWatch = false;
+watch(page, () => {
+  if (suppressPageWatch) {
+    suppressPageWatch = false;
+    return;
+  }
+  loadPage();
+});
 
 let searchTimer: ReturnType<typeof setTimeout> | undefined;
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => {
+  searchTimer = setTimeout(async () => {
+    suppressPageWatch = true;
     page.value = 1;
+    await nextTick();
+    suppressPageWatch = false;
     loadPage();
   }, 350);
 });

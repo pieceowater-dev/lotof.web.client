@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import { getErrorMessage } from '@/utils/types/errors';
 import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { FilterPaginationLengthEnum } from '@gql-hub';
@@ -97,7 +98,7 @@ const isMobileTimelineOpen = ref(false);
 // --- Real names for participants (namespace members, hub-resolved) ---
 const hubMembers = ref<Array<{ userId: string; username: string; email: string; nickname?: string | null }>>([]);
 const memberNameById = computed<Record<string, string>>(() =>
-  Object.fromEntries(hubMembers.value.map((m) => [m.userId, m.nickname || m.username || m.email]))
+  Object.fromEntries(hubMembers.value.map((m) => [m.userId, memberDisplayNameWithFallback(m, m.email)]))
 );
 function memberDisplayName(userId: string): string {
   return memberNameById.value[userId] || (t('menu.unknownMember') || 'Unknown member');
@@ -437,7 +438,7 @@ const memberOptions = computed(() => {
     return 0;
   });
   return sorted.map((m) => ({
-    label: `${m.nickname || m.username || m.email || (t('menu.unknownMember') || 'Unknown member')} — ${roleLabel(staffRoleByUserId.value[m.userId])}`,
+    label: `${memberDisplayNameWithFallback(m, m.email) || (t('menu.unknownMember') || 'Unknown member')} — ${roleLabel(staffRoleByUserId.value[m.userId])}`,
     value: m.userId,
   }));
 });

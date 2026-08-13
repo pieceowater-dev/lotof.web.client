@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import { getErrorMessage, isPermissionError } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
@@ -198,7 +199,7 @@ async function loadParticipantOptions() {
       collected.push(...batch);
       page2 += 1;
     } while (batch.length >= 50);
-    const nameByUserId = new Map(collected.map((m) => [m.userId, m.nickname || m.username || m.email]));
+    const nameByUserId = new Map(collected.map((m) => [m.userId, memberDisplayNameWithFallback(m, m.email)]));
     participantOptions.value = staffRes.staff
       .map((s) => ({ label: nameByUserId.get(s.userId) || (t('menu.unknownMember') || 'Unknown member'), value: s.userId }))
       .sort((a, b) => a.label.localeCompare(b.label));

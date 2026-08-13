@@ -48,10 +48,21 @@ useHead(() => ({
     ? 'Запрос отправлен — A-Trace'
     : (ok.value ? 'Отметка принята — A-Trace' : 'Не удалось отметиться — A-Trace'),
 }));
+// qr.vue only ever encodes a same-origin relative path (e.g.
+// /{ns}/atrace/qr?pid=...) into `u`, but nothing stops a crafted link from
+// putting an absolute URL there instead -- isSafeRelativePath rejects
+// anything that isn't a genuine single-leading-slash relative path, so a
+// malicious `u` falls back to tryCloseTabOrGoHome() instead of navigating
+// off-site.
+function isSafeRelativePath(path: string): boolean {
+  return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\');
+}
 const targetUrl = computed(() => {
   const u = route.query.u as string | undefined;
   if (!u) return null;
-  try { return atob(u); } catch { return null; }
+  let decoded: string;
+  try { decoded = atob(u); } catch { return null; }
+  return isSafeRelativePath(decoded) ? decoded : null;
 });
 
 function goTargetOrHome() {

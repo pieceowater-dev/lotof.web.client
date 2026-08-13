@@ -470,14 +470,31 @@ async function restorePublication(row: PublicationListRow) {
   }
 }
 
+// Resetting page.value to 1 on search also trips the [.., page] watcher
+// below, which then duplicates the load() call the search handler already
+// makes -- both call the same function, so the only cost is a wasted
+// duplicate request (and no guarantee the most recent one wins if the user
+// types again before the first pair settles). suppressPageWatch skips the
+// watcher once; always cleared back via nextTick so a reset that's a no-op
+// (already on page 1) can't leave it stuck and swallow a real page change.
+let suppressPageWatch = false;
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 watch(search, () => {
-  page.value = 1;
   if (searchTimer) clearTimeout(searchTimer);
-  searchTimer = setTimeout(() => load(), 250);
+  searchTimer = setTimeout(async () => {
+    suppressPageWatch = true;
+    page.value = 1;
+    await nextTick();
+    suppressPageWatch = false;
+    load();
+  }, 250);
 });
 
 watch([selectedCategory, statusFilter, page], () => {
+  if (suppressPageWatch) {
+    suppressPageWatch = false;
+    return;
+  }
   load();
 });
 

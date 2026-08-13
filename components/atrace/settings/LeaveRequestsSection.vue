@@ -4,6 +4,7 @@ import LeaveRequestModal from '@/components/atrace/LeaveRequestModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import type { AtraceLeaveRequest } from '@/api/atrace/schedule/leave';
 
 const { t } = useI18n();
@@ -20,7 +21,7 @@ const showModal = ref(false);
 
 const memberNameById = computed(() => {
   const map = new Map<string, string>();
-  members.value.forEach(m => map.set(m.userId, m.nickname || m.username || m.email || m.userId));
+  members.value.forEach(m => map.set(m.userId, memberDisplayNameWithFallback(m, m.email, m.userId)));
   return map;
 });
 

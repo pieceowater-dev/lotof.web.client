@@ -2,6 +2,7 @@ import type { ComputedRef } from 'vue';
 import { ref, computed } from 'vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
+import { memberDisplayName } from '@/utils/memberDisplayName';
 
 // Persisted across visits so a dismissed banner stays gone -- there's no
 // "seen" flag on the coverage record itself, so dismissal is tracked purely
@@ -72,7 +73,7 @@ export function useAtraceCoverageApprovalBanners(nsSlug: ComputedRef<string>) {
         const ns = await hubNamespaceBySlug(hubToken, nsSlug.value);
         if (ns?.id) {
           const members = await hubMembersList(hubToken, ns.id, 1, FilterPaginationLengthEnum.Fifty);
-          for (const m of members) nameById.set(m.userId, m.nickname || m.username);
+          for (const m of members) nameById.set(m.userId, memberDisplayName(m));
         }
       } catch (e) {
         logError('[useAtraceCoverageApprovalBanners] failed to resolve names:', e);

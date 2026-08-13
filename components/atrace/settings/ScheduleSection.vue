@@ -3,6 +3,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import type { AtraceShiftPattern, AtraceScheduleAssignment } from '@/api/atrace/schedule/schedule';
 import { useNamespace } from '@/composables/useNamespace';
 import QuickSetupButton from '@/components/onboarding/QuickSetupButton.vue';
@@ -85,7 +86,7 @@ const assignmentColumns = computed(() => ([
 
 const memberNameById = computed(() => {
   const map = new Map<string, string>();
-  members.value.forEach(m => map.set(m.userId, m.nickname || m.username || m.email || m.userId));
+  members.value.forEach(m => map.set(m.userId, memberDisplayNameWithFallback(m, m.email, m.userId)));
   return map;
 });
 const patternNameById = computed(() => {
@@ -579,7 +580,7 @@ onMounted(async () => {
               <USelectMenu
                 v-model="formUserIds"
                 multiple
-                :options="activeMembers.map(m => ({ value: m.userId, label: m.nickname || m.username || m.email }))"
+                :options="activeMembers.map(m => ({ value: m.userId, label: memberDisplayNameWithFallback(m, m.email) }))"
                 value-attribute="value"
                 option-attribute="label"
                 searchable

@@ -38,6 +38,11 @@ const { ensure: ensureAtraceToken } = useAtraceToken();
 
 const accessDenied = ref(false);
 const accessDeniedMessage = ref<string | null>(null);
+// Starts false so the invite button/modal -- which can assign a role and
+// schedule to the invitee -- stays hidden both before the async permission
+// check below resolves and if it comes back denied, instead of rendering
+// unconditionally like the rest of this page's admin-only toolbar used to.
+const accessChecked = ref(false);
 const isInviteOpen = ref(false);
 
 // Stable per-tab key so a link can deep-link straight to one (?tab=onboarding)
@@ -104,6 +109,8 @@ onMounted(async () => {
             accessDenied.value = true;
             accessDeniedMessage.value = t('app.settingsAccessDenied') || 'У вас нет доступа к настройкам ATrace. Обратитесь к администратору пространства.';
         }
+    } finally {
+        accessChecked.value = true;
     }
     // Sections below self-load their own data once mounted (only happens
     // once accessDenied stays false).
@@ -136,6 +143,7 @@ onUnmounted(() => {
           {{ t('app.upgradePlan') || 'Upgrade Plan' }}
         </UButton>
         <UButton
+          v-if="accessChecked && !accessDenied"
           icon="lucide:user-plus"
           size="xs"
           color="primary"
@@ -158,7 +166,17 @@ onUnmounted(() => {
     </div>
 
     <div
-      v-if="accessDenied"
+      v-if="!accessChecked"
+      class="flex-1 flex items-center justify-center"
+    >
+      <UIcon
+        name="i-heroicons-arrow-path"
+        class="h-6 w-6 animate-spin text-gray-400"
+      />
+    </div>
+
+    <div
+      v-else-if="accessDenied"
       class="flex-1 flex items-center justify-center"
     >
       <div class="w-full max-w-xl rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-8 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/30">
@@ -240,5 +258,8 @@ onUnmounted(() => {
     </template>
   </div>
 
-  <InviteMemberModal v-model="isInviteOpen" />
+  <InviteMemberModal
+    v-if="accessChecked && !accessDenied"
+    v-model="isInviteOpen"
+  />
 </template>
