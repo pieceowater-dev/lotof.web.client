@@ -77,7 +77,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     // into an onboarding request (see qr.vue's runCheck) -- failing here
     // first would bounce them to the login page before that logic ever
     // runs, even though they're already logged in.
-    if (to.path.includes('/atrace/plans') || to.path.includes('/atrace/qr')) {
+    // Same for the recorded (post-scan result) page: qr.vue redirects a
+    // non-member here with ok=pending/ok=0 precisely because they have no
+    // app token -- requiring one here would re-fail the same ensure() call
+    // qr.vue already gave up on, and silently bounce them home before they
+    // ever see "your request was submitted" or the failure reason.
+    if (to.path.includes('/atrace/plans') || to.path.includes('/atrace/qr') || to.path.includes('/atrace/recorded')) {
       return;
     }
     const { ensure, current } = useAtraceToken();
