@@ -755,6 +755,16 @@ async function removeMember(member: { userId: string; username: string; email: s
                   <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{{ memberDisplayName(m) }}</span>
                   <UBadge v-if="m.userId === user?.id" size="xs" color="blue" variant="subtle">{{ t('app.you') }}</UBadge>
                 </div>
+                <!-- When a nickname is set, the account's own name is still
+                     shown (small, muted) so a manager can tell who someone
+                     really is -- a nickname replaces what the team sees, not
+                     what the owner can verify. -->
+                <p
+                  v-if="m.nickname?.trim() && m.nickname.trim() !== m.username"
+                  class="text-xs text-gray-400 dark:text-gray-500 truncate"
+                >
+                  {{ m.username }}
+                </p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.email }}</p>
               </div>
               <UButton
