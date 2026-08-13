@@ -625,7 +625,7 @@
         "free": {
           "description": "Free plan to get started with A-Trace",
           "feature": {
-            "max_employees": "Up to 1 active employee",
+            "max_employees": "Up to 5 active employees",
             "max_posts": "Up to 3 locations"
           }
         },
@@ -640,6 +640,13 @@
           "description": "Full-featured plan for effective work",
           "feature": {
             "max_employees": "Up to 30 active employees",
+            "max_posts": "Up to 3 locations"
+          }
+        },
+        "pro": {
+          "description": "Maximum capabilities for large teams",
+          "feature": {
+            "max_employees": "Up to 100 active employees",
             "max_posts": "Up to 3 locations"
           }
         }
