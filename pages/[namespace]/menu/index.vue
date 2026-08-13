@@ -312,8 +312,7 @@ function applyFilterPanel() {
   appliedFilterPanel.closedTo = closedTo.value;
   appliedFilterPanel.participantUserId = participantFilter.value;
   isFilterPanelOpen.value = false;
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 }
 
 function clearFilterPanel() {
@@ -354,6 +353,26 @@ async function loadBranches() {
 }
 
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+// Resetting page.value to 1 also trips the watch([page, pageCount]) below,
+// which calls the narrower loadOrders() (no summary/statusCounts). Every
+// caller here already wants the fuller loadOrdersBundle() instead, so
+// without this guard both fire unsequenced -- if the page-watch's
+// loadOrders() resolves after loadOrdersBundle(), it silently overwrites
+// orders/totalCount with a response that never touched summary/statusCounts,
+// leaving the visible order rows out of sync with the summary/status
+// numbers above them. suppressPageWatch tells that watcher to skip once;
+// resetPageAndReload always clears it again via nextTick so a page reset
+// that's a no-op (already on page 1, watcher never fires) can't leave the
+// flag stuck and swallow the next real pagination click.
+let suppressPageWatch = false;
+async function resetPageAndReload() {
+  suppressPageWatch = true;
+  page.value = 1;
+  await nextTick();
+  suppressPageWatch = false;
+  loadOrdersBundle();
+}
 
 async function loadOrders(opts: { silent?: boolean } = {}) {
   if (!opts.silent) loading.value = true;
@@ -462,40 +481,39 @@ function toggleMyOrdersFilter() {
   const next = myOrdersFilterActive.value ? '' : (currentUser.value?.id || '');
   participantFilter.value = next;
   appliedFilterPanel.participantUserId = next;
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 }
 
 function toggleStatus(s: string) {
   const idx = selectedStatuses.value.indexOf(s);
   if (idx === -1) selectedStatuses.value = [...selectedStatuses.value, s];
   else selectedStatuses.value = selectedStatuses.value.filter((v) => v !== s);
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 }
 
 function clearStatuses() {
   selectedStatuses.value = [];
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 }
 
 watch(selectedBranchIds, () => {
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 });
 
 watch(selectedType, () => {
-  page.value = 1;
-  loadOrdersBundle();
+  resetPageAndReload();
 });
 
 watch(search, () => {
   if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(() => { page.value = 1; loadOrdersBundle(); }, 400);
+  searchDebounce = setTimeout(() => { resetPageAndReload(); }, 400);
 });
 
 watch([page, pageCount], () => {
+  if (suppressPageWatch) {
+    suppressPageWatch = false;
+    return;
+  }
   loadOrders();
 });
 

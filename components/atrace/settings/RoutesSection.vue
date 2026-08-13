@@ -124,7 +124,11 @@ async function handleDeleteRoute(routeItem: Route) {
     await deleteRouteById(routeItem.id);
     atraceRoutes.value = atraceRoutes.value.filter((r) => r.id !== routeItem.id);
   } catch (e) {
-    routesError.value = localizeAtraceErrorMessage(e, t) || (t('app_route_delete_failed') || 'Failed to delete route');
+    useToast().add({
+      title: t('app.notification'),
+      description: localizeAtraceErrorMessage(e, t) || (t('app_route_delete_failed') || 'Failed to delete route'),
+      color: 'red',
+    });
   }
 }
 
