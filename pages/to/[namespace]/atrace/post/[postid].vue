@@ -7,6 +7,10 @@ import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { dynamicLS } from '@/utils/storageKeys';
 
+definePageMeta({
+  layout: false
+});
+
 const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
