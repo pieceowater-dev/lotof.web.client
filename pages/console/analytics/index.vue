@@ -28,7 +28,7 @@
 
       <div v-else class="space-y-10">
         <!-- KPI cards -->
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <div
             v-for="card in kpiCards"
             :key="card.label"
@@ -171,7 +171,17 @@
                     <td class="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ ns.slug }}</td>
                     <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
                       <div v-if="ns.ownerInfo" class="flex flex-col">
-                        <span class="text-xs font-medium text-slate-900 dark:text-white">{{ ns.ownerInfo.username }}</span>
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs font-medium text-slate-900 dark:text-white">{{ ns.ownerInfo.username }}</span>
+                          <span
+                            v-if="isEmployeeNamespace(ns)"
+                            :title="t('admin.employeeNamespaceHint')"
+                            class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+                          >
+                            <Icon name="lucide:user" class="h-2.5 w-2.5" />
+                            {{ t('admin.employeeBadge') }}
+                          </span>
+                        </div>
                         <span class="text-[11px] text-slate-500">{{ ns.ownerInfo.email }}</span>
                       </div>
                       <span v-else class="text-slate-400">—</span>
@@ -519,6 +529,20 @@ const newNamespacesLast30Days = computed(() => {
   return namespaces.value.filter(n => n.createdAt && new Date(n.createdAt).getTime() >= cutoff).length;
 });
 
+// "Компания": owner never joined anyone else's namespace -- a real,
+// standalone account. "Сотрудник": an auto-created personal namespace
+// whose owner immediately became a member of someone else's namespace
+// instead, so this one sits unused. null (field not resolved for this row)
+// is excluded from both counts rather than guessed either way.
+function isCompanyNamespace(n: AdminNamespaceRow): boolean {
+  return n.ownerOtherNamespaceCount === 0;
+}
+function isEmployeeNamespace(n: AdminNamespaceRow): boolean {
+  return typeof n.ownerOtherNamespaceCount === 'number' && n.ownerOtherNamespaceCount > 0;
+}
+const companyNamespaceCount = computed(() => namespaces.value.filter(isCompanyNamespace).length);
+const employeeNamespaceCount = computed(() => namespaces.value.filter(isEmployeeNamespace).length);
+
 const kpiCards = computed(() => [
   {
     label: t('admin.totalNamespaces'),
@@ -548,6 +572,22 @@ const kpiCards = computed(() => [
     icon: 'lucide:tag',
     iconBg: 'bg-violet-50 dark:bg-violet-900/20',
     iconColor: 'text-violet-600 dark:text-violet-400',
+  },
+  {
+    label: t('admin.companyNamespaces'),
+    value: String(companyNamespaceCount.value),
+    sub: t('admin.companyNamespacesDesc'),
+    icon: 'lucide:building',
+    iconBg: 'bg-sky-50 dark:bg-sky-900/20',
+    iconColor: 'text-sky-600 dark:text-sky-400',
+  },
+  {
+    label: t('admin.employeeNamespaces'),
+    value: String(employeeNamespaceCount.value),
+    sub: t('admin.employeeNamespacesDesc'),
+    icon: 'lucide:user',
+    iconBg: 'bg-rose-50 dark:bg-rose-900/20',
+    iconColor: 'text-rose-600 dark:text-rose-400',
   },
 ]);
 

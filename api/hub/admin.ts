@@ -9,6 +9,12 @@ export type AdminNamespaceRow = {
   ownerInfo: { username: string; email: string; phone?: string | null } | null
   memberInfos: Array<{ id: string; username: string; email: string; phone?: string | null }> | null
   apps: Array<{ id: string; namespaceID: string; appBundle: string }> | null
+  // How many OTHER namespaces this namespace's owner is also a member of.
+  // 0 (or null before the field existed) = "Компания": they only ever run
+  // this one namespace. >0 = "Сотрудник": an auto-created personal
+  // namespace whose owner immediately joined someone else's instead, so
+  // this one sits unused.
+  ownerOtherNamespaceCount: number | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
@@ -36,6 +42,7 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
           namespaceID
           appBundle
         }
+        ownerOtherNamespaceCount
       }
       info {
         count
