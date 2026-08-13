@@ -16,8 +16,16 @@
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>
-        <div class="text-xs text-slate-500 dark:text-slate-400">
-          {{ t('admin.totalNamespaces') }}: {{ total }}
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+          <span>{{ t('admin.totalNamespaces') }}: {{ total }}</span>
+          <span class="inline-flex items-center gap-1">
+            <Icon name="lucide:building" class="h-3.5 w-3.5 text-sky-500" />
+            {{ t('admin.companyNamespaces') }}: {{ statsLoading ? '…' : companyCount }}
+          </span>
+          <span class="inline-flex items-center gap-1">
+            <Icon name="lucide:user" class="h-3.5 w-3.5 text-rose-500" />
+            {{ t('admin.employeeNamespaces') }}: {{ statsLoading ? '…' : employeeCount }}
+          </span>
         </div>
       </div>
 
@@ -51,8 +59,19 @@
                   </td>
                   <td class="px-6 py-4">
                     <div v-if="row.ownerInfo" class="flex flex-col">
-                      <span class="text-xs font-medium text-slate-900 dark:text-white">{{ row.ownerInfo.username }}</span>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-medium text-slate-900 dark:text-white">{{ row.ownerInfo.username }}</span>
+                        <span
+                          v-if="isEmployeeNamespace(row)"
+                          :title="employerHint(row)"
+                          class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
+                        >
+                          <Icon name="lucide:user" class="h-2.5 w-2.5" />
+                          {{ t('admin.employeeBadge') }}
+                        </span>
+                      </div>
                       <span class="text-[10px] text-slate-500">{{ row.ownerInfo.email }}</span>
+                      <span v-if="employerLabel(row)" class="text-[10px] text-rose-600 dark:text-rose-400">{{ t('admin.employeeOf') }} {{ employerLabel(row) }}</span>
                       <a
                         v-if="row.ownerInfo.phone"
                         :href="`tel:${row.ownerInfo.phone}`"
@@ -136,7 +155,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { hubGetAdminNamespacesPage, type AdminNamespaceRow } from '@/api/hub/admin';
+import { hubGetAdminNamespaces, hubGetAdminNamespacesPage, type AdminNamespaceRow } from '@/api/hub/admin';
 
 definePageMeta({
   middleware: 'admin',
@@ -177,6 +196,43 @@ function appLabel(bundle: string): string {
   return APP_LABELS[bundle] || bundle;
 }
 
+function isEmployeeNamespace(n: AdminNamespaceRow): boolean {
+  return typeof n.ownerOtherNamespaceCount === 'number' && n.ownerOtherNamespaceCount > 0;
+}
+function employerLabel(n: AdminNamespaceRow): string {
+  return (n.ownerEmployerNamespaces || []).map((e) => e.title).join(', ');
+}
+function employerHint(n: AdminNamespaceRow): string {
+  const label = employerLabel(n);
+  return label ? `${t('admin.employeeOf')} ${label}` : t('admin.employeeNamespaceHint');
+}
+
+// Full platform-wide list, fetched once purely to compute the
+// "Компаний"/"Сотрудников" counts -- independent of the paginated `rows`
+// used for the table itself.
+const statsLoading = ref(true);
+const companyCount = ref(0);
+const employeeCount = ref(0);
+async function loadStats() {
+  if (!token.value) return;
+  statsLoading.value = true;
+  try {
+    const res = await hubGetAdminNamespaces(token.value);
+    let companies = 0;
+    let employees = 0;
+    for (const n of res.rows) {
+      if (n.ownerOtherNamespaceCount === 0) companies += 1;
+      else if (typeof n.ownerOtherNamespaceCount === 'number' && n.ownerOtherNamespaceCount > 0) employees += 1;
+    }
+    companyCount.value = companies;
+    employeeCount.value = employees;
+  } catch (e) {
+    console.error('[console/namespaces] Failed to load namespace stats', e);
+  } finally {
+    statsLoading.value = false;
+  }
+}
+
 async function loadPage() {
   if (!token.value) return;
   loading.value = true;
@@ -210,5 +266,6 @@ onMounted(async () => {
     }
   }
   loadPage();
+  loadStats();
 });
 </script>

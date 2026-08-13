@@ -15,6 +15,9 @@ export type AdminNamespaceRow = {
   // namespace whose owner immediately joined someone else's instead, so
   // this one sits unused.
   ownerOtherNamespaceCount: number | null
+  // The other namespace(s) the owner actually belongs to, when
+  // ownerOtherNamespaceCount > 0 -- i.e. which company they work for.
+  ownerEmployerNamespaces: Array<{ id: string; title: string; slug: string }> | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
@@ -43,6 +46,11 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
           appBundle
         }
         ownerOtherNamespaceCount
+        ownerEmployerNamespaces {
+          id
+          title
+          slug
+        }
       }
       info {
         count

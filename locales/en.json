@@ -1303,6 +1303,7 @@
     "employeeNamespacesDesc": "Personal namespace the owner immediately left for someone else's team",
     "employeeBadge": "Employee",
     "employeeNamespaceHint": "This namespace's owner is also a member of another team -- likely their personal namespace while they actually work at another company",
+    "employeeOf": "Employee of:",
     "slug": "Slug",
     "last30DaysShort": "last 30 days",
     "plans": "Plans",

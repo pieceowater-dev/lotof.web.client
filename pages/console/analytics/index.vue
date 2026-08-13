@@ -175,7 +175,7 @@
                           <span class="text-xs font-medium text-slate-900 dark:text-white">{{ ns.ownerInfo.username }}</span>
                           <span
                             v-if="isEmployeeNamespace(ns)"
-                            :title="t('admin.employeeNamespaceHint')"
+                            :title="employerHint(ns)"
                             class="inline-flex items-center gap-1 rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/20 dark:text-rose-300"
                           >
                             <Icon name="lucide:user" class="h-2.5 w-2.5" />
@@ -183,6 +183,7 @@
                           </span>
                         </div>
                         <span class="text-[11px] text-slate-500">{{ ns.ownerInfo.email }}</span>
+                        <span v-if="employerLabel(ns)" class="text-[11px] text-rose-600 dark:text-rose-400">{{ t('admin.employeeOf') }} {{ employerLabel(ns) }}</span>
                       </div>
                       <span v-else class="text-slate-400">—</span>
                     </td>
@@ -542,6 +543,14 @@ function isEmployeeNamespace(n: AdminNamespaceRow): boolean {
 }
 const companyNamespaceCount = computed(() => namespaces.value.filter(isCompanyNamespace).length);
 const employeeNamespaceCount = computed(() => namespaces.value.filter(isEmployeeNamespace).length);
+
+function employerLabel(n: AdminNamespaceRow): string {
+  return (n.ownerEmployerNamespaces || []).map((e) => e.title).join(', ');
+}
+function employerHint(n: AdminNamespaceRow): string {
+  const label = employerLabel(n);
+  return label ? `${t('admin.employeeOf')} ${label}` : t('admin.employeeNamespaceHint');
+}
 
 const kpiCards = computed(() => [
   {
