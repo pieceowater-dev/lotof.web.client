@@ -465,15 +465,16 @@ function mapRow(a: CapitalAdmin): AdminRow {
   const isCurrent = isMe || (!!currentUserEmail.value && resolvedEmail.trim().toLowerCase() === currentUserEmail.value);
   return {
     ...a,
+    // This is the internal ops console, not a namespace member list --
+    // deliberately ignores per-namespace nicknames and always shows the
+    // real account identity/username, resolved server-side from hub by
+    // userId (see capitalAdmins' username field). Only falls back to
+    // deriving something from the email, then the raw userId, if that
+    // lookup came back empty (e.g. an email-only invite not yet linked to
+    // an account).
     name: isMe
-      ? (user.value?.username || ownerNameFromEmail(user.value?.email) || a.userId)
-      // This is the internal ops console, not a namespace member list --
-      // deliberately ignores per-namespace nicknames and always shows the
-      // real account identity. Every admin row has an email (they're
-      // invited by email, see capitalInviteAdmin) -- previously only the
-      // owner row derived a name from it, every other admin/CMS editor
-      // fell straight to the raw userId.
-      : ((isOwner ? ownerEmail : email) ? ownerNameFromEmail(isOwner ? ownerEmail : email) : (a.userId || '-')),
+      ? (user.value?.username || (a.username || '').trim() || ownerNameFromEmail(user.value?.email) || a.userId)
+      : ((a.username || '').trim() || ((isOwner ? ownerEmail : email) ? ownerNameFromEmail(isOwner ? ownerEmail : email) : (a.userId || '-'))),
     email: resolvedEmail,
     roleKey: toRoleKey(a.role),
     status: 'active',

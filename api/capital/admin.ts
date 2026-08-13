@@ -4,6 +4,7 @@ export type CapitalAdmin = {
   id: string;
   userId: string;
   email?: string | null;
+  username?: string | null;
   role: number;
   invitedBy?: string | null;
   createdAt: string;
@@ -16,6 +17,7 @@ const CAPITAL_ADMINS_QUERY = /* GraphQL */ `
       id
       userId
       email
+      username
       role
       invitedBy
       createdAt
@@ -30,6 +32,7 @@ const CAPITAL_ADMIN_BY_USER_ID_QUERY = /* GraphQL */ `
       id
       userId
       email
+      username
       role
       invitedBy
       createdAt
@@ -44,6 +47,7 @@ const INVITE_CAPITAL_ADMIN_MUTATION = /* GraphQL */ `
       id
       userId
       email
+      username
       role
       invitedBy
       createdAt
@@ -58,6 +62,7 @@ const CHANGE_CAPITAL_ADMIN_ROLE_MUTATION = /* GraphQL */ `
       id
       userId
       email
+      username
       role
       invitedBy
       createdAt
