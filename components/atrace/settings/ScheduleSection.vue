@@ -198,9 +198,10 @@ async function removePattern(pattern: AtraceShiftPattern) {
     await atraceDeleteShiftPattern(pattern.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = isAtracePermissionError(e, 'tracker.schedule.manage')
+    const description = isAtracePermissionError(e, 'tracker.schedule.manage')
       ? (t('app.schedulePermissionError') || 'Недостаточно прав')
       : (t('app.saveFailed') || 'Не удалось удалить');
+    useToast().add({ title: t('app.notification'), description, color: 'red' });
   }
 }
 
@@ -249,9 +250,10 @@ async function unassign(assignment: AtraceScheduleAssignment) {
     await atraceEndScheduleAssignment(assignment.id, today, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = isAtracePermissionError(e, 'tracker.schedule.manage')
+    const description = isAtracePermissionError(e, 'tracker.schedule.manage')
       ? (t('app.schedulePermissionError') || 'Недостаточно прав')
       : (t('app.saveFailed') || 'Не удалось снять назначение');
+    useToast().add({ title: t('app.notification'), description, color: 'red' });
   }
 }
 

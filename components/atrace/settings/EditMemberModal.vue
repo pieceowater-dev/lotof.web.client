@@ -79,7 +79,7 @@ const isOpen = computed({
           :help="t('app.roleHint') || 'Assign a role to control access permissions'"
           class="space-y-2"
         >
-          <USelect
+          <USelectMenu
             v-model="editForm.roleId"
             size="lg"
             :options="[

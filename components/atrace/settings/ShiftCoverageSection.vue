@@ -83,7 +83,7 @@ async function approve(row: AtraceShiftCoverage) {
     await atraceApproveShiftCoverage(row.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось согласовать';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось согласовать', color: 'red' });
   }
 }
 
@@ -93,7 +93,7 @@ async function reject(row: AtraceShiftCoverage) {
     await atraceRejectShiftCoverage(row.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось отклонить';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось отклонить', color: 'red' });
   }
 }
 
@@ -103,7 +103,7 @@ async function cancel(row: AtraceShiftCoverage) {
     await atraceCancelShiftCoverage(row.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось отменить';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось отменить', color: 'red' });
   }
 }
 

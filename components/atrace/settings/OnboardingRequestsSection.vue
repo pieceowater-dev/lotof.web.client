@@ -58,7 +58,6 @@ async function load() {
 
 async function approve(row: AtraceOnboardingRequest) {
   decidingId.value = row.id;
-  error.value = null;
   try {
     // Two independent steps, same split as everywhere else in this codebase
     // that adds someone to a namespace then activates them in atrace
@@ -83,7 +82,7 @@ async function approve(row: AtraceOnboardingRequest) {
     await atraceDecideOnboardingRequest(row.id, true, nsSlug.value);
     await load();
   } catch (_e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось согласовать';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось согласовать', color: 'red' });
   } finally {
     decidingId.value = null;
   }
@@ -91,13 +90,12 @@ async function approve(row: AtraceOnboardingRequest) {
 
 async function reject(row: AtraceOnboardingRequest) {
   decidingId.value = row.id;
-  error.value = null;
   try {
     const { atraceDecideOnboardingRequest } = await import('@/api/atrace/onboarding/onboarding');
     await atraceDecideOnboardingRequest(row.id, false, nsSlug.value);
     await load();
   } catch (_e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось отклонить';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось отклонить', color: 'red' });
   } finally {
     decidingId.value = null;
   }

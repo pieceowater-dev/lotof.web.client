@@ -128,7 +128,7 @@ async function removeOvertime(rate: AtraceOvertimeRate) {
     await atraceDeleteOvertimeRate(rate.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось удалить';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось удалить', color: 'red' });
   }
 }
 
@@ -176,7 +176,7 @@ async function removePenalty(rule: AtracePenaltyRule) {
     await atraceDeletePenaltyRule(rule.id, nsSlug.value);
     await load();
   } catch (e: any) {
-    error.value = t('app.saveFailed') || 'Не удалось удалить';
+    useToast().add({ title: t('app.notification'), description: t('app.saveFailed') || 'Не удалось удалить', color: 'red' });
   }
 }
 
