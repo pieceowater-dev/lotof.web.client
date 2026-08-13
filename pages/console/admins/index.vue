@@ -289,7 +289,9 @@
               v-model.number="inviteRole"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
-              <option :value="0">{{ t('admin.superAdmin') }}</option>
+              <!-- Super Admin (role 0) is the account owner -- unique, and
+                   the backend rejects assigning it via invite or role
+                   change (see admin.svc.go), so it's not offered here. -->
               <option :value="1">{{ t('admin.admin') }}</option>
               <option :value="2">{{ t('admin.cmsEditor') }}</option>
             </select>
@@ -335,7 +337,9 @@
               v-model.number="selectedRole"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
-              <option :value="0">{{ t('admin.superAdmin') }}</option>
+              <!-- Super Admin (role 0) is the account owner -- unique, and
+                   the backend rejects assigning it via invite or role
+                   change (see admin.svc.go), so it's not offered here. -->
               <option :value="1">{{ t('admin.admin') }}</option>
               <option :value="2">{{ t('admin.cmsEditor') }}</option>
             </select>
@@ -463,7 +467,13 @@ function mapRow(a: CapitalAdmin): AdminRow {
     ...a,
     name: isMe
       ? (user.value?.username || ownerNameFromEmail(user.value?.email) || a.userId)
-      : (isOwner ? ownerNameFromEmail(ownerEmail) : (a.userId || '-')),
+      // This is the internal ops console, not a namespace member list --
+      // deliberately ignores per-namespace nicknames and always shows the
+      // real account identity. Every admin row has an email (they're
+      // invited by email, see capitalInviteAdmin) -- previously only the
+      // owner row derived a name from it, every other admin/CMS editor
+      // fell straight to the raw userId.
+      : ((isOwner ? ownerEmail : email) ? ownerNameFromEmail(isOwner ? ownerEmail : email) : (a.userId || '-')),
     email: resolvedEmail,
     roleKey: toRoleKey(a.role),
     status: 'active',
