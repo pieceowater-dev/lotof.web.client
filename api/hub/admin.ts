@@ -81,6 +81,43 @@ export async function hubGetAdminNamespacesPage(
   return { rows: res.adminNamespaces?.rows || [], total: res.adminNamespaces?.info?.count || 0 }
 }
 
+export type AppHealthStatus = {
+  appBundle: string
+  reachable: boolean
+  schemaReady: boolean
+  appliedVersion: string | null
+  targetVersion: string | null
+  error: string | null
+}
+
+const ADMIN_NAMESPACE_HEALTH_QUERY = /* GraphQL */ `
+  query AdminNamespaceHealth($namespaceId: ID!) {
+    adminNamespaceHealth(namespaceId: $namespaceId) {
+      apps {
+        appBundle
+        reachable
+        schemaReady
+        appliedVersion
+        targetVersion
+        error
+      }
+    }
+  }
+`
+
+// hubGetAdminNamespaceHealth is deliberately separate from the bulk
+// adminNamespaces list load above -- it's an on-demand troubleshooting
+// check triggered per-namespace from the admin console, not something to
+// run for every row on page load.
+export async function hubGetAdminNamespaceHealth(token: string, namespaceId: string): Promise<AppHealthStatus[]> {
+  setGlobalAuthToken(token || null)
+  const res = await hubClient.request<{ adminNamespaceHealth: { apps: AppHealthStatus[] } }>(
+    ADMIN_NAMESPACE_HEALTH_QUERY,
+    { namespaceId }
+  )
+  return res.adminNamespaceHealth?.apps || []
+}
+
 export async function hubGetAdminNamespaces(token: string): Promise<{ rows: AdminNamespaceRow[]; total: number }> {
   setGlobalAuthToken(token || null)
   const rows: AdminNamespaceRow[] = []

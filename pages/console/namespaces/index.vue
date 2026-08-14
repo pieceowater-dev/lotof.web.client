@@ -39,12 +39,13 @@
 
       <div v-else class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1100px] text-left text-sm">
+          <table class="w-full min-w-[1250px] text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
               <tr>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.apps') || 'Приложения' }}</th>
+                <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.health') || 'Здоровье' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.members') || 'Участники' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.source') || 'Источник' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
@@ -94,6 +95,22 @@
                   </td>
                   <td class="px-6 py-4">
                     <button
+                      v-if="row.apps?.length"
+                      type="button"
+                      :disabled="healthLoading[row.id]"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      @click="toggleHealth(row)"
+                    >
+                      <Icon v-if="healthLoading[row.id]" name="lucide:loader-2" class="h-3.5 w-3.5 animate-spin" />
+                      <Icon v-else name="lucide:activity" class="h-3.5 w-3.5" />
+                      <span v-if="healthData[row.id]" :class="healthSummaryClass(row.id)">{{ healthSummaryLabel(row.id) }}</span>
+                      <span v-else>{{ t('admin.checkHealth') || 'Проверить' }}</span>
+                      <Icon :name="healthExpanded[row.id] ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-3.5 w-3.5" />
+                    </button>
+                    <span v-else class="text-[10px] text-slate-400 italic">&mdash;</span>
+                  </td>
+                  <td class="px-6 py-4">
+                    <button
                       v-if="row.memberInfos?.length"
                       type="button"
                       class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -111,8 +128,39 @@
                   </td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ formatDate(row.createdAt) }}</td>
                 </tr>
+                <tr v-if="healthExpanded[row.id]" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
+                  <td colspan="7" class="px-6 py-4">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                      {{ t('admin.health') || 'Здоровье' }}
+                    </div>
+                    <div v-if="healthLoading[row.id] && !healthData[row.id]" class="text-xs text-slate-400">
+                      {{ t('admin.checkingHealth') || 'Проверка…' }}
+                    </div>
+                    <div v-else-if="healthData[row.id]" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      <div
+                        v-for="app in healthData[row.id]"
+                        :key="app.appBundle"
+                        class="rounded-lg border px-3 py-2 dark:bg-slate-950"
+                        :class="healthCardClass(app)"
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <span class="text-xs font-medium text-slate-900 dark:text-white">{{ appLabel(app.appBundle) }}</span>
+                          <span class="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold" :class="healthPillClass(app)">
+                            {{ healthPillLabel(app) }}
+                          </span>
+                        </div>
+                        <div v-if="!app.reachable || !app.schemaReady" class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                          <div v-if="app.appliedVersion || app.targetVersion">
+                            {{ t('admin.appliedVersion') || 'Применена' }}: {{ app.appliedVersion || '—' }} / {{ t('admin.targetVersion') || 'Целевая' }}: {{ app.targetVersion || '—' }}
+                          </div>
+                          <div v-if="app.error" class="mt-0.5 text-rose-600 dark:text-rose-400">{{ app.error }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
                 <tr v-if="expanded[row.id] && row.memberInfos?.length" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <td colspan="6" class="px-6 py-4">
+                  <td colspan="7" class="px-6 py-4">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
                       {{ t('admin.members') || 'Участники' }}
                     </div>
@@ -155,7 +203,13 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
-import { hubGetAdminNamespaces, hubGetAdminNamespacesPage, type AdminNamespaceRow } from '@/api/hub/admin';
+import {
+  hubGetAdminNamespaces,
+  hubGetAdminNamespacesPage,
+  hubGetAdminNamespaceHealth,
+  type AdminNamespaceRow,
+  type AppHealthStatus,
+} from '@/api/hub/admin';
 
 definePageMeta({
   middleware: 'admin',
@@ -172,11 +226,76 @@ const search = ref('');
 const page = ref(1);
 const pageSize = 20;
 const expanded = ref<Record<string, boolean>>({});
+const healthExpanded = ref<Record<string, boolean>>({});
+const healthLoading = ref<Record<string, boolean>>({});
+const healthData = ref<Record<string, AppHealthStatus[]>>({});
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize));
 
 function toggleExpanded(id: string) {
   expanded.value = { ...expanded.value, [id]: !expanded.value[id] };
+}
+
+// On-demand troubleshooting check -- only fetched the first time a row is
+// expanded, then cached for the rest of the page's lifetime (no polling or
+// auto-refresh, this is a manual "check now" action, not monitoring).
+async function toggleHealth(row: AdminNamespaceRow) {
+  const willExpand = !healthExpanded.value[row.id];
+  healthExpanded.value = { ...healthExpanded.value, [row.id]: willExpand };
+  if (!willExpand || healthData.value[row.id] || healthLoading.value[row.id] || !token.value) return;
+
+  healthLoading.value = { ...healthLoading.value, [row.id]: true };
+  try {
+    const apps = await hubGetAdminNamespaceHealth(token.value, row.id);
+    healthData.value = { ...healthData.value, [row.id]: apps };
+  } catch (e) {
+    console.error('[console/namespaces] Failed to check namespace health', e);
+  } finally {
+    healthLoading.value = { ...healthLoading.value, [row.id]: false };
+  }
+}
+
+function appHealthStatus(app: AppHealthStatus): 'ok' | 'warn' | 'down' {
+  if (!app.reachable) return 'down';
+  if (!app.schemaReady) return 'warn';
+  return 'ok';
+}
+
+function healthPillLabel(app: AppHealthStatus): string {
+  const status = appHealthStatus(app);
+  if (status === 'ok') return t('admin.healthOk') || 'OK';
+  if (status === 'warn') return t('admin.healthStale') || 'Схема не готова';
+  return t('admin.healthDown') || 'Недоступен';
+}
+
+function healthPillClass(app: AppHealthStatus): string {
+  const status = appHealthStatus(app);
+  if (status === 'ok') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400';
+  if (status === 'warn') return 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400';
+  return 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-400';
+}
+
+function healthCardClass(app: AppHealthStatus): string {
+  const status = appHealthStatus(app);
+  if (status === 'ok') return 'border-emerald-100 bg-white dark:border-emerald-800/30';
+  if (status === 'warn') return 'border-amber-100 bg-white dark:border-amber-800/30';
+  return 'border-rose-100 bg-white dark:border-rose-800/30';
+}
+
+function healthSummaryClass(id: string): string {
+  const apps = healthData.value[id] || [];
+  if (apps.some((a) => appHealthStatus(a) === 'down')) return 'text-rose-600 dark:text-rose-400 font-semibold';
+  if (apps.some((a) => appHealthStatus(a) === 'warn')) return 'text-amber-600 dark:text-amber-400 font-semibold';
+  return 'text-emerald-600 dark:text-emerald-400 font-semibold';
+}
+
+function healthSummaryLabel(id: string): string {
+  const apps = healthData.value[id] || [];
+  const downCount = apps.filter((a) => appHealthStatus(a) === 'down').length;
+  const warnCount = apps.filter((a) => appHealthStatus(a) === 'warn').length;
+  if (downCount) return `${downCount} ${t('admin.healthDownShort') || 'недоступно'}`;
+  if (warnCount) return `${warnCount} ${t('admin.healthStaleShort') || 'не готово'}`;
+  return t('admin.healthOk') || 'OK';
 }
 
 function formatDate(value: string | null): string {
