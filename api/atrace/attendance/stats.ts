@@ -17,6 +17,8 @@ type UserAttendanceStats = {
   lateDays: number;
   earlyLeaveDays: number;
   hasScheduleAssignment: boolean;
+  geoConfirmedDays: number;
+  suspiciousDays: number;
 };
 
 const GET_ALL_USERS_STATS = `
@@ -32,6 +34,8 @@ const GET_ALL_USERS_STATS = `
       lateDays
       earlyLeaveDays
       hasScheduleAssignment
+      geoConfirmedDays
+      suspiciousDays
     }
   }
 `;
@@ -144,6 +148,8 @@ export async function atraceGetAllUsersStats(
         lateDays: number;
         earlyLeaveDays: number;
         hasScheduleAssignment: boolean;
+        geoConfirmedDays: number;
+        suspiciousDays: number;
       }>;
     }>(GET_ALL_USERS_STATS, { startDate, endDate, postId: postId ?? null }, {
       headers: {

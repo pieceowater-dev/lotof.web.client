@@ -40,6 +40,8 @@ type UserStats = {
   lateDays: number;
   earlyLeaveDays: number;
   hasScheduleAssignment: boolean;
+  geoConfirmedDays: number;
+  suspiciousDays: number;
 };
 
 const stats = ref<UserStats[]>([]);
@@ -946,6 +948,12 @@ function formatNumber(val: number, fractionDigits = 0) {
             <th class="px-3 py-2 text-center font-medium">
               {{ t('app.earlyLeaves') || 'Ранние уходы' }}
             </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.geoConfirmedDays') || 'Гео-подтв.' }}
+            </th>
+            <th class="px-3 py-2 text-center font-medium">
+              {{ t('app.suspiciousDays') || 'Подозрительные' }}
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -1046,6 +1054,23 @@ function formatNumber(val: number, fractionDigits = 0) {
                   class="text-gray-400"
                 >0</span>
               </td>
+              <td class="px-3 py-2 text-center">
+                <span class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded">
+                  {{ user.geoConfirmedDays }}
+                </span>
+              </td>
+              <td class="px-3 py-2 text-center">
+                <span
+                  v-if="user.suspiciousDays > 0"
+                  class="px-1.5 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded"
+                >
+                  {{ user.suspiciousDays }}
+                </span>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >0</span>
+              </td>
             </tr>
 
             <!-- Expanded details row -->
@@ -1054,7 +1079,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               class="bg-gray-50 dark:bg-gray-900"
             >
               <td
-                :colspan="8"
+                :colspan="10"
                 class="px-3 py-3"
               >
                 <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm">
