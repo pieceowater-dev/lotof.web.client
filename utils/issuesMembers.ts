@@ -1,4 +1,5 @@
 import { FilterPaginationLengthEnum } from '@gql-hub';
+import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 
 // Assignee/watcher/filter dropdowns should only offer namespace members who
 // have actually been granted an Issues role (staff.list) -- otherwise every
@@ -30,6 +31,6 @@ export async function loadIssuesStaffMemberOptions(
 
   return collected
     .filter((m) => staffUserIds.has(m.userId))
-    .map((m) => ({ label: m.nickname || m.username || m.email, value: m.userId }))
+    .map((m) => ({ label: memberDisplayNameWithFallback(m, m.email), value: m.userId }))
     .sort((a, b) => a.label.localeCompare(b.label));
 }
