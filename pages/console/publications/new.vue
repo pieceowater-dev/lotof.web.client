@@ -13,7 +13,8 @@ import { capitalCreatePublication } from '@/api/publications'
 
 definePageMeta({
   layout: false,
-  middleware: 'admin'
+  middleware: 'admin',
+  allowEditorRole: true,
 })
 
 useHead({ title: 'Новая публикация — Консоль' })

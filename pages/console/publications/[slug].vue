@@ -30,6 +30,7 @@ import { capitalArchivePublication, capitalGetPublicationBySlug, capitalUpdatePu
 definePageMeta({
   layout: false,
   middleware: 'admin',
+  allowEditorRole: true,
 });
 
 const route = useRoute();

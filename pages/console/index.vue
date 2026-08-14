@@ -63,18 +63,6 @@
               icon-color="text-emerald-600 dark:text-emerald-400"
             />
 
-            <!-- Publications Module -->
-            <AdminModuleCard
-              :title="t('admin.publications')"
-              :description="t('admin.publicationsDesc')"
-              icon="lucide:newspaper"
-              status="active"
-              href="/console/publications"
-              bg-gradient="bg-white dark:bg-slate-900"
-              icon-bg="bg-orange-100 dark:bg-orange-900/30"
-              icon-color="text-orange-600 dark:text-orange-400"
-            />
-
             <!-- Namespaces Module -->
             <AdminModuleCard
               :title="t('admin.namespaces')"
@@ -88,10 +76,12 @@
             />
           </template>
 
-          <!-- Guide Module -- visible to Owner/Admin and the restricted
-               Editor ("marketer") role alike. Kept second-to-last so it
-               still shows up front for Editor (the only card that role
-               ever sees) while sitting just before Team for full admins. -->
+          <!-- Guide and Publications -- visible to Owner/Admin and the
+               restricted Editor ("marketer") role alike (see admin.ts's
+               allowEditorRole flag for Publications' own page-level gate).
+               Kept second-to-last so they still show up front for Editor
+               (the only cards that role sees) while sitting just before
+               Team for full admins. -->
           <AdminModuleCard
             :title="t('admin.guide')"
             :description="t('admin.guideDesc')"
@@ -101,6 +91,17 @@
             bg-gradient="bg-white dark:bg-slate-900"
             icon-bg="bg-sky-100 dark:bg-sky-900/30"
             icon-color="text-sky-600 dark:text-sky-400"
+          />
+
+          <AdminModuleCard
+            :title="t('admin.publications')"
+            :description="t('admin.publicationsDesc')"
+            icon="lucide:newspaper"
+            status="active"
+            href="/console/publications"
+            bg-gradient="bg-white dark:bg-slate-900"
+            icon-bg="bg-orange-100 dark:bg-orange-900/30"
+            icon-color="text-orange-600 dark:text-orange-400"
           />
 
           <template v-if="isFullConsoleAdmin">

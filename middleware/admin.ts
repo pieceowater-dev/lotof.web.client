@@ -40,7 +40,13 @@ export default defineNuxtRouteMiddleware(async (to) => {
     }
 
     const role = Number(admin.role ?? -1);
-    if (role !== 0 && role !== 1) {
+    // Role 0 (owner) / 1 (admin) always pass. Role 2 (Editor) is normally
+    // rejected too -- most console pages (Analytics, Billing, Team,
+    // Namespaces) are full-admin-only -- but a page can opt in via
+    // `meta: { allowEditorRole: true }` (Publications does, since editing
+    // articles is exactly what the Editor role exists for).
+    const allowEditor = to.meta.allowEditorRole === true;
+    if (role !== 0 && role !== 1 && !(allowEditor && role === 2)) {
       return navigateTo('/');
     }
   } catch (error: any) {

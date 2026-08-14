@@ -201,7 +201,7 @@ import AdminHeader from '@/components/admin/AdminHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { capitalArchivePublication, capitalRestorePublication, capitalListPublications, type PublicationListRow } from '@/api/publications';
 
-definePageMeta({ middleware: 'admin' });
+definePageMeta({ middleware: 'admin', allowEditorRole: true });
 
 const { t } = useI18n();
 useHead({ title: `Консоль — ${t('admin.publications') || 'Публикации'}` });
