@@ -4,10 +4,15 @@ export type GeoPoint = {
 };
 
 /**
- * Radius for geo confirmation in meters
- * Used when verifying that a record's geolocation is within this distance
+ * Radius for geo confirmation in meters, purely for the confirmed/not-
+ * confirmed tooltip text -- the actual check happens server-side in
+ * atrace.msvc.tracker, which defaults GEO_CONFIRMATION_RADIUS_METERS to
+ * 20m (see its cfg.go). Keep this in sync with that value: there's no
+ * runtime endpoint exposing the live config value to the client, so if an
+ * operator ever overrides the env var in a specific deployment, this
+ * display-only number will disagree with what's actually enforced there.
  */
-export const GEO_CONFIRM_RADIUS_M = 50;
+export const GEO_CONFIRM_RADIUS_M = 20;
 
 const GEO_PROMPT_SKIP_KEY = 'geoPromptedAt';
 // Re-offer the native prompt after this long, rather than never again --
