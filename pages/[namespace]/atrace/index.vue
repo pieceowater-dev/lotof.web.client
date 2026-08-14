@@ -170,16 +170,35 @@ onMounted(async () => {
     if (process.client) {
         staleRefresh.start();
 
-        // Start onboarding tour if conditions are met (attendance mode only)
+        // First entry with nothing set up yet (attendance mode only): open
+        // the create-location modal directly instead of just pointing at it
+        // via the tour -- Atrace has nothing useful to show until at least
+        // one location exists, so this should happen as part of first entry,
+        // not wait on the user noticing the empty state and clicking
+        // themselves (mirrors menu's onboarding-wizard-on-first-visit
+        // pattern). Only for whoever can actually create one; a staff member
+        // with no create rights still gets the plain empty state + tour.
+        // loadPermissions() is awaited again here (it caches its in-flight
+        // promise, so this doesn't refetch) specifically because the
+        // fire-and-forget call above can't be relied on to have populated
+        // canCreatePost by this point.
         if (!isRouteTab.value) {
-            const { isCompleted, startTour } = useOnboarding();
-            const shouldShowTour = posts.value.length === 0 && !isCompleted(atraceTour.id);
-            if (shouldShowTour) {
-                // Wait a bit for DOM to settle
-                setTimeout(() => {
-                    startTour(atraceTour);
-                }, 1000);
-            }
+            (async () => {
+                await loadPermissions();
+                if (posts.value.length === 0 && canCreatePost.value) {
+                    setTimeout(() => {
+                        isCreateOpen.value = true;
+                    }, 500);
+                } else if (posts.value.length === 0) {
+                    const { isCompleted, startTour } = useOnboarding();
+                    if (!isCompleted(atraceTour.id)) {
+                        // Wait a bit for DOM to settle
+                        setTimeout(() => {
+                            startTour(atraceTour);
+                        }, 1000);
+                    }
+                }
+            })();
         }
     }
 });
