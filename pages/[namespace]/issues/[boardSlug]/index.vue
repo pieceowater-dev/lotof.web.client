@@ -515,6 +515,11 @@ async function submitQuickAdd() {
       priority: 1,
       status: boardStatuses.value[0]?.key,
       cycleId: defaultCycleIdForNewTask.value,
+      // Quick-add is a Trello-style "jot it down" flow -- defaulting the
+      // assignee to whoever's creating it means it shows up on their own
+      // "My tasks" filter immediately, rather than sitting unassigned until
+      // someone remembers to claim it.
+      assigneeUserId: currentUser.value?.id || undefined,
     });
     tasks.value = [...tasks.value, created];
     quickAddTitle.value = '';
