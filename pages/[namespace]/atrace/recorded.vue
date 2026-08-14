@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+import { isSafeRelativePath } from '@/utils/safeRelativePath';
 
 definePageMeta({
   layout: false
@@ -54,9 +55,6 @@ useHead(() => ({
 // anything that isn't a genuine single-leading-slash relative path, so a
 // malicious `u` falls back to tryCloseTabOrGoHome() instead of navigating
 // off-site.
-function isSafeRelativePath(path: string): boolean {
-  return path.startsWith('/') && !path.startsWith('//') && !path.startsWith('/\\');
-}
 const targetUrl = computed(() => {
   const u = route.query.u as string | undefined;
   if (!u) return null;

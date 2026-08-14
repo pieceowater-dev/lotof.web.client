@@ -5,6 +5,7 @@ import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
 import { useDowngradeBlockedModal, parseDowngradeRegressions } from '@/composables/useDowngradeBlockedModal';
 import { getErrorMessage } from '@/utils/types/errors';
+import { isSafeRelativePath } from '@/utils/safeRelativePath';
 import { getPlans, type Plan } from '@/api/atrace/plans/plans';
 import { subscribeToPlan, type Subscription } from '@/api/atrace/plans/subscribe';
 import { getActiveSubscription } from '@/api/atrace/plans/getActiveSubscription';
@@ -174,7 +175,7 @@ function formatInterval(interval: string): string {
 function resolveReturnTo(): string {
   const raw = route.query.returnTo;
   const value = Array.isArray(raw) ? raw[0] : raw;
-  if (typeof value === 'string' && value.startsWith('/') && !value.startsWith('//')) {
+  if (typeof value === 'string' && isSafeRelativePath(value)) {
     return value;
   }
   return `/${nsSlug.value}/atrace`;
