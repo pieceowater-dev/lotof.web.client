@@ -32,7 +32,19 @@ const exitingImpersonation = ref(false);
 async function onExitImpersonation() {
   if (exitingImpersonation.value) return;
   exitingImpersonation.value = true;
-  await exitImpersonation();
+  const ok = await exitImpersonation();
+  if (!ok) {
+    // Don't navigate on failure -- the session cookies were never swapped
+    // back, so reloading would just leave the owner impersonated with no
+    // visible sign of it (the banner reads owner_token, which is exactly
+    // what a failed exit leaves untouched).
+    exitingImpersonation.value = false;
+    toast.add({
+      title: t('app.exitImpersonationFailed') || 'Не удалось выйти из режима имперсонации',
+      color: 'red',
+    });
+    return;
+  }
   window.location.href = '/';
 }
 

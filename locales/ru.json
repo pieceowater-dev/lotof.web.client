@@ -348,6 +348,7 @@
     "scrollToTop": "Наверх",
     "comingSoon": "Скоро...",
     "comingSoonToast": "Скоро станет доступным!",
+    "exitImpersonationFailed": "Не удалось выйти из режима имперсонации",
     "getApp": "Подключить",
     "installedHead": "Ваши приложения",
     "availableHead": "Доступно к установке",

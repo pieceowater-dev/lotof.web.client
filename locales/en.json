@@ -345,6 +345,7 @@
     "scrollToTop": "Up",
     "comingSoon": "Coming soon...",
     "comingSoonToast": "Coming soon!",
+    "exitImpersonationFailed": "Failed to exit impersonation mode",
     "getApp": "Get App Free",
     "address": "Address",
     "city": "City",
