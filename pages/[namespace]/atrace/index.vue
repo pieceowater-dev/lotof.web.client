@@ -172,12 +172,13 @@ onMounted(async () => {
 
         // First entry with nothing set up yet (attendance mode only): open
         // the create-location modal directly instead of just pointing at it
-        // via the tour -- Atrace has nothing useful to show until at least
-        // one location exists, so this should happen as part of first entry,
-        // not wait on the user noticing the empty state and clicking
-        // themselves (mirrors menu's onboarding-wizard-on-first-visit
-        // pattern). Only for whoever can actually create one; a staff member
-        // with no create rights still gets the plain empty state + tour.
+        // via the tour's 'welcome'/'create-post' steps -- Atrace has nothing
+        // useful to show until at least one location exists, so this should
+        // happen as part of first entry, not wait on the user noticing the
+        // empty state and clicking themselves (mirrors menu's
+        // onboarding-wizard-on-first-visit pattern). Only for whoever can
+        // actually create one; a staff member with no create rights still
+        // gets the plain empty state + the full, untouched tour below.
         // loadPermissions() is awaited again here (it caches its in-flight
         // promise, so this doesn't refetch) specifically because the
         // fire-and-forget call above can't be relied on to have populated
@@ -185,22 +186,42 @@ onMounted(async () => {
         if (!isRouteTab.value) {
             (async () => {
                 await loadPermissions();
-                if (posts.value.length === 0 && canCreatePost.value) {
-                    setTimeout(() => {
-                        isCreateOpen.value = true;
-                    }, 500);
-                } else if (posts.value.length === 0) {
-                    const { isCompleted, startTour } = useOnboarding();
+                if (posts.value.length === 0) {
+                    const { isCompleted } = useOnboarding();
                     if (!isCompleted(atraceTour.id)) {
-                        // Wait a bit for DOM to settle
-                        setTimeout(() => {
-                            startTour(atraceTour);
-                        }, 1000);
+                        if (canCreatePost.value) {
+                            pendingTourResumeAfterCreate.value = true;
+                            setTimeout(() => {
+                                isCreateOpen.value = true;
+                            }, 500);
+                        } else {
+                            const { startTour } = useOnboarding();
+                            // Wait a bit for DOM to settle
+                            setTimeout(() => {
+                                startTour(atraceTour);
+                            }, 1000);
+                        }
                     }
                 }
             })();
         }
     }
+});
+
+// Once the auto-opened create modal above actually produces the first
+// post, resume the tour from 'posts-list' (index 2) -- skipping 'welcome'
+// and 'create-post' (index 0-1), whose target buttons the modal already
+// covered/replaced -- so the rest of the walkthrough (posts list,
+// attendance table, salary calculator, settings, help) still happens
+// instead of being silently dropped.
+const pendingTourResumeAfterCreate = ref(false);
+watch(posts, (list) => {
+    if (!pendingTourResumeAfterCreate.value || list.length === 0) return;
+    pendingTourResumeAfterCreate.value = false;
+    const { startTour } = useOnboarding();
+    setTimeout(() => {
+        startTour(atraceTour, 2);
+    }, 800);
 });
 
 watch(activeRouteId, (next, prev) => {
