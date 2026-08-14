@@ -51,6 +51,39 @@ const GET_RECORD_BY_POST_ID = `
   }
 `;
 
+// getRecords (unlike getRecordByPostId) isn't scoped to one location -- it's
+// permission-aware server-side: a caller without tracker.record.view is
+// force-narrowed to their own records regardless of what search is passed,
+// and a caller *with* it gets exactly what search asks for -- so always
+// passing search=<own userId> here is what makes this safely return "my
+// records" for a manager/owner too, not the whole namespace's.
+const GET_RECORDS = `
+  query GetRecords($search: String, $page: Int, $length: FilterPaginationLengthEnum, $sortField: String, $sortBy: FilterSortByEnum) {
+    getRecords(
+      filter: {
+        search: $search
+        pagination: { page: $page, length: $length }
+        sort: { field: $sortField, by: $sortBy }
+      }
+    ) {
+      records {
+        id
+        postId
+        userId
+        username
+        email
+        timestamp
+        method
+        suspicious
+        geoConfirmed
+        timezone
+        localDate
+      }
+      paginationInfo { count }
+    }
+  }
+`;
+
 // Helper: robust atraceClient request with auto-refresh on unauthorized
 async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string): Promise<T> {
   try {
@@ -105,5 +138,35 @@ export async function atraceGetRecordsByPostId(
       }
     );
     return response.getRecordByPostId;
+  }, nsSlug);
+}
+
+export async function atraceGetMyRecords(
+  userId: string,
+  options?: {
+    page?: number;
+    length?: 'TEN' | 'FIFTEEN' | 'TWENTY' | 'TWENTY_FIVE' | 'THIRTY' | 'THIRTY_FIVE' | 'FORTY' | 'FORTY_FIVE' | 'FIFTY' | 'FIFTY_FIVE' | 'SIXTY' | 'SIXTY_FIVE' | 'SEVENTY' | 'SEVENTY_FIVE' | 'EIGHTY' | 'EIGHTY_FIVE' | 'NINETY' | 'NINETY_FIVE' | 'ONE_HUNDRED';
+    sortField?: string;
+    sortBy?: 'ASC' | 'DESC';
+    nsSlug?: string;
+  }
+): Promise<PaginatedRecordList> {
+  const nsSlug = resolveAtraceNsSlug(options?.nsSlug);
+  const page = options?.page ?? 1;
+  const length = options?.length ?? 'FIFTY';
+  const sortField = options?.sortField ?? 'timestamp';
+  const sortBy = options?.sortBy ?? 'DESC';
+
+  return atraceRequestWithRefresh(async () => {
+    const response = await atraceClient.request<{ getRecords: PaginatedRecordList }>(
+      GET_RECORDS,
+      { search: userId, page, length, sortField, sortBy },
+      {
+        headers: {
+          Namespace: nsSlug || '',
+        }
+      }
+    );
+    return response.getRecords;
   }, nsSlug);
 }

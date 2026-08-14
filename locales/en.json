@@ -464,6 +464,7 @@
     "allowLatenessMakeupHint": "If an employee arrives late but stays at least as many minutes past shift end, the late arrival doesn't count.",
     "myStats": "My Stats",
     "myStatsSubtitle": "Schedule, attendance, and salary",
+    "myCheckInHistory": "Check-in history",
     "mySchedule": "My Schedule",
     "noScheduleAssigned": "No schedule assigned -- using the general monthly quota.",
     "attendedDays": "Days worked",
