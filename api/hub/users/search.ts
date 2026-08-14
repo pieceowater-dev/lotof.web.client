@@ -1,25 +1,17 @@
 import { hubClient, setGlobalAuthToken } from '@/api/clients';
 
-type UsersResp = {
-  users: {
-    rows: Array<{ id: string; email: string; username: string }>;
-    info: { count: number };
-  };
+type FindUserByEmailResp = {
+  findUserByEmail: { id: string; email: string; username: string } | null;
 };
 
-const USERS_BY_EMAIL = /* GraphQL */ `
-  query UsersByEmail($search: String!) {
-    users(filter: { search: $search, pagination: { page: 1, length: TEN } }) {
-      rows { id email username }
-      info { count }
-    }
+const FIND_USER_BY_EMAIL = /* GraphQL */ `
+  query FindUserByEmail($email: String!) {
+    findUserByEmail(email: $email) { id email username }
   }
 `;
 
 export async function hubFindUserByEmail(token: string, email: string) {
   setGlobalAuthToken(token);
-  const data = await hubClient.request<UsersResp>(USERS_BY_EMAIL, { search: email });
-  // Prefer exact email match if present
-  const exact = data.users.rows.find(r => r.email.toLowerCase() === email.toLowerCase());
-  return exact || data.users.rows[0] || null;
+  const data = await hubClient.request<FindUserByEmailResp>(FIND_USER_BY_EMAIL, { email });
+  return data.findUserByEmail || null;
 }
