@@ -143,7 +143,11 @@ function formatPrice(amountCents: number, currency: string): string {
 }
 
 function formatPlanFeature(feature: PlanFeature): string {
-  const localizedLabel = t('tasks.' + feature.label) || feature.label || feature.key;
+  // feature.label is a locale key, not free text -- matches the 'app.'
+  // namespace every other product's plans page resolves it against
+  // (atrace/menu/contacts), not 'tasks.' (an unrelated namespace, always a
+  // miss here), which fell back to displaying the raw key string.
+  const localizedLabel = t('app.' + feature.label) || feature.label || feature.key;
   return `${localizedLabel}: ${feature.value}`;
 }
 
@@ -373,6 +377,10 @@ watch([plans, activeSubscription], () => {
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {{ plan.name }}
             </h3>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">
+              {{ t('app.' + plan.description) || plan.description }}
+            </p>
 
             <div class="mb-6">
               <div class="flex items-baseline gap-2">
