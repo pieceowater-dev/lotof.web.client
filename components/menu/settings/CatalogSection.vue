@@ -25,6 +25,23 @@ const categories = ref<MenuCategory[]>([]);
 const categoriesLoading = ref(false);
 const selectedCategoryId = ref<string | null>(null);
 
+// Display-only grouping: each root category immediately followed by its
+// own children (both sorted by sortOrder) -- categories.value itself stays
+// a flat, single sortOrder namespace (that's what the up/down reorder
+// buttons and the backend operate on), this just presents it nested.
+const orderedCategories = computed(() => {
+  const roots = categories.value.filter((c) => !c.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+  const result: { category: MenuCategory; isChild: boolean }[] = [];
+  for (const root of roots) {
+    result.push({ category: root, isChild: false });
+    const children = categories.value
+      .filter((c) => c.parentId === root.id)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+    for (const child of children) result.push({ category: child, isChild: true });
+  }
+  return result;
+});
+
 const items = ref<MenuItem[]>([]);
 const itemsLoading = ref(false);
 const error = ref<string | null>(null);
@@ -312,8 +329,25 @@ async function handleCategorySubmit(payload: Record<string, any>) {
   }
 }
 
+function siblingsOf(c: MenuCategory): MenuCategory[] {
+  return categories.value
+    .filter((x) => (x.parentId || '') === (c.parentId || ''))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+function isFirstSibling(c: MenuCategory): boolean {
+  return siblingsOf(c)[0]?.id === c.id;
+}
+function isLastSibling(c: MenuCategory): boolean {
+  const s = siblingsOf(c);
+  return s[s.length - 1]?.id === c.id;
+}
+
 async function moveCategory(c: MenuCategory, direction: -1 | 1) {
-  const sorted = [...categories.value].sort((a, b) => a.sortOrder - b.sortOrder);
+  // Scoped to siblings (same parent) -- swapping sortOrder with whatever's
+  // globally next would move a child against an unrelated root category's
+  // position instead of the sibling actually shown next to it on screen.
+  const siblings = categories.value.filter((x) => (x.parentId || '') === (c.parentId || ''));
+  const sorted = [...siblings].sort((a, b) => a.sortOrder - b.sortOrder);
   const idx = sorted.findIndex((x) => x.id === c.id);
   const swapIdx = idx + direction;
   if (idx === -1 || swapIdx < 0 || swapIdx >= sorted.length) return;
@@ -323,9 +357,19 @@ async function moveCategory(c: MenuCategory, direction: -1 | 1) {
   try {
     const menuToken = await getToken();
     const { menuUpdateCategory } = await import('@/api/menu/category/update');
+    // Echo back every field the backend's blind-overwrite update would
+    // otherwise wipe (see handleCategorySubmit above for the same
+    // constraint) -- parentId/availability included, or reordering would
+    // silently un-nest a subcategory and clear its availability window.
     await Promise.all([
-      menuUpdateCategory(menuToken, nsSlug.value, { id: c.id, name: c.name, sortOrder: bOrder, isActive: c.isActive }),
-      menuUpdateCategory(menuToken, nsSlug.value, { id: other.id, name: other.name, sortOrder: aOrder, isActive: other.isActive }),
+      menuUpdateCategory(menuToken, nsSlug.value, {
+        id: c.id, name: c.name, sortOrder: bOrder, isActive: c.isActive,
+        parentId: c.parentId || '', availableFrom: c.availableFrom || '', availableTo: c.availableTo || '', availableDays: c.availableDays || '',
+      }),
+      menuUpdateCategory(menuToken, nsSlug.value, {
+        id: other.id, name: other.name, sortOrder: aOrder, isActive: other.isActive,
+        parentId: other.parentId || '', availableFrom: other.availableFrom || '', availableTo: other.availableTo || '', availableDays: other.availableDays || '',
+      }),
     ]);
     c.sortOrder = bOrder;
     other.sortOrder = aOrder;
@@ -337,6 +381,14 @@ async function moveCategory(c: MenuCategory, direction: -1 | 1) {
 }
 
 async function handleCategoryDelete(c: MenuCategory) {
+  // A deleted parent would leave its children pointing at a parentId that
+  // no longer resolves to anything -- orderedCategories only ever groups a
+  // child under a parent it can actually find, so an orphaned child would
+  // simply vanish from this list instead of surfacing as a root category.
+  if (categories.value.some((x) => x.parentId === c.id)) {
+    useToast().add({ title: t('menu.categoryHasChildrenHint') || 'This category has subcategories — move or delete them first.', color: 'red' });
+    return;
+  }
   if (!(await confirm({ message: t('menu.confirmDeleteCategory') || 'Delete this category?' }))) return;
   try {
     const menuToken = await getToken();
@@ -561,18 +613,24 @@ onMounted(async () => {
             {{ t('menu.noCategories') || 'No categories yet' }}
           </div>
           <div
-            v-for="(c, idx) in categories"
+            v-for="{ category: c, isChild } in orderedCategories"
             :key="c.id"
-            class="group flex items-center justify-between px-3 py-2 cursor-pointer text-sm border-l-2"
-            :class="c.id === selectedCategoryId
-              ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-500 font-medium'
-              : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50'"
+            class="group flex items-center justify-between py-2 cursor-pointer text-sm border-l-2"
+            :class="[
+              c.id === selectedCategoryId
+                ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-500 font-medium'
+                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50',
+              isChild ? 'pl-7 pr-3' : 'px-3',
+            ]"
             @click="selectedCategoryId = c.id"
           >
-            <span class="truncate">{{ c.name }}</span>
+            <span class="truncate flex items-center gap-1.5">
+              <UIcon v-if="isChild" name="lucide:corner-down-right" class="w-3 h-3 text-gray-400 flex-shrink-0" />
+              {{ c.name }}
+            </span>
             <div class="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
-              <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="idx === 0" @click.stop="moveCategory(c, -1)" />
-              <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="idx === categories.length - 1" @click.stop="moveCategory(c, 1)" />
+              <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="isFirstSibling(c)" @click.stop="moveCategory(c, -1)" />
+              <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="isLastSibling(c)" @click.stop="moveCategory(c, 1)" />
               <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click.stop="openEditCategory(c)" />
               <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click.stop="handleCategoryDelete(c)" />
             </div>
@@ -696,6 +754,7 @@ onMounted(async () => {
     <CategoryModal
       v-model="isCategoryModalOpen"
       :category="editingCategory"
+      :categories="categories"
       :saving="categorySaving"
       @submit="handleCategorySubmit"
     />

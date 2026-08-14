@@ -13,9 +13,11 @@ import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
 import { withRetry } from '@/utils/retry';
 import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHours';
+import { isCategoryAvailableNow } from '@/utils/categoryAvailability';
 import { buildTableTag, formatTableNumber } from '@/utils/tableTag';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
+import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 
 definePageMeta({ layout: false });
@@ -236,8 +238,8 @@ watch(data, (d) => {
   } else if (active.length === 1) {
     selectedBranchId.value = active[0].id;
   }
-  if (d.storefront.categories.length && !activeCategoryId.value) {
-    activeCategoryId.value = d.storefront.categories[0].id;
+  if (visibleCategories.value.length && !activeCategoryId.value) {
+    activeCategoryId.value = visibleCategories.value[0].id;
   }
   // Deep-link support: ?item=<id> auto-opens that product's detail sheet,
   // so a shared/bookmarked product link resolves to something on load.
@@ -273,10 +275,30 @@ watch(selectedBranchId, async (id) => {
   }
 }, { immediate: true });
 
+// Root categories currently within their configured time-of-day/day-of-week
+// window (categories with no restriction at all are always included) --
+// nav pills and top-level sections are built from this, not the raw list,
+// so a "Breakfast" category set to 08:00-12:00 actually disappears outside
+// that window instead of just having the doc claim it does.
+const categoryAvailability = computed(() => {
+  const map: Record<string, boolean> = {};
+  for (const c of data.value?.storefront.categories || []) {
+    map[c.id] = isCategoryAvailableNow(c);
+  }
+  return map;
+});
+const visibleCategories = computed(() => {
+  return (data.value?.storefront.categories || []).filter((c) => !c.parentId && categoryAvailability.value[c.id]);
+});
+function visibleChildrenOf(parentId: string): MenuCategory[] {
+  return (data.value?.storefront.categories || []).filter((c) => c.parentId === parentId && categoryAvailability.value[c.id]);
+}
+
 const visibleItemsByCategory = computed(() => {
   const result: Record<string, MenuItem[]> = {};
   const byCategory = data.value?.itemsByCategory || {};
   for (const [catId, items] of Object.entries(byCategory)) {
+    if (categoryAvailability.value[catId] === false) continue;
     result[catId] = selectedBranchId.value
       ? items.filter((i) => !i.excludedBranchIds.includes(selectedBranchId.value) && !stoppedItemIds.value.has(i.id))
       : items;
@@ -1024,7 +1046,7 @@ useHead(() => {
 
           <div v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto">
             <button
-              v-for="c in data.storefront.categories"
+              v-for="c in visibleCategories"
               :key="c.id"
               :ref="(el) => setNavRef(c.id, el)"
               class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm"
@@ -1068,7 +1090,7 @@ useHead(() => {
         <!-- Category sections -->
         <div v-else class="max-w-3xl mx-auto px-4 py-4 pb-2 space-y-8">
           <section
-            v-for="c in data.storefront.categories"
+            v-for="c in visibleCategories"
             :key="c.id"
             :ref="(el) => setCategoryRef(c.id, el)"
             :data-category-id="c.id"
@@ -1093,6 +1115,34 @@ useHead(() => {
             </div>
             <div v-if="!(visibleItemsByCategory[c.id] || []).length" class="text-center py-6 text-gray-400 text-sm">
               {{ t('menu.noMenuItems') || 'No items yet' }}
+            </div>
+
+            <!-- Subcategories nested under their parent, own heading + grid -->
+            <div
+              v-for="child in visibleChildrenOf(c.id)"
+              :key="child.id"
+              class="mt-6"
+            >
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ child.name }}</h3>
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
+                <ItemCard
+                  v-for="item in visibleItemsByCategory[child.id] || []"
+                  :key="item.id"
+                  :item="item"
+                  :badges="data.storefront.badges"
+                  :currency="data.storefront.brandSettings?.currencyCode"
+                  :primary-color="primaryColor"
+                  :secondary-color="secondaryColor"
+                  :quantity="cartQuantityFor(item.id)"
+                  @open="openItemDetail(item)"
+                  @add="addToCart(item)"
+                  @increment="addToCart(item)"
+                  @decrement="decrementItem(item)"
+                />
+              </div>
+              <div v-if="!(visibleItemsByCategory[child.id] || []).length" class="text-center py-4 text-gray-400 text-sm">
+                {{ t('menu.noMenuItems') || 'No items yet' }}
+              </div>
             </div>
           </section>
         </div>
