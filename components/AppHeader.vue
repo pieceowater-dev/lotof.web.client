@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
+import { useImpersonation } from '@/composables/useImpersonation';
 import GuideWidget from '@/components/guide/GuideWidget.vue';
 
 const { t } = useI18n();
@@ -24,6 +25,16 @@ const { resolveAppDestination, ensureAppInstallStatus } = useAppInstallStatus();
 watch(currentNamespace, (ns) => {
   if (ns) ensureAppInstallStatus(ns);
 }, { immediate: true });
+
+const { isImpersonating, exitImpersonation } = useImpersonation();
+const impersonating = computed(() => isImpersonating());
+const exitingImpersonation = ref(false);
+async function onExitImpersonation() {
+  if (exitingImpersonation.value) return;
+  exitingImpersonation.value = true;
+  await exitImpersonation();
+  window.location.href = '/';
+}
 
 const { canSeeConsole, refreshConsoleAccess } = useConsoleAccess();
 watch(
@@ -172,6 +183,22 @@ const goHome = () => {
       class="flex w-full items-center justify-between px-4 py-2 md:px-5 md:py-2 lg:px-6"
     >
       <div
+        v-if="impersonating"
+        class="flex items-center gap-2 shrink-0 rounded-full bg-amber-100 px-3 py-1 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200"
+      >
+        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+        <span class="max-w-[10rem] truncate text-xs font-medium md:max-w-xs md:text-sm">{{ user?.email || user?.username }}</span>
+        <button
+          type="button"
+          class="shrink-0 text-amber-700 hover:text-amber-950 dark:text-amber-300 dark:hover:text-white"
+          :disabled="exitingImpersonation"
+          @click="onExitImpersonation"
+        >
+          <Icon name="lucide:x" class="h-3.5 w-3.5" />
+        </button>
+      </div>
+      <div
+        v-else
         ref="brandRef"
         class="flex items-center space-x-1 cursor-pointer shrink-0"
         @click="goHome"

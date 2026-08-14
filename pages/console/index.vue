@@ -30,6 +30,35 @@
       </div>
     </div>
 
+    <div
+      v-if="isOwner"
+      class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"
+    >
+      <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+        <input
+          v-model="impersonateEmail"
+          type="email"
+          placeholder="email@..."
+          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 dark:text-white"
+          @keyup.enter="onImpersonate"
+        >
+        <button
+          type="button"
+          class="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          :disabled="!impersonateEmail || impersonateLoading"
+          @click="onImpersonate"
+        >
+          {{ impersonateLoading ? '...' : 'Войти как' }}
+        </button>
+      </div>
+      <p
+        v-if="impersonateError"
+        class="mt-1 text-xs text-red-600 dark:text-red-400"
+      >
+        {{ impersonateError }}
+      </p>
+    </div>
+
     <!-- Main Content -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
       <!-- Modules Grid -->
@@ -124,10 +153,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
+import { useImpersonation } from '@/composables/useImpersonation';
 
 definePageMeta({
   middleware: 'console-access',
@@ -146,6 +176,29 @@ watch(
   () => refreshConsoleAccess(),
   { immediate: true },
 );
+
+// Client-side visibility only -- real enforcement is server-side
+// (OWNER_EMAIL check in hub.gtw's /auth/impersonate). This just keeps the
+// control from showing up for other admins, who'd only ever get a 403.
+const isOwner = computed(() => (user.value?.email || '').trim().toLowerCase() === 'pieceowater@gmail.com');
+
+const { startImpersonation } = useImpersonation();
+const impersonateEmail = ref('');
+const impersonateLoading = ref(false);
+const impersonateError = ref('');
+async function onImpersonate() {
+  const email = impersonateEmail.value.trim();
+  if (!email || impersonateLoading.value) return;
+  impersonateLoading.value = true;
+  impersonateError.value = '';
+  const result = await startImpersonation(email);
+  if (!result.success) {
+    impersonateError.value = result.error || 'Не удалось';
+    impersonateLoading.value = false;
+    return;
+  }
+  window.location.href = '/';
+}
 </script>
 
 <style scoped>
