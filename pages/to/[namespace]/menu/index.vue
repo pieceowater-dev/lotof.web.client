@@ -219,6 +219,29 @@ const brandPhone = computed(() => {
 });
 const brandSocialLinks = computed(() => parseSocialLinks(data.value?.storefront.brandSettings?.socialLinks));
 
+// Root categories currently within their configured time-of-day/day-of-week
+// window (categories with no restriction at all are always included) --
+// nav pills and top-level sections are built from this, not the raw list,
+// so a "Breakfast" category set to 08:00-12:00 actually disappears outside
+// that window instead of just having the doc claim it does. Declared
+// before the watch(data, ...) below on purpose -- that watcher runs with
+// {immediate: true}, firing synchronously during this script's own setup
+// (unlike onMounted), so it needs visibleCategories to already be past its
+// temporal dead zone by the time its callback references it.
+const categoryAvailability = computed(() => {
+  const map: Record<string, boolean> = {};
+  for (const c of data.value?.storefront.categories || []) {
+    map[c.id] = isCategoryAvailableNow(c);
+  }
+  return map;
+});
+const visibleCategories = computed(() => {
+  return (data.value?.storefront.categories || []).filter((c) => !c.parentId && categoryAvailability.value[c.id]);
+});
+function visibleChildrenOf(parentId: string): MenuCategory[] {
+  return (data.value?.storefront.categories || []).filter((c) => c.parentId === parentId && categoryAvailability.value[c.id]);
+}
+
 watch(data, (d) => {
   if (!d) return;
   const active = visibleBranches.value;
@@ -274,25 +297,6 @@ watch(selectedBranchId, async (id) => {
     logError('[shared/menu] getPublicStopList failed', e);
   }
 }, { immediate: true });
-
-// Root categories currently within their configured time-of-day/day-of-week
-// window (categories with no restriction at all are always included) --
-// nav pills and top-level sections are built from this, not the raw list,
-// so a "Breakfast" category set to 08:00-12:00 actually disappears outside
-// that window instead of just having the doc claim it does.
-const categoryAvailability = computed(() => {
-  const map: Record<string, boolean> = {};
-  for (const c of data.value?.storefront.categories || []) {
-    map[c.id] = isCategoryAvailableNow(c);
-  }
-  return map;
-});
-const visibleCategories = computed(() => {
-  return (data.value?.storefront.categories || []).filter((c) => !c.parentId && categoryAvailability.value[c.id]);
-});
-function visibleChildrenOf(parentId: string): MenuCategory[] {
-  return (data.value?.storefront.categories || []).filter((c) => c.parentId === parentId && categoryAvailability.value[c.id]);
-}
 
 const visibleItemsByCategory = computed(() => {
   const result: Record<string, MenuItem[]> = {};
