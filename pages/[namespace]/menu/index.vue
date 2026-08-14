@@ -375,7 +375,18 @@ async function resetPageAndReload() {
   loadOrdersBundle();
 }
 
+// Shared between loadOrders and loadOrdersBundle, since both write
+// orders.value/totalCount.value -- rapid filter changes (branch/type
+// toggled a few times quickly, or a slow response overtaken by a newer
+// one) can leave two requests in flight at once with no guarantee the one
+// matching the *latest* filters resolves last. Each call captures its own
+// sequence number and only applies its response if it's still current by
+// the time the response arrives, so a stale response can never overwrite
+// what a newer request already applied.
+let ordersRequestSeq = 0;
+
 async function loadOrders(opts: { silent?: boolean } = {}) {
+  const seq = ++ordersRequestSeq;
   if (!opts.silent) loading.value = true;
   error.value = null;
   try {
@@ -386,6 +397,7 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
       page: page.value,
       length: PAGE_LENGTH_BY_COUNT[pageCount.value] || PaginationLength.FIFTY,
     });
+    if (seq !== ordersRequestSeq) return;
     orders.value = res.orders;
     totalCount.value = res.count;
     // A real (non-silent) reload means the filters/search changed — the
@@ -394,10 +406,11 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
     // driving the summary footer. Silent background polls leave it alone.
     if (!opts.silent) selectedOrders.value = [];
   } catch (e) {
+    if (seq !== ordersRequestSeq) return;
     logError('[menu/index] loadOrders failed', e);
     if (!opts.silent) error.value = getErrorMessage(e, t) || 'Failed to load orders';
   } finally {
-    if (!opts.silent) loading.value = false;
+    if (seq === ordersRequestSeq && !opts.silent) loading.value = false;
   }
 }
 
@@ -410,6 +423,7 @@ async function loadOrders(opts: { silent?: boolean } = {}) {
 // these (pagination-only reload; a status change already updates its row
 // in place and just needs fresh counts, not a full list refetch).
 async function loadOrdersBundle(opts: { silent?: boolean } = {}) {
+  const seq = ++ordersRequestSeq;
   if (!opts.silent) loading.value = true;
   error.value = null;
   try {
@@ -420,18 +434,20 @@ async function loadOrdersBundle(opts: { silent?: boolean } = {}) {
       page: page.value,
       length: PAGE_LENGTH_BY_COUNT[pageCount.value] || PaginationLength.FIFTY,
     });
+    if (seq !== ordersRequestSeq) return;
     orders.value = res.orders;
     totalCount.value = res.count;
     summary.value = res.summary;
     statusCounts.value = Object.fromEntries(STATUSES.map((s) => [s, res.statusCounts[s] || 0]));
     if (!opts.silent) selectedOrders.value = [];
   } catch (e) {
+    if (seq !== ordersRequestSeq) return;
     logError('[menu/index] loadOrdersBundle failed', e);
     if (!opts.silent) error.value = getErrorMessage(e, t) || 'Failed to load orders';
   } finally {
-    if (!opts.silent) loading.value = false;
+    if (seq === ordersRequestSeq && !opts.silent) loading.value = false;
   }
-  loadMyOrdersCount();
+  if (seq === ordersRequestSeq) loadMyOrdersCount();
 }
 
 async function loadStatusCounts() {
