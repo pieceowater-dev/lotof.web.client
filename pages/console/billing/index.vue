@@ -16,7 +16,7 @@
         </button>
         <button
           v-if="activeTab === 'subscriptions'"
-          class="flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-white hover:bg-emerald-800 transition-colors shadow-lg shadow-emerald-500/30"
+          class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
           @click="openCashPaymentModal"
         >
           <Icon name="lucide:banknote" class="h-4 w-4" />
