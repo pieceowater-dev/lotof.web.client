@@ -1612,6 +1612,7 @@
     "stopListPickBranch": "Stop list: pick a branch",
     "stopListPickBranchHint": "Pick a branch to manage",
     "name": "Name",
+    "customerName": "Name",
     "address": "Address",
     "phone": "Phone",
     "city": "City",

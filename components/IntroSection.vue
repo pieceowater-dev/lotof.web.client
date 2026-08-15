@@ -1,5 +1,22 @@
 <template>
-  <div class="flex flex-col items-center justify-center min-h-[65vh] text-center">
+  <div class="flex flex-col items-center justify-center min-h-[65vh] text-center relative">
+    <div class="absolute right-0 top-0 flex gap-1">
+      <button
+        v-for="lang in languageOptions"
+        :key="lang.value"
+        type="button"
+        class="h-8 w-8 rounded-full border text-sm transition-all"
+        :class="locale === lang.value
+          ? 'bg-blue-50 border-blue-300 dark:bg-blue-900/30 dark:border-blue-700'
+          : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700'"
+        :aria-label="lang.label"
+        :title="lang.label"
+        @click="setLocale(lang.value)"
+      >
+        {{ lang.flag }}
+      </button>
+    </div>
+
     <div class="flex flex-col items-center justify-center my-10">
       <picture>
         <source srcset="/assets/logo.webp" type="image/webp">
@@ -37,8 +54,14 @@
 import { ref, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 
-const { t } = useI18n();
+const { t, locale, setLocale } = useI18n();
 const { loginRedirecting } = useAuth();
+
+const languageOptions = [
+  { value: 'ru', label: 'Русский', flag: '🇷🇺' },
+  { value: 'kk', label: 'Қазақша', flag: '🇰🇿' },
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+] as const;
 // login() itself is synchronous -- it just kicks off window.location.href --
 // so a local isLoading reset in a finally block would flip straight back to
 // false before the (possibly slow) navigation to Google actually happens,

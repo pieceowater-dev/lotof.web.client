@@ -262,7 +262,7 @@ watch(() => props.isOpen, (newVal) => {
           size="sm"
           @click="handleCreateTag"
         >
-          {{ isSelectMode ? t('common.create') : t('common.add') }}
+          {{ isSelectMode ? t('common.add') : t('common.create') }}
         </UButton>
       </div>
 

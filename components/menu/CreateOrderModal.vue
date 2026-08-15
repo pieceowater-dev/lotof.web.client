@@ -264,7 +264,7 @@ function handleSubmit() {
                 @update:model-value="updatePhoneValue"
               />
             </UFormGroup>
-            <UFormGroup :label="t('menu.name') || 'Name'">
+            <UFormGroup :label="t('menu.customerName') || 'Name'">
               <UInput v-model="form.customerName" icon="lucide:user" :ui="{ rounded: 'rounded-xl' }" />
             </UFormGroup>
           </div>

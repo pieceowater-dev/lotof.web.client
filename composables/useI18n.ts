@@ -17,12 +17,6 @@ function normalizeLocale(value?: string | null): Locale | undefined {
   return undefined;
 }
 
-function detectFromAcceptLanguage(value?: string): Locale | undefined {
-  if (!value) return undefined;
-  const first = value.split(',').map((part) => part.trim()).find(Boolean);
-  return normalizeLocale(first);
-}
-
 const messages: Record<Locale, Record<string, any>> = {
   en: en as any,
   kk: kk as any,
@@ -30,18 +24,10 @@ const messages: Record<Locale, Record<string, any>> = {
 };
 
 export function useI18n() {
-  const locale = useState<Locale>('i18n-locale', () => {
-    if (process.server) {
-      const acceptLanguage = useRequestHeaders(['accept-language'])['accept-language'];
-      return detectFromAcceptLanguage(acceptLanguage) || DEFAULT_LOCALE;
-    }
-
-    if (process.client) {
-      return normalizeLocale(navigator.language) || DEFAULT_LOCALE;
-    }
-
-    return DEFAULT_LOCALE;
-  });
+  // Defaults to Russian for everyone regardless of browser/OS locale --
+  // an explicit product decision, not a detection bug. An explicit choice
+  // (stored in localStorage, synced below) always wins over this default.
+  const locale = useState<Locale>('i18n-locale', () => DEFAULT_LOCALE);
 
   const isClientLocaleSynced = useState<boolean>('i18n-client-synced', () => false);
   if (process.client && !isClientLocaleSynced.value) {

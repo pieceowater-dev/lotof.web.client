@@ -921,9 +921,10 @@ watch([articlesSearch, selectedArticleTag], () => {
                 variant="ghost"
                 size="xs"
                 class="mt-1"
-                :aria-label="t('app.logout') || 'Logout'"
                 @click="handleLogout"
-              />
+              >
+                {{ t('app.logout') || 'Logout' }}
+              </UButton>
             </div>
             <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ greeting }}</p>
             <h2 class="mt-1 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ username }}</h2>

@@ -808,7 +808,7 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
               </div>
             </template>
             <div v-else class="space-y-2.5">
-              <UFormGroup :label="t('menu.name') || 'Name'">
+              <UFormGroup :label="t('menu.customerName') || 'Name'">
                 <UInput v-model="editForm.customerName" size="sm" />
               </UFormGroup>
               <UFormGroup :label="t('menu.phone') || 'Phone'" required :error="!isEditFormValid">
