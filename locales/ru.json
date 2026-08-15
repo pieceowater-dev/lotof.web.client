@@ -138,6 +138,9 @@
     "period": "Период",
     "locations": "Локации",
     "atraceAddLocation": "+ Добавить локацию",
+    "atraceFirstLocationTitle": "Добавьте первую локацию",
+    "atraceFirstLocationSubtitle": "Здесь будет отмечаться посещаемость — команда отмечается именно тут, так что давайте её настроим.",
+    "atraceFirstLocationSubmit": "Создать локацию",
     "noPostsTitle": "Пока нет локаций",
     "noPostsDesc": "Добавьте первую локацию, чтобы начать отслеживать посещаемость.",
     "route": {
@@ -795,6 +798,7 @@
     "results": "записей",
     "rowsPerPage": "Строк на странице",
     "generate": "Сгенерировать",
+    "later": "Позже",
     "copy": "Копировать",
     "copied": "Скопировано!",
     "reset": "Сбросить",

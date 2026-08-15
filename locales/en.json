@@ -137,6 +137,9 @@
     "location": "Location",
     "period": "Period",
     "atraceAddLocation": "+ Add location",
+    "atraceFirstLocationTitle": "Add your first location",
+    "atraceFirstLocationSubtitle": "This is where attendance is tracked — your team checks in here, so let's set it up.",
+    "atraceFirstLocationSubmit": "Create location",
     "noPostsTitle": "No locations yet",
     "noPostsDesc": "Add your first location to start tracking attendance.",
     "route": {
@@ -799,6 +802,7 @@
     "results": "results",
     "rowsPerPage": "Rows per page",
     "generate": "Generate",
+    "later": "Later",
     "copy": "Copy",
     "copied": "Copied!",
     "reset": "Reset",

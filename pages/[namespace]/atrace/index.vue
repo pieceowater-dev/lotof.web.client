@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import CreatePostModal from '@/components/atrace/CreatePostModal.vue';
+import FirstLocationScreen from '@/components/atrace/FirstLocationScreen.vue';
 import CoverageApprovalBanner from '@/components/atrace/CoverageApprovalBanner.vue';
 import LeaveApprovalBanner from '@/components/atrace/LeaveApprovalBanner.vue';
 import EditPostModal from '@/components/atrace/EditPostModal.vue';
@@ -192,7 +193,7 @@ onMounted(async () => {
                         if (canCreatePost.value) {
                             pendingTourResumeAfterCreate.value = true;
                             setTimeout(() => {
-                                isCreateOpen.value = true;
+                                isFirstLocationOpen.value = true;
                             }, 500);
                         } else {
                             const { startTour } = useOnboarding();
@@ -215,6 +216,25 @@ onMounted(async () => {
 // attendance table, salary calculator, settings, help) still happens
 // instead of being silently dropped.
 const pendingTourResumeAfterCreate = ref(false);
+
+// A namespace with zero locations gets the full-screen first-run flow --
+// its longer form (map, PIN, timezone) deserves more room than the cramped
+// modal every subsequent "add location" click reuses. Both routes end up
+// creating a post through the exact same handleCreate().
+const isFirstLocationOpen = ref(false);
+function openCreateLocation() {
+    if (posts.value.length === 0) {
+        isFirstLocationOpen.value = true;
+    } else {
+        isCreateOpen.value = true;
+    }
+}
+async function submitFirstLocation() {
+    await handleCreate();
+    if (posts.value.length > 0) {
+        isFirstLocationOpen.value = false;
+    }
+}
 watch(posts, (list) => {
     if (!pendingTourResumeAfterCreate.value || list.length === 0) return;
     pendingTourResumeAfterCreate.value = false;
@@ -362,7 +382,7 @@ onBeforeUnmount(() => {
       :can-edit="canEditPost"
       @select="(id) => (selectedPostId = id)"
       @edit="openEdit"
-      @create="isCreateOpen = true"
+      @create="openCreateLocation"
       @load-more="loadMorePosts"
     />
 
@@ -374,7 +394,7 @@ onBeforeUnmount(() => {
       :show-skeletons="showSkeletons"
       :can-create="canCreatePost"
       @update:selected-post-id="(id) => (selectedPostId = id)"
-      @create="isCreateOpen = true"
+      @create="openCreateLocation"
     />
 
     <AttendancePanel
@@ -385,7 +405,7 @@ onBeforeUnmount(() => {
       :loading="loading"
       :error="error"
       :can-create="canCreatePost"
-      @create="isCreateOpen = true"
+      @create="openCreateLocation"
     />
   </div>
 
@@ -407,6 +427,13 @@ onBeforeUnmount(() => {
     v-model="isCreateOpen"
     v-model:form="form"
     @submit="handleCreate"
+  />
+
+  <!-- First-location full-screen flow -->
+  <FirstLocationScreen
+    v-model="isFirstLocationOpen"
+    v-model:form="form"
+    @submit="submitFirstLocation"
   />
 
   <!-- Edit Post Modal -->
