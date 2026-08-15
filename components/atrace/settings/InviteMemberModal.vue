@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
-import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
+import { atraceRoleLabel, atraceRoleDescription } from '@/utils/atrace/roleLabel';
 
 const props = defineProps<{
   modelValue: boolean;
@@ -26,6 +26,11 @@ const {
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
+});
+
+const inviteRoleDescription = computed(() => {
+  const selected = roles.value.find(r => r.id === inviteRoleId.value);
+  return selected ? atraceRoleDescription(selected.name, t) : '';
 });
 
 async function handleSubmit() {
@@ -107,6 +112,9 @@ onMounted(() => {
               value-attribute="value"
               :placeholder="t('app.selectRole') || 'Select a role'"
             />
+            <p v-if="inviteRoleDescription" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              {{ inviteRoleDescription }}
+            </p>
           </UFormGroup>
         </div>
 

@@ -39,6 +39,16 @@ const roleOptions = computed(() => [
 
 const role = ref<RoleSelection>(NONE);
 
+const ROLE_DESCRIPTION_KEYS: Record<string, string> = {
+  MANAGER: 'tasks.roleManagerDesc',
+  ASSIGNEE: 'tasks.roleAssigneeDesc',
+  VIEWER: 'tasks.roleViewerDesc',
+};
+const roleDescription = computed(() => {
+  const key = ROLE_DESCRIPTION_KEYS[role.value];
+  return key ? t(key) : '';
+});
+
 watch(() => [props.modelValue, props.member], () => {
   if (!props.modelValue) return;
   role.value = props.currentRole || NONE;
@@ -77,6 +87,9 @@ function handleSubmit() {
             option-attribute="label"
             :popper="{ strategy: 'fixed' }"
           />
+          <p v-if="roleDescription" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {{ roleDescription }}
+          </p>
         </UFormGroup>
       </div>
 

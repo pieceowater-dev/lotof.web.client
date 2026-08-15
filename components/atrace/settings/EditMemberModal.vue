@@ -2,7 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import type { Role } from '@/api/atrace/role/getRoles';
 import type { AtraceMember } from '@/composables/useAtraceMembers';
-import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
+import { atraceRoleLabel, atraceRoleDescription } from '@/utils/atrace/roleLabel';
 import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const props = defineProps<{
@@ -23,6 +23,11 @@ const { t } = useI18n();
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value: boolean) => emit('update:modelValue', value),
+});
+
+const editRoleDescription = computed(() => {
+  const selected = props.roles.find(r => r.id === editForm.value.roleId);
+  return selected ? atraceRoleDescription(selected.name, t) : '';
 });
 </script>
 
@@ -89,6 +94,9 @@ const isOpen = computed({
             option-attribute="label"
             value-attribute="value"
           />
+          <p v-if="editRoleDescription" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            {{ editRoleDescription }}
+          </p>
         </UFormGroup>
 
         <!-- Working Requirements -->
