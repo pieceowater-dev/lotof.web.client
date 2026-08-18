@@ -55,7 +55,7 @@ export const ALL_APPS: AppConfig[] = [
     icon: 'lucide:package',
     titleKey: 'app.goods',
     descriptionKey: 'app.goodsDesc',
-    canAdd: false,
+    canAdd: true, // LOCAL-ONLY, uncommitted: flipped for the local browser test session
   },
   // Temporarily out of the lineup — not implemented yet and not currently
   // planned for the near term. Left here (not deleted) so re-adding one is
