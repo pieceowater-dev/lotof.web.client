@@ -156,6 +156,7 @@ const PAGE_LENGTH_BY_COUNT: Record<number, string> = {
 const error = ref<string | null>(null);
 
 const branches = ref<MenuBranch[]>([]);
+const brandName = ref('');
 const selectedBranchIds = ref<string[]>([]);
 const selectedStatuses = ref<string[]>([]);
 const search = ref('');
@@ -350,6 +351,19 @@ async function loadBranches() {
     branches.value = res.branches;
   } catch (e) {
     logError('[menu/index] loadBranches failed', e);
+  }
+}
+
+// Used to open the WhatsApp button with a pre-filled tracking message
+// (OrderDetailModal.vue) instead of an empty chat.
+async function loadBrandName() {
+  try {
+    const menuToken = await getToken();
+    const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
+    const brand = await menuGetBrandSettings(menuToken, nsSlug.value);
+    brandName.value = brand?.name || '';
+  } catch (e) {
+    logError('[menu/index] loadBrandName failed', e);
   }
 }
 
@@ -724,6 +738,7 @@ onMounted(async () => {
   restoreQuickFilters();
   restoreLiveUpdatesPref();
   loadBranches();
+  loadBrandName();
   loadSourceTagOptions();
   loadParticipantOptions();
   fetchUser().then(() => { loadMyOrdersCount(); checkOnboarding(); });
@@ -1202,6 +1217,7 @@ async function handleCreateOrder(payload: any) {
       :order="selectedOrder"
       :branches="branches"
       :source-tag-options="sourceTagOptions"
+      :brand-name="brandName"
       @status-changed="handleDetailStatusChanged"
       @open-order="handleOpenOrderById"
     />

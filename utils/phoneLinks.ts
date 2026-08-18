@@ -14,7 +14,8 @@ export function telHref(raw: string | null | undefined): string {
   return digits ? `tel:+${digits}` : '';
 }
 
-export function whatsappHref(raw: string | null | undefined): string {
+export function whatsappHref(raw: string | null | undefined, text?: string): string {
   const digits = phoneDigitsForLink(raw);
-  return digits ? `https://wa.me/${digits}` : '';
+  if (!digits) return '';
+  return text ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : `https://wa.me/${digits}`;
 }
