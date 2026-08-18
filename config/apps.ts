@@ -48,6 +48,15 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.attendanceDesc',
     canAdd: true,
   },
+  {
+    name: 'lota Goods',
+    bundle: 'pieceowater.goods',
+    address: 'goods',
+    icon: 'lucide:package',
+    titleKey: 'app.goods',
+    descriptionKey: 'app.goodsDesc',
+    canAdd: false,
+  },
   // Temporarily out of the lineup — not implemented yet and not currently
   // planned for the near term. Left here (not deleted) so re-adding one is
   // just uncommenting rather than re-authoring the whole entry.

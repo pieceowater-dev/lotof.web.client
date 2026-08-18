@@ -3,6 +3,7 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
+import { useGoodsToken } from '@/composables/useGoodsToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
@@ -25,7 +26,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // chekalka.kz visitor with no token got silently bounced to "/" before
   // ever seeing the page, since nothing below exempts it either -- it has
   // no "/atrace" substring, so isAtraceRoute never applied to save it.
-  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/chekalka') return;
+  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/goods' || to.path === '/chekalka') return;
   // Allow public access to public post page
   if (/^\/to\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
   // Allow public, unauthenticated access to the public storefront page
@@ -38,6 +39,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const isContactsRoute = /\/contacts(\/|$)/.test(to.path);
   const isMenuRoute = /\/menu(\/|$)/.test(to.path);
   const isTasksRoute = /\/issues(\/|$)/.test(to.path);
+  const isGoodsRoute = /\/goods(\/|$)/.test(to.path);
   let token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) {
     // Try one refresh before redirecting to root when access token is expired.
@@ -151,6 +153,27 @@ export default defineNuxtRouteMiddleware(async (to) => {
     const { ensure, current } = useTasksToken();
     const tasksToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
     if (!tasksToken) {
+      try {
+        const full = to.fullPath || to.path;
+        const trimmed = full.startsWith('/') ? full.slice(1) : full;
+        localStorage.setItem('back-to', trimmed);
+      } catch {}
+      // auth-needed tells the homepage to auto-trigger the login flow on
+      // arrival instead of leaving the visitor to notice and click "Log In"
+      // themselves -- same flag the /atrace/qr redirect already used.
+      return navigateTo({ path: '/', query: { 'auth-needed': 'true' } });
+    }
+  }
+
+  if (isGoodsRoute) {
+    const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
+    // Skip token check for plans page - it doesn't require app token
+    if (to.path.includes('/goods/plans')) {
+      return;
+    }
+    const { ensure, current } = useGoodsToken();
+    const goodsToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
+    if (!goodsToken) {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;

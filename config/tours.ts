@@ -123,6 +123,52 @@ export const menuTour: TourConfig = {
   ],
 };
 
+export const goodsTour: TourConfig = {
+  id: 'goods-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="goods-warehouse-title"]',
+      titleKey: 'goods.tourWelcomeTitle',
+      contentKey: 'goods.tourWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'register',
+      target: '[data-tour="goods-register-btn"]',
+      titleKey: 'goods.tourRegisterTitle',
+      contentKey: 'goods.tourRegisterContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'stock-table',
+      target: '[data-tour="goods-stock-table"]',
+      titleKey: 'goods.tourWarehouseTitle',
+      contentKey: 'goods.tourWarehouseContent',
+      placement: 'top',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="goods-settings-btn"]',
+      titleKey: 'goods.tourSettingsTitle',
+      contentKey: 'goods.tourSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourMenuHelpTitle',
+      contentKey: 'app.tourMenuHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};
+
 export const issuesTour: TourConfig = {
   id: 'issues-intro',
   steps: [

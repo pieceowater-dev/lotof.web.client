@@ -3,6 +3,7 @@ import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
+import { useGoodsToken } from '@/composables/useGoodsToken';
 
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
@@ -85,6 +86,11 @@ export function useNamespace() {
         const { clear } = useTasksToken();
         clear();
         document.cookie = `${CookieKeys.TASKS_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      } catch {}
+      try {
+        const { clear } = useGoodsToken();
+        clear();
+        document.cookie = `${CookieKeys.GOODS_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
       try {
         useAnalytics().setNamespaceContext(ns);

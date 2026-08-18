@@ -9,6 +9,7 @@ let atraceTokenRef: Ref<string | null> | null = null; // atrace app token (Atrac
 let contactsTokenRef: Ref<string | null> | null = null; // contacts app token (ContactsAuthorization)
 let menuTokenRef: Ref<string | null> | null = null; // menu app token (MenuAuthorization)
 let tasksTokenRef: Ref<string | null> | null = null; // tasks (Issues) app token (IssuesAuthorization)
+let goodsTokenRef: Ref<string | null> | null = null; // goods app token (GoodsAuthorization)
 
 function getTokenRef() {
   if (!tokenRef) {
@@ -46,6 +47,13 @@ function getTasksTokenRef() {
   return tasksTokenRef;
 }
 
+function getGoodsTokenRef() {
+  if (!goodsTokenRef) {
+    goodsTokenRef = useState<string | null>('goods_app_token', () => null);
+  }
+  return goodsTokenRef;
+}
+
 export function setGlobalAuthToken(token: string | null) {
   getTokenRef().value = token;
 }
@@ -66,12 +74,17 @@ export function setTasksAppToken(token: string | null) {
   getTasksTokenRef().value = token;
 }
 
+export function setGoodsAppToken(token: string | null) {
+  getGoodsTokenRef().value = token;
+}
+
 type UnauthorizedHandler = () => void | Promise<void>;
 let unauthorizedHandler: UnauthorizedHandler | null = null;
 let atraceUnauthorizedHandler: UnauthorizedHandler | null = null;
 let contactsUnauthorizedHandler: UnauthorizedHandler | null = null;
 let menuUnauthorizedHandler: UnauthorizedHandler | null = null;
 let tasksUnauthorizedHandler: UnauthorizedHandler | null = null;
+let goodsUnauthorizedHandler: UnauthorizedHandler | null = null;
 
 export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) {
   unauthorizedHandler = fn;
@@ -93,8 +106,12 @@ export function setTasksUnauthorizedHandler(fn: UnauthorizedHandler | null) {
   tasksUnauthorizedHandler = fn;
 }
 
+export function setGoodsUnauthorizedHandler(fn: UnauthorizedHandler | null) {
+  goodsUnauthorizedHandler = fn;
+}
+
 type ApiClientOptions = {
-  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization';
+  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization';
 };
 
 function notifyRateLimit() {
@@ -124,7 +141,7 @@ function notifyRateLimit() {
 export class ApiClient {
   private client: GraphQLClient;
   private baseURL: string;
-  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization';
+  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization';
 
   constructor(baseURL: string, options?: ApiClientOptions) {
     this.baseURL = baseURL;
@@ -169,6 +186,9 @@ export class ApiClient {
     } else if (this.authHeader === 'IssuesAuthorization') {
       const tt = getTasksTokenRef().value;
       if (tt) headers[this.authHeader] = `Bearer ${tt}`;
+    } else if (this.authHeader === 'GoodsAuthorization') {
+      const gt = getGoodsTokenRef().value;
+      if (gt) headers[this.authHeader] = `Bearer ${gt}`;
     } else if (this.authHeader === 'CapitalAuthorization') {
       if (t) headers[this.authHeader] = `Bearer ${t}`;
     } else if (t) {
@@ -198,6 +218,9 @@ export class ApiClient {
       );
       const isTasksUnauthorized = this.authHeader === 'IssuesAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('issuesauthorization token is invalid'))
+      );
+      const isGoodsUnauthorized = this.authHeader === 'GoodsAuthorization' && (
+        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('goodsauthorization token is invalid'))
       );
       const isCapitalUnauthorized = this.authHeader === 'CapitalAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
@@ -240,6 +263,19 @@ export class ApiClient {
         if (retryCount === 0) {
           // Try refresh once before giving up
           await tasksUnauthorizedHandler?.();
+          // Retry request once with new token
+          try {
+            return await this.requestWithRetry<T>(query, variables, options, 1);
+          } catch (retryError) {
+            // If retry still fails, throw original error
+            throw error;
+          }
+        }
+      } else if (isGoodsUnauthorized) {
+        logWarn('Goods unauthorized detected, invoking goods handler');
+        if (retryCount === 0) {
+          // Try refresh once before giving up
+          await goodsUnauthorizedHandler?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -298,3 +334,4 @@ export const contactsClient = new ApiClient(getApiBaseUrl('contacts'), { authHea
 export const capitalClient = new ApiClient(getApiBaseUrl('capital'), { authHeader: 'CapitalAuthorization' });
 export const menuClient = new ApiClient(getApiBaseUrl('menu'), { authHeader: 'MenuAuthorization' });
 export const tasksClient = new ApiClient(getApiBaseUrl('tasks'), { authHeader: 'IssuesAuthorization' });
+export const goodsClient = new ApiClient(getApiBaseUrl('goods'), { authHeader: 'GoodsAuthorization' });
