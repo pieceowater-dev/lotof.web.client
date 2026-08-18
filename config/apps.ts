@@ -97,15 +97,6 @@ export const ALL_APPS: AppConfig[] = [
   //   canAdd: false,
   // },
   {
-    name: 'lota Sales',
-    bundle: 'pieceowater.sales',
-    address: 'sales',
-    icon: 'lucide:store',
-    titleKey: 'app.sales',
-    descriptionKey: 'app.salesDesc',
-    canAdd: false,
-  },
-  {
     name: 'lota Calls',
     bundle: 'pieceowater.calls',
     address: 'calls',
