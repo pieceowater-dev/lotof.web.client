@@ -3,6 +3,8 @@ import { useI18n } from '@/composables/useI18n';
 import { useGoodsToken } from '@/composables/useGoodsToken';
 import { useGoodsStaffRole } from '@/composables/useGoodsStaffRole';
 import { useNamespace } from '@/composables/useNamespace';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { goodsRegisterTour } from '@/config/tours';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
@@ -451,7 +453,16 @@ async function submitReturn() {
   }
 }
 
-onMounted(bootstrap);
+onMounted(async () => {
+  await bootstrap();
+
+  if (process.client) {
+    const { isCompleted, startTour } = useOnboarding();
+    if (activeRegister.value && currentShift.value && !isCompleted(goodsRegisterTour.id)) {
+      setTimeout(() => startTour(goodsRegisterTour), 1000);
+    }
+  }
+});
 </script>
 
 <template>
@@ -464,6 +475,7 @@ onMounted(bootstrap);
           {{ t('goods.warehouse') }}
         </UButton>
         <template v-if="currentShift">
+          <span data-tour="goods-register-shift-actions" class="contents">
           <UButton color="gray" variant="ghost" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
           <UButton color="gray" variant="ghost" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
           <UButton color="gray" variant="ghost" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
@@ -471,6 +483,7 @@ onMounted(bootstrap);
           <UButton color="gray" variant="ghost" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
             {{ t('goods.closeShift') }}
           </UButton>
+          </span>
         </template>
       </div>
     </div>
@@ -503,6 +516,7 @@ onMounted(bootstrap);
       <div class="lg:col-span-2 flex flex-col min-h-0 gap-3">
         <UInput
           v-model="query"
+          data-tour="goods-register-search"
           size="xl"
           icon="lucide:scan-barcode"
           :placeholder="t('goods.search')"
@@ -511,7 +525,7 @@ onMounted(bootstrap);
           @keyup.enter="onSearchEnter"
         />
 
-        <div class="flex-1 overflow-y-auto -mx-1 px-1">
+        <div data-tour="goods-register-products" class="flex-1 overflow-y-auto -mx-1 px-1">
           <div v-if="visibleGoods.length" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-2">
             <button
               v-for="g in visibleGoods"
@@ -538,7 +552,7 @@ onMounted(bootstrap);
       </div>
 
       <!-- Cart + calculator: 1/3, pinned totals/payment at the bottom -->
-      <div class="flex flex-col min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+      <div data-tour="goods-register-cart" class="flex flex-col min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
         <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
           <span class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ t('goods.cart') }}</span>
           <UButton v-if="activeSale?.items?.length" color="red" variant="ghost" size="2xs" icon="lucide:trash-2" @click="voidCart">{{ t('goods.voidSale') }}</UButton>

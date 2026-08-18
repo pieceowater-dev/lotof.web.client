@@ -44,7 +44,21 @@ async function getToken(): Promise<string> {
   return token;
 }
 
-const activeTab = ref<'staff' | 'warehouses' | 'general' | 'priceLists' | 'giftCertificates' | 'recipes' | 'discounts'>('staff');
+type TabKey = 'staff' | 'warehouses' | 'general' | 'priceLists' | 'giftCertificates' | 'recipes' | 'discounts';
+const activeTab = ref<TabKey>((route.query.tab as TabKey) || 'staff');
+watch(activeTab, (tab) => {
+  navigateTo({ query: { ...route.query, tab } }, { replace: true });
+});
+
+const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
+  { key: 'staff', label: t('goods.staff'), icon: 'lucide:users' },
+  { key: 'warehouses', label: t('goods.warehouse'), icon: 'lucide:warehouse' },
+  { key: 'general', label: t('goods.generalSettings'), icon: 'lucide:settings' },
+  { key: 'discounts', label: t('goods.discounts'), icon: 'lucide:percent' },
+  { key: 'priceLists', label: t('goods.priceLists'), icon: 'lucide:tags' },
+  { key: 'giftCertificates', label: t('goods.giftCertificates'), icon: 'lucide:gift' },
+  { key: 'recipes', label: t('goods.recipes'), icon: 'lucide:flask-conical' },
+]);
 
 // --- Staff ---
 const staff = ref<GoodsStaff[]>([]);
@@ -487,28 +501,21 @@ onMounted(() => {
 <template>
   <div class="max-w-3xl mx-auto px-4 py-6 space-y-4">
     <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
-      <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
+      <UButton color="primary" variant="soft" size="xs" icon="lucide:arrow-left" class="min-w-fit whitespace-nowrap gap-2" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
     </div>
 
-    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
       <button
-        v-for="tab in (['staff', 'warehouses', 'general', 'discounts', 'priceLists', 'giftCertificates', 'recipes'] as const)"
-        :key="tab"
+        v-for="tab in TABS"
+        :key="tab.key"
         type="button"
-        class="px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap"
-        :class="activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400'"
-        @click="activeTab = tab"
+        class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors"
+        :class="activeTab === tab.key ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+        @click="activeTab = tab.key"
       >
-        {{
-          tab === 'staff' ? t('goods.staff')
-          : tab === 'warehouses' ? t('goods.warehouse')
-          : tab === 'general' ? t('goods.generalSettings')
-          : tab === 'discounts' ? t('goods.discounts')
-          : tab === 'priceLists' ? t('goods.priceLists')
-          : tab === 'giftCertificates' ? t('goods.giftCertificates')
-          : t('goods.recipes')
-        }}
+        <Icon :name="tab.icon" class="w-4 h-4" />
+        {{ tab.label }}
       </button>
     </div>
 
