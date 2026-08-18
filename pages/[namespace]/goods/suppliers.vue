@@ -5,6 +5,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import type { GoodsSupplier } from '@/api/goods/supplier';
 import type { GoodsGood } from '@/api/goods/good';
 import type { SupplierPriceHistoryEntry } from '@/api/goods/goodsreceipt';
@@ -132,14 +133,13 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.suppliers') }}</h1>
-      <div class="flex gap-2">
-        <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-        <UButton color="primary" icon="lucide:plus" @click="showAdd = true">{{ t('goods.addSupplier') }}</UButton>
-      </div>
+      <UButton color="primary" icon="lucide:plus" @click="showAdd = true">{{ t('goods.addSupplier') }}</UButton>
     </div>
+
+    <GoodsNavTabs />
 
     <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
       <div v-for="s in suppliers" :key="s.id" class="px-4 py-3 space-y-1" @mouseenter="resolveContactsSummary(s)">

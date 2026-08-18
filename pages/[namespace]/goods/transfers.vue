@@ -5,6 +5,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import type { GoodsStockTransfer } from '@/api/goods/stocktransfer';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
@@ -129,16 +130,15 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.transfers') }}</h1>
-      <div class="flex gap-2">
-        <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-        <UButton color="primary" icon="lucide:plus" @click="showCreate = true">{{ t('goods.createTransfer') }}</UButton>
-      </div>
+      <UButton color="primary" icon="lucide:plus" @click="showCreate = true">{{ t('goods.createTransfer') }}</UButton>
     </div>
 
-    <div class="h-[65vh]">
+    <GoodsNavTabs />
+
+    <div class="min-h-[280px] max-h-[65vh] overflow-hidden">
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:arrow-left-right">
         <template #actions-data="{ row }">
           <div class="flex gap-1 justify-end">
@@ -163,17 +163,28 @@ onMounted(loadAll);
             </UFormGroup>
           </div>
 
-          <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2">
-            <div class="grid grid-cols-4 gap-2 items-end">
-              <USelectMenu v-model="itemDraft.goodId" :options="goods.map((g) => ({ label: g.name, value: g.id }))" value-attribute="value" option-attribute="label" size="sm" placeholder="Good" :popper="{ strategy: 'fixed' }" class="col-span-2" />
-              <USelectMenu v-model="itemDraft.unitId" :options="units.map((u) => ({ label: u.symbol, value: u.id }))" value-attribute="value" option-attribute="label" size="sm" placeholder="Unit" :popper="{ strategy: 'fixed' }" />
-              <UInput v-model.number="itemDraft.quantity" type="number" min="0" size="sm" placeholder="Qty" />
-            </div>
-            <UButton size="xs" color="gray" variant="soft" icon="lucide:plus" @click="addDraftItem">{{ t('common.add') }}</UButton>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-4 space-y-3">
+            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('goods.items') }}</div>
 
-            <div v-if="draftItems.length" class="divide-y divide-gray-100 dark:divide-gray-800 mt-2">
+            <div class="grid grid-cols-12 gap-2">
+              <div class="col-span-6">
+                <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.good') }}</label>
+                <USelectMenu v-model="itemDraft.goodId" :options="goods.map((g) => ({ label: g.name, value: g.id }))" value-attribute="value" option-attribute="label" size="sm" :popper="{ strategy: 'fixed' }" />
+              </div>
+              <div class="col-span-3">
+                <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.unit') }}</label>
+                <USelectMenu v-model="itemDraft.unitId" :options="units.map((u) => ({ label: u.symbol, value: u.id }))" value-attribute="value" option-attribute="label" size="sm" :popper="{ strategy: 'fixed' }" />
+              </div>
+              <div class="col-span-3">
+                <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.quantity') }}</label>
+                <UInput v-model.number="itemDraft.quantity" type="number" min="0" size="sm" />
+              </div>
+            </div>
+            <UButton size="sm" color="gray" variant="soft" icon="lucide:plus" :disabled="!itemDraft.goodId || !itemDraft.unitId" @click="addDraftItem">{{ t('common.add') }}</UButton>
+
+            <div v-if="draftItems.length" class="divide-y divide-gray-100 dark:divide-gray-800 border-t border-gray-100 dark:border-gray-800 pt-2">
               <div v-for="(item, idx) in draftItems" :key="idx" class="flex items-center justify-between text-sm py-1.5">
-                <span>{{ goodName(item.goodId) }} — {{ item.quantity }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ goodName(item.goodId) }} — {{ item.quantity }}</span>
                 <UButton size="2xs" color="red" variant="ghost" icon="lucide:x" @click="removeDraftItem(idx)" />
               </div>
             </div>

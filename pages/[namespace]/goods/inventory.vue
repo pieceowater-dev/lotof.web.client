@@ -5,6 +5,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import type { GoodsInventoryCount } from '@/api/goods/inventorycount';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
@@ -129,16 +130,15 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
     <div class="flex items-center justify-between">
       <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.inventory') }}</h1>
-      <div class="flex gap-2">
-        <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-        <UButton color="primary" icon="lucide:plus" @click="showStart = true">{{ t('goods.startCount') }}</UButton>
-      </div>
+      <UButton color="primary" icon="lucide:plus" @click="showStart = true">{{ t('goods.startCount') }}</UButton>
     </div>
 
-    <div class="h-[65vh]">
+    <GoodsNavTabs />
+
+    <div class="min-h-[280px] max-h-[65vh] overflow-hidden">
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check">
         <template #actions-data="{ row }">
           <div class="flex gap-1 justify-end" v-if="row.status !== 'COMPLETED'">

@@ -5,6 +5,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsUnit } from '@/api/goods/unit';
@@ -60,8 +61,10 @@ const goodColumns = [
   { key: 'sku', label: t('goods.goodSku') },
   { key: 'salePriceCents', label: t('goods.salePrice') },
   { key: 'isActive', label: t('common.status') },
+  { key: 'actions', label: '' },
 ];
 const goodRows = computed(() => goods.value.map((g) => ({ ...g, salePriceCents: (g.salePriceCents / 100).toFixed(2) })));
+const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 
 const categoryColumns = [
   { key: 'name', label: t('goods.goodName') },
@@ -104,6 +107,67 @@ async function submitAddGood() {
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to add good', color: 'red' });
   } finally {
     savingGood.value = false;
+  }
+}
+
+// --- Edit good ---
+const showEditGood = ref(false);
+const savingEditGood = ref(false);
+const deletingGoodId = ref<string | null>(null);
+const editGoodForm = reactive({ id: '', name: '', sku: '', salePriceCents: 0, unitId: '', categoryId: '', isActive: true });
+const isEditGoodFormValid = computed(() => editGoodForm.name.trim().length > 0 && !!editGoodForm.unitId);
+
+function openEditGood(g: GoodsGood) {
+  editGoodForm.id = g.id;
+  editGoodForm.name = g.name;
+  editGoodForm.sku = g.sku;
+  editGoodForm.salePriceCents = g.salePriceCents / 100;
+  editGoodForm.unitId = g.baseUnitId;
+  editGoodForm.categoryId = g.categoryId || '';
+  editGoodForm.isActive = g.isActive;
+  showEditGood.value = true;
+}
+
+async function submitEditGood() {
+  if (!isEditGoodFormValid.value) return;
+  savingEditGood.value = true;
+  try {
+    const token = await getToken();
+    const { goodsUpdateGood } = await import('@/api/goods/good');
+    await goodsUpdateGood(token, nsSlug.value, {
+      id: editGoodForm.id,
+      name: editGoodForm.name.trim(),
+      sku: editGoodForm.sku.trim() || editGoodForm.name.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 32),
+      baseUnitId: editGoodForm.unitId,
+      categoryId: editGoodForm.categoryId || undefined,
+      salePriceCents: Math.round(editGoodForm.salePriceCents * 100),
+      trackStock: true,
+      isWeighted: false,
+      imageUrl: '',
+      isActive: editGoodForm.isActive,
+    });
+    showEditGood.value = false;
+    await loadAll();
+  } catch (e) {
+    logError('[goods/catalog] submitEditGood failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update good', color: 'red' });
+  } finally {
+    savingEditGood.value = false;
+  }
+}
+
+async function deleteGood(g: GoodsGood) {
+  deletingGoodId.value = g.id;
+  try {
+    const token = await getToken();
+    const { goodsDeleteGood } = await import('@/api/goods/good');
+    await goodsDeleteGood(token, nsSlug.value, g.id);
+    await loadAll();
+  } catch (e) {
+    logError('[goods/catalog] deleteGood failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete good', color: 'red' });
+  } finally {
+    deletingGoodId.value = null;
   }
 }
 
@@ -167,11 +231,10 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
-      <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-    </div>
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
+
+    <GoodsNavTabs />
 
     <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
       <button
@@ -188,27 +251,34 @@ onMounted(loadAll);
 
     <div v-if="activeTab === 'goods'" class="space-y-3">
       <div class="flex justify-end">
-        <UButton color="gray" variant="soft" icon="lucide:plus" @click="showAddGood = true">{{ t('goods.addGood') }}</UButton>
+        <UButton color="primary" icon="lucide:plus" @click="showAddGood = true">{{ t('goods.addGood') }}</UButton>
       </div>
-      <div class="h-[55vh]">
-        <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package" />
+      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
+        <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
+          <template #actions-data="{ row }">
+            <div class="flex gap-1 justify-end">
+              <UButton size="2xs" color="gray" variant="soft" icon="lucide:pencil" @click="openEditGood(goodById.get(row.id)!)">{{ t('common.edit') }}</UButton>
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :loading="deletingGoodId === row.id" @click="deleteGood(goodById.get(row.id)!)" />
+            </div>
+          </template>
+        </AppTable>
       </div>
     </div>
 
     <div v-else-if="activeTab === 'categories'" class="space-y-3">
       <div class="flex justify-end">
-        <UButton color="gray" variant="soft" icon="lucide:plus" @click="showAddCategory = true">{{ t('goods.addCategory') }}</UButton>
+        <UButton color="primary" icon="lucide:plus" @click="showAddCategory = true">{{ t('goods.addCategory') }}</UButton>
       </div>
-      <div class="h-[55vh]">
+      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
         <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag" />
       </div>
     </div>
 
     <div v-else class="space-y-3">
       <div class="flex justify-end">
-        <UButton color="gray" variant="soft" icon="lucide:plus" @click="showAddUnit = true">{{ t('goods.addUnit') }}</UButton>
+        <UButton color="primary" icon="lucide:plus" @click="showAddUnit = true">{{ t('goods.addUnit') }}</UButton>
       </div>
-      <div class="h-[55vh]">
+      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
         <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler" />
       </div>
     </div>
@@ -218,9 +288,12 @@ onMounted(loadAll);
         <template #header><h3 class="font-semibold">{{ t('goods.addGood') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')" required><UInput v-model="goodForm.name" size="lg" @keyup.enter="submitAddGood" /></UFormGroup>
-          <UFormGroup :label="t('goods.goodSku')"><UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitAddGood" /></UFormGroup>
+          <UFormGroup :label="t('goods.goodSku')">
+            <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitAddGood" />
+            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
+          </UFormGroup>
           <UFormGroup :label="t('goods.salePrice')"><UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitAddGood" /></UFormGroup>
-          <UFormGroup label="Unit" required>
+          <UFormGroup :label="t('goods.unit')" required>
             <USelectMenu v-model="goodForm.unitId" :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
           </UFormGroup>
           <UFormGroup :label="t('goods.categories')">
@@ -231,6 +304,35 @@ onMounted(loadAll);
           <div class="flex justify-end gap-2">
             <UButton color="gray" variant="ghost" @click="showAddGood = false">{{ t('common.cancel') }}</UButton>
             <UButton color="primary" :loading="savingGood" :disabled="!isGoodFormValid || savingGood" @click="submitAddGood">{{ t('common.save') }}</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <UModal v-model="showEditGood">
+      <UCard>
+        <template #header><h3 class="font-semibold">{{ t('common.edit') }} — {{ editGoodForm.name }}</h3></template>
+        <div class="space-y-3">
+          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="editGoodForm.name" size="lg" @keyup.enter="submitEditGood" /></UFormGroup>
+          <UFormGroup :label="t('goods.goodSku')">
+            <UInput v-model="editGoodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitEditGood" />
+            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
+          </UFormGroup>
+          <UFormGroup :label="t('goods.salePrice')"><UInput v-model.number="editGoodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitEditGood" /></UFormGroup>
+          <UFormGroup :label="t('goods.unit')" required>
+            <USelectMenu v-model="editGoodForm.unitId" :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+          <UFormGroup :label="t('goods.categories')">
+            <USelectMenu v-model="editGoodForm.categoryId" :options="categories.map((c) => ({ label: c.name, value: c.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+          <UFormGroup :label="t('common.status')">
+            <UToggle v-model="editGoodForm.isActive" />
+          </UFormGroup>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="ghost" @click="showEditGood = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="savingEditGood" :disabled="!isEditGoodFormValid || savingEditGood" @click="submitEditGood">{{ t('common.save') }}</UButton>
           </div>
         </template>
       </UCard>

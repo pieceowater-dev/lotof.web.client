@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsRegister, GoodsCashShift } from '@/api/goods/register';
 import type { GoodsSale, GoodsPaymentMethod, GoodsCashMovementType } from '@/api/goods/sale';
+import type { GoodsGood } from '@/api/goods/good';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -38,6 +39,7 @@ const activeRegister = ref<GoodsRegister | null>(null);
 const currentShift = ref<GoodsCashShift | null>(null);
 const goodNameById = ref<Map<string, string>>(new Map());
 const activeSale = ref<GoodsSale | null>(null);
+const goods = ref<GoodsGood[]>([]);
 
 const STORAGE_KEY = computed(() => `goods:activeWarehouse:${nsSlug.value}`);
 
@@ -68,8 +70,9 @@ async function bootstrap() {
     }
 
     const { goodsListGoods } = await import('@/api/goods/good');
-    const { goods } = await goodsListGoods(goodsToken, nsSlug.value);
-    goodNameById.value = new Map(goods.map((g) => [g.id, g.name]));
+    const { goods: g } = await goodsListGoods(goodsToken, nsSlug.value);
+    goods.value = g.filter((x) => x.isActive);
+    goodNameById.value = new Map(g.map((x) => [x.id, x.name]));
   } catch (e) {
     logError('[goods/register] bootstrap failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load register', color: 'red' });
@@ -281,16 +284,24 @@ async function applyDiscount() {
   }
 }
 
-// --- Search / scan ---
+// --- Search / scan / product grid ---
 const query = ref('');
 const searching = ref(false);
-const searchResults = ref<{ id: string; name: string; sku: string; baseUnitId: string }[]>([]);
+
+// The full catalog is already loaded locally (bootstrap), so typing just
+// narrows the visible card grid -- no round trip per keystroke. Enter still
+// tries an exact barcode lookup first (USB scanner workflow: fast keystrokes
+// + Enter), since a scanned code is rarely a substring match on name/sku.
+const visibleGoods = computed(() => {
+  const q = query.value.trim().toLowerCase();
+  if (!q) return goods.value;
+  return goods.value.filter((g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q));
+});
 
 async function onSearchEnter() {
   const raw = query.value.trim();
   if (!raw) return;
   searching.value = true;
-  searchResults.value = [];
   try {
     const goodsToken = await getToken();
     const { goodsFindByBarcode } = await import('@/api/goods/good');
@@ -304,9 +315,12 @@ async function onSearchEnter() {
       query.value = '';
       return;
     }
-    const { goodsListGoods } = await import('@/api/goods/good');
-    const { goods } = await goodsListGoods(goodsToken, nsSlug.value, { search: raw });
-    searchResults.value = goods.map((g) => ({ id: g.id, name: g.name, sku: g.sku, baseUnitId: g.baseUnitId }));
+    // Not a barcode -- if exactly one card matches the current filter,
+    // Enter adds it directly (fast keyboard-only flow).
+    if (visibleGoods.value.length === 1) {
+      await addFromCard(visibleGoods.value[0]);
+      query.value = '';
+    }
   } catch (e) {
     logError('[goods/register] onSearchEnter failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Search failed', color: 'red' });
@@ -315,10 +329,8 @@ async function onSearchEnter() {
   }
 }
 
-async function pickSearchResult(result: { id: string; baseUnitId: string }) {
-  await addGoodToCart(result.id, result.baseUnitId, 1);
-  query.value = '';
-  searchResults.value = [];
+async function addFromCard(good: GoodsGood) {
+  await addGoodToCart(good.id, good.baseUnitId, 1);
 }
 
 // --- Payment ---
@@ -443,7 +455,7 @@ onMounted(bootstrap);
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-6 space-y-4">
+  <div class="max-w-[1600px] mx-auto px-4 py-6 space-y-4">
     <!-- Minimal chrome: this is the face of the product -->
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.register') }}</h1>
@@ -468,7 +480,7 @@ onMounted(bootstrap);
     </div>
 
     <!-- No register yet on this warehouse -->
-    <div v-else-if="!activeRegister" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center space-y-3">
+    <div v-else-if="!activeRegister" class="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center space-y-3">
       <Icon name="lucide:store" class="w-8 h-8 mx-auto text-gray-400" />
       <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.noRegisterYet') }}</p>
       <UButton v-if="isOwnerOrManager" color="primary" :loading="creatingRegister" @click="createRegisterHere">
@@ -477,7 +489,7 @@ onMounted(bootstrap);
     </div>
 
     <!-- No open shift -->
-    <div v-else-if="!currentShift" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 space-y-4">
+    <div v-else-if="!currentShift" class="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 space-y-4">
       <p class="text-sm text-gray-500 dark:text-gray-400 text-center">{{ t('goods.openShift') }}</p>
       <UFormGroup :label="t('goods.openingCash')">
         <UInput v-model.number="openingCash" type="number" min="0" step="0.01" size="lg" @keyup.enter="openShift" />
@@ -486,80 +498,104 @@ onMounted(bootstrap);
     </div>
 
     <!-- POS -->
-    <div v-else class="space-y-4" data-tour="goods-register-pos">
-      <UInput
-        v-model="query"
-        size="xl"
-        icon="lucide:scan-barcode"
-        :placeholder="t('goods.search')"
-        :loading="searching"
-        autofocus
-        @keyup.enter="onSearchEnter"
-      />
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-8.5rem)]" data-tour="goods-register-pos">
+      <!-- Product picker: 2/3 -->
+      <div class="lg:col-span-2 flex flex-col min-h-0 gap-3">
+        <UInput
+          v-model="query"
+          size="xl"
+          icon="lucide:scan-barcode"
+          :placeholder="t('goods.search')"
+          :loading="searching"
+          autofocus
+          @keyup.enter="onSearchEnter"
+        />
 
-      <div v-if="searchResults.length" class="rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
-        <button
-          v-for="r in searchResults"
-          :key="r.id"
-          type="button"
-          class="w-full flex items-center justify-between px-4 py-2.5 text-sm hover:bg-gray-50 dark:hover:bg-gray-800/60 text-left"
-          @click="pickSearchResult(r)"
-        >
-          <span class="font-medium text-gray-900 dark:text-white">{{ r.name }}</span>
-          <span class="text-gray-400">{{ r.sku }}</span>
-        </button>
+        <div class="flex-1 overflow-y-auto -mx-1 px-1">
+          <div v-if="visibleGoods.length" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-2">
+            <button
+              v-for="g in visibleGoods"
+              :key="g.id"
+              type="button"
+              class="group text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md active:scale-[0.97]"
+              @click="addFromCard(g)"
+            >
+              <div class="aspect-square bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden">
+                <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
+                <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
+              </div>
+              <div class="p-2.5 space-y-0.5">
+                <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
+                <div class="text-sm font-semibold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
+              </div>
+            </button>
+          </div>
+          <div v-else class="h-full flex flex-col items-center justify-center text-center text-sm text-gray-400 py-16">
+            <Icon name="lucide:search-x" class="w-8 h-8 mb-2 text-gray-300 dark:text-gray-700" />
+            {{ t('goods.noResults') }}
+          </div>
+        </div>
       </div>
 
-      <UInput
-        v-if="!activeSale"
-        v-model="clientIdInput"
-        size="sm"
-        icon="lucide:user"
-        :placeholder="t('goods.attachClient')"
-      />
-
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-        <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 font-medium text-sm text-gray-500 dark:text-gray-400 flex items-center justify-between">
-          <span>{{ t('goods.cart') }}</span>
+      <!-- Cart + calculator: 1/3, pinned totals/payment at the bottom -->
+      <div class="flex flex-col min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+        <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
+          <span class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ t('goods.cart') }}</span>
           <UButton v-if="activeSale?.items?.length" color="red" variant="ghost" size="2xs" icon="lucide:trash-2" @click="voidCart">{{ t('goods.voidSale') }}</UButton>
         </div>
-        <div v-if="!activeSale?.items?.length" class="px-4 py-10 text-center text-sm text-gray-400">
-          {{ t('goods.emptyCart') }}
-        </div>
-        <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
-          <div v-for="item in activeSale.items" :key="item.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-            <div>
-              <div class="font-medium text-gray-900 dark:text-white">{{ goodNameById.get(item.goodId) || item.goodId }}</div>
-              <div class="text-gray-400">{{ item.quantity }} × {{ formatCents(item.priceAtSaleCents) }}</div>
-            </div>
-            <div class="flex items-center gap-3">
-              <span class="font-semibold">{{ formatCents(item.totalCents) }}</span>
-              <UButton color="gray" variant="ghost" icon="lucide:x" size="2xs" @click="removeCartItem(item.id)" />
+
+        <UInput
+          v-if="!activeSale"
+          v-model="clientIdInput"
+          size="sm"
+          icon="lucide:user"
+          :placeholder="t('goods.attachClient')"
+          class="mx-3 mt-3 flex-shrink-0"
+        />
+
+        <div class="flex-1 overflow-y-auto min-h-0">
+          <div v-if="!activeSale?.items?.length" class="h-full flex flex-col items-center justify-center px-4 text-center text-sm text-gray-400">
+            <Icon name="lucide:shopping-cart" class="w-8 h-8 mb-2 text-gray-300 dark:text-gray-700" />
+            {{ t('goods.emptyCart') }}
+          </div>
+          <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="item in activeSale.items" :key="item.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
+              <div class="min-w-0">
+                <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodNameById.get(item.goodId) || item.goodId }}</div>
+                <div class="text-gray-400 tabular-nums">{{ item.quantity }} × {{ formatCents(item.priceAtSaleCents) }}</div>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <span class="font-semibold tabular-nums">{{ formatCents(item.totalCents) }}</span>
+                <UButton color="gray" variant="ghost" icon="lucide:x" size="2xs" @click="removeCartItem(item.id)" />
+              </div>
             </div>
           </div>
         </div>
-        <div v-if="activeSale?.items?.length" class="px-4 py-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-sm">
-          <button type="button" class="text-primary-600 dark:text-primary-400 font-medium" @click="openDiscount">
-            {{ t('goods.applyDiscount') }}
-          </button>
-          <span v-if="activeSale.discountAmountCents" class="text-gray-400">− {{ formatCents(activeSale.discountAmountCents) }}</span>
-        </div>
-        <div v-if="activeSale?.items?.length" class="px-4 py-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between">
-          <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.total') }}</span>
-          <span class="text-lg font-bold text-gray-900 dark:text-white">{{ formatCents(activeSale.totalAmountCents) }}</span>
-        </div>
-      </div>
 
-      <div v-if="activeSale?.items?.length" class="grid grid-cols-3 gap-2">
-        <UButton block size="xl" color="primary" :loading="paying" @click="payWith('CASH')">
-          <Icon name="lucide:banknote" class="w-4 h-4 mr-1" /> {{ t('goods.payCash') }}
-        </UButton>
-        <UButton block size="xl" color="primary" variant="soft" :loading="paying" @click="payWith('CARD')">
-          <Icon name="lucide:credit-card" class="w-4 h-4 mr-1" /> {{ t('goods.payCard') }}
-        </UButton>
-        <UButton block size="xl" color="gray" variant="soft" :loading="paying" @click="showGiftCertPay = true">
-          <Icon name="lucide:gift" class="w-4 h-4 mr-1" /> {{ t('goods.payGiftCert') }}
-        </UButton>
+        <!-- Calculator: totals + payment, always visible at the bottom -->
+        <div class="flex-shrink-0 border-t border-gray-100 dark:border-gray-800">
+          <div v-if="activeSale?.items?.length" class="px-4 py-2.5 flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-800">
+            <button type="button" class="text-primary-600 dark:text-primary-400 font-medium" @click="openDiscount">
+              {{ t('goods.applyDiscount') }}
+            </button>
+            <span v-if="activeSale.discountAmountCents" class="text-gray-400 tabular-nums">− {{ formatCents(activeSale.discountAmountCents) }}</span>
+          </div>
+          <div class="px-4 py-3 flex items-center justify-between">
+            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.total') }}</span>
+            <span class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ activeSale?.items?.length ? formatCents(activeSale.totalAmountCents) : '0.00' }}</span>
+          </div>
+          <div v-if="activeSale?.items?.length" class="px-4 pb-4 grid grid-cols-2 gap-2">
+            <UButton block size="lg" color="primary" :loading="paying" class="col-span-2 justify-center" @click="payWith('CASH')">
+              <Icon name="lucide:banknote" class="w-4 h-4 mr-1.5" /> {{ t('goods.payCash') }}
+            </UButton>
+            <UButton block size="lg" color="primary" variant="soft" :loading="paying" class="justify-center" @click="payWith('CARD')">
+              <Icon name="lucide:credit-card" class="w-4 h-4 mr-1.5" /> {{ t('goods.payCard') }}
+            </UButton>
+            <UButton block size="lg" color="gray" variant="soft" :loading="paying" class="justify-center" @click="showGiftCertPay = true">
+              <Icon name="lucide:gift" class="w-4 h-4 mr-1.5" /> {{ t('goods.payGiftCert') }}
+            </UButton>
+          </div>
+        </div>
       </div>
     </div>
 

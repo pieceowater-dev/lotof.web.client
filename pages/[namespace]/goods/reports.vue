@@ -8,6 +8,7 @@ import type { GoodsTopGoodsEntry, GoodsAbcEntry, GoodsMarginReport } from '@/api
 import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsBatch } from '@/api/goods/goodbatch';
 import type { GoodsGood } from '@/api/goods/good';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -95,11 +96,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
-      <UButton color="gray" variant="soft" icon="lucide:arrow-left" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-    </div>
+  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
+
+    <GoodsNavTabs />
 
     <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
       <button

@@ -6,6 +6,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsStock } from '@/api/goods/stock';
@@ -103,6 +104,12 @@ watch(activeWarehouseId, () => { if (!loading.value) loadStock(); });
 
 const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 
+// Quick stats -- fills what was otherwise a mostly-empty header area on a
+// fresh/small catalog, and gives an at-a-glance read before scanning the
+// full table below.
+const lowStockCount = computed(() => stock.value.filter((s) => s.available <= 5).length);
+const stockedItemsCount = computed(() => stock.value.length);
+
 const rows = computed(() => stock.value.map((s) => {
   const good = goodById.value.get(s.goodId);
   return {
@@ -128,6 +135,15 @@ const showAddGood = ref(false);
 const savingGood = ref(false);
 const goodForm = reactive({ name: '', sku: '', salePriceCents: 0, unitId: '' });
 const isGoodFormValid = computed(() => goodForm.name.trim().length > 0 && !!goodForm.unitId);
+
+// "штука" is always seeded first (see DefaultUnits in goods.msvc.core) --
+// defaulting to it means most goods never need the unit picker touched.
+function openAddGood() {
+  if (!goodForm.unitId) {
+    goodForm.unitId = (units.value.find((u) => u.symbol === 'шт') || units.value[0])?.id || '';
+  }
+  showAddGood.value = true;
+}
 
 async function submitAddGood() {
   if (!isGoodFormValid.value) return;
@@ -179,7 +195,10 @@ onMounted(async () => {
 <template>
   <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 data-tour="goods-warehouse-title" class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
+      <div>
+        <h1 data-tour="goods-warehouse-title" class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
+      </div>
       <div class="flex items-center gap-2 flex-wrap">
         <USelectMenu
           v-if="warehouses.length"
@@ -200,24 +219,30 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="canManageStock" class="flex items-center gap-1.5 overflow-x-auto pb-1">
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:list" :to="`/${nsSlug}/goods/catalog`">{{ t('goods.catalog') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:shopping-cart" :to="`/${nsSlug}/goods/purchases`">{{ t('goods.purchases') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:package-check" :to="`/${nsSlug}/goods/receiving`">{{ t('goods.receiving') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:arrow-left-right" :to="`/${nsSlug}/goods/transfers`">{{ t('goods.transfers') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:clipboard-check" :to="`/${nsSlug}/goods/inventory`">{{ t('goods.inventory') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:trash-2" :to="`/${nsSlug}/goods/writeoffs`">{{ t('goods.writeoffs') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:truck" :to="`/${nsSlug}/goods/suppliers`">{{ t('goods.suppliers') }}</UButton>
-      <UButton size="xs" color="gray" variant="soft" icon="lucide:bar-chart-3" :to="`/${nsSlug}/goods/reports`">{{ t('goods.reports') }}</UButton>
+    <GoodsNavTabs />
+
+    <div v-if="!loading" class="grid grid-cols-3 gap-3">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ goods.length }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.catalog') }}</div>
+      </div>
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ stockedItemsCount }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.available') }}</div>
+      </div>
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
+      </div>
     </div>
 
     <div v-if="canManageStock" class="flex justify-end">
-      <UButton color="gray" variant="soft" icon="lucide:plus" @click="showAddGood = true">
+      <UButton color="primary" size="lg" icon="lucide:plus" class="shadow-sm" @click="openAddGood">
         {{ t('goods.addGood') }}
       </UButton>
     </div>
 
-    <div data-tour="goods-stock-table" class="h-[60vh]">
+    <div data-tour="goods-stock-table" class="min-h-[280px] max-h-[60vh] overflow-hidden">
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package" />
     </div>
 
@@ -232,11 +257,12 @@ onMounted(async () => {
           </UFormGroup>
           <UFormGroup :label="t('goods.goodSku')">
             <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitAddGood" />
+            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
           </UFormGroup>
           <UFormGroup :label="t('goods.salePrice')">
             <UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitAddGood" />
           </UFormGroup>
-          <UFormGroup label="Unit" required>
+          <UFormGroup :label="t('goods.unit')" required>
             <USelectMenu
               v-model="goodForm.unitId"
               :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))"

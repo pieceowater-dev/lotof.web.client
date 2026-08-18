@@ -98,14 +98,22 @@ async function loadExistingUnitsAndContinue() {
 const goodForm = reactive({ name: '', sku: '', salePriceCents: 0 });
 const addingGood = ref(false);
 const addedGoods = ref<{ name: string }[]>([]);
-const isGoodValid = computed(() => goodForm.name.trim().length > 0 && seededUnits.value.length > 0);
+const isGoodValid = computed(() => goodForm.name.trim().length > 0);
 
 async function addGood() {
   if (!isGoodValid.value) return;
   addingGood.value = true;
   try {
     const goodsToken = await getToken();
-    const baseUnit = seededUnits.value[0];
+    // Self-heal: step 2 may have been skipped without ever loading/seeding
+    // a unit (fresh namespace, "Skip" clicked) -- without a base unit a
+    // good can't be created at all, so seed the defaults here instead of
+    // silently leaving nothing to submit.
+    if (!seededUnits.value.length) {
+      const { goodsSeedDefaultUnits } = await import('@/api/goods/unit');
+      seededUnits.value = await goodsSeedDefaultUnits(goodsToken, nsSlug.value);
+    }
+    const baseUnit = seededUnits.value.find((u) => u.symbol === 'шт') || seededUnits.value[0];
     const { goodsCreateGood } = await import('@/api/goods/good');
     const created = await goodsCreateGood(goodsToken, nsSlug.value, {
       name: goodForm.name.trim(),
@@ -209,12 +217,13 @@ function finish() {
           </div>
         </div>
 
-        <div v-if="seededUnits.length" class="space-y-3">
+        <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')">
             <UInput v-model="goodForm.name" size="lg" :placeholder="t('goods.onboardingGoodNamePlaceholder')" @keyup.enter="addGood" />
           </UFormGroup>
           <UFormGroup :label="t('goods.goodSku')">
             <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="addGood" />
+            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
           </UFormGroup>
           <UFormGroup :label="t('goods.salePrice')">
             <UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="addGood" />
@@ -223,7 +232,6 @@ function finish() {
             {{ t('goods.addGood') }}
           </UButton>
         </div>
-        <p v-else class="text-xs text-amber-600 dark:text-amber-400">{{ t('goods.onboardingNoUnitsWarning') }}</p>
 
         <div class="flex justify-end pt-1">
           <UButton color="primary" @click="finish">
