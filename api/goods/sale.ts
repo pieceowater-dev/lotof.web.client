@@ -217,3 +217,201 @@ export async function goodsGetSale(goodsToken: string, namespaceSlug: string, id
     return res.sale;
   }, namespaceSlug);
 }
+
+const ApplyCheckDiscountDocument = /* GraphQL */ `
+  mutation ApplyCheckDiscount($saleId: ID!, $discountRuleId: ID, $manualDiscountCents: Int, $managerPin: String) {
+    applyCheckDiscount(saleId: $saleId, discountRuleId: $discountRuleId, manualDiscountCents: $manualDiscountCents, managerPin: $managerPin) { ${SALE_FIELDS} }
+  }
+`;
+
+export async function goodsApplyCheckDiscount(
+  goodsToken: string, namespaceSlug: string,
+  args: { saleId: string; discountRuleId?: string; manualDiscountCents?: number; managerPin?: string },
+): Promise<GoodsSale> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ applyCheckDiscount: GoodsSale }>(
+      ApplyCheckDiscountDocument, args, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.applyCheckDiscount;
+  }, namespaceSlug);
+}
+
+// --- Discount rules ---
+export type GoodsDiscountType = 'PERCENT' | 'FIXED';
+export type GoodsDiscountScope = 'GOOD' | 'CATEGORY' | 'CHECK';
+
+export type GoodsDiscountRule = {
+  id: string;
+  name: string;
+  type: GoodsDiscountType;
+  scope: GoodsDiscountScope;
+  value: number;
+  minCheckAmountCents?: number | null;
+  validFrom?: string | null;
+  validTo?: string | null;
+  isActive: boolean;
+};
+
+const DISCOUNT_RULE_FIELDS = `id name type scope value minCheckAmountCents validFrom validTo isActive`;
+
+const ListDiscountRulesDocument = /* GraphQL */ `
+  query DiscountRules($filter: DefaultFilterInput) {
+    discountRules(filter: $filter) { rows { ${DISCOUNT_RULE_FIELDS} } info { count } }
+  }
+`;
+
+export async function goodsListDiscountRules(goodsToken: string, namespaceSlug: string): Promise<GoodsDiscountRule[]> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ discountRules: { rows: GoodsDiscountRule[] } }>(
+      ListDiscountRulesDocument, { filter: { pagination: { page: 1, length: 'ONE_HUNDRED' } } }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.discountRules.rows;
+  }, namespaceSlug);
+}
+
+const CreateDiscountRuleDocument = /* GraphQL */ `
+  mutation CreateDiscountRule($input: CreateDiscountRuleInput!) {
+    createDiscountRule(input: $input) { ${DISCOUNT_RULE_FIELDS} }
+  }
+`;
+
+export type CreateDiscountRuleInput = {
+  name: string; type: GoodsDiscountType; scope: GoodsDiscountScope; value: number;
+  minCheckAmountCents?: number; validFrom?: string; validTo?: string;
+};
+
+export async function goodsCreateDiscountRule(goodsToken: string, namespaceSlug: string, input: CreateDiscountRuleInput): Promise<GoodsDiscountRule> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ createDiscountRule: GoodsDiscountRule }>(
+      CreateDiscountRuleDocument, { input }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.createDiscountRule;
+  }, namespaceSlug);
+}
+
+const UpdateDiscountRuleDocument = /* GraphQL */ `
+  mutation UpdateDiscountRule($input: UpdateDiscountRuleInput!) {
+    updateDiscountRule(input: $input) { ${DISCOUNT_RULE_FIELDS} }
+  }
+`;
+
+export type UpdateDiscountRuleInput = {
+  id: string; name: string; value: number; minCheckAmountCents?: number; validFrom?: string; validTo?: string; isActive: boolean;
+};
+
+export async function goodsUpdateDiscountRule(goodsToken: string, namespaceSlug: string, input: UpdateDiscountRuleInput): Promise<GoodsDiscountRule> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ updateDiscountRule: GoodsDiscountRule }>(
+      UpdateDiscountRuleDocument, { input }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.updateDiscountRule;
+  }, namespaceSlug);
+}
+
+const DeleteDiscountRuleDocument = /* GraphQL */ `mutation DeleteDiscountRule($id: ID!) { deleteDiscountRule(id: $id) { success } }`;
+
+export async function goodsDeleteDiscountRule(goodsToken: string, namespaceSlug: string, id: string): Promise<boolean> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ deleteDiscountRule: { success: boolean } }>(
+      DeleteDiscountRuleDocument, { id }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.deleteDiscountRule.success;
+  }, namespaceSlug);
+}
+
+// --- Cash movements (инкассация) ---
+export type GoodsCashMovementType = 'SALE' | 'REFUND' | 'CASH_IN' | 'CASH_OUT';
+
+export type GoodsCashMovement = {
+  id: string; registerId: string; shiftId: string; type: GoodsCashMovementType;
+  amountCents: number; reason: string; actorId: string; createdAt: string;
+};
+
+const CASH_MOVEMENT_FIELDS = `id registerId shiftId type amountCents reason actorId createdAt`;
+
+const ListCashMovementsDocument = /* GraphQL */ `
+  query CashMovements($shiftId: ID!, $filter: DefaultFilterInput) {
+    cashMovements(shiftId: $shiftId, filter: $filter) { rows { ${CASH_MOVEMENT_FIELDS} } info { count } }
+  }
+`;
+
+export async function goodsListCashMovements(goodsToken: string, namespaceSlug: string, shiftId: string): Promise<GoodsCashMovement[]> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ cashMovements: { rows: GoodsCashMovement[] } }>(
+      ListCashMovementsDocument, { shiftId, filter: { pagination: { page: 1, length: 'ONE_HUNDRED' } } }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.cashMovements.rows;
+  }, namespaceSlug);
+}
+
+const RecordCashMovementDocument = /* GraphQL */ `
+  mutation RecordCashMovement($input: RecordCashMovementInput!) {
+    recordCashMovement(input: $input) { ${CASH_MOVEMENT_FIELDS} }
+  }
+`;
+
+export async function goodsRecordCashMovement(
+  goodsToken: string, namespaceSlug: string,
+  input: { registerId: string; shiftId: string; type: 'CASH_IN' | 'CASH_OUT'; amountCents: number; reason: string },
+): Promise<GoodsCashMovement> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ recordCashMovement: GoodsCashMovement }>(
+      RecordCashMovementDocument, { input }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.recordCashMovement;
+  }, namespaceSlug);
+}
+
+// --- Returns ---
+export type GoodsReturnItem = { id: string; goodId: string; quantity: number; amountCents: number };
+
+export type GoodsReturn = {
+  id: string; registerId: string; shiftId: string; originalSaleId?: string | null; isConfirmed: boolean;
+  reason: string; refundedAmountCents: number; actorId: string; createdAt: string; items: GoodsReturnItem[];
+};
+
+const RETURN_FIELDS = `id registerId shiftId originalSaleId isConfirmed reason refundedAmountCents actorId createdAt items { id goodId quantity amountCents }`;
+
+const ListReturnsDocument = /* GraphQL */ `
+  query Returns($registerId: ID, $shiftId: ID, $filter: DefaultFilterInput) {
+    returns(registerId: $registerId, shiftId: $shiftId, filter: $filter) { rows { ${RETURN_FIELDS} } info { count } }
+  }
+`;
+
+export async function goodsListReturns(goodsToken: string, namespaceSlug: string, opts?: { registerId?: string; shiftId?: string }): Promise<GoodsReturn[]> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ returns: { rows: GoodsReturn[] } }>(
+      ListReturnsDocument, { registerId: opts?.registerId, shiftId: opts?.shiftId, filter: { pagination: { page: 1, length: 'FIFTY' } } }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.returns.rows;
+  }, namespaceSlug);
+}
+
+const CreateReturnDocument = /* GraphQL */ `
+  mutation CreateReturn($input: CreateReturnInput!) {
+    createReturn(input: $input) { ${RETURN_FIELDS} }
+  }
+`;
+
+export type CreateReturnInput = {
+  registerId: string; shiftId: string; originalSaleId?: string; reason: string;
+  items: { goodId: string; quantity: number; amountCents: number }[]; managerPin?: string;
+};
+
+export async function goodsCreateReturn(goodsToken: string, namespaceSlug: string, input: CreateReturnInput): Promise<GoodsReturn> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ createReturn: GoodsReturn }>(
+      CreateReturnDocument, { input }, { headers: authHeaders(goodsToken, namespaceSlug, devHeaders) }
+    );
+    return res.createReturn;
+  }, namespaceSlug);
+}

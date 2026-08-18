@@ -129,3 +129,23 @@ export async function goodsCloseShift(goodsToken: string, namespaceSlug: string,
     return res.closeShift;
   }, namespaceSlug);
 }
+
+const ShiftReportDocument = /* GraphQL */ `
+  query ShiftReport($id: ID!) {
+    shiftReport(id: $id) {
+      id registerId openedBy openedAt closedBy closedAt openingCashAmountCents expectedCashAmountCents closingCashAmountCents discrepancyCents status
+    }
+  }
+`;
+
+export async function goodsShiftReport(goodsToken: string, namespaceSlug: string, id: string): Promise<GoodsCashShift> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ shiftReport: GoodsCashShift }>(
+      ShiftReportDocument,
+      { id },
+      { headers: { GoodsAuthorization: `Bearer ${goodsToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.shiftReport;
+  }, namespaceSlug);
+}

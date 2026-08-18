@@ -13,6 +13,7 @@ import type { GoodsGiftCertificate } from '@/api/goods/giftcertificate';
 import type { GoodsRecipe } from '@/api/goods/recipe';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsUnit } from '@/api/goods/unit';
+import type { GoodsDiscountRule, GoodsDiscountType, GoodsDiscountScope } from '@/api/goods/sale';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -43,7 +44,7 @@ async function getToken(): Promise<string> {
   return token;
 }
 
-const activeTab = ref<'staff' | 'warehouses' | 'general' | 'priceLists' | 'giftCertificates' | 'recipes'>('staff');
+const activeTab = ref<'staff' | 'warehouses' | 'general' | 'priceLists' | 'giftCertificates' | 'recipes' | 'discounts'>('staff');
 
 // --- Staff ---
 const staff = ref<GoodsStaff[]>([]);
@@ -51,6 +52,14 @@ const loadingStaff = ref(false);
 const staffForm = reactive({ userId: '', role: 'CASHIER' as GoodsStaffRole });
 const savingStaff = ref(false);
 const ROLE_OPTIONS: GoodsStaffRole[] = ['OWNER', 'MANAGER', 'CASHIER', 'STOCKKEEPER', 'VIEWER'];
+const ROLE_DESCRIPTION_KEYS: Record<GoodsStaffRole, string> = {
+  OWNER: 'goods.roleOwnerDesc',
+  MANAGER: 'goods.roleManagerDesc',
+  CASHIER: 'goods.roleCashierDesc',
+  STOCKKEEPER: 'goods.roleStockkeeperDesc',
+  VIEWER: 'goods.roleViewerDesc',
+};
+const staffFormRoleDescription = computed(() => t(ROLE_DESCRIPTION_KEYS[staffForm.role]));
 
 async function loadStaff() {
   loadingStaff.value = true;
@@ -164,6 +173,11 @@ async function loadSettings() {
     loadingSettings.value = false;
   }
 }
+
+const defaultWarehouseIdModel = computed<string>({
+  get: () => settings.value?.defaultWarehouseId || '',
+  set: (v) => { if (settings.value) settings.value.defaultWarehouseId = v; },
+});
 
 async function saveSettings() {
   if (!settings.value) return;
@@ -405,10 +419,62 @@ async function removeRecipe(r: GoodsRecipe) {
   }
 }
 
+// --- Discount rules ---
+const discountRules = ref<GoodsDiscountRule[]>([]);
+const loadingDiscountRules = ref(false);
+const discountRuleForm = reactive({ name: '', type: 'PERCENT' as GoodsDiscountType, scope: 'CHECK' as GoodsDiscountScope, value: 0 });
+const savingDiscountRule = ref(false);
+const DISCOUNT_TYPES: GoodsDiscountType[] = ['PERCENT', 'FIXED'];
+const DISCOUNT_SCOPES: GoodsDiscountScope[] = ['GOOD', 'CATEGORY', 'CHECK'];
+
+async function loadDiscountRules() {
+  loadingDiscountRules.value = true;
+  try {
+    const goodsToken = await getToken();
+    const { goodsListDiscountRules } = await import('@/api/goods/sale');
+    discountRules.value = await goodsListDiscountRules(goodsToken, nsSlug.value);
+  } catch (e) {
+    logError('[goods/settings] loadDiscountRules failed', e);
+  } finally {
+    loadingDiscountRules.value = false;
+  }
+}
+
+async function addDiscountRule() {
+  if (!discountRuleForm.name.trim() || !discountRuleForm.value) return;
+  savingDiscountRule.value = true;
+  try {
+    const goodsToken = await getToken();
+    const { goodsCreateDiscountRule } = await import('@/api/goods/sale');
+    await goodsCreateDiscountRule(goodsToken, nsSlug.value, { ...discountRuleForm, name: discountRuleForm.name.trim() });
+    discountRuleForm.name = '';
+    discountRuleForm.value = 0;
+    await loadDiscountRules();
+  } catch (e) {
+    logError('[goods/settings] addDiscountRule failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add discount rule', color: 'red' });
+  } finally {
+    savingDiscountRule.value = false;
+  }
+}
+
+async function removeDiscountRule(r: GoodsDiscountRule) {
+  try {
+    const goodsToken = await getToken();
+    const { goodsDeleteDiscountRule } = await import('@/api/goods/sale');
+    await goodsDeleteDiscountRule(goodsToken, nsSlug.value, r.id);
+    await loadDiscountRules();
+  } catch (e) {
+    logError('[goods/settings] removeDiscountRule failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to remove discount rule', color: 'red' });
+  }
+}
+
 watch(activeTab, (tab) => {
   if (tab === 'priceLists') { loadGoodsAndUnits(); if (!priceLists.value.length) loadPriceLists(); }
   else if (tab === 'giftCertificates') { if (!giftCertificates.value.length) loadGiftCertificates(); }
   else if (tab === 'recipes') { loadGoodsAndUnits(); if (!recipes.value.length) loadRecipes(); }
+  else if (tab === 'discounts') { if (!discountRules.value.length) loadDiscountRules(); }
 });
 
 onMounted(() => {
@@ -427,7 +493,7 @@ onMounted(() => {
 
     <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
       <button
-        v-for="tab in (['staff', 'warehouses', 'general', 'priceLists', 'giftCertificates', 'recipes'] as const)"
+        v-for="tab in (['staff', 'warehouses', 'general', 'discounts', 'priceLists', 'giftCertificates', 'recipes'] as const)"
         :key="tab"
         type="button"
         class="px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap"
@@ -438,6 +504,7 @@ onMounted(() => {
           tab === 'staff' ? t('goods.staff')
           : tab === 'warehouses' ? t('goods.warehouse')
           : tab === 'general' ? t('goods.generalSettings')
+          : tab === 'discounts' ? t('goods.discounts')
           : tab === 'priceLists' ? t('goods.priceLists')
           : tab === 'giftCertificates' ? t('goods.giftCertificates')
           : t('goods.recipes')
@@ -471,6 +538,7 @@ onMounted(() => {
           <USelectMenu v-model="staffForm.role" :options="ROLE_OPTIONS" class="w-36" :popper="{ strategy: 'fixed' }" />
           <UButton color="primary" icon="lucide:plus" :loading="savingStaff" @click="addStaff">{{ t('goods.addStaff') }}</UButton>
         </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ staffFormRoleDescription }}</p>
       </div>
     </div>
 
@@ -515,13 +583,55 @@ onMounted(() => {
       <UFormGroup :label="t('goods.currency')">
         <UInput v-model="settings.currency" class="max-w-[140px]" />
       </UFormGroup>
+      <UFormGroup :label="t('goods.warehouse')">
+        <USelectMenu
+          v-model="defaultWarehouseIdModel"
+          :options="warehouses.map((w) => ({ label: w.name, value: w.id }))"
+          value-attribute="value" option-attribute="label" class="max-w-xs" :popper="{ strategy: 'fixed' }"
+        />
+      </UFormGroup>
       <UFormGroup :label="t('goods.maxCashierDiscount')">
         <UInput v-model.number="settings.maxCashierDiscountPercent" type="number" min="0" max="100" class="max-w-[140px]" />
+      </UFormGroup>
+      <UFormGroup :label="t('goods.openSaleReservationTimeout')">
+        <UInput v-model.number="settings.openSaleReservationTimeoutMinutes" type="number" min="1" class="max-w-[140px]" />
+      </UFormGroup>
+      <UFormGroup :label="t('goods.barcodeLabelSize')">
+        <USelectMenu
+          v-model="settings.barcodeLabelSize"
+          :options="['58x40', '40x30']"
+          class="max-w-[140px]"
+          :popper="{ strategy: 'fixed' }"
+        />
       </UFormGroup>
       <UFormGroup :label="t('goods.receiptFooter')">
         <UTextarea v-model="settings.receiptFooterText" :rows="2" />
       </UFormGroup>
       <UButton color="primary" :loading="savingSettings" @click="saveSettings">{{ t('common.save') }}</UButton>
+    </div>
+
+    <!-- Discounts -->
+    <div v-else-if="activeTab === 'discounts'" class="space-y-4">
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-for="r in discountRules" :key="r.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
+          <div>
+            <div class="font-medium text-gray-900 dark:text-white">{{ r.name }}</div>
+            <div class="text-xs text-gray-400">{{ r.scope }} · {{ r.type === 'PERCENT' ? `${r.value}%` : r.value }}</div>
+          </div>
+          <UButton color="red" variant="ghost" icon="lucide:trash-2" size="2xs" @click="removeDiscountRule(r)" />
+        </div>
+        <div v-if="!loadingDiscountRules && !discountRules.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <UInput v-model="discountRuleForm.name" :placeholder="t('common.title')" @keyup.enter="addDiscountRule" />
+          <UInput v-model.number="discountRuleForm.value" type="number" min="0" step="0.01" :placeholder="t('goods.discountValue')" @keyup.enter="addDiscountRule" />
+          <USelectMenu v-model="discountRuleForm.type" :options="DISCOUNT_TYPES" :popper="{ strategy: 'fixed' }" />
+          <USelectMenu v-model="discountRuleForm.scope" :options="DISCOUNT_SCOPES" :popper="{ strategy: 'fixed' }" />
+        </div>
+        <UButton color="primary" icon="lucide:plus" :loading="savingDiscountRule" @click="addDiscountRule">{{ t('goods.addDiscountRule') }}</UButton>
+      </div>
     </div>
 
     <!-- Price lists -->
