@@ -195,6 +195,17 @@ onMounted(async () => {
       </div>
     </div>
 
+    <div v-if="canManageStock" class="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:list" :to="`/${nsSlug}/goods/catalog`">{{ t('goods.catalog') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:shopping-cart" :to="`/${nsSlug}/goods/purchases`">{{ t('goods.purchases') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:package-check" :to="`/${nsSlug}/goods/receiving`">{{ t('goods.receiving') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:arrow-left-right" :to="`/${nsSlug}/goods/transfers`">{{ t('goods.transfers') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:clipboard-check" :to="`/${nsSlug}/goods/inventory`">{{ t('goods.inventory') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:trash-2" :to="`/${nsSlug}/goods/writeoffs`">{{ t('goods.writeoffs') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:truck" :to="`/${nsSlug}/goods/suppliers`">{{ t('goods.suppliers') }}</UButton>
+      <UButton size="xs" color="gray" variant="soft" icon="lucide:bar-chart-3" :to="`/${nsSlug}/goods/reports`">{{ t('goods.reports') }}</UButton>
+    </div>
+
     <div v-if="canManageStock" class="flex justify-end">
       <UButton color="gray" variant="soft" icon="lucide:plus" @click="showAddGood = true">
         {{ t('goods.addGood') }}

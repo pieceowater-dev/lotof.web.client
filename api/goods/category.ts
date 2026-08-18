@@ -52,3 +52,15 @@ export async function goodsCreateCategory(
     return res.createCategory;
   }, namespaceSlug);
 }
+
+const DeleteCategoryDocument = /* GraphQL */ `mutation DeleteCategory($id: ID!) { deleteCategory(id: $id) { success } }`;
+
+export async function goodsDeleteCategory(goodsToken: string, namespaceSlug: string, id: string): Promise<boolean> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ deleteCategory: { success: boolean } }>(
+      DeleteCategoryDocument, { id }, { headers: { GoodsAuthorization: `Bearer ${goodsToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.deleteCategory.success;
+  }, namespaceSlug);
+}

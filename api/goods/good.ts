@@ -119,6 +119,39 @@ export async function goodsCreateGood(goodsToken: string, namespaceSlug: string,
   }, namespaceSlug);
 }
 
+const UpdateGoodDocument = /* GraphQL */ `
+  mutation UpdateGood($input: UpdateGoodInput!) {
+    updateGood(input: $input) { ${GOOD_FIELDS} }
+  }
+`;
+
+export type UpdateGoodInput = {
+  id: string; categoryId?: string; name: string; sku: string; baseUnitId: string;
+  salePriceCents: number; trackStock: boolean; isWeighted: boolean; imageUrl: string; isActive: boolean;
+};
+
+export async function goodsUpdateGood(goodsToken: string, namespaceSlug: string, input: UpdateGoodInput): Promise<GoodsGood> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ updateGood: GoodsGood }>(
+      UpdateGoodDocument, { input }, { headers: { GoodsAuthorization: `Bearer ${goodsToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.updateGood;
+  }, namespaceSlug);
+}
+
+const DeleteGoodDocument = /* GraphQL */ `mutation DeleteGood($id: ID!) { deleteGood(id: $id) { success } }`;
+
+export async function goodsDeleteGood(goodsToken: string, namespaceSlug: string, id: string): Promise<boolean> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ deleteGood: { success: boolean } }>(
+      DeleteGoodDocument, { id }, { headers: { GoodsAuthorization: `Bearer ${goodsToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.deleteGood.success;
+  }, namespaceSlug);
+}
+
 const CreateGoodUnitDocument = /* GraphQL */ `
   mutation CreateGoodUnit($input: CreateGoodUnitInput!) {
     createGoodUnit(input: $input) { id goodId unitId conversionToBase barcode isBase isDefaultSaleUnit isDefaultPurchaseUnit priceOverrideCents }
