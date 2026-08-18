@@ -164,7 +164,12 @@ onMounted(async () => {
 
   if (process.client) {
     const { isCompleted, startTour } = useOnboarding();
-    if (!goods.value.length && !isCompleted(goodsTour.id)) {
+    // warehouses.value.length is required too: loadAll() redirects to
+    // /onboarding when there's no warehouse yet, but navigateTo() from
+    // inside an async function doesn't actually stop this onMounted from
+    // continuing to run -- without this guard the tour would still get
+    // scheduled and pop up on top of the onboarding wizard a second later.
+    if (warehouses.value.length && !goods.value.length && !isCompleted(goodsTour.id)) {
       setTimeout(() => startTour(goodsTour), 1000);
     }
   }

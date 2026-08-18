@@ -32,7 +32,7 @@ const warehouseForm = reactive({
   currencyCode: 'KZT',
 });
 const savingWarehouse = ref(false);
-const isWarehouseValid = computed(() => warehouseForm.name.trim().length > 0 && warehouseForm.address.trim().length > 0);
+const isWarehouseValid = computed(() => warehouseForm.name.trim().length > 0);
 const createdWarehouseId = ref<string | null>(null);
 
 async function saveWarehouseAndContinue() {
@@ -166,22 +166,8 @@ function finish() {
         <UFormGroup :label="t('goods.warehouseName')" required>
           <UInput v-model="warehouseForm.name" size="lg" :placeholder="t('goods.onboardingWarehouseNamePlaceholder')" @keyup.enter="saveWarehouseAndContinue" />
         </UFormGroup>
-        <UFormGroup :label="t('goods.warehouseAddress')" required>
+        <UFormGroup :label="t('goods.warehouseAddress')">
           <UInput v-model="warehouseForm.address" size="lg" @keyup.enter="saveWarehouseAndContinue" />
-        </UFormGroup>
-        <UFormGroup :label="t('goods.warehouseType')">
-          <USelectMenu
-            v-model="warehouseForm.type"
-            :options="[
-              { label: t('goods.warehouseTypeBoth'), value: 'BOTH' },
-              { label: t('goods.warehouseTypeShop'), value: 'SHOP' },
-              { label: t('goods.warehouseTypeStorage'), value: 'STORAGE' },
-            ]"
-            value-attribute="value"
-            option-attribute="label"
-            size="lg"
-            :popper="{ strategy: 'fixed' }"
-          />
         </UFormGroup>
         <UFormGroup :label="t('goods.currency')">
           <USelectMenu v-model="warehouseForm.currencyCode" :options="currencyOptions" value-attribute="value" option-attribute="label" size="lg" class="max-w-[180px]" :popper="{ strategy: 'fixed' }" />
@@ -189,7 +175,7 @@ function finish() {
 
         <div class="flex justify-end pt-1">
           <UButton color="primary" :loading="savingWarehouse" :disabled="!isWarehouseValid || savingWarehouse" @click="saveWarehouseAndContinue">
-            {{ t('app.continue') }}
+            {{ t('common.continue') }}
           </UButton>
         </div>
       </div>

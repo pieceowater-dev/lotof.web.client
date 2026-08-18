@@ -137,7 +137,7 @@ async function loadWarehouses() {
 }
 
 async function addWarehouse() {
-  if (!warehouseForm.name.trim() || !warehouseForm.address.trim()) return;
+  if (!warehouseForm.name.trim()) return;
   savingWarehouse.value = true;
   try {
     const goodsToken = await getToken();
