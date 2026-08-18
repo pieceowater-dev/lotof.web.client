@@ -97,12 +97,12 @@ export const ALL_APPS: AppConfig[] = [
   //   canAdd: false,
   // },
   {
-    name: 'lota Calls',
-    bundle: 'pieceowater.calls',
-    address: 'calls',
-  icon: 'lucide:headset',
-    titleKey: 'app.calls',
-    descriptionKey: 'app.callsDesc',
+    name: 'lota Plans',
+    bundle: 'pieceowater.plans',
+    address: 'plans',
+    icon: 'lucide:calendar-check',
+    titleKey: 'app.plans',
+    descriptionKey: 'app.plansDesc',
     canAdd: false,
   },
 ];

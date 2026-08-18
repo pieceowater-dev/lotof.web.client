@@ -8,7 +8,7 @@ import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import { getErrorMessage } from '@/utils/types/errors';
 import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { FilterPaginationLengthEnum } from '@gql-hub';
-import { telHref, whatsappHref } from '@/utils/phoneLinks';
+import { telHref, whatsappHref, phoneDigitsForLink } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
@@ -36,6 +36,7 @@ const props = defineProps<{
   order: MenuOrder | null;
   branches?: MenuBranch[];
   sourceTagOptions?: { sourceTag: string; label: string }[];
+  brandName?: string;
 }>();
 
 const emit = defineEmits<{
@@ -629,7 +630,17 @@ async function addFromDetail() {
 // --- Contact card: call / WhatsApp / 2GIS ---
 const phoneDisplay = computed(() => formatDisplayPhoneUniversal(props.order?.phone || ''));
 const callHref = computed(() => telHref(props.order?.phone));
-const waHref = computed(() => whatsappHref(props.order?.phone));
+// Pre-fills the chat with a tracking link instead of opening an empty
+// conversation -- the /to/[namespace]/menu/[orderKey] page this points at
+// parses "{smartOrderNumber}-{phoneDigits}" back out (see parseOrderStatusKey).
+const waHref = computed(() => {
+  if (!props.order) return '';
+  const phoneDigits = phoneDigitsForLink(props.order.phone);
+  if (!phoneDigits || !props.brandName) return whatsappHref(props.order.phone);
+  const trackingUrl = `${window.location.origin}/to/${nsSlug.value}/menu/${smartOrderNumber(props.order)}-${phoneDigits}`;
+  const message = t('menu.whatsappTrackingMessage', { brand: props.brandName, url: trackingUrl });
+  return whatsappHref(props.order.phone, message);
+});
 const mapHref = computed(() => {
   if (!props.order) return '';
   if ((props.order.type === 'pickup' || props.order.type === 'table') && props.order.branchId) {
