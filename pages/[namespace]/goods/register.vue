@@ -9,7 +9,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsRegister, GoodsCashShift } from '@/api/goods/register';
-import type { GoodsSale, GoodsPaymentMethod, GoodsCashMovementType } from '@/api/goods/sale';
+import type { GoodsSale, GoodsSaleStatus, GoodsPaymentMethod, GoodsCashMovementType } from '@/api/goods/sale';
 import type { GoodsGood } from '@/api/goods/good';
 
 const { t } = useI18n();
@@ -375,6 +375,14 @@ function formatCents(cents: number): string {
   return (cents / 100).toFixed(2);
 }
 
+const SALE_STATUS_LABELS: Record<GoodsSaleStatus, string> = {
+  OPEN: t('goods.saleStatusOpen'), PAID: t('goods.saleStatusPaid'), VOID: t('goods.saleStatusVoid'),
+  REFUNDED: t('goods.saleStatusRefunded'), PARTIALLY_REFUNDED: t('goods.saleStatusPartiallyRefunded'),
+};
+const SALE_STATUS_COLORS: Record<GoodsSaleStatus, any> = {
+  OPEN: 'primary', PAID: 'green', VOID: 'gray', REFUNDED: 'red', PARTIALLY_REFUNDED: 'amber',
+};
+
 // --- History: recent sales (cancel-paid-sale) + returns ---
 const showHistory = ref(false);
 const loadingHistory = ref(false);
@@ -590,7 +598,7 @@ onMounted(async () => {
           <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
             <div v-for="item in activeSale.items" :key="item.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
               <div class="min-w-0">
-                <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodNameById.get(item.goodId) || item.goodId }}</div>
+                <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodNameById.get(item.goodId) || t('goods.unknownItem') }}</div>
                 <div class="text-gray-400 tabular-nums">{{ item.quantity }} × {{ formatCents(item.priceAtSaleCents) }}</div>
               </div>
               <div class="flex items-center gap-2 flex-shrink-0">
@@ -742,7 +750,7 @@ onMounted(async () => {
             <div class="flex items-center justify-between text-sm">
               <span class="font-medium">{{ s.number }}</span>
               <div class="flex items-center gap-2">
-                <UBadge color="gray" variant="soft">{{ s.status }}</UBadge>
+                <UBadge :color="SALE_STATUS_COLORS[s.status]" variant="soft">{{ SALE_STATUS_LABELS[s.status] }}</UBadge>
                 <span class="font-semibold">{{ formatCents(s.totalAmountCents) }}</span>
               </div>
             </div>
@@ -779,7 +787,7 @@ onMounted(async () => {
             <UButton size="xs" color="gray" variant="soft" icon="lucide:plus" @click="addReturnDraftItem">{{ t('common.add') }}</UButton>
             <div v-if="returnDraftItems.length" class="divide-y divide-gray-100 dark:divide-gray-800 mt-2">
               <div v-for="(item, idx) in returnDraftItems" :key="idx" class="flex items-center justify-between text-sm py-1.5">
-                <span>{{ goodNameById.get(item.goodId) || item.goodId }} — {{ item.quantity }} · {{ formatCents(Math.round(item.amount * 100)) }}</span>
+                <span>{{ goodNameById.get(item.goodId) || t('goods.unknownItem') }} — {{ item.quantity }} · {{ formatCents(Math.round(item.amount * 100)) }}</span>
                 <UButton size="2xs" color="red" variant="ghost" icon="lucide:x" @click="removeReturnDraftItem(idx)" />
               </div>
             </div>

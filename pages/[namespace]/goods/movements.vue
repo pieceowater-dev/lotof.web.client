@@ -49,12 +49,44 @@ const suppliers = ref<GoodsSupplier[]>([]);
 const goods = ref<GoodsGood[]>([]);
 const units = ref<GoodsUnit[]>([]);
 
-const warehouseName = (id: string) => warehouses.value.find((w) => w.id === id)?.name || id;
+const warehouseName = (id: string) => warehouses.value.find((w) => w.id === id)?.name || t('goods.unknownWarehouse');
 const supplierName = (id?: string | null) => (id && suppliers.value.find((s) => s.id === id)?.name) || '—';
-const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || id;
+const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || t('goods.unknownItem');
 const unitSymbol = (id: string) => units.value.find((u) => u.id === id)?.symbol || '';
 
 const REASON_LABELS: Record<GoodsWriteOffReason, string> = { DAMAGE: t('goods.reasonDamage'), EXPIRED: t('goods.reasonExpired'), LOST: t('goods.reasonLost'), OTHER: t('goods.reasonOther') };
+const REASON_OPTIONS_LABELED = computed(() => (['DAMAGE', 'EXPIRED', 'LOST', 'OTHER'] as GoodsWriteOffReason[]).map((value) => ({ label: REASON_LABELS[value], value })));
+
+const PO_STATUS_LABELS: Record<GoodsPurchaseOrderStatus, string> = {
+  DRAFT: t('goods.poStatusDraft'), SENT: t('goods.poStatusSent'), PARTIALLY_RECEIVED: t('goods.poStatusPartiallyReceived'),
+  RECEIVED: t('goods.poStatusReceived'), CANCELLED: t('goods.poStatusCancelled'),
+};
+const PO_STATUS_COLORS: Record<GoodsPurchaseOrderStatus, string> = {
+  DRAFT: 'gray', SENT: 'primary', PARTIALLY_RECEIVED: 'amber', RECEIVED: 'green', CANCELLED: 'red',
+};
+const TRANSFER_STATUS_LABELS: Record<GoodsStockTransferStatus, string> = {
+  DRAFT: t('goods.transferStatusDraft'), IN_TRANSIT: t('goods.transferStatusInTransit'), COMPLETED: t('goods.transferStatusCompleted'), CANCELLED: t('goods.transferStatusCancelled'),
+};
+const TRANSFER_STATUS_COLORS: Record<GoodsStockTransferStatus, string> = {
+  DRAFT: 'gray', IN_TRANSIT: 'primary', COMPLETED: 'green', CANCELLED: 'red',
+};
+
+// Purchase orders and transfers use disjoint status enums that happen to
+// share some string values (e.g. both have DRAFT/CANCELLED) with different
+// meanings -- dispatch on row.kind, not just the raw string, so each is
+// labeled/colored from the right map.
+function rowStatusLabel(row: { kind: MovementKind; status: string | null }): string {
+  if (!row.status) return '';
+  if (row.kind === 'purchase') return PO_STATUS_LABELS[row.status as GoodsPurchaseOrderStatus] || row.status;
+  if (row.kind === 'transfer') return TRANSFER_STATUS_LABELS[row.status as GoodsStockTransferStatus] || row.status;
+  return row.status;
+}
+function rowStatusColor(row: { kind: MovementKind; status: string | null }): any {
+  if (!row.status) return 'gray';
+  if (row.kind === 'purchase') return PO_STATUS_COLORS[row.status as GoodsPurchaseOrderStatus] || 'gray';
+  if (row.kind === 'transfer') return TRANSFER_STATUS_COLORS[row.status as GoodsStockTransferStatus] || 'gray';
+  return 'gray';
+}
 
 async function loadAll() {
   loading.value = true;
@@ -115,7 +147,13 @@ const allRows = computed<MovementRow[]>(() => {
   ];
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1));
 });
-const rows = computed(() => (activeType.value === 'all' ? allRows.value : allRows.value.filter((r) => r.kind === activeType.value)));
+const searchQuery = ref('');
+const rows = computed(() => {
+  let list = activeType.value === 'all' ? allRows.value : allRows.value.filter((r) => r.kind === activeType.value);
+  const q = searchQuery.value.trim().toLowerCase();
+  if (q) list = list.filter((r) => r.number.toLowerCase().includes(q) || r.summary.toLowerCase().includes(q));
+  return list;
+});
 
 const typeLabel = (kind: MovementKind) => t(TYPE_TABS.find((x) => x.key === kind)!.labelKey);
 const typeIcon = (kind: MovementKind) => TYPE_TABS.find((x) => x.key === kind)!.icon;
@@ -148,7 +186,7 @@ function openDetail(row: MovementRow) {
   showDetail.value = true;
 }
 
-const PO_STATUS_OPTIONS: GoodsPurchaseOrderStatus[] = ['DRAFT', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'];
+const PO_STATUS_OPTIONS = computed(() => (['DRAFT', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'] as GoodsPurchaseOrderStatus[]).map((value) => ({ label: PO_STATUS_LABELS[value], value })));
 const busyAction = ref(false);
 
 async function updatePoStatus(status: GoodsPurchaseOrderStatus) {
@@ -217,7 +255,6 @@ const extraFieldsByType: Record<MovementKind, MovementExtraField[]> = {
   transfer: [],
   writeoff: [],
 };
-const REASON_OPTIONS: GoodsWriteOffReason[] = ['DAMAGE', 'EXPIRED', 'LOST', 'OTHER'];
 
 const isFormValid = computed(() => {
   if (!draftItems.value.length) return false;
@@ -315,6 +352,10 @@ onMounted(loadAll);
       </button>
     </div>
 
+    <div class="flex-shrink-0 mt-3">
+      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+    </div>
+
     <div class="flex-1 min-h-0 mt-3">
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:arrow-left-right" @select="openDetail">
         <template #kind-data="{ row }">
@@ -329,7 +370,7 @@ onMounted(loadAll);
           </button>
         </template>
         <template #status-data="{ row }">
-          <UBadge v-if="row.status" color="gray" variant="soft" size="xs">{{ row.status }}</UBadge>
+          <UBadge v-if="row.status" :color="rowStatusColor(row)" variant="soft" size="xs">{{ rowStatusLabel(row) }}</UBadge>
           <span v-else class="text-gray-300 dark:text-gray-700">—</span>
         </template>
       </AppTable>
@@ -357,6 +398,8 @@ onMounted(loadAll);
             <USelectMenu
               :model-value="(detailDoc as any).status"
               :options="PO_STATUS_OPTIONS"
+              value-attribute="value"
+              option-attribute="label"
               size="sm"
               class="w-48"
               :popper="{ strategy: 'fixed' }"
@@ -430,7 +473,7 @@ onMounted(loadAll);
             </UFormGroup>
 
             <UFormGroup v-if="createType === 'writeoff'" :label="t('goods.reason')" required>
-              <USelectMenu v-model="form.reason" :options="REASON_OPTIONS" :popper="{ strategy: 'fixed' }" />
+              <USelectMenu v-model="form.reason" :options="REASON_OPTIONS_LABELED" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
             </UFormGroup>
           </div>
 

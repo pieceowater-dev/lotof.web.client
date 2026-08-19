@@ -34,7 +34,7 @@ const TABS = [
 const activeTab = ref<(typeof TABS)[number]['key']>('top');
 const loading = ref(false);
 const goods = ref<GoodsGood[]>([]);
-const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || id;
+const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || t('goods.unknownItem');
 
 const today = new Date();
 const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);

@@ -46,7 +46,7 @@ const goodCol = computed(() => (props.showUnit ? 6 : 8));
 const qtyCol = computed(() => (props.showUnit ? 2 : 2));
 
 function goodName(goodId: string): string {
-  return props.goods.find((g) => g.id === goodId)?.name || goodId;
+  return props.goods.find((g) => g.id === goodId)?.name || t('goods.unknownItem');
 }
 
 function addDraftItem() {

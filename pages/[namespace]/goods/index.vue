@@ -105,14 +105,20 @@ const allRows = computed(() => stock.value.map((s) => {
   const good = goodById.value.get(s.goodId);
   return {
     goodId: s.goodId,
-    name: good?.name || s.goodId,
+    name: good?.name || t('goods.unknownItem'),
     sku: good?.sku || '',
     quantity: s.quantity,
     reservedQuantity: s.reservedQuantity,
     available: s.available,
   };
 }));
-const rows = computed(() => statFilter.value === 'lowStock' ? allRows.value.filter((r) => r.available <= 5) : allRows.value);
+const searchQuery = ref('');
+const rows = computed(() => {
+  let list = statFilter.value === 'lowStock' ? allRows.value.filter((r) => r.available <= 5) : allRows.value;
+  const q = searchQuery.value.trim().toLowerCase();
+  if (q) list = list.filter((r) => r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q));
+  return list;
+});
 
 const columns = [
   { key: 'name', label: t('goods.goodName') },
@@ -213,6 +219,10 @@ onMounted(async () => {
         <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
       </button>
+    </div>
+
+    <div class="flex-shrink-0 mt-3">
+      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
     </div>
 
     <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">

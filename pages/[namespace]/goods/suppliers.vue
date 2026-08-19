@@ -30,6 +30,12 @@ const loading = ref(true);
 const suppliers = ref<GoodsSupplier[]>([]);
 const goods = ref<GoodsGood[]>([]);
 const supplierById = computed(() => new Map(suppliers.value.map((s) => [s.id, s])));
+const searchQuery = ref('');
+const filteredSuppliers = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return suppliers.value;
+  return suppliers.value.filter((s) => s.name.toLowerCase().includes(q) || s.phone.toLowerCase().includes(q) || s.contactPerson.toLowerCase().includes(q));
+});
 
 async function loadAll() {
   loading.value = true;
@@ -188,15 +194,16 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-1 min-h-0 mt-3 flex flex-col gap-3">
+      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
       <div class="flex-1 min-h-0">
-        <AppTable :rows="suppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
+        <AppTable :rows="filteredSuppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
           <template #name-data="{ row }">
             <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)">
               <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEdit(supplierById.get(row.id)!)">
                 {{ row.name }}
               </button>
               <UBadge v-if="row.contactsClientId && contactsSummaryCache[row.id]" color="primary" variant="soft" size="xs">
-                {{ contactsSummaryCache[row.id]?.name || row.contactsClientId }}
+                {{ contactsSummaryCache[row.id]?.name || t('goods.unknownContact') }}
               </UBadge>
             </div>
           </template>

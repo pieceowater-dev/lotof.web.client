@@ -66,7 +66,12 @@ const goodColumns = [
   { key: 'isActive', label: t('common.status') },
   { key: 'actions', label: '' },
 ];
-const goodRows = computed(() => goods.value.map((g) => ({ ...g, salePriceCents: (g.salePriceCents / 100).toFixed(2) })));
+const goodSearchQuery = ref('');
+const goodRows = computed(() => {
+  const q = goodSearchQuery.value.trim().toLowerCase();
+  const list = q ? goods.value.filter((g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q)) : goods.value;
+  return list.map((g) => ({ ...g, salePriceCents: (g.salePriceCents / 100).toFixed(2) }));
+});
 const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 
 const categoryColumns = [
@@ -290,13 +295,17 @@ onMounted(loadAll);
       </UButton>
     </div>
 
-    <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3">
+    <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
+      <UInput v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
       <div class="flex-1 min-h-0">
         <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
               {{ row.name }}
             </button>
+          </template>
+          <template #isActive-data="{ row }">
+            <UBadge :color="row.isActive ? 'green' : 'gray'" variant="soft">{{ row.isActive ? t('goods.goodActive') : t('goods.goodInactive') }}</UBadge>
           </template>
           <template #actions-data="{ row }">
             <div class="flex justify-end">

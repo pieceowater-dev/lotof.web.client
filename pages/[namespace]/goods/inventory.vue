@@ -12,7 +12,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
-import type { GoodsInventoryCount, GoodsInventoryCountItem } from '@/api/goods/inventorycount';
+import type { GoodsInventoryCount, GoodsInventoryCountItem, GoodsInventoryCountStatus } from '@/api/goods/inventorycount';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
 
@@ -24,6 +24,11 @@ const { titleBySlug } = useNamespace();
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.inventory')} — ${titleBySlug(nsSlug.value)}` : t('goods.inventory'),
 }));
+
+const COUNT_STATUS_LABELS: Record<GoodsInventoryCountStatus, string> = {
+  DRAFT: t('goods.countStatusDraft'), IN_PROGRESS: t('goods.countStatusInProgress'), COMPLETED: t('goods.countStatusCompleted'),
+};
+const COUNT_STATUS_COLORS: Record<GoodsInventoryCountStatus, any> = { DRAFT: 'gray', IN_PROGRESS: 'amber', COMPLETED: 'green' };
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
@@ -65,11 +70,16 @@ const columns = [
   { key: 'progress', label: t('goods.countedQty') },
   { key: 'startedAt', label: t('goods.startCount') },
 ];
-const rows = computed(() => counts.value.map((c) => ({
-  ...c,
-  warehouseName: warehouses.value.find((w) => w.id === c.warehouseId)?.name || c.warehouseId,
-  progress: `${c.items.filter((i) => i.countedQty != null).length} / ${c.items.length}`,
-})));
+const searchQuery = ref('');
+const rows = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  const list = q ? counts.value.filter((c) => (warehouses.value.find((w) => w.id === c.warehouseId)?.name || '').toLowerCase().includes(q)) : counts.value;
+  return list.map((c) => ({
+    ...c,
+    warehouseName: warehouses.value.find((w) => w.id === c.warehouseId)?.name || t('goods.unknownWarehouse'),
+    progress: `${c.items.filter((i) => i.countedQty != null).length} / ${c.items.length}`,
+  }));
+});
 
 const showStart = ref(false);
 const startWarehouseId = ref('');
@@ -168,6 +178,10 @@ onMounted(loadAll);
       <GoodsNavTabs />
     </div>
 
+    <div class="flex-shrink-0 mt-3">
+      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+    </div>
+
     <div class="flex-1 min-h-0 mt-3">
       <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check" @select="openGrid">
         <template #warehouseName-data="{ row }">
@@ -176,7 +190,7 @@ onMounted(loadAll);
           </button>
         </template>
         <template #status-data="{ row }">
-          <UBadge :color="row.status === 'COMPLETED' ? 'green' : 'amber'" variant="soft" size="xs">{{ row.status }}</UBadge>
+          <UBadge :color="COUNT_STATUS_COLORS[row.status as GoodsInventoryCountStatus]" variant="soft" size="xs">{{ COUNT_STATUS_LABELS[row.status as GoodsInventoryCountStatus] || row.status }}</UBadge>
         </template>
       </AppTable>
     </div>
