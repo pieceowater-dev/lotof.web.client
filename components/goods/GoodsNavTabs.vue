@@ -29,8 +29,39 @@ function isActive(address: string) {
 </script>
 
 <template>
-  <div v-if="canManageStock" class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-800">
-    <div class="flex items-center gap-1 overflow-x-auto">
+  <div v-if="canManageStock" class="flex flex-col gap-2">
+    <!-- Settings/Register used to only be reachable from index.vue's header
+         -- every other page in the module was a dead end for them. Putting
+         them here (rendered on every page via this shared component) closes
+         that gap without duplicating header markup across 6 files, and is
+         now the single Register entry point (index.vue used to render its
+         own second copy in its own header -- removed as a duplicate).
+         Register sits in its own row above the tabs -- it's the one-click
+         "go sell something" escape hatch from anywhere in the back-office,
+         so it should read as the most prominent thing here, not just
+         another item sharing the tab-bar row. Settings stays a quiet icon
+         link since it's an occasional, admin-only destination. -->
+    <div class="flex items-center justify-end gap-1.5 flex-shrink-0">
+      <UButton
+        data-tour="goods-register-btn"
+        :to="`/${nsSlug}/goods/register`"
+        icon="lucide:calculator"
+        class="flex-shrink-0 !border-0 !text-white !bg-gradient-to-r !from-blue-600 !to-emerald-500 hover:!from-blue-700 hover:!to-emerald-600 shadow-sm"
+      >
+        {{ t('goods.openRegister') }}
+      </UButton>
+      <NuxtLink
+        v-if="isOwnerOrManager"
+        data-tour="goods-settings-btn"
+        :to="`/${nsSlug}/goods/settings`"
+        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+      >
+        <Icon name="lucide:settings" class="w-4 h-4" />
+        <span class="hidden sm:inline">{{ t('goods.settings') }}</span>
+      </NuxtLink>
+    </div>
+
+    <div class="flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800">
       <NuxtLink
         v-for="tab in TABS"
         :key="tab.address"
@@ -42,31 +73,6 @@ function isActive(address: string) {
       >
         <Icon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
         {{ t(tab.labelKey) }}
-      </NuxtLink>
-    </div>
-
-    <!-- Settings/Register used to only be reachable from index.vue's header
-         -- every other page in the module was a dead end for them. Putting
-         them here (rendered on every page via this shared component) closes
-         that gap without duplicating header markup across 6 files, and is
-         now the single Register entry point (index.vue used to render its
-         own second copy in its own header -- removed as a duplicate).
-         Register gets full-color button weight (it's the one-click "go sell
-         something" escape hatch from anywhere in the back-office); Settings
-         stays a quiet icon link since it's an occasional, admin-only
-         destination. -->
-    <div class="flex items-center gap-1.5 ml-auto flex-shrink-0 pl-2">
-      <UButton data-tour="goods-register-btn" :to="`/${nsSlug}/goods/register`" color="primary" icon="lucide:calculator" class="flex-shrink-0">
-        <span class="hidden sm:inline">{{ t('goods.openRegister') }}</span>
-      </UButton>
-      <NuxtLink
-        v-if="isOwnerOrManager"
-        data-tour="goods-settings-btn"
-        :to="`/${nsSlug}/goods/settings`"
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-      >
-        <Icon name="lucide:settings" class="w-4 h-4" />
-        <span class="hidden sm:inline">{{ t('goods.settings') }}</span>
       </NuxtLink>
     </div>
   </div>
