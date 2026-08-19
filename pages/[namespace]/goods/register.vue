@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useGoodsStaffRole } from '@/composables/useGoodsStaffRole';
 import { useNamespace } from '@/composables/useNamespace';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -22,15 +22,9 @@ useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.register')} — ${titleBySlug(nsSlug.value)}` : t('goods.register'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
 const loading = ref(true);
@@ -217,6 +211,19 @@ async function ensureSale(): Promise<GoodsSale> {
 async function addGoodToCart(goodId: string, unitId: string, quantity: number) {
   const goodsToken = await getToken();
   const sale = await ensureSale();
+  // Scanning/tapping the same good again should top up its existing line
+  // rather than create a second one -- two separate lines for the same good
+  // each reserve stock independently and can trip a false "insufficient
+  // stock" error at payment time even when the combined quantity is fine.
+  const existing = (sale.items || []).find((i) => i.goodId === goodId && i.unitId === unitId && !i.discountRuleId && !i.discountCents);
+  if (existing) {
+    const { goodsUpdateSaleItem } = await import('@/api/goods/sale');
+    activeSale.value = await goodsUpdateSaleItem(goodsToken, nsSlug.value, {
+      saleItemId: existing.id,
+      quantity: existing.quantity + quantity,
+    });
+    return;
+  }
   const { goodsAddSaleItem } = await import('@/api/goods/sale');
   activeSale.value = await goodsAddSaleItem(goodsToken, nsSlug.value, sale.id, goodId, unitId, quantity);
 }
@@ -466,10 +473,10 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-[1600px] mx-auto px-4 py-6 space-y-4">
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 max-w-[1600px] mx-auto w-full space-y-3">
     <!-- Minimal chrome: this is the face of the product -->
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.register') }}</h1>
+    <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.register') }}</h1>
       <div class="flex items-center gap-1.5 flex-wrap">
         <UButton color="gray" variant="soft" icon="lucide:warehouse" :to="`/${nsSlug}/goods`">
           {{ t('goods.warehouse') }}
@@ -488,30 +495,38 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="loading" class="text-center py-16 text-gray-400">
+    <div v-if="loading" class="flex-1 min-h-0 flex items-center justify-center text-gray-400">
       <Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" />
     </div>
 
     <!-- No register yet on this warehouse -->
-    <div v-else-if="!activeRegister" class="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center space-y-3">
-      <Icon name="lucide:store" class="w-8 h-8 mx-auto text-gray-400" />
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.noRegisterYet') }}</p>
-      <UButton v-if="isOwnerOrManager" color="primary" :loading="creatingRegister" @click="createRegisterHere">
-        {{ t('goods.createRegister') }}
-      </UButton>
+    <div v-else-if="!activeRegister" class="flex-1 min-h-0 flex items-center justify-center">
+      <div class="max-w-md w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center space-y-3">
+        <Icon name="lucide:store" class="w-8 h-8 mx-auto text-gray-400" />
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.noRegisterYet') }}</p>
+        <UButton v-if="isOwnerOrManager" color="primary" :loading="creatingRegister" @click="createRegisterHere">
+          {{ t('goods.createRegister') }}
+        </UButton>
+      </div>
     </div>
 
     <!-- No open shift -->
-    <div v-else-if="!currentShift" class="max-w-md mx-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 space-y-4">
-      <p class="text-sm text-gray-500 dark:text-gray-400 text-center">{{ t('goods.openShift') }}</p>
-      <UFormGroup :label="t('goods.openingCash')">
-        <UInput v-model.number="openingCash" type="number" min="0" step="0.01" size="lg" @keyup.enter="openShift" />
-      </UFormGroup>
-      <UButton block color="primary" :loading="shiftBusy" @click="openShift">{{ t('goods.openShift') }}</UButton>
+    <div v-else-if="!currentShift" class="flex-1 min-h-0 flex items-center justify-center">
+      <div class="max-w-md w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 space-y-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400 text-center">{{ t('goods.openShift') }}</p>
+        <UFormGroup :label="t('goods.openingCash')">
+          <UInput v-model.number="openingCash" type="number" min="0" step="0.01" size="lg" @keyup.enter="openShift" />
+        </UFormGroup>
+        <UButton block color="primary" :loading="shiftBusy" @click="openShift">{{ t('goods.openShift') }}</UButton>
+      </div>
     </div>
 
     <!-- POS -->
-    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-[calc(100vh-8.5rem)]" data-tour="goods-register-pos">
+    <div
+      v-else
+      data-tour="goods-register-pos"
+      class="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1 lg:grid-cols-3 gap-4"
+    >
       <!-- Product picker: 2/3 -->
       <div class="lg:col-span-2 flex flex-col min-h-0 gap-3">
         <UInput
@@ -531,14 +546,14 @@ onMounted(async () => {
               v-for="g in visibleGoods"
               :key="g.id"
               type="button"
-              class="group text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md active:scale-[0.97]"
+              class="group aspect-square flex flex-col text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md active:scale-[0.97]"
               @click="addFromCard(g)"
             >
-              <div class="aspect-square bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden">
+              <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden">
                 <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
                 <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
               </div>
-              <div class="p-2.5 space-y-0.5">
+              <div class="flex-shrink-0 p-2.5 space-y-0.5">
                 <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
                 <div class="text-sm font-semibold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
               </div>

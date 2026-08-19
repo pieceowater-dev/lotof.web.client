@@ -4,8 +4,10 @@ import { useGoodsToken } from '@/composables/useGoodsToken';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { CURRENCIES } from '@/utils/currency';
+import GoodFormModal from '@/components/goods/GoodFormModal.vue';
 import type { GoodsWarehouseType } from '@/api/goods/warehouse';
 import type { GoodsUnit } from '@/api/goods/unit';
+import type { CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -94,41 +96,38 @@ async function loadExistingUnitsAndContinue() {
   step.value = 3;
 }
 
-// --- Step 3: first good (optional) ---
-const goodForm = reactive({ name: '', sku: '', salePriceCents: 0 });
+// --- Step 3: first good (optional) -- uses the same GoodFormModal as the
+// rest of the module instead of a third divergent copy of the form.
+const showGoodModal = ref(false);
 const addingGood = ref(false);
 const addedGoods = ref<{ name: string }[]>([]);
-const isGoodValid = computed(() => goodForm.name.trim().length > 0);
 
-async function addGood() {
-  if (!isGoodValid.value) return;
+async function openAddGoodOnboarding() {
+  // Self-heal: step 2 may have been skipped without ever loading/seeding a
+  // unit (fresh namespace, "Skip" clicked) -- without a base unit the form
+  // has nothing to offer in its unit picker, so seed the defaults here
+  // first rather than opening a modal whose Save button can never enable.
+  if (!seededUnits.value.length) {
+    try {
+      const goodsToken = await getToken();
+      const { goodsSeedDefaultUnits } = await import('@/api/goods/unit');
+      seededUnits.value = await goodsSeedDefaultUnits(goodsToken, nsSlug.value);
+    } catch (e) {
+      logError('[goods onboarding] pre-seed units failed', e);
+    }
+  }
+  showGoodModal.value = true;
+}
+
+async function submitGoodForm(payload: CreateGoodInput | UpdateGoodInput) {
+  if ('id' in payload) return; // onboarding only ever creates
   addingGood.value = true;
   try {
     const goodsToken = await getToken();
-    // Self-heal: step 2 may have been skipped without ever loading/seeding
-    // a unit (fresh namespace, "Skip" clicked) -- without a base unit a
-    // good can't be created at all, so seed the defaults here instead of
-    // silently leaving nothing to submit.
-    if (!seededUnits.value.length) {
-      const { goodsSeedDefaultUnits } = await import('@/api/goods/unit');
-      seededUnits.value = await goodsSeedDefaultUnits(goodsToken, nsSlug.value);
-    }
-    const baseUnit = seededUnits.value.find((u) => u.symbol === 'шт') || seededUnits.value[0];
     const { goodsCreateGood } = await import('@/api/goods/good');
-    const created = await goodsCreateGood(goodsToken, nsSlug.value, {
-      name: goodForm.name.trim(),
-      sku: goodForm.sku.trim() || goodForm.name.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 32),
-      baseUnitId: baseUnit.id,
-      costPriceCents: 0,
-      salePriceCents: Math.round(goodForm.salePriceCents * 100),
-      trackStock: true,
-      isWeighted: false,
-      imageUrl: '',
-    });
+    const created = await goodsCreateGood(goodsToken, nsSlug.value, payload);
     addedGoods.value.push({ name: created.name });
-    goodForm.name = '';
-    goodForm.sku = '';
-    goodForm.salePriceCents = 0;
+    showGoodModal.value = false;
   } catch (e) {
     logError('[goods onboarding] addGood failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to add good', color: 'red' });
@@ -146,7 +145,7 @@ function finish() {
   <div class="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 overflow-y-auto">
     <div class="max-w-lg mx-auto px-4 py-10">
       <div class="text-center mb-6">
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.onboardingTitle') }}</h1>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.onboardingTitle') }}</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('goods.onboardingSubtitle') }}</p>
       </div>
 
@@ -217,21 +216,9 @@ function finish() {
           </div>
         </div>
 
-        <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')">
-            <UInput v-model="goodForm.name" size="lg" :placeholder="t('goods.onboardingGoodNamePlaceholder')" @keyup.enter="addGood" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.goodSku')">
-            <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="addGood" />
-            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
-          </UFormGroup>
-          <UFormGroup :label="t('goods.salePrice')">
-            <UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="addGood" />
-          </UFormGroup>
-          <UButton color="gray" variant="soft" icon="lucide:plus" :loading="addingGood" :disabled="!isGoodValid || addingGood" @click="addGood">
-            {{ t('goods.addGood') }}
-          </UButton>
-        </div>
+        <UButton color="gray" variant="soft" icon="lucide:plus" @click="openAddGoodOnboarding">
+          {{ t('goods.addGood') }}
+        </UButton>
 
         <div class="flex justify-end pt-1">
           <UButton color="primary" @click="finish">
@@ -240,5 +227,7 @@ function finish() {
         </div>
       </div>
     </div>
+
+    <GoodFormModal v-model="showGoodModal" :units="seededUnits" :saving="addingGood" :ns-slug="nsSlug" @submit="submitGoodForm" />
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -19,18 +19,18 @@ useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.reports')} — ${titleBySlug(nsSlug.value)}` : t('goods.reports'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
-const activeTab = ref<'top' | 'abc' | 'margin' | 'alerts'>('top');
+const TABS = [
+  { key: 'top', labelKey: 'goods.topGoods', icon: 'lucide:trending-up' },
+  { key: 'abc', labelKey: 'goods.abcAnalysis', icon: 'lucide:layers' },
+  { key: 'margin', labelKey: 'goods.marginReport', icon: 'lucide:percent' },
+  { key: 'alerts', labelKey: 'goods.lowStockAlerts', icon: 'lucide:bell' },
+] as const;
+const activeTab = ref<(typeof TABS)[number]['key']>('top');
 const loading = ref(false);
 const goods = ref<GoodsGood[]>([]);
 const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || id;
@@ -45,6 +45,10 @@ const abcEntries = ref<GoodsAbcEntry[]>([]);
 const marginReport = ref<GoodsMarginReport | null>(null);
 const lowStock = ref<GoodsStock[]>([]);
 const expiringBatches = ref<GoodsBatch[]>([]);
+
+// Lightweight bar visualization without pulling in a charting dependency --
+// each row's bar is sized relative to the largest value in the list.
+const maxRevenue = computed(() => Math.max(1, ...topGoods.value.map((e) => e.revenueCents)));
 
 function rangeIso() {
   return { from: new Date(from.value).toISOString(), to: new Date(to.value + 'T23:59:59').toISOString() };
@@ -96,93 +100,119 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex-shrink-0">
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.reportsSubtitle') }}</p>
+    </div>
 
-    <GoodsNavTabs />
+    <div class="flex-shrink-0 mt-3">
+      <GoodsNavTabs />
+    </div>
 
-    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
       <button
-        v-for="tab in (['top', 'abc', 'margin', 'alerts'] as const)"
-        :key="tab"
+        v-for="tab in TABS"
+        :key="tab.key"
         type="button"
-        class="px-3 py-2 text-sm font-medium border-b-2 -mb-px"
-        :class="activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400'"
-        @click="activeTab = tab"
+        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap flex items-center gap-1.5"
+        :class="activeTab === tab.key
+          ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+        @click="activeTab = tab.key"
       >
-        {{ tab === 'top' ? t('goods.topGoods') : tab === 'abc' ? t('goods.abcAnalysis') : tab === 'margin' ? t('goods.marginReport') : t('goods.lowStockAlerts') }}
+        <UIcon :name="tab.icon" class="w-4 h-4" />
+        {{ t(tab.labelKey) }}
       </button>
     </div>
 
-    <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2">
+    <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2 flex-shrink-0 mt-3">
       <UFormGroup :label="t('goods.dateFrom')"><UInput v-model="from" type="date" size="sm" /></UFormGroup>
       <UFormGroup :label="t('goods.dateTo')"><UInput v-model="to" type="date" size="sm" /></UFormGroup>
       <UButton class="mt-5" size="sm" color="gray" variant="soft" :loading="loading" @click="loadReport">{{ t('common.ok') }}</UButton>
     </div>
 
-    <div v-if="loading" class="text-center py-10 text-gray-400"><Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" /></div>
+    <div class="flex-1 min-h-0 overflow-y-auto mt-3">
+      <div v-if="loading" class="text-center py-10 text-gray-400"><Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" /></div>
 
-    <div v-else-if="activeTab === 'top'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-      <div v-for="e in topGoods" :key="e.goodId" class="flex items-center justify-between px-4 py-2.5 text-sm">
-        <span class="font-medium">{{ e.goodName }}</span>
-        <span>{{ e.quantitySold }} · {{ (e.revenueCents / 100).toFixed(2) }}</span>
-      </div>
-      <div v-if="!topGoods.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
-    </div>
-
-    <div v-else-if="activeTab === 'abc'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-      <div v-for="e in abcEntries" :key="e.goodId" class="flex items-center justify-between px-4 py-2.5 text-sm">
-        <span class="font-medium">{{ e.goodName }}</span>
-        <div class="flex items-center gap-2">
-          <UBadge :color="e.class === 'A' ? 'green' : e.class === 'B' ? 'amber' : 'gray'" variant="soft">{{ e.class }}</UBadge>
-          <span>{{ (e.revenueCents / 100).toFixed(2) }} ({{ e.revenueSharePercent.toFixed(1) }}%)</span>
-        </div>
-      </div>
-      <div v-if="!abcEntries.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
-    </div>
-
-    <div v-else-if="activeTab === 'margin' && marginReport" class="space-y-3">
-      <div class="grid grid-cols-3 gap-2 text-center">
-        <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-3">
-          <div class="text-xs text-gray-400">{{ t('goods.total') }}</div>
-          <div class="font-bold">{{ (marginReport.totalRevenueCents / 100).toFixed(2) }}</div>
-        </div>
-        <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-3">
-          <div class="text-xs text-gray-400">{{ t('goods.costPrice') }}</div>
-          <div class="font-bold">{{ (marginReport.totalCostCents / 100).toFixed(2) }}</div>
-        </div>
-        <div class="rounded-xl border border-gray-200 dark:border-gray-800 p-3">
-          <div class="text-xs text-gray-400">{{ t('goods.marginReport') }}</div>
-          <div class="font-bold">{{ (marginReport.totalMarginCents / 100).toFixed(2) }} ({{ marginReport.totalMarginPercent.toFixed(1) }}%)</div>
-        </div>
-      </div>
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="e in marginReport.entries" :key="e.saleId" class="flex items-center justify-between px-4 py-2.5 text-sm">
-          <span class="font-medium">{{ e.number }}</span>
-          <span>{{ (e.marginCents / 100).toFixed(2) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
-        </div>
-      </div>
-    </div>
-
-    <div v-else-if="activeTab === 'alerts'" class="space-y-4">
-      <div>
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ t('goods.lowStockAlerts') }}</h3>
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-          <div v-for="s in lowStock" :key="`${s.warehouseId}-${s.goodId}`" class="flex items-center justify-between px-4 py-2.5 text-sm">
-            <span class="font-medium">{{ goodName(s.goodId) }}</span>
-            <UBadge color="amber" variant="soft">{{ s.available }}</UBadge>
+      <div v-else-if="activeTab === 'top'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-for="e in topGoods" :key="e.goodId" class="px-4 py-2.5 text-sm space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-medium">{{ e.goodName }}</span>
+            <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ e.quantitySold }} · {{ (e.revenueCents / 100).toFixed(2) }}</span>
           </div>
-          <div v-if="!lowStock.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+          <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div class="h-full rounded-full bg-primary-400 dark:bg-primary-600" :style="{ width: `${(e.revenueCents / maxRevenue) * 100}%` }" />
+          </div>
+        </div>
+        <div v-if="!topGoods.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+      </div>
+
+      <div v-else-if="activeTab === 'abc'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-for="e in abcEntries" :key="e.goodId" class="px-4 py-2.5 text-sm space-y-1">
+          <div class="flex items-center justify-between">
+            <span class="font-medium">{{ e.goodName }}</span>
+            <div class="flex items-center gap-2">
+              <UBadge :color="e.class === 'A' ? 'green' : e.class === 'B' ? 'amber' : 'gray'" variant="soft" size="xs">{{ e.class }}</UBadge>
+              <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.revenueCents / 100).toFixed(2) }} ({{ e.revenueSharePercent.toFixed(1) }}%)</span>
+            </div>
+          </div>
+          <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+            <div
+              class="h-full rounded-full"
+              :class="e.class === 'A' ? 'bg-emerald-500' : e.class === 'B' ? 'bg-amber-500' : 'bg-gray-400'"
+              :style="{ width: `${Math.min(100, e.revenueSharePercent)}%` }"
+            />
+          </div>
+        </div>
+        <div v-if="!abcEntries.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+      </div>
+
+      <div v-else-if="activeTab === 'margin' && marginReport" class="space-y-3">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ (marginReport.totalRevenueCents / 100).toFixed(2) }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.total') }}</div>
+          </div>
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ (marginReport.totalCostCents / 100).toFixed(2) }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.costPrice') }}</div>
+          </div>
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div class="text-2xl font-bold tabular-nums" :class="marginReport.totalMarginCents >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
+              {{ (marginReport.totalMarginCents / 100).toFixed(2) }}
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.marginReport') }} ({{ marginReport.totalMarginPercent.toFixed(1) }}%)</div>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+          <div v-for="e in marginReport.entries" :key="e.saleId" class="flex items-center justify-between px-4 py-2.5 text-sm">
+            <span class="font-medium">{{ e.number }}</span>
+            <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.marginCents / 100).toFixed(2) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
+          </div>
         </div>
       </div>
-      <div>
-        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ t('goods.expiringBatches') }}</h3>
-        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-          <div v-for="b in expiringBatches" :key="b.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-            <span class="font-medium">{{ goodName(b.goodId) }} <span v-if="b.batchNumber" class="text-gray-400">({{ b.batchNumber }})</span></span>
-            <UBadge color="red" variant="soft">{{ b.expiryDate }}</UBadge>
+
+      <div v-else-if="activeTab === 'alerts'" class="space-y-4">
+        <div>
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ t('goods.lowStockAlerts') }}</h3>
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="s in lowStock" :key="`${s.warehouseId}-${s.goodId}`" class="flex items-center justify-between px-4 py-2.5 text-sm">
+              <span class="font-medium">{{ goodName(s.goodId) }}</span>
+              <UBadge color="amber" variant="soft">{{ s.available }}</UBadge>
+            </div>
+            <div v-if="!lowStock.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
           </div>
-          <div v-if="!expiringBatches.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+        </div>
+        <div>
+          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ t('goods.expiringBatches') }}</h3>
+          <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="b in expiringBatches" :key="b.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
+              <span class="font-medium">{{ goodName(b.goodId) }} <span v-if="b.batchNumber" class="text-gray-400">({{ b.batchNumber }})</span></span>
+              <UBadge color="red" variant="soft">{{ b.expiryDate }}</UBadge>
+            </div>
+            <div v-if="!expiringBatches.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+          </div>
         </div>
       </div>
     </div>

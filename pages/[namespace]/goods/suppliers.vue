@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
@@ -14,25 +15,21 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
+const { confirm } = useConfirm();
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.suppliers')} — ${titleBySlug(nsSlug.value)}` : t('goods.suppliers'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
 const loading = ref(true);
 const suppliers = ref<GoodsSupplier[]>([]);
 const goods = ref<GoodsGood[]>([]);
+const supplierById = computed(() => new Map(suppliers.value.map((s) => [s.id, s])));
 
 async function loadAll() {
   loading.value = true;
@@ -54,34 +51,72 @@ async function loadAll() {
 
 const columns = [
   { key: 'name', label: t('goods.goodName') },
-  { key: 'phone', label: 'Phone' },
+  { key: 'phone', label: t('goods.phone') },
   { key: 'contactPerson', label: t('goods.contactPerson') },
   { key: 'actions', label: '' },
 ];
 
-// --- Add ---
-const showAdd = ref(false);
+// --- Add / edit ---
+const showForm = ref(false);
 const saving = ref(false);
+const editingSupplier = ref<GoodsSupplier | null>(null);
+const deletingId = ref<string | null>(null);
 const form = reactive({ name: '', phone: '', contactPerson: '', identity: '', contactsClientId: '' });
 
-async function submitAdd() {
+function openAdd() {
+  editingSupplier.value = null;
+  form.name = ''; form.phone = ''; form.contactPerson = ''; form.identity = ''; form.contactsClientId = '';
+  showForm.value = true;
+}
+function openEdit(s: GoodsSupplier) {
+  editingSupplier.value = s;
+  form.name = s.name; form.phone = s.phone; form.contactPerson = s.contactPerson;
+  form.identity = s.identity; form.contactsClientId = s.contactsClientId || '';
+  showForm.value = true;
+}
+
+async function submitForm() {
   if (!form.name.trim()) return;
   saving.value = true;
   try {
     const token = await getToken();
-    const { goodsCreateSupplier } = await import('@/api/goods/supplier');
-    await goodsCreateSupplier(token, nsSlug.value, {
-      name: form.name.trim(), phone: form.phone.trim(), contactPerson: form.contactPerson.trim(),
-      identity: form.identity.trim(), contactsClientId: form.contactsClientId.trim() || undefined,
-    });
-    showAdd.value = false;
-    form.name = ''; form.phone = ''; form.contactPerson = ''; form.identity = ''; form.contactsClientId = '';
+    if (editingSupplier.value) {
+      const { goodsUpdateSupplier } = await import('@/api/goods/supplier');
+      await goodsUpdateSupplier(token, nsSlug.value, {
+        ...editingSupplier.value,
+        name: form.name.trim(), phone: form.phone.trim(), contactPerson: form.contactPerson.trim(),
+        identity: form.identity.trim(), contactsClientId: form.contactsClientId.trim() || undefined,
+      });
+    } else {
+      const { goodsCreateSupplier } = await import('@/api/goods/supplier');
+      await goodsCreateSupplier(token, nsSlug.value, {
+        name: form.name.trim(), phone: form.phone.trim(), contactPerson: form.contactPerson.trim(),
+        identity: form.identity.trim(), contactsClientId: form.contactsClientId.trim() || undefined,
+      });
+    }
+    showForm.value = false;
     await loadAll();
   } catch (e) {
-    logError('[goods/suppliers] submitAdd failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add supplier', color: 'red' });
+    logError('[goods/suppliers] submitForm failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save supplier', color: 'red' });
   } finally {
     saving.value = false;
+  }
+}
+
+async function deleteSupplier(s: GoodsSupplier) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${s.name}"` }))) return;
+  deletingId.value = s.id;
+  try {
+    const token = await getToken();
+    const { goodsDeleteSupplier } = await import('@/api/goods/supplier');
+    await goodsDeleteSupplier(token, nsSlug.value, s.id);
+    await loadAll();
+  } catch (e) {
+    logError('[goods/suppliers] deleteSupplier failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete supplier', color: 'red' });
+  } finally {
+    deletingId.value = null;
   }
 }
 
@@ -110,6 +145,12 @@ async function resolveContactsSummary(supplier: GoodsSupplier) {
 
 // --- Price history ---
 const showHistory = ref(false);
+const historyGoodQuery = ref('');
+const visibleHistoryGoods = computed(() => {
+  const q = historyGoodQuery.value.trim().toLowerCase();
+  if (!q) return goods.value;
+  return goods.value.filter((g) => g.name.toLowerCase().includes(q));
+});
 const historyGoodId = ref('');
 const history = ref<SupplierPriceHistoryEntry[]>([]);
 const loadingHistory = ref(false);
@@ -133,50 +174,63 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.suppliers') }}</h1>
-      <UButton color="primary" icon="lucide:plus" @click="showAdd = true">{{ t('goods.addSupplier') }}</UButton>
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex items-center justify-between flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.suppliers') }}</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.suppliersSubtitle') }}</p>
+      </div>
+      <UButton color="primary" icon="lucide:plus" @click="openAdd">{{ t('goods.addSupplier') }}</UButton>
     </div>
 
-    <GoodsNavTabs />
+    <div class="flex-shrink-0 mt-3">
+      <GoodsNavTabs />
+    </div>
 
-    <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-      <div v-for="s in suppliers" :key="s.id" class="px-4 py-3 space-y-1" @mouseenter="resolveContactsSummary(s)">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">{{ s.name }}</div>
-            <div class="text-xs text-gray-400">{{ s.phone }} · {{ s.contactPerson }}</div>
-          </div>
-          <UBadge v-if="s.contactsClientId && contactsSummaryCache[s.id]" color="primary" variant="soft">
-            {{ t('goods.linkToContacts') }}: {{ contactsSummaryCache[s.id]?.name || s.contactsClientId }}
-          </UBadge>
+    <div class="flex-1 min-h-0 mt-3 flex flex-col gap-3">
+      <div class="flex-1 min-h-0">
+        <AppTable :rows="suppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
+          <template #name-data="{ row }">
+            <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)">
+              <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEdit(supplierById.get(row.id)!)">
+                {{ row.name }}
+              </button>
+              <UBadge v-if="row.contactsClientId && contactsSummaryCache[row.id]" color="primary" variant="soft" size="xs">
+                {{ contactsSummaryCache[row.id]?.name || row.contactsClientId }}
+              </UBadge>
+            </div>
+          </template>
+          <template #actions-data="{ row }">
+            <div class="flex justify-end">
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :loading="deletingId === row.id" @click="deleteSupplier(supplierById.get(row.id)!)" />
+            </div>
+          </template>
+        </AppTable>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-2 flex-shrink-0 max-h-52 overflow-y-auto">
+        <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('goods.priceHistory') }}</h3>
+        <UInput v-model="historyGoodQuery" size="xs" icon="lucide:search" :placeholder="t('common.search')" class="max-w-xs" />
+        <div class="flex flex-wrap gap-1.5">
+          <UButton v-for="g in visibleHistoryGoods" :key="g.id" size="2xs" color="gray" variant="soft" @click="openHistory(g.id)">{{ g.name }}</UButton>
         </div>
       </div>
-      <div v-if="!loading && !suppliers.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
     </div>
 
-    <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-2">
-      <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('goods.priceHistory') }}</h3>
-      <div class="flex flex-wrap gap-1.5">
-        <UButton v-for="g in goods" :key="g.id" size="2xs" color="gray" variant="soft" @click="openHistory(g.id)">{{ g.name }}</UButton>
-      </div>
-    </div>
-
-    <UModal v-model="showAdd">
+    <UModal v-model="showForm">
       <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
+        <template #header><h3 class="text-lg font-semibold">{{ editingSupplier ? t('goods.editSupplier') : t('goods.addSupplier') }}</h3></template>
         <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="form.name" @keyup.enter="submitAdd" /></UFormGroup>
-          <UFormGroup label="Phone"><UInput v-model="form.phone" @keyup.enter="submitAdd" /></UFormGroup>
-          <UFormGroup :label="t('goods.contactPerson')"><UInput v-model="form.contactPerson" @keyup.enter="submitAdd" /></UFormGroup>
-          <UFormGroup :label="t('goods.identity')"><UInput v-model="form.identity" @keyup.enter="submitAdd" /></UFormGroup>
-          <UFormGroup :label="t('goods.linkToContacts')"><UInput v-model="form.contactsClientId" placeholder="Contacts client ID" @keyup.enter="submitAdd" /></UFormGroup>
+          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="form.name" autofocus @keyup.enter="submitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.phone')"><UInput v-model="form.phone" @keyup.enter="submitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.contactPerson')"><UInput v-model="form.contactPerson" @keyup.enter="submitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.identity')"><UInput v-model="form.identity" @keyup.enter="submitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.linkToContacts')"><UInput v-model="form.contactsClientId" placeholder="Contacts client ID" @keyup.enter="submitForm" /></UFormGroup>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showAdd = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="saving" :disabled="!form.name.trim()" @click="submitAdd">{{ t('common.save') }}</UButton>
+            <UButton color="gray" variant="ghost" @click="showForm = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="saving" :disabled="!form.name.trim()" @click="submitForm">{{ t('common.save') }}</UButton>
           </div>
         </template>
       </UCard>
@@ -184,7 +238,7 @@ onMounted(loadAll);
 
     <UModal v-model="showHistory">
       <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.priceHistory') }}</h3></template>
+        <template #header><h3 class="text-lg font-semibold">{{ t('goods.priceHistory') }}</h3></template>
         <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
         <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">—</div>
         <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">

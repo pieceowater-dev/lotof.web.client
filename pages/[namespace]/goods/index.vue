@@ -1,14 +1,15 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useGoodsStaffRole } from '@/composables/useGoodsStaffRole';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import GoodFormModal from '@/components/goods/GoodFormModal.vue';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
-import type { GoodsGood } from '@/api/goods/good';
+import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsUnit } from '@/api/goods/unit';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -18,21 +19,15 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
-const { isOwnerOrManager, canManageStock } = useGoodsStaffRole();
+const { canManageStock } = useGoodsStaffRole();
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('app.goods')} — ${titleBySlug(nsSlug.value)}` : t('app.goods'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
 const loading = ref(true);
@@ -110,7 +105,11 @@ const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 const lowStockCount = computed(() => stock.value.filter((s) => s.available <= 5).length);
 const stockedItemsCount = computed(() => stock.value.length);
 
-const rows = computed(() => stock.value.map((s) => {
+// Stat tiles double as quick filters (mirrors Menu's order-status cards) --
+// clicking "low stock" narrows the table instead of just reporting a number.
+const statFilter = ref<'all' | 'lowStock'>('all');
+
+const allRows = computed(() => stock.value.map((s) => {
   const good = goodById.value.get(s.goodId);
   return {
     goodId: s.goodId,
@@ -121,6 +120,7 @@ const rows = computed(() => stock.value.map((s) => {
     available: s.available,
   };
 }));
+const rows = computed(() => statFilter.value === 'lowStock' ? allRows.value.filter((r) => r.available <= 5) : allRows.value);
 
 const columns = [
   { key: 'name', label: t('goods.goodName') },
@@ -130,45 +130,38 @@ const columns = [
   { key: 'available', label: t('goods.available') },
 ];
 
-// --- Add good (quick form) ---
-const showAddGood = ref(false);
+// --- Add/edit good (shared GoodFormModal) ---
+const showGoodModal = ref(false);
 const savingGood = ref(false);
-const goodForm = reactive({ name: '', sku: '', salePriceCents: 0, unitId: '' });
-const isGoodFormValid = computed(() => goodForm.name.trim().length > 0 && !!goodForm.unitId);
+const editingGood = ref<GoodsGood | null>(null);
 
-// "штука" is always seeded first (see DefaultUnits in goods.msvc.core) --
-// defaulting to it means most goods never need the unit picker touched.
 function openAddGood() {
-  if (!goodForm.unitId) {
-    goodForm.unitId = (units.value.find((u) => u.symbol === 'шт') || units.value[0])?.id || '';
-  }
-  showAddGood.value = true;
+  editingGood.value = null;
+  showGoodModal.value = true;
+}
+function openEditGood(goodId: string) {
+  const g = goodById.value.get(goodId);
+  if (!g) return;
+  editingGood.value = g;
+  showGoodModal.value = true;
 }
 
-async function submitAddGood() {
-  if (!isGoodFormValid.value) return;
+async function submitGoodForm(payload: CreateGoodInput | UpdateGoodInput) {
   savingGood.value = true;
   try {
     const goodsToken = await getToken();
-    const { goodsCreateGood } = await import('@/api/goods/good');
-    await goodsCreateGood(goodsToken, nsSlug.value, {
-      name: goodForm.name.trim(),
-      sku: goodForm.sku.trim() || goodForm.name.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 32),
-      baseUnitId: goodForm.unitId,
-      costPriceCents: 0,
-      salePriceCents: Math.round(goodForm.salePriceCents * 100),
-      trackStock: true,
-      isWeighted: false,
-      imageUrl: '',
-    });
-    showAddGood.value = false;
-    goodForm.name = '';
-    goodForm.sku = '';
-    goodForm.salePriceCents = 0;
+    if ('id' in payload) {
+      const { goodsUpdateGood } = await import('@/api/goods/good');
+      await goodsUpdateGood(goodsToken, nsSlug.value, payload);
+    } else {
+      const { goodsCreateGood } = await import('@/api/goods/good');
+      await goodsCreateGood(goodsToken, nsSlug.value, payload);
+    }
+    showGoodModal.value = false;
     await loadAll();
   } catch (e) {
-    logError('[goods/index] submitAddGood failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add good', color: 'red' });
+    logError('[goods/index] submitGoodForm failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save good', color: 'red' });
   } finally {
     savingGood.value = false;
   }
@@ -193,11 +186,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
       <div>
-        <h1 data-tour="goods-warehouse-title" class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
+        <h1 data-tour="goods-warehouse-title" class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <USelectMenu
@@ -213,73 +206,44 @@ onMounted(async () => {
         <UButton data-tour="goods-register-btn" color="primary" icon="lucide:store" :to="`/${nsSlug}/goods/register`">
           {{ t('goods.register') }}
         </UButton>
-        <UButton v-if="isOwnerOrManager" data-tour="goods-settings-btn" color="gray" variant="soft" icon="lucide:settings" :to="`/${nsSlug}/goods/settings`">
-          {{ t('goods.settings') }}
-        </UButton>
       </div>
     </div>
 
-    <GoodsNavTabs />
+    <div class="flex-shrink-0 mt-3">
+      <GoodsNavTabs />
+    </div>
 
-    <div v-if="!loading" class="grid grid-cols-3 gap-3">
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div v-if="!loading" class="grid grid-cols-3 gap-3 flex-shrink-0 mt-3">
+      <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'all' ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = 'all'">
         <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ goods.length }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.catalog') }}</div>
-      </div>
+      </button>
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
         <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ stockedItemsCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.available') }}</div>
       </div>
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+      <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'lowStock' ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = statFilter === 'lowStock' ? 'all' : 'lowStock'">
         <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
-      </div>
+      </button>
     </div>
 
-    <div v-if="canManageStock" class="flex justify-end">
+    <div v-if="canManageStock" class="flex justify-end flex-shrink-0 mt-3">
       <UButton color="primary" size="lg" icon="lucide:plus" class="shadow-sm" @click="openAddGood">
         {{ t('goods.addGood') }}
       </UButton>
     </div>
 
-    <div data-tour="goods-stock-table" class="min-h-[280px] max-h-[60vh] overflow-hidden">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package" />
+    <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">
+      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
+        <template #name-data="{ row }">
+          <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(row.goodId)">
+            {{ row.name }}
+          </button>
+        </template>
+      </AppTable>
     </div>
 
-    <UModal v-model="showAddGood">
-      <UCard>
-        <template #header>
-          <h3 class="font-semibold">{{ t('goods.addGood') }}</h3>
-        </template>
-        <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')" required>
-            <UInput v-model="goodForm.name" size="lg" @keyup.enter="submitAddGood" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.goodSku')">
-            <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitAddGood" />
-            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
-          </UFormGroup>
-          <UFormGroup :label="t('goods.salePrice')">
-            <UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitAddGood" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.unit')" required>
-            <USelectMenu
-              v-model="goodForm.unitId"
-              :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))"
-              value-attribute="value"
-              option-attribute="label"
-              size="lg"
-              :popper="{ strategy: 'fixed' }"
-            />
-          </UFormGroup>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showAddGood = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="savingGood" :disabled="!isGoodFormValid || savingGood" @click="submitAddGood">{{ t('common.save') }}</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
+    <GoodFormModal v-model="showGoodModal" :good="editingGood" :units="units" :saving="savingGood" :ns-slug="nsSlug" @submit="submitGoodForm" />
   </div>
 </template>

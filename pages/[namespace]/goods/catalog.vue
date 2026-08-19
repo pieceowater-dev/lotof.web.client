@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
+import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
-import type { GoodsGood } from '@/api/goods/good';
+import GoodFormModal from '@/components/goods/GoodFormModal.vue';
+import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsUnit } from '@/api/goods/unit';
 
@@ -14,23 +16,24 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
+const { confirm } = useConfirm();
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.catalog')} — ${titleBySlug(nsSlug.value)}` : t('goods.catalog'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
-const activeTab = ref<'goods' | 'categories' | 'units'>('goods');
+const TABS = [
+  { key: 'goods', labelKey: 'goods.catalog' },
+  { key: 'categories', labelKey: 'goods.categories' },
+  { key: 'units', labelKey: 'goods.units' },
+] as const;
+const activeTab = ref<(typeof TABS)[number]['key']>('goods');
+
 const loading = ref(true);
 const goods = ref<GoodsGood[]>([]);
 const categories = ref<GoodsCategory[]>([]);
@@ -69,94 +72,53 @@ const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 const categoryColumns = [
   { key: 'name', label: t('goods.goodName') },
   { key: 'sortOrder', label: '#' },
+  { key: 'actions', label: '' },
 ];
 
 const unitColumns = [
   { key: 'name', label: t('goods.goodName') },
-  { key: 'symbol', label: 'Symbol' },
+  { key: 'symbol', label: t('goods.unitSymbol') },
+  { key: 'actions', label: '' },
 ];
 
-// --- Add good ---
-const showAddGood = ref(false);
+// --- Good create/edit (shared GoodFormModal) ---
+const showGoodModal = ref(false);
 const savingGood = ref(false);
-const goodForm = reactive({ name: '', sku: '', salePriceCents: 0, unitId: '', categoryId: '' });
-const isGoodFormValid = computed(() => goodForm.name.trim().length > 0 && !!goodForm.unitId);
+const editingGood = ref<GoodsGood | null>(null);
+const deletingGoodId = ref<string | null>(null);
 
-async function submitAddGood() {
-  if (!isGoodFormValid.value) return;
+function openAddGood() {
+  editingGood.value = null;
+  showGoodModal.value = true;
+}
+function openEditGood(g: GoodsGood) {
+  editingGood.value = g;
+  showGoodModal.value = true;
+}
+
+async function submitGoodForm(payload: CreateGoodInput | UpdateGoodInput) {
   savingGood.value = true;
   try {
     const token = await getToken();
-    const { goodsCreateGood } = await import('@/api/goods/good');
-    await goodsCreateGood(token, nsSlug.value, {
-      name: goodForm.name.trim(),
-      sku: goodForm.sku.trim() || goodForm.name.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 32),
-      baseUnitId: goodForm.unitId,
-      categoryId: goodForm.categoryId || undefined,
-      costPriceCents: 0,
-      salePriceCents: Math.round(goodForm.salePriceCents * 100),
-      trackStock: true,
-      isWeighted: false,
-      imageUrl: '',
-    });
-    showAddGood.value = false;
-    goodForm.name = ''; goodForm.sku = ''; goodForm.salePriceCents = 0; goodForm.categoryId = '';
+    if ('id' in payload) {
+      const { goodsUpdateGood } = await import('@/api/goods/good');
+      await goodsUpdateGood(token, nsSlug.value, payload);
+    } else {
+      const { goodsCreateGood } = await import('@/api/goods/good');
+      await goodsCreateGood(token, nsSlug.value, payload);
+    }
+    showGoodModal.value = false;
     await loadAll();
   } catch (e) {
-    logError('[goods/catalog] submitAddGood failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add good', color: 'red' });
+    logError('[goods/catalog] submitGoodForm failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save good', color: 'red' });
   } finally {
     savingGood.value = false;
   }
 }
 
-// --- Edit good ---
-const showEditGood = ref(false);
-const savingEditGood = ref(false);
-const deletingGoodId = ref<string | null>(null);
-const editGoodForm = reactive({ id: '', name: '', sku: '', salePriceCents: 0, unitId: '', categoryId: '', isActive: true });
-const isEditGoodFormValid = computed(() => editGoodForm.name.trim().length > 0 && !!editGoodForm.unitId);
-
-function openEditGood(g: GoodsGood) {
-  editGoodForm.id = g.id;
-  editGoodForm.name = g.name;
-  editGoodForm.sku = g.sku;
-  editGoodForm.salePriceCents = g.salePriceCents / 100;
-  editGoodForm.unitId = g.baseUnitId;
-  editGoodForm.categoryId = g.categoryId || '';
-  editGoodForm.isActive = g.isActive;
-  showEditGood.value = true;
-}
-
-async function submitEditGood() {
-  if (!isEditGoodFormValid.value) return;
-  savingEditGood.value = true;
-  try {
-    const token = await getToken();
-    const { goodsUpdateGood } = await import('@/api/goods/good');
-    await goodsUpdateGood(token, nsSlug.value, {
-      id: editGoodForm.id,
-      name: editGoodForm.name.trim(),
-      sku: editGoodForm.sku.trim() || editGoodForm.name.trim().toUpperCase().replace(/\s+/g, '-').slice(0, 32),
-      baseUnitId: editGoodForm.unitId,
-      categoryId: editGoodForm.categoryId || undefined,
-      salePriceCents: Math.round(editGoodForm.salePriceCents * 100),
-      trackStock: true,
-      isWeighted: false,
-      imageUrl: '',
-      isActive: editGoodForm.isActive,
-    });
-    showEditGood.value = false;
-    await loadAll();
-  } catch (e) {
-    logError('[goods/catalog] submitEditGood failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update good', color: 'red' });
-  } finally {
-    savingEditGood.value = false;
-  }
-}
-
 async function deleteGood(g: GoodsGood) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${g.name}"` }))) return;
   deletingGoodId.value = g.id;
   try {
     const token = await getToken();
@@ -171,59 +133,116 @@ async function deleteGood(g: GoodsGood) {
   }
 }
 
-// --- Add category ---
-const showAddCategory = ref(false);
+// --- Category create/edit/delete ---
+const showCategoryModal = ref(false);
 const savingCategory = ref(false);
+const editingCategory = ref<GoodsCategory | null>(null);
 const categoryForm = reactive({ name: '' });
 
-async function submitAddCategory() {
+function openAddCategory() {
+  editingCategory.value = null;
+  categoryForm.name = '';
+  showCategoryModal.value = true;
+}
+function openEditCategory(c: GoodsCategory) {
+  editingCategory.value = c;
+  categoryForm.name = c.name;
+  showCategoryModal.value = true;
+}
+
+async function submitCategoryForm() {
   if (!categoryForm.name.trim()) return;
   savingCategory.value = true;
   try {
     const token = await getToken();
-    const { goodsCreateCategory } = await import('@/api/goods/category');
-    await goodsCreateCategory(token, nsSlug.value, { name: categoryForm.name.trim(), sortOrder: categories.value.length });
-    showAddCategory.value = false;
-    categoryForm.name = '';
+    if (editingCategory.value) {
+      const { goodsUpdateCategory } = await import('@/api/goods/category');
+      await goodsUpdateCategory(token, nsSlug.value, {
+        id: editingCategory.value.id,
+        name: categoryForm.name.trim(),
+        sortOrder: editingCategory.value.sortOrder,
+        isActive: editingCategory.value.isActive,
+      });
+    } else {
+      const { goodsCreateCategory } = await import('@/api/goods/category');
+      await goodsCreateCategory(token, nsSlug.value, { name: categoryForm.name.trim(), sortOrder: categories.value.length });
+    }
+    showCategoryModal.value = false;
     await loadAll();
   } catch (e) {
-    logError('[goods/catalog] submitAddCategory failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add category', color: 'red' });
+    logError('[goods/catalog] submitCategoryForm failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save category', color: 'red' });
   } finally {
     savingCategory.value = false;
   }
 }
 
-// --- Add unit ---
-const showAddUnit = ref(false);
+async function deleteCategory(c: GoodsCategory) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${c.name}"` }))) return;
+  try {
+    const token = await getToken();
+    const { goodsDeleteCategory } = await import('@/api/goods/category');
+    await goodsDeleteCategory(token, nsSlug.value, c.id);
+    await loadAll();
+  } catch (e) {
+    logError('[goods/catalog] deleteCategory failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete category', color: 'red' });
+  }
+}
+
+// --- Unit create/edit/delete ---
+const showUnitModal = ref(false);
 const savingUnit = ref(false);
+const editingUnit = ref<GoodsUnit | null>(null);
 const unitForm = reactive({ name: '', symbol: '' });
 
-async function submitAddUnit() {
+function openAddUnit() {
+  editingUnit.value = null;
+  unitForm.name = '';
+  unitForm.symbol = '';
+  showUnitModal.value = true;
+}
+function openEditUnit(u: GoodsUnit) {
+  editingUnit.value = u;
+  unitForm.name = u.name;
+  unitForm.symbol = u.symbol;
+  showUnitModal.value = true;
+}
+
+async function submitUnitForm() {
   if (!unitForm.name.trim() || !unitForm.symbol.trim()) return;
   savingUnit.value = true;
   try {
     const token = await getToken();
-    const { goodsClient } = await import('@/api/clients');
-    const { getDeviceHeaders } = await import('@/utils/device');
-    const { goodsRequestWithRefresh } = await import('@/api/goods/goodsRequestWithRefresh');
-    const devHeaders = await getDeviceHeaders();
-    const CreateUnitDocument = /* GraphQL */ `
-      mutation CreateUnit($input: CreateUnitInput!) { createUnit(input: $input) { id name symbol isActive } }
-    `;
-    await goodsRequestWithRefresh(async () => goodsClient.request(
-      CreateUnitDocument,
-      { input: { name: unitForm.name.trim(), symbol: unitForm.symbol.trim() } },
-      { headers: { GoodsAuthorization: `Bearer ${token}`, Namespace: nsSlug.value, ...devHeaders } }
-    ), nsSlug.value);
-    showAddUnit.value = false;
-    unitForm.name = ''; unitForm.symbol = '';
+    if (editingUnit.value) {
+      const { goodsUpdateUnit } = await import('@/api/goods/unit');
+      await goodsUpdateUnit(token, nsSlug.value, {
+        id: editingUnit.value.id, name: unitForm.name.trim(), symbol: unitForm.symbol.trim(), isActive: editingUnit.value.isActive,
+      });
+    } else {
+      const { goodsCreateUnit } = await import('@/api/goods/unit');
+      await goodsCreateUnit(token, nsSlug.value, { name: unitForm.name.trim(), symbol: unitForm.symbol.trim() });
+    }
+    showUnitModal.value = false;
     await loadAll();
   } catch (e) {
-    logError('[goods/catalog] submitAddUnit failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to add unit', color: 'red' });
+    logError('[goods/catalog] submitUnitForm failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to save unit', color: 'red' });
   } finally {
     savingUnit.value = false;
+  }
+}
+
+async function deleteUnit(u: GoodsUnit) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${u.name}"` }))) return;
+  try {
+    const token = await getToken();
+    const { goodsDeleteUnit } = await import('@/api/goods/unit');
+    await goodsDeleteUnit(token, nsSlug.value, u.id);
+    await loadAll();
+  } catch (e) {
+    logError('[goods/catalog] deleteUnit failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to delete unit', color: 'red' });
   }
 }
 
@@ -231,33 +250,46 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex-shrink-0">
+      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
+      <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.catalogSubtitle') }}</p>
+    </div>
 
-    <GoodsNavTabs />
+    <div class="flex-shrink-0 mt-3">
+      <GoodsNavTabs />
+    </div>
 
-    <div class="flex gap-2 border-b border-gray-200 dark:border-gray-800">
+    <!-- Segmented pill control -- deliberately NOT styled like GoodsNavTabs above,
+         since this switches local component state, not real routes. -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
       <button
-        v-for="tab in (['goods', 'categories', 'units'] as const)"
-        :key="tab"
+        v-for="tab in TABS"
+        :key="tab.key"
         type="button"
-        class="px-3 py-2 text-sm font-medium border-b-2 -mb-px"
-        :class="activeTab === tab ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400'"
-        @click="activeTab = tab"
+        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
+        :class="activeTab === tab.key
+          ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+        @click="activeTab = tab.key"
       >
-        {{ tab === 'goods' ? t('goods.catalog') : tab === 'categories' ? t('goods.categories') : t('goods.units') }}
+        {{ t(tab.labelKey) }}
       </button>
     </div>
 
-    <div v-if="activeTab === 'goods'" class="space-y-3">
-      <div class="flex justify-end">
-        <UButton color="primary" icon="lucide:plus" @click="showAddGood = true">{{ t('goods.addGood') }}</UButton>
+    <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
+      <div class="flex justify-end flex-shrink-0">
+        <UButton color="primary" icon="lucide:plus" @click="openAddGood">{{ t('goods.addGood') }}</UButton>
       </div>
-      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
+      <div class="flex-1 min-h-0">
         <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
+          <template #name-data="{ row }">
+            <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
+              {{ row.name }}
+            </button>
+          </template>
           <template #actions-data="{ row }">
-            <div class="flex gap-1 justify-end">
-              <UButton size="2xs" color="gray" variant="soft" icon="lucide:pencil" @click="openEditGood(goodById.get(row.id)!)">{{ t('common.edit') }}</UButton>
+            <div class="flex justify-end">
               <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :loading="deletingGoodId === row.id" @click="deleteGood(goodById.get(row.id)!)" />
             </div>
           </template>
@@ -265,103 +297,82 @@ onMounted(loadAll);
       </div>
     </div>
 
-    <div v-else-if="activeTab === 'categories'" class="space-y-3">
-      <div class="flex justify-end">
-        <UButton color="primary" icon="lucide:plus" @click="showAddCategory = true">{{ t('goods.addCategory') }}</UButton>
+    <div v-else-if="activeTab === 'categories'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
+      <div class="flex justify-end flex-shrink-0">
+        <UButton color="primary" icon="lucide:plus" @click="openAddCategory">{{ t('goods.addCategory') }}</UButton>
       </div>
-      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
-        <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag" />
+      <div class="flex-1 min-h-0">
+        <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag">
+          <template #name-data="{ row }">
+            <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditCategory(row)">
+              {{ row.name }}
+            </button>
+          </template>
+          <template #actions-data="{ row }">
+            <div class="flex justify-end">
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" @click="deleteCategory(row)" />
+            </div>
+          </template>
+        </AppTable>
       </div>
     </div>
 
-    <div v-else class="space-y-3">
-      <div class="flex justify-end">
-        <UButton color="primary" icon="lucide:plus" @click="showAddUnit = true">{{ t('goods.addUnit') }}</UButton>
+    <div v-else class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
+      <div class="flex justify-end flex-shrink-0">
+        <UButton color="primary" icon="lucide:plus" @click="openAddUnit">{{ t('goods.addUnit') }}</UButton>
       </div>
-      <div class="min-h-[280px] max-h-[60vh] overflow-hidden">
-        <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler" />
+      <div class="flex-1 min-h-0">
+        <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler">
+          <template #name-data="{ row }">
+            <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditUnit(row)">
+              {{ row.name }}
+            </button>
+          </template>
+          <template #actions-data="{ row }">
+            <div class="flex justify-end">
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" @click="deleteUnit(row)" />
+            </div>
+          </template>
+        </AppTable>
       </div>
     </div>
 
-    <UModal v-model="showAddGood">
+    <GoodFormModal
+      v-model="showGoodModal"
+      :good="editingGood"
+      :units="units"
+      :categories="categories"
+      :saving="savingGood"
+      :ns-slug="nsSlug"
+      @submit="submitGoodForm"
+    />
+
+    <UModal v-model="showCategoryModal">
       <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.addGood') }}</h3></template>
-        <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="goodForm.name" size="lg" @keyup.enter="submitAddGood" /></UFormGroup>
-          <UFormGroup :label="t('goods.goodSku')">
-            <UInput v-model="goodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitAddGood" />
-            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
-          </UFormGroup>
-          <UFormGroup :label="t('goods.salePrice')"><UInput v-model.number="goodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitAddGood" /></UFormGroup>
-          <UFormGroup :label="t('goods.unit')" required>
-            <USelectMenu v-model="goodForm.unitId" :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.categories')">
-            <USelectMenu v-model="goodForm.categoryId" :options="categories.map((c) => ({ label: c.name, value: c.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
-          </UFormGroup>
-        </div>
+        <template #header><h3 class="text-lg font-semibold">{{ editingCategory ? t('goods.editCategory') : t('goods.addCategory') }}</h3></template>
+        <UFormGroup :label="t('goods.goodName')" required>
+          <UInput v-model="categoryForm.name" size="lg" autofocus @keyup.enter="submitCategoryForm" />
+        </UFormGroup>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showAddGood = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="savingGood" :disabled="!isGoodFormValid || savingGood" @click="submitAddGood">{{ t('common.save') }}</UButton>
+            <UButton color="gray" variant="ghost" @click="showCategoryModal = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="savingCategory" :disabled="!categoryForm.name.trim() || savingCategory" @click="submitCategoryForm">{{ t('common.save') }}</UButton>
           </div>
         </template>
       </UCard>
     </UModal>
 
-    <UModal v-model="showEditGood">
+    <UModal v-model="showUnitModal">
       <UCard>
-        <template #header><h3 class="font-semibold">{{ t('common.edit') }} — {{ editGoodForm.name }}</h3></template>
+        <template #header><h3 class="text-lg font-semibold">{{ editingUnit ? t('goods.editUnit') : t('goods.addUnit') }}</h3></template>
         <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="editGoodForm.name" size="lg" @keyup.enter="submitEditGood" /></UFormGroup>
-          <UFormGroup :label="t('goods.goodSku')">
-            <UInput v-model="editGoodForm.sku" size="lg" placeholder="SKU-001" @keyup.enter="submitEditGood" />
-            <p class="text-xs text-gray-400 mt-1">{{ t('goods.goodSkuHint') }}</p>
-          </UFormGroup>
-          <UFormGroup :label="t('goods.salePrice')"><UInput v-model.number="editGoodForm.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submitEditGood" /></UFormGroup>
-          <UFormGroup :label="t('goods.unit')" required>
-            <USelectMenu v-model="editGoodForm.unitId" :options="units.map((u) => ({ label: `${u.name} (${u.symbol})`, value: u.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.categories')">
-            <USelectMenu v-model="editGoodForm.categoryId" :options="categories.map((c) => ({ label: c.name, value: c.id }))" value-attribute="value" option-attribute="label" size="lg" :popper="{ strategy: 'fixed' }" />
-          </UFormGroup>
-          <UFormGroup :label="t('common.status')">
-            <UToggle v-model="editGoodForm.isActive" />
-          </UFormGroup>
+          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="unitForm.name" size="lg" autofocus @keyup.enter="submitUnitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.unitSymbol')" required><UInput v-model="unitForm.symbol" size="lg" placeholder="kg" @keyup.enter="submitUnitForm" /></UFormGroup>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showEditGood = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="savingEditGood" :disabled="!isEditGoodFormValid || savingEditGood" @click="submitEditGood">{{ t('common.save') }}</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-
-    <UModal v-model="showAddCategory">
-      <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.addCategory') }}</h3></template>
-        <UFormGroup :label="t('goods.goodName')" required><UInput v-model="categoryForm.name" size="lg" @keyup.enter="submitAddCategory" /></UFormGroup>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showAddCategory = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="savingCategory" @click="submitAddCategory">{{ t('common.save') }}</UButton>
-          </div>
-        </template>
-      </UCard>
-    </UModal>
-
-    <UModal v-model="showAddUnit">
-      <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.addUnit') }}</h3></template>
-        <div class="space-y-3">
-          <UFormGroup :label="t('goods.goodName')" required><UInput v-model="unitForm.name" size="lg" @keyup.enter="submitAddUnit" /></UFormGroup>
-          <UFormGroup label="Symbol" required><UInput v-model="unitForm.symbol" size="lg" placeholder="kg" @keyup.enter="submitAddUnit" /></UFormGroup>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showAddUnit = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="savingUnit" @click="submitAddUnit">{{ t('common.save') }}</UButton>
+            <UButton color="gray" variant="ghost" @click="showUnitModal = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="savingUnit" :disabled="!unitForm.name.trim() || !unitForm.symbol.trim() || savingUnit" @click="submitUnitForm">{{ t('common.save') }}</UButton>
           </div>
         </template>
       </UCard>

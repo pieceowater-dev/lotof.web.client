@@ -53,6 +53,28 @@ export async function goodsCreateCategory(
   }, namespaceSlug);
 }
 
+const UpdateCategoryDocument = /* GraphQL */ `
+  mutation UpdateCategory($input: UpdateCategoryInput!) {
+    updateCategory(input: $input) { id parentId name sortOrder isActive }
+  }
+`;
+
+export async function goodsUpdateCategory(
+  goodsToken: string,
+  namespaceSlug: string,
+  input: { id: string; name: string; parentId?: string; sortOrder: number; isActive: boolean },
+): Promise<GoodsCategory> {
+  const devHeaders = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ updateCategory: GoodsCategory }>(
+      UpdateCategoryDocument,
+      { input },
+      { headers: { GoodsAuthorization: `Bearer ${goodsToken}`, Namespace: namespaceSlug, ...devHeaders } }
+    );
+    return res.updateCategory;
+  }, namespaceSlug);
+}
+
 const DeleteCategoryDocument = /* GraphQL */ `mutation DeleteCategory($id: ID!) { deleteCategory(id: $id) { success } }`;
 
 export async function goodsDeleteCategory(goodsToken: string, namespaceSlug: string, id: string): Promise<boolean> {

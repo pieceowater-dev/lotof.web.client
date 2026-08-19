@@ -1,12 +1,18 @@
 <script lang="ts" setup>
+// Inventory counting used to be one-item-at-a-time via a picker modal, with
+// no visible list of what still needed counting and no discrepancy shown
+// anywhere despite the API already returning it per item. This redesign
+// pulls up the count's pre-seeded item list (every good with stock in that
+// warehouse -- see StartInventoryCount on the backend) as a bulk-entry grid
+// with autosave per row and a live progress/discrepancy view.
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
-import type { GoodsInventoryCount } from '@/api/goods/inventorycount';
+import type { GoodsInventoryCount, GoodsInventoryCountItem } from '@/api/goods/inventorycount';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
 
@@ -19,21 +25,16 @@ useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.inventory')} — ${titleBySlug(nsSlug.value)}` : t('goods.inventory'),
 }));
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
 const loading = ref(true);
 const counts = ref<GoodsInventoryCount[]>([]);
 const warehouses = ref<GoodsWarehouse[]>([]);
 const goods = ref<GoodsGood[]>([]);
+const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || id;
 
 async function loadAll() {
   loading.value = true;
@@ -47,6 +48,9 @@ async function loadAll() {
     counts.value = c;
     warehouses.value = w;
     goods.value = g;
+    if (activeCount.value) {
+      activeCount.value = counts.value.find((x) => x.id === activeCount.value!.id) || null;
+    }
   } catch (e) {
     logError('[goods/inventory] loadAll failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load inventory counts', color: 'red' });
@@ -58,10 +62,14 @@ async function loadAll() {
 const columns = [
   { key: 'warehouseName', label: t('goods.selectWarehouse') },
   { key: 'status', label: t('common.status') },
+  { key: 'progress', label: t('goods.countedQty') },
   { key: 'startedAt', label: t('goods.startCount') },
-  { key: 'actions', label: '' },
 ];
-const rows = computed(() => counts.value.map((c) => ({ ...c, warehouseName: warehouses.value.find((w) => w.id === c.warehouseId)?.name || c.warehouseId })));
+const rows = computed(() => counts.value.map((c) => ({
+  ...c,
+  warehouseName: warehouses.value.find((w) => w.id === c.warehouseId)?.name || c.warehouseId,
+  progress: `${c.items.filter((i) => i.countedQty != null).length} / ${c.items.length}`,
+})));
 
 const showStart = ref(false);
 const startWarehouseId = ref('');
@@ -72,10 +80,12 @@ async function startCount() {
   try {
     const token = await getToken();
     const { goodsStartInventoryCount } = await import('@/api/goods/inventorycount');
-    await goodsStartInventoryCount(token, nsSlug.value, startWarehouseId.value);
+    const created = await goodsStartInventoryCount(token, nsSlug.value, startWarehouseId.value);
     showStart.value = false;
     startWarehouseId.value = '';
     await loadAll();
+    activeCount.value = counts.value.find((x) => x.id === created.id) || created;
+    showGrid.value = true;
   } catch (e) {
     logError('[goods/inventory] startCount failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to start inventory count', color: 'red' });
@@ -84,45 +94,60 @@ async function startCount() {
   }
 }
 
-// --- Submit counted qty modal ---
-const showSubmitItem = ref(false);
+// --- Bulk count grid ---
+const showGrid = ref(false);
 const activeCount = ref<GoodsInventoryCount | null>(null);
-const submitForm = reactive({ goodId: '', countedQty: 0 });
-const submitting = ref(false);
+const savingItemId = ref<string | null>(null);
+const countedInputs = reactive<Record<string, number | undefined>>({});
 
-function openSubmit(count: GoodsInventoryCount) {
+function openGrid(count: GoodsInventoryCount) {
   activeCount.value = count;
-  submitForm.goodId = '';
-  submitForm.countedQty = 0;
-  showSubmitItem.value = true;
+  for (const item of count.items) countedInputs[item.goodId] = item.countedQty ?? undefined;
+  showGrid.value = true;
 }
 
-async function submitItem() {
-  if (!activeCount.value || !submitForm.goodId) return;
-  submitting.value = true;
+function discrepancyFor(item: GoodsInventoryCountItem): number | null {
+  const counted = countedInputs[item.goodId];
+  if (counted == null) return null;
+  return counted - item.expectedQty;
+}
+
+async function submitOne(item: GoodsInventoryCountItem) {
+  if (!activeCount.value) return;
+  const counted = countedInputs[item.goodId];
+  if (counted == null) return;
+  savingItemId.value = item.goodId;
   try {
     const token = await getToken();
     const { goodsSubmitInventoryCount } = await import('@/api/goods/inventorycount');
-    await goodsSubmitInventoryCount(token, nsSlug.value, activeCount.value.id, submitForm.goodId, submitForm.countedQty);
-    showSubmitItem.value = false;
-    await loadAll();
+    const updated = await goodsSubmitInventoryCount(token, nsSlug.value, activeCount.value.id, item.goodId, counted);
+    const idx = activeCount.value.items.findIndex((i) => i.goodId === item.goodId);
+    if (idx !== -1) activeCount.value.items[idx] = updated;
+    const listIdx = counts.value.findIndex((c) => c.id === activeCount.value!.id);
+    if (listIdx !== -1) counts.value[listIdx] = activeCount.value;
   } catch (e) {
-    logError('[goods/inventory] submitItem failed', e);
+    logError('[goods/inventory] submitOne failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to submit count', color: 'red' });
   } finally {
-    submitting.value = false;
+    savingItemId.value = null;
   }
 }
 
-async function complete(id: string) {
+const completing = ref(false);
+async function completeActive() {
+  if (!activeCount.value) return;
+  completing.value = true;
   try {
     const token = await getToken();
     const { goodsCompleteInventoryCount } = await import('@/api/goods/inventorycount');
-    await goodsCompleteInventoryCount(token, nsSlug.value, id);
+    await goodsCompleteInventoryCount(token, nsSlug.value, activeCount.value.id);
+    showGrid.value = false;
     await loadAll();
   } catch (e) {
     logError('[goods/inventory] complete failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to complete inventory count', color: 'red' });
+  } finally {
+    completing.value = false;
   }
 }
 
@@ -130,28 +155,35 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('goods.inventory') }}</h1>
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex items-center justify-between flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.inventory') }}</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.inventorySubtitle') }}</p>
+      </div>
       <UButton color="primary" icon="lucide:plus" @click="showStart = true">{{ t('goods.startCount') }}</UButton>
     </div>
 
-    <GoodsNavTabs />
+    <div class="flex-shrink-0 mt-3">
+      <GoodsNavTabs />
+    </div>
 
-    <div class="min-h-[280px] max-h-[65vh] overflow-hidden">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check">
-        <template #actions-data="{ row }">
-          <div class="flex gap-1 justify-end" v-if="row.status !== 'COMPLETED'">
-            <UButton size="2xs" color="gray" variant="soft" @click="openSubmit(row)">{{ t('goods.submit') }}</UButton>
-            <UButton size="2xs" color="primary" variant="soft" @click="complete(row.id)">{{ t('goods.completeCount') }}</UButton>
-          </div>
+    <div class="flex-1 min-h-0 mt-3">
+      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check" @select="openGrid">
+        <template #warehouseName-data="{ row }">
+          <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openGrid(row)">
+            {{ row.warehouseName }}
+          </button>
+        </template>
+        <template #status-data="{ row }">
+          <UBadge :color="row.status === 'COMPLETED' ? 'green' : 'amber'" variant="soft" size="xs">{{ row.status }}</UBadge>
         </template>
       </AppTable>
     </div>
 
     <UModal v-model="showStart">
       <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.startCount') }}</h3></template>
+        <template #header><h3 class="text-lg font-semibold">{{ t('goods.startCount') }}</h3></template>
         <UFormGroup :label="t('goods.selectWarehouse')" required>
           <USelectMenu v-model="startWarehouseId" :options="warehouses.map((w) => ({ label: w.name, value: w.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
         </UFormGroup>
@@ -164,24 +196,54 @@ onMounted(loadAll);
       </UCard>
     </UModal>
 
-    <UModal v-model="showSubmitItem">
-      <UCard>
-        <template #header><h3 class="font-semibold">{{ t('goods.submit') }}</h3></template>
-        <div class="space-y-3">
-          <UFormGroup :label="t('goods.good')" required>
-            <USelectMenu v-model="submitForm.goodId" :options="goods.map((g) => ({ label: g.name, value: g.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
-          </UFormGroup>
-          <UFormGroup :label="t('goods.countedQty')" required>
-            <UInput v-model.number="submitForm.countedQty" type="number" min="0" @keyup.enter="submitItem" />
-          </UFormGroup>
+    <!-- Bulk count grid -->
+    <USlideover v-model="showGrid">
+      <UCard class="flex flex-col h-full overflow-hidden" :ui="{ body: { base: 'flex-1 overflow-y-auto' } }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold">{{ warehouses.find((w) => w.id === activeCount?.warehouseId)?.name }}</h3>
+              <p v-if="activeCount" class="text-xs text-gray-400 mt-0.5">
+                {{ activeCount.items.filter((i) => i.countedQty != null).length }} / {{ activeCount.items.length }} {{ t('goods.countedQty').toLowerCase() }}
+              </p>
+            </div>
+            <UButton color="gray" variant="ghost" icon="lucide:x" size="xs" @click="showGrid = false" />
+          </div>
+        </template>
+
+        <div v-if="activeCount" class="divide-y divide-gray-100 dark:divide-gray-800">
+          <div v-for="item in activeCount.items" :key="item.id" class="py-2.5 flex items-center gap-3">
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodName(item.goodId) }}</div>
+              <div class="text-xs text-gray-400">{{ t('goods.expectedQty') }}: {{ item.expectedQty }}</div>
+            </div>
+            <UInput
+              v-model.number="countedInputs[item.goodId]"
+              type="number"
+              min="0"
+              size="sm"
+              class="w-24 flex-shrink-0"
+              :disabled="activeCount.status === 'COMPLETED'"
+              @blur="submitOne(item)"
+              @keyup.enter="submitOne(item)"
+            />
+            <div class="w-14 flex-shrink-0 text-right text-sm tabular-nums" :class="{
+              'text-gray-300 dark:text-gray-700': discrepancyFor(item) == null,
+              'text-emerald-600 dark:text-emerald-400': discrepancyFor(item) === 0,
+              'text-red-600 dark:text-red-400': !!discrepancyFor(item),
+            }">
+              <Icon v-if="savingItemId === item.goodId" name="lucide:loader" class="w-3.5 h-3.5 animate-spin inline-block" />
+              <template v-else>{{ discrepancyFor(item) == null ? '—' : (discrepancyFor(item)! > 0 ? `+${discrepancyFor(item)}` : discrepancyFor(item)) }}</template>
+            </div>
+          </div>
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showSubmitItem = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="submitting" :disabled="!submitForm.goodId" @click="submitItem">{{ t('goods.submit') }}</UButton>
+
+        <template v-if="activeCount && activeCount.status !== 'COMPLETED'" #footer>
+          <div class="flex justify-end">
+            <UButton color="primary" :loading="completing" @click="completeActive">{{ t('goods.completeCount') }}</UButton>
           </div>
         </template>
       </UCard>
-    </UModal>
+    </USlideover>
   </div>
 </template>

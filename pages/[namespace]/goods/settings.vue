@@ -1,10 +1,11 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
-import { useGoodsToken } from '@/composables/useGoodsToken';
+import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useGoodsStaffRole, type GoodsStaffRole } from '@/composables/useGoodsStaffRole';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
+import { useConfirm } from '@/composables/useConfirm';
 import type { GoodsStaff } from '@/api/goods/staff';
 import type { GoodsWarehouse, GoodsWarehouseType } from '@/api/goods/warehouse';
 import type { GoodsSettings } from '@/api/goods/settings';
@@ -20,6 +21,7 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 const { role: staffRole, isOwnerOrManager } = useGoodsStaffRole();
+const { confirm } = useConfirm();
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.settings')} — ${titleBySlug(nsSlug.value)}` : t('goods.settings'),
@@ -33,18 +35,17 @@ watch(staffRole, (r) => {
   if (r && !isOwnerOrManager.value) navigateTo(`/${nsSlug.value}/goods/register`);
 }, { immediate: true });
 
+const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
-  const { ensure, current } = useGoodsToken();
-  const existing = current();
-  if (existing) return existing;
-  const { token: hubToken } = useAuth();
-  if (!hubToken.value) throw new Error('No hub token');
-  const token = await ensure(nsSlug.value, hubToken.value);
-  if (!token) throw new Error('No goods token');
-  return token;
+  return getGoodsTokenRaw(nsSlug.value);
 }
 
-type TabKey = 'staff' | 'warehouses' | 'general' | 'priceLists' | 'giftCertificates' | 'recipes' | 'discounts';
+// Discounts + price lists used to be two separate top-level tabs even
+// though both are "pricing rules" -- merged into one "pricing" tab (two
+// sections, divider between) so the tab strip reads as 6 real groupings
+// (access / locations / general / pricing / gift certs / recipes) instead
+// of 7 flat, same-weight items.
+type TabKey = 'staff' | 'warehouses' | 'general' | 'pricing' | 'giftCertificates' | 'recipes';
 const activeTab = ref<TabKey>((route.query.tab as TabKey) || 'staff');
 watch(activeTab, (tab) => {
   navigateTo({ query: { ...route.query, tab } }, { replace: true });
@@ -54,8 +55,7 @@ const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'staff', label: t('goods.staff'), icon: 'lucide:users' },
   { key: 'warehouses', label: t('goods.warehouse'), icon: 'lucide:warehouse' },
   { key: 'general', label: t('goods.generalSettings'), icon: 'lucide:settings' },
-  { key: 'discounts', label: t('goods.discounts'), icon: 'lucide:percent' },
-  { key: 'priceLists', label: t('goods.priceLists'), icon: 'lucide:tags' },
+  { key: 'pricing', label: t('goods.pricing'), icon: 'lucide:percent' },
   { key: 'giftCertificates', label: t('goods.giftCertificates'), icon: 'lucide:gift' },
   { key: 'recipes', label: t('goods.recipes'), icon: 'lucide:flask-conical' },
 ]);
@@ -119,6 +119,7 @@ async function updateRole(member: GoodsStaff, role: GoodsStaffRole) {
 }
 
 async function removeStaff(member: GoodsStaff) {
+  if (!(await confirm({ message: t('common.confirmDelete') }))) return;
   try {
     const goodsToken = await getToken();
     const { goodsDeleteStaff } = await import('@/api/goods/staff');
@@ -167,6 +168,41 @@ async function addWarehouse() {
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to add warehouse', color: 'red' });
   } finally {
     savingWarehouse.value = false;
+  }
+}
+
+// goodsUpdateWarehouse has existed in the API since the module shipped but
+// never had UI -- warehouses were create-only. Reusing the same "click the
+// name to edit" pattern as everywhere else in the redesign.
+const showEditWarehouse = ref(false);
+const savingEditWarehouse = ref(false);
+const editWarehouseForm = reactive({ id: '', name: '', address: '', type: 'BOTH' as GoodsWarehouseType, isActive: true });
+
+function openEditWarehouse(w: GoodsWarehouse) {
+  editWarehouseForm.id = w.id;
+  editWarehouseForm.name = w.name;
+  editWarehouseForm.address = w.address;
+  editWarehouseForm.type = w.type;
+  editWarehouseForm.isActive = w.isActive;
+  showEditWarehouse.value = true;
+}
+
+async function submitEditWarehouse() {
+  if (!editWarehouseForm.name.trim()) return;
+  savingEditWarehouse.value = true;
+  try {
+    const goodsToken = await getToken();
+    const { goodsUpdateWarehouse } = await import('@/api/goods/warehouse');
+    await goodsUpdateWarehouse(goodsToken, nsSlug.value, {
+      ...editWarehouseForm, name: editWarehouseForm.name.trim(), address: editWarehouseForm.address.trim(),
+    });
+    showEditWarehouse.value = false;
+    await loadWarehouses();
+  } catch (e) {
+    logError('[goods/settings] submitEditWarehouse failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update warehouse', color: 'red' });
+  } finally {
+    savingEditWarehouse.value = false;
   }
 }
 
@@ -269,6 +305,7 @@ async function addPriceList() {
 }
 
 async function removePriceList(pl: GoodsPriceList) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${pl.name}"` }))) return;
   try {
     const goodsToken = await getToken();
     const { goodsDeletePriceList } = await import('@/api/goods/pricelist');
@@ -422,6 +459,7 @@ async function saveRecipe() {
 }
 
 async function removeRecipe(r: GoodsRecipe) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${r.name}"` }))) return;
   try {
     const goodsToken = await getToken();
     const { goodsDeleteRecipe } = await import('@/api/goods/recipe');
@@ -473,6 +511,7 @@ async function addDiscountRule() {
 }
 
 async function removeDiscountRule(r: GoodsDiscountRule) {
+  if (!(await confirm({ message: `${t('common.confirmDelete')} "${r.name}"` }))) return;
   try {
     const goodsToken = await getToken();
     const { goodsDeleteDiscountRule } = await import('@/api/goods/sale');
@@ -485,11 +524,13 @@ async function removeDiscountRule(r: GoodsDiscountRule) {
 }
 
 watch(activeTab, (tab) => {
-  if (tab === 'priceLists') { loadGoodsAndUnits(); if (!priceLists.value.length) loadPriceLists(); }
-  else if (tab === 'giftCertificates') { if (!giftCertificates.value.length) loadGiftCertificates(); }
+  if (tab === 'pricing') {
+    loadGoodsAndUnits();
+    if (!priceLists.value.length) loadPriceLists();
+    if (!discountRules.value.length) loadDiscountRules();
+  } else if (tab === 'giftCertificates') { if (!giftCertificates.value.length) loadGiftCertificates(); }
   else if (tab === 'recipes') { loadGoodsAndUnits(); if (!recipes.value.length) loadRecipes(); }
-  else if (tab === 'discounts') { if (!discountRules.value.length) loadDiscountRules(); }
-});
+}, { immediate: true });
 
 onMounted(() => {
   loadStaff();
@@ -499,13 +540,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-6 space-y-4">
-    <div class="flex items-center justify-between">
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+    <div class="flex items-center justify-between flex-shrink-0">
       <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
       <UButton color="primary" variant="soft" size="xs" icon="lucide:arrow-left" class="min-w-fit whitespace-nowrap gap-2" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
     </div>
 
-    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 mt-3 flex-shrink-0">
       <button
         v-for="tab in TABS"
         :key="tab.key"
@@ -519,6 +560,7 @@ onMounted(() => {
       </button>
     </div>
 
+    <div class="flex-1 min-h-0 overflow-y-auto mt-4 space-y-4">
     <!-- Staff -->
     <div v-if="activeTab === 'staff'" class="space-y-4">
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
@@ -540,12 +582,16 @@ onMounted(() => {
       </div>
 
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
-        <div class="flex gap-2">
-          <UInput v-model="staffForm.userId" class="flex-1" :placeholder="t('goods.userId')" @keyup.enter="addStaff" />
-          <USelectMenu v-model="staffForm.role" :options="ROLE_OPTIONS" class="w-36" :popper="{ strategy: 'fixed' }" />
-          <UButton color="primary" icon="lucide:plus" :loading="savingStaff" @click="addStaff">{{ t('goods.addStaff') }}</UButton>
+        <div class="grid grid-cols-[1fr_auto] gap-2 items-end">
+          <UFormGroup :label="t('goods.userId')">
+            <UInput v-model="staffForm.userId" @keyup.enter="addStaff" />
+          </UFormGroup>
+          <UFormGroup :label="t('goods.role')">
+            <USelectMenu v-model="staffForm.role" :options="ROLE_OPTIONS" class="w-36" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
         </div>
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ staffFormRoleDescription }}</p>
+        <UButton color="primary" icon="lucide:plus" :loading="savingStaff" @click="addStaff">{{ t('goods.addStaff') }}</UButton>
       </div>
     </div>
 
@@ -553,10 +599,10 @@ onMounted(() => {
     <div v-else-if="activeTab === 'warehouses'" class="space-y-4">
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
         <div v-for="w in warehouses" :key="w.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">{{ w.name }}</div>
+          <button type="button" class="text-left" @click="openEditWarehouse(w)">
+            <div class="font-medium text-gray-900 dark:text-white hover:underline hover:text-primary-600 dark:hover:text-primary-400">{{ w.name }}</div>
             <div class="text-gray-400">{{ w.address }}</div>
-          </div>
+          </button>
           <UBadge color="gray" variant="soft">{{ w.type }}</UBadge>
         </div>
       </div>
@@ -617,47 +663,52 @@ onMounted(() => {
       <UButton color="primary" :loading="savingSettings" @click="saveSettings">{{ t('common.save') }}</UButton>
     </div>
 
-    <!-- Discounts -->
-    <div v-else-if="activeTab === 'discounts'" class="space-y-4">
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="r in discountRules" :key="r.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-          <div>
-            <div class="font-medium text-gray-900 dark:text-white">{{ r.name }}</div>
-            <div class="text-xs text-gray-400">{{ r.scope }} · {{ r.type === 'PERCENT' ? `${r.value}%` : r.value }}</div>
+    <!-- Pricing: discount rules + price lists, merged into one grouping
+         since both are "pricing rules" -- used to be two same-weight top
+         level tabs for what's really one topic. -->
+    <div v-else-if="activeTab === 'pricing'" class="space-y-6">
+      <div class="space-y-3">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('goods.discounts') }}</h3>
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+          <div v-for="r in discountRules" :key="r.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
+            <div>
+              <div class="font-medium text-gray-900 dark:text-white">{{ r.name }}</div>
+              <div class="text-xs text-gray-400">{{ r.scope }} · {{ r.type === 'PERCENT' ? `${r.value}%` : r.value }}</div>
+            </div>
+            <UButton color="red" variant="ghost" icon="lucide:trash-2" size="2xs" @click="removeDiscountRule(r)" />
           </div>
-          <UButton color="red" variant="ghost" icon="lucide:trash-2" size="2xs" @click="removeDiscountRule(r)" />
+          <div v-if="!loadingDiscountRules && !discountRules.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
         </div>
-        <div v-if="!loadingDiscountRules && !discountRules.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <div class="grid grid-cols-2 gap-3">
+            <UFormGroup :label="t('common.title')"><UInput v-model="discountRuleForm.name" @keyup.enter="addDiscountRule" /></UFormGroup>
+            <UFormGroup :label="t('goods.discountValue')"><UInput v-model.number="discountRuleForm.value" type="number" min="0" step="0.01" @keyup.enter="addDiscountRule" /></UFormGroup>
+            <UFormGroup :label="t('goods.type')"><USelectMenu v-model="discountRuleForm.type" :options="DISCOUNT_TYPES" :popper="{ strategy: 'fixed' }" /></UFormGroup>
+            <UFormGroup :label="t('goods.discountScope')"><USelectMenu v-model="discountRuleForm.scope" :options="DISCOUNT_SCOPES" :popper="{ strategy: 'fixed' }" /></UFormGroup>
+          </div>
+          <UButton color="primary" icon="lucide:plus" :loading="savingDiscountRule" @click="addDiscountRule">{{ t('goods.addDiscountRule') }}</UButton>
+        </div>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
-        <div class="grid grid-cols-2 gap-2">
-          <UInput v-model="discountRuleForm.name" :placeholder="t('common.title')" @keyup.enter="addDiscountRule" />
-          <UInput v-model.number="discountRuleForm.value" type="number" min="0" step="0.01" :placeholder="t('goods.discountValue')" @keyup.enter="addDiscountRule" />
-          <USelectMenu v-model="discountRuleForm.type" :options="DISCOUNT_TYPES" :popper="{ strategy: 'fixed' }" />
-          <USelectMenu v-model="discountRuleForm.scope" :options="DISCOUNT_SCOPES" :popper="{ strategy: 'fixed' }" />
+      <div class="space-y-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('goods.priceLists') }}</h3>
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+          <div v-for="pl in priceLists" :key="pl.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
+            <button type="button" class="text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openPriceListItems(pl)">
+              <div class="font-medium text-gray-900 dark:text-white">{{ pl.name }}</div>
+              <div class="text-xs text-gray-400">{{ pl.type }} · {{ pl.items.length }}</div>
+            </button>
+            <UButton color="red" variant="ghost" icon="lucide:trash-2" size="2xs" @click="removePriceList(pl)" />
+          </div>
+          <div v-if="!loadingPriceLists && !priceLists.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
         </div>
-        <UButton color="primary" icon="lucide:plus" :loading="savingDiscountRule" @click="addDiscountRule">{{ t('goods.addDiscountRule') }}</UButton>
-      </div>
-    </div>
 
-    <!-- Price lists -->
-    <div v-else-if="activeTab === 'priceLists'" class="space-y-4">
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="pl in priceLists" :key="pl.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-          <button type="button" class="text-left" @click="openPriceListItems(pl)">
-            <div class="font-medium text-gray-900 dark:text-white">{{ pl.name }}</div>
-            <div class="text-xs text-gray-400">{{ pl.type }} · {{ pl.items.length }}</div>
-          </button>
-          <UButton color="red" variant="ghost" icon="lucide:trash-2" size="2xs" @click="removePriceList(pl)" />
-        </div>
-        <div v-if="!loadingPriceLists && !priceLists.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
-      </div>
-
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
-        <div class="flex gap-2">
-          <UInput v-model="priceListForm.name" class="flex-1" :placeholder="t('common.title')" @keyup.enter="addPriceList" />
-          <USelectMenu v-model="priceListForm.type" :options="PRICE_LIST_TYPES" class="w-36" :popper="{ strategy: 'fixed' }" />
+        <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+          <div class="grid grid-cols-[1fr_auto] gap-3">
+            <UFormGroup :label="t('common.title')"><UInput v-model="priceListForm.name" @keyup.enter="addPriceList" /></UFormGroup>
+            <UFormGroup :label="t('goods.type')"><USelectMenu v-model="priceListForm.type" :options="PRICE_LIST_TYPES" class="w-36" :popper="{ strategy: 'fixed' }" /></UFormGroup>
+          </div>
           <UButton color="primary" icon="lucide:plus" :loading="savingPriceList" @click="addPriceList">{{ t('goods.addPriceList') }}</UButton>
         </div>
       </div>
@@ -677,11 +728,11 @@ onMounted(() => {
       </div>
 
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
-        <div class="flex gap-2">
-          <UInput v-model.number="giftCertForm.initialBalance" type="number" min="0" class="w-32" :placeholder="t('goods.balance')" @keyup.enter="issueGiftCertificate" />
-          <UInput v-model="giftCertForm.expiresAt" type="date" class="w-40" />
-          <UButton color="primary" icon="lucide:plus" :loading="issuingGiftCert" :disabled="!giftCertForm.initialBalance" @click="issueGiftCertificate">{{ t('goods.addGiftCertificate') }}</UButton>
+        <div class="grid grid-cols-2 gap-3">
+          <UFormGroup :label="t('goods.balance')"><UInput v-model.number="giftCertForm.initialBalance" type="number" min="0" @keyup.enter="issueGiftCertificate" /></UFormGroup>
+          <UFormGroup :label="t('goods.expiryDate')"><UInput v-model="giftCertForm.expiresAt" type="date" /></UFormGroup>
         </div>
+        <UButton color="primary" icon="lucide:plus" :loading="issuingGiftCert" :disabled="!giftCertForm.initialBalance" @click="issueGiftCertificate">{{ t('goods.addGiftCertificate') }}</UButton>
       </div>
     </div>
 
@@ -701,6 +752,44 @@ onMounted(() => {
         <div v-if="!loadingRecipes && !recipes.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
       </div>
     </div>
+    </div>
+
+    <!-- Edit warehouse modal -->
+    <UModal v-model="showEditWarehouse">
+      <UCard>
+        <template #header><h3 class="text-lg font-semibold">{{ t('goods.editWarehouse') }}</h3></template>
+        <div class="space-y-3">
+          <UFormGroup :label="t('goods.warehouseName')" required>
+            <UInput v-model="editWarehouseForm.name" autofocus @keyup.enter="submitEditWarehouse" />
+          </UFormGroup>
+          <UFormGroup :label="t('goods.warehouseAddress')">
+            <UInput v-model="editWarehouseForm.address" @keyup.enter="submitEditWarehouse" />
+          </UFormGroup>
+          <UFormGroup :label="t('goods.warehouseType')">
+            <USelectMenu
+              v-model="editWarehouseForm.type"
+              :options="[
+                { label: t('goods.warehouseTypeBoth'), value: 'BOTH' },
+                { label: t('goods.warehouseTypeShop'), value: 'SHOP' },
+                { label: t('goods.warehouseTypeStorage'), value: 'STORAGE' },
+              ]"
+              value-attribute="value"
+              option-attribute="label"
+              :popper="{ strategy: 'fixed' }"
+            />
+          </UFormGroup>
+          <UFormGroup :label="t('common.status')">
+            <UToggle v-model="editWarehouseForm.isActive" />
+          </UFormGroup>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="ghost" @click="showEditWarehouse = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="savingEditWarehouse" :disabled="!editWarehouseForm.name.trim()" @click="submitEditWarehouse">{{ t('common.save') }}</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
 
     <!-- Price list items modal -->
     <UModal v-model="showPriceListItems" :ui="{ width: 'sm:max-w-lg' }">
