@@ -15,12 +15,13 @@ export type UpsertBrandSettingsInput = {
   seoTitle?: string;
   seoDescription?: string;
   autoAcceptOrders?: boolean;
+  showcaseViewOnly?: boolean;
 };
 
 const UpsertBrandSettingsDocument = /* GraphQL */ `
   mutation UpsertBrandSettings($input: UpsertBrandSettingsInput!) {
     upsertBrandSettings(input: $input) {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly
     }
   }
 `;

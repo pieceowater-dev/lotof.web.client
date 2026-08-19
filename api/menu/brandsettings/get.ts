@@ -15,12 +15,13 @@ export type MenuBrandSettings = {
   seoTitle?: string | null;
   seoDescription?: string | null;
   autoAcceptOrders: boolean;
+  showcaseViewOnly: boolean;
 };
 
 const BrandSettingsDocument = /* GraphQL */ `
   query BrandSettings {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly
     }
   }
 `;

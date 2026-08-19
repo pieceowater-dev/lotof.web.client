@@ -4,14 +4,17 @@ import { formatMoney } from '@/utils/currency';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   item: MenuItem;
   badges: MenuBadge[];
   currency?: string | null;
   primaryColor: string;
   secondaryColor: string;
   quantity: number;
-}>();
+  // Showcase (view-only) mode: hides the add/stepper button entirely, since
+  // there's nothing to add to -- ordering is off for this storefront.
+  orderingDisabled?: boolean;
+}>(), { orderingDisabled: false });
 
 const emit = defineEmits<{
   (e: 'open'): void;
@@ -71,7 +74,7 @@ function handleAddClick() {
     <!-- Zero-height anchor at the image's bottom edge so the add/stepper
          button can float half-over the photo regardless of its rendered
          height (aspect-square scales with column width). -->
-    <div class="relative h-0">
+    <div v-if="!orderingDisabled" class="relative h-0">
       <div class="absolute -top-4 right-2 z-10">
         <button
           v-if="!quantity || hasModifiers"

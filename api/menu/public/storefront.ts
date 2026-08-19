@@ -55,7 +55,7 @@ async function withMigrationRetry<T>(fn: () => Promise<T>, attempts = 4, delayMs
 const StorefrontDocument = /* GraphQL */ `
   query Storefront {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly
     }
     branches(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id name address phone lat lng workingHours isActive city isPrimary slug }
@@ -111,7 +111,7 @@ export async function getPublicStorefront(namespaceSlug: string): Promise<Storef
 const StorefrontWithCatalogDocument = /* GraphQL */ `
   query StorefrontWithCatalog {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly
     }
     branches(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id name address phone lat lng workingHours isActive city isPrimary slug }

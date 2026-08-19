@@ -1772,6 +1772,7 @@
     "noOrders": "No orders yet",
     "all": "All",
     "storefront": "Storefront",
+    "editStorefrontAdminHint": "Edit storefront — you're the admin",
     "settings": "Settings",
     "staff": "Staff",
     "promoBanners": "Banners",
@@ -1874,6 +1875,8 @@
     "backToMenu": "Back to menu",
     "orderStatusNotFound": "We couldn't find that order",
     "orderStatusNotFoundHint": "Double-check the order number and phone it was placed under.",
+    "orderTrackingDisabled": "Order tracking is unavailable",
+    "orderTrackingDisabledHint": "This storefront is a showcase-only menu right now.",
     "orderStatusCancelledHint": "This order was cancelled.",
     "viewOrder": "View order",
     "closedAt": "Closed",
@@ -1982,6 +1985,8 @@
     "noSlotsForDate": "No time slots available for that date — try another day.",
     "autoAcceptOrders": "Auto-accept orders",
     "autoAcceptOrdersHint": "New orders move to \"Accepted\" on their own after 30 seconds, instead of waiting for staff to accept them.",
+    "showcaseViewOnly": "View-only showcase",
+    "showcaseViewOnlyHint": "Turns the public storefront into a plain online menu — no cart, no checkout, no order tracking.",
     "businessTab": "Business"
   },
   "tasks": {
