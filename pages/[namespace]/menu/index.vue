@@ -880,7 +880,7 @@ async function handleCreateOrder(payload: any) {
       </div>
       <div class="flex items-center gap-2 self-start">
         <UButton
-          icon="lucide:external-link"
+          icon="lucide:store"
           size="xs"
           color="emerald"
           variant="soft"

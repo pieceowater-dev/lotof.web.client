@@ -1429,7 +1429,8 @@ useHead(() => {
                 block
                 :disabled="!isModifierSelectionValid"
                 :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-                class="border-0 flex-1"
+                :ui="{ rounded: 'rounded-full' }"
+                class="border-0 flex-1 h-9 flex items-center justify-center"
                 @click="addToCartQty(selectedItem, sheetQuantity, selectedModifierLines); closeItemDetail()"
               >
                 {{ t('menu.addToCart') || 'Add to cart' }} · {{ formatMoney((selectedItem.price + modifierUnitPriceTotal) * sheetQuantity, data?.storefront.brandSettings?.currencyCode) }}
@@ -1786,19 +1787,20 @@ useHead(() => {
 
     <!-- "You're an admin" widget: only a staff owner/manager visiting their
          own storefront sees this -- everyone else gets the plain public
-         page. Fixed to a top corner so it never collides with the floating
-         cart bar (which lives at the bottom). -->
-    <div v-if="isOwnerOrManager" class="fixed top-4 right-4 z-40">
-      <UButton
+         page. -->
+    <div v-if="isOwnerOrManager" class="fixed bottom-4 right-4 z-40">
+      <NuxtLink
         :to="`/${nsSlug}/menu/settings?tab=brand`"
-        icon="lucide:pencil-line"
-        size="sm"
-        color="gray"
-        variant="solid"
-        class="shadow-lg bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-200 ring-1 ring-black/5 dark:ring-white/10"
+        class="flex items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 pl-3 pr-4 py-2.5 hover:shadow-xl transition-shadow"
       >
-        {{ t('menu.editStorefrontAdminHint') || "Edit storefront — you're the admin" }}
-      </UButton>
+        <span class="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400">
+          <Icon name="lucide:pencil-line" class="w-4 h-4" />
+        </span>
+        <span class="text-left">
+          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.thisIsYourStorefront') || 'This is your storefront' }}</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">{{ t('menu.thisIsYourStorefrontHint') || 'Tap to edit it' }}</span>
+        </span>
+      </NuxtLink>
     </div>
   </div>
 </template>

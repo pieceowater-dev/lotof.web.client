@@ -1011,7 +1011,7 @@ watch([articlesSearch, selectedArticleTag], () => {
                 class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
               >
                 <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <UIcon name="lucide:external-link" class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]" />
+                  <UIcon name="lucide:store" class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]" />
                 </div>
                 <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t('menu.storefront') || 'Storefront' }}</p>
                 <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
