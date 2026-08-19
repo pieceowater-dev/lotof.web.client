@@ -2,6 +2,7 @@ import { tasksClient } from '@/api/clients';
 import { tasksRequestWithRefresh } from '@/api/tasks/tasksRequestWithRefresh';
 import { getDeviceHeaders } from '@/utils/device';
 import { getApiBaseUrl } from '@/utils/api-base';
+import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload';
 import type { TaskItem } from '@/api/tasks/task/list';
 
 const TASK_FIELDS = `
@@ -148,15 +149,7 @@ export async function tasksUploadTaskDeliveryPhoto(tasksToken: string, namespace
     variables: { taskId, file: null },
   };
 
-  // The file part is named "file", not a numeric string like "0" -- Safari's
-  // FormData has been observed serializing purely-numeric field names out of
-  // insertion order (integer-key semantics leaking into multipart encoding),
-  // which put the file part before "operations" on the wire and made
-  // gqlgen's strict first-part-must-be-operations parser reject the request.
-  const form = new FormData();
-  form.append('operations', JSON.stringify(operations));
-  form.append('map', JSON.stringify({ file: ['variables.file'] }));
-  form.append('file', file, file.name);
+  const { body, contentType } = buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
 
   const uploadUrl = `${getApiBaseUrl('tasks')}/query`;
   const response = await fetch(uploadUrl, {
@@ -164,8 +157,9 @@ export async function tasksUploadTaskDeliveryPhoto(tasksToken: string, namespace
     headers: {
       IssuesAuthorization: `Bearer ${tasksToken}`,
       Namespace: namespaceSlug,
+      'Content-Type': contentType,
     },
-    body: form,
+    body,
   });
 
   const result: any = await response.json().catch(() => ({}));

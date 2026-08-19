@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useGoodsAuth } from '@/composables/useGoodsAuth';
-import { useGoodsStaffRole } from '@/composables/useGoodsStaffRole';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -19,7 +18,6 @@ const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
-const { canManageStock } = useGoodsStaffRole();
 
 useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('app.goods')} — ${titleBySlug(nsSlug.value)}` : t('app.goods'),
@@ -41,12 +39,6 @@ const units = ref<GoodsUnit[]>([]);
 // quick-filter.
 const STORAGE_KEY = computed(() => `goods:activeWarehouse:${nsSlug.value}`);
 const activeWarehouseId = ref<string | null>(null);
-// USelectMenu's v-model type doesn't accept null -- only rendered once
-// warehouses.length is truthy, by which point activeWarehouseId is always set.
-const activeWarehouseIdModel = computed<string>({
-  get: () => activeWarehouseId.value || '',
-  set: (v) => { activeWarehouseId.value = v; },
-});
 
 function restoreActiveWarehouse() {
   try {
@@ -130,15 +122,12 @@ const columns = [
   { key: 'available', label: t('goods.available') },
 ];
 
-// --- Add/edit good (shared GoodFormModal) ---
+// --- Edit good (shared GoodFormModal) -- adding a new good lives on the
+// Catalog page, not here; the dashboard only edits what's already in stock. ---
 const showGoodModal = ref(false);
 const savingGood = ref(false);
 const editingGood = ref<GoodsGood | null>(null);
 
-function openAddGood() {
-  editingGood.value = null;
-  showGoodModal.value = true;
-}
 function openEditGood(goodId: string) {
   const g = goodById.value.get(goodId);
   if (!g) return;
@@ -147,16 +136,12 @@ function openEditGood(goodId: string) {
 }
 
 async function submitGoodForm(payload: CreateGoodInput | UpdateGoodInput) {
+  if (!('id' in payload)) return; // this page only edits goods already in stock
   savingGood.value = true;
   try {
     const goodsToken = await getToken();
-    if ('id' in payload) {
-      const { goodsUpdateGood } = await import('@/api/goods/good');
-      await goodsUpdateGood(goodsToken, nsSlug.value, payload);
-    } else {
-      const { goodsCreateGood } = await import('@/api/goods/good');
-      await goodsCreateGood(goodsToken, nsSlug.value, payload);
-    }
+    const { goodsUpdateGood } = await import('@/api/goods/good');
+    await goodsUpdateGood(goodsToken, nsSlug.value, payload);
     showGoodModal.value = false;
     await loadAll();
   } catch (e) {
@@ -192,20 +177,22 @@ onMounted(async () => {
         <h1 data-tour="goods-warehouse-title" class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
       </div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <USelectMenu
-          v-if="warehouses.length"
-          v-model="activeWarehouseIdModel"
-          :options="warehouses.map((w) => ({ label: w.name, value: w.id }))"
-          value-attribute="value"
-          option-attribute="label"
-          size="sm"
-          class="w-48"
-          :popper="{ strategy: 'fixed' }"
-        />
-        <UButton data-tour="goods-register-btn" color="primary" icon="lucide:store" :to="`/${nsSlug}/goods/register`">
-          {{ t('goods.register') }}
-        </UButton>
+      <!-- Current warehouse as pills, not a dropdown -- which one is active
+           should be readable at a glance, not hidden behind a click. -->
+      <div v-if="warehouses.length > 1" class="flex items-center gap-1.5 flex-wrap">
+        <button
+          v-for="w in warehouses"
+          :key="w.id"
+          type="button"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
+          :class="activeWarehouseId === w.id
+            ? 'bg-primary-500 border-primary-500 text-white'
+            : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
+          @click="activeWarehouseId = w.id"
+        >
+          <Icon name="lucide:warehouse" class="w-3.5 h-3.5 flex-shrink-0" />
+          {{ w.name }}
+        </button>
       </div>
     </div>
 
@@ -226,12 +213,6 @@ onMounted(async () => {
         <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
       </button>
-    </div>
-
-    <div v-if="canManageStock" class="flex justify-end flex-shrink-0 mt-3">
-      <UButton color="primary" size="lg" icon="lucide:plus" class="shadow-sm" @click="openAddGood">
-        {{ t('goods.addGood') }}
-      </UButton>
     </div>
 
     <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">

@@ -48,13 +48,16 @@ function isActive(address: string) {
     <!-- Settings/Register used to only be reachable from index.vue's header
          -- every other page in the module was a dead end for them. Putting
          them here (rendered on every page via this shared component) closes
-         that gap without duplicating header markup across 6 files. Register
-         gets real button weight (it's the one-click "go sell something"
-         escape hatch from anywhere in the back-office); Settings stays a
-         quiet icon link since it's an occasional, admin-only destination. -->
+         that gap without duplicating header markup across 6 files, and is
+         now the single Register entry point (index.vue used to render its
+         own second copy in its own header -- removed as a duplicate).
+         Register gets full-color button weight (it's the one-click "go sell
+         something" escape hatch from anywhere in the back-office); Settings
+         stays a quiet icon link since it's an occasional, admin-only
+         destination. -->
     <div class="flex items-center gap-1.5 ml-auto flex-shrink-0 pl-2">
-      <UButton :to="`/${nsSlug}/goods/register`" color="primary" variant="soft" size="xs" icon="lucide:store" class="flex-shrink-0">
-        <span class="hidden sm:inline">{{ t('goods.register') }}</span>
+      <UButton data-tour="goods-register-btn" :to="`/${nsSlug}/goods/register`" color="primary" icon="lucide:calculator" class="flex-shrink-0">
+        <span class="hidden sm:inline">{{ t('goods.openRegister') }}</span>
       </UButton>
       <NuxtLink
         v-if="isOwnerOrManager"

@@ -261,26 +261,36 @@ onMounted(loadAll);
     </div>
 
     <!-- Segmented pill control -- deliberately NOT styled like GoodsNavTabs above,
-         since this switches local component state, not real routes. -->
-    <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        type="button"
-        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-        :class="activeTab === tab.key
-          ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-        @click="activeTab = tab.key"
+         since this switches local component state, not real routes. The
+         per-tab "add" action lives in this same row (not stacked below it)
+         so switching tabs and adding an item both happen from one place. -->
+    <div class="flex items-center justify-between gap-2 mt-3 flex-shrink-0">
+      <div class="flex items-center gap-2 overflow-x-auto pb-1">
+        <button
+          v-for="tab in TABS"
+          :key="tab.key"
+          type="button"
+          class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
+          :class="activeTab === tab.key
+            ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+            : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+          @click="activeTab = tab.key"
+        >
+          {{ t(tab.labelKey) }}
+        </button>
+      </div>
+      <UButton
+        color="primary"
+        icon="lucide:plus"
+        size="sm"
+        class="flex-shrink-0"
+        @click="activeTab === 'goods' ? openAddGood() : activeTab === 'categories' ? openAddCategory() : openAddUnit()"
       >
-        {{ t(tab.labelKey) }}
-      </button>
+        {{ activeTab === 'goods' ? t('goods.addGood') : activeTab === 'categories' ? t('goods.addCategory') : t('goods.addUnit') }}
+      </UButton>
     </div>
 
-    <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
-      <div class="flex justify-end flex-shrink-0">
-        <UButton color="primary" icon="lucide:plus" @click="openAddGood">{{ t('goods.addGood') }}</UButton>
-      </div>
+    <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3">
       <div class="flex-1 min-h-0">
         <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
           <template #name-data="{ row }">
@@ -297,10 +307,7 @@ onMounted(loadAll);
       </div>
     </div>
 
-    <div v-else-if="activeTab === 'categories'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
-      <div class="flex justify-end flex-shrink-0">
-        <UButton color="primary" icon="lucide:plus" @click="openAddCategory">{{ t('goods.addCategory') }}</UButton>
-      </div>
+    <div v-else-if="activeTab === 'categories'" class="flex-1 min-h-0 flex flex-col mt-3">
       <div class="flex-1 min-h-0">
         <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag">
           <template #name-data="{ row }">
@@ -317,10 +324,7 @@ onMounted(loadAll);
       </div>
     </div>
 
-    <div v-else class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
-      <div class="flex justify-end flex-shrink-0">
-        <UButton color="primary" icon="lucide:plus" @click="openAddUnit">{{ t('goods.addUnit') }}</UButton>
-      </div>
+    <div v-else class="flex-1 min-h-0 flex flex-col mt-3">
       <div class="flex-1 min-h-0">
         <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler">
           <template #name-data="{ row }">

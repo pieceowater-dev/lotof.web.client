@@ -240,11 +240,14 @@ onMounted(loadAll);
       <UCard>
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.priceHistory') }}</h3></template>
         <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
-        <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">—</div>
+        <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">{{ t('goods.priceHistoryEmpty') }}</div>
         <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="(h, idx) in history" :key="idx" class="flex items-center justify-between text-sm py-2">
-            <span class="font-medium">{{ h.supplierName }}</span>
-            <span>{{ (h.costPriceCents / 100).toFixed(2) }} × {{ h.quantity }}</span>
+            <div>
+              <div class="font-medium">{{ h.supplierName || t('goods.noSupplier') }}</div>
+              <div class="text-xs text-gray-400">{{ new Date(h.receivedAt).toLocaleDateString() }}</div>
+            </div>
+            <span class="tabular-nums">{{ (h.costPriceCents / 100).toFixed(2) }} × {{ h.quantity }}</span>
           </div>
         </div>
       </UCard>

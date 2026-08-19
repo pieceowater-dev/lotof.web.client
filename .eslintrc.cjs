@@ -85,6 +85,7 @@ module.exports = {
     PermissionState: 'readonly',
     PermissionName: 'readonly',
     ScrollBehavior: 'readonly',
+    BlobPart: 'readonly',
   },
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],

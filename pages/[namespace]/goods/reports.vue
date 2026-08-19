@@ -9,6 +9,7 @@ import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsBatch } from '@/api/goods/goodbatch';
 import type { GoodsGood } from '@/api/goods/good';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -126,26 +127,31 @@ onMounted(async () => {
       </button>
     </div>
 
-    <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2 flex-shrink-0 mt-3">
-      <UFormGroup :label="t('goods.dateFrom')"><UInput v-model="from" type="date" size="sm" /></UFormGroup>
-      <UFormGroup :label="t('goods.dateTo')"><UInput v-model="to" type="date" size="sm" /></UFormGroup>
-      <UButton class="mt-5" size="sm" color="gray" variant="soft" :loading="loading" @click="loadReport">{{ t('common.ok') }}</UButton>
+    <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2 flex-shrink-0 mt-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2">
+      <UIcon name="lucide:calendar" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+      <UInput v-model="from" type="date" size="sm" class="w-auto" />
+      <span class="text-gray-300 dark:text-gray-600 flex-shrink-0">—</span>
+      <UInput v-model="to" type="date" size="sm" class="w-auto" />
+      <UButton size="xs" color="primary" variant="soft" :loading="loading" class="ml-auto flex-shrink-0" @click="loadReport">{{ t('common.apply') }}</UButton>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto mt-3">
       <div v-if="loading" class="text-center py-10 text-gray-400"><Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" /></div>
 
       <div v-else-if="activeTab === 'top'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-        <div v-for="e in topGoods" :key="e.goodId" class="px-4 py-2.5 text-sm space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-medium">{{ e.goodName }}</span>
-            <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ e.quantitySold }} · {{ (e.revenueCents / 100).toFixed(2) }}</span>
-          </div>
-          <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
-            <div class="h-full rounded-full bg-primary-400 dark:bg-primary-600" :style="{ width: `${(e.revenueCents / maxRevenue) * 100}%` }" />
+        <div v-for="(e, idx) in topGoods" :key="e.goodId" class="px-4 py-2.5 text-sm flex items-center gap-3">
+          <span class="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-xs font-semibold flex items-center justify-center tabular-nums">{{ idx + 1 }}</span>
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center justify-between gap-2">
+              <span class="font-medium truncate">{{ e.goodName }}</span>
+              <span class="tabular-nums text-gray-500 dark:text-gray-400 flex-shrink-0">{{ e.quantitySold }} · {{ (e.revenueCents / 100).toFixed(2) }}</span>
+            </div>
+            <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
+              <div class="h-full rounded-full bg-primary-400 dark:bg-primary-600" :style="{ width: `${(e.revenueCents / maxRevenue) * 100}%` }" />
+            </div>
           </div>
         </div>
-        <div v-if="!topGoods.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+        <EmptyState v-if="!topGoods.length" icon="lucide:trending-up" :title="t('goods.noReportData')" />
       </div>
 
       <div v-else-if="activeTab === 'abc'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
@@ -165,7 +171,7 @@ onMounted(async () => {
             />
           </div>
         </div>
-        <div v-if="!abcEntries.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+        <EmptyState v-if="!abcEntries.length" icon="lucide:layers" :title="t('goods.noReportData')" />
       </div>
 
       <div v-else-if="activeTab === 'margin' && marginReport" class="space-y-3">
@@ -190,6 +196,7 @@ onMounted(async () => {
             <span class="font-medium">{{ e.number }}</span>
             <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.marginCents / 100).toFixed(2) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
           </div>
+          <EmptyState v-if="!marginReport.entries.length" icon="lucide:percent" :title="t('goods.noReportData')" />
         </div>
       </div>
 
@@ -201,7 +208,7 @@ onMounted(async () => {
               <span class="font-medium">{{ goodName(s.goodId) }}</span>
               <UBadge color="amber" variant="soft">{{ s.available }}</UBadge>
             </div>
-            <div v-if="!lowStock.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+            <EmptyState v-if="!lowStock.length" icon="lucide:package-check" :title="t('goods.noLowStock')" />
           </div>
         </div>
         <div>
@@ -211,7 +218,7 @@ onMounted(async () => {
               <span class="font-medium">{{ goodName(b.goodId) }} <span v-if="b.batchNumber" class="text-gray-400">({{ b.batchNumber }})</span></span>
               <UBadge color="red" variant="soft">{{ b.expiryDate }}</UBadge>
             </div>
-            <div v-if="!expiringBatches.length" class="px-4 py-8 text-center text-sm text-gray-400">—</div>
+            <EmptyState v-if="!expiringBatches.length" icon="lucide:calendar-check" :title="t('goods.noExpiringBatches')" />
           </div>
         </div>
       </div>
