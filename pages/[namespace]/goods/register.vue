@@ -438,6 +438,87 @@ async function onSearchEnter() {
 
 async function addFromCard(good: GoodsGood) {
   await addGoodToCart(good.id, good.baseUnitId, 1);
+  // Return focus to the search box after every add -- the default,
+  // "ready" state for this page is always the search input, so a
+  // keyboard-only cashier lands back there for the next scan/search
+  // instead of having to navigate the grid again from scratch.
+  focusSearchInput();
+}
+
+// --- Keyboard-only navigation: search input <-> product grid ---
+// The grid is always exactly 4 columns wide (see the square-card layout
+// above), so stepping an index by +-1 moves left/right and by +-COLS
+// moves up/down a row while staying in the same column.
+const COLS = 4;
+const searchInputRef = ref<{ input?: HTMLInputElement } | null>(null);
+const cardButtons = ref<HTMLButtonElement[]>([]);
+
+function focusSearchInput() {
+  searchInputRef.value?.input?.focus();
+}
+
+function isCardDisabled(g: GoodsGood): boolean {
+  return isOutOfStock(g) || addingGoodId.value === g.id;
+}
+
+// Walks the flat visibleGoods list from `start` in `step` increments until
+// it finds a focusable (non-disabled) card, so arrow navigation skips over
+// out-of-stock tiles instead of silently getting stuck on one.
+function nextFocusableIndex(start: number, step: number): number | null {
+  let i = start;
+  while (i >= 0 && i < visibleGoods.value.length) {
+    if (!isCardDisabled(visibleGoods.value[i])) return i;
+    i += step;
+  }
+  return null;
+}
+
+function focusCard(index: number) {
+  cardButtons.value[index]?.focus();
+}
+
+function onSearchKeydown(e: KeyboardEvent) {
+  if (e.key !== 'ArrowDown' || !visibleGoods.value.length) return;
+  e.preventDefault();
+  const target = nextFocusableIndex(0, 1);
+  if (target !== null) focusCard(target);
+}
+
+function onCardKeydown(e: KeyboardEvent, index: number) {
+  switch (e.key) {
+    case 'ArrowRight': {
+      e.preventDefault();
+      const next = nextFocusableIndex(index + 1, 1);
+      if (next !== null) focusCard(next);
+      break;
+    }
+    case 'ArrowLeft': {
+      e.preventDefault();
+      const prev = nextFocusableIndex(index - 1, -1);
+      if (prev !== null) focusCard(prev);
+      else focusSearchInput();
+      break;
+    }
+    case 'ArrowDown': {
+      e.preventDefault();
+      const next = nextFocusableIndex(index + COLS, COLS);
+      if (next !== null) focusCard(next);
+      break;
+    }
+    case 'ArrowUp': {
+      e.preventDefault();
+      const prev = nextFocusableIndex(index - COLS, -COLS);
+      if (prev !== null) focusCard(prev);
+      else focusSearchInput();
+      break;
+    }
+    case 'Escape':
+      e.preventDefault();
+      focusSearchInput();
+      break;
+    // Enter/Space are left alone -- a native <button> already fires @click
+    // (i.e. addFromCard) on both, no extra handling needed.
+  }
 }
 
 // --- Payment ---
@@ -659,6 +740,7 @@ onMounted(async () => {
       <!-- Product picker: 2/3 -->
       <div class="lg:col-span-2 flex flex-col min-h-0 gap-3">
         <UInput
+          ref="searchInputRef"
           v-model="query"
           data-tour="goods-register-search"
           size="xl"
@@ -668,6 +750,7 @@ onMounted(async () => {
           autofocus
           :ui="{ base: 'text-base' }"
           @keyup.enter="onSearchEnter"
+          @keydown="onSearchKeydown"
         />
 
         <!-- Category tabs -->
@@ -705,15 +788,17 @@ onMounted(async () => {
                  here (it either overflowed past square or collapsed to
                  near-zero); this padding trick is a much older, unambiguous
                  mechanism and isn't affected by that. -->
-            <div v-for="g in visibleGoods" :key="g.id" class="relative w-full" style="padding-bottom: 100%">
+            <div v-for="(g, idx) in visibleGoods" :key="g.id" class="relative w-full" style="padding-bottom: 100%">
               <button
+                ref="cardButtons"
                 type="button"
                 :disabled="isOutOfStock(g) || addingGoodId === g.id"
-                class="group absolute inset-0 flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
+                class="group absolute inset-0 flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
                 :class="isOutOfStock(g)
                   ? 'border-gray-200 dark:border-gray-800 opacity-50'
                   : 'border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg active:scale-[0.97] active:shadow-sm'"
                 @click="addFromCard(g)"
+                @keydown="(e) => onCardKeydown(e as KeyboardEvent, idx)"
               >
                 <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
                   <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
