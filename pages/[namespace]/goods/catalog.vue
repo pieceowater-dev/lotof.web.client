@@ -262,7 +262,11 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-shrink-0 mt-3">
-      <GoodsNavTabs />
+      <GoodsNavTabs>
+        <template #search>
+          <UInput v-if="activeTab === 'goods'" v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+        </template>
+      </GoodsNavTabs>
     </div>
 
     <!-- Segmented pill control -- deliberately NOT styled like GoodsNavTabs above,
@@ -296,7 +300,6 @@ onMounted(loadAll);
     </div>
 
     <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
-      <UInput v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
       <div class="flex-1 min-h-0">
         <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
           <template #name-data="{ row }">

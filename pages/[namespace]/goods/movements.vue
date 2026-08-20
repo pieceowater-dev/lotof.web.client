@@ -333,7 +333,11 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-shrink-0 mt-3">
-      <GoodsNavTabs />
+      <GoodsNavTabs>
+        <template #search>
+          <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+        </template>
+      </GoodsNavTabs>
     </div>
 
     <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
@@ -350,10 +354,6 @@ onMounted(loadAll);
         <UIcon :name="tab.icon" class="w-4 h-4" />
         {{ t(tab.labelKey) }}
       </button>
-    </div>
-
-    <div class="flex-shrink-0 mt-3">
-      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
     </div>
 
     <div class="flex-1 min-h-0 mt-3">

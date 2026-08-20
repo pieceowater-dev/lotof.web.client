@@ -190,11 +190,14 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-shrink-0 mt-3">
-      <GoodsNavTabs />
+      <GoodsNavTabs>
+        <template #search>
+          <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+        </template>
+      </GoodsNavTabs>
     </div>
 
     <div class="flex-1 min-h-0 mt-3 flex flex-col gap-3">
-      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
       <div class="flex-1 min-h-0">
         <AppTable :rows="filteredSuppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
           <template #name-data="{ row }">

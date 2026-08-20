@@ -535,6 +535,15 @@ function openReturn(saleId?: string) {
   showReturn.value = true;
 }
 
+// Suggests the refund amount from the good's current sale price the moment
+// it's picked -- still a plain editable field afterward, since a real
+// refund amount can legitimately differ (a discount was applied, price
+// changed since the original sale, partial refund, etc).
+function onReturnGoodSelected(goodId: string) {
+  const good = goods.value.find((g) => g.id === goodId);
+  if (good) returnItemDraft.amount = (good.salePriceCents * returnItemDraft.quantity) / 100;
+}
+
 function addReturnDraftItem() {
   if (!returnItemDraft.goodId) return;
   returnDraftItems.value.push({ ...returnItemDraft });
@@ -871,14 +880,37 @@ onMounted(async () => {
     <UModal v-model="showCashMovement">
       <UCard>
         <template #header><h3 class="font-semibold">{{ t('goods.cashMovement') }}</h3></template>
-        <div class="space-y-3">
-          <USelectMenu
-            v-model="cashMovementForm.type"
-            :options="[{ label: t('goods.cashIn'), value: 'CASH_IN' }, { label: t('goods.cashOut'), value: 'CASH_OUT' }]"
-            value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }"
-          />
-          <UInput v-model.number="cashMovementForm.amount" type="number" min="0" step="0.01" size="lg" :placeholder="t('goods.balance')" />
-          <UInput v-model="cashMovementForm.reason" :placeholder="t('goods.reason')" @keyup.enter="recordCashMovement" />
+        <div class="space-y-4">
+          <UFormGroup :label="t('goods.movementType')">
+            <div class="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 rounded-lg border-2 py-2.5 text-sm font-medium transition-colors"
+                :class="cashMovementForm.type === 'CASH_IN'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+                  : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'"
+                @click="cashMovementForm.type = 'CASH_IN'"
+              >
+                <Icon name="lucide:arrow-down-circle" class="w-4 h-4" /> {{ t('goods.cashIn') }}
+              </button>
+              <button
+                type="button"
+                class="flex items-center justify-center gap-2 rounded-lg border-2 py-2.5 text-sm font-medium transition-colors"
+                :class="cashMovementForm.type === 'CASH_OUT'
+                  ? 'border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+                  : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'"
+                @click="cashMovementForm.type = 'CASH_OUT'"
+              >
+                <Icon name="lucide:arrow-up-circle" class="w-4 h-4" /> {{ t('goods.cashOut') }}
+              </button>
+            </div>
+          </UFormGroup>
+          <UFormGroup :label="t('goods.amount')" required>
+            <UInput v-model.number="cashMovementForm.amount" type="number" min="0" step="0.01" size="lg" placeholder="0.00" />
+          </UFormGroup>
+          <UFormGroup :label="t('goods.reason')">
+            <UInput v-model="cashMovementForm.reason" :placeholder="t('goods.reasonPlaceholder')" @keyup.enter="recordCashMovement" />
+          </UFormGroup>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
@@ -968,17 +1000,31 @@ onMounted(async () => {
     <UModal v-model="showReturn" :ui="{ width: 'sm:max-w-lg' }">
       <UCard>
         <template #header><h3 class="font-semibold">{{ returnForm.originalSaleId ? t('goods.return') : t('goods.freeReturn') }}</h3></template>
-        <div class="space-y-3">
+        <div class="space-y-4">
           <UFormGroup :label="t('goods.reason')">
             <UInput v-model="returnForm.reason" />
           </UFormGroup>
-          <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2">
-            <div class="grid grid-cols-4 gap-2 items-end">
-              <UInput v-model="returnItemDraft.goodId" size="sm" placeholder="Good ID" class="col-span-2" />
-              <UInput v-model.number="returnItemDraft.quantity" type="number" min="0" size="sm" placeholder="Qty" />
-              <UInput v-model.number="returnItemDraft.amount" type="number" min="0" step="0.01" size="sm" placeholder="Amount" />
+          <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-3">
+            <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ t('goods.return') }}</div>
+            <UFormGroup :label="t('goods.product')">
+              <USelectMenu
+                v-model="returnItemDraft.goodId"
+                :options="goods.map(g => ({ label: `${g.name} · ${formatCents(g.salePriceCents)}`, value: g.id }))"
+                value-attribute="value" option-attribute="label" searchable
+                :placeholder="t('goods.selectProduct')"
+                :popper="{ strategy: 'fixed' }"
+                @update:model-value="onReturnGoodSelected"
+              />
+            </UFormGroup>
+            <div class="grid grid-cols-2 gap-2">
+              <UFormGroup :label="t('goods.quantity')">
+                <UInput v-model.number="returnItemDraft.quantity" type="number" min="0" size="sm" />
+              </UFormGroup>
+              <UFormGroup :label="t('goods.amount')">
+                <UInput v-model.number="returnItemDraft.amount" type="number" min="0" step="0.01" size="sm" />
+              </UFormGroup>
             </div>
-            <UButton size="xs" color="gray" variant="soft" icon="lucide:plus" @click="addReturnDraftItem">{{ t('common.add') }}</UButton>
+            <UButton size="xs" color="gray" variant="soft" icon="lucide:plus" :disabled="!returnItemDraft.goodId" @click="addReturnDraftItem">{{ t('common.add') }}</UButton>
             <div v-if="returnDraftItems.length" class="divide-y divide-gray-100 dark:divide-gray-800 mt-2">
               <div v-for="(item, idx) in returnDraftItems" :key="idx" class="flex items-center justify-between text-sm py-1.5">
                 <span>{{ goodNameById.get(item.goodId) || t('goods.unknownItem') }} — {{ item.quantity }} · {{ formatCents(Math.round(item.amount * 100)) }}</span>

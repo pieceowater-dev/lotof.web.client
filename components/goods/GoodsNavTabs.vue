@@ -41,7 +41,15 @@ function isActive(address: string) {
          so it should read as the most prominent thing here, not just
          another item sharing the tab-bar row. Settings stays a quiet icon
          link since it's an occasional, admin-only destination. -->
-    <div class="flex items-center justify-end gap-1.5 flex-shrink-0">
+    <div class="flex items-center justify-between gap-1.5 flex-shrink-0 flex-wrap">
+      <!-- Each tab page's own search input (if it has one) lands here via
+           this slot, so it reads as part of the same "toolbar" row as the
+           Register button instead of sitting in its own row squeezed
+           between the tabs and the table. -->
+      <div class="flex-1 min-w-[160px]">
+        <slot name="search" />
+      </div>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
       <UButton
         data-tour="goods-register-btn"
         :to="`/${nsSlug}/goods/register`"
@@ -59,6 +67,7 @@ function isActive(address: string) {
         <Icon name="lucide:settings" class="w-4 h-4" />
         <span class="hidden sm:inline">{{ t('goods.settings') }}</span>
       </NuxtLink>
+      </div>
     </div>
 
     <div class="flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800">

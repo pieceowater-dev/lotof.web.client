@@ -175,11 +175,11 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-shrink-0 mt-3">
-      <GoodsNavTabs />
-    </div>
-
-    <div class="flex-shrink-0 mt-3">
-      <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+      <GoodsNavTabs>
+        <template #search>
+          <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+        </template>
+      </GoodsNavTabs>
     </div>
 
     <div class="flex-1 min-h-0 mt-3">
