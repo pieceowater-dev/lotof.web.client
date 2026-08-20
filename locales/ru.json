@@ -2302,7 +2302,18 @@
     "roleViewerDesc": "Только просмотр: отчёты и остатки.",
     "openSaleReservationTimeout": "Таймаут резерва корзины (мин)",
     "openSaleReservationTimeoutHint": "Сколько минут товар остаётся зарезервированным в открытой продаже, прежде чем вернуться в доступный остаток.",
-    "barcodeLabelSize": "Размер этикетки штрихкода"
+    "barcodeLabelSize": "Размер этикетки штрихкода",
+    "integrations": "Интеграции",
+    "contactsIntegration": "Интеграция с Contacts",
+    "contactsIntegrationHint": "Позволяет искать клиентов из Contacts при добавлении поставщика и создавать юрлицо автоматически, если ничего не найдено. Требует подписки обеих сторон на приложение Contacts.",
+    "linkToContacts": "Клиент в Contacts",
+    "linkToContactsSearchPlaceholder": "Поиск по названию, телефону или БИН/ИИН",
+    "linkToContactsNotFound": "Ничего не найдено в Contacts.",
+    "linkToContactsCreateHint": "Создать новое юрлицо в Contacts с этим названием?",
+    "linkToContactsCreate": "Создать в Contacts",
+    "linkToContactsUnavailable": "Contacts не подключён к этому пространству — привязка недоступна.",
+    "linkToContactsSelected": "Привязан к Contacts",
+    "linkToContactsUnlink": "Отвязать"
   },
   "tasks": {
     "activity": "Активность",

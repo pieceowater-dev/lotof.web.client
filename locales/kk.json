@@ -2020,7 +2020,18 @@
     "roleViewerDesc": "Тек қарау: есептер мен қалдықтар.",
     "openSaleReservationTimeout": "Себет резервінің тайм-ауты (мин)",
     "openSaleReservationTimeoutHint": "Ашық сатылымда тауар қолжетімді қалдыққа қайтарылғанша қанша минут резервте тұрады.",
-    "barcodeLabelSize": "Штрихкод этикеткасының өлшемі"
+    "barcodeLabelSize": "Штрихкод этикеткасының өлшемі",
+    "integrations": "Интеграциялар",
+    "contactsIntegration": "Contacts интеграциясы",
+    "contactsIntegrationHint": "Жеткізушіні қосқанда Contacts клиенттерін іздеуге мүмкіндік береді, ештеңе табылмаса заңды тұлғаны автоматты түрде жасайды. Екі қосымшаның да жазылымы қажет.",
+    "linkToContacts": "Contacts клиенті",
+    "linkToContactsSearchPlaceholder": "Атауы, телефоны немесе БСН/ЖСН бойынша іздеу",
+    "linkToContactsNotFound": "Contacts-та ештеңе табылмады.",
+    "linkToContactsCreateHint": "Contacts-та осы атаумен жаңа заңды тұлға жасау керек пе?",
+    "linkToContactsCreate": "Contacts-та жасау",
+    "linkToContactsUnavailable": "Contacts бұл кеңістікке қосылмаған — байланыстыру қолжетімсіз.",
+    "linkToContactsSelected": "Contacts-қа байланыстырылды",
+    "linkToContactsUnlink": "Байланысты үзу"
   },
   "guide": {
     "title": "Гид",

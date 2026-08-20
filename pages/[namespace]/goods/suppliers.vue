@@ -7,6 +7,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import ContactsClientLinkField from '@/components/goods/ContactsClientLinkField.vue';
 import type { GoodsSupplier } from '@/api/goods/supplier';
 import type { GoodsGood } from '@/api/goods/good';
 import type { SupplierPriceHistoryEntry } from '@/api/goods/goodsreceipt';
@@ -29,6 +30,7 @@ async function getToken(): Promise<string> {
 const loading = ref(true);
 const suppliers = ref<GoodsSupplier[]>([]);
 const goods = ref<GoodsGood[]>([]);
+const contactsIntegrationEnabled = ref(false);
 const supplierById = computed(() => new Map(suppliers.value.map((s) => [s.id, s])));
 const searchQuery = ref('');
 const filteredSuppliers = computed(() => {
@@ -41,12 +43,14 @@ async function loadAll() {
   loading.value = true;
   try {
     const token = await getToken();
-    const [{ suppliers: s }, { goods: g }] = await Promise.all([
+    const [{ suppliers: s }, { goods: g }, settings] = await Promise.all([
       (await import('@/api/goods/supplier')).goodsListSuppliers(token, nsSlug.value),
       (await import('@/api/goods/good')).goodsListGoods(token, nsSlug.value),
+      (await import('@/api/goods/settings')).goodsGetSettings(token, nsSlug.value),
     ]);
     suppliers.value = s;
     goods.value = g;
+    contactsIntegrationEnabled.value = settings.contactsIntegrationEnabled;
   } catch (e) {
     logError('[goods/suppliers] loadAll failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load suppliers', color: 'red' });
@@ -235,7 +239,13 @@ onMounted(loadAll);
           <UFormGroup :label="t('goods.phone')"><UInput v-model="form.phone" @keyup.enter="submitForm" /></UFormGroup>
           <UFormGroup :label="t('goods.contactPerson')"><UInput v-model="form.contactPerson" @keyup.enter="submitForm" /></UFormGroup>
           <UFormGroup :label="t('goods.identity')"><UInput v-model="form.identity" @keyup.enter="submitForm" /></UFormGroup>
-          <UFormGroup :label="t('goods.linkToContacts')"><UInput v-model="form.contactsClientId" placeholder="Contacts client ID" @keyup.enter="submitForm" /></UFormGroup>
+          <UFormGroup :label="t('goods.linkToContacts')">
+            <ContactsClientLinkField
+              v-model="form.contactsClientId"
+              :ns-slug="nsSlug"
+              :contacts-integration-enabled="contactsIntegrationEnabled"
+            />
+          </UFormGroup>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">

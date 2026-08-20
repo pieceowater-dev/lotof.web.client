@@ -617,6 +617,17 @@ onMounted(() => {
         </UFormGroup>
       </div>
 
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+        <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('goods.integrations') }}</h3>
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <div class="text-sm text-gray-900 dark:text-white">{{ t('goods.contactsIntegration') }}</div>
+            <p class="text-xs text-gray-400 mt-0.5">{{ t('goods.contactsIntegrationHint') }}</p>
+          </div>
+          <UToggle v-model="settings.contactsIntegrationEnabled" />
+        </div>
+      </div>
+
       <UButton color="primary" :loading="savingSettings" @click="saveSettings">{{ t('common.save') }}</UButton>
     </div>
 

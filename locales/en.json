@@ -2269,7 +2269,18 @@
     "roleViewerDesc": "Read-only: reports and stock levels.",
     "openSaleReservationTimeout": "Cart reservation timeout (min)",
     "openSaleReservationTimeoutHint": "How many minutes a good stays reserved in an open sale before returning to available stock.",
-    "barcodeLabelSize": "Barcode label size"
+    "barcodeLabelSize": "Barcode label size",
+    "integrations": "Integrations",
+    "contactsIntegration": "Contacts integration",
+    "contactsIntegrationHint": "Lets you search Contacts clients when adding a supplier, and auto-creates a legal entity there if nothing matches. Requires both apps to be subscribed.",
+    "linkToContacts": "Contacts client",
+    "linkToContactsSearchPlaceholder": "Search by name, phone, or tax ID",
+    "linkToContactsNotFound": "No match found in Contacts.",
+    "linkToContactsCreateHint": "Create a new legal entity in Contacts with this name?",
+    "linkToContactsCreate": "Create in Contacts",
+    "linkToContactsUnavailable": "Contacts isn't connected to this namespace — linking is unavailable.",
+    "linkToContactsSelected": "Linked to Contacts",
+    "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
     "activity": "Activity",
