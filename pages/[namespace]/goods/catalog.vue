@@ -268,39 +268,40 @@ onMounted(loadAll);
     <div class="flex-shrink-0 mt-3">
       <GoodsNavTabs>
         <template #search>
-          <UInput v-if="activeTab === 'goods'" v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+          <!-- Search + the local Goods/Categories/Units pill switcher share
+               this one row now -- deliberately NOT styled like the real
+               route tabs below, since this switches local component state,
+               not the URL. -->
+          <div class="flex items-center gap-2 min-w-0">
+            <UInput v-if="activeTab === 'goods'" v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
+            <div class="flex items-center gap-2 overflow-x-auto pb-0.5 min-w-0">
+              <button
+                v-for="tab in TABS"
+                :key="tab.key"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
+                :class="activeTab === tab.key
+                  ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+                  : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+                @click="activeTab = tab.key"
+              >
+                {{ t(tab.labelKey) }}
+              </button>
+            </div>
+          </div>
+        </template>
+        <template #action>
+          <UButton
+            color="primary"
+            icon="lucide:plus"
+            size="sm"
+            class="flex-shrink-0"
+            @click="activeTab === 'goods' ? openAddGood() : activeTab === 'categories' ? openAddCategory() : openAddUnit()"
+          >
+            {{ activeTab === 'goods' ? t('goods.addGood') : activeTab === 'categories' ? t('goods.addCategory') : t('goods.addUnit') }}
+          </UButton>
         </template>
       </GoodsNavTabs>
-    </div>
-
-    <!-- Segmented pill control -- deliberately NOT styled like GoodsNavTabs above,
-         since this switches local component state, not real routes. The
-         per-tab "add" action lives in this same row (not stacked below it)
-         so switching tabs and adding an item both happen from one place. -->
-    <div class="flex items-center justify-between gap-2 mt-3 flex-shrink-0">
-      <div class="flex items-center gap-2 overflow-x-auto pb-1">
-        <button
-          v-for="tab in TABS"
-          :key="tab.key"
-          type="button"
-          class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-          :class="activeTab === tab.key
-            ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-            : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-          @click="activeTab = tab.key"
-        >
-          {{ t(tab.labelKey) }}
-        </button>
-      </div>
-      <UButton
-        color="primary"
-        icon="lucide:plus"
-        size="sm"
-        class="flex-shrink-0"
-        @click="activeTab === 'goods' ? openAddGood() : activeTab === 'categories' ? openAddCategory() : openAddUnit()"
-      >
-        {{ activeTab === 'goods' ? t('goods.addGood') : activeTab === 'categories' ? t('goods.addCategory') : t('goods.addUnit') }}
-      </UButton>
     </div>
 
     <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
