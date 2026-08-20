@@ -19,6 +19,9 @@ import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
+import { useMenuToken } from '@/composables/useMenuToken';
+import { useMenuStaffRole } from '@/composables/useMenuStaffRole';
+import { CookieKeys } from '@/utils/storageKeys';
 
 definePageMeta({ layout: false });
 
@@ -219,6 +222,33 @@ const brandPhone = computed(() => {
 });
 const brandSocialLinks = computed(() => parseSocialLinks(data.value?.storefront.brandSettings?.socialLinks));
 
+// Showcase (view-only) mode: the owner turned this storefront into a plain
+// online menu -- no cart, no checkout, no order tracking. Every ordering
+// entry point below is gated on this; CreateOrder is also rejected
+// server-side (menu.msvc.core order.svc), so this is UI polish on top of a
+// real enforcement, not the only thing stopping an order.
+const showcaseMode = computed(() => !!data.value?.storefront.brandSettings?.showcaseViewOnly);
+
+// "You're an admin" widget: this page is public/unauthenticated by design
+// (no middleware gate, see middleware/auth.global.ts), so a visiting owner/
+// manager isn't otherwise distinguished from any other customer. A menu
+// token for this exact namespace only exists here if we go get one -- see
+// checkStaffAccess() below.
+const { isOwnerOrManager } = useMenuStaffRole();
+
+async function checkStaffAccess() {
+  try {
+    const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
+    if (!hubToken) return;
+    const { ensure } = useMenuToken();
+    await ensure(nsSlug.value, hubToken);
+  } catch (e) {
+    // Not staff, not logged in, or the exchange failed -- all indistinguishable
+    // from "just a regular visitor" here, and none worth surfacing.
+    logError('[menu/storefront] checkStaffAccess failed', e);
+  }
+}
+
 // Root categories currently within their configured time-of-day/day-of-week
 // window (categories with no restriction at all are always included) --
 // nav pills and top-level sections are built from this, not the raw list,
@@ -382,6 +412,7 @@ let observer: IntersectionObserver | null = null;
 
 onMounted(() => {
   restoreContact();
+  checkStaffAccess();
   nextTick(() => {
     observer = new IntersectionObserver((entries) => {
       if (suppressSpy) return;
@@ -1039,6 +1070,7 @@ useHead(() => {
               </button>
             </div>
             <button
+              v-if="!showcaseMode"
               type="button"
               class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
               @click="openMyOrderSheet"
@@ -1078,6 +1110,7 @@ useHead(() => {
               :primary-color="primaryColor"
               :secondary-color="secondaryColor"
               :quantity="cartQuantityFor(item.id)"
+              :ordering-disabled="showcaseMode"
               @open="openItemDetail(item)"
               @add="addToCart(item)"
               @increment="addToCart(item)"
@@ -1111,6 +1144,7 @@ useHead(() => {
                 :primary-color="primaryColor"
                 :secondary-color="secondaryColor"
                 :quantity="cartQuantityFor(item.id)"
+                :ordering-disabled="showcaseMode"
                 @open="openItemDetail(item)"
                 @add="addToCart(item)"
                 @increment="addToCart(item)"
@@ -1138,6 +1172,7 @@ useHead(() => {
                   :primary-color="primaryColor"
                   :secondary-color="secondaryColor"
                   :quantity="cartQuantityFor(item.id)"
+                  :ordering-disabled="showcaseMode"
                   @open="openItemDetail(item)"
                   @add="addToCart(item)"
                   @increment="addToCart(item)"
@@ -1153,7 +1188,7 @@ useHead(() => {
 
         <!-- Floating cart bar -->
         <div
-          v-if="cartCount > 0"
+          v-if="!showcaseMode && cartCount > 0"
           class="fixed bottom-0 left-0 right-0 z-30 pt-8 pb-4 px-4 bg-gradient-to-t from-gray-50 dark:from-gray-950 via-gray-50/95 dark:via-gray-950/95 to-transparent pointer-events-none"
         >
           <div class="max-w-3xl mx-auto pointer-events-auto">
@@ -1176,7 +1211,7 @@ useHead(() => {
       <!-- My order tracking: a proper, hard-to-miss block at the bottom of
            the menu, not just a small button — the top-bar/search-bar
            shortcuts are easy to miss on a long scroll. -->
-      <div class="max-w-3xl mx-auto px-4 pt-8">
+      <div v-if="!showcaseMode" class="max-w-3xl mx-auto px-4 pt-8">
         <button
           type="button"
           class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
@@ -1268,7 +1303,7 @@ useHead(() => {
       <!-- Clearance so the footer never sits under the fixed cart bar — only
            actually needed while that bar is showing, otherwise it was just
            dead empty space below the footer on every page load. -->
-      <div v-if="cartCount > 0" class="pb-24" />
+      <div v-if="!showcaseMode && cartCount > 0" class="pb-24" />
     </template>
 
     <!-- Item detail sheet -->
@@ -1364,7 +1399,7 @@ useHead(() => {
           </div>
         </div>
 
-        <template #footer>
+        <template v-if="!showcaseMode" #footer>
           <div class="flex flex-col gap-2">
             <p v-if="!isModifierSelectionValid" class="text-xs text-red-500 text-center">
               {{ t('menu.modifierSelectionRequired') || 'Please complete the required options above.' }}
@@ -1394,7 +1429,8 @@ useHead(() => {
                 block
                 :disabled="!isModifierSelectionValid"
                 :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-                class="border-0 flex-1"
+                :ui="{ rounded: 'rounded-full' }"
+                class="border-0 flex-1 h-9 flex items-center justify-center"
                 @click="addToCartQty(selectedItem, sheetQuantity, selectedModifierLines); closeItemDetail()"
               >
                 {{ t('menu.addToCart') || 'Add to cart' }} · {{ formatMoney((selectedItem.price + modifierUnitPriceTotal) * sheetQuantity, data?.storefront.brandSettings?.currencyCode) }}
@@ -1748,5 +1784,23 @@ useHead(() => {
         </template>
       </UCard>
     </USlideover>
+
+    <!-- "You're an admin" widget: only a staff owner/manager visiting their
+         own storefront sees this -- everyone else gets the plain public
+         page. -->
+    <div v-if="isOwnerOrManager" class="fixed bottom-4 right-4 z-40">
+      <NuxtLink
+        :to="`/${nsSlug}/menu/settings?tab=brand`"
+        class="flex items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 pl-3 pr-4 py-2.5 hover:shadow-xl transition-shadow"
+      >
+        <span class="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400">
+          <Icon name="lucide:pencil-line" class="w-4 h-4" />
+        </span>
+        <span class="text-left">
+          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.thisIsYourStorefront') || 'This is your storefront' }}</span>
+          <span class="block text-xs text-gray-500 dark:text-gray-400">{{ t('menu.thisIsYourStorefrontHint') || 'Tap to edit it' }}</span>
+        </span>
+      </NuxtLink>
+    </div>
   </div>
 </template>

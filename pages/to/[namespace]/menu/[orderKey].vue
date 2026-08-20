@@ -29,6 +29,10 @@ const order = ref<PublicOrderStatus | null>(null);
 const loading = ref(true);
 const invalidLink = ref(false);
 const notFound = ref(false);
+// Showcase (view-only) mode disables order tracking along with the cart --
+// see pages/to/[namespace]/menu/index.vue's showcaseMode. Checked before
+// ever attempting a lookup, not just hidden after the fact.
+const trackingDisabled = ref(false);
 
 // Same "primary branch phone stands in for the business line" convention as
 // the main storefront page.
@@ -86,6 +90,12 @@ async function load() {
     logError('[order-status] getPublicStorefront failed', e);
   }
 
+  if (brand.value?.showcaseViewOnly) {
+    trackingDisabled.value = true;
+    loading.value = false;
+    return;
+  }
+
   const parsed = parseOrderStatusKey(orderKey.value);
   if (!parsed) {
     invalidLink.value = true;
@@ -129,6 +139,7 @@ async function pollTick() {
 
 onMounted(async () => {
   await load();
+  if (trackingDisabled.value) return;
   // This is the most-replicated poller in the app — every customer with an
   // order open runs their own copy, unlike the admin/board pages where
   // there's normally just one watcher per venue — so it's worth erring
@@ -208,6 +219,16 @@ useHead(() => ({
         <Icon name="lucide:loader-2" class="w-6 h-6 animate-spin mb-2" />
         {{ t('app.loading') || 'Loading...' }}
       </div>
+
+      <!-- Showcase (view-only) mode: tracking is off entirely, not just "this
+           particular order wasn't found". -->
+      <EmptyState
+        v-else-if="trackingDisabled"
+        icon="lucide:eye"
+        size="lg"
+        :title="t('menu.orderTrackingDisabled') || 'Order tracking is unavailable'"
+        :description="t('menu.orderTrackingDisabledHint') || 'This storefront is a showcase-only menu right now.'"
+      />
 
       <!-- Invalid link / not found -->
       <EmptyState
