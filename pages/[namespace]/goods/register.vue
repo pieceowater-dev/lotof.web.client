@@ -11,6 +11,9 @@ import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsRegister, GoodsCashShift } from '@/api/goods/register';
 import type { GoodsSale, GoodsSaleStatus, GoodsPaymentMethod, GoodsCashMovementType } from '@/api/goods/sale';
 import type { GoodsGood } from '@/api/goods/good';
+import type { GoodsCategory } from '@/api/goods/category';
+import type { GoodsStock } from '@/api/goods/stock';
+import { formatMoney } from '@/utils/currency';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -36,6 +39,10 @@ const currentShift = ref<GoodsCashShift | null>(null);
 const goodNameById = ref<Map<string, string>>(new Map());
 const activeSale = ref<GoodsSale | null>(null);
 const goods = ref<GoodsGood[]>([]);
+const categories = ref<GoodsCategory[]>([]);
+const stockByGoodId = ref<Map<string, GoodsStock>>(new Map());
+const currencyCode = ref<string>('KZT');
+const activeCategoryId = ref<string | null>(null);
 
 const STORAGE_KEY = computed(() => `goods:activeWarehouse:${nsSlug.value}`);
 
@@ -63,12 +70,41 @@ async function bootstrap() {
     if (activeRegister.value) {
       const { goodsCurrentShift } = await import('@/api/goods/register');
       currentShift.value = await goodsCurrentShift(goodsToken, nsSlug.value, activeRegister.value.id);
+
+      // Resume an already-open sale for this register+shift instead of
+      // silently abandoning it -- a reload used to lose the in-progress
+      // cart from view entirely while the backend kept holding its stock
+      // reservation forever (nothing ever re-discovers and voids it), which
+      // is how "insufficient stock" errors could show up for items that
+      // were actually available.
+      if (currentShift.value) {
+        const { goodsListSales } = await import('@/api/goods/sale');
+        const { sales } = await goodsListSales(goodsToken, nsSlug.value, {
+          registerId: activeRegister.value.id,
+          shiftId: currentShift.value.id,
+        });
+        activeSale.value = sales.find((s) => s.status === 'OPEN') || null;
+      }
     }
 
     const { goodsListGoods } = await import('@/api/goods/good');
     const { goods: g } = await goodsListGoods(goodsToken, nsSlug.value);
     goods.value = g.filter((x) => x.isActive);
     goodNameById.value = new Map(g.map((x) => [x.id, x.name]));
+
+    const { goodsListCategories } = await import('@/api/goods/category');
+    const { categories: c } = await goodsListCategories(goodsToken, nsSlug.value);
+    categories.value = c.filter((x) => x.isActive && !x.parentId).sort((a, b) => a.sortOrder - b.sortOrder);
+
+    if (activeWarehouseId.value) {
+      const { goodsListStock } = await import('@/api/goods/stock');
+      const { stock } = await goodsListStock(goodsToken, nsSlug.value, { warehouseId: activeWarehouseId.value });
+      stockByGoodId.value = new Map(stock.map((s) => [s.goodId, s]));
+    }
+
+    const { goodsGetSettings } = await import('@/api/goods/settings');
+    const settings = await goodsGetSettings(goodsToken, nsSlug.value);
+    currencyCode.value = settings.currency;
   } catch (e) {
     logError('[goods/register] bootstrap failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load register', color: 'red' });
@@ -208,31 +244,77 @@ async function ensureSale(): Promise<GoodsSale> {
   return activeSale.value;
 }
 
+// Tracks which good is mid-flight so the same tile can show a spinner and
+// double-taps (very easy to do on a touchscreen register) don't fire a
+// second overlapping request for the same good.
+const addingGoodId = ref<string | null>(null);
+// Tracks which cart line is mid-flight (stepper +/- or remove) the same way.
+const busyCartItemId = ref<string | null>(null);
+
 async function addGoodToCart(goodId: string, unitId: string, quantity: number) {
-  const goodsToken = await getToken();
-  const sale = await ensureSale();
-  // Scanning/tapping the same good again should top up its existing line
-  // rather than create a second one -- two separate lines for the same good
-  // each reserve stock independently and can trip a false "insufficient
-  // stock" error at payment time even when the combined quantity is fine.
-  const existing = (sale.items || []).find((i) => i.goodId === goodId && i.unitId === unitId && !i.discountRuleId && !i.discountCents);
-  if (existing) {
-    const { goodsUpdateSaleItem } = await import('@/api/goods/sale');
-    activeSale.value = await goodsUpdateSaleItem(goodsToken, nsSlug.value, {
-      saleItemId: existing.id,
-      quantity: existing.quantity + quantity,
-    });
-    return;
+  addingGoodId.value = goodId;
+  try {
+    const goodsToken = await getToken();
+    const sale = await ensureSale();
+    // Scanning/tapping the same good again should top up its existing line
+    // rather than create a second one -- two separate lines for the same good
+    // each reserve stock independently and can trip a false "insufficient
+    // stock" error at payment time even when the combined quantity is fine.
+    const existing = (sale.items || []).find((i) => i.goodId === goodId && i.unitId === unitId && !i.discountRuleId && !i.discountCents);
+    if (existing) {
+      const { goodsUpdateSaleItem } = await import('@/api/goods/sale');
+      activeSale.value = await goodsUpdateSaleItem(goodsToken, nsSlug.value, {
+        saleItemId: existing.id,
+        quantity: existing.quantity + quantity,
+      });
+      return;
+    }
+    const { goodsAddSaleItem } = await import('@/api/goods/sale');
+    activeSale.value = await goodsAddSaleItem(goodsToken, nsSlug.value, sale.id, goodId, unitId, quantity);
+  } catch (e) {
+    logError('[goods/register] addGoodToCart failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('goods.addToCartFailed'), color: 'red' });
+  } finally {
+    addingGoodId.value = null;
   }
-  const { goodsAddSaleItem } = await import('@/api/goods/sale');
-  activeSale.value = await goodsAddSaleItem(goodsToken, nsSlug.value, sale.id, goodId, unitId, quantity);
 }
 
 async function removeCartItem(saleItemId: string) {
   if (!activeSale.value) return;
-  const goodsToken = await getToken();
-  const { goodsRemoveSaleItem } = await import('@/api/goods/sale');
-  activeSale.value = await goodsRemoveSaleItem(goodsToken, nsSlug.value, saleItemId);
+  busyCartItemId.value = saleItemId;
+  try {
+    const goodsToken = await getToken();
+    const { goodsRemoveSaleItem } = await import('@/api/goods/sale');
+    activeSale.value = await goodsRemoveSaleItem(goodsToken, nsSlug.value, saleItemId);
+  } catch (e) {
+    logError('[goods/register] removeCartItem failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to remove item', color: 'red' });
+  } finally {
+    busyCartItemId.value = null;
+  }
+}
+
+// Inline +/- steppers on each cart line -- quantity 0 removes the line the
+// same way the explicit remove button does, so dragging the stepper down
+// to zero doesn't leave a dangling zero-quantity item.
+async function changeCartItemQty(item: { id: string; quantity: number }, delta: number) {
+  if (!activeSale.value) return;
+  const nextQty = item.quantity + delta;
+  if (nextQty <= 0) {
+    await removeCartItem(item.id);
+    return;
+  }
+  busyCartItemId.value = item.id;
+  try {
+    const goodsToken = await getToken();
+    const { goodsUpdateSaleItem } = await import('@/api/goods/sale');
+    activeSale.value = await goodsUpdateSaleItem(goodsToken, nsSlug.value, { saleItemId: item.id, quantity: nextQty });
+  } catch (e) {
+    logError('[goods/register] changeCartItemQty failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('goods.addToCartFailed'), color: 'red' });
+  } finally {
+    busyCartItemId.value = null;
+  }
 }
 
 async function voidCart() {
@@ -303,9 +385,21 @@ const searching = ref(false);
 // + Enter), since a scanned code is rarely a substring match on name/sku.
 const visibleGoods = computed(() => {
   const q = query.value.trim().toLowerCase();
-  if (!q) return goods.value;
-  return goods.value.filter((g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q));
+  let list = activeCategoryId.value ? goods.value.filter((g) => g.categoryId === activeCategoryId.value) : goods.value;
+  if (q) list = list.filter((g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q));
+  return list;
 });
+
+function stockFor(goodId: string): GoodsStock | undefined {
+  return stockByGoodId.value.get(goodId);
+}
+// Only goods that actually track stock can be "out" -- a service or a good
+// with stock tracking off is always sellable regardless of what's in this map.
+function isOutOfStock(good: GoodsGood): boolean {
+  if (!good.trackStock) return false;
+  const s = stockFor(good.id);
+  return !!s && s.available <= 0;
+}
 
 async function onSearchEnter() {
   const raw = query.value.trim();
@@ -372,7 +466,7 @@ function payWithGiftCert() {
 }
 
 function formatCents(cents: number): string {
-  return (cents / 100).toFixed(2);
+  return formatMoney(cents / 100, currencyCode.value);
 }
 
 const SALE_STATUS_LABELS: Record<GoodsSaleStatus, string> = {
@@ -481,12 +575,20 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 max-w-[1600px] mx-auto w-full space-y-3">
-    <!-- Minimal chrome: this is the face of the product -->
+  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 max-w-[1600px] mx-auto w-full space-y-3 tabular-nums">
+    <!-- Top bar -->
     <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.register') }}</h1>
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
+          <Icon name="lucide:store" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        </div>
+        <div class="min-w-0">
+          <h1 class="text-lg font-bold leading-tight text-gray-900 dark:text-white truncate">{{ t('goods.register') }}</h1>
+          <p v-if="activeRegister" class="text-xs text-gray-400 truncate">{{ activeRegister.name }}</p>
+        </div>
+      </div>
       <div class="flex items-center gap-1.5 flex-wrap">
-        <UButton color="gray" variant="soft" icon="lucide:warehouse" :to="`/${nsSlug}/goods`">
+        <UButton color="gray" variant="soft" icon="lucide:warehouse" size="sm" :to="`/${nsSlug}/goods`">
           {{ t('goods.warehouse') }}
         </UButton>
         <template v-if="currentShift">
@@ -495,7 +597,8 @@ onMounted(async () => {
           <UButton color="gray" variant="ghost" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
           <UButton color="gray" variant="ghost" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
           <UButton color="gray" variant="ghost" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
-          <UButton color="gray" variant="ghost" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
+          <span class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
+          <UButton color="red" variant="soft" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
             {{ t('goods.closeShift') }}
           </UButton>
           </span>
@@ -510,9 +613,11 @@ onMounted(async () => {
     <!-- No register yet on this warehouse -->
     <div v-else-if="!activeRegister" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="max-w-md w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center space-y-3">
-        <Icon name="lucide:store" class="w-8 h-8 mx-auto text-gray-400" />
+        <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto">
+          <Icon name="lucide:store" class="w-7 h-7 text-gray-400" />
+        </div>
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.noRegisterYet') }}</p>
-        <UButton v-if="isOwnerOrManager" color="primary" :loading="creatingRegister" @click="createRegisterHere">
+        <UButton v-if="isOwnerOrManager" color="primary" size="lg" :loading="creatingRegister" @click="createRegisterHere">
           {{ t('goods.createRegister') }}
         </UButton>
       </div>
@@ -521,11 +626,14 @@ onMounted(async () => {
     <!-- No open shift -->
     <div v-else-if="!currentShift" class="flex-1 min-h-0 flex items-center justify-center">
       <div class="max-w-md w-full rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 space-y-4">
+        <div class="w-14 h-14 rounded-2xl bg-primary-500/10 flex items-center justify-center mx-auto">
+          <Icon name="lucide:lock-keyhole-open" class="w-7 h-7 text-primary-600 dark:text-primary-400" />
+        </div>
         <p class="text-sm text-gray-500 dark:text-gray-400 text-center">{{ t('goods.openShift') }}</p>
         <UFormGroup :label="t('goods.openingCash')">
-          <UInput v-model.number="openingCash" type="number" min="0" step="0.01" size="lg" @keyup.enter="openShift" />
+          <UInput v-model.number="openingCash" type="number" min="0" step="0.01" size="xl" @keyup.enter="openShift" />
         </UFormGroup>
-        <UButton block color="primary" :loading="shiftBusy" @click="openShift">{{ t('goods.openShift') }}</UButton>
+        <UButton block size="xl" color="primary" :loading="shiftBusy" @click="openShift">{{ t('goods.openShift') }}</UButton>
       </div>
     </div>
 
@@ -545,8 +653,35 @@ onMounted(async () => {
           :placeholder="t('goods.search')"
           :loading="searching"
           autofocus
+          :ui="{ base: 'text-base' }"
           @keyup.enter="onSearchEnter"
         />
+
+        <!-- Category tabs -->
+        <div v-if="categories.length" class="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 flex-shrink-0">
+          <button
+            type="button"
+            class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+            :class="activeCategoryId === null
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+            @click="activeCategoryId = null"
+          >
+            {{ t('goods.allCategories') }}
+          </button>
+          <button
+            v-for="c in categories"
+            :key="c.id"
+            type="button"
+            class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
+            :class="activeCategoryId === c.id
+              ? 'bg-primary-500 text-white'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'"
+            @click="activeCategoryId = c.id"
+          >
+            {{ c.name }}
+          </button>
+        </div>
 
         <div data-tour="goods-register-products" class="flex-1 overflow-y-auto -mx-1 px-1">
           <div v-if="visibleGoods.length" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-2">
@@ -554,16 +689,27 @@ onMounted(async () => {
               v-for="g in visibleGoods"
               :key="g.id"
               type="button"
-              class="group aspect-square flex flex-col text-left rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-md active:scale-[0.97]"
+              :disabled="isOutOfStock(g) || addingGoodId === g.id"
+              class="group relative aspect-square flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
+              :class="isOutOfStock(g)
+                ? 'border-gray-200 dark:border-gray-800 opacity-50'
+                : 'border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] active:shadow-sm'"
               @click="addFromCard(g)"
             >
-              <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden">
+              <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
                 <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
-                <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
+                <Icon v-else name="lucide:package" class="w-9 h-9 text-gray-300 dark:text-gray-700" />
+                <span
+                  v-if="isOutOfStock(g)"
+                  class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-gray-900/80 text-white text-[10px] font-semibold uppercase tracking-wide"
+                >{{ t('goods.outOfStock') }}</span>
+                <div v-if="addingGoodId === g.id" class="absolute inset-0 bg-white/70 dark:bg-gray-900/70 flex items-center justify-center">
+                  <Icon name="lucide:loader" class="w-5 h-5 animate-spin text-primary-600" />
+                </div>
               </div>
               <div class="flex-shrink-0 p-2.5 space-y-0.5">
                 <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
-                <div class="text-sm font-semibold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
+                <div class="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
               </div>
             </button>
           </div>
@@ -575,9 +721,15 @@ onMounted(async () => {
       </div>
 
       <!-- Cart + calculator: 1/3, pinned totals/payment at the bottom -->
-      <div data-tour="goods-register-cart" class="flex flex-col min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-        <div class="px-4 py-2.5 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
-          <span class="font-medium text-sm text-gray-500 dark:text-gray-400">{{ t('goods.cart') }}</span>
+      <div data-tour="goods-register-cart" class="flex flex-col min-h-0 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden shadow-sm">
+        <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
+          <span class="font-semibold text-sm text-gray-900 dark:text-white flex items-center gap-1.5">
+            <Icon name="lucide:shopping-cart" class="w-4 h-4 text-gray-400" />
+            {{ t('goods.cart') }}
+            <span v-if="activeSale?.items?.length" class="inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-primary-500 text-white text-[11px] font-bold">
+              {{ activeSale.items.length }}
+            </span>
+          </span>
           <UButton v-if="activeSale?.items?.length" color="red" variant="ghost" size="2xs" icon="lucide:trash-2" @click="voidCart">{{ t('goods.voidSale') }}</UButton>
         </div>
 
@@ -591,19 +743,42 @@ onMounted(async () => {
         />
 
         <div class="flex-1 overflow-y-auto min-h-0">
-          <div v-if="!activeSale?.items?.length" class="h-full flex flex-col items-center justify-center px-4 text-center text-sm text-gray-400">
-            <Icon name="lucide:shopping-cart" class="w-8 h-8 mb-2 text-gray-300 dark:text-gray-700" />
+          <div v-if="!activeSale?.items?.length" class="h-full flex flex-col items-center justify-center px-6 text-center text-sm text-gray-400">
+            <Icon name="lucide:shopping-cart" class="w-10 h-10 mb-3 text-gray-200 dark:text-gray-800" />
             {{ t('goods.emptyCart') }}
           </div>
           <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
-            <div v-for="item in activeSale.items" :key="item.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
-              <div class="min-w-0">
+            <div v-for="item in activeSale.items" :key="item.id" class="flex items-center gap-2 px-4 py-2.5 text-sm">
+              <div class="min-w-0 flex-1">
                 <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodNameById.get(item.goodId) || t('goods.unknownItem') }}</div>
-                <div class="text-gray-400 tabular-nums">{{ item.quantity }} × {{ formatCents(item.priceAtSaleCents) }}</div>
+                <div class="text-gray-400 tabular-nums text-xs">{{ formatCents(item.priceAtSaleCents) }} {{ t('goods.perUnit') }}</div>
               </div>
-              <div class="flex items-center gap-2 flex-shrink-0">
-                <span class="font-semibold tabular-nums">{{ formatCents(item.totalCents) }}</span>
-                <UButton color="gray" variant="ghost" icon="lucide:x" size="2xs" @click="removeCartItem(item.id)" />
+
+              <div class="flex items-center gap-1 flex-shrink-0 rounded-lg bg-gray-50 dark:bg-gray-800/70 p-0.5">
+                <button
+                  type="button"
+                  :disabled="busyCartItemId === item.id"
+                  class="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-colors disabled:opacity-40"
+                  @click="changeCartItemQty(item, -1)"
+                >
+                  <Icon name="lucide:minus" class="w-3 h-3" />
+                </button>
+                <span class="w-7 text-center text-sm font-semibold tabular-nums">{{ item.quantity }}</span>
+                <button
+                  type="button"
+                  :disabled="busyCartItemId === item.id"
+                  class="w-6 h-6 flex items-center justify-center rounded-md text-gray-500 hover:bg-white dark:hover:bg-gray-700 hover:shadow-sm transition-colors disabled:opacity-40"
+                  @click="changeCartItemQty(item, 1)"
+                >
+                  <Icon name="lucide:plus" class="w-3 h-3" />
+                </button>
+              </div>
+
+              <div class="flex flex-col items-end flex-shrink-0 w-20">
+                <span class="font-bold tabular-nums text-gray-900 dark:text-white">{{ formatCents(item.totalCents) }}</span>
+                <button type="button" class="text-[11px] text-gray-400 hover:text-red-500 transition-colors" @click="removeCartItem(item.id)">
+                  {{ t('goods.removeItem') }}
+                </button>
               </div>
             </div>
           </div>
@@ -612,23 +787,27 @@ onMounted(async () => {
         <!-- Calculator: totals + payment, always visible at the bottom -->
         <div class="flex-shrink-0 border-t border-gray-100 dark:border-gray-800">
           <div v-if="activeSale?.items?.length" class="px-4 py-2.5 flex items-center justify-between text-sm border-b border-gray-100 dark:border-gray-800">
-            <button type="button" class="text-primary-600 dark:text-primary-400 font-medium" @click="openDiscount">
-              {{ t('goods.applyDiscount') }}
+            <button type="button" class="text-primary-600 dark:text-primary-400 font-medium flex items-center gap-1" @click="openDiscount">
+              <Icon name="lucide:percent" class="w-3.5 h-3.5" /> {{ t('goods.applyDiscount') }}
             </button>
-            <span v-if="activeSale.discountAmountCents" class="text-gray-400 tabular-nums">− {{ formatCents(activeSale.discountAmountCents) }}</span>
+            <span v-if="activeSale.discountAmountCents" class="text-red-500 tabular-nums font-medium">− {{ formatCents(activeSale.discountAmountCents) }}</span>
           </div>
-          <div class="px-4 py-3 flex items-center justify-between">
-            <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.total') }}</span>
-            <span class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ activeSale?.items?.length ? formatCents(activeSale.totalAmountCents) : '0.00' }}</span>
+          <div class="px-4 py-3.5 flex items-center justify-between">
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('goods.total') }}</span>
+            <span class="text-3xl font-extrabold text-gray-900 dark:text-white tabular-nums tracking-tight">{{ activeSale?.items?.length ? formatCents(activeSale.totalAmountCents) : formatCents(0) }}</span>
           </div>
           <div v-if="activeSale?.items?.length" class="px-4 pb-4 grid grid-cols-2 gap-2">
-            <UButton block size="lg" color="primary" :loading="paying" class="col-span-2 justify-center" @click="payWith('CASH')">
-              <Icon name="lucide:banknote" class="w-4 h-4 mr-1.5" /> {{ t('goods.payCash') }}
+            <UButton
+              block size="xl" :loading="paying" class="col-span-2 justify-center font-semibold"
+              :ui="{ color: { primary: { solid: 'bg-emerald-600 hover:bg-emerald-700 text-white focus-visible:ring-emerald-500' } } }"
+              @click="payWith('CASH')"
+            >
+              <Icon name="lucide:banknote" class="w-5 h-5 mr-1.5" /> {{ t('goods.payCash') }}
             </UButton>
-            <UButton block size="lg" color="primary" variant="soft" :loading="paying" class="justify-center" @click="payWith('CARD')">
+            <UButton block size="lg" color="blue" :loading="paying" class="justify-center font-medium" @click="payWith('CARD')">
               <Icon name="lucide:credit-card" class="w-4 h-4 mr-1.5" /> {{ t('goods.payCard') }}
             </UButton>
-            <UButton block size="lg" color="gray" variant="soft" :loading="paying" class="justify-center" @click="showGiftCertPay = true">
+            <UButton block size="lg" color="violet" variant="soft" :loading="paying" class="justify-center font-medium" @click="showGiftCertPay = true">
               <Icon name="lucide:gift" class="w-4 h-4 mr-1.5" /> {{ t('goods.payGiftCert') }}
             </UButton>
           </div>
