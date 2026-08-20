@@ -14,6 +14,7 @@ import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsStock } from '@/api/goods/stock';
 import { formatMoney } from '@/utils/currency';
+import { playScannerBeep } from '@/utils/scannerBeep';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -404,6 +405,9 @@ function isOutOfStock(good: GoodsGood): boolean {
 async function onSearchEnter() {
   const raw = query.value.trim();
   if (!raw) return;
+  // Beeps immediately, before the lookup even resolves -- a real scanner
+  // beeps the instant it decodes the code, not once the sale item lands.
+  playScannerBeep();
   searching.value = true;
   try {
     const goodsToken = await getToken();
@@ -690,26 +694,32 @@ onMounted(async () => {
               :key="g.id"
               type="button"
               :disabled="isOutOfStock(g) || addingGoodId === g.id"
-              class="group relative aspect-square flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
+              class="group relative aspect-square rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
               :class="isOutOfStock(g)
                 ? 'border-gray-200 dark:border-gray-800 opacity-50'
                 : 'border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] active:shadow-sm'"
               @click="addFromCard(g)"
             >
-              <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
-                <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
-                <Icon v-else name="lucide:package" class="w-9 h-9 text-gray-300 dark:text-gray-700" />
-                <span
-                  v-if="isOutOfStock(g)"
-                  class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-gray-900/80 text-white text-[10px] font-semibold uppercase tracking-wide"
-                >{{ t('goods.outOfStock') }}</span>
-                <div v-if="addingGoodId === g.id" class="absolute inset-0 bg-white/70 dark:bg-gray-900/70 flex items-center justify-center">
-                  <Icon name="lucide:loader" class="w-5 h-5 animate-spin text-primary-600" />
+              <!-- Absolutely positioned so the card's box is driven purely by
+                   aspect-square + grid width -- content (2-line names, etc.)
+                   is taken out of flow and can never stretch the tile taller
+                   than square, it just clips/scrolls within it instead. -->
+              <div class="absolute inset-0 flex flex-col">
+                <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
+                  <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
+                  <Icon v-else name="lucide:package" class="w-9 h-9 text-gray-300 dark:text-gray-700" />
+                  <span
+                    v-if="isOutOfStock(g)"
+                    class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-gray-900/80 text-white text-[10px] font-semibold uppercase tracking-wide"
+                  >{{ t('goods.outOfStock') }}</span>
+                  <div v-if="addingGoodId === g.id" class="absolute inset-0 bg-white/70 dark:bg-gray-900/70 flex items-center justify-center">
+                    <Icon name="lucide:loader" class="w-5 h-5 animate-spin text-primary-600" />
+                  </div>
                 </div>
-              </div>
-              <div class="flex-shrink-0 p-2.5 space-y-0.5">
-                <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
-                <div class="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
+                <div class="flex-shrink-0 p-2.5 space-y-0.5 text-left">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
+                  <div class="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
+                </div>
               </div>
             </button>
           </div>
@@ -798,8 +808,7 @@ onMounted(async () => {
           </div>
           <div v-if="activeSale?.items?.length" class="px-4 pb-4 grid grid-cols-2 gap-2">
             <UButton
-              block size="xl" :loading="paying" class="col-span-2 justify-center font-semibold"
-              :ui="{ color: { primary: { solid: 'bg-emerald-600 hover:bg-emerald-700 text-white focus-visible:ring-emerald-500' } } }"
+              block size="xl" color="primary" :loading="paying" class="col-span-2 justify-center font-semibold"
               @click="payWith('CASH')"
             >
               <Icon name="lucide:banknote" class="w-5 h-5 mr-1.5" /> {{ t('goods.payCash') }}
