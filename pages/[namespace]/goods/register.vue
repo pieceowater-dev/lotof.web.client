@@ -569,6 +569,14 @@ const recentSales = ref<GoodsSale[]>([]);
 const cancelingSaleId = ref<string | null>(null);
 const cancelPin = ref('');
 
+// Sales created before the SaleCounter fix (and any future edge case where
+// allocation somehow didn't run) have an empty `number` -- fall back to the
+// sale's time so the row never renders with a blank title.
+function saleTitle(s: GoodsSale): string {
+  if (s.number) return `№${s.number}`;
+  return new Date(s.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+}
+
 async function openHistory() {
   if (!currentShift.value) return;
   showHistory.value = true;
@@ -1059,7 +1067,10 @@ onMounted(async () => {
         <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="s in recentSales" :key="s.id" class="py-2.5 space-y-1.5">
             <div class="flex items-center justify-between text-sm">
-              <span class="font-medium">{{ s.number }}</span>
+              <div>
+                <span class="font-medium">{{ saleTitle(s) }}</span>
+                <span v-if="s.number" class="text-xs text-gray-400 ml-1.5">{{ new Date(s.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}</span>
+              </div>
               <div class="flex items-center gap-2">
                 <UBadge :color="SALE_STATUS_COLORS[s.status]" variant="soft">{{ SALE_STATUS_LABELS[s.status] }}</UBadge>
                 <span class="font-semibold">{{ formatCents(s.totalAmountCents) }}</span>
