@@ -336,28 +336,32 @@ onMounted(loadAll);
     <div class="flex-shrink-0 mt-3">
       <GoodsNavTabs>
         <template #search>
-          <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs" :placeholder="t('common.search')" />
+          <!-- Search + the local movement-type pill filter share this one
+               row now -- deliberately NOT styled like the real route tabs
+               below, since this filters local component state, not the URL. -->
+          <div class="flex items-center gap-2 min-w-0">
+            <UInput v-model="searchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
+            <div class="flex items-center gap-2 overflow-x-auto pb-0.5 min-w-0">
+              <button
+                v-for="tab in TYPE_TABS"
+                :key="tab.key"
+                type="button"
+                class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap flex items-center gap-1.5"
+                :class="activeType === tab.key
+                  ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+                  : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+                @click="activeType = tab.key"
+              >
+                <UIcon :name="tab.icon" class="w-4 h-4" />
+                {{ t(tab.labelKey) }}
+              </button>
+            </div>
+          </div>
         </template>
         <template #action>
           <UButton color="primary" icon="lucide:plus" @click="showCreate = true">{{ t('goods.createMovement') }}</UButton>
         </template>
       </GoodsNavTabs>
-    </div>
-
-    <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
-      <button
-        v-for="tab in TYPE_TABS"
-        :key="tab.key"
-        type="button"
-        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap flex items-center gap-1.5"
-        :class="activeType === tab.key
-          ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-        @click="activeType = tab.key"
-      >
-        <UIcon :name="tab.icon" class="w-4 h-4" />
-        {{ t(tab.labelKey) }}
-      </button>
     </div>
 
     <div class="flex-1 min-h-0 mt-3">
