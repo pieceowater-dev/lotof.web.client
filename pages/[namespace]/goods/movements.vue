@@ -240,11 +240,52 @@ const form = reactive({ warehouseId: '', toWarehouseId: '', supplierId: '', expe
 const draftItems = ref<MovementDraftItem[]>([]);
 
 function resetCreateForm() {
-  form.warehouseId = ''; form.toWarehouseId = ''; form.supplierId = ''; form.expectedDate = ''; form.reason = 'OTHER';
+  // Defaults to the first warehouse instead of forcing an empty selection --
+  // most namespaces only ever have one or two, so this saves a click on the
+  // single most common case instead of always starting blank. toWarehouseId
+  // (transfers only) defaults to the *second* one instead, since defaulting
+  // both ends to the same warehouse would be a same-warehouse transfer --
+  // left blank when there's nothing else to pick.
+  form.warehouseId = warehouses.value[0]?.id || '';
+  form.toWarehouseId = warehouses.value[1]?.id || '';
+  form.supplierId = ''; form.expectedDate = ''; form.reason = 'OTHER';
   draftItems.value = [];
 }
 watch(showCreate, (open) => { if (open) resetCreateForm(); });
 watch(createType, () => { draftItems.value = []; });
+
+// --- Quick supplier create (rescue path from the movement modal when the
+// namespace has zero suppliers yet -- the full Suppliers page form is a
+// separate, heavier flow with Contacts linking; this is just enough to get
+// unblocked and pick a name). ---
+const showQuickSupplier = ref(false);
+const quickSupplierName = ref('');
+const creatingQuickSupplier = ref(false);
+
+function openQuickSupplier() {
+  quickSupplierName.value = '';
+  showQuickSupplier.value = true;
+}
+
+async function createQuickSupplier() {
+  if (!quickSupplierName.value.trim()) return;
+  creatingQuickSupplier.value = true;
+  try {
+    const token = await getToken();
+    const { goodsCreateSupplier } = await import('@/api/goods/supplier');
+    const created = await goodsCreateSupplier(token, nsSlug.value, {
+      name: quickSupplierName.value.trim(), phone: '', contactPerson: '', identity: '',
+    });
+    suppliers.value.push(created);
+    form.supplierId = created.id;
+    showQuickSupplier.value = false;
+  } catch (e) {
+    logError('[goods/movements] createQuickSupplier failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create supplier', color: 'red' });
+  } finally {
+    creatingQuickSupplier.value = false;
+  }
+}
 
 const extraFieldsByType: Record<MovementKind, MovementExtraField[]> = {
   purchase: [{ key: 'priceCents', labelKey: 'goods.price', type: 'number', step: '0.01', min: 0, colSpan: 2 }],
@@ -474,10 +515,16 @@ onMounted(loadAll);
             </UFormGroup>
 
             <UFormGroup v-if="createType === 'purchase'" :label="t('goods.supplier')" required>
-              <USelectMenu v-model="form.supplierId" :options="suppliers.map((s) => ({ label: s.name, value: s.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+              <div class="flex items-center gap-1.5">
+                <USelectMenu v-model="form.supplierId" class="flex-1 min-w-0" :options="suppliers.map((s) => ({ label: s.name, value: s.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+                <UButton color="gray" variant="soft" icon="lucide:plus" size="sm" class="flex-shrink-0" @click="openQuickSupplier" />
+              </div>
             </UFormGroup>
             <UFormGroup v-if="createType === 'receipt'" :label="t('goods.supplier')">
-              <USelectMenu v-model="form.supplierId" :options="suppliers.map((s) => ({ label: s.name, value: s.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+              <div class="flex items-center gap-1.5">
+                <USelectMenu v-model="form.supplierId" class="flex-1 min-w-0" :options="suppliers.map((s) => ({ label: s.name, value: s.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+                <UButton color="gray" variant="soft" icon="lucide:plus" size="sm" class="flex-shrink-0" @click="openQuickSupplier" />
+              </div>
             </UFormGroup>
 
             <UFormGroup v-if="createType === 'purchase'" :label="t('goods.expectedDate')">
@@ -502,6 +549,22 @@ onMounted(loadAll);
           <div class="flex justify-end gap-2">
             <UButton color="gray" variant="ghost" @click="showCreate = false">{{ t('common.cancel') }}</UButton>
             <UButton color="primary" :loading="saving" :disabled="!isFormValid || saving" @click="submitCreate">{{ t('common.save') }}</UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- Quick supplier create -- rescue path when there are none yet -->
+    <UModal v-model="showQuickSupplier">
+      <UCard>
+        <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
+        <UFormGroup :label="t('goods.goodName')" required>
+          <UInput v-model="quickSupplierName" autofocus @keyup.enter="createQuickSupplier" />
+        </UFormGroup>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton color="gray" variant="ghost" @click="showQuickSupplier = false">{{ t('common.cancel') }}</UButton>
+            <UButton color="primary" :loading="creatingQuickSupplier" :disabled="!quickSupplierName.trim()" @click="createQuickSupplier">{{ t('common.save') }}</UButton>
           </div>
         </template>
       </UCard>

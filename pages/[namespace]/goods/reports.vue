@@ -112,23 +112,28 @@ onMounted(async () => {
     </div>
 
     <div class="flex-shrink-0 mt-3">
-      <GoodsNavTabs />
-    </div>
-
-    <div class="flex items-center gap-2 overflow-x-auto pb-1 mt-3 flex-shrink-0">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        type="button"
-        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap flex items-center gap-1.5"
-        :class="activeTab === tab.key
-          ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-        @click="activeTab = tab.key"
-      >
-        <UIcon :name="tab.icon" class="w-4 h-4" />
-        {{ t(tab.labelKey) }}
-      </button>
+      <GoodsNavTabs>
+        <template #search>
+          <!-- Report-type pill switcher shares this row now -- deliberately
+               NOT styled like the real route tabs below, since this
+               switches local component state, not the URL. -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+            <button
+              v-for="tab in TABS"
+              :key="tab.key"
+              type="button"
+              class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap flex items-center gap-1.5"
+              :class="activeTab === tab.key
+                ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
+                : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+              @click="activeTab = tab.key"
+            >
+              <UIcon :name="tab.icon" class="w-4 h-4" />
+              {{ t(tab.labelKey) }}
+            </button>
+          </div>
+        </template>
+      </GoodsNavTabs>
     </div>
 
     <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2 flex-shrink-0 mt-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2">

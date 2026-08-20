@@ -128,6 +128,21 @@ export function isRateLimitError(e: unknown): boolean {
   return /^GraphQL Error \(Code: 429\)/.test(raw)
 }
 
+// lotof.goods.msvc.core's stock.ent.go raises this exact, stable message
+// (ErrInsufficientStock) any time a decrement would take quantity below
+// zero -- a routine, expected business outcome (someone tried to sell more
+// than is in stock), not a technical failure, but its English wording is
+// never fit to show as-is in an otherwise-localized UI.
+const INSUFFICIENT_STOCK_RE = /insufficient stock/i
+
+export function isInsufficientStockError(e: unknown): boolean {
+  const raw = extractRawMessage(e)
+  if (!raw) return false
+  const grpcMatch = raw.match(GRPC_WRAPPER_RE)
+  const desc = grpcMatch ? grpcMatch[2] : raw
+  return INSUFFICIENT_STOCK_RE.test(desc)
+}
+
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
 // stack traces, bare "rpc error: code = Unknown desc = ...") to end users —
 // they're meaningless and alarming. The detail is never lost though: it's
@@ -158,5 +173,14 @@ export function getErrorMessage(e: unknown, t?: (key: string) => string): string
     console.error('[app] technical error (hidden from UI):', raw, e)
     return ''
   }
-  return raw
+  if (isInsufficientStockError(e)) {
+    console.error('[app] insufficient stock (hidden from UI):', raw, e)
+    return t ? (t('common.insufficientStock') || '') : ''
+  }
+  // Every other "safe" business error (an intentional status.Error(...) with
+  // a non-technical code) still crossed the wire as "rpc error: code = X
+  // desc = Y" -- strip that wrapper so only the human-authored desc text
+  // ever reaches the UI, never the raw wire format.
+  const grpcMatch = raw.match(GRPC_WRAPPER_RE)
+  return grpcMatch ? grpcMatch[2] : raw
 }

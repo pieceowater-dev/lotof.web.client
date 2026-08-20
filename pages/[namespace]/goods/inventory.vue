@@ -85,6 +85,9 @@ const rows = computed(() => {
 const showStart = ref(false);
 const startWarehouseId = ref('');
 const starting = ref(false);
+// Defaults to the first warehouse instead of forcing an empty selection --
+// most namespaces only ever have one or two.
+watch(showStart, (open) => { if (open) startWarehouseId.value = warehouses.value[0]?.id || ''; });
 async function startCount() {
   if (!startWarehouseId.value) return;
   starting.value = true;
