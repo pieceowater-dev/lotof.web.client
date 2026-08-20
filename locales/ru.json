@@ -1,5 +1,36 @@
 {
   "app": {
+    "pieceowater": {
+      "goods": {
+        "free": {
+          "description": "Бесплатный старт для одной точки продаж.",
+          "feature": {
+            "max_warehouses": "1 склад",
+            "max_staff": "1 сотрудник",
+            "max_registers": "1 касса",
+            "max_goods": "До 50 товаров"
+          }
+        },
+        "mini": {
+          "description": "Для небольшого магазина с несколькими сотрудниками.",
+          "feature": {
+            "max_warehouses": "1 склад",
+            "max_staff": "До 5 сотрудников",
+            "max_registers": "До 2 касс",
+            "max_goods": "До 300 товаров"
+          }
+        },
+        "start": {
+          "description": "Для растущей розницы с несколькими складами и кассами.",
+          "feature": {
+            "max_warehouses": "До 5 складов",
+            "max_staff": "До 20 сотрудников",
+            "max_registers": "До 10 касс",
+            "max_goods": "До 2000 товаров"
+          }
+        }
+      }
+    },
     "done": "Готово",
     "edit": "Редактировать",
     "title": "lota",

@@ -1,5 +1,36 @@
 {
   "app": {
+    "pieceowater": {
+      "goods": {
+        "free": {
+          "description": "A free start for a single point of sale.",
+          "feature": {
+            "max_warehouses": "1 warehouse",
+            "max_staff": "1 staff member",
+            "max_registers": "1 register",
+            "max_goods": "Up to 50 products"
+          }
+        },
+        "mini": {
+          "description": "For a small shop with a few staff members.",
+          "feature": {
+            "max_warehouses": "1 warehouse",
+            "max_staff": "Up to 5 staff members",
+            "max_registers": "Up to 2 registers",
+            "max_goods": "Up to 300 products"
+          }
+        },
+        "start": {
+          "description": "For growing retail with multiple warehouses and registers.",
+          "feature": {
+            "max_warehouses": "Up to 5 warehouses",
+            "max_staff": "Up to 20 staff members",
+            "max_registers": "Up to 10 registers",
+            "max_goods": "Up to 2000 products"
+          }
+        }
+      }
+    },
     "done": "Done",
     "edit": "Edit",
     "title": "lota",
