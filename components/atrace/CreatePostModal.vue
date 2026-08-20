@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n';
-import { useAtraceLocationMap, TIMEZONES, getTimezoneLabel, type LocationForm } from '@/composables/useAtraceLocationMap';
+import { useAtraceLocationMap, type LocationForm } from '@/composables/useAtraceLocationMap';
+import { TIMEZONES, getTimezoneLabel } from '@/utils/timezones';
 
 const TIMEZONES_FORMATTED = computed(() =>
   TIMEZONES.map(tz => ({
