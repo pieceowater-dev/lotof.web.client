@@ -228,11 +228,11 @@ async function cancelTransfer() { const { goodsCancelStockTransfer } = await imp
 const showCreate = ref(false);
 const saving = ref(false);
 const createType = ref<MovementKind>('purchase');
-const CREATE_TABS: { key: MovementKind; labelKey: string }[] = [
-  { key: 'purchase', labelKey: 'goods.purchases' },
-  { key: 'receipt', labelKey: 'goods.receiving' },
-  { key: 'transfer', labelKey: 'goods.transfers' },
-  { key: 'writeoff', labelKey: 'goods.writeoffs' },
+const CREATE_TABS: { key: MovementKind; labelKey: string; icon: string }[] = [
+  { key: 'purchase', labelKey: 'goods.purchases', icon: 'lucide:shopping-cart' },
+  { key: 'receipt', labelKey: 'goods.receiving', icon: 'lucide:package-check' },
+  { key: 'transfer', labelKey: 'goods.transfers', icon: 'lucide:arrow-left-right' },
+  { key: 'writeoff', labelKey: 'goods.writeoffs', icon: 'lucide:trash-2' },
 ];
 
 const form = reactive({ warehouseId: '', toWarehouseId: '', supplierId: '', expectedDate: '', reason: 'OTHER' as GoodsWriteOffReason });
@@ -436,22 +436,26 @@ onMounted(loadAll);
     <UModal v-model="showCreate" :ui="{ width: 'sm:max-w-2xl' }">
       <UCard>
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
-        <div class="space-y-3">
-          <div class="flex gap-2">
-            <button
-              v-for="tab in CREATE_TABS"
-              :key="tab.key"
-              type="button"
-              class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
-              :class="createType === tab.key
-                ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-                : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
-              @click="createType = tab.key"
-            >
-              {{ t(tab.labelKey) }}
-            </button>
-          </div>
+        <div class="space-y-4">
+          <UFormGroup :label="t('goods.movementType')">
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="tab in CREATE_TABS"
+                :key="tab.key"
+                type="button"
+                class="flex flex-col items-center gap-1 px-2 py-2.5 rounded-lg border-2 text-xs font-medium transition-colors"
+                :class="createType === tab.key
+                  ? 'bg-primary-50 border-primary-500 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300'
+                  : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-500 hover:border-gray-300 dark:hover:border-gray-700'"
+                @click="createType = tab.key"
+              >
+                <Icon :name="tab.icon" class="w-4 h-4" />
+                {{ t(tab.labelKey) }}
+              </button>
+            </div>
+          </UFormGroup>
 
+          <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ t('goods.documentDetails') }}</div>
           <div class="grid grid-cols-2 gap-3">
             <UFormGroup :label="createType === 'transfer' ? t('goods.fromWarehouse') : t('goods.selectWarehouse')" required>
               <USelectMenu v-model="form.warehouseId" :options="warehouses.map((w) => ({ label: w.name, value: w.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />

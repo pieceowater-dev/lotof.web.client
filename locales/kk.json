@@ -1962,6 +1962,7 @@
     "issue": "Шығару",
     "balance": "Баланс",
     "movementType": "Операция түрі",
+    "documentDetails": "Құжат деректері",
     "amount": "Сома",
     "reasonPlaceholder": "Мысалы: инкассация, ұсақ ақша",
     "product": "Тауар",

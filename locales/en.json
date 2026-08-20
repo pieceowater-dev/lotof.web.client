@@ -2211,6 +2211,7 @@
     "issue": "Issue",
     "balance": "Balance",
     "movementType": "Operation type",
+    "documentDetails": "Document details",
     "amount": "Amount",
     "reasonPlaceholder": "E.g. cash pickup, making change",
     "product": "Product",

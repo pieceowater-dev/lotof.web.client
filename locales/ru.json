@@ -2244,6 +2244,7 @@
     "issue": "Выпустить",
     "balance": "Баланс",
     "movementType": "Тип операции",
+    "documentDetails": "Детали документа",
     "amount": "Сумма",
     "reasonPlaceholder": "Например: инкассация, размен",
     "product": "Товар",
