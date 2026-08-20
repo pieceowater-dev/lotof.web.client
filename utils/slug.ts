@@ -29,3 +29,10 @@ export function slugFromNames(nameEn: string, nameRu: string): string {
   if (fromEn) return fromEn;
   return slugify(nameRu);
 }
+
+// SKU auto-fill for a good left blank by the user -- transliterates a
+// Cyrillic name instead of leaving Cyrillic characters in the code (bad for
+// barcode/label printing and for typing an SKU into a scanner/search box).
+export function generateSku(name: string): string {
+  return slugify(name).toUpperCase().slice(0, 32);
+}

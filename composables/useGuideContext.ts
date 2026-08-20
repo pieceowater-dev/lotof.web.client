@@ -2,20 +2,21 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS } from '@/config/apps';
-import { atraceTour, contactsTour, issuesTour, menuTour } from '@/config/tours';
+import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour } from '@/config/tours';
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
-export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace';
+export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace' | 'goods';
 
 const APP_TOURS: Record<GuideAppId, TourConfig> = {
   atrace: atraceTour,
   menu: menuTour,
   issues: issuesTour,
   contacts: contactsTour,
+  goods: goodsTour,
 };
 
-export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace'];
+export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods'];
 
 const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE'];
 
@@ -35,6 +36,10 @@ export const GUIDE_APP_BY_ID: Record<GuideAppId, GuideApp> = {
   menu: 'MENU',
   contacts: 'CONTACTS',
   atrace: 'ATRACE',
+  // Hub's guide-content backend doesn't have a GOODS GuideApp value yet --
+  // fall back to GLOBAL content rather than sending an app the backend
+  // would reject. Revisit once Goods gets its own Guide articles.
+  goods: 'GLOBAL',
 };
 
 /**
@@ -54,6 +59,7 @@ export function useGuideContext() {
   const isContactsListRoute = computed(() => /\/contacts\/(all|individual|legal)\//.test(route.path));
   const isMenuRoute = computed(() => /^\/[^/]+\/menu\/?$/.test(route.path));
   const isIssuesRoute = computed(() => /^\/[^/]+\/issues\/(?!plans$|settings$|zen$)[^/]+\/?$/.test(route.path));
+  const isGoodsRoute = computed(() => /^\/[^/]+\/goods(\/|$)/.test(route.path));
   const isConsoleRoute = computed(() => route.path.startsWith('/console'));
   const isPublicationRoute = computed(() => /^\/(blog|whatsnew|articles|academy|news)\//.test(route.path));
 
@@ -62,6 +68,7 @@ export function useGuideContext() {
     if (isContactsListRoute.value) return 'contacts';
     if (isMenuRoute.value) return 'menu';
     if (isIssuesRoute.value) return 'issues';
+    if (isGoodsRoute.value) return 'goods';
     return null;
   });
 

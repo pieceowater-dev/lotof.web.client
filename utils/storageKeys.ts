@@ -7,6 +7,7 @@ export const CookieKeys = {
   CONTACTS_TOKEN: 'contacts-token',
   MENU_TOKEN: 'menu-token',
   TASKS_TOKEN: 'tasks-token',
+  GOODS_TOKEN: 'goods-token',
 } as const;
 export type CookieKey = (typeof CookieKeys)[keyof typeof CookieKeys];
 
@@ -18,6 +19,7 @@ export const LSKeys = {
   CONTACTS_TOKEN_NS: 'contactsTokenNs',
   MENU_TOKEN_NS: 'menuTokenNs',
   TASKS_TOKEN_NS: 'tasksTokenNs',
+  GOODS_TOKEN_NS: 'goodsTokenNs',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',

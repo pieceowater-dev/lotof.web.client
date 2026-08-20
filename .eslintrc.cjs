@@ -78,11 +78,14 @@ module.exports = {
     useConfirm: 'readonly',
     useMenuToken: 'readonly',
     useMenuStaffRole: 'readonly',
+    useGoodsToken: 'readonly',
+    useGoodsStaffRole: 'readonly',
     // Browser API types (used as TypeScript type annotations, not runtime values)
     PositionOptions: 'readonly',
     PermissionState: 'readonly',
     PermissionName: 'readonly',
     ScrollBehavior: 'readonly',
+    BlobPart: 'readonly',
   },
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],

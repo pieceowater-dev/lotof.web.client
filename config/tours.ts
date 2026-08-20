@@ -123,6 +123,90 @@ export const menuTour: TourConfig = {
   ],
 };
 
+export const goodsTour: TourConfig = {
+  id: 'goods-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="goods-warehouse-title"]',
+      titleKey: 'goods.tourWelcomeTitle',
+      contentKey: 'goods.tourWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'register',
+      target: '[data-tour="goods-register-btn"]',
+      titleKey: 'goods.tourRegisterTitle',
+      contentKey: 'goods.tourRegisterContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'stock-table',
+      target: '[data-tour="goods-stock-table"]',
+      titleKey: 'goods.tourWarehouseTitle',
+      contentKey: 'goods.tourWarehouseContent',
+      placement: 'top',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="goods-settings-btn"]',
+      titleKey: 'goods.tourSettingsTitle',
+      contentKey: 'goods.tourSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourMenuHelpTitle',
+      contentKey: 'app.tourMenuHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};
+
+export const goodsRegisterTour: TourConfig = {
+  id: 'goods-register-intro',
+  steps: [
+    {
+      id: 'search',
+      target: '[data-tour="goods-register-search"]',
+      titleKey: 'goods.tourRegSearchTitle',
+      contentKey: 'goods.tourRegSearchContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'products',
+      target: '[data-tour="goods-register-products"]',
+      titleKey: 'goods.tourRegProductsTitle',
+      contentKey: 'goods.tourRegProductsContent',
+      placement: 'right',
+      highlightPadding: 8,
+    },
+    {
+      id: 'cart',
+      target: '[data-tour="goods-register-cart"]',
+      titleKey: 'goods.tourRegCartTitle',
+      contentKey: 'goods.tourRegCartContent',
+      placement: 'left',
+      highlightPadding: 8,
+    },
+    {
+      id: 'shift-actions',
+      target: '[data-tour="goods-register-shift-actions"]',
+      titleKey: 'goods.tourRegShiftTitle',
+      contentKey: 'goods.tourRegShiftContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+  ],
+};
+
 export const issuesTour: TourConfig = {
   id: 'issues-intro',
   steps: [

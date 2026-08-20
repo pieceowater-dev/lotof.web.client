@@ -48,6 +48,15 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.attendanceDesc',
     canAdd: true,
   },
+  {
+    name: 'lota Goods',
+    bundle: 'pieceowater.goods',
+    address: 'goods',
+    icon: 'lucide:package',
+    titleKey: 'app.goods',
+    descriptionKey: 'app.goodsDesc',
+    canAdd: true, // LOCAL-ONLY, uncommitted: flipped for the local browser test session
+  },
   // Temporarily out of the lineup — not implemented yet and not currently
   // planned for the near term. Left here (not deleted) so re-adding one is
   // just uncommenting rather than re-authoring the whole entry.
@@ -87,15 +96,6 @@ export const ALL_APPS: AppConfig[] = [
   //   descriptionKey: 'app.reportsDesc',
   //   canAdd: false,
   // },
-  {
-    name: 'lota Sales',
-    bundle: 'pieceowater.sales',
-    address: 'sales',
-    icon: 'lucide:store',
-    titleKey: 'app.sales',
-    descriptionKey: 'app.salesDesc',
-    canAdd: false,
-  },
   {
     name: 'lota Plans',
     bundle: 'pieceowater.plans',

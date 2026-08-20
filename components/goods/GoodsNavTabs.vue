@@ -1,0 +1,81 @@
+<script lang="ts" setup>
+import { useI18n } from '@/composables/useI18n';
+import { useGoodsStaffRole } from '@/composables/useGoodsStaffRole';
+
+const { t } = useI18n();
+const route = useRoute();
+const { canManageStock, isOwnerOrManager } = useGoodsStaffRole();
+const nsSlug = computed(() => route.params.namespace as string);
+
+// Real navigation between real pages (not local tab state) -- styled as a
+// tab bar so moving between the warehouse's sub-sections feels like one
+// app instead of a pile of standalone pages, but the URL always reflects
+// which "tab" is open.
+const TABS = [
+  { address: '', icon: 'lucide:warehouse', labelKey: 'goods.warehouse' },
+  { address: 'catalog', icon: 'lucide:list', labelKey: 'goods.catalog' },
+  { address: 'movements', icon: 'lucide:arrow-left-right', labelKey: 'goods.movements' },
+  { address: 'inventory', icon: 'lucide:clipboard-check', labelKey: 'goods.inventory' },
+  { address: 'suppliers', icon: 'lucide:truck', labelKey: 'goods.suppliers' },
+  { address: 'reports', icon: 'lucide:bar-chart-3', labelKey: 'goods.reports' },
+] as const;
+
+function tabPath(address: string) {
+  return address ? `/${nsSlug.value}/goods/${address}` : `/${nsSlug.value}/goods`;
+}
+function isActive(address: string) {
+  return route.path === tabPath(address);
+}
+</script>
+
+<template>
+  <div v-if="canManageStock" class="flex flex-col gap-2">
+    <!-- Settings used to only be reachable from index.vue's header -- every
+         other page in the module was a dead end for it. Putting it here
+         (rendered on every page via this shared component) closes that gap
+         without duplicating header markup across 6 files. Settings stays a
+         quiet icon link since it's an occasional, admin-only destination.
+         Register itself now lives in each page's own top header row (next
+         to the title, via GoodsRegisterButton) -- it's the one-click "go
+         sell something" escape hatch, so it reads as the most prominent
+         thing on the page, not shared with this toolbar row. Whatever used
+         to be the page's own top-row action button (Add Supplier, Create
+         Movement, etc.) moves down into the #action slot here instead. -->
+    <div class="flex items-center justify-between gap-1.5 flex-shrink-0 flex-wrap">
+      <!-- Each tab page's own search input (if it has one) lands here via
+           this slot, so it reads as part of the same "toolbar" row as the
+           page action instead of sitting in its own row squeezed between
+           the tabs and the table. -->
+      <div class="flex-1 min-w-[160px]">
+        <slot name="search" />
+      </div>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+      <slot name="action" />
+      <NuxtLink
+        v-if="isOwnerOrManager"
+        data-tour="goods-settings-btn"
+        :to="`/${nsSlug}/goods/settings`"
+        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+      >
+        <Icon name="lucide:settings" class="w-4 h-4" />
+        <span class="hidden sm:inline">{{ t('goods.settings') }}</span>
+      </NuxtLink>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800">
+      <NuxtLink
+        v-for="tab in TABS"
+        :key="tab.address"
+        :to="tabPath(tab.address)"
+        class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors"
+        :class="isActive(tab.address)
+          ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+      >
+        <Icon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
+        {{ t(tab.labelKey) }}
+      </NuxtLink>
+    </div>
+  </div>
+</template>

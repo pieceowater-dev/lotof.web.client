@@ -1,5 +1,6 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients'
 import { getApiBaseUrl } from '@/utils/api-base'
+import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload'
 import {
   type PublicationCategory,
   PUBLICATION_CATEGORY_ALIASES,
@@ -1231,20 +1232,9 @@ export async function capitalUploadPublicationImage(
     },
   }
 
-  // The file part is named "file", not a numeric string like "0" -- Safari's
-  // FormData has been observed serializing purely-numeric field names out of
-  // insertion order (integer-key semantics leaking into multipart encoding),
-  // which put the file part before "operations" on the wire and made
-  // gqlgen's strict first-part-must-be-operations parser reject the request.
-  const buildForm = () => {
-    const form = new FormData()
-    form.append('operations', JSON.stringify(operations))
-    form.append('map', JSON.stringify({ file: ['variables.file'] }))
-    form.append('file', file, file.name)
-    return form
-  }
+  const { body, contentType } = buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file)
 
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = { 'Content-Type': contentType }
   if (asString(token)) {
     headers.CapitalAuthorization = `Bearer ${asString(token)}`
   }
@@ -1254,7 +1244,7 @@ export async function capitalUploadPublicationImage(
   const response = await fetch(uploadUrl, {
     method: 'POST',
     headers,
-    body: buildForm(),
+    body,
     credentials: 'omit',
   })
 

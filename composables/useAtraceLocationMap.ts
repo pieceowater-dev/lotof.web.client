@@ -232,6 +232,3 @@ export function useAtraceLocationMap(form: Ref<LocationForm>) {
     generatePin,
   };
 }
-
-// Re-exported here so both hosts import timezone helpers from one place.
-export { TIMEZONES, getBrowserTimezone, getTimezoneLabel } from '@/utils/timezones';
