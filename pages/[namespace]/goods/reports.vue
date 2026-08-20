@@ -9,6 +9,7 @@ import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsBatch } from '@/api/goods/goodbatch';
 import type { GoodsGood } from '@/api/goods/good';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 
 const { t } = useI18n();
@@ -102,9 +103,12 @@ onMounted(async () => {
 
 <template>
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex-shrink-0">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.reportsSubtitle') }}</p>
+    <div class="flex items-center justify-between gap-3 flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.reportsSubtitle') }}</p>
+      </div>
+      <GoodsRegisterButton />
     </div>
 
     <div class="flex-shrink-0 mt-3">

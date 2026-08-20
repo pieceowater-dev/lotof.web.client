@@ -6,6 +6,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
@@ -183,22 +184,25 @@ onMounted(async () => {
         <h1 data-tour="goods-warehouse-title" class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
       </div>
-      <!-- Current warehouse as pills, not a dropdown -- which one is active
-           should be readable at a glance, not hidden behind a click. -->
-      <div v-if="warehouses.length > 1" class="flex items-center gap-1.5 flex-wrap">
-        <button
-          v-for="w in warehouses"
-          :key="w.id"
-          type="button"
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
-          :class="activeWarehouseId === w.id
-            ? 'bg-primary-500 border-primary-500 text-white'
-            : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
-          @click="activeWarehouseId = w.id"
-        >
-          <Icon name="lucide:warehouse" class="w-3.5 h-3.5 flex-shrink-0" />
-          {{ w.name }}
-        </button>
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- Current warehouse as pills, not a dropdown -- which one is active
+             should be readable at a glance, not hidden behind a click. -->
+        <div v-if="warehouses.length > 1" class="flex items-center gap-1.5 flex-wrap">
+          <button
+            v-for="w in warehouses"
+            :key="w.id"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
+            :class="activeWarehouseId === w.id
+              ? 'bg-primary-500 border-primary-500 text-white'
+              : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
+            @click="activeWarehouseId = w.id"
+          >
+            <Icon name="lucide:warehouse" class="w-3.5 h-3.5 flex-shrink-0" />
+            {{ w.name }}
+          </button>
+        </div>
+        <GoodsRegisterButton />
       </div>
     </div>
 

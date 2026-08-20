@@ -7,6 +7,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
+import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
 import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
@@ -256,9 +257,12 @@ onMounted(loadAll);
 
 <template>
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex-shrink-0">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
-      <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.catalogSubtitle') }}</p>
+    <div class="flex items-center justify-between gap-3 flex-shrink-0">
+      <div>
+        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.catalogSubtitle') }}</p>
+      </div>
+      <GoodsRegisterButton />
     </div>
 
     <div class="flex-shrink-0 mt-3">

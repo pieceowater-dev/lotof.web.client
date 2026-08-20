@@ -30,34 +30,27 @@ function isActive(address: string) {
 
 <template>
   <div v-if="canManageStock" class="flex flex-col gap-2">
-    <!-- Settings/Register used to only be reachable from index.vue's header
-         -- every other page in the module was a dead end for them. Putting
-         them here (rendered on every page via this shared component) closes
-         that gap without duplicating header markup across 6 files, and is
-         now the single Register entry point (index.vue used to render its
-         own second copy in its own header -- removed as a duplicate).
-         Register sits in its own row above the tabs -- it's the one-click
-         "go sell something" escape hatch from anywhere in the back-office,
-         so it should read as the most prominent thing here, not just
-         another item sharing the tab-bar row. Settings stays a quiet icon
-         link since it's an occasional, admin-only destination. -->
+    <!-- Settings used to only be reachable from index.vue's header -- every
+         other page in the module was a dead end for it. Putting it here
+         (rendered on every page via this shared component) closes that gap
+         without duplicating header markup across 6 files. Settings stays a
+         quiet icon link since it's an occasional, admin-only destination.
+         Register itself now lives in each page's own top header row (next
+         to the title, via GoodsRegisterButton) -- it's the one-click "go
+         sell something" escape hatch, so it reads as the most prominent
+         thing on the page, not shared with this toolbar row. Whatever used
+         to be the page's own top-row action button (Add Supplier, Create
+         Movement, etc.) moves down into the #action slot here instead. -->
     <div class="flex items-center justify-between gap-1.5 flex-shrink-0 flex-wrap">
       <!-- Each tab page's own search input (if it has one) lands here via
            this slot, so it reads as part of the same "toolbar" row as the
-           Register button instead of sitting in its own row squeezed
-           between the tabs and the table. -->
+           page action instead of sitting in its own row squeezed between
+           the tabs and the table. -->
       <div class="flex-1 min-w-[160px]">
         <slot name="search" />
       </div>
       <div class="flex items-center gap-1.5 flex-shrink-0">
-      <UButton
-        data-tour="goods-register-btn"
-        :to="`/${nsSlug}/goods/register`"
-        icon="lucide:calculator"
-        class="flex-shrink-0 !border-0 !text-white !bg-gradient-to-r !from-blue-600 !to-emerald-500 hover:!from-blue-700 hover:!to-emerald-600 shadow-sm"
-      >
-        {{ t('goods.openRegister') }}
-      </UButton>
+      <slot name="action" />
       <NuxtLink
         v-if="isOwnerOrManager"
         data-tour="goods-settings-btn"
