@@ -415,8 +415,8 @@ const projects = [
   { id: 'atrace', appCode: 'pieceowater.atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', appCode: 'pieceowater.contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
   { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' },
-  { id: 'goods', appCode: 'pieceowater.goods', title: 'Lota Goods', icon: 'lucide:package' },
-  { id: 'issues', appCode: 'pieceowater.issues', title: 'Lota Issues', icon: 'lucide:clipboard-check' }
+  { id: 'issues', appCode: 'pieceowater.issues', title: 'Lota Issues', icon: 'lucide:clipboard-check' },
+  { id: 'goods', appCode: 'pieceowater.goods', title: 'Lota Goods', icon: 'lucide:package' }
 ] as const;
 
 // Known usage-limit keys per app -- these are the exact keys product
