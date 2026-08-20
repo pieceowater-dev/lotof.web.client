@@ -688,41 +688,46 @@ onMounted(async () => {
         </div>
 
         <div data-tour="goods-register-products" class="flex-1 overflow-y-auto -mx-1 px-1">
-          <div v-if="visibleGoods.length" class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 pb-2">
-            <button
-              v-for="g in visibleGoods"
-              :key="g.id"
-              type="button"
-              :disabled="isOutOfStock(g) || addingGoodId === g.id"
-              class="group relative aspect-square flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
-              :class="isOutOfStock(g)
-                ? 'border-gray-200 dark:border-gray-800 opacity-50'
-                : 'border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.97] active:shadow-sm'"
-              @click="addFromCard(g)"
-            >
-              <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
-                <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
-                <Icon v-else name="lucide:package" class="w-9 h-9 text-gray-300 dark:text-gray-700" />
-                <span
-                  v-if="isOutOfStock(g)"
-                  class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-gray-900/80 text-white text-[10px] font-semibold uppercase tracking-wide"
-                >{{ t('goods.outOfStock') }}</span>
-                <div v-if="addingGoodId === g.id" class="absolute inset-0 bg-white/70 dark:bg-gray-900/70 flex items-center justify-center">
-                  <Icon name="lucide:loader" class="w-5 h-5 animate-spin text-primary-600" />
+          <div v-if="visibleGoods.length" class="grid grid-cols-4 gap-3 pb-2">
+            <!-- padding-bottom:100% (not the aspect-ratio property) makes a
+                 responsive square whose height always equals its own resolved
+                 width -- aspect-ratio's interaction with CSS Grid's auto row
+                 sizing on a flex-col box with real content proved unreliable
+                 here (it either overflowed past square or collapsed to
+                 near-zero); this padding trick is a much older, unambiguous
+                 mechanism and isn't affected by that. -->
+            <div v-for="g in visibleGoods" :key="g.id" class="relative w-full" style="padding-bottom: 100%">
+              <button
+                type="button"
+                :disabled="isOutOfStock(g) || addingGoodId === g.id"
+                class="group absolute inset-0 flex flex-col text-left rounded-2xl border bg-white dark:bg-gray-900 overflow-hidden transition-all duration-150 disabled:cursor-not-allowed"
+                :class="isOutOfStock(g)
+                  ? 'border-gray-200 dark:border-gray-800 opacity-50'
+                  : 'border-gray-200 dark:border-gray-800 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-lg active:scale-[0.97] active:shadow-sm'"
+                @click="addFromCard(g)"
+              >
+                <div class="flex-1 min-h-0 bg-gray-50 dark:bg-gray-800/60 flex items-center justify-center overflow-hidden relative">
+                  <img v-if="g.imageUrl" :src="g.imageUrl" :alt="g.name" class="w-full h-full object-cover" />
+                  <Icon v-else name="lucide:package" class="w-9 h-9 text-gray-300 dark:text-gray-700" />
+                  <span
+                    v-if="isOutOfStock(g)"
+                    class="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-gray-900/80 text-white text-[10px] font-semibold uppercase tracking-wide"
+                  >{{ t('goods.outOfStock') }}</span>
+                  <div v-if="addingGoodId === g.id" class="absolute inset-0 bg-white/70 dark:bg-gray-900/70 flex items-center justify-center">
+                    <Icon name="lucide:loader" class="w-5 h-5 animate-spin text-primary-600" />
+                  </div>
                 </div>
-              </div>
-              <!-- Fixed height, not flex-shrink-0 -- a shrink-0 block still
-                   claims its full content-based size as its flex-basis, which
-                   can force this whole card taller than aspect-square when a
-                   2-line name collides with a narrow grid column. A fixed
-                   height + overflow-hidden caps it regardless of content, so
-                   the image above (flex-1 min-h-0) is what absorbs the rest
-                   and the square is guaranteed instead of just intended. -->
-              <div class="h-[5.25rem] overflow-hidden p-2.5 space-y-0.5 text-left">
-                <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
-                <div class="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
-              </div>
-            </button>
+                <!-- Fixed height, not flex-shrink-0 -- a shrink-0 block still
+                     claims its full content-based size as its flex-basis,
+                     which could force this taller than the square. A fixed
+                     height + overflow-hidden caps it regardless of content,
+                     so the image above (flex-1 min-h-0) absorbs the rest. -->
+                <div class="h-[5.25rem] overflow-hidden p-2.5 space-y-0.5 text-left">
+                  <div class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 leading-tight min-h-[2.2em]">{{ g.name }}</div>
+                  <div class="text-base font-bold text-primary-600 dark:text-primary-400 tabular-nums">{{ formatCents(g.salePriceCents) }}</div>
+                </div>
+              </button>
+            </div>
           </div>
           <div v-else class="h-full flex flex-col items-center justify-center text-center text-sm text-gray-400 py-16">
             <Icon name="lucide:search-x" class="w-8 h-8 mb-2 text-gray-300 dark:text-gray-700" />
