@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { MENU_DOC_VARIABLES, menuDocVariableToken } from '@/utils/menuDocVariables';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const props = defineProps<{ modelValue: string }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
@@ -35,7 +35,7 @@ function exec(command: string, value?: string) {
 
 function insertVariable(key: string) {
   editorRef.value?.focus();
-  document.execCommand('insertText', false, menuDocVariableToken(key as any));
+  document.execCommand('insertText', false, menuDocVariableToken(key as any, locale.value));
   handleInput();
   isVariableMenuOpen.value = false;
 }
@@ -44,11 +44,12 @@ const variableGroups = [
   { key: 'order', labelKey: 'menu.docVarGroupOrder', fallback: 'Order' },
   { key: 'client', labelKey: 'menu.docVarGroupClient', fallback: 'Client' },
   { key: 'staff', labelKey: 'menu.docVarGroupStaff', fallback: 'Staff' },
+  { key: 'brand', labelKey: 'menu.docVarGroupBrand', fallback: 'Business' },
 ] as const;
 </script>
 
 <template>
-  <div class="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
+  <div class="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
     <div class="flex flex-wrap items-center gap-0.5 p-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40">
       <UButton icon="lucide:bold" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorBold') || 'Bold'" @mousedown.prevent="exec('bold')" />
       <UButton icon="lucide:italic" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorItalic') || 'Italic'" @mousedown.prevent="exec('italic')" />
@@ -92,7 +93,7 @@ const variableGroups = [
               @mousedown.prevent="insertVariable(v.key)"
             >
               <span>{{ t(v.labelKey) || v.fallback }}</span>
-              <span class="text-[10px] font-mono text-gray-400 dark:text-gray-500 flex-shrink-0">{{ menuDocVariableToken(v.key) }}</span>
+              <span class="text-[10px] font-mono text-gray-400 dark:text-gray-500 flex-shrink-0">{{ menuDocVariableToken(v.key, locale) }}</span>
             </button>
           </template>
         </div>
@@ -101,7 +102,7 @@ const variableGroups = [
 
     <div
       ref="editorRef"
-      class="min-h-[280px] max-h-[50vh] overflow-y-auto px-4 py-3 text-sm leading-relaxed focus:outline-none prose prose-sm dark:prose-invert max-w-none"
+      class="flex-1 min-h-[280px] overflow-y-auto px-4 py-3 text-sm leading-relaxed focus:outline-none prose prose-sm dark:prose-invert max-w-none"
       contenteditable="true"
       @input="handleInput"
       @mousedown="isVariableMenuOpen = false"

@@ -6,7 +6,7 @@ import type { MenuOrder } from '@/api/menu/order/list';
 const OrderDocument = /* GraphQL */ `
   query Order($id: ID!) {
     order(id: $id) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount paidAmount
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount
     }
   }
 `;

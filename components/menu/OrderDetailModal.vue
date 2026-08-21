@@ -24,8 +24,11 @@ import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
-import { buildMenuDocVariables, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
+import { buildMenuDocVariables, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
 import { printHtmlDocument } from '@/utils/printWindow';
+import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
+import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -383,6 +386,7 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     loadCustomerOrders();
     loadClientIntegration();
     loadDocumentTemplates();
+    loadBrandSettings();
     resetPaymentForm();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
@@ -730,41 +734,82 @@ function itemUnitPrice(i: MenuOrderItem): number {
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitPrice(i) * i.quantity, 0));
 
 // --- Discount / paid amount (echoes to UpdateOrderPayment) ---
-const paymentForm = reactive({ discountAmount: 0, paidAmount: 0 });
+const paymentForm = reactive({
+  discountType: '' as DiscountType,
+  discountValue: 0,
+  discountItemId: undefined as string | undefined,
+  paidAmount: 0,
+});
 const savingPayment = ref(false);
 
 function resetPaymentForm() {
   if (!props.order) return;
-  paymentForm.discountAmount = props.order.discountAmount;
+  paymentForm.discountType = (props.order.discountType || '') as DiscountType;
+  paymentForm.discountValue = props.order.discountValue;
+  paymentForm.discountItemId = props.order.discountItemId || undefined;
   paymentForm.paidAmount = props.order.paidAmount;
 }
 
+// Clearing the item selector when switching away from an item-scoped type
+// keeps a stale item id from lingering into a later ORDER_* selection.
+watch(() => paymentForm.discountType, (type) => {
+  if (!isItemScopedDiscount(type)) paymentForm.discountItemId = undefined;
+});
+
+const discountTypeOptions = computed(() =>
+  (['', 'ORDER_AMOUNT', 'ORDER_PERCENT', 'ITEM_AMOUNT', 'ITEM_PERCENT'] as DiscountType[]).map((type) => {
+    const info = discountTypeLabelInfo(type);
+    return { label: t(info.key) || info.fallback, value: type };
+  })
+);
+
+// Mirrors msvc.core's recomputeDiscountAmount so the UI shows the resulting
+// discount before saving, not just after -- server stays authoritative
+// (this is only ever a preview, recomputed for real on save).
+const previewDiscountAmount = computed(() => {
+  if (!props.order || !paymentForm.discountType) return 0;
+  const value = Number(paymentForm.discountValue) || 0;
+  if (value <= 0) return 0;
+  if (paymentForm.discountType === 'ORDER_AMOUNT') return Math.min(value, props.order.totalAmount);
+  if (paymentForm.discountType === 'ORDER_PERCENT') return (props.order.totalAmount * Math.min(value, 100)) / 100;
+  const item = items.value.find((i) => i.id === paymentForm.discountItemId);
+  if (!item) return 0;
+  const subtotal = itemUnitPrice(item) * item.quantity;
+  return paymentForm.discountType === 'ITEM_AMOUNT' ? Math.min(value, subtotal) : (subtotal * Math.min(value, 100)) / 100;
+});
+
 const amountDue = computed(() => {
   const total = props.order?.totalAmount ?? itemsTotal.value;
-  return total - (Number(paymentForm.discountAmount) || 0) - (Number(paymentForm.paidAmount) || 0);
+  return total - previewDiscountAmount.value - (Number(paymentForm.paidAmount) || 0);
 });
 
 const isPaymentDirty = computed(() => {
   if (!props.order) return false;
   return (
-    (Number(paymentForm.discountAmount) || 0) !== props.order.discountAmount ||
+    paymentForm.discountType !== (props.order.discountType || '') ||
+    (Number(paymentForm.discountValue) || 0) !== props.order.discountValue ||
+    (paymentForm.discountItemId || undefined) !== (props.order.discountItemId || undefined) ||
     (Number(paymentForm.paidAmount) || 0) !== props.order.paidAmount
   );
 });
 
 async function savePayment() {
   if (!props.order) return;
+  if (isItemScopedDiscount(paymentForm.discountType) && !paymentForm.discountItemId) {
+    useToast().add({ title: t('menu.discountSelectProduct') || 'Select which product the discount applies to', color: 'amber' });
+    return;
+  }
   savingPayment.value = true;
   try {
     const menuToken = await getToken();
     const { menuUpdateOrderPayment } = await import('@/api/menu/order/updatePayment');
-    const updated = await menuUpdateOrderPayment(
-      menuToken,
-      nsSlug.value,
-      props.order.id,
-      Number(paymentForm.discountAmount) || 0,
-      Number(paymentForm.paidAmount) || 0
-    );
+    const updated = await menuUpdateOrderPayment(menuToken, nsSlug.value, {
+      orderId: props.order.id,
+      discountType: paymentForm.discountType,
+      discountValue: Number(paymentForm.discountValue) || 0,
+      discountItemId: isItemScopedDiscount(paymentForm.discountType) ? paymentForm.discountItemId : undefined,
+      paidAmount: Number(paymentForm.paidAmount) || 0,
+    });
     emit('statusChanged', updated);
     useToast().add({ title: t('menu.paymentUpdated') || 'Payment updated', color: 'primary' });
   } catch (e) {
@@ -778,6 +823,7 @@ async function savePayment() {
 // --- Print: render a document template with this order's data substituted
 // into its {{VARIABLE}} placeholders (see utils/documentVariableSubstitution.ts) ---
 const documentTemplates = ref<MenuDocumentTemplate[]>([]);
+const brandSettings = ref<MenuBrandSettings | null>(null);
 
 async function loadDocumentTemplates() {
   try {
@@ -790,28 +836,60 @@ async function loadDocumentTemplates() {
   }
 }
 
+async function loadBrandSettings() {
+  try {
+    const menuToken = await getToken();
+    const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
+    brandSettings.value = await menuGetBrandSettings(menuToken, nsSlug.value);
+  } catch (e) {
+    logError('[OrderDetailModal] loadBrandSettings failed', e);
+  }
+}
+
+// A branch-scoped template (see settings' Document Templates tab) is only
+// offered when printing an order from that same branch; global templates
+// (branchId unset) are always offered.
+const printableTemplates = computed(() =>
+  documentTemplates.value.filter((tpl) => !tpl.branchId || tpl.branchId === props.order?.branchId)
+);
+
 const printMenuItems = computed(() => [
-  documentTemplates.value.map((tpl) => ({ label: tpl.name, click: () => printWithTemplate(tpl) })),
+  printableTemplates.value.map((tpl) => ({ label: tpl.name, click: () => printWithTemplate(tpl) })),
 ]);
 
-function printWithTemplate(template: MenuDocumentTemplate) {
+async function printWithTemplate(template: MenuDocumentTemplate) {
   if (!props.order) return;
+  const branch = props.order.branchId ? branchById.value[props.order.branchId] : undefined;
+  const noneLabel = t('menu.docVarNoneLabel') || '—';
   const variables = buildMenuDocVariables({
     order: props.order,
     items: items.value,
     members: members.value,
     memberDisplayName,
     guestLabel: t('menu.guestCustomer') || 'Guest',
-    noneLabel: t('menu.docVarNoneLabel') || '—',
+    noneLabel,
     itemsTableHeaders: {
       name: t('menu.name') || 'Name',
       qty: t('menu.quantity') || 'Qty',
       price: t('menu.price') || 'Price',
       sum: t('menu.total') || 'Total',
     },
+    brand: brandSettings.value,
+    branch,
   });
+  // QR generation is async and only worth doing if the template actually
+  // references the variable -- checking every locale's token spelling
+  // covers a template authored in any of them, not just the current UI locale.
+  const socialTokens = Object.values(MENU_DOC_VARIABLES_BY_KEY.SOCIAL_LINKS_QR.localTokens);
+  if (socialTokens.some((token) => template.content.includes(`{{${token}}}`))) {
+    variables.SOCIAL_LINKS_QR = await buildSocialLinksQrBlock(brandSettings.value?.socialLinks, noneLabel);
+  }
   const html = substituteMenuDocVariables(template.content, variables);
-  printHtmlDocument(template.name, html);
+  // Included in the document's <title>, which browsers use as the default
+  // filename when the print dialog is used to "Save as PDF" -- without the
+  // order number, printing the same template for different orders produces
+  // a pile of identically-named files.
+  printHtmlDocument(`${template.name}-${smartOrderNumber(props.order)}`, html);
 }
 </script>
 
@@ -851,9 +929,9 @@ function printWithTemplate(template: MenuDocumentTemplate) {
             <UTooltip :text="t('menu.copyLink') || 'Copy share link'">
               <UButton icon="lucide:link" size="sm" color="gray" variant="ghost" @click="copyShareLink" />
             </UTooltip>
-            <UDropdown v-if="documentTemplates.length" :items="printMenuItems" :popper="{ placement: 'bottom-end' }">
+            <UDropdown v-if="printableTemplates.length" :items="printMenuItems" :popper="{ placement: 'bottom-end' }">
               <UTooltip :text="t('menu.printOrder') || 'Print'">
-                <UButton icon="lucide:printer" size="sm" color="gray" variant="ghost" />
+                <UButton icon="lucide:printer" size="sm" color="primary" variant="soft" class="rounded-full" />
               </UTooltip>
             </UDropdown>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
@@ -1130,13 +1208,11 @@ function printWithTemplate(template: MenuDocumentTemplate) {
                     <td class="px-4 py-2.5 text-right tabular-nums">{{ order.totalAmount ?? itemsTotal }}</td>
                     <td />
                   </tr>
-                  <tr class="border-t border-gray-100 dark:border-gray-800">
+                  <tr v-if="previewDiscountAmount > 0" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.discount') || 'Discount' }}</td>
-                    <td class="px-4 py-2 text-right" colspan="2">
-                      <UInput v-model.number="paymentForm.discountAmount" type="number" size="2xs" class="w-24 ml-auto" :ui="{ base: 'text-right' }" />
-                    </td>
+                    <td class="px-4 py-2 text-right tabular-nums" colspan="2">−{{ previewDiscountAmount }}</td>
                   </tr>
-                  <tr>
+                  <tr class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.paidAmount') || 'Paid' }}</td>
                     <td class="px-4 py-2 text-right" colspan="2">
                       <UInput v-model.number="paymentForm.paidAmount" type="number" size="2xs" class="w-24 ml-auto" :ui="{ base: 'text-right' }" />
@@ -1156,6 +1232,42 @@ function printWithTemplate(template: MenuDocumentTemplate) {
                 </tfoot>
               </table>
             </div>
+          </div>
+
+          <!-- Discount configurator: split out of the items table footer since
+               it needs a type selector (+ a product picker for item-scoped
+               types), not just a bare number field. -->
+          <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-2.5">
+            <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.discount') || 'Discount' }}</div>
+            <div class="grid grid-cols-2 gap-2">
+              <USelectMenu
+                v-model="paymentForm.discountType"
+                :options="discountTypeOptions"
+                value-attribute="value"
+                option-attribute="label"
+                size="sm"
+                :popper="{ strategy: 'fixed' }"
+              />
+              <UInput
+                v-if="paymentForm.discountType"
+                v-model.number="paymentForm.discountValue"
+                type="number"
+                min="0"
+                :max="isPercentDiscount(paymentForm.discountType) ? 100 : undefined"
+                size="sm"
+                :placeholder="isPercentDiscount(paymentForm.discountType) ? '%' : (t('menu.amount') || 'Amount')"
+              />
+            </div>
+            <USelectMenu
+              v-if="isItemScopedDiscount(paymentForm.discountType)"
+              v-model="paymentForm.discountItemId"
+              :options="items.map((i) => ({ label: i.name, value: i.id }))"
+              value-attribute="value"
+              option-attribute="label"
+              size="sm"
+              :placeholder="t('menu.discountSelectProduct') || 'Select which product the discount applies to'"
+              :popper="{ strategy: 'fixed' }"
+            />
           </div>
 
           <!-- Participants -->

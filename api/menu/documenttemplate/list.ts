@@ -7,12 +7,13 @@ export type MenuDocumentTemplate = {
   name: string;
   content: string;
   isActive: boolean;
+  branchId?: string | null;
 };
 
 const DocumentTemplatesDocument = /* GraphQL */ `
   query DocumentTemplates($filter: DefaultFilterInput) {
     documentTemplates(filter: $filter) {
-      rows { id name content isActive }
+      rows { id name content isActive branchId }
       info { count }
     }
   }

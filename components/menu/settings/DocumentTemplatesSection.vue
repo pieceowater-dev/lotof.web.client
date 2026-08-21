@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import DocumentTemplateEditor from '@/components/menu/DocumentTemplateEditor.vue';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
+import type { MenuBranch } from '@/api/menu/branch/list';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -14,14 +15,37 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
 const templates = ref<MenuDocumentTemplate[]>([]);
+const branches = ref<MenuBranch[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
 const columns = computed(() => [
   { key: 'name', label: t('menu.docTemplateName') || 'Name' },
+  { key: 'branchId', label: t('menu.docTemplateBranch') || 'Branch' },
   { key: 'isActive', label: t('menu.docTemplateStatus') || 'Status' },
   { key: 'actions', label: t('app.actions') || 'Actions' },
 ]);
+
+function branchName(branchId?: string | null): string {
+  if (!branchId) return t('menu.docTemplateAllBranches') || 'All branches';
+  return branches.value.find((b) => b.id === branchId)?.name || branchId;
+}
+
+const branchOptions = computed(() => [
+  { label: t('menu.docTemplateAllBranches') || 'All branches', value: undefined },
+  ...branches.value.map((b) => ({ label: b.name, value: b.id })),
+]);
+
+async function loadBranches() {
+  try {
+    const menuToken = await getToken();
+    const { menuBranchesList } = await import('@/api/menu/branch/list');
+    const res = await menuBranchesList(menuToken, nsSlug.value);
+    branches.value = res.branches;
+  } catch (e) {
+    logError('[menu/settings/documentTemplates] loadBranches failed', e);
+  }
+}
 
 async function getToken(): Promise<string> {
   const { current } = useMenuToken();
@@ -51,13 +75,26 @@ const editingTemplate = ref<MenuDocumentTemplate | null>(null);
 const formName = ref('');
 const formContent = ref('');
 const formIsActive = ref(true);
+const formBranchId = ref<string | undefined>(undefined);
 const saving = ref(false);
+
+// Snapshot taken when the editor opens, so closeEditor() can tell a genuine
+// edit apart from "opened and immediately closed" without asking every time.
+const initialSnapshot = ref({ name: '', content: '', isActive: true, branchId: undefined as string | undefined });
+const isDirty = computed(() =>
+  formName.value !== initialSnapshot.value.name ||
+  formContent.value !== initialSnapshot.value.content ||
+  formIsActive.value !== initialSnapshot.value.isActive ||
+  formBranchId.value !== initialSnapshot.value.branchId
+);
 
 function openCreate() {
   editingTemplate.value = null;
   formName.value = '';
   formContent.value = '';
   formIsActive.value = true;
+  formBranchId.value = undefined;
+  initialSnapshot.value = { name: '', content: '', isActive: true, branchId: undefined };
   isEditorOpen.value = true;
 }
 
@@ -66,7 +103,20 @@ function openEdit(row: MenuDocumentTemplate) {
   formName.value = row.name;
   formContent.value = row.content;
   formIsActive.value = row.isActive;
+  formBranchId.value = row.branchId || undefined;
+  initialSnapshot.value = { name: row.name, content: row.content, isActive: row.isActive, branchId: row.branchId || undefined };
   isEditorOpen.value = true;
+}
+
+// The editor is a full-screen takeover (not a UModal) specifically so there's
+// no backdrop-click/Esc path that silently discards an in-progress template
+// -- closing is only ever this explicit action, which itself confirms first
+// when there are unsaved changes.
+async function closeEditor() {
+  if (isDirty.value && !(await confirm({ message: t('menu.confirmDiscardDocTemplate') || 'Discard unsaved changes to this template?' }))) {
+    return;
+  }
+  isEditorOpen.value = false;
 }
 
 async function handleSave() {
@@ -80,13 +130,14 @@ async function handleSave() {
         name: formName.value.trim(),
         content: formContent.value,
         isActive: formIsActive.value,
+        branchId: formBranchId.value,
       });
       const idx = templates.value.findIndex((tpl) => tpl.id === updated.id);
       if (idx !== -1) templates.value[idx] = updated;
       useToast().add({ title: t('menu.docTemplateUpdated') || 'Template updated', color: 'primary' });
     } else {
       const { menuCreateDocumentTemplate } = await import('@/api/menu/documenttemplate/create');
-      const created = await menuCreateDocumentTemplate(menuToken, nsSlug.value, formName.value.trim(), formContent.value);
+      const created = await menuCreateDocumentTemplate(menuToken, nsSlug.value, formName.value.trim(), formContent.value, formBranchId.value);
       templates.value = [...templates.value, created];
       useToast().add({ title: t('menu.docTemplateCreated') || 'Template created', color: 'primary' });
     }
@@ -113,7 +164,10 @@ async function handleDelete(row: MenuDocumentTemplate) {
   }
 }
 
-onMounted(load);
+onMounted(() => {
+  load();
+  loadBranches();
+});
 </script>
 
 <template>
@@ -138,6 +192,9 @@ onMounted(load);
             {{ row.name }}
           </button>
         </template>
+        <template #branchId-data="{ row }">
+          <span class="text-gray-600 dark:text-gray-300">{{ branchName(row.branchId) }}</span>
+        </template>
         <template #isActive-data="{ row }">
           <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle">
             {{ row.isActive ? (t('menu.docTemplateActive') || 'Active') : (t('menu.docTemplateInactive') || 'Inactive') }}
@@ -152,43 +209,51 @@ onMounted(load);
       </AppTable>
     </div>
 
-    <UModal v-model="isEditorOpen" :ui="{ width: 'sm:max-w-3xl' }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">
-              {{ editingTemplate ? (t('menu.docTemplateEdit') || 'Edit template') : (t('menu.docTemplateNew') || 'New template') }}
-            </h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isEditorOpen = false" />
-          </div>
-        </template>
+    <!-- Full-screen takeover, not a UModal -- see closeEditor()'s comment for
+         why: an in-progress template is too easy to lose to a stray
+         backdrop click or Esc press otherwise. -->
+    <div v-if="isEditorOpen" class="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
+      <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <h3 class="text-lg font-semibold truncate">
+          {{ editingTemplate ? (t('menu.docTemplateEdit') || 'Edit template') : (t('menu.docTemplateNew') || 'New template') }}
+        </h3>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <UButton color="gray" variant="ghost" :label="t('app.cancel')" :disabled="saving" @click="closeEditor" />
+          <UButton
+            color="primary"
+            :label="saving ? (t('app.loading') || 'Loading...') : (t('app.save') || 'Save')"
+            :loading="saving"
+            :disabled="!formName.trim() || saving"
+            @click="handleSave"
+          />
+          <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" :disabled="saving" @click="closeEditor" />
+        </div>
+      </div>
 
-        <div class="space-y-3">
-          <div class="flex items-center gap-3">
+      <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+        <div class="max-w-4xl mx-auto h-full flex flex-col space-y-3">
+          <div class="flex items-center gap-3 flex-shrink-0">
             <UFormGroup :label="t('menu.docTemplateName') || 'Name'" required class="flex-1">
               <UInput v-model="formName" size="sm" :placeholder="t('menu.docTemplateNamePlaceholder') || 'e.g. Act of completed work'" />
+            </UFormGroup>
+            <UFormGroup :label="t('menu.docTemplateBranch') || 'Branch'" class="w-56">
+              <USelectMenu
+                v-model="formBranchId"
+                :options="branchOptions"
+                value-attribute="value"
+                option-attribute="label"
+                size="sm"
+                :popper="{ strategy: 'fixed' }"
+              />
             </UFormGroup>
             <UFormGroup :label="t('menu.docTemplateStatus') || 'Status'">
               <UToggle v-model="formIsActive" />
             </UFormGroup>
           </div>
 
-          <DocumentTemplateEditor :key="editingTemplate?.id || 'new'" v-model="formContent" />
+          <DocumentTemplateEditor :key="editingTemplate?.id || 'new'" v-model="formContent" class="flex-1 min-h-0" />
         </div>
-
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" :label="t('app.cancel')" @click="isEditorOpen = false" />
-            <UButton
-              color="primary"
-              :label="saving ? (t('app.loading') || 'Loading...') : (t('app.save') || 'Save')"
-              :loading="saving"
-              :disabled="!formName.trim() || saving"
-              @click="handleSave"
-            />
-          </div>
-        </template>
-      </UCard>
-    </UModal>
+      </div>
+    </div>
   </div>
 </template>
