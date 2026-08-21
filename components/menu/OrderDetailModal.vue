@@ -23,6 +23,9 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
+import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
+import { buildMenuDocVariables, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import { printHtmlDocument } from '@/utils/printWindow';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -379,6 +382,8 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     loadCatalog();
     loadCustomerOrders();
     loadClientIntegration();
+    loadDocumentTemplates();
+    resetPaymentForm();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
     // still short, but readable instead of a bare "4". See the matching
@@ -723,6 +728,91 @@ function itemUnitPrice(i: MenuOrderItem): number {
 }
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitPrice(i) * i.quantity, 0));
+
+// --- Discount / paid amount (echoes to UpdateOrderPayment) ---
+const paymentForm = reactive({ discountAmount: 0, paidAmount: 0 });
+const savingPayment = ref(false);
+
+function resetPaymentForm() {
+  if (!props.order) return;
+  paymentForm.discountAmount = props.order.discountAmount;
+  paymentForm.paidAmount = props.order.paidAmount;
+}
+
+const amountDue = computed(() => {
+  const total = props.order?.totalAmount ?? itemsTotal.value;
+  return total - (Number(paymentForm.discountAmount) || 0) - (Number(paymentForm.paidAmount) || 0);
+});
+
+const isPaymentDirty = computed(() => {
+  if (!props.order) return false;
+  return (
+    (Number(paymentForm.discountAmount) || 0) !== props.order.discountAmount ||
+    (Number(paymentForm.paidAmount) || 0) !== props.order.paidAmount
+  );
+});
+
+async function savePayment() {
+  if (!props.order) return;
+  savingPayment.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuUpdateOrderPayment } = await import('@/api/menu/order/updatePayment');
+    const updated = await menuUpdateOrderPayment(
+      menuToken,
+      nsSlug.value,
+      props.order.id,
+      Number(paymentForm.discountAmount) || 0,
+      Number(paymentForm.paidAmount) || 0
+    );
+    emit('statusChanged', updated);
+    useToast().add({ title: t('menu.paymentUpdated') || 'Payment updated', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] savePayment failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update payment', color: 'red' });
+  } finally {
+    savingPayment.value = false;
+  }
+}
+
+// --- Print: render a document template with this order's data substituted
+// into its {{VARIABLE}} placeholders (see utils/documentVariableSubstitution.ts) ---
+const documentTemplates = ref<MenuDocumentTemplate[]>([]);
+
+async function loadDocumentTemplates() {
+  try {
+    const menuToken = await getToken();
+    const { menuDocumentTemplatesList } = await import('@/api/menu/documenttemplate/list');
+    const res = await menuDocumentTemplatesList(menuToken, nsSlug.value);
+    documentTemplates.value = res.templates.filter((tpl) => tpl.isActive);
+  } catch (e) {
+    logError('[OrderDetailModal] loadDocumentTemplates failed', e);
+  }
+}
+
+const printMenuItems = computed(() => [
+  documentTemplates.value.map((tpl) => ({ label: tpl.name, click: () => printWithTemplate(tpl) })),
+]);
+
+function printWithTemplate(template: MenuDocumentTemplate) {
+  if (!props.order) return;
+  const variables = buildMenuDocVariables({
+    order: props.order,
+    items: items.value,
+    members: members.value,
+    memberDisplayName,
+    guestLabel: t('menu.guestCustomer') || 'Guest',
+    noneLabel: t('menu.docVarNoneLabel') || '—',
+    itemsTableHeaders: {
+      name: t('menu.name') || 'Name',
+      qty: t('menu.quantity') || 'Qty',
+      price: t('menu.price') || 'Price',
+      sum: t('menu.total') || 'Total',
+    },
+  });
+  const html = substituteMenuDocVariables(template.content, variables);
+  printHtmlDocument(template.name, html);
+}
 </script>
 
 <template>
@@ -761,6 +851,11 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
             <UTooltip :text="t('menu.copyLink') || 'Copy share link'">
               <UButton icon="lucide:link" size="sm" color="gray" variant="ghost" @click="copyShareLink" />
             </UTooltip>
+            <UDropdown v-if="documentTemplates.length" :items="printMenuItems" :popper="{ placement: 'bottom-end' }">
+              <UTooltip :text="t('menu.printOrder') || 'Print'">
+                <UButton icon="lucide:printer" size="sm" color="gray" variant="ghost" />
+              </UTooltip>
+            </UDropdown>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
           </div>
         </div>
@@ -1034,6 +1129,29 @@ const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitP
                     <td class="px-4 py-2.5" colspan="3">{{ t('menu.total') || 'Total' }}</td>
                     <td class="px-4 py-2.5 text-right tabular-nums">{{ order.totalAmount ?? itemsTotal }}</td>
                     <td />
+                  </tr>
+                  <tr class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.discount') || 'Discount' }}</td>
+                    <td class="px-4 py-2 text-right" colspan="2">
+                      <UInput v-model.number="paymentForm.discountAmount" type="number" size="2xs" class="w-24 ml-auto" :ui="{ base: 'text-right' }" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.paidAmount') || 'Paid' }}</td>
+                    <td class="px-4 py-2 text-right" colspan="2">
+                      <UInput v-model.number="paymentForm.paidAmount" type="number" size="2xs" class="w-24 ml-auto" :ui="{ base: 'text-right' }" />
+                    </td>
+                  </tr>
+                  <tr class="font-semibold">
+                    <td class="px-4 py-2" colspan="3">{{ t('menu.amountDue') || 'Amount due' }}</td>
+                    <td class="px-4 py-2 text-right tabular-nums" colspan="2">{{ amountDue }}</td>
+                  </tr>
+                  <tr v-if="isPaymentDirty">
+                    <td class="px-4 pb-2" colspan="5">
+                      <UButton size="2xs" color="primary" :loading="savingPayment" :disabled="savingPayment" class="ml-auto flex w-fit" @click="savePayment">
+                        {{ t('app.save') || 'Save' }}
+                      </UButton>
+                    </td>
                   </tr>
                 </tfoot>
               </table>

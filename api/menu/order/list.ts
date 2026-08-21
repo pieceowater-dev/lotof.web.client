@@ -18,6 +18,8 @@ export type MenuOrder = {
   totalAmount: number;
   createdAt: string;
   closedAt?: string | null;
+  discountAmount: number;
+  paidAmount: number;
 };
 
 export type OrdersFilter = {
@@ -49,7 +51,7 @@ const OrdersDocument = /* GraphQL */ `
   query Orders($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount paidAmount
       }
       info { count }
     }
@@ -154,7 +156,7 @@ const OrdersBundleDocument = /* GraphQL */ `
   query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount paidAmount
       }
       info { count }
     }
