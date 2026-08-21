@@ -106,6 +106,55 @@ const qrPostTitle = ref('');
 const qrPostAddress = ref('');
 const polling = ref(false);
 
+// Mirrors the backend lockout window (pinLockoutDuration in
+// lotof.atrace.msvc.tracker/internal/pkg/record/svc/record.svc.go) so the
+// countdown shown here matches when the server will actually accept
+// attempts again.
+const PIN_LOCKOUT_COOLDOWN_MS = 5 * 60 * 1000;
+const rateLimitedUntil = ref<number | null>(null);
+const rateLimitCountdownText = ref('');
+let rateLimitTimer: ReturnType<typeof setInterval> | null = null;
+
+function formatCountdown(ms: number) {
+  const totalSeconds = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function clearRateLimitCooldown() {
+  if (rateLimitTimer) {
+    clearInterval(rateLimitTimer);
+    rateLimitTimer = null;
+  }
+  rateLimitedUntil.value = null;
+}
+
+function startRateLimitCooldown() {
+  // The stream keeps re-requesting a QR every REFRESH_INTERVAL seconds over
+  // the same open connection, which is exactly what trips this lockout in
+  // the first place -- so unlike a normal drop, we must stop reconnecting
+  // entirely for the cooldown window instead of letting scheduleWsRetry's
+  // exponential backoff (which resets on each open) paper over it.
+  wsEnabled = false;
+  stopWs();
+  qrError.value = '';
+  const until = Date.now() + PIN_LOCKOUT_COOLDOWN_MS;
+  rateLimitedUntil.value = until;
+  rateLimitCountdownText.value = formatCountdown(until - Date.now());
+  if (rateLimitTimer) clearInterval(rateLimitTimer);
+  rateLimitTimer = setInterval(() => {
+    const msLeft = until - Date.now();
+    if (msLeft <= 0) {
+      clearRateLimitCooldown();
+      wsEnabled = true;
+      startWs();
+      return;
+    }
+    rateLimitCountdownText.value = formatCountdown(msLeft);
+  }, 1000);
+}
+
 useHead(() => ({
   title: qrPostTitle.value ? `${qrPostTitle.value} — A-Trace` : 'Отметка — A-Trace',
 }));
@@ -228,6 +277,10 @@ function startWs() {
           clearPin();
           pinError.value = data.error || t('app.pinInvalid') || 'Неверный PIN, попробуйте снова';
           askPin();
+        } else if (data.code === 'ResourceExhausted') {
+          // PIN is presumably correct here, just rate-limited -- don't clear
+          // it or reprompt, just wait out the same cooldown the server uses.
+          startRateLimitCooldown();
         } else {
           qrError.value = data.error || t('app.loadingError');
         }
@@ -278,6 +331,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   wsEnabled = false;
   stopWs();
+  clearRateLimitCooldown();
   if (stopWatch) stopWatch();
 });
 
@@ -441,6 +495,21 @@ onBeforeUnmount(() => {
           >
             <i class="i-lucide-loader animate-spin" />
             {{ t('app.loading') || 'Loading...' }}
+          </div>
+          <div
+            v-else-if="rateLimitedUntil"
+            class="flex flex-col items-center gap-2 mt-4 text-center"
+          >
+            <UIcon
+              name="i-lucide-clock-alert"
+              class="w-8 h-8 text-amber-500 dark:text-amber-300"
+            />
+            <div class="font-medium text-amber-700 dark:text-amber-300">
+              {{ t('app.pinTooManyAttemptsTitle') || 'Too many attempts' }}
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 tabular-nums">
+              {{ t('app.pinTooManyAttemptsRetry', { time: rateLimitCountdownText }) || `Retrying in ${rateLimitCountdownText}` }}
+            </div>
           </div>
           <div
             v-else-if="qrError"

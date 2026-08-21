@@ -338,6 +338,8 @@
     "enterPin": "PIN-кодты енгізіңіз",
     "pinMustBe6Digits": "PIN-код 6 цифрдан тұруы керек",
     "pinInvalid": "PIN-код қате, қайталап көріңіз",
+    "pinTooManyAttemptsTitle": "Тым көп әрекет",
+    "pinTooManyAttemptsRetry": "{time} ішінде қайта әрекет",
     "forgetPin": "PIN-кодты ұмыту",
     "qrRefreshNote": "QR әр 15 секунд сайын жаңарады",
     "pinPromptDesc": "Пост құрылған кезде көрсетілген 6 таңбалы PIN-кодты енгізіңіз. Онсыз бет қолжетімсіз.",

@@ -377,6 +377,8 @@
     "enterPin": "Введите PIN-код",
     "pinMustBe6Digits": "PIN-код должен содержать 6 цифр",
     "pinInvalid": "Неверный PIN-код, попробуйте снова",
+    "pinTooManyAttemptsTitle": "Слишком много попыток",
+    "pinTooManyAttemptsRetry": "Повторная попытка через {time}",
     "forgetPin": "Забыть PIN-код",
     "qrRefreshNote": "QR обновляется каждые 15 секунд",
     "pinPromptDesc": "Введите 6-значный PIN-код, который был показан при создании поста. Без него страница недоступна.",

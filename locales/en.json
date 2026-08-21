@@ -376,6 +376,8 @@
     "enterPin": "Enter PIN",
     "pinMustBe6Digits": "PIN must be 6 digits",
     "pinInvalid": "Incorrect PIN, please try again",
+    "pinTooManyAttemptsTitle": "Too many attempts",
+    "pinTooManyAttemptsRetry": "Retrying in {time}",
     "forgetPin": "Forget PIN",
     "qrRefreshNote": "QR refreshes every 15 seconds",
     "pinPromptDesc": "Enter the 6-digit PIN shown to the post creator. This PIN is required to access the page.",
