@@ -35,6 +35,14 @@ export const atraceTour: TourConfig = {
       highlightPadding: 8,
     },
     {
+      id: 'print-qr',
+      target: '[data-tour="post-qr-btn"]',
+      titleKey: 'app.tourAtracePrintQrTitle',
+      contentKey: 'app.tourAtracePrintQrContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+    {
       id: 'attendance-table',
       target: '[data-tour="attendance-table"]',
       titleKey: 'app.tourAtraceTableTitle',

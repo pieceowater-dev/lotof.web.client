@@ -12,6 +12,21 @@ const TIMEZONES_FORMATTED = computed(() =>
 
 const props = defineProps<{
   modelValue: boolean
+  // Set once the location form has been submitted and the post actually
+  // exists -- switches this screen to the "scan to check in" step so
+  // there's a live end-to-end test of the location just created, instead
+  // of closing the moment the post exists but nobody has confirmed a scan
+  // actually works. The QR fetch itself is owned and kicked off by the
+  // caller (not a watcher in here): saving the first post changes
+  // selectedPostId, which the page's tab-routing composable reacts to with
+  // a same-route-record `router.push` that -- for reasons not fully
+  // understood -- still remounts this component. A fetch started from a
+  // watcher in here would get orphaned mid-flight by that remount and never
+  // update anything; the caller's own state survives it via useState.
+  createdPost?: { id: string; pin: string } | null
+  checkinQrImage?: string | null
+  checkinQrLoading?: boolean
+  checkinQrError?: string
 }>();
 const form = defineModel<LocationForm>('form', { required: true });
 const emit = defineEmits<{
@@ -27,7 +42,7 @@ const {
 } = useAtraceLocationMap(form);
 
 watch(() => props.modelValue, (isOpen) => {
-  if (isOpen) {
+  if (isOpen && !props.createdPost) {
     activate();
   } else {
     deactivate();
@@ -46,6 +61,7 @@ function close() {
         <UButton color="gray" variant="ghost" size="sm" icon="lucide:x" :label="t('common.later') || 'Later'" @click="close" />
       </div>
 
+      <template v-if="!createdPost">
       <div class="text-center mb-8">
         <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-primary-50 dark:bg-primary-950/40 flex items-center justify-center">
           <Icon name="lucide:map-pin-plus" class="w-7 h-7 text-primary-600 dark:text-primary-400" />
@@ -149,6 +165,55 @@ function close() {
           </UButton>
         </div>
       </div>
+      </template>
+
+      <template v-else>
+      <div class="text-center mb-8">
+        <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center">
+          <Icon name="lucide:qr-code" class="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+          {{ t('app.atraceFirstCheckinTitle') || 'Location created' }}
+        </h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 max-w-md mx-auto">
+          {{ t('app.atraceFirstCheckinSubtitle') || "Let's confirm it all works — make your first check-in." }}
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col items-center">
+        <p class="text-sm text-gray-600 dark:text-gray-300 text-center max-w-sm mb-5">
+          {{ t('app.atraceFirstCheckinInstruction') || 'Grab your phone camera and scan the QR code below to make your first check-in.' }}
+        </p>
+
+        <div
+          class="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 flex items-center justify-center"
+          style="min-width:220px; min-height:220px;"
+        >
+          <img
+            v-if="checkinQrImage"
+            :src="checkinQrImage"
+            alt="QR"
+            class="checkin-qr-image w-full max-w-xs h-auto aspect-square object-contain"
+            style="max-width:220px; min-width:180px;"
+          >
+          <div v-else-if="checkinQrLoading" class="flex flex-col items-center gap-3 text-emerald-600 dark:text-emerald-400">
+            <Icon name="lucide:loader" class="w-8 h-8 animate-spin" />
+            <span class="text-sm">{{ t('common.loading') }}</span>
+          </div>
+          <span v-else-if="checkinQrError" class="text-sm text-red-500 text-center max-w-[180px]">{{ checkinQrError }}</span>
+          <span v-else class="text-sm text-gray-400 text-center max-w-[180px]">{{ t('common.loading') }}</span>
+        </div>
+
+        <div class="flex justify-center gap-3 pt-6 w-full">
+          <UButton size="lg" color="gray" variant="soft" @click="close">
+            {{ t('app.atraceFirstCheckinSkip') || 'Skip' }}
+          </UButton>
+          <UButton size="lg" icon="lucide:check" color="primary" @click="close">
+            {{ t('app.atraceFirstCheckinDone') || 'Done' }}
+          </UButton>
+        </div>
+      </div>
+      </template>
     </div>
   </div>
 </template>

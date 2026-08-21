@@ -151,10 +151,10 @@ export function useAtracePosts(
     }
   }
 
-  async function handleCreate() {
+  async function handleCreate(): Promise<Post | undefined> {
     const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
     const atraceToken = await ensureAtraceToken(nsSlug.value, hubToken);
-    if (!atraceToken) return router.push('/');
+    if (!atraceToken) { router.push('/'); return; }
     try {
       const { atraceCreatePost } = await import('@/api/atrace/post/create');
       const payload: any = { title: form.title };
@@ -192,6 +192,7 @@ export function useAtracePosts(
       form.description = '';
       form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' };
       form.pin = '';
+      return created;
     } catch (e) {
       const msg = getErrorMessage(e, t);
       const lower = msg.toLowerCase();

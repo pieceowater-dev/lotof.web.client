@@ -245,6 +245,7 @@ const dropdownItems = [
             color="primary"
             :variant="selected ? 'solid' : 'ghost'"
             aria-label="QR actions"
+            :data-tour="post.id ? 'post-qr-btn' : undefined"
           />
         </UDropdown>
         <UButton

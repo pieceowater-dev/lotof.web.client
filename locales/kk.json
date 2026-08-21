@@ -245,6 +245,8 @@
     "tourAtraceCreateContent": "Локация құру үшін осы жерді басыңыз.",
     "tourAtracePostsTitle": "Локацияларды басқару",
     "tourAtracePostsContent": "Локация құрылғаннан кейін мұнда карточка түрінде көрінеді.",
+    "tourAtracePrintQrTitle": "Локацияның QR-коды",
+    "tourAtracePrintQrContent": "Мұнда сілтемені көшіруге, локация бетін ашуға немесе орнында сканерлеу үшін QR-кодты басып шығаруға болады.",
     "tourAtraceTableTitle": "Қатысу кестесі",
     "tourAtraceTableContent": "Мұнда әр қатысушы бойынша статистика көрсетіледі: жұмыс күндері, қатысу, бұзушылықтар және дәлелді себептер.",
     "tourAtraceCalculateTitle": "Есептеу",

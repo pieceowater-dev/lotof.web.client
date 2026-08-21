@@ -15,6 +15,8 @@ import QuickAddRouteModal from '@/components/atrace/QuickAddRouteModal.vue';
 import PostLimitModal from '@/components/atrace/PostLimitModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+import { QRMethod } from '@/utils/constants';
+import { logError } from '@/utils/logger';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useAuth } from '@/composables/useAuth';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -215,13 +217,31 @@ onMounted(async () => {
 // covered/replaced -- so the rest of the walkthrough (posts list,
 // attendance table, salary calculator, settings, help) still happens
 // instead of being silently dropped.
-const pendingTourResumeAfterCreate = ref(false);
+//
+// This whole group is `useState`, not `ref`, because creating the first
+// post changes `selectedPostId`, which useAtraceTabRouting reacts to with
+// a `router.push` to `/attendance/<id>` -- and despite matching the same
+// `:type?/:id?` route record, that navigation remounts this page
+// component. A plain ref would silently reset to its default right as the
+// check-in step is about to show; useState survives the remount.
+const pendingTourResumeAfterCreate = useState<boolean>('atrace-first-location-pending-tour', () => false);
 
 // A namespace with zero locations gets the full-screen first-run flow --
 // its longer form (map, PIN, timezone) deserves more room than the cramped
 // modal every subsequent "add location" click reuses. Both routes end up
 // creating a post through the exact same handleCreate().
-const isFirstLocationOpen = ref(false);
+const isFirstLocationOpen = useState<boolean>('atrace-first-location-open', () => false);
+// Set once the post from the first-location form actually exists -- swaps
+// FirstLocationScreen from the form to its "scan to check in" step instead
+// of closing immediately, so first entry ends with a live end-to-end test
+// of the location just created rather than an unconfirmed "should work".
+const firstLocationCreatedPost = useState<{ id: string; pin: string } | null>('atrace-first-location-created-post', () => null);
+// Set synchronously before handleCreate() runs (not after, from its
+// result) so the `posts` watcher below -- which can fire while handleCreate
+// is still resolving, before firstLocationCreatedPost is assigned -- never
+// mistakes an in-flight first-location submit for an unrelated post
+// creation and resumes the tour underneath the about-to-open check-in step.
+const awaitingFirstLocationCreate = useState<boolean>('atrace-first-location-awaiting', () => false);
 function openCreateLocation() {
     if (posts.value.length === 0) {
         isFirstLocationOpen.value = true;
@@ -229,19 +249,70 @@ function openCreateLocation() {
         isCreateOpen.value = true;
     }
 }
+// Owned here (not by a watcher inside FirstLocationScreen) so the fetch
+// survives the page remount triggered right after this by selectedPostId
+// changing -- see the useState comments above and the prop doc on
+// FirstLocationScreen for why a component-local effect can't be trusted
+// to finish here.
+const firstLocationCheckinQrImage = useState<string | null>('atrace-first-location-qr-image', () => null);
+const firstLocationCheckinQrLoading = useState<boolean>('atrace-first-location-qr-loading', () => false);
+const firstLocationCheckinQrError = useState<string>('atrace-first-location-qr-error', () => '');
+
+async function loadFirstLocationCheckinQr(created: { id: string; pin: string }) {
+    firstLocationCheckinQrLoading.value = true;
+    firstLocationCheckinQrError.value = '';
+    firstLocationCheckinQrImage.value = null;
+    try {
+        const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
+        const CryptoJS = (await import('crypto-js')).default;
+        const secret = CryptoJS.MD5(created.pin).toString();
+        const res = await qrGenPublic(created.id, QRMethod.QR_STATIC, secret, nsSlug.value);
+        const qr = res?.qr;
+        firstLocationCheckinQrImage.value = qr && !qr.startsWith('data:') ? `data:image/png;base64,${qr}` : qr || null;
+        if (!firstLocationCheckinQrImage.value) firstLocationCheckinQrError.value = t('app.atraceFirstCheckinQrError') || 'Failed to generate the QR code';
+    } catch (e) {
+        logError('[atrace onboarding] checkin QR generation failed', e);
+        firstLocationCheckinQrError.value = t('app.atraceFirstCheckinQrError') || 'Failed to generate the QR code';
+    } finally {
+        firstLocationCheckinQrLoading.value = false;
+    }
+}
+
 async function submitFirstLocation() {
-    await handleCreate();
-    if (posts.value.length > 0) {
-        isFirstLocationOpen.value = false;
+    awaitingFirstLocationCreate.value = true;
+    // handleCreate() resets `form` (including the PIN) on success, so the
+    // PIN needed for the check-in QR has to be captured before it runs.
+    const pin = form.pin;
+    const created = await handleCreate();
+    awaitingFirstLocationCreate.value = false;
+    if (created) {
+        firstLocationCreatedPost.value = { id: created.id, pin };
+        loadFirstLocationCheckinQr({ id: created.id, pin });
     }
 }
 watch(posts, (list) => {
     if (!pendingTourResumeAfterCreate.value || list.length === 0) return;
+    // The check-in step is about to show (or already showing) on top of
+    // this same screen -- let the watcher below resume the tour once that
+    // closes, instead of racing it here.
+    if (awaitingFirstLocationCreate.value || firstLocationCreatedPost.value) return;
     pendingTourResumeAfterCreate.value = false;
     const { startTour } = useOnboarding();
     setTimeout(() => {
         startTour(atraceTour, 2);
     }, 800);
+});
+watch(isFirstLocationOpen, (open) => {
+    if (open) return;
+    firstLocationCreatedPost.value = null;
+    firstLocationCheckinQrImage.value = null;
+    firstLocationCheckinQrError.value = '';
+    if (!pendingTourResumeAfterCreate.value || posts.value.length === 0) return;
+    pendingTourResumeAfterCreate.value = false;
+    const { startTour } = useOnboarding();
+    setTimeout(() => {
+        startTour(atraceTour, 2);
+    }, 300);
 });
 
 watch(activeRouteId, (next, prev) => {
@@ -433,6 +504,10 @@ onBeforeUnmount(() => {
   <FirstLocationScreen
     v-model="isFirstLocationOpen"
     v-model:form="form"
+    :created-post="firstLocationCreatedPost"
+    :checkin-qr-image="firstLocationCheckinQrImage"
+    :checkin-qr-loading="firstLocationCheckinQrLoading"
+    :checkin-qr-error="firstLocationCheckinQrError"
     @submit="submitFirstLocation"
   />
 
