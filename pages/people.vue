@@ -10,6 +10,7 @@ import { memberDisplayName } from '@/utils/memberDisplayName';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { peopleTour } from '@/config/tours';
 
+const { homePath } = usePreferredSpace();
 const { token, user } = useAuth();
 const { isCompleted, startTour, reset } = useOnboarding();
 const { rows: friends, applyLoaded: applyLoadedFriends, load, loading, currentStatus } = useFriendships();
@@ -561,7 +562,7 @@ async function removeMember(member: { userId: string; username: string; email: s
 <template>
   <div class="p-4 md:p-6 lg:p-8 min-h-screen max-w-7xl mx-auto">
     <NuxtLink
-      to="/"
+      :to="homePath()"
       class="mb-4 inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
     >
       <UIcon name="lucide:home" class="h-3.5 w-3.5" />

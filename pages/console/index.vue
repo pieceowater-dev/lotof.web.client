@@ -4,7 +4,7 @@
     <div class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <NuxtLink
-          to="/"
+          :to="homePath()"
           class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
         >
           <Icon name="lucide:arrow-left" class="h-3.5 w-3.5" />
@@ -165,6 +165,7 @@ definePageMeta({
 
 const { t } = useI18n();
 useHead({ title: 'Консоль' });
+const { homePath } = usePreferredSpace();
 const { user, isLoggedIn, token } = useAuth();
 
 const username = computed(() => user.value?.username || 'Admin');

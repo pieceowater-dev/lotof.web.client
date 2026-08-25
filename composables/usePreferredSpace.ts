@@ -25,5 +25,17 @@ export function usePreferredSpace() {
     } catch {}
   }
 
-  return { get, set };
+  // Shared "where does a generic Home link go" rule -- any "Home" /
+  // "back to lota" link outside AppHeader.vue (which has its own
+  // isPublicationPage-aware variant) should use this instead of hardcoding
+  // to="/", so it respects a returning hub user's actual home (/hub)
+  // instead of always bouncing them through the landing page.
+  function homePath(): string {
+    const pref = get();
+    if (pref === 'hub') return '/hub';
+    if (pref === 'catalog') return '/catalog';
+    return '/';
+  }
+
+  return { get, set, homePath };
 }

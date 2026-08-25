@@ -3,7 +3,7 @@
     <div class="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
       <div class="mx-auto max-w-4xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
         <NuxtLink
-          to="/"
+          :to="homePath()"
           class="mb-6 inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
         >
           <UIcon name="lucide:home" class="h-3.5 w-3.5" />
@@ -59,6 +59,7 @@ import { ALL_APPS } from '@/config/apps';
 import { GUIDE_APP_IDS, guideAppToParam } from '@/composables/useGuideContext';
 
 const { t } = useI18n();
+const { homePath } = usePreferredSpace();
 const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
 
