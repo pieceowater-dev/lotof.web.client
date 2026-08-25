@@ -113,9 +113,24 @@ async function addBranch() {
   }
 }
 
+// "Continue" used to be a bare `step = 3`, so a filled-in-but-never-submitted
+// branch form (the user typed name/address/phone but never clicked "Add
+// branch") was silently discarded. Auto-save it first if it's valid, same
+// validity gate the explicit button uses.
+async function continueFromBranches() {
+  if (isBranchValid.value) {
+    await addBranch();
+  }
+  step.value = 3;
+}
+
 // --- Catalog preset (optional) ---
 const selectedBusinessType = ref<BusinessType | null>(null);
 const catalogSaving = ref(false);
+// "Services" is reserved for the future standalone "Lota Plans" product, not
+// Menu -- filtered out here rather than in config/businessTypes.ts, which is
+// shared with Tasks/Atrace/Contacts' own quick-setup flows.
+const menuBusinessTypes = computed(() => BUSINESS_TYPES.filter((o) => o.value !== 'services'));
 
 async function applyCatalogPresetAndFinish() {
   if (!selectedBusinessType.value) {
@@ -262,8 +277,11 @@ function finish() {
           </UButton>
         </div>
 
-        <div class="flex justify-end pt-1">
-          <UButton color="primary" @click="step = 3">
+        <div class="flex justify-between pt-1">
+          <UButton color="gray" variant="ghost" @click="step = 1">
+            {{ t('app.back') || 'Back' }}
+          </UButton>
+          <UButton color="primary" :loading="branchSaving" @click="continueFromBranches">
             {{ t('app.continue') || 'Continue' }}
           </UButton>
         </div>
@@ -277,7 +295,7 @@ function finish() {
 
         <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <button
-            v-for="option in BUSINESS_TYPES"
+            v-for="option in menuBusinessTypes"
             :key="option.value"
             type="button"
             class="flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors"
@@ -292,9 +310,14 @@ function finish() {
         </div>
 
         <div class="flex justify-between pt-1">
-          <UButton color="gray" variant="ghost" :disabled="catalogSaving" @click="finish">
-            {{ t('menu.onboardingSkip') || 'Skip for now' }}
-          </UButton>
+          <div class="flex items-center gap-2">
+            <UButton color="gray" variant="ghost" :disabled="catalogSaving" @click="step = 2">
+              {{ t('app.back') || 'Back' }}
+            </UButton>
+            <UButton color="gray" variant="ghost" :disabled="catalogSaving" @click="finish">
+              {{ t('menu.onboardingSkip') || 'Skip for now' }}
+            </UButton>
+          </div>
           <UButton color="primary" :loading="catalogSaving" :disabled="catalogSaving" @click="applyCatalogPresetAndFinish">
             {{ selectedBusinessType ? (t('onboarding.applyPreset') || 'Apply and finish') : (t('menu.onboardingFinish') || 'Go to my store') }}
           </UButton>

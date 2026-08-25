@@ -236,6 +236,33 @@ const showcaseMode = computed(() => !!data.value?.storefront.brandSettings?.show
 // checkStaffAccess() below.
 const { isOwnerOrManager } = useMenuStaffRole();
 
+// Patron identity: a namespace-less, Google-authenticated visitor (see
+// hub.gtw's PatronAuthService) -- distinct from staff above, this is the
+// "customer with an account across storefronts" side, not "this namespace's
+// owner/manager." Best-effort: an expired/missing token just renders the
+// logged-out state, same as checkStaffAccess() below.
+const { me: patronMe, token: patronToken, isLoggedIn: patronLoggedIn, fetchMe: fetchPatronMe, login: patronLogin, logout: patronLogout } = usePatronAuth();
+
+// Order history for the logged-in Patron at this storefront -- fetched
+// lazily on first expand rather than in onMounted, since most visitors
+// never open it.
+const patronOrders = ref<import('@/api/menu/public/patron').PatronOrder[]>([]);
+const patronOrdersOpen = ref(false);
+const patronOrdersLoading = ref(false);
+async function togglePatronOrders() {
+  patronOrdersOpen.value = !patronOrdersOpen.value;
+  if (!patronOrdersOpen.value || !patronToken.value || patronOrders.value.length) return;
+  patronOrdersLoading.value = true;
+  try {
+    const { getPatronOrders } = await import('@/api/menu/public/patron');
+    patronOrders.value = await getPatronOrders(patronToken.value, nsSlug.value);
+  } catch (e) {
+    logError('[menu/storefront] togglePatronOrders failed', e);
+  } finally {
+    patronOrdersLoading.value = false;
+  }
+}
+
 async function checkStaffAccess() {
   try {
     const hubToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
@@ -347,6 +374,10 @@ function badgeById(id: string) {
 // --- Menu search (flattens all visible categories, client-side) ---
 const searchQuery = ref('');
 const isSearching = computed(() => searchQuery.value.trim().length > 0);
+// Focus (not just content) drives the "My order"/"Log in" pills collapsing
+// next to the search bar -- on narrow screens the row no longer fits once
+// both pills are present, so give the input room to expand while typing.
+const searchFocused = ref(false);
 const searchResults = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return [];
@@ -413,6 +444,7 @@ let observer: IntersectionObserver | null = null;
 onMounted(() => {
   restoreContact();
   checkStaffAccess();
+  fetchPatronMe();
   nextTick(() => {
     observer = new IntersectionObserver((entries) => {
       if (suppressSpy) return;
@@ -915,6 +947,40 @@ useHead(() => {
             <Icon v-else name="lucide:store" class="w-8 h-8 text-gray-300" />
           </div>
           <div class="min-w-0 flex-1 pt-1">
+            <!-- Patron identity icon: only shown once logged in (see
+                 hub.gtw's PatronAuthService) -- the login entry point itself
+                 lives lower, next to the existing "My order" block, not up
+                 here in the brand header. -->
+            <div v-if="patronLoggedIn" class="float-right ml-2 relative">
+              <button
+                type="button"
+                class="w-8 h-8 rounded-full flex items-center justify-center bg-white/15 hover:bg-white/25 transition-colors"
+                :style="{ color: onPrimaryText }"
+                :title="patronMe?.name || patronMe?.email || ''"
+                @click="togglePatronOrders"
+              >
+                <Icon name="lucide:user-round" class="w-4 h-4" />
+              </button>
+
+              <div v-if="patronOrdersOpen" class="absolute top-full right-0 mt-1.5 w-64 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-3 z-30">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ patronMe?.name || patronMe?.email }}</span>
+                  <button type="button" class="text-[11px] text-gray-400 dark:text-gray-500 hover:underline flex-shrink-0 ml-2" @click="patronLogout(); patronOrdersOpen = false">
+                    {{ t('menu.patronLogout') || 'Log out' }}
+                  </button>
+                </div>
+                <p v-if="patronOrdersLoading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Loading…' }}</p>
+                <p v-else-if="!patronOrders.length" class="text-xs text-gray-400">{{ t('menu.patronNoOrders') || 'No orders here yet' }}</p>
+                <div v-else class="space-y-1.5">
+                  <div v-for="o in patronOrders" :key="o.id" class="flex items-center justify-between text-xs rounded-lg bg-gray-50 dark:bg-gray-800/60 px-2 py-1.5">
+                    <span class="font-medium text-gray-900 dark:text-white">№{{ o.number }}</span>
+                    <span class="text-gray-400">{{ o.status }}</span>
+                    <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
               {{ data.storefront.brandSettings?.name || nsSlug }}
             </h1>
@@ -1059,6 +1125,8 @@ useHead(() => {
                 type="search"
                 :placeholder="t('menu.searchMenu') || 'Search menu'"
                 class="w-full pl-9 pr-8 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                @focus="searchFocused = true"
+                @blur="searchFocused = false"
               >
               <button
                 v-if="searchQuery"
@@ -1069,15 +1137,29 @@ useHead(() => {
                 <Icon name="lucide:x" class="w-4 h-4" />
               </button>
             </div>
-            <button
-              v-if="!showcaseMode"
-              type="button"
-              class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
-              @click="openMyOrderSheet"
+            <div
+              class="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
+              :class="searchFocused ? 'max-w-0 opacity-0' : 'max-w-[220px] opacity-100'"
             >
-              <Icon name="lucide:receipt-text" class="w-4 h-4" />
-              {{ t('menu.myOrder') || 'My order' }}
-            </button>
+              <button
+                v-if="!showcaseMode"
+                type="button"
+                class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                @click="openMyOrderSheet"
+              >
+                <Icon name="lucide:receipt-text" class="w-4 h-4" />
+                {{ t('menu.myOrder') || 'My order' }}
+              </button>
+              <button
+                v-if="!showcaseMode && !patronLoggedIn"
+                type="button"
+                class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                @click="patronLogin()"
+              >
+                <Icon name="lucide:log-in" class="w-4 h-4" />
+                {{ t('menu.patronLogin') || 'Log in' }}
+              </button>
+            </div>
           </div>
 
           <div v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto">
@@ -1210,11 +1292,12 @@ useHead(() => {
 
       <!-- My order tracking: a proper, hard-to-miss block at the bottom of
            the menu, not just a small button — the top-bar/search-bar
-           shortcuts are easy to miss on a long scroll. -->
-      <div v-if="!showcaseMode" class="max-w-3xl mx-auto px-4 pt-8">
+           shortcuts are easy to miss on a long scroll. Patron login sits
+           right alongside it, same size/style, when not already logged in. -->
+      <div v-if="!showcaseMode" class="max-w-3xl mx-auto px-4 pt-8 flex flex-col sm:flex-row gap-3">
         <button
           type="button"
-          class="w-full flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          class="flex-1 flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
           @click="openMyOrderSheet"
         >
           <span
@@ -1226,6 +1309,24 @@ useHead(() => {
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrder') || 'My order' }}</span>
             <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.myOrderBlockHint') || 'Check your order status and details' }}</span>
+          </span>
+          <Icon name="lucide:chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+        </button>
+        <button
+          v-if="!patronLoggedIn"
+          type="button"
+          class="flex-1 flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          @click="patronLogin()"
+        >
+          <span
+            class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+            :style="{ backgroundColor: `${primaryColor}`, color: secondaryColor }"
+          >
+            <Icon name="lucide:log-in" class="w-5 h-5" />
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.patronLogin') || 'Log in' }}</span>
+            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.patronCheckoutHint') || 'Skip retyping your phone and keep an order history' }}</span>
           </span>
           <Icon name="lucide:chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0" />
         </button>
@@ -1636,6 +1737,19 @@ useHead(() => {
             </div>
           </div>
 
+          <!-- Nudge toward Patron login before phone entry -- logging in
+               once means not retyping a phone number on every order and
+               carries order history across storefronts, unlike the
+               guest/phone-only flow below. Dismissible via the login click
+               itself; never blocks checkout. -->
+          <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300">
+            <Icon name="lucide:sparkles" class="w-4 h-4 flex-shrink-0" :style="{ color: primaryColor }" />
+            <span class="flex-1">{{ t('menu.patronCheckoutHint') || "Log in to skip typing your phone next time and keep an order history." }}</span>
+            <button type="button" class="font-semibold flex-shrink-0" :style="{ color: primaryColor }" @click="patronLogin()">
+              {{ t('menu.patronLogin') || 'Log in' }}
+            </button>
+          </div>
+
           <UFormGroup :label="t('menu.phone') || 'Phone'" :required="!isTableOrder" :error="!!(checkoutForm.phone && !isPhoneValid)">
             <UInput
               :model-value="checkoutForm.phone"
@@ -1787,8 +1901,13 @@ useHead(() => {
 
     <!-- "You're an admin" widget: only a staff owner/manager visiting their
          own storefront sees this -- everyone else gets the plain public
-         page. -->
-    <div v-if="isOwnerOrManager" class="fixed bottom-4 right-4 z-40">
+         page. Bumped above the floating cart bar (z-30, bottom-0) whenever
+         it's showing, so the two don't overlap on narrow/mobile screens. -->
+    <div
+      v-if="isOwnerOrManager"
+      class="fixed right-4 z-40 transition-[bottom]"
+      :class="(!showcaseMode && cartCount > 0) ? 'bottom-24' : 'bottom-4'"
+    >
       <NuxtLink
         :to="`/${nsSlug}/menu/settings?tab=brand`"
         class="flex items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 pl-3 pr-4 py-2.5 hover:shadow-xl transition-shadow"
@@ -1802,5 +1921,6 @@ useHead(() => {
         </span>
       </NuxtLink>
     </div>
+
   </div>
 </template>

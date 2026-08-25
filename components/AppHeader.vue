@@ -7,13 +7,134 @@ import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import { useImpersonation } from '@/composables/useImpersonation';
 import GuideWidget from '@/components/guide/GuideWidget.vue';
+import { LSKeys } from '@/utils/storageKeys';
 
-const { t } = useI18n();
+const { t, locale, setLocale } = useI18n();
 const toast = useToast();
 const router = useRouter();
 const route = useRoute();
 
+// / replaces the whole header with the business ribbon (see the header
+// template below) -- it's a marketing landing page, not a place that needs
+// the app nav/burger menu.
+const isLandingPage = computed(() => route.path === '/');
+
+// /catalog and its single-vertical filtered views (/stores, /services) are
+// the Patron-facing public marketplace -- the hub nav (Home/Console/apps)
+// makes no sense there, so they share header content: catalog-family nav
+// plus Patron auth status instead.
+const isCatalogPage = computed(() => ['/catalog', '/stores', '/services'].includes(route.path));
+
+// Public content pages (feed, news list, a single article) -- same route
+// names middleware/auth.global.ts already treats as "public content", so
+// this stays in sync with that classification. The app/product nav makes
+// no sense here either -- swap it for publication-category navigation, and
+// send the logo/Home click to / specifically (not whatever hub/catalog was
+// last chosen), since a reader landing on an article via search/share has
+// no space preference yet.
+const isPublicationPage = computed(() => {
+  const name = typeof route.name === 'string' ? route.name : '';
+  return name === 'feed' || name === 'slug' || name === 'news' || name === 'category-slug';
+});
+const {
+  token: patronToken,
+  isLoggedIn: patronLoggedIn,
+  me: patronMe,
+  login: patronLogin,
+  logout: patronLogout,
+  fetchMe: fetchPatronMe,
+  refreshToken: refreshPatronToken,
+} = usePatronAuth();
+const patronDisplayName = computed(() => patronMe.value?.name || patronMe.value?.email || '');
+
+// patron_token is short-lived (15 min). The catalog-family pages are
+// mostly mock/static and make no authenticated calls that would otherwise
+// surface an expired token and trigger a refresh, so a Patron browsing
+// there for a while would silently look logged out. Refresh proactively
+// on entry and keep renewing on an interval for as long as the visitor
+// stays on one of these pages.
+// Populate the header's Patron avatar/name during SSR too (not just after
+// hydration) whenever a valid patron_token cookie came in with the request
+// -- runs on both server and client, it's just a data fetch, no timers.
+watch(isCatalogPage, (isCatalog) => {
+  if (isCatalog && patronToken.value) fetchPatronMe();
+}, { immediate: true });
+
+if (process.client) {
+  let patronRefreshTimer: ReturnType<typeof setInterval> | null = null;
+  const stopPatronRefreshTimer = () => {
+    if (patronRefreshTimer) {
+      clearInterval(patronRefreshTimer);
+      patronRefreshTimer = null;
+    }
+  };
+  watch(isCatalogPage, async (isCatalog) => {
+    if (!isCatalog) {
+      stopPatronRefreshTimer();
+      return;
+    }
+
+    // patron_refresh_token is httpOnly, so we can't check it directly --
+    // only attempt the (otherwise guaranteed-401) refresh, and only keep
+    // renewing on an interval, for a browser that has actually had a Patron
+    // session before.
+    let hadSessionBefore = false;
+    try { hadSessionBefore = localStorage.getItem(LSKeys.HAS_PATRON_SESSION) === '1'; } catch {}
+
+    if (!patronToken.value && hadSessionBefore) {
+      await refreshPatronToken();
+      if (patronToken.value) await fetchPatronMe();
+    }
+
+    stopPatronRefreshTimer();
+    if (patronToken.value || hadSessionBefore) {
+      // setInterval is client-only on purpose -- creating one during SSR
+      // would leak a Node-process-level timer per server-rendered request
+      // (there's no reliable unmount hook to clear it once the response is
+      // sent), firing refreshPatronToken() against a stale request forever.
+      patronRefreshTimer = setInterval(async () => {
+        const refreshed = await refreshPatronToken();
+        if (refreshed && patronToken.value) await fetchPatronMe(true);
+      }, 10 * 60 * 1000);
+    }
+  }, { immediate: true });
+  onBeforeUnmount(stopPatronRefreshTimer);
+}
+
+// A logged-in Patron gets no extra chrome on the page itself -- the header
+// avatar opens a slide-over with their profile, bonuses, and the cross-sell
+// into the hub, instead of dedicating page space to a greeting card.
+const catalogSheetOpen = ref(false);
+function handleCatalogLogout() {
+  patronLogout();
+  catalogSheetOpen.value = false;
+}
+
+// Mock only -- no loyalty backend wired up here yet. Bonuses are per
+// business (lota Contacts tracks loyalty per company), so this stays a
+// short list instead of one pooled number even as a placeholder.
+const mockBonusBalances = [
+  { key: 'coffeeboom', business: 'Coffee Boom', amount: 320 },
+  { key: 'barberclub', business: 'Barber Club', amount: 150 },
+];
+
+const languageOptions = [
+  { value: 'en', label: 'English', code: 'EN' },
+  { value: 'ru', label: 'Русский', code: 'RU' },
+  { value: 'kk', label: 'Қазақша', code: 'KZ' },
+] as const;
+
 const { isLoggedIn, login, user, token } = useAuth();
+const { set: setPreferredSpace } = usePreferredSpace();
+
+function handleGoToHub() {
+  setPreferredSpace('hub');
+  if (isLoggedIn.value) {
+    router.push('/hub');
+  } else {
+    login('/hub');
+  }
+}
 const { selected: selectedNS } = useNamespace();
 const routeNamespace = computed(() => (route.params.namespace as string) || '');
 const currentNamespace = computed(() => selectedNS.value || routeNamespace.value);
@@ -96,9 +217,26 @@ function handleHelpClick() {
   isGuideOpen.value = true;
 }
 
+const { get: getPreferredSpace } = usePreferredSpace();
+
+// Returning visitors skip the / landing choice -- their last pick (hub
+// workspace vs. patron catalog) sends them straight there. Nobody has
+// chosen yet -> / itself, which is where the choice lives.
+function preferredSpacePath(): string {
+  // A reader on an article/feed page has no space preference in play here
+  // -- they arrived via search/share, not by picking hub or catalog -- so
+  // the logo/Home always goes to the plain landing page from here.
+  if (isPublicationPage.value) return '/';
+
+  const pref = getPreferredSpace();
+  if (pref === 'hub') return '/hub';
+  if (pref === 'catalog') return '/catalog';
+  return '/';
+}
+
 function handleHomeClick() {
   isMobileMenuOpen.value = false;
-  router.push('/');
+  router.push(preferredSpacePath());
 }
 
 function handleMenuSelect(app: AppConfig) {
@@ -180,7 +318,7 @@ watch(
 );
 
 const goHome = () => {
-  router.push('/');
+  router.push(preferredSpacePath());
 };
 </script>
 
@@ -228,100 +366,273 @@ const goHome = () => {
         <span class="text-base md:text-lg">lota</span>
       </div>
 
+      <!-- / replaces the nav/burger with the business ribbon -- it's the
+           marketing landing page, not somewhere the app nav belongs. -->
       <div
-        v-if="!shouldUseBurger"
-        class="flex min-w-0 flex-1 items-center justify-end gap-2 pl-4 md:pl-5 lg:pl-6"
+        v-if="isLandingPage"
+        class="flex min-w-0 flex-1 items-center justify-end gap-3 pl-4"
       >
-        <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
+        <p class="hidden sm:flex min-w-0 truncate text-sm text-gray-600 dark:text-gray-300 items-center gap-1.5">
+          <UIcon name="lucide:briefcase" class="w-4 h-4 flex-shrink-0" />
+          {{ t('app.hubRibbonText') || 'Работаете на lota?' }}
+        </p>
+        <div class="flex items-center gap-2 flex-shrink-0">
           <button
-            v-if="showHomeItem"
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="isHomeActive
+            class="flex-shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white px-3.5 py-1.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+            @click="handleGoToHub"
+          >
+            <svg v-if="!isLoggedIn" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            <span class="hidden sm:inline truncate">{{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : (t('app.hubRibbonCta') || 'Войти через Google') }}</span>
+            <span class="sm:hidden truncate">{{ isLoggedIn ? (t('app.hubRibbonCtaLoggedInShort') || 'Кабинет') : (t('app.hubRibbonCtaShort') || 'Войти') }}</span>
+          </button>
+          <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+            <button
+              v-for="lang in languageOptions"
+              :key="lang.value"
+              type="button"
+              class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+              :class="locale === lang.value
+                ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+              :title="lang.label"
+              @click="setLocale(lang.value)"
+            >
+              {{ lang.code }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- /catalog and its filtered views (/stores, /services) are the
+           Patron-facing public marketplace -- Patron auth status instead of
+           the hub nav, plus nav between the three catalog-family pages. -->
+      <div
+        v-else-if="isCatalogPage"
+        class="flex min-w-0 flex-1 items-center justify-end gap-3 pl-4"
+      >
+        <nav class="hidden md:flex min-w-0 items-center gap-1 mr-1">
+          <NuxtLink
+            to="/catalog"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/catalog'
               ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
               : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
-            @click="handleHomeClick"
           >
-            <UIcon
-              name="i-lucide-home"
-              class="h-4 w-4"
-            />
-            <span class="truncate">{{ homeText }}</span>
-          </button>
-
-          <button
-            v-if="canSeeConsole"
-            type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60"
-            @click="handleConsoleClick"
+            <UIcon name="lucide:layout-grid" class="h-4 w-4" />
+            <span class="truncate">{{ t('home.title') || 'Каталог' }}</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/stores"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/stores'
+              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
           >
-            <UIcon
-              name="lucide:terminal-square"
-              class="h-4 w-4"
-            />
-            <span class="truncate">Console</span>
-          </button>
-
-          <button
-            v-for="app in navApps"
-            :key="app.bundle"
-            type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="[
-              isAppActive(app)
-                ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary-300'
-                : 'border-transparent bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/60',
-              !isAppActive(app) && (app.canAdd ? 'text-gray-700 hover:text-primary dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'),
-            ]"
-            :aria-disabled="!app.canAdd"
-            @click="handleMenuSelect(app)"
+            <UIcon name="lucide:utensils" class="h-4 w-4" />
+            <span class="truncate">{{ t('home.storesTitle') || 'Заведения' }}</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/services"
+            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/services'
+              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
           >
-            <UIcon
-              :name="app.icon"
-              class="h-4 w-4"
-            />
-            <span class="truncate">{{ t(app.titleKey) }}</span>
-          </button>
+            <UIcon name="lucide:scissors" class="h-4 w-4" />
+            <span class="truncate">{{ t('home.servicesTitle') || 'Услуги' }}</span>
+          </NuxtLink>
         </nav>
-
-        <UButton
-          v-if="showHelpButton"
-          data-tour="help-button"
-          variant="ghost"
-          size="sm"
-          :aria-label="t('guide.openGuide') || 'Open lota Гид'"
-          :title="t('guide.openGuide') || 'Open lota Гид'"
-          @click="handleHelpClick"
+        <template v-if="patronLoggedIn">
+          <button
+            type="button"
+            class="flex-shrink-0 flex items-center gap-2 rounded-full pl-1 pr-3 py-1 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            @click="catalogSheetOpen = true"
+          >
+            <span class="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-semibold text-amber-700 dark:text-amber-300">
+              {{ (patronDisplayName || '?').charAt(0).toUpperCase() }}
+            </span>
+            <span class="hidden sm:inline min-w-0 max-w-[9rem] truncate text-sm font-medium text-gray-700 dark:text-gray-200">{{ patronDisplayName }}</span>
+          </button>
+        </template>
+        <button
+          v-else
+          type="button"
+          class="flex-shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+          @click="patronLogin()"
         >
-          <UIcon name="i-lucide-life-buoy" />
-        </UButton>
+          <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          <span class="truncate">{{ t('home.loginCta') || 'Войти' }}</span>
+        </button>
+        <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+          <button
+            v-for="lang in languageOptions"
+            :key="lang.value"
+            type="button"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+            :class="locale === lang.value
+              ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+            :title="lang.label"
+            @click="setLocale(lang.value)"
+          >
+            {{ lang.code }}
+          </button>
+        </div>
       </div>
 
+      <!-- Feed/news/article pages: navigation between publication
+           categories, not the product/app nav -- browsing a blog post has
+           nothing to do with picking an app. -->
       <div
-        v-if="shouldUseBurger"
-        class="flex shrink-0 items-center gap-1 pl-4"
+        v-else-if="isPublicationPage"
+        class="flex min-w-0 flex-1 items-center justify-end gap-2 pl-4"
       >
-        <UButton
-          v-if="showHelpButton"
-          data-tour="help-button"
-          variant="ghost"
-          size="sm"
-          :aria-label="t('guide.openGuide') || 'Open lota Гид'"
-          :title="t('guide.openGuide') || 'Open lota Гид'"
-          @click="handleHelpClick"
-        >
-          <UIcon name="i-lucide-life-buoy" />
-        </UButton>
-
-        <UButton
-          variant="ghost"
-          size="sm"
-          :aria-label="t('app.feedMenu') || 'Open menu'"
-          @click="isMobileMenuOpen = true"
-        >
-          <UIcon name="i-lucide-menu" />
-        </UButton>
+        <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
+          <NuxtLink
+            to="/feed"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/feed'
+              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+          >
+            <UIcon name="lucide:newspaper" class="h-4 w-4" />
+            <span class="truncate">{{ t('app.feed') || 'Лента' }}</span>
+          </NuxtLink>
+          <NuxtLink
+            to="/news"
+            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            :class="route.path === '/news'
+              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+          >
+            <UIcon name="lucide:radio" class="h-4 w-4" />
+            <span class="truncate">{{ t('app.news') || 'Новости' }}</span>
+          </NuxtLink>
+        </nav>
+        <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+          <button
+            v-for="lang in languageOptions"
+            :key="lang.value"
+            type="button"
+            class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+            :class="locale === lang.value
+              ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+              : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+            :title="lang.label"
+            @click="setLocale(lang.value)"
+          >
+            {{ lang.code }}
+          </button>
+        </div>
       </div>
+
+      <template v-else>
+        <div
+          v-if="!shouldUseBurger"
+          class="flex min-w-0 flex-1 items-center justify-end gap-2 pl-4 md:pl-5 lg:pl-6"
+        >
+          <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
+            <button
+              v-if="showHomeItem"
+              type="button"
+              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+              :class="isHomeActive
+                ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
+                : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              @click="handleHomeClick"
+            >
+              <UIcon
+                name="i-lucide-home"
+                class="h-4 w-4"
+              />
+              <span class="truncate">{{ homeText }}</span>
+            </button>
+
+            <button
+              v-if="canSeeConsole"
+              type="button"
+              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60"
+              @click="handleConsoleClick"
+            >
+              <UIcon
+                name="lucide:terminal-square"
+                class="h-4 w-4"
+              />
+              <span class="truncate">Console</span>
+            </button>
+
+            <button
+              v-for="app in navApps"
+              :key="app.bundle"
+              type="button"
+              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+              :class="[
+                isAppActive(app)
+                  ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary-300'
+                  : 'border-transparent bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/60',
+                !isAppActive(app) && (app.canAdd ? 'text-gray-700 hover:text-primary dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'),
+              ]"
+              :aria-disabled="!app.canAdd"
+              @click="handleMenuSelect(app)"
+            >
+              <UIcon
+                :name="app.icon"
+                class="h-4 w-4"
+              />
+              <span class="truncate">{{ t(app.titleKey) }}</span>
+            </button>
+          </nav>
+
+          <UButton
+            v-if="showHelpButton"
+            data-tour="help-button"
+            variant="ghost"
+            size="sm"
+            :aria-label="t('guide.openGuide') || 'Open lota Гид'"
+            :title="t('guide.openGuide') || 'Open lota Гид'"
+            @click="handleHelpClick"
+          >
+            <UIcon name="i-lucide-life-buoy" />
+          </UButton>
+        </div>
+
+        <div
+          v-if="shouldUseBurger"
+          class="flex shrink-0 items-center gap-1 pl-4"
+        >
+          <UButton
+            v-if="showHelpButton"
+            data-tour="help-button"
+            variant="ghost"
+            size="sm"
+            :aria-label="t('guide.openGuide') || 'Open lota Гид'"
+            :title="t('guide.openGuide') || 'Open lota Гид'"
+            @click="handleHelpClick"
+          >
+            <UIcon name="i-lucide-life-buoy" />
+          </UButton>
+
+          <UButton
+            variant="ghost"
+            size="sm"
+            :aria-label="t('app.feedMenu') || 'Open menu'"
+            @click="isMobileMenuOpen = true"
+          >
+            <UIcon name="i-lucide-menu" />
+          </UButton>
+        </div>
+      </template>
     </div>
 
     <div class="pointer-events-none absolute left-0 top-0 -z-10 opacity-0">
@@ -460,4 +771,88 @@ const goHome = () => {
   </UModal>
 
   <GuideWidget v-model="isGuideOpen" />
+
+  <!-- Catalog profile sheet: everything a logged-in Patron might want
+       (bonuses, orders/favorites, cross-sell into the hub) lives here
+       instead of on the page, so logging in doesn't change the page layout. -->
+  <USlideover
+    v-if="isCatalogPage"
+    v-model="catalogSheetOpen"
+    side="bottom"
+    :ui="{
+      base: 'relative flex flex-none flex-col w-[92%] max-w-md mx-auto focus:outline-none',
+      height: 'min-h-[70vh] max-h-[90vh]',
+      rounded: 'rounded-t-2xl',
+    }"
+  >
+    <div class="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+      <div class="flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-lg font-semibold text-amber-700 dark:text-amber-300">
+            {{ (patronDisplayName || '?').charAt(0).toUpperCase() }}
+          </span>
+          <div class="min-w-0">
+            <p class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{{ patronDisplayName }}</p>
+            <p v-if="patronMe?.email" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ patronMe.email }}</p>
+          </div>
+        </div>
+        <UButton icon="lucide:x" color="gray" variant="ghost" size="sm" class="flex-shrink-0" @click="catalogSheetOpen = false" />
+      </div>
+
+      <!-- Bonuses: mock balances, no loyalty backend wired up here yet.
+           Shown per business, not as one pooled total -- lota Contacts
+           tracks loyalty bonuses per company, so a Patron's balance is
+           naturally split the same way. -->
+      <div class="rounded-2xl border border-amber-100 dark:border-amber-900/30 overflow-hidden">
+        <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/10 flex items-center gap-2">
+          <UIcon name="lucide:gift" class="w-4 h-4 text-amber-500" />
+          <p class="text-xs font-medium text-amber-700 dark:text-amber-400">{{ t('home.bonusesLabel') || 'Бонусы' }}</p>
+        </div>
+        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
+          <li
+            v-for="balance in mockBonusBalances"
+            :key="balance.key"
+            class="px-4 py-2.5 flex items-center justify-between gap-3"
+          >
+            <span class="min-w-0 truncate text-sm text-gray-700 dark:text-gray-200">{{ balance.business }}</span>
+            <span class="flex-shrink-0 text-sm font-semibold text-amber-700 dark:text-amber-400">{{ balance.amount }} ₸</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-4 text-center">
+          <UIcon name="lucide:receipt" class="w-5 h-5 mx-auto text-gray-400" />
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ t('home.ordersTitle') || 'Заказы' }}</p>
+        </div>
+        <div class="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-4 text-center">
+          <UIcon name="lucide:heart" class="w-5 h-5 mx-auto text-gray-400" />
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ t('home.favoritesTitle') || 'Избранное' }}</p>
+        </div>
+      </div>
+
+      <!-- Cross-sell into the business side -- clearly a jump away from the
+           catalog, not one of its own features. -->
+      <button
+        type="button"
+        class="text-left rounded-2xl p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group"
+        @click="handleGoToHub"
+      >
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200">
+            <UIcon name="lucide:briefcase" class="w-5 h-5" />
+          </span>
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ t('home.workWithLotaTitle') || 'Работать с lota' }}</span>
+            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('home.workWithLotaHint') || 'Работаете на lota? Перейти в рабочее пространство' }}</span>
+          </span>
+        </div>
+        <UIcon name="lucide:arrow-right" class="w-4 h-4 flex-shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5" />
+      </button>
+
+      <UButton color="gray" variant="soft" icon="lucide:door-open" block @click="handleCatalogLogout">
+        {{ t('app.logout') || 'Выйти' }}
+      </UButton>
+    </div>
+  </USlideover>
 </template>

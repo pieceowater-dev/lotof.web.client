@@ -42,21 +42,25 @@ function handleAddClick() {
 </script>
 
 <template>
-  <div class="w-full rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden transition-shadow hover:shadow-md">
+  <div class="w-full h-full flex flex-col rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden transition-shadow hover:shadow-md">
     <button
       type="button"
       class="w-full text-left block group"
       @click="emit('open')"
     >
-      <div class="relative aspect-square w-full bg-gray-100 dark:bg-gray-800">
+      <div class="relative w-full bg-gray-100 dark:bg-gray-800" style="aspect-ratio: 1 / 1">
         <img
           v-if="item.imageUrl"
           :src="item.imageUrl"
           :alt="item.imageAlt || item.name"
           class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
         >
+        <!-- Placeholder fills the same aspect-square box a real photo would
+             (not a small icon adrift in empty space) so every no-photo card
+             reads as consistently "picture-shaped" as its photographed
+             row-mates. -->
         <div v-else class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-700">
-          <Icon name="lucide:package" class="w-7 h-7" />
+          <Icon name="lucide:image" class="w-1/3 h-1/3" />
         </div>
         <div v-if="itemBadges.length" class="absolute top-1.5 left-1.5 flex flex-wrap gap-1 max-w-[calc(100%-12px)]">
           <span
@@ -116,10 +120,13 @@ function handleAddClick() {
 
     <button
       type="button"
-      class="w-full text-left block mt-3 px-3 pb-3"
+      class="w-full flex-1 flex flex-col text-left mt-3 px-3 pb-3"
       @click="emit('open')"
     >
-      <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2">{{ item.name }}</div>
+      <!-- min-h reserves 2 lines even when the name only needs 1, so a short
+           name doesn't leave this card shorter than its row-mates --
+           line-clamp-2 alone only caps the max, it doesn't set a min. -->
+      <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">{{ item.name }}</div>
       <div class="text-sm font-semibold mt-1 tabular-nums" :style="{ color: secondaryColor }">{{ formatMoney(item.price, currency) }}</div>
     </button>
   </div>

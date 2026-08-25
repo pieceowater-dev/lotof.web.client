@@ -8,14 +8,29 @@ import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 import type { ORDER_STATUSES } from '@/utils/orderStatus';
+import { CookieKeys } from '@/utils/storageKeys';
 
 // Unauthenticated reads for the public storefront page (/to/[namespace]/menu).
 // Every field these hit is intentionally free of @menuAuth on the backend —
 // only the Namespace header is required to scope the tenant.
 
 async function headers(namespaceSlug: string) {
+  // useCookie must run before the first await below -- Nuxt's composable
+  // context (needed for auto-imports like useCookie) is only available
+  // synchronously; calling it after an await throws "composable called
+  // outside a Nuxt instance" here since this is a plain async function, not
+  // a Vue setup()/plugin/middleware.
+  //
+  // Best-effort: when the visitor is logged in as a Patron, submitPublicOrder
+  // (below) opportunistically links the order to their identity server-side
+  // (see menu.gtw's OrderController.callerPatronID) -- harmless to also send
+  // on the other, read-only public queries in this file, which just ignore it.
+  const patronToken = useCookie<string | null>(CookieKeys.PATRON_TOKEN).value;
+
   const devHeaders = await getDeviceHeaders();
-  return { Namespace: namespaceSlug, ...devHeaders };
+  const result: Record<string, string> = { Namespace: namespaceSlug, ...devHeaders };
+  if (patronToken) result.Authorization = `Bearer ${patronToken}`;
+  return result;
 }
 
 // Resolve the base URL fresh on every call rather than reusing the shared

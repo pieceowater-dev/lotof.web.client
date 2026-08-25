@@ -93,12 +93,15 @@ export function useAuth() {
     }
   }
 
-  function login() {
+  // redirectPath: where to land after a successful login, relative to the
+  // origin (e.g. '/hub'). Defaults to the bare origin, unchanged from
+  // before this param existed.
+  function login(redirectPath = '') {
     if (loginRedirecting.value) return;
     loginRedirecting.value = true;
     // Redirect to hub auth
     const base = getApiBasePath('hub');
-    const redirect = encodeURIComponent(window.location.origin);
+    const redirect = encodeURIComponent(window.location.origin + redirectPath);
     // Carry a deep link's attribution code (set by server/routes/l/[code].get.ts
     // as the `lead_ref` cookie) through the OAuth round-trip so a brand-new
     // signup can be attributed back to it -- see GoogleCallbackState.LeadSource.

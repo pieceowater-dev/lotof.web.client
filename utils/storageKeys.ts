@@ -8,6 +8,10 @@ export const CookieKeys = {
   MENU_TOKEN: 'menu-token',
   TASKS_TOKEN: 'tasks-token',
   GOODS_TOKEN: 'goods-token',
+  // Namespace-less Patron identity (see hub.gtw's PatronAuthService) --
+  // deliberately its own cookie, never mixed with TOKEN (the namespace-owning
+  // hub User session), matching backend's dedicated patron_token cookie.
+  PATRON_TOKEN: 'patron_token',
 } as const;
 export type CookieKey = (typeof CookieKeys)[keyof typeof CookieKeys];
 
@@ -28,6 +32,11 @@ export const LSKeys = {
   // logged-in visitor whose access token expired) can skip the attempt --
   // and its guaranteed 401 -- for a browser that has never had a session.
   HAS_SESSION: 'lota_has_session',
+  // Same idea as HAS_SESSION, but for the Patron identity (patron_token) --
+  // patron_refresh_token is httpOnly, so pages that want to opportunistically
+  // silent-refresh a Patron session (e.g. the Catalog) can skip the attempt
+  // (and its guaranteed 401) for a browser that never had a Patron session.
+  HAS_PATRON_SESSION: 'lota_has_patron_session',
 } as const;
 export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 

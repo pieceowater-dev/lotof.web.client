@@ -1,105 +1,78 @@
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { log, logError } from '@/utils/logger';
+import { logError } from '@/utils/logger';
 import { useRouter } from 'vue-router';
 import { ALL_APPS, type AppConfig } from '@/config/apps';
-import { hubUpdateProfile } from '@/api/hub/updateMyPhone';
-import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
-import { usePhoneGate } from '@/composables/usePhoneGate';
-import IntroSection from '@/components/IntroSection.vue';
-import Modal from '@/components/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
-import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
 // Composables
-const { user, token, isLoggedIn, initialized, justLoggedOut, fetchUser, login, logout } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
-const { hasPhone: phoneGateHasPhone } = usePhoneGate();
+const { user, isLoggedIn, initialized, justLoggedOut, fetchUser, login } = useAuth();
+const { selected: selectedNS } = useNamespace();
+const { set: setPreferredSpace } = usePreferredSpace();
 
 const router = useRouter();
 const route = useRoute();
 const toast = useToast();
-const colorMode = useColorMode();
-const isDarkMode = computed({
-  get: () => colorMode.preference === 'dark',
-  set: (val: boolean) => { colorMode.preference = val ? 'dark' : 'light'; }
+
+const { appInstalled, appRoutePath: sharedAppRoutePath, ensureAppInstallStatus } = useAppInstallStatus();
+
+// Both entry-point cards remember the visitor's choice (see AppHeader's
+// header-logo shortcut) and act as Google auth triggers where needed --
+// the Hub always requires a hub session; the Catalog never does.
+function handleGoToHub() {
+  setPreferredSpace('hub');
+  if (isLoggedIn.value) {
+    router.push('/hub');
+  } else {
+    login('/hub');
+  }
+}
+
+function handleGoToCatalog() {
+  setPreferredSpace('catalog');
+  router.push('/catalog');
+}
+
+const catalogFeatures = [
+  { key: 'businesses', icon: 'lucide:store', titleKey: 'app.catalogFeatureBusinessesTitle', descKey: 'app.catalogFeatureBusinessesDesc' },
+  { key: 'ratings', icon: 'lucide:star', titleKey: 'app.catalogFeatureRatingsTitle', descKey: 'app.catalogFeatureRatingsDesc' },
+  { key: 'services', icon: 'lucide:briefcase', titleKey: 'app.catalogFeatureServicesTitle', descKey: 'app.catalogFeatureServicesDesc' },
+  { key: 'more', icon: 'lucide:sparkles', titleKey: 'app.catalogFeatureMoreTitle', descKey: 'app.catalogFeatureMoreDesc' },
+] as const;
+
+// Plain (non-opacity-modified) Tailwind gradient utility classes render
+// fine in this app -- it's specifically the `/opacity` modifier on
+// gradient-stop classes that @nuxt/ui's regenerated color palette breaks
+// (see the removed inline-style workaround this used briefly). Going light
+// via genuinely light shades (50/100) sidesteps that landmine entirely.
+const catalogSlides = [
+  { key: 'businesses', icon: 'lucide:store', headlineKey: 'app.catalogSlideBusinessesTitle', descKey: 'app.catalogSlideBusinessesDesc', gradient: 'from-blue-50 to-indigo-100', iconColor: 'text-indigo-400', headlineColor: 'text-indigo-950', descColor: 'text-indigo-800', accentColor: 'rgba(129, 140, 248, 0.35)' },
+  { key: 'ratings', icon: 'lucide:star', headlineKey: 'app.catalogSlideRatingsTitle', descKey: 'app.catalogSlideRatingsDesc', gradient: 'from-amber-50 to-orange-100', iconColor: 'text-orange-400', headlineColor: 'text-amber-950', descColor: 'text-amber-800', accentColor: 'rgba(251, 146, 60, 0.35)' },
+  { key: 'services', icon: 'lucide:briefcase', headlineKey: 'app.catalogSlideServicesTitle', descKey: 'app.catalogSlideServicesDesc', gradient: 'from-rose-50 to-pink-100', iconColor: 'text-pink-400', headlineColor: 'text-rose-950', descColor: 'text-rose-800', accentColor: 'rgba(244, 114, 182, 0.35)' },
+  { key: 'more', icon: 'lucide:sparkles', headlineKey: 'app.catalogSlideMoreTitle', descKey: 'app.catalogSlideMoreDesc', gradient: 'from-fuchsia-50 to-purple-100', iconColor: 'text-purple-400', headlineColor: 'text-fuchsia-950', descColor: 'text-fuchsia-800', accentColor: 'rgba(192, 132, 252, 0.35)' },
+] as const;
+
+const activeCatalogSlide = ref(0);
+let catalogSlideTimer: ReturnType<typeof setInterval> | null = null;
+
+onMounted(() => {
+  if (!process.client) return;
+  catalogSlideTimer = setInterval(() => {
+    activeCatalogSlide.value = (activeCatalogSlide.value + 1) % catalogSlides.length;
+  }, 4500);
 });
 
-const isModalOpen = ref(false);
-const username = ref('');
-const email = ref('');
-const phone = ref('');
-const phoneLooksInvalid = computed(() => Boolean(phone.value.trim()) && !isPhoneInputValid(phone.value.trim()));
-const savingProfile = ref(false);
-
-// Forces the underlying native input's DOM value back in sync -- when a
-// stripped character (e.g. a letter) doesn't change the sanitized result vs.
-// the previous keystroke, the reactive `phone` ref sees no change and Vue
-// skips re-patching UInput's native element, leaving the raw character in
-// the DOM even though `phone` itself is clean.
-function onPhoneFieldInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const sanitized = sanitizePhoneInput(target.value);
-  if (target.value !== sanitized) target.value = sanitized;
-  phone.value = sanitized;
-}
-const isLoading = ref(true);
-const namespaceAccordionOpen = ref(true);
-const settingsAccordionOpen = ref(false);
-const { appInstalled, appRoutePath: sharedAppRoutePath, ensureAppInstallStatus } = useAppInstallStatus();
-const installingBundles = new Set<string>(); // prevent double-installs per app
-
-const DASHBOARD_ACCORDIONS_LS_KEY = 'dashboard_accordions_state_v1';
-
-function loadAccordionState() {
-  if (!process.client) return;
-  try {
-    const raw = localStorage.getItem(DASHBOARD_ACCORDIONS_LS_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw) as { namespaceOpen?: boolean; settingsOpen?: boolean };
-    if (typeof parsed.namespaceOpen === 'boolean') {
-      namespaceAccordionOpen.value = parsed.namespaceOpen;
-    }
-    if (typeof parsed.settingsOpen === 'boolean') {
-      settingsAccordionOpen.value = parsed.settingsOpen;
-    }
-  } catch {
-    // Keep defaults when localStorage is unavailable or malformed.
-  }
-}
-
-function persistAccordionState() {
-  if (!process.client) return;
-  try {
-    localStorage.setItem(
-      DASHBOARD_ACCORDIONS_LS_KEY,
-      JSON.stringify({
-        namespaceOpen: namespaceAccordionOpen.value,
-        settingsOpen: settingsAccordionOpen.value,
-      })
-    );
-  } catch {
-    // Ignore localStorage write errors.
-  }
-}
-
-function toggleNamespaceAccordion() {
-  namespaceAccordionOpen.value = !namespaceAccordionOpen.value;
-}
-
-function toggleSettingsAccordion() {
-  settingsAccordionOpen.value = !settingsAccordionOpen.value;
-}
+onBeforeUnmount(() => {
+  if (catalogSlideTimer) clearInterval(catalogSlideTimer);
+});
 
 onMounted(async () => {
-  loadAccordionState();
-
   // 1) Wait a tick for cookies to be available after OAuth redirect
   await nextTick();
 
@@ -133,15 +106,6 @@ onMounted(async () => {
     login();
     return;
   }
-
-  // 3) Normal init flow
-  if (user.value) {
-    username.value = user.value.username;
-    email.value = user.value.email;
-    phone.value = user.value.phone || '';
-  }
-  await refreshConsoleAccess();
-  isLoading.value = false;
 
   if (user.value) {
     // A deep link tagged a target app (see server/routes/l/[code].get.ts) --
@@ -178,16 +142,6 @@ onMounted(async () => {
     router.replace({ path: route.path, query: cleaned });
   }
 });
-
-watch(user, (u) => {
-  if (u) {
-    username.value = u.username;
-    email.value = u.email;
-    phone.value = u.phone || '';
-  }
-});
-
-const handleEditPeople = () => router.push('/people');
 
 async function handleAppClick(appAddress: string) {
   if (!isLoggedIn.value) return login();
@@ -261,45 +215,7 @@ async function handleGetApp(app: AppConfig) {
   });
 }
 
-const handleSaveProfile = async () => {
-  const token = useCookie<string | null>(CookieKeys.TOKEN).value;
-  if (!token || !user.value) return;
-
-  const trimmedPhone = phone.value.trim();
-  if (trimmedPhone && !isPhoneInputValid(trimmedPhone)) {
-    toast.add({
-      title: t('app.error') || 'Ошибка',
-      description: t('admin.phoneInvalid') || 'Введите корректный номер телефона',
-      color: 'red',
-    });
-    return;
-  }
-
-  savingProfile.value = true;
-  try {
-    const updatedUser = await hubUpdateProfile(token, {
-      id: user.value.id,
-      username: username.value,
-      phone: trimmedPhone,
-    });
-    isModalOpen.value = false;
-
-    if (updatedUser?.username) username.value = updatedUser.username;
-    if (updatedUser) phone.value = updatedUser.phone || '';
-    await fetchUser(true);
-  } catch (error) {
-    logError('[profile] save failed', error);
-    toast.add({
-      title: t('app.error') || 'Ошибка',
-      description: t('app.profileSaveFailed') || 'Не удалось сохранить профиль',
-      color: 'red',
-    });
-  } finally {
-    savingProfile.value = false;
-  }
-};
-
-const { t, locale, setLocale } = useI18n();
+const { t, locale } = useI18n();
 const config = useRuntimeConfig();
 const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
 
@@ -322,17 +238,8 @@ useHead({
   titleTemplate: (s) => s ?? 'lota',
 });
 
-const greeting = computed(() => {
-  const hours = new Date().getHours();
-  if (hours >= 0 && hours < 4) return t('app.greetingNight');
-  if (hours < 12) return t('app.greetingMorning');
-  if (hours < 18) return t('app.greetingDay');
-  return t('app.greetingEvening');
-});
-
 const activeApps = computed(() => ALL_APPS.filter(a => appInstalled[a.bundle]));
 const possibleApps = computed(() => ALL_APPS.filter(a => !appInstalled[a.bundle] && a.canAdd));
-const comingSoonApps = computed(() => ALL_APPS.filter(a => !a.canAdd));
 
 function appRoutePath(app: AppConfig): string | null {
   const ns = selectedNS.value;
@@ -423,52 +330,9 @@ async function checkInstalledForVisibleApps() {
   await ensureAppInstallStatus(selectedNS.value);
 }
 
-function handleSwitchNamespace(ns: string) {
-  setNamespace(ns);
-  // Note: checkInstalledForVisibleApps() is called automatically by the watch below
-}
-
 // Re-check when selected namespace changes outside of dropdown (e.g., deep link)
 watch(() => selectedNS.value, () => {
   checkInstalledForVisibleApps();
-});
-
-watch([namespaceAccordionOpen, settingsAccordionOpen], () => {
-  persistAccordionState();
-});
-
-function handleLogout() {
-  logout();
-  isModalOpen.value = false;
-}
-
-// Fixed order everywhere (see config/apps.ts) -- not grouped by install
-// status, so the header nav and this dashboard grid always agree, and an
-// app's position doesn't shuffle depending on what's installed.
-const dashboardApps = computed(() => ALL_APPS);
-
-const { canSeeConsole: canSeeConsoleCard, refreshConsoleAccess } = useConsoleAccess();
-
-function openConsole() {
-  router.push('/console');
-}
-
-watch(
-  () => [isLoggedIn.value, user.value?.id, token.value],
-  () => {
-    refreshConsoleAccess();
-  }
-);
-
-const languageOptions = [
-  { value: 'en', label: 'English', flag: '🇺🇸' },
-  { value: 'ru', label: 'Русский', flag: '🇷🇺' },
-  { value: 'kk', label: 'Қазақша', flag: '🇰🇿' },
-] as const;
-
-const currentLanguage = computed(() => {
-  const current = String(locale.value || 'en');
-  return languageOptions.find((item) => item.value === current) || languageOptions[0];
 });
 
 type ProcessedMarkdownPost = HomeFeedPost & {
@@ -835,20 +699,6 @@ function handleOpenPost(post: HomeFeedPost) {
   router.push(post.href);
 }
 
-function setLanguage(lang: 'en' | 'ru' | 'kk') {
-  setLocale(lang);
-}
-
-function handleDashboardApp(app: AppConfig) {
-  if (appInstalled[app.bundle]) {
-    handleAppClick(app.address);
-    return;
-  }
-  if (app.canAdd) {
-    handleGetApp(app);
-  }
-}
-
 onMounted(() => {
   if (!process.client) return;
   mainScrollContainer.value = document.querySelector<HTMLElement>('main.main-scroll');
@@ -892,269 +742,140 @@ watch([articlesSearch, selectedArticleTag], () => {
     <div class="pb-safe-or-4">
       <ClientOnly>
         <template #fallback>
-          <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
+          <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[50vh]">
             <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
             <USkeleton class="h-4 w-[250px]" />
             <USkeleton class="h-4 w-[200px]" />
           </div>
         </template>
 
-        <div v-if="!initialized" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
+        <div v-if="!initialized" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[50vh]">
           <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
           <USkeleton class="h-4 w-[250px]" />
           <USkeleton class="h-4 w-[200px]" />
         </div>
-
-        <IntroSection v-else-if="!isLoggedIn" :on-action="login" />
       </ClientOnly>
 
-      <div v-if="initialized && isLoggedIn" class="max-w-7xl mx-auto mt-4 md:mt-6 mb-16 px-3 md:px-4">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-6">
-          <div class="lg:col-span-4 rounded-3xl p-6 md:p-7 bg-gradient-to-br from-blue-50 to-blue-100/80 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-            <div class="flex items-start justify-between gap-3">
-              <div class="w-20 h-20 rounded-full bg-white/80 dark:bg-gray-700 flex items-center justify-center text-3xl font-semibold text-gray-900 dark:text-gray-100 shadow-sm">
-                {{ (username || '?').charAt(0).toUpperCase() }}
-              </div>
-              <UButton
-                icon="lucide:door-open"
-                color="gray"
-                variant="ghost"
-                size="xs"
-                class="mt-1"
-                @click="handleLogout"
-              >
-                {{ t('app.logout') || 'Logout' }}
-              </UButton>
-            </div>
-            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ greeting }}</p>
-            <h2 class="mt-1 text-4xl font-semibold tracking-tight text-gray-900 dark:text-gray-100">{{ username }}</h2>
-            <p class="mt-2 text-lg text-gray-600 dark:text-gray-300 break-all">{{ email }}</p>
-
-            <div class="mt-6 flex flex-wrap gap-2">
-              <button
-                class="px-3 py-1.5 rounded-md bg-gradient-to-r from-blue-500 to-emerald-500 text-white font-medium text-sm hover:from-blue-600 hover:to-emerald-600 transition-all flex items-center gap-1.5 shadow-sm hover:shadow-md"
-                @click="handleEditPeople"
-              >
-                <UIcon name="i-lucide-user-round-check" class="w-4 h-4" />
-                {{ t('app.myPeople') }}
-              </button>
-              <UButton variant="soft" size="sm" class="relative" @click="isModalOpen = true">
-                {{ t('app.configureProfile') }}
-                <span v-if="!phoneGateHasPhone" class="absolute -right-1 -top-1 flex h-3 w-3">
-                  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-                  <span class="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
-                </span>
-              </UButton>
-            </div>
-          </div>
-
-          <div class="lg:col-span-8 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 md:gap-4">
-              <button
-                v-if="canSeeConsoleCard"
-                class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
-                @click="openConsole"
-              >
-                <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <UIcon name="lucide:terminal-square" class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]" />
+      <!-- Auto-rotating carousel: each slide owns its own light gradient.
+           No mode="out-in" -- old and new slides crossfade simultaneously
+           (default Transition behavior) so there's never an instant with
+           neither mounted, which is what flashed the page's white
+           background through earlier. A big decorative icon deliberately
+           bleeds past the card edge, clipped by the frame's
+           overflow-hidden. -->
+      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-6 md:pt-8 pb-12 md:pb-16">
+        <div class="relative w-full h-[460px] sm:h-[460px] rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800">
+          <Transition name="catalog-fade">
+            <div
+              :key="activeCatalogSlide"
+              :class="['absolute inset-0 flex flex-col px-8 md:px-14 py-16 pt-8 bg-gradient-to-br', catalogSlides[activeCatalogSlide].gradient]"
+            >
+              <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                  <picture>
+                    <source srcset="/assets/logo.webp" type="image/webp">
+                    <img src="/assets/logo.png" alt="Logo" width="18" height="18" class="h-[18px] w-[18px]">
+                  </picture>
                 </div>
-                <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">Console</p>
-                <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
-                  {{ t('app.open') || 'Open' }}
-                </p>
-              </button>
+                <span class="text-sm font-semibold text-gray-700">{{ t('app.title') }}</span>
+              </div>
 
-              <template v-for="app in dashboardApps" :key="app.bundle">
-                <NuxtLink
-                  v-if="appInstalled[app.bundle] && appRoutePath(app)"
-                  :to="appRoutePath(app) || '/'"
-                  class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
-                >
-                  <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                    <UIcon
-                      :name="app.icon"
-                      class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
-                    />
-                  </div>
-                  <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
-                  <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
-                    {{ t('app.open') || 'Open' }}
+              <div class="relative flex-1 flex items-center">
+                <div class="relative z-10 max-w-sm">
+                  <h2 :class="['text-2xl md:text-3xl font-bold leading-snug', catalogSlides[activeCatalogSlide].headlineColor]">
+                    {{ t(catalogSlides[activeCatalogSlide].headlineKey) }}
+                  </h2>
+                  <p :class="['mt-3 text-lg leading-relaxed', catalogSlides[activeCatalogSlide].descColor]">
+                    {{ t(catalogSlides[activeCatalogSlide].descKey) }}
                   </p>
-                </NuxtLink>
-
-                <button
-                  v-else
-                  :disabled="!app.canAdd"
-                  class="group rounded-2xl p-3 text-center transition-all disabled:opacity-45 disabled:cursor-not-allowed bg-white/75 dark:bg-gray-800 hover:shadow-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
-                  @click="handleDashboardApp(app)"
-                >
-                  <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                    <UIcon :name="app.icon" class="w-8 h-8" />
-                  </div>
-                  <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
-                  <p
-                    class="mt-1 text-[11px] leading-4"
-                    :class="app.canAdd ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500'"
-                  >
-                    {{ app.canAdd ? (t('app.getApp') || 'Get') : (t('app.comingSoon') || 'Soon') }}
-                  </p>
-                </button>
-              </template>
-
-              <!-- Storefront: only once Menu is actually connected for this
-                   namespace -- an unconnected tenant has nothing to show at
-                   /to/{ns}/menu yet. -->
-              <NuxtLink
-                v-if="appInstalled['pieceowater.menu']"
-                :to="`/to/${selectedNS}/menu`"
-                target="_blank"
-                class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
-              >
-                <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <UIcon name="lucide:store" class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]" />
                 </div>
-                <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t('menu.storefront') || 'Storefront' }}</p>
-                <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
-                  {{ t('app.open') || 'Open' }}
-                </p>
-              </NuxtLink>
-            </div>
-          </div>
-        </div>
 
-        <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-          <button
-            type="button"
-            class="w-full flex items-center justify-between gap-3 text-left"
-            :aria-expanded="namespaceAccordionOpen"
-            @click="toggleNamespaceAccordion"
-          >
-            <div class="flex min-w-0 items-center gap-3">
-              <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
-                <UIcon name="lucide:building-2" class="w-5 h-5" />
-              </div>
-              <div class="min-w-0">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-600/80 dark:text-blue-400/80">
-                  {{ t('app.currentNamespace') || 'Namespace' }}
-                </p>
-                <h3 class="truncate text-base md:text-lg font-bold text-gray-900 dark:text-gray-100">
-                  {{ (selectedNS && (titleBySlug(selectedNS) || selectedNS)) || (t('app.selectNamespace') || 'Select active workspace') }}
-                </h3>
-              </div>
-            </div>
-            <UIcon
-              name="lucide:chevron-down"
-              class="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-gray-400 transition-transform"
-              :class="namespaceAccordionOpen ? 'rotate-180' : ''"
-            />
-          </button>
+                <!-- Accent glow behind the icon, in the slide's own hue, so
+                     the icon doesn't just float on the flat card gradient. -->
+                <div
+                  class="absolute -right-16 -bottom-16 sm:-right-10 sm:-bottom-10 md:-right-14 md:-bottom-14 w-96 h-96 sm:w-[34rem] sm:h-[34rem] md:w-[42rem] md:h-[42rem] rounded-full pointer-events-none"
+                  :style="{ background: `radial-gradient(circle, ${catalogSlides[activeCatalogSlide].accentColor} 0%, transparent 80%)` }"
+                />
 
-          <div v-show="namespaceAccordionOpen" class="mt-4">
-            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-              <button
-                v-for="slug in allNamespaces"
-                :key="slug"
-                type="button"
-                class="text-left rounded-2xl p-4 border transition-all duration-200"
-                :class="selectedNS === slug
-                  ? 'bg-white border-2 border-blue-500 dark:bg-blue-900/30 dark:border-blue-500 shadow-sm'
-                  : 'bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-700'"
-                @click="handleSwitchNamespace(slug)"
-              >
-                <div class="flex items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <p class="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
-                      {{ titleBySlug(slug) || slug }}
-                    </p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{{ slug }}</p>
-                  </div>
-                  <UIcon
-                    v-if="selectedNS === slug"
-                    name="lucide:check-circle-2"
-                    class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
-                  />
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-          <button
-            type="button"
-            class="w-full flex items-center justify-between gap-3 text-left"
-            :aria-expanded="settingsAccordionOpen"
-            @click="toggleSettingsAccordion"
-          >
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
-                <UIcon name="lucide:sliders-horizontal" class="w-5 h-5" />
+                <UIcon
+                  :name="catalogSlides[activeCatalogSlide].icon"
+                  :class="['absolute -right-10 -bottom-14 sm:-right-20 sm:-bottom-32 md:-right-28 md:-bottom-36 w-56 h-56 sm:w-[23rem] sm:h-[23rem] md:w-[29rem] md:h-[29rem] pointer-events-none opacity-60', catalogSlides[activeCatalogSlide].iconColor]"
+                />
               </div>
-              <div>
-                <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {{ t('app.preferences') || 'Preferences' }}
-                </h3>
-                <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
-                  {{ t('app.preferencesSubtitle') || 'Language, theme & display' }}
-                </p>
-              </div>
-            </div>
-            <UIcon
-              name="lucide:chevron-down"
-              class="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform"
-              :class="settingsAccordionOpen ? 'rotate-180' : ''"
-            />
-          </button>
 
-          <div v-show="settingsAccordionOpen" class="mt-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               <button
                 type="button"
-                class="rounded-2xl p-5 border bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700 text-left transition-all duration-200 hover:border-blue-200 dark:hover:border-blue-700"
-                @click="isDarkMode = !isDarkMode"
+                class="relative z-10 self-start -mt-5 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-600 transition-all"
+                @click="handleGoToCatalog"
               >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ t('app.theme') || 'Theme' }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {{ isDarkMode ? (t('app.dark') || 'Dark') : (t('app.light') || 'Light') }}
-                    </p>
-                  </div>
-                  <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                    <UIcon :name="isDarkMode ? 'lucide:moon-star' : 'lucide:sun-medium'" class="w-8 h-8" />
-                  </div>
-                </div>
+                {{ t('app.goToCatalogCta') || 'Перейти в каталог' }}
+                <UIcon name="lucide:arrow-right" class="w-4 h-4" />
               </button>
-
-              <div class="rounded-2xl p-5 border bg-white/80 border-white/70 dark:bg-gray-800/70 dark:border-gray-700">
-                <div class="flex items-start justify-between gap-3 mb-4">
-                  <div>
-                    <p class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ t('app.language') }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ currentLanguage.label }}</p>
-                  </div>
-                </div>
-
-                <div class="grid grid-cols-3 gap-2">
-                  <button
-                    v-for="lang in languageOptions"
-                    :key="lang.value"
-                    type="button"
-                    class="h-11 rounded-xl border text-sm font-medium transition-all"
-                    :class="locale === lang.value
-                      ? 'bg-blue-50 border-blue-300 text-blue-700 font-semibold dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-300'
-                      : 'bg-white border-gray-200 text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 hover:border-blue-300 dark:hover:border-blue-700'"
-                    @click="setLanguage(lang.value)"
-                  >
-                    <span class="mr-1.5">{{ lang.flag }}</span>{{ lang.label }}
-                  </button>
-                </div>
-              </div>
             </div>
+          </Transition>
+        </div>
+
+        <div class="mt-4 flex items-center gap-1.5">
+          <button
+            v-for="(slide, i) in catalogSlides"
+            :key="slide.key"
+            type="button"
+            class="h-1.5 rounded-full transition-all"
+            :class="i === activeCatalogSlide ? 'w-6 bg-emerald-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'"
+            :aria-label="t(slide.headlineKey)"
+            @click="activeCatalogSlide = i"
+          />
+        </div>
+      </div>
+
+      <!-- Catalog, explained -- and a second chance to click through. Same
+           width/left-aligned rhythm as the business services section below,
+           not a separate centered block. A bottom border + matching
+           vertical padding is the section divider -- no divider of its own
+           otherwise, this ran straight into "Business services" below it. -->
+      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 py-10 md:py-14 border-b border-gray-100 dark:border-gray-800">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+            <div
+              v-for="feature in catalogFeatures"
+              :key="feature.key"
+              class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 sm:p-7"
+            >
+              <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-4">
+                <UIcon :name="feature.icon" class="w-8 h-8" />
+              </div>
+              <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-snug">{{ t(feature.titleKey) }}</p>
+              <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t(feature.descKey) }}</p>
+            </div>
+          </div>
+
+          <div>
+            <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-5">
+              <UIcon name="lucide:store" class="w-7 h-7" />
+            </div>
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{{ t('app.catalogCardTitle') || 'Каталог' }}</h2>
+            <p class="mt-3 text-base text-gray-600 dark:text-gray-300 max-w-md">
+              {{ t('app.catalogExplainer') || 'Каталог — удобный способ находить и выбирать бизнесы на lota: смотрите публичные витрины, меню и цены, оформляйте заказы и записывайтесь на услуги — без звонков и лишних действий.' }}
+            </p>
+            <button
+              type="button"
+              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
+              @click="handleGoToCatalog"
+            >
+              {{ t('app.open') || 'Открыть' }}
+              <UIcon name="lucide:arrow-right" class="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      <div v-if="initialized && !isLoggedIn" class="max-w-7xl mx-auto mb-20 px-2 md:px-4 space-y-6 md:space-y-10">
+      <!-- Business services -->
+      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-10 md:pt-14 pb-10 md:pb-14 space-y-6 md:space-y-10 border-b border-gray-100 dark:border-gray-800">
+        <div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.businessServicesHeading') || 'Сервисы lota для бизнеса' }}</h3>
+          <p class="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">{{ t('app.businessServicesHint') || 'Приложения для управления бизнесом на платформе lota' }}</p>
+        </div>
+
         <div v-if="activeApps.length">
           <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
@@ -1165,18 +886,9 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
 
         <div v-if="possibleApps.length">
-          <h3 class="text-xl font-semibold mb-4">{{ t('app.availableHead') }}</h3>
+          <h3 class="text-lg font-medium mb-4">{{ t('app.availableHead') }}</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
             <div v-for="app in possibleApps" :key="app.bundle" class="h-full">
-              <AppCard v-bind="toCard(app)" />
-            </div>
-          </div>
-        </div>
-
-        <div v-if="comingSoonApps.length">
-          <h3 class="text-xl font-semibold mb-4">{{ t('app.comingSoonHead') }}</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
-            <div v-for="app in comingSoonApps" :key="app.bundle" class="h-full">
               <AppCard v-bind="toCard(app)" />
             </div>
           </div>
@@ -1303,57 +1015,6 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
       </div>
 
-      <Modal
-        v-model="isModalOpen"
-        :disable-autofocus="true"
-      >
-        <template #header>
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white/80 text-lg font-semibold text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100">
-              {{ (username || '?').charAt(0).toUpperCase() }}
-            </div>
-            <span class="font-semibold">{{ t('app.profileEditing') }}</span>
-          </div>
-        </template>
-
-        <div class="space-y-5">
-          <UFormGroup :label="t('app.username') || 'Имя пользователя'">
-            <UInput v-model="username" icon="lucide:user" size="lg" />
-          </UFormGroup>
-
-          <UFormGroup :label="t('app.email') || 'Email'">
-            <UInput v-model="email" disabled type="email" icon="lucide:mail" size="lg" />
-          </UFormGroup>
-
-          <UFormGroup
-            :label="t('admin.phone') || 'Телефон'"
-            :error="phoneLooksInvalid ? (t('admin.phoneInvalid') || 'Введите корректный номер телефона') : undefined"
-          >
-            <UInput
-              :model-value="phone"
-              type="tel"
-              autocomplete="tel"
-              icon="lucide:phone"
-              size="lg"
-              :color="phoneLooksInvalid ? 'red' : undefined"
-              :placeholder="t('admin.phonePlaceholder') || '+7 700 000 00 00'"
-              @input="onPhoneFieldInput"
-            />
-            <p v-if="!phoneLooksInvalid" class="mt-1.5 flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500">
-              <Icon name="lucide:shield-check" class="h-3.5 w-3.5" />
-              {{ t('admin.phonePrivacyHint') || 'Мы не передаём ваш номер третьим лицам' }}
-            </p>
-          </UFormGroup>
-        </div>
-
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="soft" :label="t('app.cancel')" @click="isModalOpen = false" />
-            <UButton color="primary" :loading="savingProfile" :disabled="phoneLooksInvalid" :label="t('app.save')" @click="handleSaveProfile" />
-          </div>
-        </template>
-      </Modal>
-
     </div>
 
     <div class="m-4 mt-auto">
@@ -1381,4 +1042,13 @@ watch([articlesSearch, selectedArticleTag], () => {
   max-height: 600px;
 }
 
+.catalog-fade-enter-active,
+.catalog-fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.catalog-fade-enter-from,
+.catalog-fade-leave-to {
+  opacity: 0;
+}
 </style>

@@ -13,7 +13,7 @@
     ]"
   >
     <div
-      class="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(70%_70%_at_100%_0%,rgba(96,165,250,0.16)_0%,rgba(16,185,129,0.12)_42%,rgba(255,255,255,0)_78%)] dark:bg-[radial-gradient(70%_70%_at_100%_0%,rgba(59,130,246,0.16)_0%,rgba(16,185,129,0.10)_42%,rgba(31,41,55,0)_78%)]"
+      class="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(70%_70%_at_100%_0%,rgba(96,165,250,0.10)_0%,rgba(16,185,129,0.07)_42%,rgba(255,255,255,0)_78%)] dark:bg-[radial-gradient(70%_70%_at_100%_0%,rgba(59,130,246,0.10)_0%,rgba(16,185,129,0.06)_42%,rgba(31,41,55,0)_78%)]"
     />
 
     <div class="relative flex h-full flex-col gap-5">
