@@ -93,10 +93,10 @@ const promoBanners = [
     icon: 'lucide:smartphone',
     title: 'Без установки приложений',
     subtitle: 'Открывайте витрину заведения прямо в браузере',
-    gradient: 'from-emerald-100 to-teal-50',
-    iconColor: 'text-emerald-500',
-    titleColor: 'text-emerald-950',
-    subtitleColor: 'text-emerald-800',
+    gradient: 'from-rose-100 to-pink-50',
+    iconColor: 'text-rose-500',
+    titleColor: 'text-rose-950',
+    subtitleColor: 'text-rose-800',
   },
 ] as const;
 
