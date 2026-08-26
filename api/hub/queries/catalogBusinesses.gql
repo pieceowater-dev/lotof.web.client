@@ -1,13 +1,21 @@
-query CatalogBusinesses($categoryId: ID, $search: String, $page: Int, $length: FilterPaginationLengthEnum) {
+query CatalogBusinesses(
+  $categoryId: ID
+  $namespaceSlug: String
+  $search: String
+  $page: Int
+  $length: FilterPaginationLengthEnum
+) {
   catalogBusinesses(
     filter: {
       categoryId: $categoryId
+      namespaceSlug: $namespaceSlug
       data: { search: $search, pagination: { page: $page, length: $length } }
     }
   ) {
     rows {
       id
       namespaceSlug
+      sourceBranchId
       categoryId
       name
       logoUrl

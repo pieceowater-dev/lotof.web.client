@@ -16,6 +16,8 @@ import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHour
 import { isCategoryAvailableNow } from '@/utils/categoryAvailability';
 import { buildTableTag, formatTableNumber } from '@/utils/tableTag';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
+import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
+import { getCatalogBusinesses } from '@/api/hub/catalog';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -228,6 +230,22 @@ onMounted(() => {
   if (back === '/catalog' || back === '/stores') backHref.value = back;
 });
 
+// Resolves this exact branch's CatalogBusiness id (lotof.hub.msvc.core's
+// aggregator, same one /catalog reads from) for the reviews section below.
+// namespaceSlug alone is ambiguous for a multi-branch tenant, hence the
+// sourceBranchId match against the currently active Branch -- see hub.gtw's
+// CatalogBusiness.sourceBranchId doc comment.
+const catalogBusinessId = ref<string | null>(null);
+watch(activeBranch, async (branch) => {
+  if (!branch) return;
+  try {
+    const { rows } = await getCatalogBusinesses({ namespaceSlug: nsSlug.value });
+    catalogBusinessId.value = rows.find((b) => b.sourceBranchId === branch.id)?.id || rows[0]?.id || null;
+  } catch (e) {
+    logError('[menu/storefront] failed to resolve catalog business id', e);
+  }
+}, { immediate: true });
+
 // Brand-level contact info isn't its own field — the primary (or first)
 // branch's phone stands in for "call the business", since that's the number
 // that's actually staffed, and social links live on brand settings already.
@@ -258,25 +276,29 @@ const { isOwnerOrManager } = useMenuStaffRole();
 // logged-out state, same as checkStaffAccess() below.
 const { me: patronMe, token: patronToken, isLoggedIn: patronLoggedIn, fetchMe: fetchPatronMe, login: patronLogin, logout: patronLogout } = usePatronAuth();
 
-// Order history for the logged-in Patron at this storefront -- fetched
-// lazily on first expand rather than in onMounted, since most visitors
-// never open it.
+// Order history for the logged-in Patron at this storefront -- shown as a
+// plain list under the menu search bar (see template), not behind the old
+// profile-icon dropdown (removed: redundant with the "My order" sheet, and
+// rendered badly). Loaded once the Patron identity resolves, not lazily on
+// an open/close toggle that no longer exists.
 const patronOrders = ref<import('@/api/menu/public/patron').PatronOrder[]>([]);
-const patronOrdersOpen = ref(false);
 const patronOrdersLoading = ref(false);
-async function togglePatronOrders() {
-  patronOrdersOpen.value = !patronOrdersOpen.value;
-  if (!patronOrdersOpen.value || !patronToken.value || patronOrders.value.length) return;
+async function loadPatronOrders() {
+  if (!patronToken.value) return;
   patronOrdersLoading.value = true;
   try {
     const { getPatronOrders } = await import('@/api/menu/public/patron');
     patronOrders.value = await getPatronOrders(patronToken.value, nsSlug.value);
   } catch (e) {
-    logError('[menu/storefront] togglePatronOrders failed', e);
+    logError('[menu/storefront] loadPatronOrders failed', e);
   } finally {
     patronOrdersLoading.value = false;
   }
 }
+watch(patronLoggedIn, (loggedIn) => {
+  if (loggedIn) loadPatronOrders();
+  else patronOrders.value = [];
+}, { immediate: true });
 
 async function checkStaffAccess() {
   try {
@@ -972,40 +994,6 @@ useHead(() => {
             <Icon v-else name="lucide:store" class="w-8 h-8 text-gray-300" />
           </div>
           <div class="min-w-0 flex-1 pt-1">
-            <!-- Patron identity icon: only shown once logged in (see
-                 hub.gtw's PatronAuthService) -- the login entry point itself
-                 lives lower, next to the existing "My order" block, not up
-                 here in the brand header. -->
-            <div v-if="patronLoggedIn" class="float-right ml-2 relative">
-              <button
-                type="button"
-                class="w-8 h-8 rounded-full flex items-center justify-center bg-white/15 hover:bg-white/25 transition-colors"
-                :style="{ color: onPrimaryText }"
-                :title="patronMe?.name || patronMe?.email || ''"
-                @click="togglePatronOrders"
-              >
-                <Icon name="lucide:user-round" class="w-4 h-4" />
-              </button>
-
-              <div v-if="patronOrdersOpen" class="absolute top-full right-0 mt-1.5 w-64 max-h-64 overflow-y-auto rounded-xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 p-3 z-30">
-                <div class="flex items-center justify-between mb-2">
-                  <span class="text-xs font-semibold text-gray-900 dark:text-white truncate">{{ patronMe?.name || patronMe?.email }}</span>
-                  <button type="button" class="text-[11px] text-gray-400 dark:text-gray-500 hover:underline flex-shrink-0 ml-2" @click="patronLogout(); patronOrdersOpen = false">
-                    {{ t('menu.patronLogout') || 'Log out' }}
-                  </button>
-                </div>
-                <p v-if="patronOrdersLoading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Loading…' }}</p>
-                <p v-else-if="!patronOrders.length" class="text-xs text-gray-400">{{ t('menu.patronNoOrders') || 'No orders here yet' }}</p>
-                <div v-else class="space-y-1.5">
-                  <div v-for="o in patronOrders" :key="o.id" class="flex items-center justify-between text-xs rounded-lg bg-gray-50 dark:bg-gray-800/60 px-2 py-1.5">
-                    <span class="font-medium text-gray-900 dark:text-white">№{{ o.number }}</span>
-                    <span class="text-gray-400">{{ o.status }}</span>
-                    <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
               {{ data.storefront.brandSettings?.name || nsSlug }}
             </h1>
@@ -1202,6 +1190,36 @@ useHead(() => {
           </div>
         </div>
 
+        <!-- Patron order history: plain list of links, not the removed
+             profile-icon dropdown (redundant with the "My order" sheet
+             above, and rendered badly). Each link reuses orderStatusHref --
+             the exact same "/to/ns/menu/YYMMDD-NNN-PHONEDIGITS" key the
+             checkout flow already builds, landing on the existing
+             pages/to/[namespace]/menu/[orderKey].vue tracking page. -->
+        <div v-if="patronLoggedIn && !isSearching && (patronOrders.length || patronOrdersLoading)" class="max-w-3xl mx-auto px-4 pt-4">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrdersHeading') || 'Мои заказы' }}</h2>
+            <button type="button" class="text-xs text-gray-400 dark:text-gray-500 hover:underline" @click="patronLogout()">
+              {{ t('menu.patronLogout') || 'Log out' }}
+            </button>
+          </div>
+          <p v-if="patronOrdersLoading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Loading…' }}</p>
+          <div v-else class="flex flex-col gap-1.5">
+            <a
+              v-for="o in patronOrders"
+              :key="o.id"
+              :href="orderStatusHref(smartOrderNumber(o), o.phone)"
+              target="_blank"
+              rel="noopener"
+              class="flex items-center justify-between text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3 py-2 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+            >
+              <span class="font-mono font-medium text-gray-900 dark:text-white">{{ smartOrderNumber(o) }}</span>
+              <span class="text-gray-400">{{ o.status }}</span>
+              <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
+            </a>
+          </div>
+        </div>
+
         <!-- Search results -->
         <div v-if="isSearching" class="max-w-3xl mx-auto px-4 py-4 pb-2">
           <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">
@@ -1355,6 +1373,14 @@ useHead(() => {
           </span>
           <Icon name="lucide:chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0" />
         </button>
+      </div>
+
+      <!-- Reviews: read + leave one for this exact branch (resolved via
+           catalogBusinessId below), same catalog aggregator /catalog reads
+           from. Posting requires a Patron identity -- ReviewForm routes
+           through the normal Google login when logged out. -->
+      <div class="max-w-3xl mx-auto px-4 pt-2 pb-4">
+        <ReviewForm :business-id="catalogBusinessId" />
       </div>
 
       <!-- Footer: company/contact info instead of a bare spacer. -->

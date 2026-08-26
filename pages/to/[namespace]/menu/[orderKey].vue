@@ -14,6 +14,8 @@ import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
 import { parseTableTag } from '@/utils/tableTag';
 import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref } from '@/utils/phoneLinks';
+import { getCatalogBusinesses } from '@/api/hub/catalog';
+import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
 
 definePageMeta({ layout: false });
 
@@ -174,6 +176,21 @@ onBeforeUnmount(() => {
   if (pollTimer) clearInterval(pollTimer);
 });
 
+// Review prompt: only once the order is actually done -- resolves the same
+// CatalogBusiness id the storefront's own review form uses (see
+// pages/to/[namespace]/menu/index.vue), matched by this order's branchId
+// rather than an activeBranch selection (this page has no branch picker).
+const catalogBusinessId = ref<string | null>(null);
+watch(order, async (o) => {
+  if (!o || o.status !== 'COMPLETED' || !o.branchId) return;
+  try {
+    const { rows } = await getCatalogBusinesses({ namespaceSlug: nsSlug.value });
+    catalogBusinessId.value = rows.find((b) => b.sourceBranchId === o.branchId)?.id || rows[0]?.id || null;
+  } catch (e) {
+    logError('[order-status] failed to resolve catalog business id', e);
+  }
+});
+
 useHead(() => ({
   title: order.value ? `${t('menu.yourOrder') || 'Your order'} ${smartOrderNumber(order.value)}` : (brand.value?.name || 'Order status'),
 }));
@@ -312,6 +329,10 @@ useHead(() => ({
           </div>
         </div>
       </template>
+
+      <div v-if="order?.status === 'COMPLETED' && catalogBusinessId" class="mt-6">
+        <ReviewForm :business-id="catalogBusinessId" />
+      </div>
 
       <!-- Contact us: shown regardless of whether the order was found —
            most useful exactly when the lookup fails and someone needs a

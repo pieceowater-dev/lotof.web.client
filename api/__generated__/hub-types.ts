@@ -51,6 +51,7 @@ export type CatalogBusiness = {
   logoUrl?: Maybe<Scalars["String"]["output"]>;
   name: Scalars["String"]["output"];
   namespaceSlug: Scalars["String"]["output"];
+  sourceBranchId: Scalars["String"]["output"];
 };
 
 export type CatalogBusinessFilter = {
@@ -709,6 +710,7 @@ export type NamespacesQuery = {
 
 export type CatalogBusinessesQueryVariables = Exact<{
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  namespaceSlug?: InputMaybe<Scalars["String"]["input"]>;
   search?: InputMaybe<Scalars["String"]["input"]>;
   page?: InputMaybe<Scalars["Int"]["input"]>;
   length?: InputMaybe<FilterPaginationLengthEnum>;
@@ -722,6 +724,7 @@ export type CatalogBusinessesQuery = {
       __typename?: "CatalogBusiness";
       id: string;
       namespaceSlug: string;
+      sourceBranchId: string;
       categoryId?: string | null;
       name: string;
       logoUrl?: string | null;
@@ -1410,6 +1413,14 @@ export const CatalogBusinessesDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "namespaceSlug" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "search" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
@@ -1450,6 +1461,14 @@ export const CatalogBusinessesDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "categoryId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "namespaceSlug" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "namespaceSlug" },
                       },
                     },
                     {
@@ -1511,6 +1530,10 @@ export const CatalogBusinessesDocument = {
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "namespaceSlug" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "sourceBranchId" },
                       },
                       {
                         kind: "Field",

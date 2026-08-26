@@ -39,6 +39,7 @@ export interface PatronOrder {
   status: string;
   totalAmount: number;
   createdAt: string;
+  phone: string;
 }
 
 const PatronOrdersDocument = /* GraphQL */ `
@@ -50,6 +51,7 @@ const PatronOrdersDocument = /* GraphQL */ `
         status
         totalAmount
         createdAt
+        phone
       }
     }
   }
