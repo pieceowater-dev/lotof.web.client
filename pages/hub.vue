@@ -246,6 +246,7 @@ const greeting = computed(() => {
 function handleLogout() {
   logout();
   isModalOpen.value = false;
+  router.push('/');
 }
 
 const dashboardApps = computed(() => ALL_APPS);
