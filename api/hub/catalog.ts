@@ -3,12 +3,14 @@ import { hubClient } from '../clients';
 import { getApiBaseUrl } from '@/utils/api-base';
 import {
   CatalogCategoriesDocument,
+  CatalogTagsDocument,
   CatalogBusinessesDocument,
   CatalogReviewsDocument,
   CatalogFavoritesDocument,
   CatalogToggleFavoriteDocument,
   CatalogCreateReviewDocument,
   type CatalogCategoriesQuery,
+  type CatalogTagsQuery,
   type CatalogBusinessesQuery,
   type CatalogBusinessesQueryVariables,
   type CatalogReviewsQuery,
@@ -23,12 +25,21 @@ import {
 // on purpose: no token is ever attached for these calls.
 
 export type CatalogCategory = NonNullable<CatalogCategoriesQuery['catalogCategories']>[number];
+export type CatalogTag = NonNullable<CatalogTagsQuery['catalogTags']>[number];
 export type CatalogBusiness = NonNullable<CatalogBusinessesQuery['catalogBusinesses']>['rows'][number];
 export type CatalogReview = NonNullable<CatalogReviewsQuery['catalogReviews']>[number];
 
 export async function getCatalogCategories(): Promise<CatalogCategory[]> {
   const data = await hubClient.request<CatalogCategoriesQuery>(CatalogCategoriesDocument);
   return data.catalogCategories ?? [];
+}
+
+// The real, growing taxonomy (each tenant's own Menu category names,
+// aggregated and normalized) -- this is what the Catalog's quick-filter
+// chips use, not getCatalogCategories (the fixed 5-row business-type list).
+export async function getCatalogTags(): Promise<CatalogTag[]> {
+  const data = await hubClient.request<CatalogTagsQuery>(CatalogTagsDocument);
+  return data.catalogTags ?? [];
 }
 
 export async function getCatalogBusinesses(

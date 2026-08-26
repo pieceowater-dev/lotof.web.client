@@ -8,10 +8,11 @@ import { plansBarbershops, plansBeauty, type MockBusiness, type MockReview } fro
 import {
   getCatalogBusinesses,
   getCatalogCategories,
+  getCatalogTags,
   getCatalogFavorites,
   toggleCatalogFavorite,
   getCatalogReviews,
-  type CatalogCategory,
+  type CatalogTag,
 } from '@/api/hub/catalog';
 import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
 import { FilterPaginationLengthEnum } from '@gql-hub';
@@ -114,9 +115,15 @@ onBeforeUnmount(() => {
   if (bannerSlideTimer) clearInterval(bannerSlideTimer);
 });
 
-// -- Categories: real taxonomy, real filtering ------------------------------
-const categories = ref<CatalogCategory[]>([]);
-const activeCategoryId = ref<string | null>(null);
+// -- Tags: the real, aggregated per-tenant Menu category taxonomy -- see
+// utils/mapCatalogBusiness.ts's doc comments and hub.gtw's catalog.graphqls
+// for why this is CatalogTag, not CatalogCategory (the fixed 5-row
+// business-type list). Actually filters the grid below.
+const tags = ref<CatalogTag[]>([]);
+const activeTagId = ref<string | null>(null);
+// "Избранное" is a separate, client-side quick filter (not a server tagId)
+// -- narrows whatever's already loaded down to favorited businesses.
+const favoritesOnly = ref(false);
 
 // -- Businesses: real data, deduped by brand, capped at 10 for this
 // homepage highlight row (see pages/stores.vue for the full, uncapped
@@ -130,11 +137,12 @@ const reviews = ref<MockReview[]>([]);
 
 async function loadCatalogFeed() {
   try {
-    const [categoriesResp, businessesResp] = await Promise.all([
+    const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
       getCatalogCategories(),
-      getCatalogBusinesses({ categoryId: activeCategoryId.value, length: FilterPaginationLengthEnum.Fifty }),
+      getCatalogTags(),
+      getCatalogBusinesses({ tagId: activeTagId.value, length: FilterPaginationLengthEnum.Fifty }),
     ]);
-    categories.value = categoriesResp;
+    tags.value = tagsResp;
     const deduped = dedupeByBrand(businessesResp.rows).slice(0, 10);
     if (deduped.length > 0) {
       realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
@@ -180,8 +188,8 @@ function formatReviewDate(iso: string): string {
 
 onMounted(loadCatalogFeed);
 
-function selectCategory(id: string | null) {
-  activeCategoryId.value = id;
+function selectTag(id: string | null) {
+  activeTagId.value = id;
   loadCatalogFeed();
 }
 
@@ -194,12 +202,27 @@ onMounted(async () => {
   }
 });
 
+function toggleFavoritesOnly() {
+  if (!patronToken.value) {
+    patronLogin();
+    return;
+  }
+  favoritesOnly.value = !favoritesOnly.value;
+}
+
+const realBusinessesFiltered = computed(() => {
+  const items = realBusinesses.value ?? [];
+  return favoritesOnly.value ? items.filter((b) => favoriteIds.value.has(b.key)) : items;
+});
+
 // Mixed feed: the real "Заведения на lota" row, plus lota Plans placeholders
 // (barbershops/beauty) -- see pages/services.vue for why those stay mock.
+// The favorites-only filter only narrows the real row -- the Plans
+// placeholders have no real favorite state to filter by.
 const businessSections = computed(() => [
-  { key: 'popular', title: 'Заведения на lota', to: '/stores', items: realBusinesses.value ?? [] },
-  { key: 'barbers', title: 'Стрижка и барбершопы', to: '/services', items: plansBarbershops },
-  { key: 'beauty', title: 'Красота и уход', to: '/services', items: plansBeauty },
+  { key: 'popular', title: 'Заведения на lota', to: '/stores', items: realBusinessesFiltered.value },
+  { key: 'barbers', title: 'Стрижка и барбершопы', to: '/services', items: favoritesOnly.value ? [] : plansBarbershops },
+  { key: 'beauty', title: 'Красота и уход', to: '/services', items: favoritesOnly.value ? [] : plansBeauty },
 ]);
 
 async function toggleFavorite(key: string) {
@@ -329,7 +352,10 @@ useSeoMeta({
           </NuxtLink>
         </div>
 
-        <!-- Categories: real taxonomy, actually filters the grid below. -->
+        <!-- Categories: real per-tenant Menu category names, aggregated and
+             normalized -- actually filters the grid below. "Избранное" is a
+             separate quick filter (client-side, narrows to favorited
+             businesses) rather than a tag. -->
         <div>
           <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {{ t('home.categoriesHeading') || 'Категории' }}
@@ -339,26 +365,36 @@ useSeoMeta({
               <button
                 type="button"
                 class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-                :class="activeCategoryId === null
+                :class="activeTagId === null && !favoritesOnly
                   ? 'bg-amber-500 text-white border-amber-500'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-                @click="selectCategory(null)"
+                @click="favoritesOnly = false; selectTag(null)"
               >
                 <UIcon name="lucide:layout-grid" class="w-4 h-4" />
                 {{ t('home.allCategories') || 'Все' }}
               </button>
               <button
-                v-for="cat in categories"
-                :key="cat.id"
                 type="button"
                 class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-                :class="activeCategoryId === cat.id
+                :class="favoritesOnly
+                  ? 'bg-rose-500 text-white border-rose-500'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                @click="toggleFavoritesOnly"
+              >
+                <UIcon name="lucide:heart" class="w-4 h-4" :class="favoritesOnly && 'fill-white'" />
+                {{ t('home.favoritesFilter') || 'Избранное' }}
+              </button>
+              <button
+                v-for="tag in tags"
+                :key="tag.id"
+                type="button"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+                :class="activeTagId === tag.id && !favoritesOnly
                   ? 'bg-amber-500 text-white border-amber-500'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-                @click="selectCategory(cat.id)"
+                @click="favoritesOnly = false; selectTag(tag.id)"
               >
-                <UIcon :name="cat.icon || 'lucide:store'" class="w-4 h-4" />
-                {{ cat.name }}
+                {{ tag.name }}
               </button>
             </div>
           </div>

@@ -58,6 +58,7 @@ export type CatalogBusinessFilter = {
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
   data?: InputMaybe<DefaultFilterInput>;
   namespaceSlug?: InputMaybe<Scalars["String"]["input"]>;
+  tagId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type CatalogCategory = {
@@ -77,6 +78,13 @@ export type CatalogReview = {
   createdAt: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   rating: Scalars["Int"]["output"];
+};
+
+export type CatalogTag = {
+  __typename?: "CatalogTag";
+  businessCount: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
 };
 
 export type CreateDeepLinkCategoryInput = {
@@ -450,6 +458,7 @@ export type Query = {
   catalogCategories: Array<CatalogCategory>;
   catalogFavorites: Array<Scalars["ID"]["output"]>;
   catalogReviews: Array<CatalogReview>;
+  catalogTags: Array<CatalogTag>;
   findUserByEmail?: Maybe<User>;
   invite?: Maybe<Invite>;
   invites: Array<Invite>;
@@ -710,6 +719,7 @@ export type NamespacesQuery = {
 
 export type CatalogBusinessesQueryVariables = Exact<{
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  tagId?: InputMaybe<Scalars["ID"]["input"]>;
   namespaceSlug?: InputMaybe<Scalars["String"]["input"]>;
   search?: InputMaybe<Scalars["String"]["input"]>;
   page?: InputMaybe<Scalars["Int"]["input"]>;
@@ -774,6 +784,18 @@ export type CatalogReviewsQuery = {
     rating: number;
     body: string;
     createdAt: string;
+  }>;
+};
+
+export type CatalogTagsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CatalogTagsQuery = {
+  __typename?: "Query";
+  catalogTags: Array<{
+    __typename?: "CatalogTag";
+    id: string;
+    name: string;
+    businessCount: number;
   }>;
 };
 
@@ -1413,6 +1435,14 @@ export const CatalogBusinessesDocument = {
           kind: "VariableDefinition",
           variable: {
             kind: "Variable",
+            name: { kind: "Name", value: "tagId" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
             name: { kind: "Name", value: "namespaceSlug" },
           },
           type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
@@ -1461,6 +1491,14 @@ export const CatalogBusinessesDocument = {
                       value: {
                         kind: "Variable",
                         name: { kind: "Name", value: "categoryId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "tagId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "tagId" },
                       },
                     },
                     {
@@ -1687,6 +1725,36 @@ export const CatalogReviewsDocument = {
     },
   ],
 } as unknown as DocumentNode<CatalogReviewsQuery, CatalogReviewsQueryVariables>;
+export const CatalogTagsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CatalogTags" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogTags" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "businessCount" },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CatalogTagsQuery, CatalogTagsQueryVariables>;
 export const MeDocument = {
   kind: "Document",
   definitions: [

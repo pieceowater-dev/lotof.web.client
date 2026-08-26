@@ -1,5 +1,6 @@
 query CatalogBusinesses(
   $categoryId: ID
+  $tagId: ID
   $namespaceSlug: String
   $search: String
   $page: Int
@@ -8,6 +9,7 @@ query CatalogBusinesses(
   catalogBusinesses(
     filter: {
       categoryId: $categoryId
+      tagId: $tagId
       namespaceSlug: $namespaceSlug
       data: { search: $search, pagination: { page: $page, length: $length } }
     }

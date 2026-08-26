@@ -5,10 +5,11 @@ import { menuBusinesses, type MockBusiness, type MockReview } from '@/utils/mock
 import {
   getCatalogBusinesses,
   getCatalogCategories,
+  getCatalogTags,
   getCatalogFavorites,
   toggleCatalogFavorite,
   getCatalogReviews,
-  type CatalogCategory,
+  type CatalogTag,
 } from '@/api/hub/catalog';
 import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
 import { FilterPaginationLengthEnum } from '@gql-hub';
@@ -21,23 +22,27 @@ const { t } = useI18n();
 const { token: patronToken, login: patronLogin } = usePatronAuth();
 
 // Single-vertical filtered view of the Catalog: lota Menu businesses only
-// (cafes, restaurants, delivery). Real taxonomy, real filtering -- deduped
-// by brand (see utils/mapCatalogBusiness.ts's dedupeByBrand) so a tenant
-// with several branches shows one card; the storefront itself handles
-// branch selection once a Patron gets there.
-const categories = ref<CatalogCategory[]>([]);
-const activeCategoryId = ref<string | null>(null);
+// (cafes, restaurants, delivery). Real taxonomy (Tag, the aggregated
+// per-tenant Menu category names -- not CatalogCategory, the fixed 5-row
+// business-type list), real filtering -- deduped by brand (see
+// utils/mapCatalogBusiness.ts's dedupeByBrand) so a tenant with several
+// branches shows one card; the storefront itself handles branch selection
+// once a Patron gets there.
+const tags = ref<CatalogTag[]>([]);
+const activeTagId = ref<string | null>(null);
+const favoritesOnly = ref(false);
 
 const realBusinesses = ref<MockBusiness[] | null>(null);
 const reviews = ref<MockReview[]>([]);
 
 async function loadBusinesses() {
   try {
-    const [categoriesResp, businessesResp] = await Promise.all([
+    const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
       getCatalogCategories(),
-      getCatalogBusinesses({ categoryId: activeCategoryId.value, length: FilterPaginationLengthEnum.OneHundred }),
+      getCatalogTags(),
+      getCatalogBusinesses({ tagId: activeTagId.value, length: FilterPaginationLengthEnum.OneHundred }),
     ]);
-    categories.value = categoriesResp;
+    tags.value = tagsResp;
     const deduped = dedupeByBrand(businessesResp.rows);
     realBusinesses.value = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
 
@@ -75,12 +80,15 @@ function formatReviewDate(iso: string): string {
 
 onMounted(loadBusinesses);
 
-function selectCategory(id: string | null) {
-  activeCategoryId.value = id;
+function selectTag(id: string | null) {
+  activeTagId.value = id;
   loadBusinesses();
 }
 
-const displayedBusinesses = computed(() => realBusinesses.value ?? menuBusinesses);
+const displayedBusinesses = computed(() => {
+  const items = realBusinesses.value ?? menuBusinesses;
+  return favoritesOnly.value ? items.filter((b) => favoriteIds.value.has(b.key)) : items;
+});
 
 const favoriteIds = ref<Set<string>>(new Set());
 onMounted(async () => {
@@ -91,6 +99,14 @@ onMounted(async () => {
     logError('[stores] failed to load favorites', e);
   }
 });
+
+function toggleFavoritesOnly() {
+  if (!patronToken.value) {
+    patronLogin();
+    return;
+  }
+  favoritesOnly.value = !favoritesOnly.value;
+}
 
 async function toggleFavorite(key: string) {
   if (!patronToken.value) {
@@ -144,32 +160,44 @@ useSeoMeta({
       </div>
 
       <div class="flex flex-col gap-8">
-        <!-- Categories: real taxonomy, actually filters the grid below. -->
+        <!-- Categories: real per-tenant Menu category names, actually
+             filters the grid below. "Избранное" is a separate quick filter
+             (client-side, narrows to favorited businesses). -->
         <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
           <div class="flex gap-2">
             <button
               type="button"
               class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="activeCategoryId === null
+              :class="activeTagId === null && !favoritesOnly
                 ? 'bg-amber-500 text-white border-amber-500'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="selectCategory(null)"
+              @click="favoritesOnly = false; selectTag(null)"
             >
               <UIcon name="lucide:layout-grid" class="w-4 h-4" />
               {{ t('home.allCategories') || 'Все' }}
             </button>
             <button
-              v-for="cat in categories"
-              :key="cat.id"
               type="button"
               class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="activeCategoryId === cat.id
+              :class="favoritesOnly
+                ? 'bg-rose-500 text-white border-rose-500'
+                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+              @click="toggleFavoritesOnly"
+            >
+              <UIcon name="lucide:heart" class="w-4 h-4" :class="favoritesOnly && 'fill-white'" />
+              {{ t('home.favoritesFilter') || 'Избранное' }}
+            </button>
+            <button
+              v-for="tag in tags"
+              :key="tag.id"
+              type="button"
+              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+              :class="activeTagId === tag.id && !favoritesOnly
                 ? 'bg-amber-500 text-white border-amber-500'
                 : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="selectCategory(cat.id)"
+              @click="favoritesOnly = false; selectTag(tag.id)"
             >
-              <UIcon :name="cat.icon || 'lucide:store'" class="w-4 h-4" />
-              {{ cat.name }}
+              {{ tag.name }}
             </button>
           </div>
         </div>

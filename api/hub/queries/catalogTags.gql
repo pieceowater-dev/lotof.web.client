@@ -1,0 +1,7 @@
+query CatalogTags {
+  catalogTags {
+    id
+    name
+    businessCount
+  }
+}

@@ -8,6 +8,7 @@ import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import { useImpersonation } from '@/composables/useImpersonation';
 import GuideWidget from '@/components/guide/GuideWidget.vue';
 import { LSKeys } from '@/utils/storageKeys';
+import { logError } from '@/utils/logger';
 
 const { t, locale, setLocale } = useI18n();
 const toast = useToast();
@@ -108,6 +109,36 @@ const catalogSheetOpen = ref(false);
 function handleCatalogLogout() {
   patronLogout();
   catalogSheetOpen.value = false;
+}
+
+// Favorited businesses: lazily loaded the first time the sheet opens with a
+// Patron logged in, not on every page load -- most visits never open this.
+// getCatalogBusinesses has no "fetch by ids" filter, so this fetches a
+// broad batch and filters client-side; fine at the catalog's current size.
+const favoritesList = ref<import('@/utils/mockCatalog').MockBusiness[]>([]);
+const favoritesLoading = ref(false);
+const favoritesExpanded = ref(false);
+async function toggleFavoritesSection() {
+  favoritesExpanded.value = !favoritesExpanded.value;
+  if (!favoritesExpanded.value || !patronToken.value || favoritesList.value.length) return;
+  favoritesLoading.value = true;
+  try {
+    const [{ getCatalogFavorites, getCatalogBusinesses, getCatalogCategories }, { toDisplayBusiness }] = await Promise.all([
+      import('@/api/hub/catalog'),
+      import('@/utils/mapCatalogBusiness'),
+    ]);
+    const [ids, categories, { rows }] = await Promise.all([
+      getCatalogFavorites(patronToken.value),
+      getCatalogCategories(),
+      getCatalogBusinesses({}),
+    ]);
+    const idSet = new Set(ids);
+    favoritesList.value = rows.filter((b) => idSet.has(b.id)).map((b) => toDisplayBusiness(b, categories));
+  } catch (e) {
+    logError('[AppHeader] failed to load favorites', e);
+  } finally {
+    favoritesLoading.value = false;
+  }
 }
 
 const languageOptions = [
@@ -795,10 +826,36 @@ const goHome = () => {
           <UIcon name="lucide:receipt" class="w-5 h-5 mx-auto text-gray-400" />
           <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ t('home.ordersTitle') || 'Заказы' }}</p>
         </div>
-        <div class="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-4 text-center">
-          <UIcon name="lucide:heart" class="w-5 h-5 mx-auto text-gray-400" />
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ t('home.favoritesTitle') || 'Избранное' }}</p>
-        </div>
+        <button
+          type="button"
+          class="rounded-2xl border p-4 text-center transition-colors"
+          :class="favoritesExpanded ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/10' : 'border-dashed border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
+          @click="toggleFavoritesSection"
+        >
+          <UIcon name="lucide:heart" class="w-5 h-5 mx-auto" :class="favoritesExpanded ? 'text-rose-500 fill-rose-500' : 'text-gray-400'" />
+          <p class="mt-2 text-xs" :class="favoritesExpanded ? 'text-rose-700 dark:text-rose-400 font-medium' : 'text-gray-500 dark:text-gray-400'">{{ t('home.favoritesTitle') || 'Избранное' }}</p>
+        </button>
+      </div>
+
+      <div v-if="favoritesExpanded" class="rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+        <p v-if="favoritesLoading" class="text-xs text-gray-400 p-4">{{ t('app.loading') || 'Загрузка…' }}</p>
+        <p v-else-if="!favoritesList.length" class="text-xs text-gray-400 p-4">{{ t('home.noFavoritesYet') || 'Пока нет избранных заведений' }}</p>
+        <ul v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+          <li v-for="biz in favoritesList" :key="biz.key">
+            <NuxtLink
+              :to="biz.to"
+              class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+              @click="catalogSheetOpen = false"
+            >
+              <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br flex items-center justify-center" :class="biz.gradient">
+                <img v-if="biz.logoUrl" :src="biz.logoUrl" :alt="biz.name" class="w-full h-full object-contain rounded-full p-0.5">
+                <UIcon v-else :name="biz.icon" class="w-4 h-4" :class="biz.iconColor" />
+              </span>
+              <span class="min-w-0 flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{{ biz.name }}</span>
+              <UIcon name="lucide:chevron-right" class="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
+            </NuxtLink>
+          </li>
+        </ul>
       </div>
 
       <!-- Cross-sell into the business side -- clearly a jump away from the
