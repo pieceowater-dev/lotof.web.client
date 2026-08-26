@@ -21,12 +21,13 @@ export type PostForm = {
     latitude?: number | '';
     longitude?: number | '';
     timezone?: string;
+    requireGeoOnCheckIn?: boolean;
   };
   pin: string;
 };
 
 function emptyPostForm(): PostForm {
-  return { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' }, pin: '' };
+  return { title: '', description: '', location: { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '', requireGeoOnCheckIn: false }, pin: '' };
 }
 
 // Post list + pagination/infinite-scroll + create/edit/delete CRUD for the
@@ -172,6 +173,10 @@ export function useAtracePosts(
       if (form.location.longitude !== '' && form.location.longitude !== undefined && form.location.longitude !== null) {
         loc.longitude = Number(form.location.longitude);
       }
+      // Only meaningful (and only settable in the form) when coordinates are present
+      if (loc.latitude !== undefined && loc.longitude !== undefined) {
+        loc.requireGeoOnCheckIn = !!form.location.requireGeoOnCheckIn;
+      }
       // Add timezone: use form value if provided, otherwise default to browser timezone
       if (form.location.timezone) {
         loc.timezone = form.location.timezone;
@@ -190,7 +195,7 @@ export function useAtracePosts(
       // reset form
       form.title = '';
       form.description = '';
-      form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '' };
+      form.location = { address: '', city: '', country: '', comment: '', latitude: '', longitude: '', timezone: '', requireGeoOnCheckIn: false };
       form.pin = '';
       return created;
     } catch (e) {
@@ -257,6 +262,7 @@ export function useAtracePosts(
       latitude: (p.location?.latitude ?? ''),
       longitude: (p.location?.longitude ?? ''),
       timezone: p.location?.timezone || '',
+      requireGeoOnCheckIn: p.location?.requireGeoOnCheckIn || false,
     };
     editForm.pin = p.phrase || '';
     isEditOpen.value = true;
@@ -308,6 +314,10 @@ export function useAtracePosts(
     if (lat !== null && lat !== 0 && lon !== null && lon !== 0) {
       loc.latitude = lat as number;
       loc.longitude = lon as number;
+      // Only meaningful when coordinates are actually present
+      loc.requireGeoOnCheckIn = !!editForm.location.requireGeoOnCheckIn;
+    } else {
+      loc.requireGeoOnCheckIn = false;
     }
     // Always include timezone (even if empty to allow clearing)
     loc.timezone = editForm.location.timezone || '';
@@ -336,6 +346,7 @@ export function useAtracePosts(
           if (hasOrigCoords) {
             retryLoc.latitude = orig.latitude;
             retryLoc.longitude = orig.longitude;
+            retryLoc.requireGeoOnCheckIn = !!orig.requireGeoOnCheckIn;
           }
           const payload2 = { ...payload, location: retryLoc };
           const updated = await atraceUpdatePost(atraceToken, nsSlug.value, payload2 as any);

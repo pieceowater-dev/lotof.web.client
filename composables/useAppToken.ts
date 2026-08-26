@@ -125,6 +125,16 @@ export function createAppTokenComposable(config: AppTokenConfig) {
           } catch (e) {
             lastError = e
             logError(`[${label}] attempt ${attempt}/${maxAttempts} failed`, e)
+            // Originally this broke early on "not a member of the namespace"
+            // on the theory that it's always a permanent, stale-identity
+            // failure not worth retrying. Live prod evidence says otherwise:
+            // hub-gtw's HPA was found flapping 1<->2 replicas continuously
+            // (an existing, unrelated infra issue -- CPU nowhere near its
+            // scaling threshold), and during that churn AmIMemberOfNamespace
+            // genuinely answered "false" for confirmed, permanent namespace
+            // owners. Bailing after one attempt would remove the only thing
+            // that currently rides out a blip like that, so this keeps
+            // retrying through all maxAttempts regardless of message.
             if (attempt < maxAttempts) {
               const isTenantWarmup = String((e as any)?.message || '').includes('tenant migration in progress')
               await sleep(isTenantWarmup ? 1500 : 300)

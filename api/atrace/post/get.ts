@@ -9,7 +9,7 @@ const GET_POST = /* GraphQL */ `
       id
       title
       description
-      location { comment country city address latitude longitude timezone }
+      location { comment country city address latitude longitude timezone requireGeoOnCheckIn }
     }
   }
 `;

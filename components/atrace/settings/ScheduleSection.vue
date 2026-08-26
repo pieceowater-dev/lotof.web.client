@@ -29,10 +29,25 @@ const saving = ref(false);
 const showPatternModal = ref(false);
 const editingPattern = ref<AtraceShiftPattern | null>(null);
 
-const WEEKDAYS = [
-  { value: 1, label: 'Пн' }, { value: 2, label: 'Вт' }, { value: 3, label: 'Ср' },
-  { value: 4, label: 'Чт' }, { value: 5, label: 'Пт' }, { value: 6, label: 'Сб' }, { value: 7, label: 'Вс' },
-];
+// Localized weekday labels via Intl instead of a hardcoded Russian array --
+// value stays 1=Monday..7=Sunday (matches the backend's work_days_of_week
+// encoding). 2024-01-01 was a Monday, so offsetting from it gives us a
+// known Mon..Sun reference week to format for any locale.
+const INTL_LOCALE_BY_APP_LOCALE: Record<string, string> = { ru: 'ru-RU', en: 'en-US', kk: 'kk-KZ' };
+const WEEKDAYS = computed(() => {
+  const intlLocale = INTL_LOCALE_BY_APP_LOCALE[locale.value] || 'ru-RU';
+  const shortFmt = new Intl.DateTimeFormat(intlLocale, { weekday: 'short' });
+  const longFmt = new Intl.DateTimeFormat(intlLocale, { weekday: 'long' });
+  return Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(Date.UTC(2024, 0, 1 + i));
+    const label = shortFmt.format(date);
+    return {
+      value: i + 1,
+      label: label.charAt(0).toUpperCase() + label.slice(1),
+      full: longFmt.format(date),
+    };
+  });
+});
 
 function emptyPatternForm(): AtraceShiftPattern {
   return {
@@ -207,7 +222,7 @@ async function removePattern(pattern: AtraceShiftPattern) {
 
 function summary(p: AtraceShiftPattern): string {
   if (p.type === 'FIXED_WEEKDAYS') {
-    const names = (p.workDaysOfWeek || []).map(d => WEEKDAYS.find(w => w.value === d)?.label || d).join(', ');
+    const names = (p.workDaysOfWeek || []).map(d => WEEKDAYS.value.find(w => w.value === d)?.label || d).join(', ');
     return `${names} · ${p.shiftStartTime}-${p.shiftEndTime}`;
   }
   return `${p.rotationWorkDays}/${p.rotationOffDays} · ${p.shiftStartTime}-${p.shiftEndTime}`;
@@ -457,14 +472,20 @@ onMounted(async () => {
           </UFormGroup>
 
           <div v-if="patternForm.type === 'FIXED_WEEKDAYS'">
-            <label class="text-sm font-medium mb-2 block">{{ t('app.workDays') || 'Рабочие дни' }}</label>
+            <label class="text-sm font-medium mb-1 block">{{ t('app.workDays') || 'Рабочие дни' }}</label>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              {{ t('app.workDaysHint') || 'Нажмите на день, чтобы отметить его рабочим' }}
+            </p>
             <div class="flex flex-wrap gap-1.5">
               <UButton
                 v-for="wd in WEEKDAYS"
                 :key="wd.value"
                 size="xs"
+                :title="wd.full"
+                :aria-pressed="(patternForm.workDaysOfWeek || []).includes(wd.value)"
                 :color="(patternForm.workDaysOfWeek || []).includes(wd.value) ? 'primary' : 'gray'"
                 :variant="(patternForm.workDaysOfWeek || []).includes(wd.value) ? 'solid' : 'soft'"
+                :class="(patternForm.workDaysOfWeek || []).includes(wd.value) ? '' : 'ring-1 ring-inset ring-gray-300 dark:ring-gray-600'"
                 @click="toggleWeekday(wd.value)"
               >
                 {{ wd.label }}

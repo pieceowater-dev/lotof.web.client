@@ -5,9 +5,42 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useGoodsToken } from '@/composables/useGoodsToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
+import { useNamespace } from '@/composables/useNamespace';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 
 export default defineNuxtRouteMiddleware(async (to) => {
+  // Tries the namespace slug embedded in the URL first; if that fails to
+  // produce a token (e.g. a stale/copy-pasted/placeholder namespace segment
+  // the visitor isn't actually a member of -- "click a link meant for a
+  // different namespace"), falls back to the visitor's own current
+  // namespace before giving up on the caller's behalf.
+  type TokenAttempt =
+    | { kind: 'token'; token: string }
+    | { kind: 'redirect'; result: ReturnType<typeof navigateTo> }
+    | { kind: 'none' };
+  async function ensureWithNamespaceFallback(
+    ensure: (ns: string, token: string) => Promise<string | null>,
+    current: () => string | null,
+    nsSlug: string,
+    hubToken: string
+  ): Promise<TokenAttempt> {
+    const existing = current();
+    if (existing) return { kind: 'token', token: existing };
+    if (nsSlug) {
+      const token = await ensure(nsSlug, hubToken);
+      if (token) return { kind: 'token', token };
+    }
+    const { selected: ownNsSlug } = useNamespace();
+    if (ownNsSlug.value && ownNsSlug.value !== nsSlug) {
+      const token = await ensure(ownNsSlug.value, hubToken);
+      if (token) {
+        const rest = nsSlug && to.path.startsWith(`/${nsSlug}`) ? to.path.slice(nsSlug.length + 1) : to.path;
+        return { kind: 'redirect', result: navigateTo({ path: `/${ownNsSlug.value}${rest}`, query: to.query, replace: true }) };
+      }
+    }
+    return { kind: 'none' };
+  }
+
   if (to.path === '/') return;
   // lota Гид must work fully without authorization -- every /guide page
   // is public. Without this, the isAtraceRoute/isContactsRoute/isMenuRoute/
@@ -93,8 +126,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useAtraceToken();
-    const atraceToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
-    if (!atraceToken) {
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;
@@ -114,8 +148,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useContactsToken();
-    const contactsToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
-    if (!contactsToken) {
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;
@@ -135,8 +170,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useMenuToken();
-    const menuToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
-    if (!menuToken) {
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;
@@ -156,8 +192,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useTasksToken();
-    const tasksToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
-    if (!tasksToken) {
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;
@@ -177,8 +214,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useGoodsToken();
-    const goodsToken = current() || (nsSlug ? await ensure(nsSlug, token) : null);
-    if (!goodsToken) {
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
       try {
         const full = to.fullPath || to.path;
         const trimmed = full.startsWith('/') ? full.slice(1) : full;

@@ -20,6 +20,7 @@ export type AtracePostLocation = {
   latitude?: number | null;
   longitude?: number | null;
   timezone?: string | null;
+  requireGeoOnCheckIn?: boolean;
 };
 
 export type Post = {

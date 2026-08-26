@@ -11,7 +11,7 @@ const TIMEZONES_FORMATTED = computed(() =>
   }))
 );
 
-type PostForm = { title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string }; pin: string };
+type PostForm = { title: string; description?: string; location: { address?: string; city?: string; country?: string; comment?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string; requireGeoOnCheckIn?: boolean }; pin: string };
 
 const props = defineProps<{
   modelValue: boolean,
@@ -223,6 +223,8 @@ function disableGeolocation() {
   mapLoading.value = false;
   form.value.location.latitude = '';
   form.value.location.longitude = '';
+  // Not meaningful without coordinates to confirm against
+  form.value.location.requireGeoOnCheckIn = false;
 }
 
 watch(geoEnabled, async (enabled) => {
@@ -344,6 +346,15 @@ watch(() => props.modelValue, (isOpen) => {
               >
                 {{ Number(form.location.latitude).toFixed(6) }}, {{ Number(form.location.longitude).toFixed(6) }}
               </div>
+            </div>
+            <div
+              v-if="form.location.latitude && form.location.longitude"
+              class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800"
+            >
+              <UToggle v-model="form.location.requireGeoOnCheckIn" />
+              <span class="text-sm text-gray-700 dark:text-gray-200">
+                {{ t('app.requireGeoOnCheckIn') || 'Требовать геолокацию при отметке' }}
+              </span>
             </div>
           </div>
         </UFormGroup>

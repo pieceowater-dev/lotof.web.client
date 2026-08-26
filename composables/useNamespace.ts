@@ -27,7 +27,14 @@ export function useNamespace() {
       const uid = user.value?.id || 'anon';
       if (mapRaw) {
         const map = JSON.parse(mapRaw || '{}') as Record<string, string>;
-        return map[uid] || single || null;
+        // Once the per-user map exists, it's authoritative -- do NOT fall
+        // back to the legacy shared key for a uid that simply has no entry
+        // yet. That fallback used to leak whichever namespace was last
+        // picked under a *different* identity sharing this browser (most
+        // visibly: an admin exiting impersonation would inherit the
+        // impersonated user's last-selected namespace, since the legacy
+        // key is a single global slot every identity writes through).
+        return map[uid] || null;
       }
       return single;
     } catch {

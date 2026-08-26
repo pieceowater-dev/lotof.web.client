@@ -142,6 +142,15 @@ watch(() => props.modelValue, (isOpen) => {
                 {{ t('app.allowGeolocation') || 'Разрешить геолокацию' }}
               </UButton>
             </div>
+            <div
+              v-if="form.location.latitude && form.location.longitude"
+              class="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800"
+            >
+              <UToggle v-model="form.location.requireGeoOnCheckIn" />
+              <span class="text-sm text-gray-700 dark:text-gray-200">
+                {{ t('app.requireGeoOnCheckIn') || 'Требовать геолокацию при отметке' }}
+              </span>
+            </div>
           </div>
         </UFormGroup>
 

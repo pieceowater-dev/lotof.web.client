@@ -14,12 +14,13 @@ export type UpdatePostInput = {
     latitude?: number | null;
     longitude?: number | null;
     timezone?: string | null;
+    requireGeoOnCheckIn?: boolean | null;
   } | null;
 };
 
 const AtraceUpdatePostDocument = /* GraphQL */ `
   mutation AtraceUpdatePost($input: UpdatePostInput!) {
-    updatePost(input: $input) { id title description location { comment country city address latitude longitude timezone } }
+    updatePost(input: $input) { id title description location { comment country city address latitude longitude timezone requireGeoOnCheckIn } }
   }
 `;
 

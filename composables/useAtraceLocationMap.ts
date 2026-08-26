@@ -5,7 +5,7 @@ import { getBrowserTimezone } from '@/utils/timezones';
 export type LocationForm = {
   title: string;
   description?: string;
-  location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string };
+  location: { address?: string; city?: string; latitude?: number | ''; longitude?: number | ''; timezone?: string; requireGeoOnCheckIn?: boolean };
   pin: string;
 };
 
@@ -185,6 +185,8 @@ export function useAtraceLocationMap(form: Ref<LocationForm>) {
     mapLoading.value = false;
     form.value.location.latitude = '';
     form.value.location.longitude = '';
+    // Not meaningful without coordinates to confirm against
+    form.value.location.requireGeoOnCheckIn = false;
   }
 
   watch(geoEnabled, async (enabled) => {

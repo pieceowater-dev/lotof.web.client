@@ -3,7 +3,7 @@ import { getDeviceHeaders } from '@/utils/device';
 
 const AtraceCreatePostDocument = /* GraphQL */ `
   mutation AtraceCreatePost($input: CreatePostInput!) {
-    createPost(input: $input) { id title description location { comment country city address latitude longitude timezone } }
+    createPost(input: $input) { id title description location { comment country city address latitude longitude timezone requireGeoOnCheckIn } }
   }
 `;
 
@@ -19,6 +19,7 @@ export type CreatePostInput = {
     latitude?: number | null;
     longitude?: number | null;
     timezone?: string | null;
+    requireGeoOnCheckIn?: boolean | null;
   } | null;
 };
 

@@ -452,6 +452,8 @@
     "attendanceNoData": "No data for selected period",
     "user": "User",
     "workDays": "Work Days",
+    "workDaysHint": "Click a day to mark it as a working day",
+    "requireGeoOnCheckIn": "Require geolocation on check-in",
     "attended": "Attended",
     "violations": "Violations",
     "exceptions": "Exceptions",
