@@ -2066,6 +2066,8 @@
     "autoAcceptOrdersHint": "New orders move to \"Accepted\" on their own after 30 seconds, instead of waiting for staff to accept them.",
     "showcaseViewOnly": "View-only showcase",
     "showcaseViewOnlyHint": "Turns the public storefront into a plain online menu — no cart, no checkout, no order tracking.",
+    "listedInCatalog": "Public storefront",
+    "listedInCatalogHint": "Shows this business in the lota Catalog. Turn off to hide it without deleting anything.",
     "businessTab": "Business",
     "printOrder": "Print",
     "discount": "Discount",

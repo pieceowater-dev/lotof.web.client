@@ -40,6 +40,7 @@ const form = reactive({
   seoDescription: '',
   autoAcceptOrders: false,
   showcaseViewOnly: false,
+  listedInCatalog: true,
 });
 const socialLinksList = ref<SocialLink[]>([]);
 
@@ -57,6 +58,7 @@ function applySettings(s: MenuBrandSettings | null) {
   form.seoDescription = s.seoDescription || '';
   form.autoAcceptOrders = s.autoAcceptOrders || false;
   form.showcaseViewOnly = s.showcaseViewOnly || false;
+  form.listedInCatalog = s.listedInCatalog ?? true;
 }
 
 function addSocialLink() {
@@ -135,6 +137,7 @@ async function save() {
       seoDescription: form.seoDescription.trim() || undefined,
       autoAcceptOrders: form.autoAcceptOrders,
       showcaseViewOnly: form.showcaseViewOnly,
+      listedInCatalog: form.listedInCatalog,
     });
     applySettings(settings);
     useToast().add({ title: t('menu.brandSettingsSaved') || 'Saved', color: 'primary' });
@@ -229,6 +232,14 @@ onMounted(load);
               <p class="text-xs text-gray-400 mt-0.5">{{ t('menu.showcaseViewOnlyHint') || 'Turns the public storefront into a plain online menu — no cart, no checkout, no order tracking.' }}</p>
             </div>
             <UToggle v-model="form.showcaseViewOnly" class="flex-shrink-0" />
+          </div>
+
+          <div class="flex items-center justify-between gap-4 rounded-xl border border-gray-200 dark:border-gray-800 p-3.5">
+            <div class="min-w-0">
+              <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t('menu.listedInCatalog') || 'Public storefront' }}</div>
+              <p class="text-xs text-gray-400 mt-0.5">{{ t('menu.listedInCatalogHint') || 'Shows this business in the lota Catalog. Turn off to hide it without deleting anything.' }}</p>
+            </div>
+            <UToggle v-model="form.listedInCatalog" class="flex-shrink-0" />
           </div>
         </div>
 
