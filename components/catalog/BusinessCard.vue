@@ -20,7 +20,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-full h-full object-contain p-4"
+        class="w-20 h-20 object-contain"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
       <button
@@ -68,7 +68,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-full h-full object-contain p-4"
+        class="w-20 h-20 object-contain"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
       <button
