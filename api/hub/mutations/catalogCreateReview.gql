@@ -1,0 +1,10 @@
+mutation CatalogCreateReview($businessId: ID!, $rating: Int!, $body: String!) {
+  catalogCreateReview(businessId: $businessId, rating: $rating, body: $body) {
+    id
+    businessId
+    authorName
+    rating
+    body
+    createdAt
+  }
+}

@@ -16,6 +16,11 @@ export interface MockBusiness {
   priceTier?: string;
   distance?: string;
   badge?: string;
+  // Real businesses only (see utils/mapCatalogBusiness.ts) -- a brand logo
+  // to render instead of the icon, and the storefront URL the card links
+  // to. Mock cards have neither: no real storefront exists to link to.
+  logoUrl?: string;
+  to?: string;
 }
 
 // lota Menu businesses -- cafes, restaurants, delivery (pages/stores.vue).

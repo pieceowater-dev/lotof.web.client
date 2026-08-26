@@ -213,6 +213,21 @@ const secondaryColor = computed(() => data.value?.storefront.brandSettings?.seco
 // whichever of black/white text actually has usable contrast against it.
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
 
+// Back-to-Catalog: only shown when the Patron actually arrived from /catalog
+// or /stores. document.referrer isn't reliable here (a NuxtLink click is a
+// client-side SPA navigation, so referrer still reflects whatever the
+// *original* page load was, not this in-app hop) -- history.state.back is
+// what Vue Router's HTML5 history mode actually updates on every
+// client-side navigation, so it correctly captures "the page one back in
+// this tab's history," which is exactly what a NuxtLink click from the
+// Catalog leaves behind. A hard refresh/direct link resets it to
+// null/undefined, which correctly hides the button (no known origin).
+const backHref = ref<string | null>(null);
+onMounted(() => {
+  const back = window.history.state?.back as string | undefined;
+  if (back === '/catalog' || back === '/stores') backHref.value = back;
+});
+
 // Brand-level contact info isn't its own field — the primary (or first)
 // branch's phone stands in for "call the business", since that's the number
 // that's actually staffed, and social links live on brand settings already.
@@ -936,6 +951,16 @@ useHead(() => {
            tenant's own primary color, big elevated logo card. -->
       <div class="relative" :style="{ backgroundColor: primaryColor }">
         <div class="max-w-3xl mx-auto px-4 pt-7 pb-6">
+        <button
+          v-if="backHref"
+          type="button"
+          class="mb-3 inline-flex items-center gap-1.5 text-xs font-medium opacity-90 hover:opacity-100 transition-opacity"
+          :style="{ color: onPrimaryText }"
+          @click="navigateTo(backHref)"
+        >
+          <Icon name="lucide:arrow-left" class="w-3.5 h-3.5" />
+          {{ t('menu.backToCatalog') || 'Каталог' }}
+        </button>
         <div class="flex items-start gap-4">
           <div class="w-20 h-20 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
             <img
@@ -1742,10 +1767,16 @@ useHead(() => {
                carries order history across storefronts, unlike the
                guest/phone-only flow below. Dismissible via the login click
                itself; never blocks checkout. -->
-          <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 text-xs text-gray-600 dark:text-gray-300">
-            <Icon name="lucide:sparkles" class="w-4 h-4 flex-shrink-0" :style="{ color: primaryColor }" />
-            <span class="flex-1">{{ t('menu.patronCheckoutHint') || "Log in to skip typing your phone next time and keep an order history." }}</span>
-            <button type="button" class="font-semibold flex-shrink-0" :style="{ color: primaryColor }" @click="patronLogin()">
+          <!-- Brand-colored pill, not brand-colored text on a neutral
+               background -- a light primaryColor (near-white) used as text
+               on bg-gray-50 was invisible. Filling the pill with
+               primaryColor and using onPrimaryText (black/white, whichever
+               contrasts with it) guarantees readability for any brand
+               color. -->
+          <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs" :style="{ backgroundColor: primaryColor, color: onPrimaryText }">
+            <Icon name="lucide:sparkles" class="w-4 h-4 flex-shrink-0" :style="{ color: onPrimaryText }" />
+            <span class="flex-1 opacity-90">{{ t('menu.patronCheckoutHint') || "Log in to skip typing your phone next time and keep an order history." }}</span>
+            <button type="button" class="font-semibold flex-shrink-0 underline" :style="{ color: onPrimaryText }" @click="patronLogin()">
               {{ t('menu.patronLogin') || 'Log in' }}
             </button>
           </div>

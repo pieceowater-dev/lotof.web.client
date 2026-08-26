@@ -1,0 +1,3 @@
+mutation CatalogToggleFavorite($businessId: ID!) {
+  catalogToggleFavorite(businessId: $businessId)
+}

@@ -110,14 +110,6 @@ function handleCatalogLogout() {
   catalogSheetOpen.value = false;
 }
 
-// Mock only -- no loyalty backend wired up here yet. Bonuses are per
-// business (lota Contacts tracks loyalty per company), so this stays a
-// short list instead of one pooled number even as a placeholder.
-const mockBonusBalances = [
-  { key: 'coffeeboom', business: 'Coffee Boom', amount: 320 },
-  { key: 'barberclub', business: 'Barber Club', amount: 150 },
-];
-
 const languageOptions = [
   { value: 'en', label: 'English', code: 'EN' },
   { value: 'ru', label: 'Русский', code: 'RU' },
@@ -796,27 +788,6 @@ const goHome = () => {
           </div>
         </div>
         <UButton icon="lucide:x" color="gray" variant="ghost" size="sm" class="flex-shrink-0" @click="catalogSheetOpen = false" />
-      </div>
-
-      <!-- Bonuses: mock balances, no loyalty backend wired up here yet.
-           Shown per business, not as one pooled total -- lota Contacts
-           tracks loyalty bonuses per company, so a Patron's balance is
-           naturally split the same way. -->
-      <div class="rounded-2xl border border-amber-100 dark:border-amber-900/30 overflow-hidden">
-        <div class="px-4 py-2.5 bg-amber-50 dark:bg-amber-900/10 flex items-center gap-2">
-          <UIcon name="lucide:gift" class="w-4 h-4 text-amber-500" />
-          <p class="text-xs font-medium text-amber-700 dark:text-amber-400">{{ t('home.bonusesLabel') || 'Бонусы' }}</p>
-        </div>
-        <ul class="divide-y divide-gray-100 dark:divide-gray-700">
-          <li
-            v-for="balance in mockBonusBalances"
-            :key="balance.key"
-            class="px-4 py-2.5 flex items-center justify-between gap-3"
-          >
-            <span class="min-w-0 truncate text-sm text-gray-700 dark:text-gray-200">{{ balance.business }}</span>
-            <span class="flex-shrink-0 text-sm font-semibold text-amber-700 dark:text-amber-400">{{ balance.amount }} ₸</span>
-          </li>
-        </ul>
       </div>
 
       <div class="grid grid-cols-2 gap-3">

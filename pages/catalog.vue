@@ -4,9 +4,17 @@ import { useI18n } from '@/composables/useI18n';
 import { getApiBasePath } from '@/utils/api-base';
 import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
-import { menuBusinesses, plansBarbershops, plansBeauty, type MockBusiness } from '@/utils/mockCatalog';
-import { getCatalogBusinesses, getCatalogCategories } from '@/api/hub/catalog';
-import { toDisplayBusiness } from '@/utils/mapCatalogBusiness';
+import { plansBarbershops, plansBeauty, type MockBusiness, type MockReview } from '@/utils/mockCatalog';
+import {
+  getCatalogBusinesses,
+  getCatalogCategories,
+  getCatalogFavorites,
+  toggleCatalogFavorite,
+  getCatalogReviews,
+  type CatalogCategory,
+} from '@/api/hub/catalog';
+import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
+import { FilterPaginationLengthEnum } from '@gql-hub';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
@@ -49,22 +57,7 @@ onMounted(() => {
   }
 });
 
-// -- Mock marketplace feed -------------------------------------------------
-// There is no live business directory yet -- this is placeholder content
-// only, styled after Yandex Eda / Ozon / Glovo-style browse feeds, so the
-// Catalog's shape is validated before any real data source exists.
-
 const promoBanners = [
-  {
-    key: 'discount',
-    icon: 'lucide:percent',
-    title: 'Скидка до 20%',
-    subtitle: 'На первый заказ через lota',
-    gradient: 'from-orange-100 to-amber-50',
-    iconColor: 'text-amber-500',
-    titleColor: 'text-amber-950',
-    subtitleColor: 'text-amber-800',
-  },
   {
     key: 'booking',
     icon: 'lucide:calendar-check',
@@ -85,6 +78,26 @@ const promoBanners = [
     titleColor: 'text-lime-950',
     subtitleColor: 'text-lime-800',
   },
+  {
+    key: 'onePlace',
+    icon: 'lucide:layout-grid',
+    title: 'Всё в одном месте',
+    subtitle: 'Кафе, рестораны и услуги — в одном каталоге',
+    gradient: 'from-blue-100 to-cyan-50',
+    iconColor: 'text-blue-500',
+    titleColor: 'text-blue-950',
+    subtitleColor: 'text-blue-800',
+  },
+  {
+    key: 'noApp',
+    icon: 'lucide:smartphone',
+    title: 'Без установки приложений',
+    subtitle: 'Открывайте витрину заведения прямо в браузере',
+    gradient: 'from-emerald-100 to-teal-50',
+    iconColor: 'text-emerald-500',
+    titleColor: 'text-emerald-950',
+    subtitleColor: 'text-emerald-800',
+  },
 ] as const;
 
 // Auto-rotating, one-at-a-time -- see pages/index.vue's hero carousel for
@@ -101,69 +114,121 @@ onBeforeUnmount(() => {
   if (bannerSlideTimer) clearInterval(bannerSlideTimer);
 });
 
-const categories = [
-  { key: 'cafe', icon: 'lucide:coffee', label: 'Кафе' },
-  { key: 'restaurant', icon: 'lucide:utensils', label: 'Рестораны' },
-  { key: 'barbershop', icon: 'lucide:scissors', label: 'Барбершопы' },
-  { key: 'nails', icon: 'lucide:sparkles', label: 'Маникюр' },
-  { key: 'spa', icon: 'lucide:flower-2', label: 'Спа и массаж' },
-  { key: 'beauty', icon: 'lucide:wand-2', label: 'Косметология' },
-  { key: 'fitness', icon: 'lucide:dumbbell', label: 'Фитнес' },
-  { key: 'auto', icon: 'lucide:car', label: 'Автосервис' },
-  { key: 'repair', icon: 'lucide:wrench', label: 'Ремонт' },
-  { key: 'flowers', icon: 'lucide:flower', label: 'Цветы' },
-] as const;
-const activeCategory = ref('cafe');
+// -- Categories: real taxonomy, real filtering ------------------------------
+const categories = ref<CatalogCategory[]>([]);
+const activeCategoryId = ref<string | null>(null);
 
-const featuredShops = [
-  { key: 'shop1', name: 'Coffee Boom', icon: 'lucide:coffee', color: 'bg-amber-100 text-amber-600', hint: '15–25 мин' },
-  { key: 'shop2', name: 'Своя Пекарня', icon: 'lucide:croissant', color: 'bg-orange-100 text-orange-600', hint: '20–30 мин' },
-  { key: 'shop3', name: 'Barber Club', icon: 'lucide:scissors', color: 'bg-blue-100 text-blue-600', hint: 'До 21:00' },
-  { key: 'shop4', name: 'Nail Bar', icon: 'lucide:sparkles', color: 'bg-pink-100 text-pink-600', hint: 'До 20:00' },
-  { key: 'shop5', name: 'Fitness Loft', icon: 'lucide:dumbbell', color: 'bg-emerald-100 text-emerald-600', hint: 'Круглосуточно' },
-  { key: 'shop6', name: 'АвтоМастер', icon: 'lucide:car', color: 'bg-slate-100 text-slate-600', hint: '30–40 мин' },
-] as const;
+// -- Businesses: real data, deduped by brand, capped at 10 for this
+// homepage highlight row (see pages/stores.vue for the full, uncapped
+// list -- that's what "Все" links to). No rating-based sort yet: nothing
+// aggregates a per-business average from Review rows, so "top 10" is
+// currently "first 10 after dedup" rather than genuinely rating-sorted --
+// revisit once that aggregation exists.
+const realBusinesses = ref<MockBusiness[] | null>(null);
+const favoriteIds = ref<Set<string>>(new Set());
+const reviews = ref<MockReview[]>([]);
 
-// The first section is the only real one here -- lota Menu businesses from
-// lotof.hub.msvc.core's cross-tenant aggregator. Barbershops/beauty stay
-// mock (lota Plans has no real aggregation yet, see pages/services.vue).
-// Falls back to the mock Menu slice while the aggregator has no businesses
-// synced yet, so the feed never looks empty.
-//
-// Titled "Заведения на lota", not "Популярное рядом" -- there's no
-// popularity signal (no review/order counts feed this yet) and no proximity
-// signal either: MenuBusiness does carry lat/lng (from Branch.Lat/Lng), but
-// nothing captures a Patron's own location to sort or filter by it, so a
-// "nearby" claim would be dishonest. Revisit once either signal exists.
-const realPopularBusinesses = ref<MockBusiness[] | null>(null);
-onMounted(async () => {
+async function loadCatalogFeed() {
   try {
-    const [categoriesResp, businessesResp] = await Promise.all([getCatalogCategories(), getCatalogBusinesses()]);
-    if (businessesResp.rows.length > 0) {
-      realPopularBusinesses.value = businessesResp.rows
-        .slice(0, 4)
-        .map((b) => toDisplayBusiness(b, categoriesResp));
+    const [categoriesResp, businessesResp] = await Promise.all([
+      getCatalogCategories(),
+      getCatalogBusinesses({ categoryId: activeCategoryId.value, length: FilterPaginationLengthEnum.Fifty }),
+    ]);
+    categories.value = categoriesResp;
+    const deduped = dedupeByBrand(businessesResp.rows).slice(0, 10);
+    if (deduped.length > 0) {
+      realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
+
+      // Bounded fan-out (at most 10 businesses) -- no bulk "reviews for many
+      // businesses" query exists, and this list is already capped, so a
+      // handful of small requests is fine. Concatenated and capped again so
+      // the reviews grid doesn't grow unbounded either.
+      const perBusiness = await Promise.all(
+        deduped.map(async (b) => {
+          try {
+            const list = await getCatalogReviews(b.id);
+            return list.map((r) => ({
+              key: r.id,
+              author: r.authorName,
+              business: b.name,
+              rating: r.rating,
+              date: formatReviewDate(r.createdAt),
+              text: r.body,
+            }));
+          } catch {
+            return [];
+          }
+        }),
+      );
+      reviews.value = perBusiness.flat().slice(0, 6);
+    } else {
+      realBusinesses.value = null;
+      reviews.value = [];
     }
   } catch (e) {
     logError('[catalog] failed to load real catalog businesses', e);
   }
+}
+
+function formatReviewDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  } catch {
+    return '';
+  }
+}
+
+onMounted(loadCatalogFeed);
+
+function selectCategory(id: string | null) {
+  activeCategoryId.value = id;
+  loadCatalogFeed();
+}
+
+onMounted(async () => {
+  if (!patronToken.value) return;
+  try {
+    favoriteIds.value = new Set(await getCatalogFavorites(patronToken.value));
+  } catch (e) {
+    logError('[catalog] failed to load favorites', e);
+  }
 });
 
-// Mixed feed: a bit of everything (lota Menu + lota Plans businesses) --
-// see pages/stores.vue and pages/services.vue for the single-vertical
-// filtered views, linked to from the "browse by category" row below.
+// Mixed feed: the real "Заведения на lota" row, plus lota Plans placeholders
+// (barbershops/beauty) -- see pages/services.vue for why those stay mock.
 const businessSections = computed(() => [
-  { key: 'popular', title: 'Заведения на lota', items: realPopularBusinesses.value ?? menuBusinesses.slice(0, 4) },
-  { key: 'barbers', title: 'Стрижка и барбершопы', items: plansBarbershops },
-  { key: 'beauty', title: 'Красота и уход', items: plansBeauty },
+  { key: 'popular', title: 'Заведения на lota', to: '/stores', items: realBusinesses.value ?? [] },
+  { key: 'barbers', title: 'Стрижка и барбершопы', to: '/services', items: plansBarbershops },
+  { key: 'beauty', title: 'Красота и уход', to: '/services', items: plansBeauty },
 ]);
 
-const favorites = ref<Set<string>>(new Set());
-function toggleFavorite(key: string) {
-  const next = new Set(favorites.value);
-  if (next.has(key)) next.delete(key);
+async function toggleFavorite(key: string) {
+  if (!patronToken.value) {
+    patronLogin();
+    return;
+  }
+  const wasFavorite = favoriteIds.value.has(key);
+  // Optimistic: flip immediately, reconcile with the server's actual state
+  // once the mutation resolves (never trust the optimistic guess as final).
+  const next = new Set(favoriteIds.value);
+  if (wasFavorite) next.delete(key);
   else next.add(key);
-  favorites.value = next;
+  favoriteIds.value = next;
+
+  try {
+    const nowFavorited = await toggleCatalogFavorite(patronToken.value, key);
+    const reconciled = new Set(favoriteIds.value);
+    if (nowFavorited) reconciled.add(key);
+    else reconciled.delete(key);
+    favoriteIds.value = reconciled;
+  } catch (e) {
+    logError('[catalog] toggleFavorite failed', e);
+    // Roll back on failure.
+    const rollback = new Set(favoriteIds.value);
+    if (wasFavorite) rollback.add(key);
+    else rollback.delete(key);
+    favoriteIds.value = rollback;
+  }
 }
 
 const siteUrl = 'https://lota.tools';
@@ -180,10 +245,6 @@ useSeoMeta({
 <template>
   <div class="max-w-7xl mx-auto px-4 py-10 md:py-16">
     <div class="flex flex-col gap-6">
-      <!-- Marketplace-style browse feed: mock content only (no live
-           business directory yet) -- categories, promo banners, and
-           horizontally scrolling business/service rows, browsable whether
-           or not a Patron identity is present. -->
       <div class="flex flex-col gap-8">
         <!-- Promo banners: auto-rotating carousel on mobile (one slide at a
              time -- plenty of banners, not much width to show them side by
@@ -268,7 +329,7 @@ useSeoMeta({
           </NuxtLink>
         </div>
 
-        <!-- Categories -->
+        <!-- Categories: real taxonomy, actually filters the grid below. -->
         <div>
           <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
             {{ t('home.categoriesHeading') || 'Категории' }}
@@ -276,55 +337,41 @@ useSeoMeta({
           <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
             <div class="flex gap-2">
               <button
-                v-for="cat in categories"
-                :key="cat.key"
                 type="button"
                 class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-                :class="activeCategory === cat.key
+                :class="activeCategoryId === null
                   ? 'bg-amber-500 text-white border-amber-500'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-                @click="activeCategory = cat.key"
+                @click="selectCategory(null)"
               >
-                <UIcon :name="cat.icon" class="w-4 h-4" />
-                {{ cat.label }}
+                <UIcon name="lucide:layout-grid" class="w-4 h-4" />
+                {{ t('home.allCategories') || 'Все' }}
               </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Featured shops -->
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              {{ t('home.shopsHeading') || 'Заведения' }}
-            </h3>
-            <button type="button" class="text-sm font-medium text-blue-600 dark:text-blue-400">
-              {{ t('home.seeAll') || 'Все' }}
-            </button>
-          </div>
-          <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
-            <div class="flex gap-3">
-              <div v-for="shop in featuredShops" :key="shop.key" class="flex-shrink-0 w-24 flex flex-col items-center text-center gap-2">
-                <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-sm" :class="shop.color">
-                  <UIcon :name="shop.icon" class="w-7 h-7" />
-                </div>
-                <div class="w-24">
-                  <p class="text-xs font-medium text-gray-800 dark:text-gray-200 truncate">{{ shop.name }}</p>
-                  <p class="text-[11px] text-gray-400 dark:text-gray-500 truncate">{{ shop.hint }}</p>
-                </div>
-              </div>
+              <button
+                v-for="cat in categories"
+                :key="cat.id"
+                type="button"
+                class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+                :class="activeCategoryId === cat.id
+                  ? 'bg-amber-500 text-white border-amber-500'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                @click="selectCategory(cat.id)"
+              >
+                <UIcon :name="cat.icon || 'lucide:store'" class="w-4 h-4" />
+                {{ cat.name }}
+              </button>
             </div>
           </div>
         </div>
 
         <!-- Business / service rows -->
         <template v-for="(section, sectionIdx) in businessSections" :key="section.key">
-          <div>
+          <div v-if="section.items.length > 0">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
-              <button type="button" class="text-sm font-medium text-blue-600 dark:text-blue-400">
+              <NuxtLink :to="section.to" class="text-sm font-medium text-blue-600 dark:text-blue-400">
                 {{ t('home.seeAll') || 'Все' }}
-              </button>
+              </NuxtLink>
             </div>
             <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
               <div class="flex gap-3 snap-x">
@@ -335,7 +382,7 @@ useSeoMeta({
                 >
                   <BusinessCard
                     :business="biz"
-                    :is-favorite="favorites.has(biz.key)"
+                    :is-favorite="favoriteIds.has(biz.key)"
                     @toggle-favorite="toggleFavorite"
                   />
                 </div>
@@ -350,8 +397,8 @@ useSeoMeta({
                visitor never actually sees this -- autoProvisionPatron()
                resolves before this would render for them. Once signed in,
                this banner is gone and nothing replaces it: the header's
-               avatar + profile sheet carries the personalized content
-               instead, so logging in causes no page layout change. -->
+               avatar carries the personalized content instead, so logging
+               in causes no page layout change. -->
           <div
             v-if="sectionIdx === 0 && !hasPatronToken"
             class="rounded-3xl p-6 md:p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center gap-6"
@@ -393,7 +440,7 @@ useSeoMeta({
           </div>
         </template>
 
-        <ReviewsSection />
+        <ReviewsSection :reviews="reviews" />
       </div>
     </div>
   </div>

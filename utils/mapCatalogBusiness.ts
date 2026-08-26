@@ -35,5 +35,24 @@ export function toDisplayBusiness(business: CatalogBusiness, categories: Catalog
     gradient,
     iconColor,
     badge: business.city || undefined,
+    logoUrl: business.logoUrl || undefined,
+    to: `/to/${business.namespaceSlug}/menu`,
   };
+}
+
+// One MenuBusiness row = one Branch (see hub.msvc.core's catalog schema), so
+// a brand with several branches would otherwise show up as several
+// near-identical cards. The storefront itself (pages/to/[namespace]/menu)
+// already handles picking a branch once a Patron gets there -- the Catalog
+// only needs one card per brand. Keeps the first (most recently synced,
+// since ListBusinesses orders by created_at desc) branch per namespace.
+export function dedupeByBrand(businesses: CatalogBusiness[]): CatalogBusiness[] {
+  const seen = new Set<string>();
+  const result: CatalogBusiness[] = [];
+  for (const b of businesses) {
+    if (seen.has(b.namespaceSlug)) continue;
+    seen.add(b.namespaceSlug);
+    result.push(b);
+  }
+  return result;
 }

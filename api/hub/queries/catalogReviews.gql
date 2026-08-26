@@ -1,0 +1,10 @@
+query CatalogReviews($businessId: ID!) {
+  catalogReviews(businessId: $businessId) {
+    id
+    businessId
+    authorName
+    rating
+    body
+    createdAt
+  }
+}

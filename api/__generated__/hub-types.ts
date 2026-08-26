@@ -56,6 +56,7 @@ export type CatalogBusiness = {
 export type CatalogBusinessFilter = {
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
   data?: InputMaybe<DefaultFilterInput>;
+  namespaceSlug?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type CatalogCategory = {
@@ -65,6 +66,16 @@ export type CatalogCategory = {
   name: Scalars["String"]["output"];
   slug: Scalars["String"]["output"];
   sortOrder: Scalars["Int"]["output"];
+};
+
+export type CatalogReview = {
+  __typename?: "CatalogReview";
+  authorName: Scalars["String"]["output"];
+  body: Scalars["String"]["output"];
+  businessId: Scalars["ID"]["output"];
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  rating: Scalars["Int"]["output"];
 };
 
 export type CreateDeepLinkCategoryInput = {
@@ -211,6 +222,8 @@ export type Mutation = {
   acceptFriendshipRequest: Friendship;
   addAppToNamespace: NamespaceApp;
   addMemberToNamespace: Namespace;
+  catalogCreateReview: CatalogReview;
+  catalogToggleFavorite: Scalars["Boolean"]["output"];
   createDeepLink: DeepLink;
   createDeepLinkCategory: DeepLinkCategory;
   createFriendship: Friendship;
@@ -244,6 +257,16 @@ export type MutationAddAppToNamespaceArgs = {
 
 export type MutationAddMemberToNamespaceArgs = {
   input: MemberToNamespaceInput;
+};
+
+export type MutationCatalogCreateReviewArgs = {
+  body: Scalars["String"]["input"];
+  businessId: Scalars["ID"]["input"];
+  rating: Scalars["Int"]["input"];
+};
+
+export type MutationCatalogToggleFavoriteArgs = {
+  businessId: Scalars["ID"]["input"];
 };
 
 export type MutationCreateDeepLinkArgs = {
@@ -424,6 +447,8 @@ export type Query = {
   adminNamespaces: PaginatedNamespaceList;
   catalogBusinesses: PaginatedCatalogBusinessList;
   catalogCategories: Array<CatalogCategory>;
+  catalogFavorites: Array<Scalars["ID"]["output"]>;
+  catalogReviews: Array<CatalogReview>;
   findUserByEmail?: Maybe<User>;
   invite?: Maybe<Invite>;
   invites: Array<Invite>;
@@ -455,6 +480,10 @@ export type QueryAdminNamespacesArgs = {
 
 export type QueryCatalogBusinessesArgs = {
   filter?: InputMaybe<CatalogBusinessFilter>;
+};
+
+export type QueryCatalogReviewsArgs = {
+  businessId: Scalars["ID"]["input"];
 };
 
 export type QueryFindUserByEmailArgs = {
@@ -583,6 +612,34 @@ export type MembersQuery = {
   }>;
 };
 
+export type CatalogCreateReviewMutationVariables = Exact<{
+  businessId: Scalars["ID"]["input"];
+  rating: Scalars["Int"]["input"];
+  body: Scalars["String"]["input"];
+}>;
+
+export type CatalogCreateReviewMutation = {
+  __typename?: "Mutation";
+  catalogCreateReview: {
+    __typename?: "CatalogReview";
+    id: string;
+    businessId: string;
+    authorName: string;
+    rating: number;
+    body: string;
+    createdAt: string;
+  };
+};
+
+export type CatalogToggleFavoriteMutationVariables = Exact<{
+  businessId: Scalars["ID"]["input"];
+}>;
+
+export type CatalogToggleFavoriteMutation = {
+  __typename?: "Mutation";
+  catalogToggleFavorite: boolean;
+};
+
 export type UpdateMyPhoneMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
   username: Scalars["String"]["input"];
@@ -690,6 +747,30 @@ export type CatalogCategoriesQuery = {
     slug: string;
     icon?: string | null;
     sortOrder: number;
+  }>;
+};
+
+export type CatalogFavoritesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CatalogFavoritesQuery = {
+  __typename?: "Query";
+  catalogFavorites: Array<string>;
+};
+
+export type CatalogReviewsQueryVariables = Exact<{
+  businessId: Scalars["ID"]["input"];
+}>;
+
+export type CatalogReviewsQuery = {
+  __typename?: "Query";
+  catalogReviews: Array<{
+    __typename?: "CatalogReview";
+    id: string;
+    businessId: string;
+    authorName: string;
+    rating: number;
+    body: string;
+    createdAt: string;
   }>;
 };
 
@@ -836,6 +917,145 @@ export const MembersDocument = {
     },
   ],
 } as unknown as DocumentNode<MembersQuery, MembersQueryVariables>;
+export const CatalogCreateReviewDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "CatalogCreateReview" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "businessId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "rating" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+          },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "body" } },
+          type: {
+            kind: "NonNullType",
+            type: {
+              kind: "NamedType",
+              name: { kind: "Name", value: "String" },
+            },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogCreateReview" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "businessId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "businessId" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "rating" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "rating" },
+                },
+              },
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "body" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "body" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "businessId" } },
+                { kind: "Field", name: { kind: "Name", value: "authorName" } },
+                { kind: "Field", name: { kind: "Name", value: "rating" } },
+                { kind: "Field", name: { kind: "Name", value: "body" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CatalogCreateReviewMutation,
+  CatalogCreateReviewMutationVariables
+>;
+export const CatalogToggleFavoriteDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "mutation",
+      name: { kind: "Name", value: "CatalogToggleFavorite" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "businessId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogToggleFavorite" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "businessId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "businessId" },
+                },
+              },
+            ],
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CatalogToggleFavoriteMutation,
+  CatalogToggleFavoriteMutationVariables
+>;
 export const UpdateMyPhoneDocument = {
   kind: "Document",
   definitions: [
@@ -1372,6 +1592,78 @@ export const CatalogCategoriesDocument = {
   CatalogCategoriesQuery,
   CatalogCategoriesQueryVariables
 >;
+export const CatalogFavoritesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CatalogFavorites" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          { kind: "Field", name: { kind: "Name", value: "catalogFavorites" } },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CatalogFavoritesQuery,
+  CatalogFavoritesQueryVariables
+>;
+export const CatalogReviewsDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CatalogReviews" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "businessId" },
+          },
+          type: {
+            kind: "NonNullType",
+            type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogReviews" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "businessId" },
+                value: {
+                  kind: "Variable",
+                  name: { kind: "Name", value: "businessId" },
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "businessId" } },
+                { kind: "Field", name: { kind: "Name", value: "authorName" } },
+                { kind: "Field", name: { kind: "Name", value: "rating" } },
+                { kind: "Field", name: { kind: "Name", value: "body" } },
+                { kind: "Field", name: { kind: "Name", value: "createdAt" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<CatalogReviewsQuery, CatalogReviewsQueryVariables>;
 export const MeDocument = {
   kind: "Document",
   definitions: [

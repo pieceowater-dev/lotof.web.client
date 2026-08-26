@@ -1,16 +1,19 @@
 <script setup lang="ts">
-import { mockReviews, type MockReview } from '@/utils/mockCatalog';
+import type { MockReview } from '@/utils/mockCatalog';
 import { useI18n } from '@/composables/useI18n';
 
+// No mock fallback here (unlike BusinessCard's mock-fallback pattern) --
+// real reviews barely exist yet, and showing fabricated ones next to real
+// businesses would be misleading. Empty means empty.
 withDefaults(defineProps<{ reviews?: MockReview[] }>(), {
-  reviews: () => mockReviews,
+  reviews: () => [],
 });
 
 const { t } = useI18n();
 </script>
 
 <template>
-  <div>
+  <div v-if="reviews.length > 0">
     <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
       {{ t('home.reviewsHeading') || 'Отзывы' }}
     </h3>

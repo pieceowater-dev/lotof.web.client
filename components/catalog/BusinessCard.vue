@@ -10,9 +10,19 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
 </script>
 
 <template>
-  <div class="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+  <component
+    :is="business.to ? 'NuxtLink' : 'div'"
+    :to="business.to"
+    class="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow block"
+  >
     <div class="relative h-28 sm:h-32 bg-gradient-to-br flex items-center justify-center" :class="business.gradient">
-      <UIcon :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
+      <img
+        v-if="business.logoUrl"
+        :src="business.logoUrl"
+        :alt="business.name"
+        class="w-full h-full object-contain p-4"
+      >
+      <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
       <button
         type="button"
         class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 dark:bg-gray-900/70 backdrop-blur flex items-center justify-center shadow-sm"
@@ -47,5 +57,5 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         <span>{{ business.distance }}</span>
       </div>
     </div>
-  </div>
+  </component>
 </template>
