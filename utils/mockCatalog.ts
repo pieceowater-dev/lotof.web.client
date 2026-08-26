@@ -1,18 +1,20 @@
 // Placeholder data for the Catalog / Stores / Services mock marketplace
-// pages -- no live business directory exists yet, so these are the same
-// fake businesses reused consistently across pages/catalog.vue,
-// pages/stores.vue, and pages/services.vue rather than re-invented per page.
-
+// pages, reused consistently across pages/catalog.vue, pages/stores.vue,
+// and pages/services.vue as a fallback for whichever sections don't have
+// real data yet. rating/reviews/priceTier/distance are optional because
+// real businesses (see utils/mapCatalogBusiness.ts) don't have any of that
+// -- BusinessCard.vue hides each line when its data is missing rather than
+// showing a fabricated number.
 export interface MockBusiness {
   key: string;
   name: string;
   icon: string;
   gradient: string;
   iconColor: string;
-  rating: number;
-  reviews: number;
-  priceTier: string;
-  distance: string;
+  rating?: number;
+  reviews?: number;
+  priceTier?: string;
+  distance?: string;
   badge?: string;
 }
 

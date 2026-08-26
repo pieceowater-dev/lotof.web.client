@@ -1,14 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { menuBusinesses } from '@/utils/mockCatalog';
+import { menuBusinesses, type MockBusiness } from '@/utils/mockCatalog';
+import { getCatalogBusinesses, getCatalogCategories } from '@/api/hub/catalog';
+import { toDisplayBusiness } from '@/utils/mapCatalogBusiness';
+import { logError } from '@/utils/logger';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
 const { t } = useI18n();
 
 // Single-vertical filtered view of the Catalog: lota Menu businesses only
-// (cafes, restaurants, delivery). Mock content only, same as pages/catalog.vue.
+// (cafes, restaurants, delivery). Category chips below are still decorative
+// (they're finer-grained "genres" than the seeded Category taxonomy, no 1:1
+// mapping) -- only the businesses grid itself is real, fetched from
+// lotof.hub.msvc.core's cross-tenant aggregator. Falls back to the mock
+// grid while that aggregator has no real businesses synced yet, so the page
+// never looks broken/empty.
 const categories = [
   { key: 'cafe', icon: 'lucide:coffee', label: 'Кафе' },
   { key: 'restaurant', icon: 'lucide:utensils', label: 'Рестораны' },
@@ -17,6 +25,19 @@ const categories = [
   { key: 'bakery', icon: 'lucide:croissant', label: 'Выпечка' },
 ] as const;
 const activeCategory = ref('cafe');
+
+const realBusinesses = ref<MockBusiness[] | null>(null);
+onMounted(async () => {
+  try {
+    const [categoriesResp, businessesResp] = await Promise.all([getCatalogCategories(), getCatalogBusinesses()]);
+    if (businessesResp.rows.length > 0) {
+      realBusinesses.value = businessesResp.rows.map((b) => toDisplayBusiness(b, categoriesResp));
+    }
+  } catch (e) {
+    logError('[stores] failed to load real catalog businesses', e);
+  }
+});
+const displayedBusinesses = computed(() => realBusinesses.value ?? menuBusinesses);
 
 const favorites = ref<Set<string>>(new Set());
 function toggleFavorite(key: string) {
@@ -74,7 +95,7 @@ useSeoMeta({
         <!-- Businesses grid -->
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           <BusinessCard
-            v-for="biz in menuBusinesses"
+            v-for="biz in displayedBusinesses"
             :key="biz.key"
             :business="biz"
             :is-favorite="favorites.has(biz.key)"

@@ -4,7 +4,9 @@ import { useI18n } from '@/composables/useI18n';
 import { getApiBasePath } from '@/utils/api-base';
 import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
-import { menuBusinesses, plansBarbershops, plansBeauty } from '@/utils/mockCatalog';
+import { menuBusinesses, plansBarbershops, plansBeauty, type MockBusiness } from '@/utils/mockCatalog';
+import { getCatalogBusinesses, getCatalogCategories } from '@/api/hub/catalog';
+import { toDisplayBusiness } from '@/utils/mapCatalogBusiness';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
@@ -122,14 +124,39 @@ const featuredShops = [
   { key: 'shop6', name: 'АвтоМастер', icon: 'lucide:car', color: 'bg-slate-100 text-slate-600', hint: '30–40 мин' },
 ] as const;
 
+// The first section is the only real one here -- lota Menu businesses from
+// lotof.hub.msvc.core's cross-tenant aggregator. Barbershops/beauty stay
+// mock (lota Plans has no real aggregation yet, see pages/services.vue).
+// Falls back to the mock Menu slice while the aggregator has no businesses
+// synced yet, so the feed never looks empty.
+//
+// Titled "Заведения на lota", not "Популярное рядом" -- there's no
+// popularity signal (no review/order counts feed this yet) and no proximity
+// signal either: MenuBusiness does carry lat/lng (from Branch.Lat/Lng), but
+// nothing captures a Patron's own location to sort or filter by it, so a
+// "nearby" claim would be dishonest. Revisit once either signal exists.
+const realPopularBusinesses = ref<MockBusiness[] | null>(null);
+onMounted(async () => {
+  try {
+    const [categoriesResp, businessesResp] = await Promise.all([getCatalogCategories(), getCatalogBusinesses()]);
+    if (businessesResp.rows.length > 0) {
+      realPopularBusinesses.value = businessesResp.rows
+        .slice(0, 4)
+        .map((b) => toDisplayBusiness(b, categoriesResp));
+    }
+  } catch (e) {
+    logError('[catalog] failed to load real catalog businesses', e);
+  }
+});
+
 // Mixed feed: a bit of everything (lota Menu + lota Plans businesses) --
 // see pages/stores.vue and pages/services.vue for the single-vertical
 // filtered views, linked to from the "browse by category" row below.
-const businessSections = [
-  { key: 'popular', title: 'Популярное рядом', items: menuBusinesses.slice(0, 4) },
+const businessSections = computed(() => [
+  { key: 'popular', title: 'Заведения на lota', items: realPopularBusinesses.value ?? menuBusinesses.slice(0, 4) },
   { key: 'barbers', title: 'Стрижка и барбершопы', items: plansBarbershops },
   { key: 'beauty', title: 'Красота и уход', items: plansBeauty },
-];
+]);
 
 const favorites = ref<Set<string>>(new Set());
 function toggleFavorite(key: string) {

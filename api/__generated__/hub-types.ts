@@ -28,11 +28,87 @@ export type Scalars = {
   Float: { input: number; output: number };
 };
 
+export type AppHealthStatus = {
+  __typename?: "AppHealthStatus";
+  appBundle: Scalars["String"]["output"];
+  appliedVersion?: Maybe<Scalars["String"]["output"]>;
+  error?: Maybe<Scalars["String"]["output"]>;
+  reachable: Scalars["Boolean"]["output"];
+  schemaReady: Scalars["Boolean"]["output"];
+  targetVersion?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type CatalogBusiness = {
+  __typename?: "CatalogBusiness";
+  address?: Maybe<Scalars["String"]["output"]>;
+  categoryId?: Maybe<Scalars["String"]["output"]>;
+  city?: Maybe<Scalars["String"]["output"]>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  lat?: Maybe<Scalars["Float"]["output"]>;
+  lng?: Maybe<Scalars["Float"]["output"]>;
+  logoUrl?: Maybe<Scalars["String"]["output"]>;
+  name: Scalars["String"]["output"];
+  namespaceSlug: Scalars["String"]["output"];
+};
+
+export type CatalogBusinessFilter = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  data?: InputMaybe<DefaultFilterInput>;
+};
+
+export type CatalogCategory = {
+  __typename?: "CatalogCategory";
+  icon?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  slug: Scalars["String"]["output"];
+  sortOrder: Scalars["Int"]["output"];
+};
+
+export type CreateDeepLinkCategoryInput = {
+  name: Scalars["String"]["input"];
+};
+
+export type CreateDeepLinkInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  label?: InputMaybe<Scalars["String"]["input"]>;
+  target: Scalars["String"]["input"];
+};
+
 export type CreateInviteInput = {
   actions: Scalars["String"]["input"];
   email: Scalars["String"]["input"];
   expiresAt?: InputMaybe<Scalars["Int"]["input"]>;
   namespaceSlug: Scalars["String"]["input"];
+};
+
+export type DeepLink = {
+  __typename?: "DeepLink";
+  appInstallCount: Scalars["Int"]["output"];
+  categoryId?: Maybe<Scalars["ID"]["output"]>;
+  clickCount: Scalars["Int"]["output"];
+  code: Scalars["String"]["output"];
+  createdAt?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  label?: Maybe<Scalars["String"]["output"]>;
+  registrationCount: Scalars["Int"]["output"];
+  target: Scalars["String"]["output"];
+};
+
+export type DeepLinkCategory = {
+  __typename?: "DeepLinkCategory";
+  createdAt?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+};
+
+export type DeepLinkResolution = {
+  __typename?: "DeepLinkResolution";
+  code?: Maybe<Scalars["String"]["output"]>;
+  found: Scalars["Boolean"]["output"];
+  target?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type DefaultFilterInput = {
@@ -114,6 +190,7 @@ export type Member = {
   __typename?: "Member";
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  nickname?: Maybe<Scalars["String"]["output"]>;
   userId: Scalars["ID"]["output"];
   username: Scalars["String"]["output"];
 };
@@ -134,15 +211,24 @@ export type Mutation = {
   acceptFriendshipRequest: Friendship;
   addAppToNamespace: NamespaceApp;
   addMemberToNamespace: Namespace;
+  createDeepLink: DeepLink;
+  createDeepLinkCategory: DeepLinkCategory;
   createFriendship: Friendship;
   createInvite: Invite;
   createNamespace: Namespace;
+  deleteDeepLink: Scalars["Boolean"]["output"];
+  deleteDeepLinkCategory: Scalars["Boolean"]["output"];
   deleteInvite: Scalars["Boolean"]["output"];
   rejectFriendshipRequest: Friendship;
   removeFriendship: Scalars["Boolean"]["output"];
   removeMemberFromNamespace: Namespace;
+  setMemberNickname: Member;
+  setNamespaceBusinessType: Namespace;
+  updateDeepLink: DeepLink;
+  updateDeepLinkCategory: DeepLinkCategory;
   updateInvite: Invite;
   updateNamespace: Namespace;
+  updatePatronProfile: Patron;
   updateUser: User;
 };
 
@@ -152,11 +238,20 @@ export type MutationAcceptFriendshipRequestArgs = {
 
 export type MutationAddAppToNamespaceArgs = {
   appBundle: Scalars["String"]["input"];
+  leadSource?: InputMaybe<Scalars["String"]["input"]>;
   namespaceId: Scalars["ID"]["input"];
 };
 
 export type MutationAddMemberToNamespaceArgs = {
   input: MemberToNamespaceInput;
+};
+
+export type MutationCreateDeepLinkArgs = {
+  input: CreateDeepLinkInput;
+};
+
+export type MutationCreateDeepLinkCategoryArgs = {
+  input: CreateDeepLinkCategoryInput;
 };
 
 export type MutationCreateFriendshipArgs = {
@@ -169,6 +264,14 @@ export type MutationCreateInviteArgs = {
 
 export type MutationCreateNamespaceArgs = {
   input: NamespaceInput;
+};
+
+export type MutationDeleteDeepLinkArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteDeepLinkCategoryArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationDeleteInviteArgs = {
@@ -187,6 +290,25 @@ export type MutationRemoveMemberFromNamespaceArgs = {
   input: MemberToNamespaceInput;
 };
 
+export type MutationSetMemberNicknameArgs = {
+  input: SetMemberNicknameInput;
+};
+
+export type MutationSetNamespaceBusinessTypeArgs = {
+  businessType: Scalars["String"]["input"];
+  namespaceId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateDeepLinkArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateDeepLinkInput;
+};
+
+export type MutationUpdateDeepLinkCategoryArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateDeepLinkCategoryInput;
+};
+
 export type MutationUpdateInviteArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateInviteInput;
@@ -197,6 +319,10 @@ export type MutationUpdateNamespaceArgs = {
   input: NamespaceInput;
 };
 
+export type MutationUpdatePatronProfileArgs = {
+  input: UpdatePatronProfileInput;
+};
+
 export type MutationUpdateUserArgs = {
   id: Scalars["ID"]["input"];
   input: UserInput;
@@ -204,11 +330,19 @@ export type MutationUpdateUserArgs = {
 
 export type Namespace = {
   __typename?: "Namespace";
+  apps?: Maybe<Array<NamespaceApp>>;
+  businessType?: Maybe<Scalars["String"]["output"]>;
   createdAt?: Maybe<Scalars["String"]["output"]>;
   description?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
+  leadSource?: Maybe<Scalars["String"]["output"]>;
+  memberInfos?: Maybe<Array<UserInfo>>;
   members?: Maybe<Array<Maybe<Member>>>;
   owner: Scalars["ID"]["output"];
+  ownerEmployerNamespaces?: Maybe<Array<NamespaceRef>>;
+  ownerInfo?: Maybe<UserInfo>;
+  ownerOtherNamespaceCount?: Maybe<Scalars["Int"]["output"]>;
+  referredByNamespace?: Maybe<NamespaceRef>;
   slug: Scalars["String"]["output"];
   title: Scalars["String"]["output"];
 };
@@ -220,10 +354,28 @@ export type NamespaceApp = {
   namespaceID: Scalars["ID"]["output"];
 };
 
+export type NamespaceHealth = {
+  __typename?: "NamespaceHealth";
+  apps: Array<AppHealthStatus>;
+};
+
 export type NamespaceInput = {
   description?: InputMaybe<Scalars["String"]["input"]>;
   slug: Scalars["String"]["input"];
   title: Scalars["String"]["input"];
+};
+
+export type NamespaceRef = {
+  __typename?: "NamespaceRef";
+  id: Scalars["ID"]["output"];
+  slug: Scalars["String"]["output"];
+  title: Scalars["String"]["output"];
+};
+
+export type PaginatedCatalogBusinessList = {
+  __typename?: "PaginatedCatalogBusinessList";
+  info: PaginationInfo;
+  rows: Array<CatalogBusiness>;
 };
 
 export type PaginatedFriendshipList = {
@@ -254,10 +406,25 @@ export type PaginationInput = {
   page: Scalars["Int"]["input"];
 };
 
+export type Patron = {
+  __typename?: "Patron";
+  avatarUrl?: Maybe<Scalars["String"]["output"]>;
+  email: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  name?: Maybe<Scalars["String"]["output"]>;
+  phone?: Maybe<Scalars["String"]["output"]>;
+};
+
 export type Query = {
   __typename?: "Query";
   _placeholder?: Maybe<Scalars["String"]["output"]>;
+  adminDeepLinkCategories: Array<DeepLinkCategory>;
+  adminDeepLinks: Array<DeepLink>;
+  adminNamespaceHealth: NamespaceHealth;
   adminNamespaces: PaginatedNamespaceList;
+  catalogBusinesses: PaginatedCatalogBusinessList;
+  catalogCategories: Array<CatalogCategory>;
+  findUserByEmail?: Maybe<User>;
   invite?: Maybe<Invite>;
   invites: Array<Invite>;
   isAppInNamespace?: Maybe<NamespaceApp>;
@@ -265,14 +432,33 @@ export type Query = {
   member?: Maybe<Member>;
   members: Array<Member>;
   myFriends: PaginatedFriendshipList;
+  myReferrals: Array<Namespace>;
   namespace?: Maybe<Namespace>;
   namespaces: PaginatedNamespaceList;
+  patronMe?: Maybe<Patron>;
+  resolveDeepLink: DeepLinkResolution;
   user?: Maybe<User>;
   users: PaginatedUserList;
 };
 
+export type QueryAdminDeepLinksArgs = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryAdminNamespaceHealthArgs = {
+  namespaceId: Scalars["ID"]["input"];
+};
+
 export type QueryAdminNamespacesArgs = {
   filter?: InputMaybe<DefaultFilterInput>;
+};
+
+export type QueryCatalogBusinessesArgs = {
+  filter?: InputMaybe<CatalogBusinessFilter>;
+};
+
+export type QueryFindUserByEmailArgs = {
+  email: Scalars["String"]["input"];
 };
 
 export type QueryInviteArgs = {
@@ -303,12 +489,20 @@ export type QueryMyFriendsArgs = {
   filter?: InputMaybe<FriendshipFilter>;
 };
 
+export type QueryMyReferralsArgs = {
+  namespaceId: Scalars["ID"]["input"];
+};
+
 export type QueryNamespaceArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type QueryNamespacesArgs = {
   filter?: InputMaybe<DefaultFilterInput>;
+};
+
+export type QueryResolveDeepLinkArgs = {
+  code: Scalars["String"]["input"];
 };
 
 export type QueryUserArgs = {
@@ -319,9 +513,25 @@ export type QueryUsersArgs = {
   filter?: InputMaybe<DefaultFilterInput>;
 };
 
+export type SetMemberNicknameInput = {
+  namespaceId: Scalars["ID"]["input"];
+  nickname: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type SortInput = {
   direction: Scalars["String"]["input"];
   field: Scalars["String"]["input"];
+};
+
+export type UpdateDeepLinkCategoryInput = {
+  name: Scalars["String"]["input"];
+};
+
+export type UpdateDeepLinkInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  label?: InputMaybe<Scalars["String"]["input"]>;
+  target: Scalars["String"]["input"];
 };
 
 export type UpdateInviteInput = {
@@ -330,8 +540,21 @@ export type UpdateInviteInput = {
   expiresAt?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type UpdatePatronProfileInput = {
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  phone?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type User = {
   __typename?: "User";
+  email: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  phone?: Maybe<Scalars["String"]["output"]>;
+  username: Scalars["String"]["output"];
+};
+
+export type UserInfo = {
+  __typename?: "UserInfo";
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   phone?: Maybe<Scalars["String"]["output"]>;
@@ -425,6 +648,49 @@ export type NamespacesQuery = {
     }>;
     info: { __typename?: "PaginationInfo"; count: number };
   };
+};
+
+export type CatalogBusinessesQueryVariables = Exact<{
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  page?: InputMaybe<Scalars["Int"]["input"]>;
+  length?: InputMaybe<FilterPaginationLengthEnum>;
+}>;
+
+export type CatalogBusinessesQuery = {
+  __typename?: "Query";
+  catalogBusinesses: {
+    __typename?: "PaginatedCatalogBusinessList";
+    rows: Array<{
+      __typename?: "CatalogBusiness";
+      id: string;
+      namespaceSlug: string;
+      categoryId?: string | null;
+      name: string;
+      logoUrl?: string | null;
+      description?: string | null;
+      address?: string | null;
+      city?: string | null;
+      lat?: number | null;
+      lng?: number | null;
+      isActive: boolean;
+    }>;
+    info: { __typename?: "PaginationInfo"; count: number };
+  };
+};
+
+export type CatalogCategoriesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type CatalogCategoriesQuery = {
+  __typename?: "Query";
+  catalogCategories: Array<{
+    __typename?: "CatalogCategory";
+    id: string;
+    name: string;
+    slug: string;
+    icon?: string | null;
+    sortOrder: number;
+  }>;
 };
 
 export type MeQueryVariables = Exact<{ [key: string]: never }>;
@@ -904,6 +1170,208 @@ export const NamespacesDocument = {
     },
   ],
 } as unknown as DocumentNode<NamespacesQuery, NamespacesQueryVariables>;
+export const CatalogBusinessesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CatalogBusinesses" },
+      variableDefinitions: [
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "categoryId" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "ID" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "search" },
+          },
+          type: { kind: "NamedType", name: { kind: "Name", value: "String" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: { kind: "Variable", name: { kind: "Name", value: "page" } },
+          type: { kind: "NamedType", name: { kind: "Name", value: "Int" } },
+        },
+        {
+          kind: "VariableDefinition",
+          variable: {
+            kind: "Variable",
+            name: { kind: "Name", value: "length" },
+          },
+          type: {
+            kind: "NamedType",
+            name: { kind: "Name", value: "FilterPaginationLengthEnum" },
+          },
+        },
+      ],
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogBusinesses" },
+            arguments: [
+              {
+                kind: "Argument",
+                name: { kind: "Name", value: "filter" },
+                value: {
+                  kind: "ObjectValue",
+                  fields: [
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "categoryId" },
+                      value: {
+                        kind: "Variable",
+                        name: { kind: "Name", value: "categoryId" },
+                      },
+                    },
+                    {
+                      kind: "ObjectField",
+                      name: { kind: "Name", value: "data" },
+                      value: {
+                        kind: "ObjectValue",
+                        fields: [
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "search" },
+                            value: {
+                              kind: "Variable",
+                              name: { kind: "Name", value: "search" },
+                            },
+                          },
+                          {
+                            kind: "ObjectField",
+                            name: { kind: "Name", value: "pagination" },
+                            value: {
+                              kind: "ObjectValue",
+                              fields: [
+                                {
+                                  kind: "ObjectField",
+                                  name: { kind: "Name", value: "page" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "page" },
+                                  },
+                                },
+                                {
+                                  kind: "ObjectField",
+                                  name: { kind: "Name", value: "length" },
+                                  value: {
+                                    kind: "Variable",
+                                    name: { kind: "Name", value: "length" },
+                                  },
+                                },
+                              ],
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "rows" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "id" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "namespaceSlug" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "categoryId" },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "name" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "logoUrl" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "description" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "address" },
+                      },
+                      { kind: "Field", name: { kind: "Name", value: "city" } },
+                      { kind: "Field", name: { kind: "Name", value: "lat" } },
+                      { kind: "Field", name: { kind: "Name", value: "lng" } },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "isActive" },
+                      },
+                    ],
+                  },
+                },
+                {
+                  kind: "Field",
+                  name: { kind: "Name", value: "info" },
+                  selectionSet: {
+                    kind: "SelectionSet",
+                    selections: [
+                      { kind: "Field", name: { kind: "Name", value: "count" } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CatalogBusinessesQuery,
+  CatalogBusinessesQueryVariables
+>;
+export const CatalogCategoriesDocument = {
+  kind: "Document",
+  definitions: [
+    {
+      kind: "OperationDefinition",
+      operation: "query",
+      name: { kind: "Name", value: "CatalogCategories" },
+      selectionSet: {
+        kind: "SelectionSet",
+        selections: [
+          {
+            kind: "Field",
+            name: { kind: "Name", value: "catalogCategories" },
+            selectionSet: {
+              kind: "SelectionSet",
+              selections: [
+                { kind: "Field", name: { kind: "Name", value: "id" } },
+                { kind: "Field", name: { kind: "Name", value: "name" } },
+                { kind: "Field", name: { kind: "Name", value: "slug" } },
+                { kind: "Field", name: { kind: "Name", value: "icon" } },
+                { kind: "Field", name: { kind: "Name", value: "sortOrder" } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<
+  CatalogCategoriesQuery,
+  CatalogCategoriesQueryVariables
+>;
 export const MeDocument = {
   kind: "Document",
   definitions: [

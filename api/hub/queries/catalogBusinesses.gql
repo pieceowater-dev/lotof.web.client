@@ -1,0 +1,25 @@
+query CatalogBusinesses($categoryId: ID, $search: String, $page: Int, $length: FilterPaginationLengthEnum) {
+  catalogBusinesses(
+    filter: {
+      categoryId: $categoryId
+      data: { search: $search, pagination: { page: $page, length: $length } }
+    }
+  ) {
+    rows {
+      id
+      namespaceSlug
+      categoryId
+      name
+      logoUrl
+      description
+      address
+      city
+      lat
+      lng
+      isActive
+    }
+    info {
+      count
+    }
+  }
+}

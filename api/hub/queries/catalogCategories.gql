@@ -1,0 +1,9 @@
+query CatalogCategories {
+  catalogCategories {
+    id
+    name
+    slug
+    icon
+    sortOrder
+  }
+}

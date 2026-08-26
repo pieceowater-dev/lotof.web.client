@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { plansBarbershops, plansBeauty } from '@/utils/mockCatalog';
-import BusinessCard from '@/components/catalog/BusinessCard.vue';
-import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
 const { t } = useI18n();
 
 // Single-vertical filtered view of the Catalog: lota Plans businesses only
-// (booking/appointment-based services). Mock content only, same as
-// pages/catalog.vue.
+// (booking/appointment-based services). Unlike /catalog and /stores, this
+// page has no real data source at all yet -- lota Plans isn't aggregated
+// into lotof.hub.msvc.core (see that repo's BusinessSource.PLANS, reserved
+// but unused). A genuine empty state, not fabricated mock businesses,
+// since real ones now appear next to this on /catalog and /stores.
 const categories = [
   { key: 'barbershop', icon: 'lucide:scissors', label: 'Барбершопы' },
   { key: 'nails', icon: 'lucide:sparkles', label: 'Маникюр' },
@@ -18,19 +18,6 @@ const categories = [
   { key: 'lashes', icon: 'lucide:eye', label: 'Ресницы и брови' },
 ] as const;
 const activeCategory = ref('barbershop');
-
-const favorites = ref<Set<string>>(new Set());
-function toggleFavorite(key: string) {
-  const next = new Set(favorites.value);
-  if (next.has(key)) next.delete(key);
-  else next.add(key);
-  favorites.value = next;
-}
-
-const sections = [
-  { key: 'barbers', title: 'Стрижка и барбершопы', items: plansBarbershops },
-  { key: 'beauty', title: 'Красота и уход', items: plansBeauty },
-];
 
 const siteUrl = 'https://lota.tools';
 useSeoMeta({
@@ -77,21 +64,18 @@ useSeoMeta({
           </div>
         </div>
 
-        <!-- Businesses, grouped by kind -->
-        <div v-for="section in sections" :key="section.key">
-          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
-          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            <BusinessCard
-              v-for="biz in section.items"
-              :key="biz.key"
-              :business="biz"
-              :is-favorite="favorites.has(biz.key)"
-              @toggle-favorite="toggleFavorite"
-            />
+        <!-- No real lota Plans aggregation yet -- see script comment above. -->
+        <div class="rounded-3xl p-8 md:p-10 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+            <UIcon name="lucide:scissors" class="w-7 h-7 text-violet-500" />
           </div>
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            {{ t('home.servicesComingSoonTitle') || 'Скоро здесь появятся заведения' }}
+          </h3>
+          <p class="max-w-md text-sm text-gray-500 dark:text-gray-400">
+            {{ t('home.servicesComingSoonSubtitle') || 'lota Plans пока не подключена к каталогу — запись и бронирование появятся здесь позже.' }}
+          </p>
         </div>
-
-        <ReviewsSection />
       </div>
     </div>
   </div>
