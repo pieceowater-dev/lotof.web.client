@@ -249,12 +249,19 @@ function formatTime(record: AtraceRecord) {
   }
 }
 
+// dayRecords is already sorted chronologically (see recordsByDay above), so
+// alternating by position is correct on its own: even index (0, 2, 4, ...)
+// is an arrival, odd index is a departure. The previous version special-cased
+// the first record as always "arrival" and the LAST record as always
+// "departure" -- redundant for the first (index 0 is already even) and
+// wrong for the last whenever the day has an odd total count: e.g. 3 scans
+// (arrive, leave for lunch, return from lunch) has last index 2, which
+// alternation correctly calls an arrival, but the special case forced it to
+// "departure" instead. Only ever visible on odd-count days, which is why an
+// 8-scan test day looked fine (its last index is odd, so both rules agreed)
+// while a 3-4 scan day mislabeled the final scan.
 function getRecordDirection(record: AtraceRecord, dayRecords: AtraceRecord[]): string {
   if (!dayRecords.length) return '';
-  const first = dayRecords[0];
-  const last = dayRecords[dayRecords.length - 1];
-  if (record.id === first.id) return t('app.checkIn');
-  if (record.id === last.id) return t('app.checkOut');
   const index = dayRecords.findIndex(r => r.id === record.id);
   if (index < 0) return '';
   return index % 2 === 0 ? t('app.checkIn') : t('app.checkOut');
