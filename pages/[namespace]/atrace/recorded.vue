@@ -37,6 +37,7 @@ const FAILURE_REASON_KEYS: Record<string, string> = {
   not_member: 'atraceRecordedReasonNotMember',
   post_not_found: 'atraceRecordedReasonPostNotFound',
   invalid_link: 'atraceRecordedReasonInvalidLink',
+  geo_required: 'atraceRecordedReasonGeoRequired',
 };
 const failureReason = computed(() => {
   const code = (route.query.reason as string) || '';

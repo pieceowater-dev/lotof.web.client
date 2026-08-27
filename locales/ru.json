@@ -241,6 +241,7 @@
     "atraceRecordedReasonNotMember": "Вы не состоите в этой компании",
     "atraceRecordedReasonPostNotFound": "Точка не найдена. Обратитесь к руководителю",
     "atraceRecordedReasonInvalidLink": "Ссылка повреждена. Отсканируйте QR ещё раз",
+    "atraceRecordedReasonGeoRequired": "Эта точка требует подтверждения геолокации. Разрешите доступ к местоположению и попробуйте снова",
     "geoConfirmed": "Гео подтверждено",
     "geoNotConfirmed": "Гео не подтверждено",
     "geoConfirmedHint": "Отметка была создана менее чем в {meters} метрах (до 100м) от точки локации",

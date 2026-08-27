@@ -26,6 +26,7 @@ interface UserDailyRecord {
   attended: boolean;
   legitimate: boolean;
   reason?: string;
+  timezone?: string; // IANA zone firstCheckIn/lastCheckOut should be displayed in; falls back to the exporting browser's own zone when absent (older rows)
 }
 
 interface Locale {
@@ -202,15 +203,22 @@ function buildPivotTableData(
       const record = recordsByUserAndDate.get(username)!.get(date);
       
       if (record) {
+        // Format in the post's own timezone (same as the on-screen record
+        // views), not whichever timezone the exporting browser happens to be
+        // in -- an admin generating the report from a different city/country
+        // than the post previously got check-in/check-out times shifted by
+        // their own UTC offset instead of the actual local work times.
         const checkInTime = new Date(record.firstCheckIn).toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false,
+          timeZone: record.timezone || undefined,
         });
         const checkOutTime = new Date(record.lastCheckOut).toLocaleTimeString('en-US', {
           hour: '2-digit',
           minute: '2-digit',
           hour12: false,
+          timeZone: record.timezone || undefined,
         });
         row[header] = `${checkInTime} - ${checkOutTime}`;
         totalHours += record.workedHours;

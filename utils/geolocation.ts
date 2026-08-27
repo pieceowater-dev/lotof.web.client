@@ -25,7 +25,18 @@ const GEO_PROMPT_SKIP_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
 // Returns coords if permission is granted or prompted once; skips if denied
 // or already prompted very recently and still not decided.
-export async function getGeolocationOnce(options?: PositionOptions): Promise<GeoPoint> {
+//
+// alwaysPrompt bypasses that "recently prompted, still not decided" cooldown
+// -- for a screen where getting a fix is the whole point of being there right
+// now (check-in), silently giving up on it for up to 24h after one dismissed/
+// timed-out dialog just makes the action fail with no visible explanation
+// every time in between. The cooldown still makes sense for callers where a
+// missed fix is a soft nicety (e.g. a post's location-picker map defaulting
+// to the user's position), so it stays opt-in rather than removed outright.
+// An explicit `denied` permission is unaffected either way -- the browser
+// itself won't re-prompt after a real denial, so there's nothing to gain by
+// trying again.
+export async function getGeolocationOnce(options?: PositionOptions, opts?: { alwaysPrompt?: boolean }): Promise<GeoPoint> {
   if (typeof window === 'undefined') return {};
   if (!('geolocation' in navigator)) return {};
 
@@ -37,7 +48,7 @@ export async function getGeolocationOnce(options?: PositionOptions): Promise<Geo
       if (permissionState === 'denied') {
         return {};
       }
-      if (permissionState === 'prompt') {
+      if (permissionState === 'prompt' && !opts?.alwaysPrompt) {
         // Avoid re-prompting on every visit if the user very recently saw
         // the prompt and didn't decide -- but only for a bounded window, so
         // a later visit still gets a chance to actually ask again.

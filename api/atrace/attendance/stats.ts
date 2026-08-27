@@ -93,6 +93,7 @@ const EXPORT_DAILY_ATTENDANCE = `
       reason
       late
       earlyLeave
+      timezone
     }
   }
 `;
@@ -178,6 +179,7 @@ export async function atraceExportDailyAttendance(
   reason?: string;
   late: boolean;
   earlyLeave: boolean;
+  timezone?: string;
 }>> {
   const namespace = resolveAtraceNsSlug(nsSlug);
   return atraceRequestWithRefresh(async () => {
@@ -195,6 +197,7 @@ export async function atraceExportDailyAttendance(
         reason?: string;
         late: boolean;
         earlyLeave: boolean;
+        timezone?: string;
       }>
     }>(EXPORT_DAILY_ATTENDANCE, { startDate, endDate }, {
       headers: {

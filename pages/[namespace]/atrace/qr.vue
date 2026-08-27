@@ -46,6 +46,7 @@ function classifyCheckFailure(err: unknown): string {
   if (msg.includes('access denied') || msg.includes('not active in atrace')) return 'not_active';
   if (msg.includes('not a member of the namespace')) return 'not_member';
   if (msg.includes('failed to get post')) return 'post_not_found';
+  if (msg.includes('location confirmation required')) return 'geo_required';
   return '';
 }
 
@@ -150,12 +151,17 @@ async function runCheck() {
       return;
     }
 
-    // Request geolocation only once (skip if previously denied)
+    // Request geolocation (skip only if the browser permission is a real,
+    // explicit denial). alwaysPrompt: check-in is exactly the situation
+    // getGeolocationOnce's normal 24h "don't re-nag" cooldown is wrong for --
+    // a post can require a confirmed location for the check-in to count at
+    // all, so silently giving up on asking again after one dismissed/timed-
+    // out dialog would fail every check-in in between with no visible reason.
     let latitude: number | undefined;
     let longitude: number | undefined;
     if (process.client) {
       try {
-        const coords = await getGeolocationOnce({ timeout: 5000, enableHighAccuracy: false });
+        const coords = await getGeolocationOnce({ timeout: 5000, enableHighAccuracy: false }, { alwaysPrompt: true });
         latitude = coords.latitude;
         longitude = coords.longitude;
       } catch (e) {

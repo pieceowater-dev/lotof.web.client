@@ -238,6 +238,7 @@
     "atraceRecordedReasonNotMember": "You're not a member of this company",
     "atraceRecordedReasonPostNotFound": "Post not found. Contact your manager",
     "atraceRecordedReasonInvalidLink": "Broken link. Scan the QR again",
+    "atraceRecordedReasonGeoRequired": "This post requires confirmed location. Allow location access and try again",
     "geoConfirmed": "Geo confirmed",
     "geoNotConfirmed": "Geo not confirmed",
     "geoConfirmedHint": "Check was made within {meters} meters from the post location",
