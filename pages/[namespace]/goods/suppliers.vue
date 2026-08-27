@@ -4,6 +4,7 @@ import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
@@ -211,7 +212,7 @@ onMounted(loadAll);
           <template #name-data="{ row }">
             <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)">
               <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEdit(supplierById.get(row.id)!)">
-                {{ row.name }}
+                {{ maskProfanity(row.name) }}
               </button>
               <UBadge v-if="row.contactsClientId && contactsSummaryCache[row.id]" color="primary" variant="soft" size="xs">
                 {{ contactsSummaryCache[row.id]?.name || t('goods.unknownContact') }}

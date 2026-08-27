@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { maskProfanity } from '@/utils/profanityFilter';
 import {
   addStamp,
   addBonusTransaction,
@@ -561,10 +562,10 @@ async function submitStampFromModal() {
             <div class="flex items-start justify-between mb-2">
               <div>
                 <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                  {{ progress.stampCard?.name }}
+                  {{ maskProfanity(progress.stampCard?.name) }}
                 </p>
                 <p class="text-xs text-slate-600 dark:text-slate-400 mt-1">
-                  {{ progress.stampCard?.description }}
+                  {{ maskProfanity(progress.stampCard?.description) }}
                 </p>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { useToast } from '#imports';
 import { addTagToClient, removeTagFromClient } from '@/api/contacts/tags';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 interface Tag {
   id: string;
@@ -94,7 +95,7 @@ function openTagsModal() {
             name="lucide:tag"
             class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400"
           />
-          <span>{{ tag.name }}</span>
+          <span>{{ maskProfanity(tag.name) }}</span>
           <button
             v-if="clientId"
             :disabled="isRemoving === tag.id"

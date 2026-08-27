@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import { getErrorMessage } from '@/utils/types/errors';
 import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
@@ -1073,7 +1074,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </div>
               <div v-if="order.comment" class="flex items-start gap-2 text-sm">
                 <Icon name="lucide:message-square" class="w-4 h-4 text-gray-400 mt-0.5" />
-                <span class="text-gray-600 dark:text-gray-300">{{ order.comment }}</span>
+                <span class="text-gray-600 dark:text-gray-300">{{ maskProfanity(order.comment) }}</span>
               </div>
               <div v-if="order.sourceTag" class="flex items-center gap-2 text-xs text-gray-400">
                 <Icon name="lucide:tag" class="w-3.5 h-3.5" />

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 export interface Tier {
   id?: string;
@@ -195,7 +196,7 @@ async function deleteTier(tier: Tier) {
             />
             <div class="flex-1 min-w-0">
               <h4 class="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                {{ tier.name }}
+                {{ maskProfanity(tier.name) }}
               </h4>
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 {{ t('app.level') || 'Level' }} {{ tier.level }}
@@ -222,7 +223,7 @@ async function deleteTier(tier: Tier) {
         </div>
 
         <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
-          {{ tier.description }}
+          {{ maskProfanity(tier.description) }}
         </p>
 
         <div class="space-y-1 mb-2 text-sm">

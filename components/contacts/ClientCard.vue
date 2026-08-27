@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 const { t } = useI18n();
 
@@ -19,9 +20,9 @@ const emit = defineEmits<{
 
 const clientName = computed(() => {
   if (props.client.client.clientType === 'INDIVIDUAL' && props.client.individual) {
-    return `${props.client.individual.lastName} ${props.client.individual.firstName}`;
+    return maskProfanity(`${props.client.individual.lastName} ${props.client.individual.firstName}`);
   }
-  return props.client.legalEntity?.legalName || 'N/A';
+  return maskProfanity(props.client.legalEntity?.legalName) || 'N/A';
 });
 
 const clientType = computed(() => {

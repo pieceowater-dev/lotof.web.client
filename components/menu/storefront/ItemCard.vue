@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { getContrastTextColor } from '@/utils/color';
 import { formatMoney } from '@/utils/currency';
+import { maskProfanity } from '@/utils/profanityFilter';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
 
@@ -52,7 +53,7 @@ function handleAddClick() {
         <img
           v-if="item.imageUrl"
           :src="item.imageUrl"
-          :alt="item.imageAlt || item.name"
+          :alt="maskProfanity(item.imageAlt || item.name)"
           class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
         >
         <!-- Placeholder fills the same aspect-square box a real photo would
@@ -126,7 +127,7 @@ function handleAddClick() {
       <!-- min-h reserves 2 lines even when the name only needs 1, so a short
            name doesn't leave this card shorter than its row-mates --
            line-clamp-2 alone only caps the max, it doesn't set a min. -->
-      <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">{{ item.name }}</div>
+      <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">{{ maskProfanity(item.name) }}</div>
       <div class="text-sm font-semibold mt-1 tabular-nums" :style="{ color: secondaryColor }">{{ formatMoney(item.price, currency) }}</div>
     </button>
   </div>

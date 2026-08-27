@@ -5,6 +5,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { taskShortCode, priorityIcon, priorityColorClass } from '@/utils/taskDisplay';
+import { maskProfanity } from '@/utils/profanityFilter';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
@@ -193,7 +194,7 @@ function syncMarkers() {
     // A tooltip (hover) for a quick title glance -- unlike a popup, it never
     // sits between the user and opening the task, so a click always works.
     marker.bindTooltip(
-      `<b>#${num} · ${escapeHtml(taskShortCode(boardSlug.value, task.taskNumber))}</b><br>${escapeHtml(task.title)}`,
+      `<b>#${num} · ${escapeHtml(taskShortCode(boardSlug.value, task.taskNumber))}</b><br>${escapeHtml(maskProfanity(task.title))}`,
       { direction: 'top', offset: [0, -14] },
     );
     marker.on('click', () => { selectedTaskId.value = task.id; openDetail(task); });
@@ -372,7 +373,7 @@ onBeforeUnmount(() => {
                 <span class="font-mono">{{ taskShortCode(boardSlug, task.taskNumber) }}</span>
               </div>
               <div class="flex items-start justify-between gap-2">
-                <span class="text-sm font-medium leading-snug line-clamp-2">{{ task.title }}</span>
+                <span class="text-sm font-medium leading-snug line-clamp-2">{{ maskProfanity(task.title) }}</span>
                 <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4 flex-shrink-0 mt-0.5', priorityColorClass(task.priority)]" />
               </div>
               <p v-if="task.textAddress" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5 flex items-center gap-1">

@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { historyDotStyle } from '@/utils/orderStatus';
 import type { MenuOrderHistoryEntry } from '@/api/menu/order/history';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 const { t } = useI18n();
 
@@ -26,7 +27,7 @@ defineProps<{
           <div class="text-sm font-medium">{{ statusLabel(h.newStatus) }}</div>
           <div class="text-xs text-gray-400">{{ formatDate(h.createdAt) }}</div>
           <div v-if="h.userId" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ memberDisplayName(h.userId) }}</div>
-          <div v-if="h.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ h.comment }}</div>
+          <div v-if="h.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ maskProfanity(h.comment) }}</div>
         </div>
       </li>
     </ol>

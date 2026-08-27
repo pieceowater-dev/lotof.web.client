@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
 import { logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { getErrorMessage } from '@/utils/types/errors';
 import CategoryModal from '@/components/menu/CategoryModal.vue';
 import MenuItemModal from '@/components/menu/MenuItemModal.vue';
@@ -626,7 +627,7 @@ onMounted(async () => {
           >
             <span class="truncate flex items-center gap-1.5">
               <UIcon v-if="isChild" name="lucide:corner-down-right" class="w-3 h-3 text-gray-400 flex-shrink-0" />
-              {{ c.name }}
+              {{ maskProfanity(c.name) }}
             </span>
             <div class="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
               <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="isFirstSibling(c)" @click.stop="moveCategory(c, -1)" />
@@ -706,7 +707,7 @@ onMounted(async () => {
                 class="text-left font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 transition-colors truncate w-32 flex-shrink-0"
                 @click="openEditItem(row)"
               >
-                {{ row.name }}
+                {{ maskProfanity(row.name) }}
               </button>
               <span class="text-sm text-gray-600 dark:text-gray-400 tabular-nums flex-shrink-0 w-16 text-right">{{ row.price }}</span>
               <div class="hidden lg:flex flex-wrap gap-1 flex-shrink-0 w-28">

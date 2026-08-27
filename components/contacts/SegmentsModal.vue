@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '#imports';
+import { maskProfanity } from '@/utils/profanityFilter';
 import type { Segment, SegmentRule } from '@/api/contacts/segments';
 import { 
   listSegments, 
@@ -180,7 +181,7 @@ watch(() => props.isOpen, (newVal) => {
               @click="selectSegment(segment)"
             >
               <div class="flex items-center justify-between">
-                <span>{{ segment.name }}</span>
+                <span>{{ maskProfanity(segment.name) }}</span>
                 <UButton
                   size="xs"
                   color="red"

@@ -9,6 +9,7 @@ import { dynamicLS } from '@/utils/storageKeys';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import { usePwaInstall } from '@/composables/usePwaInstall';
 import { stripMarkdownPreview } from '@/utils/renderMarkdown';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { issuesTour } from '@/config/tours';
 import TaskModal from '@/components/tasks/TaskModal.vue';
@@ -263,7 +264,7 @@ async function loadBoard() {
 function firstLine(text?: string | null): string {
   if (!text) return '';
   const line = text.split('\n').find((l) => l.trim().length > 0)?.trim() || '';
-  return stripMarkdownPreview(line);
+  return maskProfanity(stripMarkdownPreview(line));
 }
 function formatDueDate(iso: string) {
   try {
@@ -816,7 +817,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
                 <span class="font-mono">{{ taskShortCode(boardSlug, task.taskNumber) }}</span>
               </div>
               <div class="flex items-start justify-between gap-2">
-                <span class="text-sm font-medium leading-snug line-clamp-2">{{ task.title }}</span>
+                <span class="text-sm font-medium leading-snug line-clamp-2">{{ maskProfanity(task.title) }}</span>
                 <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4 flex-shrink-0 mt-0.5', priorityColorClass(task.priority)]" />
               </div>
               <p v-if="firstLine(task.description)" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ firstLine(task.description) }}</p>

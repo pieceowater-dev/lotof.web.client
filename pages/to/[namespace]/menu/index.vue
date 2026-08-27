@@ -18,6 +18,7 @@ import { buildTableTag, formatTableNumber } from '@/utils/tableTag';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
 import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
 import { getCatalogBusinesses } from '@/api/hub/catalog';
+import { maskProfanity } from '@/utils/profanityFilter';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -28,6 +29,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 definePageMeta({ layout: false });
 
 const { t, locale, setLocale, available: availableLocales } = useI18n();
+const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 const LOCALE_LABELS: Record<string, string> = { ru: 'РУ', kk: 'ҚАЗ', en: 'EN' };
 const route = useRoute();
 const router = useRouter();
@@ -955,7 +957,7 @@ useHead(() => {
             </button>
           </div>
           <a
-            href="https://lota.tools"
+            :href="siteUrl"
             target="_blank"
             rel="noopener"
             class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
@@ -995,7 +997,7 @@ useHead(() => {
           </div>
           <div class="min-w-0 flex-1 pt-1">
             <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
-              {{ data.storefront.brandSettings?.name || nsSlug }}
+              {{ data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug }}
             </h1>
             <p
               v-if="data.storefront.brandSettings?.welcomeMessage"
@@ -1004,7 +1006,7 @@ useHead(() => {
               :style="{ color: onPrimaryText, opacity: 0.85 }"
               @click="isDescriptionExpanded = !isDescriptionExpanded"
             >
-              {{ data.storefront.brandSettings.welcomeMessage }}
+              {{ maskProfanity(data.storefront.brandSettings.welcomeMessage) }}
             </p>
           </div>
         </div>
@@ -1091,9 +1093,9 @@ useHead(() => {
           class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block text-left shadow-md"
           @click="openBanner(b)"
         >
-          <img :src="b.imageUrl" :alt="b.imageAlt || b.title" class="w-full h-full object-cover">
+          <img :src="b.imageUrl" :alt="maskProfanity(b.imageAlt || b.title)" class="w-full h-full object-cover">
           <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-            <span class="text-white text-sm font-semibold">{{ b.title }}</span>
+            <span class="text-white text-sm font-semibold">{{ maskProfanity(b.title) }}</span>
           </div>
         </button>
       </div>
@@ -1185,7 +1187,7 @@ useHead(() => {
               :style="activeCategoryId === c.id ? { backgroundColor: primaryColor, color: onPrimaryText } : {}"
               @click="scrollToCategory(c.id)"
             >
-              {{ c.name }}
+              {{ maskProfanity(c.name) }}
             </button>
           </div>
         </div>
@@ -1258,7 +1260,7 @@ useHead(() => {
             :data-category-id="c.id"
             class="scroll-mt-28 border-t border-gray-200 dark:border-gray-800 pt-6 first:border-t-0 first:pt-0"
           >
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ c.name }}</h2>
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ maskProfanity(c.name) }}</h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
               <ItemCard
                 v-for="item in visibleItemsByCategory[c.id] || []"
@@ -1286,7 +1288,7 @@ useHead(() => {
               :key="child.id"
               class="mt-6"
             >
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ child.name }}</h3>
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ maskProfanity(child.name) }}</h3>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
                 <ItemCard
                   v-for="item in visibleItemsByCategory[child.id] || []"
@@ -1386,7 +1388,7 @@ useHead(() => {
       <!-- Footer: company/contact info instead of a bare spacer. -->
       <footer class="mt-10 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
         <div class="max-w-3xl mx-auto px-4 py-6 space-y-3">
-          <div class="font-semibold text-gray-900 dark:text-white">{{ data.storefront.brandSettings?.name || nsSlug }}</div>
+          <div class="font-semibold text-gray-900 dark:text-white">{{ data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug }}</div>
           <div v-if="activeBranch || visibleBranches[0]" class="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
             <Icon name="lucide:map-pin" class="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span>{{ (activeBranch || visibleBranches[0]).address }}</span>
@@ -1426,7 +1428,7 @@ useHead(() => {
           </div>
           <div class="flex items-center justify-between pt-2">
             <a
-              href="https://lota.tools"
+              :href="siteUrl"
               target="_blank"
               rel="noopener"
               class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
@@ -1472,7 +1474,7 @@ useHead(() => {
               <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
                 {{ t('menu.itemDetails') || 'Menu item' }}
               </p>
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ selectedItem.name }}</h2>
+              <h2 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ maskProfanity(selectedItem.name) }}</h2>
             </div>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" class="flex-shrink-0" @click="closeItemDetail" />
           </div>
@@ -1483,7 +1485,7 @@ useHead(() => {
             <img
               v-if="selectedItem.imageUrl"
               :src="selectedItem.imageUrl"
-              :alt="selectedItem.imageAlt || selectedItem.name"
+              :alt="maskProfanity(selectedItem.imageAlt || selectedItem.name)"
               class="w-full h-full object-cover"
             >
             <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
@@ -1498,16 +1500,16 @@ useHead(() => {
               class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium"
               :style="badgeById(bid) ? { backgroundColor: badgeById(bid)!.bgColor, color: badgeById(bid)!.textColor } : {}"
             >
-              <span v-if="badgeById(bid)?.icon">{{ badgeById(bid)?.icon }}</span>{{ badgeById(bid)?.text }}
+              <span v-if="badgeById(bid)?.icon">{{ badgeById(bid)?.icon }}</span>{{ maskProfanity(badgeById(bid)?.text) }}
             </span>
           </div>
           <p v-if="selectedItem.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            {{ selectedItem.description }}
+            {{ maskProfanity(selectedItem.description) }}
           </p>
 
           <div v-for="group in selectedItemModifierGroups" :key="group.id" class="pt-3 border-t border-gray-100 dark:border-gray-800">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ group.name }}</span>
+              <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ maskProfanity(group.name) }}</span>
               <span
                 class="text-[11px] font-medium px-1.5 py-0.5 rounded-full"
                 :class="group.isRequired
@@ -1543,7 +1545,7 @@ useHead(() => {
                   >
                     <Icon v-if="(selectedModifiers[group.id] || []).includes(opt.id)" name="lucide:check" class="w-2.5 h-2.5 text-white" />
                   </span>
-                  {{ opt.name }}
+                  {{ maskProfanity(opt.name) }}
                 </span>
                 <span v-if="opt.price" class="text-xs text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">+{{ formatMoney(opt.price, data?.storefront.brandSettings?.currencyCode) }}</span>
               </label>
@@ -1645,14 +1647,14 @@ useHead(() => {
         <template #header>
           <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ selectedBanner.title }}</h3>
+            <h3 class="text-lg font-semibold">{{ maskProfanity(selectedBanner.title) }}</h3>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isBannerSheetOpen = false" />
           </div>
         </template>
         <div class="space-y-4">
-          <img :src="selectedBanner.imageUrl" :alt="selectedBanner.imageAlt || selectedBanner.title" class="w-full aspect-video object-cover rounded-xl">
+          <img :src="selectedBanner.imageUrl" :alt="maskProfanity(selectedBanner.imageAlt || selectedBanner.title)" class="w-full aspect-video object-cover rounded-xl">
           <p v-if="selectedBanner.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-            {{ selectedBanner.description }}
+            {{ maskProfanity(selectedBanner.description) }}
           </p>
         </div>
         <template v-if="selectedBanner.targetUrl" #footer>

@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
+import { maskProfanity } from '@/utils/profanityFilter';
 import PromoBannerModal from '@/components/menu/PromoBannerModal.vue';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
@@ -279,9 +280,9 @@ onMounted(async () => {
             class="group relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm"
           >
             <div class="w-full h-28 relative bg-gray-100 dark:bg-gray-800">
-              <img v-if="b.imageUrl" :src="b.imageUrl" :alt="b.imageAlt || b.title" class="w-full h-full object-cover">
+              <img v-if="b.imageUrl" :src="b.imageUrl" :alt="maskProfanity(b.imageAlt || b.title)" class="w-full h-full object-cover">
               <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-3">
-                <span class="text-white text-sm font-semibold truncate">{{ b.title }}</span>
+                <span class="text-white text-sm font-semibold truncate">{{ maskProfanity(b.title) }}</span>
               </div>
               <UBadge
                 class="absolute top-2 right-2"
@@ -297,7 +298,7 @@ onMounted(async () => {
               </div>
             </div>
             <div v-if="b.description" class="px-3 py-2 text-xs text-gray-500 dark:text-gray-400 truncate">
-              {{ b.description }}
+              {{ maskProfanity(b.description) }}
             </div>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { priorityIcon, priorityColorClass, taskShortCode, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
+import { maskProfanity } from '@/utils/profanityFilter';
 import PwaInstallModal from '@/components/tasks/PwaInstallModal.vue';
 import NavigateSheet from '@/components/tasks/NavigateSheet.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
@@ -397,8 +398,8 @@ onBeforeUnmount(() => {
             <span v-if="task.dueAt" class="text-[11px] text-gray-400">{{ new Date(task.dueAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}</span>
           </span>
         </div>
-        <h2 class="text-base font-semibold leading-snug mb-1 text-gray-900">{{ task.title }}</h2>
-        <div v-if="task.description" class="zen-md text-sm text-gray-500 mb-2 line-clamp-3" v-html="renderMarkdownSafe(task.description)" />
+        <h2 class="text-base font-semibold leading-snug mb-1 text-gray-900">{{ maskProfanity(task.title) }}</h2>
+        <div v-if="task.description" class="zen-md text-sm text-gray-500 mb-2 line-clamp-3" v-html="renderMarkdownSafe(maskProfanity(task.description))" />
         <p v-if="task.textAddress" class="text-sm text-gray-600 flex items-center gap-1.5 mb-1">
           <UIcon name="lucide:map-pin" class="w-4 h-4 flex-shrink-0 text-gray-400" />{{ task.textAddress }}
         </p>

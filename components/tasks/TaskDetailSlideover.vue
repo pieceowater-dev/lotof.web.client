@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { getApiBaseUrl } from '@/utils/api-base';
 import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
@@ -117,7 +118,7 @@ function commitTitle() {
 // --- Description (click to edit, markdown preview otherwise) ---
 const editingDescription = ref(false);
 const descriptionDraft = ref('');
-const renderedDescription = computed(() => renderMarkdownSafe(props.task?.description || ''));
+const renderedDescription = computed(() => renderMarkdownSafe(maskProfanity(props.task?.description || '')));
 function startDescriptionEdit() {
   descriptionDraft.value = props.task?.description || '';
   editingDescription.value = true;
@@ -529,7 +530,7 @@ async function handleDelete() {
                   @keyup.esc="editingTitle = false"
                 />
                 <template v-else>
-                  <h3 class="text-lg font-semibold leading-snug cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 truncate" @click="startTitleEdit">{{ task.title }}</h3>
+                  <h3 class="text-lg font-semibold leading-snug cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 truncate" @click="startTitleEdit">{{ maskProfanity(task.title) }}</h3>
                   <button type="button" class="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0" :title="t('app.edit') || 'Edit'" @click="startTitleEdit">
                     <UIcon name="lucide:pencil" class="w-3.5 h-3.5" />
                   </button>
@@ -814,7 +815,7 @@ async function handleDelete() {
             </span>
             <div class="text-xs font-medium text-gray-700 dark:text-gray-300">{{ activityLabel(a) }}</div>
             <div v-if="activityDetail(a)" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ activityDetail(a) }}</div>
-            <p v-if="a.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">{{ a.comment }}</p>
+            <p v-if="a.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 italic">{{ maskProfanity(a.comment) }}</p>
             <p class="text-[10px] text-gray-400 mt-0.5">{{ formatDate(a.createdAt) }}</p>
           </li>
         </ul>

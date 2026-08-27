@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { log, logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { useRoute } from 'vue-router';
 const { t } = useI18n();
 
@@ -227,7 +228,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                   v-if="record.legitimate && record.reason"
                   class="text-gray-700 dark:text-gray-300"
                 >
-                  {{ record.reason }}
+                  {{ maskProfanity(record.reason) }}
                 </span>
                 <span
                   v-else

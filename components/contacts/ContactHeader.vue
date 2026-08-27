@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 interface Props {
   client: ClientRow | null;
@@ -22,9 +23,9 @@ const displayName = computed(() => {
   const c = props.client;
   if (c.client.clientType === 'INDIVIDUAL' && c.individual) {
     const parts = [c.individual.lastName, c.individual.firstName, c.individual.middleName].filter(Boolean);
-    return parts.join(' ');
+    return maskProfanity(parts.join(' '));
   }
-  return c.legalEntity?.legalName || '---';
+  return maskProfanity(c.legalEntity?.legalName) || '---';
 });
 
 const nsTitle = computed(() => titleBySlug(props.namespace || '') || props.namespace || '');

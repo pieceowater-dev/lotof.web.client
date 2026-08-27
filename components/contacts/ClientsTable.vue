@@ -3,6 +3,7 @@ import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { formatDisplayPhoneUniversal, sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
+import { maskProfanity } from '@/utils/profanityFilter';
 import FinderStyleSearch from './FinderStyleSearch.vue';
 
 const { t } = useI18n();
@@ -266,9 +267,9 @@ function getClientName(client: ClientRow): string {
       client.individual.firstName,
       client.individual.middleName,
     ].filter(Boolean);
-    return parts.join(' ');
+    return maskProfanity(parts.join(' '));
   }
-  return client.legalEntity?.legalName || '—';
+  return maskProfanity(client.legalEntity?.legalName) || '—';
 }
 
 function getClientIdentifier(client: ClientRow): string {
@@ -305,7 +306,7 @@ function getOtherContacts(client: ClientRow): Array<{ type: string; value: strin
     .filter((item) => item.type !== 'phone')
     .map((item) => {
       const displayValue = (item.type === 'company' || item.type === 'contact_person')
-        ? (item.comments?.trim() || props.resolvedNames?.[item.value] || item.value)
+        ? maskProfanity(item.comments?.trim() || props.resolvedNames?.[item.value] || item.value)
         : item.value;
       return { type: item.type, value: displayValue };
     })
@@ -380,7 +381,7 @@ function contactTypeLabel(type: string): string {
 function getAdditionalInfo(client: ClientRow): string {
   const fromProfile = client.additionalInfo?.trim();
   if (fromProfile) {
-    return fromProfile;
+    return maskProfanity(fromProfile);
   }
   if (client.client.clientType === 'INDIVIDUAL' && client.individual?.birthDate) {
     return new Date(client.individual.birthDate).toLocaleDateString('ru-RU', {
@@ -390,7 +391,7 @@ function getAdditionalInfo(client: ClientRow): string {
     });
   }
   if (client.client.clientType === 'LEGAL' && client.legalEntity?.brandName) {
-    return client.legalEntity.brandName;
+    return maskProfanity(client.legalEntity.brandName);
   }
   return '—';
 }
@@ -791,10 +792,10 @@ function addTagToFilter(tagId: string, tagName: string) {
                   v-for="tag in getClientTags(client)"
                   :key="tag.id"
                   class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer max-w-[110px]"
-                  :title="`Filter by: ${tag.name}`"
+                  :title="`Filter by: ${maskProfanity(tag.name)}`"
                   @click.stop="addTagToFilter(tag.id, tag.name)"
                 >
-                  <span class="truncate">{{ tag.name }}</span>
+                  <span class="truncate">{{ maskProfanity(tag.name) }}</span>
                 </button>
 
                 <!-- Add tag button: no tags → text pill; has tags → icon on hover -->

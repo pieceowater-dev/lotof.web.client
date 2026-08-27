@@ -2,6 +2,7 @@
 import RouteModal from '@/components/atrace/RouteModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useAtraceRoutes } from '@/composables/useAtraceRoutes';
 import { localizeAtraceErrorMessage } from '@/utils/atrace/localizeError';
@@ -203,7 +204,7 @@ onMounted(() => {
           >
             <td class="px-4 py-3 align-top">
               <div class="font-semibold text-gray-900 dark:text-white">
-                {{ routeItem.title }}
+                {{ maskProfanity(routeItem.title) }}
               </div>
               <div class="text-xs text-gray-500">
                 {{ routeItem.milestones.length }} {{ t('app.locations') || 'постов' }}

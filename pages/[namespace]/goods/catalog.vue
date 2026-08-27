@@ -4,6 +4,7 @@ import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
@@ -309,7 +310,7 @@ onMounted(loadAll);
         <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
-              {{ row.name }}
+              {{ maskProfanity(row.name) }}
             </button>
           </template>
           <template #isActive-data="{ row }">
@@ -329,7 +330,7 @@ onMounted(loadAll);
         <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditCategory(row)">
-              {{ row.name }}
+              {{ maskProfanity(row.name) }}
             </button>
           </template>
           <template #actions-data="{ row }">
@@ -346,7 +347,7 @@ onMounted(loadAll);
         <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditUnit(row)">
-              {{ row.name }}
+              {{ maskProfanity(row.name) }}
             </button>
           </template>
           <template #actions-data="{ row }">

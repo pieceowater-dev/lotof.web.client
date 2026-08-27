@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 interface Props {
   client: ClientRow | null;
@@ -125,7 +126,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ t('contacts.lastName') }}
               </p>
               <p class="text-sm text-gray-900 dark:text-white">
-                {{ client.individual.lastName }}
+                {{ maskProfanity(client.individual.lastName) }}
               </p>
             </div>
             <div>
@@ -133,7 +134,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ t('contacts.firstName') }}
               </p>
               <p class="text-sm text-gray-900 dark:text-white">
-                {{ client.individual.firstName }}
+                {{ maskProfanity(client.individual.firstName) }}
               </p>
             </div>
             <div v-if="client.individual.middleName">
@@ -141,7 +142,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ t('contacts.middleName') }}
               </p>
               <p class="text-sm text-gray-900 dark:text-white">
-                {{ client.individual.middleName }}
+                {{ maskProfanity(client.individual.middleName) }}
               </p>
             </div>
             <div v-if="client.individual.birthDate">
@@ -182,7 +183,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ t('contacts.legalName') }}
               </p>
               <p class="text-sm text-gray-900 dark:text-white">
-                {{ client.legalEntity.legalName }}
+                {{ maskProfanity(client.legalEntity.legalName) }}
               </p>
             </div>
             <div v-if="client.legalEntity.brandName">
@@ -190,7 +191,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ t('contacts.brandName') }}
               </p>
               <p class="text-sm text-gray-900 dark:text-white">
-                {{ client.legalEntity.brandName }}
+                {{ maskProfanity(client.legalEntity.brandName) }}
               </p>
             </div>
             <div v-if="client.legalEntity.binIin">

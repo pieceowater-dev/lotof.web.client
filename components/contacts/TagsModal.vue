@@ -7,6 +7,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { useToast } from '#imports';
 import type { Tag } from '@/api/contacts/tags';
 import { listTags, createTag, updateTag, deleteTag, addTagToClient } from '@/api/contacts/tags';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 const { t } = useI18n();
 const toast = useToast();
@@ -311,7 +312,7 @@ watch(() => props.isOpen, (newVal) => {
                 :title="t('contacts.doubleClickToRename')"
                 @dblclick.stop="startEdit(tag)"
                 @click.stop="confirmDeleteId !== tag.id && handleAddTag(tag.id)"
-              >{{ tag.name }}</span>
+              >{{ maskProfanity(tag.name) }}</span>
             </div>
 
             <!-- Actions -->
@@ -411,7 +412,7 @@ watch(() => props.isOpen, (newVal) => {
                 class="text-sm font-medium truncate cursor-text select-none"
                 :title="t('contacts.doubleClickToRename')"
                 @dblclick="startEdit(tag)"
-              >{{ tag.name }}</span>
+              >{{ maskProfanity(tag.name) }}</span>
               <!-- Pencil hint — visible on row hover when not editing -->
               <UIcon
                 v-if="editingId !== tag.id && confirmDeleteId !== tag.id"

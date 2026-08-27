@@ -5,6 +5,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { listTags, type Tag } from '@/api/contacts/tags';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 const { t } = useI18n();
 const { token } = useAuth();
@@ -244,10 +245,10 @@ onMounted(() => {
           name="lucide:tag"
           class="w-3 h-3 text-gray-500 dark:text-gray-400"
         />
-        <span class="text-xs">{{ tag.name }}</span>
+        <span class="text-xs">{{ maskProfanity(tag.name) }}</span>
         <button
           class="hover:bg-gray-200 dark:hover:bg-gray-600 rounded-sm transition-colors p-0.5"
-          :title="`Remove ${tag.name}`"
+          :title="`Remove ${maskProfanity(tag.name)}`"
           @click.stop="removeTag(tag.id)"
         >
           <UIcon
@@ -323,10 +324,10 @@ onMounted(() => {
               name="lucide:tag"
               class="w-3.5 h-3.5"
             />
-            <span>{{ tag.name }}</span>
+            <span>{{ maskProfanity(tag.name) }}</span>
           </button>
         </div>
-        
+
         <!-- No results hint -->
         <div 
           v-if="filteredTags.length === 0 && inputValue"

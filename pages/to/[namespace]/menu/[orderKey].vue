@@ -16,6 +16,7 @@ import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref } from '@/utils/phoneLinks';
 import { getCatalogBusinesses } from '@/api/hub/catalog';
 import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 definePageMeta({ layout: false });
 
@@ -225,7 +226,7 @@ useHead(() => ({
             class="min-w-0 flex-1 text-xl font-bold truncate"
             :class="!brand && 'text-gray-900 dark:text-white'"
             :style="brand ? { color: onPrimaryText } : {}"
-          >{{ brand?.name || nsSlug }}</h1>
+          >{{ brand?.name ? maskProfanity(brand.name) : nsSlug }}</h1>
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import type { MenuBranch } from '@/api/menu/branch/list';
 import { statusBadgeStyle } from '@/utils/orderStatus';
 import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
 import { withRetry } from '@/utils/retry';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 // Public, unauthenticated Kitchen Display Board — view-only, no login (see
 // pages/to/[namespace]/menu/index.vue for the matching customer storefront
@@ -19,6 +20,7 @@ definePageMeta({ layout: false });
 
 const route = useRoute();
 const { t } = useI18n();
+const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 const nsSlug = computed(() => route.params.namespace as string);
 const branchParam = computed(() => (route.query.b as string) || '');
 
@@ -157,8 +159,8 @@ useHead(() => ({
       <div class="flex items-center gap-2 sm:gap-3 min-w-0">
         <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.name" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-contain bg-white flex-shrink-0">
         <Icon v-else name="lucide:store" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 flex-shrink-0" />
-        <h1 class="text-sm sm:text-lg font-bold truncate">{{ brand?.name || nsSlug }}</h1>
-        <span v-if="activeBranch" class="hidden sm:inline text-sm text-gray-400 truncate">— {{ activeBranch.name }}</span>
+        <h1 class="text-sm sm:text-lg font-bold truncate">{{ brand?.name ? maskProfanity(brand.name) : nsSlug }}</h1>
+        <span v-if="activeBranch" class="hidden sm:inline text-sm text-gray-400 truncate">— {{ maskProfanity(activeBranch.name) }}</span>
       </div>
       <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
         <span v-if="error" class="text-xs text-amber-400 flex items-center gap-1">
@@ -167,7 +169,7 @@ useHead(() => ({
         </span>
         <span class="text-base sm:text-2xl font-mono tabular-nums text-gray-300">{{ new Date(now).toLocaleTimeString() }}</span>
         <a
-          href="https://lota.tools"
+          :href="siteUrl"
           target="_blank"
           rel="noopener"
           class="hidden md:inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
@@ -236,7 +238,7 @@ useHead(() => ({
             </div>
             <ul class="text-sm text-gray-300 space-y-0.5 pt-1 border-t border-gray-800">
               <li v-for="(item, idx) in order.items" :key="idx" class="flex justify-between gap-2">
-                <span class="truncate">{{ item.name }}</span>
+                <span class="truncate">{{ maskProfanity(item.name) }}</span>
                 <span class="font-semibold tabular-nums flex-shrink-0">×{{ item.quantity }}</span>
               </li>
             </ul>

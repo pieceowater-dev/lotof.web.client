@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import type { Route } from '@/api/atrace/route/list';
+import { maskProfanity } from '@/utils/profanityFilter';
 import type { RoutePass } from '@/api/atrace/route/validatePass';
 
 defineProps<{
@@ -46,7 +47,7 @@ const showStatInfoTooltip = ref(false);
               </button>
             </div>
             <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-              {{ route?.title || '—' }}
+              {{ route?.title ? maskProfanity(route.title) : '—' }}
             </h2>
             <div class="text-sm text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
               <UIcon

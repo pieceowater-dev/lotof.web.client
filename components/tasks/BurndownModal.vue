@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { maskProfanity } from '@/utils/profanityFilter';
 import type { Cycle } from '@/api/tasks/cycle/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
@@ -186,7 +187,7 @@ const points = computed(() => {
           </h3>
           <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
         </div>
-        <p v-if="cycle" class="text-sm text-gray-500 mt-0.5">{{ cycle.name }}</p>
+        <p v-if="cycle" class="text-sm text-gray-500 mt-0.5">{{ maskProfanity(cycle.name) }}</p>
       </template>
 
       <div v-if="!cycle?.startsAt || !cycle?.endsAt" class="flex flex-col items-center justify-center gap-2 text-center py-10 text-gray-400">

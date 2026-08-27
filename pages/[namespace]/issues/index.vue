@@ -8,6 +8,7 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { dynamicLS } from '@/utils/storageKeys';
+import { maskProfanity } from '@/utils/profanityFilter';
 import BoardModal from '@/components/tasks/BoardModal.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 
@@ -208,7 +209,7 @@ onMounted(() => {
               <UIcon name="lucide:layout-grid" class="w-4 h-4 text-primary-600 dark:text-primary-300" />
             </span>
             <div class="min-w-0">
-              <div class="font-semibold truncate">{{ board.name }}</div>
+              <div class="font-semibold truncate">{{ maskProfanity(board.name) }}</div>
               <UBadge v-if="!board.isActive" color="gray" variant="subtle" size="xs">{{ t('tasks.inactive') || 'Inactive' }}</UBadge>
             </div>
           </div>
