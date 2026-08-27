@@ -37,7 +37,8 @@ export function toDisplayBusiness(business: CatalogBusiness, categories: Catalog
     icon: category?.icon || 'lucide:store',
     gradient,
     iconColor,
-    badge: business.city ? maskProfanity(business.city) : undefined,
+    // badge is a promo/status label on mock cards (e.g. "Новинка") -- city
+    // isn't that, so it's left unset here rather than repurposing the slot.
     logoUrl: business.logoUrl || undefined,
     to: `/to/${business.namespaceSlug}/menu`,
   };
