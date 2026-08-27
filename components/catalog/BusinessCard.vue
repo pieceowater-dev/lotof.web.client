@@ -25,7 +25,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-20 h-20 object-contain"
+        class="w-full h-full object-cover"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
     </div>
@@ -79,7 +79,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-20 h-20 object-contain"
+        class="w-full h-full object-cover"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
     </div>
