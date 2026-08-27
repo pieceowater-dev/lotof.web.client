@@ -310,6 +310,8 @@ const APP_LABELS: Record<string, string> = {
   'pieceowater.contacts': 'Contacts',
   'pieceowater.menu': 'Orders',
   'pieceowater.issues': 'Issues',
+  'pieceowater.goods': 'Goods',
+  'pieceowater.plans': 'Plans',
 };
 function appLabel(bundle: string): string {
   return APP_LABELS[bundle] || bundle;

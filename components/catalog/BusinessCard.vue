@@ -17,7 +17,8 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
   <NuxtLink
     v-if="business.to"
     :to="business.to"
-    class="relative block aspect-square rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    class="relative block rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    style="aspect-ratio: 1 / 1"
   >
     <div class="absolute inset-0 bg-gradient-to-br flex items-center justify-center" :class="business.gradient">
       <img
@@ -70,7 +71,8 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
 
   <div
     v-else
-    class="relative aspect-square rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    class="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    style="aspect-ratio: 1 / 1"
   >
     <div class="absolute inset-0 bg-gradient-to-br flex items-center justify-center" :class="business.gradient">
       <img
