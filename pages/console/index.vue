@@ -169,7 +169,7 @@ const { homePath } = usePreferredSpace();
 const { user, isLoggedIn, token } = useAuth();
 
 const username = computed(() => user.value?.username || 'Admin');
-const userEmail = computed(() => user.value?.email || 'unknown@lota.tools');
+const userEmail = computed(() => user.value?.email || 'unknown@example.com');
 
 const { isFullConsoleAdmin, refreshConsoleAccess } = useConsoleAccess();
 watch(

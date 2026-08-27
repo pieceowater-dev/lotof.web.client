@@ -217,7 +217,7 @@ async function handleGetApp(app: AppConfig) {
 
 const { t, locale } = useI18n();
 const config = useRuntimeConfig();
-const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = (config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 
 useSeoMeta({
   title: () => t('app.title') || 'lota',

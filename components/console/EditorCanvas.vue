@@ -548,18 +548,18 @@ const { t } = useI18n()
 const config = useRuntimeConfig()
 
 const previewDomain = computed(() => {
-  const raw = String(config.public.siteUrl || 'https://lota.tools').trim()
+  const raw = String(config.public.siteUrl || DEFAULT_SITE_URL).trim()
   try {
     return new URL(raw).host
   } catch {
-    return raw.replace(/^https?:\/\//, '').replace(/\/+$/, '') || 'lota.tools'
+    return raw.replace(/^https?:\/\//, '').replace(/\/+$/, '') || resolveSiteHost()
   }
 })
 
 const hasSlug = computed(() => String(props.article?.slug || '').trim().length > 0)
 
 const publicSlugUrl = computed(() => {
-  const rawSiteUrl = String(config.public.siteUrl || 'https://lota.tools').trim()
+  const rawSiteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).trim()
   const siteUrl = /^https?:\/\//i.test(rawSiteUrl) ? rawSiteUrl : `https://${rawSiteUrl}`
   const category = String(props.article?.category || '').trim().replace(/^\/+|\/+$/g, '') || 'news'
   const slug = String(props.article?.slug || '').trim().replace(/^\/+/, '')

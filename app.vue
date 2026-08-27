@@ -122,7 +122,7 @@ useHead(() => ({
   title: pageTitle.value,
 }));
 
-const normalizedSiteUrl = computed(() => String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, ''));
+const normalizedSiteUrl = computed(() => String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, ''));
 
 const routeSegments = computed(() => route.path.split('/').filter(Boolean));
 const isConsoleRoute = computed(() => route.path.startsWith('/console'));

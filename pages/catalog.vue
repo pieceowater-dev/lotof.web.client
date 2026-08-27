@@ -267,7 +267,7 @@ async function toggleFavorite(key: string) {
   }
 }
 
-const siteUrl = 'https://lota.tools';
+const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 useSeoMeta({
   title: () => t('home.title') || 'Каталог lota',
   description: () => t('home.seoDescription') || 'Заказы, карты лояльности и заведения на платформе lota — для клиентов бизнесов.',

@@ -19,7 +19,7 @@ const categories = [
 ] as const;
 const activeCategory = ref('barbershop');
 
-const siteUrl = 'https://lota.tools';
+const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 useSeoMeta({
   title: () => `${t('home.servicesTitle') || 'Услуги'} — lota`,
   description: () => t('home.servicesSubtitle') || 'Запись и бронирование на lota Plans',

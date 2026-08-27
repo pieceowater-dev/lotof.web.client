@@ -23,7 +23,10 @@ COPY . .
 # container's runtime env vars again after this build.
 ARG NUXT_PUBLIC_AMPLITUDE_API_KEY
 ENV NUXT_PUBLIC_AMPLITUDE_API_KEY=$NUXT_PUBLIC_AMPLITUDE_API_KEY
-ARG NUXT_PUBLIC_SITE_URL=https://lota.tools
+# No default on purpose: pass --build-arg NUXT_PUBLIC_SITE_URL=https://<host> per
+# deployment. Left empty, nuxt.config.ts falls back to DEFAULT_SITE_URL
+# (utils/siteUrl.ts) -- the one place the platform domain is written as a literal.
+ARG NUXT_PUBLIC_SITE_URL
 ENV NUXT_PUBLIC_SITE_URL=$NUXT_PUBLIC_SITE_URL
 
 # Build the Nuxt application (SSR with Nitro server)

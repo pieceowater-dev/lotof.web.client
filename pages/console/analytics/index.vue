@@ -799,7 +799,7 @@ const TARGET_OPTIONS = computed(() => [
   // chekalka.kz-sourced traffic only (see pages/chekalka.vue), so it's
   // special-cased in server/routes/l/[code].get.ts rather than resolved
   // through ALL_APPS like the landing:<address> options above.
-  { value: 'landing:chekalka', label: 'Чекалка (lota.tools/chekalka)' },
+  { value: 'landing:chekalka', label: 'Чекалка (/chekalka)' },
 ]);
 
 const deepLinkCategories = ref<AdminDeepLinkCategory[]>([]);

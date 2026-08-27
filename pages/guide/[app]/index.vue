@@ -90,7 +90,7 @@ const resolvedAppIcon = computed(() => {
 });
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const pageTitle = computed(() => app.value ? `${resolvedAppLabel.value} — lota Гид` : 'lota Гид');
 const pageDescription = computed(() => app.value
   ? `Инструкции и ответы на вопросы по ${resolvedAppLabel.value} в lota.`

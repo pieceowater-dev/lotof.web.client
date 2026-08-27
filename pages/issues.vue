@@ -9,7 +9,7 @@ definePageMeta({ name: 'landing-issues' });
 const { t } = useI18n();
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const pageTitle = 'lota Issues — таск-трекер для команд в поле и в офисе';
 const pageDescription = 'Канбан-доски, спринты, SLA и живая карта курьеров — lota Issues держит задачи под контролем от постановки до закрытия.';
 

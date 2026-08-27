@@ -61,7 +61,7 @@ import { GUIDE_APP_IDS, guideAppToParam } from '@/composables/useGuideContext';
 const { t } = useI18n();
 const { homePath } = usePreferredSpace();
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 
 useSeoMeta({
   title: 'lota Гид',

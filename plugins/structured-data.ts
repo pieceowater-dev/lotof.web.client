@@ -1,6 +1,6 @@
 export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig();
-  const siteUrl = (config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+  const siteUrl = (config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 
   useHead({
     script: [

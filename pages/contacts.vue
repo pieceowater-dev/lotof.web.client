@@ -9,7 +9,7 @@ definePageMeta({ name: 'landing-contacts' });
 const { t } = useI18n();
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const pageTitle = 'lota Contacts — CRM для клиентской базы';
 const pageDescription = 'Единая карточка клиента, программы лояльности и история обращений — lota Contacts вместо разрозненных таблиц и блокнотов.';
 

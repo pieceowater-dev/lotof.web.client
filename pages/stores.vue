@@ -149,7 +149,7 @@ async function toggleFavorite(key: string) {
   }
 }
 
-const siteUrl = 'https://lota.tools';
+const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 useSeoMeta({
   title: () => `${t('home.storesTitle') || 'Заведения'} — lota`,
   description: () => t('home.storesSubtitle') || 'Кафе, рестораны и доставка на lota Menu',

@@ -85,7 +85,7 @@ const localeExcerpt = computed(() => {
 });
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const pageTitle = computed(() => article.value ? `${localeTitle.value} — lota Гид` : 'lota Гид');
 const pageDescription = computed(() => localeExcerpt.value || (article.value ? `${localeTitle.value} — инструкция lota Гид.` : ''));
 const pageCanonical = computed(() => `${siteUrl}/guide/${appParam.value}/${slug.value}`);

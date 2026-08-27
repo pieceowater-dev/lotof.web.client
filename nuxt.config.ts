@@ -1,6 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 
 import type { PluginOption } from 'vite';
+import { DEFAULT_SITE_URL } from './utils/siteUrl';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -49,7 +50,7 @@ function buildApiProxyTarget(envValue: string | undefined, fallbackPath: string,
     }
   }
 
-  return `https://lota.tools${fallbackPath}/**`;
+  return `${DEFAULT_SITE_URL}${fallbackPath}/**`;
 }
 
 function stripInspectorPlugins(plugins: PluginOption[]): PluginOption[] {
@@ -336,7 +337,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
-      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://lota.tools',
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL,
       // Not a secret -- it's a write-only client key that ships embedded in
       // every page's JS bundle either way. Same fallback pattern as siteUrl
       // above: prerendered routes (home, /feed) bake this in at build time

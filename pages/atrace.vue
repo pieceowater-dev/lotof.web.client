@@ -12,7 +12,7 @@ definePageMeta({ name: 'landing-atrace' });
 const { t } = useI18n();
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const pageTitle = 'lota A-Trace — учёт рабочего времени по QR';
 const pageDescription = 'QR-отметки на входе, графики смен и расчёт зарплаты по факту отработанного — lota A-Trace вместо бумажных табелей.';
 

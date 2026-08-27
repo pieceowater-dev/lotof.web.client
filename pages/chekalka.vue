@@ -18,7 +18,8 @@ import { useAnalytics } from '@/composables/useAnalytics';
 definePageMeta({ name: 'landing-chekalka', layout: false });
 
 const config = useRuntimeConfig();
-const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
+const siteHost = resolveSiteHost(config.public.siteUrl);
 
 const pageTitle = 'Чекалка — учёт рабочего времени по QR. Начать бесплатно';
 const pageDescription = 'Учёт рабочего времени по QR-коду для бизнеса в Казахстане. Цена за всю компанию, до 5 сотрудников бесплатно. Вход через Google, карта не нужна.';
@@ -209,7 +210,7 @@ const faqItems = [
   },
   {
     label: 'Почему в адресной строке lota, а не Чекалка?',
-    content: 'Чекалка — продукт компании Lota Business. Личный кабинет работает на нашей платформе lota.tools, поэтому название в адресной строке другое. Это то же самое.',
+    content: `Чекалка — продукт компании Lota Business. Личный кабинет работает на нашей платформе ${siteHost}, поэтому название в адресной строке другое. Это то же самое.`,
   },
   {
     label: 'Кто поможет настроить?',
@@ -356,7 +357,7 @@ const faqItems = [
           </p>
 
           <p class="mt-3 text-xs text-gray-400 dark:text-gray-500">
-            Кабинет открывается на lota.tools — это наша платформа. Разработчик: Lota Business, Казахстан.
+            Кабинет открывается на {{ siteHost }} — это наша платформа. Разработчик: Lota Business, Казахстан.
           </p>
         </div>
 

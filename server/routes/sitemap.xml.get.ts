@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '../../utils/api-base';
 import { fromGqlCategory } from '../../utils/publicationCategory';
+import { DEFAULT_SITE_URL } from '../../utils/siteUrl';
 
 type PublicPublicationsResponse = {
   data?: {
@@ -147,7 +148,7 @@ async function fetchAllPublishedArticles(capitalEndpoint: string): Promise<Array
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event);
-  const siteUrl = String(config.public.siteUrl || 'https://lota.tools').replace(/\/$/, '');
+  const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
   const forwardedHost = String(getHeader(event, 'x-forwarded-host') || '').trim();
   const host = String(getHeader(event, 'host') || '').trim();
   const forwardedProto = String(getHeader(event, 'x-forwarded-proto') || '').trim().toLowerCase();

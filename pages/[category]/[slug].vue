@@ -213,7 +213,7 @@ const slugParam = computed(() => {
 
 function normalizeSiteUrl(raw: string): string {
   const trimmed = String(raw || '').trim();
-  if (!trimmed) return 'https://lota.tools';
+  if (!trimmed) return DEFAULT_SITE_URL;
   if (/^https?:\/\//i.test(trimmed)) return trimmed.replace(/\/$/, '');
   return `https://${trimmed.replace(/^\/+/, '').replace(/\/$/, '')}`;
 }
@@ -478,7 +478,7 @@ function toLocalizedDate(raw: string): string {
   return dt.toLocaleDateString(intlLocale, { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
-const siteUrl = computed(() => normalizeSiteUrl(String(config.public.siteUrl || 'https://lota.tools')));
+const siteUrl = computed(() => normalizeSiteUrl(String(config.public.siteUrl || DEFAULT_SITE_URL)));
 const isNews = computed(() => article.value?.category === 'news');
 const isWhatsNew = computed(() => article.value?.category === 'whatsnew');
 const backHref = computed(() => isNews.value ? '/news' : '/feed');

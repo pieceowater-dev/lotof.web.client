@@ -83,7 +83,7 @@ onMounted(() => {
               v-model="inviteEmail"
               type="email"
               size="lg"
-              :placeholder="'name@lota.tools'"
+              :placeholder="'name@example.com'"
               :state="inviteEmail && !isValidInviteEmail ? 'error' : 'success'"
             />
             <p

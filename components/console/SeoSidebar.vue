@@ -28,11 +28,11 @@ const { t } = useI18n()
 const config = useRuntimeConfig()
 
 const previewDomain = computed(() => {
-  const raw = String(config.public.siteUrl || 'https://lota.tools').trim()
+  const raw = String(config.public.siteUrl || DEFAULT_SITE_URL).trim()
   try {
     return new URL(raw).host
   } catch {
-    return raw.replace(/^https?:\/\//, '').replace(/\/+$/, '') || 'lota.tools'
+    return raw.replace(/^https?:\/\//, '').replace(/\/+$/, '') || resolveSiteHost()
   }
 })
 
