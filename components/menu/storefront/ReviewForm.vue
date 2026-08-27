@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { getCatalogReviews, createCatalogReview, type CatalogReview } from '@/api/hub/catalog';
 import { logError } from '@/utils/logger';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 // Shared between pages/to/[namespace]/menu/index.vue (bottom of the
 // storefront) and [orderKey].vue (once an order is closed) -- posting
@@ -112,7 +113,7 @@ async function submit() {
         class="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3"
       >
         <div class="flex items-center justify-between gap-2">
-          <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ r.authorName }}</span>
+          <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ maskProfanity(r.authorName) }}</span>
           <div class="flex-shrink-0 flex items-center gap-0.5">
             <Icon
               v-for="i in 5"
@@ -123,7 +124,7 @@ async function submit() {
             />
           </div>
         </div>
-        <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{{ r.body }}</p>
+        <p class="mt-1.5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">{{ maskProfanity(r.body) }}</p>
       </div>
     </div>
 

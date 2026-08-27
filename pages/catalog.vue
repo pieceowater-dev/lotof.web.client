@@ -15,6 +15,7 @@ import {
   type CatalogTag,
 } from '@/api/hub/catalog';
 import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
+import { maskProfanity } from '@/utils/profanityFilter';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
@@ -153,7 +154,7 @@ async function loadCatalogFeed() {
         length: FilterPaginationLengthEnum.Fifty,
       }),
     ]);
-    tags.value = tagsResp;
+    tags.value = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
     const deduped = dedupeByBrand(businessesResp.rows).slice(0, 10);
     if (deduped.length > 0) {
       realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
@@ -168,12 +169,12 @@ async function loadCatalogFeed() {
             const list = await getCatalogReviews(b.id);
             return list.map((r) => ({
               key: r.id,
-              author: r.authorName,
-              business: b.name,
+              author: maskProfanity(r.authorName),
+              business: maskProfanity(b.name),
               businessTo: `/to/${b.namespaceSlug}/menu`,
               rating: r.rating,
               date: formatReviewDate(r.createdAt),
-              text: r.body,
+              text: maskProfanity(r.body),
             }));
           } catch {
             return [];

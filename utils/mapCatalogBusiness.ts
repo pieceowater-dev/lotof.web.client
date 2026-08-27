@@ -1,5 +1,6 @@
 import type { MockBusiness } from '@/utils/mockCatalog';
 import type { CatalogBusiness, CatalogCategory } from '@/api/hub/catalog';
+import { maskProfanity } from '@/utils/profanityFilter';
 
 // Real catalog data (lotof.hub.msvc.core, via hub.gtw's catalogBusinesses/
 // catalogCategories) has no rating/reviews/price-tier/distance/gradient --
@@ -30,11 +31,13 @@ export function toDisplayBusiness(business: CatalogBusiness, categories: Catalog
 
   return {
     key: business.id,
-    name: business.name,
+    // Tenant-entered, unmoderated -- masked here rather than at write time
+    // so nothing stored needs a migration if the word list changes.
+    name: maskProfanity(business.name),
     icon: category?.icon || 'lucide:store',
     gradient,
     iconColor,
-    badge: business.city || undefined,
+    badge: business.city ? maskProfanity(business.city) : undefined,
     logoUrl: business.logoUrl || undefined,
     to: `/to/${business.namespaceSlug}/menu`,
   };
