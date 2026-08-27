@@ -1369,7 +1369,7 @@ useHead(() => {
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.patronLogin') || 'Log in' }}</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.patronCheckoutHint') || 'Skip retyping your phone and keep an order history' }}</span>
+            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.patronCheckoutHint') || 'Skip retyping your phone' }}</span>
           </span>
           <Icon name="lucide:chevron-right" class="w-4 h-4 text-gray-400 flex-shrink-0" />
         </button>
@@ -1801,7 +1801,7 @@ useHead(() => {
                color. -->
           <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs" :style="{ backgroundColor: primaryColor, color: onPrimaryText }">
             <Icon name="lucide:sparkles" class="w-4 h-4 flex-shrink-0" :style="{ color: onPrimaryText }" />
-            <span class="flex-1 opacity-90">{{ t('menu.patronCheckoutHint') || "Log in to skip typing your phone next time and keep an order history." }}</span>
+            <span class="flex-1 opacity-90">{{ t('menu.patronCheckoutHint') || 'Skip retyping your phone' }}</span>
             <button type="button" class="font-semibold flex-shrink-0 underline" :style="{ color: onPrimaryText }" @click="patronLogin()">
               {{ t('menu.patronLogin') || 'Log in' }}
             </button>
