@@ -35,12 +35,23 @@ const favoritesOnly = ref(false);
 const realBusinesses = ref<MockBusiness[] | null>(null);
 const reviews = ref<MockReview[]>([]);
 
+const searchQuery = ref('');
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(loadBusinesses, 350);
+}
+
 async function loadBusinesses() {
   try {
     const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
       getCatalogCategories(),
       getCatalogTags(),
-      getCatalogBusinesses({ tagId: activeTagId.value, length: FilterPaginationLengthEnum.OneHundred }),
+      getCatalogBusinesses({
+        tagId: activeTagId.value,
+        search: searchQuery.value.trim() || undefined,
+        length: FilterPaginationLengthEnum.OneHundred,
+      }),
     ]);
     tags.value = tagsResp;
     const deduped = dedupeByBrand(businessesResp.rows);
@@ -55,6 +66,7 @@ async function loadBusinesses() {
             key: r.id,
             author: r.authorName,
             business: b.name,
+            businessTo: `/to/${b.namespaceSlug}/menu`,
             rating: r.rating,
             date: formatReviewDate(r.createdAt),
             text: r.body,
@@ -86,7 +98,9 @@ function selectTag(id: string | null) {
 }
 
 const displayedBusinesses = computed(() => {
-  const items = realBusinesses.value ?? menuBusinesses;
+  // No mock fallback while a search is active -- an intentional "nothing
+  // matched" result should say so, not quietly show unrelated mock cards.
+  const items = realBusinesses.value ?? (searchQuery.value.trim() ? [] : menuBusinesses);
   return favoritesOnly.value ? items.filter((b) => favoriteIds.value.has(b.key)) : items;
 });
 
@@ -202,8 +216,23 @@ useSeoMeta({
           </div>
         </div>
 
+        <!-- Search -->
+        <div class="relative">
+          <UIcon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            v-model="searchQuery"
+            type="search"
+            :placeholder="t('home.searchBusinesses') || 'Поиск заведений'"
+            class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+            @input="onSearchInput"
+          >
+        </div>
+
         <!-- Businesses grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        <p v-if="!displayedBusinesses.length" class="text-sm text-gray-400 py-10 text-center">
+          {{ t('home.noSearchResults') || 'Ничего не найдено' }}
+        </p>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           <BusinessCard
             v-for="biz in displayedBusinesses"
             :key="biz.key"

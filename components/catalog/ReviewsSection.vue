@@ -43,7 +43,16 @@ const { t } = useI18n();
             />
           </div>
         </div>
-        <div class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+        <NuxtLink
+          v-if="review.businessTo"
+          :to="review.businessTo"
+          class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+        >
+          <UIcon name="lucide:store" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+          <span class="text-xs font-medium text-gray-700 dark:text-gray-200">{{ review.business }}</span>
+          <UIcon name="lucide:chevron-right" class="w-3 h-3 text-gray-400" />
+        </NuxtLink>
+        <div v-else class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
           <UIcon name="lucide:store" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
           <span class="text-xs font-medium text-gray-700 dark:text-gray-200">{{ review.business }}</span>
         </div>

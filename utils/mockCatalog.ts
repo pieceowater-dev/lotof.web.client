@@ -53,6 +53,10 @@ export interface MockReview {
   key: string;
   author: string;
   business: string;
+  // Real reviews only -- link to the reviewed business's storefront, so a
+  // reader can tell what the review is actually about. Mock reviews have
+  // no real storefront to link to.
+  businessTo?: string;
   rating: number;
   date: string;
   text: string;

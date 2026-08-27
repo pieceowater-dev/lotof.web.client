@@ -135,12 +135,23 @@ const realBusinesses = ref<MockBusiness[] | null>(null);
 const favoriteIds = ref<Set<string>>(new Set());
 const reviews = ref<MockReview[]>([]);
 
+const searchQuery = ref('');
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(loadCatalogFeed, 350);
+}
+
 async function loadCatalogFeed() {
   try {
     const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
       getCatalogCategories(),
       getCatalogTags(),
-      getCatalogBusinesses({ tagId: activeTagId.value, length: FilterPaginationLengthEnum.Fifty }),
+      getCatalogBusinesses({
+        tagId: activeTagId.value,
+        search: searchQuery.value.trim() || undefined,
+        length: FilterPaginationLengthEnum.Fifty,
+      }),
     ]);
     tags.value = tagsResp;
     const deduped = dedupeByBrand(businessesResp.rows).slice(0, 10);
@@ -159,6 +170,7 @@ async function loadCatalogFeed() {
               key: r.id,
               author: r.authorName,
               business: b.name,
+              businessTo: `/to/${b.namespaceSlug}/menu`,
               rating: r.rating,
               date: formatReviewDate(r.createdAt),
               text: r.body,
@@ -402,13 +414,26 @@ useSeoMeta({
 
         <!-- Business / service rows -->
         <template v-for="(section, sectionIdx) in businessSections" :key="section.key">
-          <div v-if="section.items.length > 0">
+          <div v-if="section.items.length > 0 || (sectionIdx === 0 && searchQuery)">
             <div class="flex items-center justify-between mb-3">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ section.title }}</h3>
               <NuxtLink :to="section.to" class="text-sm font-medium text-blue-600 dark:text-blue-400">
                 {{ t('home.seeAll') || 'Все' }}
               </NuxtLink>
             </div>
+            <div v-if="sectionIdx === 0" class="relative mb-3">
+              <UIcon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <input
+                v-model="searchQuery"
+                type="search"
+                :placeholder="t('home.searchBusinesses') || 'Поиск заведений'"
+                class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                @input="onSearchInput"
+              >
+            </div>
+            <p v-if="section.items.length === 0" class="text-sm text-gray-400 py-6 text-center">
+              {{ t('home.noSearchResults') || 'Ничего не найдено' }}
+            </p>
             <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
               <div class="flex gap-3 snap-x">
                 <div
