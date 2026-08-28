@@ -130,6 +130,21 @@ const sortedStats = computed(() => {
     .map((item) => item.user);
 });
 
+// Search box that replaced the always-on desktop legend swatches (moved
+// into the info-button modal instead, see showLegendModal) -- narrows the
+// visible rows only, deliberately left out of exportToExcel/statsForExport
+// below so a manager mid-search doesn't accidentally export a filtered
+// subset without noticing.
+const memberSearchQuery = ref('');
+const visibleStats = computed(() => {
+  const q = memberSearchQuery.value.trim().toLowerCase();
+  if (!q) return sortedStats.value;
+  return sortedStats.value.filter((user) => {
+    const name = statUserDisplayName(user).toLowerCase();
+    return name.includes(q) || (user.email || '').toLowerCase().includes(q);
+  });
+});
+
 // Time thresholds for highlighting -- persisted server-side (namespace-wide),
 // not localStorage: this needs to be consistent for every manager viewing
 // the same company's data, and mutating it is permission-gated
@@ -789,29 +804,23 @@ function formatNumber(val: number, fractionDigits = 0) {
         </UButton>
       </div>
 
-      <!-- Legend - full on desktop -->
-      <div class="hidden md:flex items-center gap-2 text-xs ml-auto">
-        <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-red-100 dark:bg-red-900/40 border border-red-300 dark:border-red-700" />
-          <span>{{ t('app.violationDay') }}</span>
-        </div>
-        <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-emerald-100 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700" />
-          <span>{{ t('app.legitimateDay') }}</span>
-        </div>
-        <div class="flex items-center gap-1 whitespace-nowrap">
-          <div class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700" />
-          <span>{{ t('app.timeViolation') }}</span>
-        </div>
-      </div>
-      
-      <!-- Legend info button - only on mobile -->
-      <UButton 
-        icon="lucide:info" 
-        size="xs" 
-        color="gray" 
+      <!-- Member search -- replaced the always-on legend swatches; the
+           legend itself moved into the info-button modal below (both
+           mobile and desktop now use it, not just mobile). -->
+      <UInput
+        v-model="memberSearchQuery"
+        icon="i-heroicons-magnifying-glass"
+        size="xs"
+        class="ml-auto w-40 sm:w-56"
+        :placeholder="t('app.searchMemberPlaceholder') || 'Поиск по сотруднику'"
+      />
+
+      <!-- Legend info button -->
+      <UButton
+        icon="lucide:info"
+        size="xs"
+        color="gray"
         variant="ghost"
-        class="md:hidden"
         @click="showLegendModal = true"
       />
     </div>
@@ -920,6 +929,18 @@ function formatNumber(val: number, fractionDigits = 0) {
           {{ t('app.noData') }}
         </div>
       </div>
+      <div
+        v-else-if="visibleStats.length === 0"
+        class="text-gray-500 py-6 text-center flex flex-col items-center justify-center"
+      >
+        <UIcon
+          name="i-heroicons-magnifying-glass"
+          class="w-8 h-8 mb-1.5 text-gray-400"
+        />
+        <div class="text-sm">
+          {{ t('app.noSearchResults') || 'Ничего не найдено' }}
+        </div>
+      </div>
       <table
         v-else
         class="w-full text-sm"
@@ -958,7 +979,7 @@ function formatNumber(val: number, fractionDigits = 0) {
         </thead>
         <tbody>
           <template
-            v-for="(user, index) in sortedStats"
+            v-for="(user, index) in visibleStats"
             :key="user.userId"
           >
             <!-- Main row -->

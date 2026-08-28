@@ -501,6 +501,8 @@
     "legitimateDay": "Legitimate Day",
     "timeViolation": "Late/Early Leave",
     "suspiciousDay": "Suspicious Check-in",
+    "searchMemberPlaceholder": "Search by employee",
+    "noSearchResults": "Nothing found",
     "legend": "Legend",
     "legendHint": "Red = violation, Blue = legitimate absence, Orange = time violation",
     "timeThresholds": "Time Thresholds",

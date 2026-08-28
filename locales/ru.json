@@ -497,6 +497,8 @@
     "legitimateDay": "Оправданный день",
     "timeViolation": "Опоздание/Ранний уход",
     "suspiciousDay": "Подозрительная отметка",
+    "searchMemberPlaceholder": "Поиск по сотруднику",
+    "noSearchResults": "Ничего не найдено",
     "legend": "Легенда",
     "legendHint": "Красный = нарушение, синий = оправданное отсутствие, оранжевый = нарушение времени",
     "timeThresholds": "Пороги времени",
