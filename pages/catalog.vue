@@ -126,12 +126,10 @@ const activeTagId = ref<string | null>(null);
 // -- narrows whatever's already loaded down to favorited businesses.
 const favoritesOnly = ref(false);
 
-// -- Businesses: real data, deduped by brand, capped at 10 for this
-// homepage highlight row (see pages/stores.vue for the full, uncapped
-// list -- that's what "Все" links to). No rating-based sort yet: nothing
-// aggregates a per-business average from Review rows, so "top 10" is
-// currently "first 10 after dedup" rather than genuinely rating-sorted --
-// revisit once that aggregation exists.
+// -- Businesses: real data, deduped by brand, sorted by avgRating desc
+// (reviewCount as tiebreaker; unreviewed businesses sort last) and capped
+// at 10 for this homepage highlight row (see pages/stores.vue for the
+// full, uncapped list -- that's what "Все" links to).
 const realBusinesses = ref<MockBusiness[] | null>(null);
 const favoriteIds = ref<Set<string>>(new Set());
 const reviews = ref<MockReview[]>([]);
@@ -155,7 +153,10 @@ async function loadCatalogFeed() {
       }),
     ]);
     tags.value = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
-    const deduped = dedupeByBrand(businessesResp.rows).slice(0, 10);
+    const deduped = dedupeByBrand(businessesResp.rows)
+      .slice()
+      .sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount)
+      .slice(0, 10);
     if (deduped.length > 0) {
       realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
 

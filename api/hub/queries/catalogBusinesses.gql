@@ -27,6 +27,8 @@ query CatalogBusinesses(
       lat
       lng
       isActive
+      avgRating
+      reviewCount
     }
     info {
       count

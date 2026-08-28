@@ -1192,36 +1192,6 @@ useHead(() => {
           </div>
         </div>
 
-        <!-- Patron order history: plain list of links, not the removed
-             profile-icon dropdown (redundant with the "My order" sheet
-             above, and rendered badly). Each link reuses orderStatusHref --
-             the exact same "/to/ns/menu/YYMMDD-NNN-PHONEDIGITS" key the
-             checkout flow already builds, landing on the existing
-             pages/to/[namespace]/menu/[orderKey].vue tracking page. -->
-        <div v-if="patronLoggedIn && !isSearching && (patronOrders.length || patronOrdersLoading)" class="max-w-3xl mx-auto px-4 pt-4">
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrdersHeading') || 'Мои заказы' }}</h2>
-            <button type="button" class="text-xs text-gray-400 dark:text-gray-500 hover:underline" @click="patronLogout()">
-              {{ t('menu.patronLogout') || 'Log out' }}
-            </button>
-          </div>
-          <p v-if="patronOrdersLoading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Loading…' }}</p>
-          <div v-else class="flex flex-col gap-1.5">
-            <a
-              v-for="o in patronOrders"
-              :key="o.id"
-              :href="orderStatusHref(smartOrderNumber(o), o.phone)"
-              target="_blank"
-              rel="noopener"
-              class="flex items-center justify-between text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3 py-2 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
-            >
-              <span class="font-mono font-medium text-gray-900 dark:text-white">{{ smartOrderNumber(o) }}</span>
-              <span class="text-gray-400">{{ o.status }}</span>
-              <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
-            </a>
-          </div>
-        </div>
-
         <!-- Search results -->
         <div v-if="isSearching" class="max-w-3xl mx-auto px-4 py-4 pb-2">
           <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">
@@ -1627,6 +1597,38 @@ useHead(() => {
             />
           </UFormGroup>
           <p v-if="myOrderLookupError" class="text-sm text-red-600 dark:text-red-400">{{ myOrderLookupError }}</p>
+
+          <!-- Logged-in Patron's own order history: lives here, below the
+               guest lookup form, rather than inline on the page (was easy to
+               mistake for part of the main menu layout). Data is already
+               loaded eagerly on login (see loadPatronOrders/watch above), so
+               it's ready as soon as this sheet opens. -->
+          <template v-if="patronLoggedIn">
+            <div class="border-t border-gray-100 dark:border-gray-800 pt-4">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrdersHeading') || 'Мои заказы' }}</h4>
+                <button type="button" class="text-xs text-gray-400 dark:text-gray-500 hover:underline" @click="patronLogout()">
+                  {{ t('menu.patronLogout') || 'Log out' }}
+                </button>
+              </div>
+              <p v-if="patronOrdersLoading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Loading…' }}</p>
+              <p v-else-if="!patronOrders.length" class="text-xs text-gray-400">{{ t('menu.noOrdersYet') || 'Пока нет заказов' }}</p>
+              <div v-else class="flex flex-col gap-1.5">
+                <a
+                  v-for="o in patronOrders"
+                  :key="o.id"
+                  :href="orderStatusHref(smartOrderNumber(o), o.phone)"
+                  target="_blank"
+                  rel="noopener"
+                  class="flex items-center justify-between text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3 py-2 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                >
+                  <span class="font-mono font-medium text-gray-900 dark:text-white">{{ smartOrderNumber(o) }}</span>
+                  <span class="text-gray-400">{{ o.status }}</span>
+                  <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
+                </a>
+              </div>
+            </div>
+          </template>
         </div>
         <template #footer>
           <UButton

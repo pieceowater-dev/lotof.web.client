@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { getCatalogReviews, createCatalogReview, type CatalogReview } from '@/api/hub/catalog';
 import { logError } from '@/utils/logger';
@@ -40,15 +40,18 @@ async function loadReviews() {
   }
 }
 
-function restoreDraft() {
-  if (!draftKey.value || !process.client) return;
+function restoreDraft(): boolean {
+  if (!draftKey.value || !process.client) return false;
   try {
     const raw = localStorage.getItem(draftKey.value);
-    if (!raw) return;
+    if (!raw) return false;
     const draft = JSON.parse(raw);
     if (draft.rating) rating.value = draft.rating;
     if (draft.body) body.value = draft.body;
-  } catch {}
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function saveDraft() {
@@ -64,11 +67,6 @@ function clearDraft() {
     localStorage.removeItem(draftKey.value);
   } catch {}
 }
-
-onMounted(() => {
-  loadReviews();
-  if (patronToken.value) restoreDraft();
-});
 
 const canSubmit = computed(() => rating.value > 0 && body.value.trim().length > 0 && !submitting.value);
 
@@ -99,6 +97,29 @@ async function submit() {
     submitting.value = false;
   }
 }
+
+// businessId resolves asynchronously in the parent (storefront data load ->
+// active branch -> catalog lookup), so it's still null at the moment this
+// component mounts on virtually every real page load -- an onMounted-only
+// loadReviews() call was a silent no-op that never ran again once the id
+// showed up. Watching it (immediate: true) covers both the normal mount and
+// this deferred-arrival case.
+watch(
+  () => props.businessId,
+  (id) => {
+    if (!id) return;
+    loadReviews();
+    if (patronToken.value) {
+      // Restoring a draft left before the patronLogin() redirect only
+      // refills the form -- auto-submitting it here (rather than making the
+      // Patron notice the prefilled form and press submit again) is what
+      // actually completes "leave a review" after the login round trip.
+      const hadDraft = restoreDraft();
+      if (hadDraft && canSubmit.value) submit();
+    }
+  },
+  { immediate: true },
+);
 </script>
 
 <template>

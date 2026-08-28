@@ -41,6 +41,7 @@ export type AppHealthStatus = {
 export type CatalogBusiness = {
   __typename?: "CatalogBusiness";
   address?: Maybe<Scalars["String"]["output"]>;
+  avgRating: Scalars["Float"]["output"];
   categoryId?: Maybe<Scalars["String"]["output"]>;
   city?: Maybe<Scalars["String"]["output"]>;
   description?: Maybe<Scalars["String"]["output"]>;
@@ -51,6 +52,7 @@ export type CatalogBusiness = {
   logoUrl?: Maybe<Scalars["String"]["output"]>;
   name: Scalars["String"]["output"];
   namespaceSlug: Scalars["String"]["output"];
+  reviewCount: Scalars["Int"]["output"];
   sourceBranchId: Scalars["String"]["output"];
 };
 
@@ -744,6 +746,8 @@ export type CatalogBusinessesQuery = {
       lat?: number | null;
       lng?: number | null;
       isActive: boolean;
+      avgRating: number;
+      reviewCount: number;
     }>;
     info: { __typename?: "PaginationInfo"; count: number };
   };
@@ -1596,6 +1600,14 @@ export const CatalogBusinessesDocument = {
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "isActive" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "avgRating" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "reviewCount" },
                       },
                     ],
                   },

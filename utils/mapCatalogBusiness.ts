@@ -3,12 +3,14 @@ import type { CatalogBusiness, CatalogCategory } from '@/api/hub/catalog';
 import { maskProfanity } from '@/utils/profanityFilter';
 
 // Real catalog data (lotof.hub.msvc.core, via hub.gtw's catalogBusinesses/
-// catalogCategories) has no rating/reviews/price-tier/distance/gradient --
-// none of that has a real source yet. This maps it onto the same
-// MockBusiness shape BusinessCard.vue already renders, leaving those fields
-// undefined (BusinessCard hides them rather than showing a fabricated
-// number) and picking a stable-per-business color from a small palette so
-// cards still look visually distinct without inventing per-business colors.
+// catalogCategories) has no price-tier/distance -- neither has a real
+// source yet. rating/reviews DO have a real source now (avgRating/
+// reviewCount, computed server-side from Review rows) -- this maps it onto
+// the same MockBusiness shape BusinessCard.vue already renders, leaving
+// price-tier/distance undefined (BusinessCard hides a field rather than
+// showing a fabricated value) and picking a stable-per-business color from
+// a small palette so cards still look visually distinct without inventing
+// per-business colors.
 
 const PALETTE: Array<{ gradient: string; iconColor: string }> = [
   { gradient: 'from-amber-200 to-orange-100', iconColor: 'text-amber-700' },
@@ -41,6 +43,13 @@ export function toDisplayBusiness(business: CatalogBusiness, categories: Catalog
     // isn't that, so it's left unset here rather than repurposing the slot.
     logoUrl: business.logoUrl || undefined,
     to: `/to/${business.namespaceSlug}/menu`,
+    // reviewCount gates rating, not the other way around -- a business with
+    // zero reviews has avgRating 0 from the DB, which is a real value, not
+    // "no rating yet", so checking it alone would show "0" on every fresh
+    // card instead of hiding the row entirely (BusinessCard.vue already
+    // hides rating when it's undefined).
+    rating: business.reviewCount > 0 ? Math.round(business.avgRating * 10) / 10 : undefined,
+    reviews: business.reviewCount > 0 ? business.reviewCount : undefined,
   };
 }
 
