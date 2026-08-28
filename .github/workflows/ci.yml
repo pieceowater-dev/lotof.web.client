@@ -54,15 +54,14 @@ jobs:
             ${{ steps.meta.outputs.tags }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.GIT_SHORT_SHA }}
           labels: ${{ steps.meta.outputs.labels }}
-          # NUXT_PUBLIC_SITE_URL is only baked into the prerendered routes (/,
-          # /feed); SSR routes read it from the runtime configmap. Set it as a
-          # per-environment GitHub variable (Settings > Environments >
-          # main/test/dev > Variables), e.g. NUXT_PUBLIC_SITE_URL=https://lota.tools.
-          # If unset, the build arg is empty and nuxt.config.ts falls back to
-          # DEFAULT_SITE_URL in utils/siteUrl.ts -- the one place the domain is a literal.
+          # NUXT_PUBLIC_SITE_URL is the CANONICAL site URL: baked into the
+          # prerendered routes (/, /feed) and the compiled /api-* proxy target.
+          # It is one value, not per-mirror -- lota.kz serves the same content
+          # but canonical / OG / sitemap stay lota.tools. Mirrors are handled at
+          # the edge (ALB host rules + CoreDNS), not here.
           build-args: |
             NUXT_PUBLIC_AMPLITUDE_API_KEY=4f13a54e957d08dc4165a91a0d5640e7
-            NUXT_PUBLIC_SITE_URL=${{ vars.NUXT_PUBLIC_SITE_URL }}
+            NUXT_PUBLIC_SITE_URL=https://lota.tools
           secret-files: |
             gh_token=.gh_token
           cache-from: type=gha
