@@ -25,6 +25,14 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const saving = ref(false);
 
+// Pagination -- both lists are fetched in full (up to the API's page-size
+// cap) and paged client-side, same approach as MembersSection.vue's
+// paginatedMembers.
+const patternsPage = ref(1);
+const patternsPageCount = ref(10);
+const assignmentsPage = ref(1);
+const assignmentsPageCount = ref(10);
+
 // -- Pattern create/edit modal --
 const showPatternModal = ref(false);
 const editingPattern = ref<AtraceShiftPattern | null>(null);
@@ -125,12 +133,20 @@ const patternRows = computed(() => patterns.value.map(p => ({
   ...p,
   assignedCount: assignedCountByPattern.value.get(p.id) || 0,
 })));
+const paginatedPatternRows = computed(() => {
+  const start = (patternsPage.value - 1) * patternsPageCount.value;
+  return patternRows.value.slice(start, start + patternsPageCount.value);
+});
 
 const assignmentRows = computed(() => activeAssignments.value.map(a => ({
   ...a,
   userName: memberNameById.value.get(a.userId) || a.userId,
   patternName: patternNameById.value.get(a.shiftPatternId) || a.shiftPatternId,
 })));
+const paginatedAssignmentRows = computed(() => {
+  const start = (assignmentsPage.value - 1) * assignmentsPageCount.value;
+  return assignmentRows.value.slice(start, start + assignmentsPageCount.value);
+});
 
 async function load() {
   loading.value = true;
@@ -323,11 +339,13 @@ onMounted(async () => {
         class="h-[360px]"
       >
         <AppTable
-          :rows="patternRows"
+          v-model:page="patternsPage"
+          v-model:page-count="patternsPageCount"
+          :rows="paginatedPatternRows"
           :columns="patternColumns"
           :loading="loading"
           :total="patternRows.length"
-          :pagination="false"
+          :pagination="true"
         >
           <template #type-data="{ row }">
             {{ row.type === 'FIXED_WEEKDAYS' ? (t('app.fixedWeekdays') || 'Фикс. дни недели') : (t('app.rotating') || 'Ротация N/M') }}
@@ -407,11 +425,13 @@ onMounted(async () => {
         class="h-[360px]"
       >
         <AppTable
-          :rows="assignmentRows"
+          v-model:page="assignmentsPage"
+          v-model:page-count="assignmentsPageCount"
+          :rows="paginatedAssignmentRows"
           :columns="assignmentColumns"
           :loading="loading"
           :total="assignmentRows.length"
-          :pagination="false"
+          :pagination="true"
         >
           <template #effectiveTo-data="{ row }">
             <span v-if="row.effectiveTo">{{ row.effectiveTo }}</span>

@@ -5,6 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { localizeAtraceErrorMessage } from '@/utils/atrace/localizeError';
 import type { Role } from '@/api/atrace/role/getRoles';
+import type { MemberRoleAndScheduleEntry } from '@/api/atrace/member/getMembersRolesAndSchedules';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 
 export type AtraceMember = {
@@ -132,56 +133,63 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
           logError('[loadMembers] Failed to load active members list:', err);
         }
 
-        // Load role and schedule for each member using combined query
-        const { atraceGetMemberRoleAndSchedule } = await import('@/api/atrace/member/getMemberWithRoleAndSchedule');
+        // Load role and schedule for all members in one batched round trip
+        // (was one getMemberRole+getSchedule request per member -- up to
+        // ~100 browser requests for 50 members once the userId/memberId
+        // fallback below kicked in -- see getMembersRolesAndSchedules on
+        // the gateway).
+        const { atraceGetMembersRolesAndSchedules } = await import('@/api/atrace/member/getMembersRolesAndSchedules');
         const now = new Date();
         const currentYear = now.getFullYear();
         const currentMonth = now.getMonth() + 1;
 
-        members.value = await Promise.all(
-          membersList.map(async (m) => {
-            try {
-              // Try with userId first (new style)
-              let data = await atraceGetMemberRoleAndSchedule(
-                atraceToken,
-                nsSlug.value,
-                m.userId,
-                currentYear,
-                currentMonth
-              );
+        const byUserId = new Map<string, MemberRoleAndScheduleEntry>();
+        try {
+          const entries = await atraceGetMembersRolesAndSchedules(
+            atraceToken,
+            nsSlug.value,
+            membersList.map((m) => m.userId),
+            currentYear,
+            currentMonth
+          );
+          entries.forEach((e) => byUserId.set(e.memberId, e));
+        } catch (err) {
+          logError('[loadMembers] Failed to batch-load roles/schedules:', err);
+        }
 
-              // If no data, try with memberId (old style for owner)
-              if (!data.role) {
-                data = await atraceGetMemberRoleAndSchedule(
-                  atraceToken,
-                  nsSlug.value,
-                  m.id,
-                  currentYear,
-                  currentMonth
-                );
-              }
+        // Old-style members (owner) have no role under userId -- retry
+        // those, batched, under their memberId instead.
+        const fallbackMembers = membersList.filter((m) => !byUserId.get(m.userId)?.role);
+        if (fallbackMembers.length > 0) {
+          const userIdByMemberId = new Map(fallbackMembers.map((m) => [m.id, m.userId]));
+          try {
+            const fallbackEntries = await atraceGetMembersRolesAndSchedules(
+              atraceToken,
+              nsSlug.value,
+              fallbackMembers.map((m) => m.id),
+              currentYear,
+              currentMonth
+            );
+            fallbackEntries.forEach((e) => {
+              const userId = userIdByMemberId.get(e.memberId);
+              if (userId) byUserId.set(userId, e);
+            });
+          } catch (err) {
+            logError('[loadMembers] Failed to batch-load fallback roles/schedules:', err);
+          }
+        }
 
-              return {
-                ...m,
-                roleId: data.role?.id || null,
-                roleName: data.role?.name || null,
-                requiredWorkingDays: data.schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
-                requiredWorkingHours: data.schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS,
-                isActive: activeUserIds.has(m.userId)
-              };
-            } catch (err) {
-              logError(`Failed to load role/schedule for member ${m.userId}/${m.id}:`, err);
-              return {
-                ...m,
-                roleId: null,
-                roleName: null,
-                requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
-                requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS,
-                isActive: activeUserIds.has(m.userId)
-              };
-            }
-          })
-        );
+        members.value = membersList.map((m) => {
+          const data = byUserId.get(m.userId);
+          return {
+            ...m,
+            roleId: data?.role?.id || null,
+            roleName: data?.role?.name || null,
+            requiredWorkingDays: data?.schedule?.shouldAttendDaysPerMonth ?? DEFAULT_REQUIRED_WORKING_DAYS,
+            requiredWorkingHours: data?.schedule?.shouldAttendHoursPerDay ?? DEFAULT_REQUIRED_WORKING_HOURS,
+            isActive: activeUserIds.has(m.userId)
+          };
+        });
       } catch (e: unknown) {
         error.value = localizeAtraceErrorMessage(e, t) || 'Failed to load members';
       } finally {
