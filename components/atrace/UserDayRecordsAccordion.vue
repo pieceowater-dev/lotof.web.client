@@ -164,21 +164,37 @@ function getRecordDate(record: AtraceRecord): string {
   return new Date(record.timestamp * 1000).toISOString().split('T')[0];
 }
 
-function getDayTimeInfo(records: AtraceRecord[]) {
+function getDayTimeInfo(date: string, records: AtraceRecord[]) {
   if (records.length === 0) return null;
-  
+
   const firstRecord = records[0];
   const lastRecord = records[records.length - 1];
-  
+
   const firstTime = formatTime(firstRecord).time;
   const lastTime = formatTime(lastRecord).time;
-  
-  // Calculate duration in hours
-  const durationMs = (lastRecord.timestamp - firstRecord.timestamp) * 1000;
-  const hours = Math.floor(durationMs / (1000 * 60 * 60));
-  const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-  const duration = `${hours}ч ${minutes}м`;
-  
+
+  // Prefer the backend's own paired work-time calculation (correctly
+  // subtracts a lunch-break gap, ignores an odd/still-open trailing
+  // check-in, etc.) over the naive first-to-last span -- the violation
+  // badge next to this is driven by that same backend value, so showing a
+  // different, larger number here reads as a flat contradiction ("Находился:
+  // 11ч26м" next to "Нарушение" for a day that's actually ~7.9 worked hours
+  // once the gap is subtracted). Falls back to the raw span only when
+  // there's no processed DailyAttendance for this date yet.
+  const da = dailyAttendanceMap.value.get(date);
+  let duration: string;
+  if (da) {
+    const totalMinutes = Math.round(da.workedHours * 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    duration = `${hours}ч ${minutes}м`;
+  } else {
+    const durationMs = (lastRecord.timestamp - firstRecord.timestamp) * 1000;
+    const hours = Math.floor(durationMs / (1000 * 60 * 60));
+    const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    duration = `${hours}ч ${minutes}м`;
+  }
+
   return { firstTime, lastTime, duration };
 }
 
@@ -376,13 +392,13 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
               <span class="font-medium text-sm">{{ formatDate(date) }}</span>
               <div class="flex items-center gap-2 text-xs text-gray-500">
                 <span>{{ t('app.records') }} - {{ records.length }}</span>
-                <template v-if="getDayTimeInfo(records)">
+                <template v-if="getDayTimeInfo(date, records)">
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(records)?.firstTime }}</span>
+                  <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(date, records)?.firstTime }}</span>
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(records)?.lastTime }}</span>
+                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(date, records)?.lastTime }}</span>
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(records)?.duration }}</span>
+                  <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(date, records)?.duration }}</span>
                 </template>
               </div>
             </div>
