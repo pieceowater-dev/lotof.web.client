@@ -6,6 +6,46 @@
     />
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="favoriteRows.length" class="mb-6">
+        <div class="mb-2 flex items-center gap-2">
+          <Icon name="lucide:star" class="h-4 w-4 fill-current text-amber-400" />
+          <h2 class="text-sm font-bold text-slate-900 dark:text-white">
+            {{ t('admin.favoriteNamespaces') || 'Избранные неймспейсы' }}
+          </h2>
+          <span class="text-xs text-slate-400">{{ favoriteRows.length }}</span>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            v-for="row in favoriteRows"
+            :key="row.id"
+            class="relative rounded-xl border border-amber-200 bg-amber-50/40 p-3 dark:border-amber-800/40 dark:bg-amber-900/10"
+          >
+            <button
+              type="button"
+              :title="t('admin.removeFromFavorites') || 'Убрать из избранного'"
+              class="absolute right-2 top-2 text-amber-400 transition-colors hover:text-amber-500"
+              @click="toggleFavorite(row.id)"
+            >
+              <Icon name="lucide:star" class="h-4 w-4 fill-current" />
+            </button>
+            <button type="button" class="block w-full pr-6 text-left" @click="focusNamespace(row)">
+              <div class="truncate font-semibold text-slate-900 dark:text-white">{{ row.title }}</div>
+              <div class="truncate font-mono text-[10px] text-slate-500">{{ row.slug }}</div>
+              <div v-if="row.apps?.length" class="mt-1.5 flex flex-wrap gap-1">
+                <span
+                  v-for="app in row.apps"
+                  :key="app.id"
+                  class="inline-flex items-center rounded-md border border-blue-100 bg-white px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:border-blue-800/30 dark:bg-slate-900 dark:text-blue-400"
+                >{{ appLabel(app.appBundle) }}</span>
+              </div>
+              <div v-if="row.ownerInfo" class="mt-1.5 truncate text-[10px] text-slate-500">
+                {{ row.ownerInfo.username }} · {{ row.ownerInfo.email }}
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div class="relative flex-1 md:max-w-sm">
           <Icon name="lucide:search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -39,9 +79,10 @@
 
       <div v-else class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1250px] text-left text-sm">
+          <table class="w-full min-w-[1290px] text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
               <tr>
+                <th class="w-10 px-4 py-3"><span class="sr-only">{{ t('admin.favorite') || 'Избранное' }}</span></th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.apps') || 'Приложения' }}</th>
@@ -54,6 +95,18 @@
             <tbody>
               <template v-for="row in rows" :key="row.id">
                 <tr class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900">
+                  <td class="px-4 py-4">
+                    <button
+                      type="button"
+                      :title="isFavorite(row.id) ? (t('admin.removeFromFavorites') || 'Убрать из избранного') : (t('admin.addToFavorites') || 'В избранное')"
+                      :aria-pressed="isFavorite(row.id)"
+                      class="transition-colors"
+                      :class="isFavorite(row.id) ? 'text-amber-400 hover:text-amber-500' : 'text-slate-300 hover:text-amber-400 dark:text-slate-600'"
+                      @click="toggleFavorite(row.id)"
+                    >
+                      <Icon name="lucide:star" class="h-4 w-4" :class="isFavorite(row.id) ? 'fill-current' : ''" />
+                    </button>
+                  </td>
                   <td class="px-6 py-4">
                     <div class="font-semibold text-slate-900 dark:text-white">{{ row.title }}</div>
                     <div class="text-[10px] text-slate-500 font-mono">{{ row.slug }}</div>
@@ -129,7 +182,7 @@
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ formatDate(row.createdAt) }}</td>
                 </tr>
                 <tr v-if="healthExpanded[row.id]" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <td colspan="7" class="px-6 py-4">
+                  <td colspan="8" class="px-6 py-4">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
                       {{ t('admin.health') || 'Здоровье' }}
                     </div>
@@ -160,7 +213,7 @@
                   </td>
                 </tr>
                 <tr v-if="expanded[row.id] && row.memberInfos?.length" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <td colspan="7" class="px-6 py-4">
+                  <td colspan="8" class="px-6 py-4">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
                       {{ t('admin.members') || 'Участники' }}
                     </div>
@@ -203,6 +256,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import { useFavoriteNamespaces } from '@/composables/useFavoriteNamespaces';
 import {
   hubGetAdminNamespaces,
   hubGetAdminNamespacesPage,
@@ -218,6 +272,7 @@ definePageMeta({
 const { t } = useI18n();
 useHead({ title: `Консоль — ${t('admin.namespaces') || 'Неймспейсы'}` });
 const { token } = useAuth();
+const { favoriteIds, isFavorite, toggle: toggleFavorite } = useFavoriteNamespaces();
 
 const rows = ref<AdminNamespaceRow[]>([]);
 const total = ref(0);
@@ -229,8 +284,30 @@ const expanded = ref<Record<string, boolean>>({});
 const healthExpanded = ref<Record<string, boolean>>({});
 const healthLoading = ref<Record<string, boolean>>({});
 const healthData = ref<Record<string, AppHealthStatus[]>>({});
+// Full platform-wide list (also feeds the company/employee counts below).
+// The pinned "favorites" section reads from this so a starred namespace
+// stays visible no matter which page of `rows` is loaded or what's typed
+// in the search box.
+const allRows = ref<AdminNamespaceRow[]>([]);
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize));
+
+const favoriteRows = computed(() => {
+  const set = new Set(favoriteIds.value);
+  return allRows.value
+    .filter((r) => set.has(r.id))
+    .sort((a, b) => a.title.localeCompare(b.title));
+});
+
+// Jump from a favorite card to that namespace's row in the table below,
+// where health/members can be inspected. Reuses the existing search box
+// (debounced watcher reloads page 1 filtered to this slug).
+function focusNamespace(row: AdminNamespaceRow) {
+  search.value = row.slug;
+  if (typeof window !== 'undefined') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
 
 function toggleExpanded(id: string) {
   expanded.value = { ...expanded.value, [id]: !expanded.value[id] };
@@ -328,9 +405,9 @@ function employerHint(n: AdminNamespaceRow): string {
   return label ? `${t('admin.employeeOf')} ${label}` : t('admin.employeeNamespaceHint');
 }
 
-// Full platform-wide list, fetched once purely to compute the
-// "Компаний"/"Сотрудников" counts -- independent of the paginated `rows`
-// used for the table itself.
+// Full platform-wide list, fetched once to compute the
+// "Компаний"/"Сотрудников" counts and to back the pinned favorites section
+// (see allRows) -- independent of the paginated `rows` used for the table.
 const statsLoading = ref(true);
 const companyCount = ref(0);
 const employeeCount = ref(0);
@@ -339,6 +416,7 @@ async function loadStats() {
   statsLoading.value = true;
   try {
     const res = await hubGetAdminNamespaces(token.value);
+    allRows.value = res.rows;
     let companies = 0;
     let employees = 0;
     for (const n of res.rows) {

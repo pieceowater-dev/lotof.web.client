@@ -37,6 +37,12 @@ export const LSKeys = {
   // silent-refresh a Patron session (e.g. the Catalog) can skip the attempt
   // (and its guaranteed 401) for a browser that never had a Patron session.
   HAS_PATRON_SESSION: 'lota_has_patron_session',
+  // Per-browser JSON array of namespace IDs an admin starred in
+  // /console/namespaces, so that page can pin them above the (server-
+  // paginated, search-filtered) table instead of making the admin
+  // re-search for the same handful every visit. Client-only convenience,
+  // no server-side counterpart.
+  CONSOLE_FAVORITE_NAMESPACES: 'console:favorite-namespaces',
 } as const;
 export type LSKey = (typeof LSKeys)[keyof typeof LSKeys];
 
