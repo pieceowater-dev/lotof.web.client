@@ -229,7 +229,7 @@ export type AtraceDailyAttendanceRecord = {
   /** missing checkout was filled in at the scheduled shift end */
   autoClosedCheckout?: boolean;
   /** IANA zone firstCheckIn/lastCheckOut/date should be read in */
-  timezone?: string;
+  timezone?: string | null;
 };
 
 export async function atraceGetAttendanceReport(

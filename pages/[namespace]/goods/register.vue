@@ -694,16 +694,19 @@ onMounted(async () => {
           {{ t('goods.warehouse') }}
         </UButton>
         <template v-if="currentShift">
-          <span data-tour="goods-register-shift-actions" class="contents">
-          <UButton color="gray" variant="ghost" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
-          <UButton color="gray" variant="ghost" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
-          <UButton color="gray" variant="ghost" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
-          <UButton color="gray" variant="ghost" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
-          <span class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
-          <UButton color="red" variant="soft" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
-            {{ t('goods.closeShift') }}
-          </UButton>
-          </span>
+          <!-- Real flex box (not display:contents) so the tour can measure it
+               -- a `contents` element has a zero-size rect and the highlight
+               lands in the top-left corner. -->
+          <div data-tour="goods-register-shift-actions" class="flex items-center gap-1.5 flex-wrap">
+            <UButton color="gray" variant="ghost" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
+            <UButton color="gray" variant="ghost" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
+            <UButton color="gray" variant="ghost" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
+            <UButton color="gray" variant="ghost" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
+            <span class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
+            <UButton color="red" variant="soft" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
+              {{ t('goods.closeShift') }}
+            </UButton>
+          </div>
         </template>
       </div>
     </div>

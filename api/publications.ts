@@ -1234,7 +1234,7 @@ export async function capitalUploadPublicationImage(
     },
   }
 
-  const { body, contentType } = buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file)
+  const { body, contentType } = await buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file)
 
   const headers: Record<string, string> = { 'Content-Type': contentType }
   if (asString(token)) {

@@ -87,6 +87,9 @@ function loadHtmlImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
+    // Browsers apply EXIF orientation when drawing an <img> to canvas
+    // (image-orientation: from-image is the default), so a portrait phone
+    // photo doesn't come out rotated.
     img.onload = () => {
       URL.revokeObjectURL(url);
       resolve(img);
@@ -104,6 +107,27 @@ function canEncode(canvas: HTMLCanvasElement, type: string): boolean {
     return canvas.toDataURL(type).startsWith(`data:${type}`);
   } catch {
     return false;
+  }
+}
+
+function toBlob(canvas: HTMLCanvasElement, type: string, quality?: number): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b), type, quality);
+  });
+}
+
+/** Any pixel with alpha below ~opaque means the source carries transparency. */
+function canvasHasAlpha(ctx: CanvasRenderingContext2D, w: number, h: number): boolean {
+  try {
+    const { data } = ctx.getImageData(0, 0, w, h);
+    for (let i = 3; i < data.length; i += 4) {
+      if (data[i] < 250) return true;
+    }
+    return false;
+  } catch {
+    // Tainted canvas (shouldn't happen for a user-picked File) -- assume
+    // alpha so we don't silently drop it by encoding to JPEG.
+    return true;
   }
 }
 
@@ -154,24 +178,28 @@ export async function compressImageForUpload(
 
   if (typeof document === 'undefined') return file;
 
+  // Decode. <img> is the most compatible path across browsers (Safari's
+  // createImageBitmap has historically choked on progressive / CMYK / EXIF
+  // JPEGs) and applies EXIF orientation for free; createImageBitmap is the
+  // fallback.
   let source: CanvasImageSource;
   let width: number;
   let height: number;
   let bitmap: ImageBitmap | null = null;
   try {
-    if (typeof createImageBitmap === 'function') {
-      bitmap = await createImageBitmap(file);
+    const img = await loadHtmlImage(file);
+    source = img;
+    width = img.naturalWidth;
+    height = img.naturalHeight;
+  } catch {
+    try {
+      bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' as any });
       source = bitmap;
       width = bitmap.width;
       height = bitmap.height;
-    } else {
-      const img = await loadHtmlImage(file);
-      source = img;
-      width = img.naturalWidth;
-      height = img.naturalHeight;
+    } catch {
+      return file;
     }
-  } catch {
-    return file;
   }
 
   if (!width || !height) {
@@ -194,25 +222,36 @@ export async function compressImageForUpload(
   ctx.drawImage(source, 0, 0, targetW, targetH);
   bitmap?.close();
 
-  const outType = canEncode(canvas, 'image/webp')
-    ? 'image/webp'
-    : file.type === 'image/png' && scale === 1
-      ? 'image/png'
-      : 'image/jpeg';
+  // Only PNG/WebP sources can carry transparency; a JPEG never does, so
+  // skip the pixel scan for it.
+  const mayHaveAlpha = file.type === 'image/png' || file.type === 'image/webp';
+  const hasAlpha = mayHaveAlpha && canvasHasAlpha(ctx, targetW, targetH);
 
-  const blob = await new Promise<Blob | null>((resolve) => {
-    canvas.toBlob(
-      (b) => resolve(b),
-      outType,
-      outType === 'image/png' ? undefined : quality,
-    );
-  });
+  // Prefer WebP everywhere it encodes (small, alpha-capable). Otherwise:
+  // keep PNG only when the source is actually transparent; every other
+  // image -- including an opaque PNG / screenshot on a browser without WebP
+  // encoding -- goes to JPEG so it actually shrinks.
+  let outType: 'image/webp' | 'image/png' | 'image/jpeg';
+  if (canEncode(canvas, 'image/webp')) outType = 'image/webp';
+  else if (hasAlpha) outType = 'image/png';
+  else outType = 'image/jpeg';
 
+  let blob = await toBlob(canvas, outType, outType === 'image/png' ? undefined : quality);
   if (!blob) return file;
 
-  // Don't ship something bigger than what we started with when we didn't
-  // even downscale.
-  if (blob.size >= file.size && scale === 1) return file;
+  // Still heavy after a downscale + first encode? One lower-quality pass for
+  // the lossy formats.
+  if (blob.size > 900 * 1024 && outType !== 'image/png') {
+    const smaller = await toBlob(canvas, outType, 0.6);
+    if (smaller && smaller.size < blob.size) blob = smaller;
+  }
+
+  // Hand back the original only when we changed nothing useful: no
+  // downscale, no size win, and the type is unchanged (so we're never
+  // returning a bloated PNG where a JPEG would have been far smaller).
+  if (scale === 1 && blob.size >= file.size && blob.type === file.type) {
+    return file;
+  }
 
   const ext = outType === 'image/webp' ? 'webp' : outType === 'image/png' ? 'png' : 'jpg';
   const baseName = (file.name || 'image').replace(/\.[^./\\]+$/, '') || 'image';

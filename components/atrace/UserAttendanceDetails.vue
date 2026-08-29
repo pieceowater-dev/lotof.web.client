@@ -27,7 +27,7 @@ type DailyAttendance = {
   reason?: string;
   incompleteCheckout?: boolean;
   autoClosedCheckout?: boolean;
-  timezone?: string;
+  timezone?: string | null;
 };
 
 const attendanceRecords = ref<DailyAttendance[]>([]);
@@ -74,7 +74,7 @@ async function loadAttendanceDetails() {
   }
 }
 
-function formatTime(timestamp: number, tz?: string): string {
+function formatTime(timestamp: number, tz?: string | null): string {
   if (!timestamp) return '-';
   try {
     return new Date(timestamp * 1000).toLocaleTimeString('ru-RU', {

@@ -42,7 +42,7 @@ type DailyAttendance = {
   earlyLeave: boolean;
   incompleteCheckout?: boolean;
   autoClosedCheckout?: boolean;
-  timezone?: string;
+  timezone?: string | null;
 };
 
 // Mirror of the backend's pairDedupeGap (attendance.svc.go): two scans this

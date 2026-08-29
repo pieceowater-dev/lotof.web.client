@@ -24,7 +24,7 @@ export async function menuUploadImage(menuToken: string, namespaceSlug: string, 
     variables: { file: null },
   };
 
-  const { body, contentType } = buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
+  const { body, contentType } = await buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
 
   const uploadUrl = `${getApiBaseUrl('menu')}/query`;
   const response = await fetch(uploadUrl, {

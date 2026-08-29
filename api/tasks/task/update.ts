@@ -151,7 +151,7 @@ export async function tasksUploadTaskDeliveryPhoto(tasksToken: string, namespace
     variables: { taskId, file: null },
   };
 
-  const { body, contentType } = buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
+  const { body, contentType } = await buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
 
   const uploadUrl = `${getApiBaseUrl('tasks')}/query`;
   const response = await fetch(uploadUrl, {
