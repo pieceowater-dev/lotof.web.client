@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { changeBonusPin, type ChangePinInput } from '@/api/contacts/loyalty';
 
@@ -8,6 +8,11 @@ interface Props {
   loading?: boolean;
   error?: string | null;
   token: string;
+  /** Namespace slug -- sent as an explicit header so the tenant resolves
+   *  even for a hub token without a namespace claim. */
+  nsSlug?: string;
+  /** Whether a global bonus PIN is already configured (from the server). */
+  hasPin?: boolean;
 }
 
 interface Emits {
@@ -19,7 +24,15 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   error: null,
   clientId: undefined,
+  nsSlug: undefined,
+  hasPin: false,
 });
+
+// Local mirror of "a PIN exists" -- seeded from the server-provided prop,
+// flipped to true the moment a save succeeds so the UI stops claiming the
+// PIN still isn't set.
+const pinConfigured = ref(props.hasPin);
+watch(() => props.hasPin, (v) => { pinConfigured.value = v; });
 
 const emit = defineEmits<Emits>();
 const { t } = useI18n();
@@ -119,9 +132,10 @@ async function savePin() {
       input.oldPin = formData.value.oldPin;
     }
 
-    const result = await changeBonusPin(props.token, input);
+    const result = await changeBonusPin(props.token, input, props.nsSlug);
 
     if (result.success) {
+      pinConfigured.value = true;
       emit('success', t('common.pinChanged'));
       closeModal();
     } else {
@@ -154,14 +168,23 @@ defineExpose({
           {{ t('contacts.loyalty.bonusPinDescription') }}
         </p>
       </div>
-      <UButton 
-        icon="lucide:lock" 
-        size="xs" 
-        color="primary"
-        @click="openModal"
-      >
-        {{ hasOldPin ? t('common.changePin') : t('common.setPin') }}
-      </UButton>
+      <div class="flex items-center gap-2">
+        <span
+          v-if="pinConfigured"
+          class="inline-flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"
+        >
+          <UIcon name="lucide:check-circle" class="w-3.5 h-3.5" />
+          {{ t('contacts.loyalty.bonusPinConfigured') || 'PIN configured' }}
+        </span>
+        <UButton
+          icon="lucide:lock"
+          size="xs"
+          color="primary"
+          @click="openModal"
+        >
+          {{ (hasOldPin || pinConfigured) ? t('common.changePin') : t('common.setPin') }}
+        </UButton>
+      </div>
     </div>
 
     <!-- Error State -->
@@ -201,7 +224,7 @@ defineExpose({
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">
-              {{ hasOldPin ? t('common.changePin') : t('common.setPin') }}
+              {{ (hasOldPin || pinConfigured) ? t('common.changePin') : t('common.setPin') }}
             </h3>
           </div>
         </template>

@@ -1,6 +1,7 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients'
 import { getApiBaseUrl } from '@/utils/api-base'
 import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload'
+import { assertUploadSize } from '@/utils/imageCompression'
 import {
   type PublicationCategory,
   PUBLICATION_CATEGORY_ALIASES,
@@ -1221,6 +1222,7 @@ export async function capitalUploadPublicationImage(
   file: File,
   options?: { kind?: 'FEATURED' | 'INLINE'; alt?: string; caption?: string }
 ): Promise<{ url: string; assetId: string; key: string; contentType: string; size: string; kind: string }> {
+  assertUploadSize(file)
   const operations = {
     query: UPLOAD_PUBLICATION_IMAGE_MUTATION,
     variables: {

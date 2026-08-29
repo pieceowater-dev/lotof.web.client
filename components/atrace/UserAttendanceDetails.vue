@@ -74,13 +74,24 @@ async function loadAttendanceDetails() {
 function formatTime(timestamp: number): string {
   if (!timestamp) return '-';
   try {
-    return new Date(timestamp * 1000).toLocaleTimeString('ru-RU', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return new Date(timestamp * 1000).toLocaleTimeString('ru-RU', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   } catch {
     return '-';
   }
+}
+
+// The backend reuses firstCheckIn as lastCheckOut when there's no real
+// closing scan yet (lone check-in / still-open shift). Rendering that as a
+// "check-out" equal to the check-in makes it look like the person arrived
+// and left in the same minute -- show a "still on shift" placeholder instead.
+function formatCheckOut(record: DailyAttendance): string {
+  if (!record.lastCheckOut || record.lastCheckOut === record.firstCheckIn) {
+    return t('app.stillOnShift') || '—';
+  }
+  return formatTime(record.lastCheckOut);
 }
 
 function formatDate(date: string): string {
@@ -186,7 +197,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                 {{ formatTime(record.firstCheckIn) }}
               </td>
               <td class="px-3 py-2 text-center">
-                {{ formatTime(record.lastCheckOut) }}
+                {{ formatCheckOut(record) }}
               </td>
               <td class="px-3 py-2 text-center">
                 <span class="font-medium">{{ record.workedHours.toFixed(1) }}{{ t('app.hoursShort') }}</span>

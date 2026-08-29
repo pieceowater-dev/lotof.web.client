@@ -170,8 +170,14 @@ function getDayTimeInfo(date: string, records: AtraceRecord[]) {
   const firstRecord = records[0];
   const lastRecord = records[records.length - 1];
 
+  // An odd number of scans means the last one is a check-in, not a
+  // departure -- the shift is still open. Showing that timestamp as a
+  // "departure" (identical to arrival on a single-scan day) reads as
+  // "arrived and left at the same minute", which is simply wrong.
+  const shiftOpen = records.length % 2 === 1;
+
   const firstTime = formatTime(firstRecord).time;
-  const lastTime = formatTime(lastRecord).time;
+  const lastTime = shiftOpen ? null : formatTime(lastRecord).time;
 
   // Prefer the backend's own paired work-time calculation (correctly
   // subtracts a lunch-break gap, ignores an odd/still-open trailing
@@ -396,7 +402,10 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                   <span class="hidden sm:inline">•</span>
                   <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(date, records)?.firstTime }}</span>
                   <span class="hidden sm:inline">•</span>
-                  <span class="hidden sm:inline">{{ t('app.departure') }}: {{ getDayTimeInfo(date, records)?.lastTime }}</span>
+                  <span class="hidden sm:inline">
+                    {{ t('app.departure') }}:
+                    {{ getDayTimeInfo(date, records)?.lastTime ?? (t('app.stillOnShift') || '—') }}
+                  </span>
                   <span class="hidden sm:inline">•</span>
                   <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(date, records)?.duration }}</span>
                 </template>

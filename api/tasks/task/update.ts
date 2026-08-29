@@ -3,6 +3,7 @@ import { tasksRequestWithRefresh } from '@/api/tasks/tasksRequestWithRefresh';
 import { getDeviceHeaders } from '@/utils/device';
 import { getApiBaseUrl } from '@/utils/api-base';
 import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload';
+import { assertUploadSize } from '@/utils/imageCompression';
 import type { TaskItem } from '@/api/tasks/task/list';
 
 const TASK_FIELDS = `
@@ -144,6 +145,7 @@ export async function tasksRefreshClientSnapshot(tasksToken: string, namespaceSl
 // — mirrors menuUploadImage's exact pattern, following the GraphQL
 // multipart-request spec by hand.
 export async function tasksUploadTaskDeliveryPhoto(tasksToken: string, namespaceSlug: string, taskId: string, file: File): Promise<TaskItem> {
+  assertUploadSize(file);
   const operations = {
     query: UploadTaskDeliveryPhotoDocument,
     variables: { taskId, file: null },

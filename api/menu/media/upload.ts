@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from '@/utils/api-base';
 import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload';
+import { assertUploadSize } from '@/utils/imageCompression';
 
 const UPLOAD_MENU_IMAGE_MUTATION = /* GraphQL */ `
   mutation UploadMenuImage($file: Upload!) {
@@ -17,6 +18,7 @@ export type MenuMediaUploadResult = {
 };
 
 export async function menuUploadImage(menuToken: string, namespaceSlug: string, file: File): Promise<MenuMediaUploadResult> {
+  assertUploadSize(file);
   const operations = {
     query: UPLOAD_MENU_IMAGE_MUTATION,
     variables: { file: null },

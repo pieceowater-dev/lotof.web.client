@@ -88,6 +88,7 @@ async function load() {
 
 function openCreateOvertime() {
   overtimeEditing.value = null;
+  overtimeNameError.value = false;
   overtimeForm.value = {
     name: '',
     calcType: 'multiplier',
@@ -100,10 +101,20 @@ function openCreateOvertime() {
 }
 function openEditOvertime(rate: AtraceOvertimeRate) {
   overtimeEditing.value = rate;
+  overtimeNameError.value = false;
   overtimeForm.value = { ...rate, comment: rate.comment || '' };
   showOvertimeModal.value = true;
 }
+const overtimeNameError = ref(false);
+const penaltyNameError = ref(false);
+
 async function saveOvertime() {
+  overtimeNameError.value = !overtimeForm.value.name.trim();
+  if (overtimeNameError.value) {
+    error.value = t('app.nameRequired') || 'Укажите название';
+    return;
+  }
+  overtimeForm.value.name = overtimeForm.value.name.trim();
   saving.value = true;
   error.value = null;
   try {
@@ -134,6 +145,7 @@ async function removeOvertime(rate: AtraceOvertimeRate) {
 
 function openCreatePenalty() {
   penaltyEditing.value = null;
+  penaltyNameError.value = false;
   penaltyForm.value = {
     name: '',
     type: 'absence',
@@ -148,10 +160,17 @@ function openCreatePenalty() {
 }
 function openEditPenalty(rule: AtracePenaltyRule) {
   penaltyEditing.value = rule;
+  penaltyNameError.value = false;
   penaltyForm.value = { ...rule, comment: rule.comment || '' };
   showPenaltyModal.value = true;
 }
 async function savePenalty() {
+  penaltyNameError.value = !penaltyForm.value.name.trim();
+  if (penaltyNameError.value) {
+    error.value = t('app.nameRequired') || 'Укажите название';
+    return;
+  }
+  penaltyForm.value.name = penaltyForm.value.name.trim();
   saving.value = true;
   error.value = null;
   try {
@@ -286,8 +305,15 @@ onMounted(load);
           <h3 class="text-base font-semibold">{{ overtimeEditing ? t('common.edit') : (t('app.createRate') || 'Создать ставку') }}</h3>
         </template>
         <div class="flex flex-col gap-3">
-          <UFormGroup :label="t('common.name') || 'Название'">
-            <UInput v-model="overtimeForm.name" placeholder="Переработка x1.5" />
+          <UFormGroup
+            :label="t('common.name') || 'Название'"
+            :error="overtimeNameError ? (t('app.nameRequired') || 'Укажите название') : undefined"
+          >
+            <UInput
+              v-model="overtimeForm.name"
+              placeholder="Переработка x1.5"
+              @input="overtimeNameError = false"
+            />
           </UFormGroup>
           <UFormGroup :label="t('app.calcType') || 'Способ расчёта'">
             <USelectMenu v-model="overtimeForm.calcType" :options="['multiplier', 'fixed']">
@@ -325,8 +351,15 @@ onMounted(load);
           <h3 class="text-base font-semibold">{{ penaltyEditing ? t('common.edit') : (t('app.createRule') || 'Создать штраф') }}</h3>
         </template>
         <div class="flex flex-col gap-3">
-          <UFormGroup :label="t('common.name') || 'Название'">
-            <UInput v-model="penaltyForm.name" placeholder="Штраф за прогул" />
+          <UFormGroup
+            :label="t('common.name') || 'Название'"
+            :error="penaltyNameError ? (t('app.nameRequired') || 'Укажите название') : undefined"
+          >
+            <UInput
+              v-model="penaltyForm.name"
+              placeholder="Штраф за прогул"
+              @input="penaltyNameError = false"
+            />
           </UFormGroup>
           <UFormGroup :label="t('app.penaltyType') || 'Тип'">
             <USelectMenu v-model="penaltyForm.type" :options="['absence', 'late_threshold']">

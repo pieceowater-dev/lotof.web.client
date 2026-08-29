@@ -785,6 +785,15 @@ watch([() => checkoutForm.customerName, () => checkoutForm.phone], ([customerNam
   localStorage.setItem(contactStorageKey.value, JSON.stringify({ customerName, phone }));
 });
 
+// A logged-in Patron shouldn't have to type a name we already know. Fill it
+// from their identity, but only when the field is still empty -- never
+// clobber a name they (or restoreContact) already put there.
+watch(() => patronMe.value?.name, (name) => {
+  if (name && !checkoutForm.customerName.trim()) {
+    checkoutForm.customerName = name;
+  }
+}, { immediate: true });
+
 function updatePhoneValue(value: string) {
   checkoutForm.phone = sanitizePhoneInput(value);
 }

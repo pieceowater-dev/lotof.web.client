@@ -161,6 +161,7 @@ onMounted(async () => {
             <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <BonusPinManager
                 :token="contactsToken || ''"
+                :ns-slug="nsSlug"
                 @success="(msg) => toast.add({ title: msg, color: 'emerald' })"
                 @error="(msg) => toast.add({ title: msg, color: 'red' })"
               />

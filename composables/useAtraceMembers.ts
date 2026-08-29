@@ -1,6 +1,7 @@
 import type { ComputedRef } from 'vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { useAuth } from '@/composables/useAuth';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { localizeAtraceErrorMessage } from '@/utils/atrace/localizeError';
@@ -32,6 +33,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
   const { t } = useI18n();
   const router = useRouter();
   const { ensure: ensureAtraceToken } = useAtraceToken();
+  const { user: currentUser } = useAuth();
 
   const members = ref<AtraceMember[]>([]);
   const roles = ref<Role[]>([]);
@@ -317,8 +319,15 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
       const primaryMemberId = editingMember.value.userId;
       const fallbackMemberId = editingMember.value.id;
 
+      // Never touch your own role assignment -- the backend rejects it too
+      // (self-downgrade = permanent lockout, permissions come only from the
+      // assigned role), but skip the doomed round-trip and just save the
+      // working-requirements part.
+      const myId = currentUser.value?.id;
+      const isSelf = !!myId && (primaryMemberId === myId || fallbackMemberId === myId);
+
       // Assign role via Atrace API if roleId is provided
-      if (editForm.roleId) {
+      if (!isSelf && editForm.roleId) {
         try {
           await atraceAssignRole(atraceToken, nsSlug.value, editForm.roleId, primaryMemberId);
         } catch (err) {
@@ -326,7 +335,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
           logError(`Failed to assign role with userId, trying memberId:`, err);
           await atraceAssignRole(atraceToken, nsSlug.value, editForm.roleId, fallbackMemberId);
         }
-      } else {
+      } else if (!isSelf) {
         // Remove role if empty
         const previousRoleId = editingMember.value.roleId;
         if (previousRoleId) {

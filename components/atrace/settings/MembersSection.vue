@@ -3,12 +3,23 @@ import AppTable from '@/components/ui/AppTable.vue';
 import EditMemberModal from '@/components/atrace/settings/EditMemberModal.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAtraceMembers } from '@/composables/useAtraceMembers';
+import { useAuth } from '@/composables/useAuth';
 import { atraceRoleLabel } from '@/utils/atrace/roleLabel';
 import { memberDisplayName } from '@/utils/memberDisplayName';
 
 const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
+const { user } = useAuth();
+
+// The signed-in user must not be able to change their own role -- Atrace
+// permissions come purely from the assigned role (no owner bypass), so a
+// self-downgrade locks you out of Settings for good.
+const isEditingSelf = computed(() => {
+  const me = user.value?.id;
+  const m = editingMember.value;
+  return !!me && !!m && (m.userId === me || m.id === me);
+});
 
 const {
   members, roles, loading, error,
@@ -116,6 +127,7 @@ onMounted(async () => {
       v-model:form="editForm"
       :member="editingMember"
       :roles="roles"
+      :is-self="isEditingSelf"
       @save="handleSaveMember"
     />
   </div>

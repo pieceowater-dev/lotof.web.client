@@ -9,6 +9,8 @@ const props = defineProps<{
   modelValue: boolean;
   member: AtraceMember | null;
   roles: Role[];
+  /** The member being edited is the signed-in user -- role must stay locked. */
+  isSelf?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -81,12 +83,15 @@ const editRoleDescription = computed(() => {
         <!-- Role Selection -->
         <UFormGroup
           :label="t('common.role') || 'Role'"
-          :help="t('app.roleHint') || 'Assign a role to control access permissions'"
+          :help="isSelf
+            ? (t('app.roleSelfLockedHint') || 'You cannot change your own role. Ask another administrator.')
+            : (t('app.roleHint') || 'Assign a role to control access permissions')"
           class="space-y-2"
         >
           <USelectMenu
             v-model="editForm.roleId"
             size="lg"
+            :disabled="isSelf"
             :options="[
               { label: t('app.noRole') || 'No role', value: '' },
               ...roles.map(r => ({ label: atraceRoleLabel(r.name, t), value: r.id }))

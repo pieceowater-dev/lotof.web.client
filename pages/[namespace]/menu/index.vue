@@ -571,6 +571,13 @@ function formatDate(iso: string) {
   }
 }
 
+// TotalAmount stays the gross (pre-discount) figure by design; the amount
+// actually owed is total - discount. Show that in the list so applying a
+// discount visibly changes the order's amount instead of looking like a no-op.
+function orderNetAmount(order: MenuOrder): number {
+  return Math.max(0, order.totalAmount - (order.discountAmount || 0));
+}
+
 async function copyOrderLink(order: MenuOrder) {
   const url = `${window.location.origin}/${nsSlug.value}/menu?order=${smartOrderNumber(order)}`;
   try {
@@ -1146,7 +1153,11 @@ async function handleCreateOrder(payload: any) {
           </span>
         </template>
         <template #totalAmount-data="{ row }">
-          <span class="font-semibold tabular-nums">{{ row.totalAmount.toLocaleString() }}</span>
+          <span v-if="row.discountAmount > 0" class="inline-flex items-baseline gap-1.5">
+            <span class="text-gray-400 dark:text-gray-500 line-through tabular-nums text-xs">{{ row.totalAmount.toLocaleString() }}</span>
+            <span class="font-semibold tabular-nums">{{ orderNetAmount(row).toLocaleString() }}</span>
+          </span>
+          <span v-else class="font-semibold tabular-nums">{{ row.totalAmount.toLocaleString() }}</span>
         </template>
         <template #createdAt-data="{ row }">
           <span class="text-gray-500 dark:text-gray-400">{{ formatDate(row.createdAt) }}</span>

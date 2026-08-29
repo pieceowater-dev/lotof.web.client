@@ -507,15 +507,23 @@ const CHECK_BONUS_PIN_QUERY = gql`
 
 export async function changeBonusPin(
   token: string,
-  input: ChangePinInput
+  input: ChangePinInput,
+  namespaceSlug?: string
 ): Promise<ChangePinResponse> {
   try {
     if (!token) throw new Error('Token is required');
     setContactsAppToken(token);
 
+    // Every other contacts write passes the namespace explicitly (see
+    // clientPage.ts / getClient.ts / dynamicFields.ts). @hubAuth reads it
+    // from the JWT claim when present but falls back to this header -- send
+    // it so a hub token without a namespace claim still resolves the tenant.
+    const options = namespaceSlug ? { headers: { Namespace: namespaceSlug } } : undefined;
+
     const data = await contactsClient.request<{ changeBonusPin: ChangePinResponse }>(
       CHANGE_BONUS_PIN_MUTATION,
-      { input }
+      { input },
+      options
     );
 
     return data.changeBonusPin;
@@ -530,15 +538,18 @@ export async function changeBonusPin(
 
 export async function checkBonusPinStatus(
   token: string,
-  clientId: string
+  clientId: string,
+  namespaceSlug?: string
 ): Promise<boolean> {
   try {
     if (!token) throw new Error('Token is required');
     setContactsAppToken(token);
 
+    const options = namespaceSlug ? { headers: { Namespace: namespaceSlug } } : undefined;
     const data = await contactsClient.request<{ bonusBalance: { hasPin: boolean } }>(
       CHECK_BONUS_PIN_QUERY,
-      { clientId }
+      { clientId },
+      options
     );
 
     return data.bonusBalance?.hasPin || false;

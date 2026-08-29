@@ -86,13 +86,21 @@ async function seedUnitsAndContinue() {
   }
 }
 
+// "Skip" still has to leave the namespace with at least one unit of measure
+// -- goods can't be created without one. Seed the standard set if none exist
+// yet (the backend also guarantees this at tenant creation; this covers
+// namespaces provisioned before that and avoids a round-trip later).
 async function loadExistingUnitsAndContinue() {
   try {
     const goodsToken = await getToken();
-    const { goodsListUnits } = await import('@/api/goods/unit');
+    const { goodsListUnits, goodsSeedDefaultUnits } = await import('@/api/goods/unit');
     const { units } = await goodsListUnits(goodsToken, nsSlug.value);
-    seededUnits.value = units;
-  } catch {}
+    seededUnits.value = units.length
+      ? units
+      : await goodsSeedDefaultUnits(goodsToken, nsSlug.value);
+  } catch (e) {
+    logError('[goods onboarding] loadExistingUnitsAndContinue failed', e);
+  }
   step.value = 3;
 }
 

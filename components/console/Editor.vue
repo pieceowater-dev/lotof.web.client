@@ -106,6 +106,7 @@
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 import { capitalUploadPublicationImage } from '@/api/publications'
+import { compressImageForUpload } from '@/utils/imageCompression'
 
 const { t } = useI18n()
 const toast = useToast()
@@ -731,7 +732,7 @@ function onArticlePatch(patch: Partial<ArticleState>) {
   Object.assign(article, patch)
 }
 
-async function uploadFeaturedImage(file: File) {
+async function uploadFeaturedImage(rawFile: File) {
   const slug = String(article.slug || '').trim()
   if (!slug) {
     toast.add({ title: 'Сначала сохрани статью, чтобы получить slug', color: 'amber' })
@@ -745,6 +746,7 @@ async function uploadFeaturedImage(file: File) {
   }
 
   try {
+    const file = await compressImageForUpload(rawFile, { t })
     const uploaded = await capitalUploadPublicationImage(token, slug, file, {
       kind: 'FEATURED',
       alt: String(article.featuredImageAlt || '').trim(),
@@ -778,7 +780,8 @@ async function uploadInlineImage(payload: { blockId: string; file: File }) {
   }
 
   try {
-    const uploaded = await capitalUploadPublicationImage(token, slug, payload.file, { kind: 'INLINE' })
+    const file = await compressImageForUpload(payload.file, { t })
+    const uploaded = await capitalUploadPublicationImage(token, slug, file, { kind: 'INLINE' })
     const blockIndex = blocks.value.findIndex((item) => String(item.id) === String(payload.blockId))
     const block = blockIndex >= 0 ? blocks.value[blockIndex] : null
     if (!block || String(block.type) !== 'image') {

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { compressImageForUpload } from '@/utils/imageCompression';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 
@@ -30,10 +31,11 @@ function pickFile() {
 
 async function onFileChange(e: Event) {
   const input = e.target as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
+  const picked = input.files?.[0];
+  if (!picked) return;
   uploading.value = true;
   try {
+    const file = await compressImageForUpload(picked, { t });
     const { current } = useMenuToken();
     const menuToken = current();
     if (!menuToken) throw new Error('No menu token');

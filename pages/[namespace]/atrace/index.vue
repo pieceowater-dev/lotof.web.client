@@ -290,17 +290,28 @@ async function submitFirstLocation() {
         loadFirstLocationCheckinQr({ id: created.id, pin });
     }
 }
+// Resume the post-onboarding tour from 'posts-list' (index 2), but first
+// force the attendance view back to "All locations" (selectedPostId = '').
+// handleCreate() auto-selects the just-created post, which drops the page
+// into single-post mode -- and several tour targets (notably the salary
+// 'calculate-btn', rendered only when `!postId`) don't exist there, so the
+// walkthrough would silently skip them. The tour was authored against the
+// all-locations view; put the page in that state before running it.
+function resumeOnboardingTour(delayMs: number) {
+    pendingTourResumeAfterCreate.value = false;
+    selectedPostId.value = '';
+    const { startTour } = useOnboarding();
+    setTimeout(() => {
+        startTour(atraceTour, 2);
+    }, delayMs);
+}
 watch(posts, (list) => {
     if (!pendingTourResumeAfterCreate.value || list.length === 0) return;
     // The check-in step is about to show (or already showing) on top of
     // this same screen -- let the watcher below resume the tour once that
     // closes, instead of racing it here.
     if (awaitingFirstLocationCreate.value || firstLocationCreatedPost.value) return;
-    pendingTourResumeAfterCreate.value = false;
-    const { startTour } = useOnboarding();
-    setTimeout(() => {
-        startTour(atraceTour, 2);
-    }, 800);
+    resumeOnboardingTour(800);
 });
 watch(isFirstLocationOpen, (open) => {
     if (open) return;
@@ -308,11 +319,7 @@ watch(isFirstLocationOpen, (open) => {
     firstLocationCheckinQrImage.value = null;
     firstLocationCheckinQrError.value = '';
     if (!pendingTourResumeAfterCreate.value || posts.value.length === 0) return;
-    pendingTourResumeAfterCreate.value = false;
-    const { startTour } = useOnboarding();
-    setTimeout(() => {
-        startTour(atraceTour, 2);
-    }, 300);
+    resumeOnboardingTour(500);
 });
 
 watch(activeRouteId, (next, prev) => {
