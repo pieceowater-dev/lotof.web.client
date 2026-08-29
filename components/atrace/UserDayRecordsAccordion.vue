@@ -40,7 +40,25 @@ type DailyAttendance = {
   requiredHours: number;
   late: boolean;
   earlyLeave: boolean;
+  incompleteCheckout?: boolean;
+  autoClosedCheckout?: boolean;
+  timezone?: string;
 };
+
+// Mirror of the backend's pairDedupeGap (attendance.svc.go): two scans this
+// close together are one event -- an accidental double-tap or a "did it
+// register?" re-scan. Collapsing them keeps the check-in/check-out labels
+// from flipping for the rest of the day.
+const PAIR_DEDUPE_GAP_MS = 90 * 1000;
+function dedupeConsecutive(records: AtraceRecord[]): AtraceRecord[] {
+  if (records.length <= 1) return records;
+  const out: AtraceRecord[] = [records[0]];
+  for (let i = 1; i < records.length; i++) {
+    if ((records[i].timestamp - out[out.length - 1].timestamp) * 1000 < PAIR_DEDUPE_GAP_MS) continue;
+    out.push(records[i]);
+  }
+  return out;
+}
 const dailyAttendance = ref<DailyAttendance[]>([]);
 const missedDates = ref<string[]>([]);
 const dailyAttendanceMap = computed(() => {
@@ -164,22 +182,32 @@ function getRecordDate(record: AtraceRecord): string {
   return new Date(record.timestamp * 1000).toISOString().split('T')[0];
 }
 
-function getDayTimeInfo(date: string, records: AtraceRecord[]) {
-  if (records.length === 0) return null;
+function getDayTimeInfo(date: string, rawRecords: AtraceRecord[]) {
+  if (rawRecords.length === 0) return null;
 
+  const records = dedupeConsecutive(rawRecords);
   const firstRecord = records[0];
   const lastRecord = records[records.length - 1];
+  const da = dailyAttendanceMap.value.get(date);
 
-  // An odd number of scans means the last one is a check-in, not a
-  // check-out. On *today* that's a shift still in progress -- show "still
-  // on shift" rather than a bogus departure equal to the last scan. On a
-  // past day, though, the shift is long over: the person left without ever
-  // checking out, so their last scan is the best departure we have.
-  const shiftOpen = records.length % 2 === 1;
-  const stillOnShift = shiftOpen && isToday(date);
-
+  // The backend is authoritative on whether the shift is over / the
+  // checkout is missing (it knows the shift-end time and the server clock):
+  //   - incompleteCheckout + autoClosedCheckout -> departure filled in at
+  //     the scheduled shift end; show that time, marked as an estimate.
+  //   - incompleteCheckout only -> left with no closing scan and no basis
+  //     to estimate (lone scan); show "not recorded".
+  //   - neither, but odd scan count -> shift still running today.
   const firstTime = formatTime(firstRecord).time;
-  const lastTime = stillOnShift ? null : formatTime(lastRecord).time;
+  let departureLabel: string;
+  if (da?.incompleteCheckout && da?.autoClosedCheckout && da.lastCheckOut) {
+    departureLabel = `${formatUnixTime(da.lastCheckOut, da.timezone || lastRecord.timezone)} · ${t('app.autoEstimate') || 'авто'}`;
+  } else if (da?.incompleteCheckout) {
+    departureLabel = t('app.checkoutNotRecorded') || 'не отмечен';
+  } else if (records.length % 2 === 1) {
+    departureLabel = t('app.stillOnShift') || '—';
+  } else {
+    departureLabel = formatTime(lastRecord).time;
+  }
 
   // Prefer the backend's own paired work-time calculation (correctly
   // subtracts a lunch-break gap, ignores an odd/still-open trailing
@@ -189,7 +217,6 @@ function getDayTimeInfo(date: string, records: AtraceRecord[]) {
   // 11ч26м" next to "Нарушение" for a day that's actually ~7.9 worked hours
   // once the gap is subtracted). Falls back to the raw span only when
   // there's no processed DailyAttendance for this date yet.
-  const da = dailyAttendanceMap.value.get(date);
   let duration: string;
   if (da) {
     const totalMinutes = Math.round(da.workedHours * 60);
@@ -203,7 +230,20 @@ function getDayTimeInfo(date: string, records: AtraceRecord[]) {
     duration = `${hours}ч ${minutes}м`;
   }
 
-  return { firstTime, lastTime, duration };
+  return { firstTime, departureLabel, duration };
+}
+
+function formatUnixTime(unixSec: number, tz?: string | null): string {
+  if (!unixSec) return '-';
+  try {
+    return new Date(unixSec * 1000).toLocaleTimeString(locale.value === 'ru' ? 'ru-RU' : 'en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: tz || undefined,
+    });
+  } catch {
+    return '-';
+  }
 }
 
 function isViolationDay(date: string): boolean {
@@ -286,8 +326,12 @@ function formatTime(record: AtraceRecord) {
 // while a 3-4 scan day mislabeled the final scan.
 function getRecordDirection(record: AtraceRecord, dayRecords: AtraceRecord[]): string {
   if (!dayRecords.length) return '';
-  const index = dayRecords.findIndex(r => r.id === record.id);
-  if (index < 0) return '';
+  // Alternate over the DEDUPED list so an accidental double-tap doesn't flip
+  // the check-in/check-out label of every scan after it. A record that was
+  // collapsed away is shown as a duplicate rather than a phantom direction.
+  const deduped = dedupeConsecutive(dayRecords);
+  const index = deduped.findIndex(r => r.id === record.id);
+  if (index < 0) return t('app.duplicateScan') || 'дубль';
   return index % 2 === 0 ? t('app.checkIn') : t('app.checkOut');
 }
 
@@ -299,8 +343,19 @@ function methodLabel(method?: string) {
 }
 
 function isToday(date: string): boolean {
-  const today = new Date().toISOString().split('T')[0];
-  return date === today;
+  // "Today" in the day's own timezone, not UTC: a post in Asia/Almaty just
+  // after midnight is still on the previous UTC date for several hours.
+  const tz = dailyAttendanceMap.value.get(date)?.timezone
+    || allRecords.value.find((r) => getRecordDate(r) === date)?.timezone
+    || undefined;
+  try {
+    const todayLocal = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
+    return date === todayLocal;
+  } catch {
+    return date === new Date().toISOString().split('T')[0];
+  }
 }
 
 function openReasonModal(date: string) {
@@ -405,8 +460,7 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
                   <span class="hidden sm:inline">{{ t('app.arrival') }}: {{ getDayTimeInfo(date, records)?.firstTime }}</span>
                   <span class="hidden sm:inline">•</span>
                   <span class="hidden sm:inline">
-                    {{ t('app.departure') }}:
-                    {{ getDayTimeInfo(date, records)?.lastTime ?? (t('app.stillOnShift') || '—') }}
+                    {{ t('app.departure') }}: {{ getDayTimeInfo(date, records)?.departureLabel }}
                   </span>
                   <span class="hidden sm:inline">•</span>
                   <span class="hidden sm:inline">{{ t('app.duration') }}: {{ getDayTimeInfo(date, records)?.duration }}</span>

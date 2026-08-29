@@ -64,6 +64,9 @@ const GET_ATTENDANCE_REPORT = `
         lastRecordId
         late
         earlyLeave
+        incompleteCheckout
+        autoClosedCheckout
+        timezone
       }
     }
   }
@@ -221,6 +224,12 @@ export type AtraceDailyAttendanceRecord = {
   reason?: string;
   late: boolean;
   earlyLeave: boolean;
+  /** odd scan count on a day whose shift is over: left without a closing scan */
+  incompleteCheckout?: boolean;
+  /** missing checkout was filled in at the scheduled shift end */
+  autoClosedCheckout?: boolean;
+  /** IANA zone firstCheckIn/lastCheckOut/date should be read in */
+  timezone?: string;
 };
 
 export async function atraceGetAttendanceReport(
@@ -255,6 +264,9 @@ export async function atraceGetAttendanceReport(
           lastRecordId: string;
           late: boolean;
           earlyLeave: boolean;
+          incompleteCheckout: boolean;
+          autoClosedCheckout: boolean;
+          timezone: string | null;
         }>;
       };
     }>(GET_ATTENDANCE_REPORT, { userId, startDate, endDate }, {

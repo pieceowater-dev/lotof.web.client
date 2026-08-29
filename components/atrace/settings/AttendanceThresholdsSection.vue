@@ -9,6 +9,13 @@ const nsSlug = computed(() => route.params.namespace as string);
 const lateArrivalTime = ref('09:15');
 const earlyLeaveTime = ref('18:15');
 const allowLatenessMakeup = ref(false);
+const roundingMinutes = ref(0);
+const roundingOptions = [
+  { value: 0, label: t('app.roundingOff') || 'Без округления' },
+  { value: 5, label: '5 ' + (t('app.minShort') || 'мин') },
+  { value: 10, label: '10 ' + (t('app.minShort') || 'мин') },
+  { value: 15, label: '15 ' + (t('app.minShort') || 'мин') },
+];
 const loading = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
@@ -23,6 +30,7 @@ async function load() {
     lateArrivalTime.value = settings.lateArrivalThreshold;
     earlyLeaveTime.value = settings.earlyLeaveThreshold;
     allowLatenessMakeup.value = settings.allowLatenessMakeup;
+    roundingMinutes.value = settings.roundingMinutes ?? 0;
   } catch (e: any) {
     error.value = isAtracePermissionError(e, 'tracker.attendance.view')
       ? (t('app.attendancePermissionError') || 'Недостаточно прав')
@@ -37,10 +45,11 @@ async function save() {
   error.value = null;
   try {
     const { atraceUpdateAttendanceSettings } = await import('@/api/atrace/attendance/settings');
-    const settings = await atraceUpdateAttendanceSettings(lateArrivalTime.value, earlyLeaveTime.value, allowLatenessMakeup.value, nsSlug.value);
+    const settings = await atraceUpdateAttendanceSettings(lateArrivalTime.value, earlyLeaveTime.value, allowLatenessMakeup.value, roundingMinutes.value, nsSlug.value);
     lateArrivalTime.value = settings.lateArrivalThreshold;
     earlyLeaveTime.value = settings.earlyLeaveThreshold;
     allowLatenessMakeup.value = settings.allowLatenessMakeup;
+    roundingMinutes.value = settings.roundingMinutes ?? 0;
   } catch (e: any) {
     if (isAtracePermissionError(e, 'tracker.attendance.manage')) {
       readOnly.value = true;
@@ -94,6 +103,23 @@ onMounted(load);
         />
       </UFormGroup>
     </div>
+
+    <UFormGroup
+      :label="t('app.roundWorkedHours') || 'Округление отработанных часов'"
+      :help="t('app.roundWorkedHoursHint') || 'Итог за день округляется до ближайшего значения. Без округления — точный учёт до минуты.'"
+      class="mb-4"
+    >
+      <USelectMenu
+        v-model="roundingMinutes"
+        :options="roundingOptions"
+        value-attribute="value"
+        option-attribute="label"
+        size="sm"
+        class="max-w-[220px]"
+        :disabled="loading || readOnly"
+        :popper="{ strategy: 'fixed' }"
+      />
+    </UFormGroup>
 
     <div class="flex items-start gap-3 mb-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
       <UToggle

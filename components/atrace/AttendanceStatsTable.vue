@@ -152,8 +152,10 @@ const visibleStats = computed(() => {
 const lateArrivalTime = ref('09:15');
 const earlyLeaveTime = ref('18:15');
 // Preserved (not editable from this quick panel) so saving thresholds here
-// doesn't silently clobber the sit-out toggle configured on the Settings page.
+// doesn't silently clobber the sit-out toggle / rounding configured on the
+// Settings page.
 const allowLatenessMakeup = ref(false);
+const roundingMinutes = ref(0);
 const showSettings = ref(false);
 const lateArrivalDraft = ref(lateArrivalTime.value);
 const earlyLeaveDraft = ref(earlyLeaveTime.value);
@@ -170,6 +172,7 @@ async function loadTimeSettings() {
     lateArrivalTime.value = settings.lateArrivalThreshold;
     earlyLeaveTime.value = settings.earlyLeaveThreshold;
     allowLatenessMakeup.value = settings.allowLatenessMakeup;
+    roundingMinutes.value = settings.roundingMinutes ?? 0;
   } catch (e) {
     logError('[AttendanceStatsTable] failed to load attendance settings:', e);
   } finally {
@@ -201,10 +204,11 @@ async function applyTimeSettings() {
   timeSettingsError.value = null;
   try {
     const { atraceUpdateAttendanceSettings } = await import('@/api/atrace/attendance/settings');
-    const settings = await atraceUpdateAttendanceSettings(lateArrivalDraft.value, earlyLeaveDraft.value, allowLatenessMakeup.value, namespaceSlug.value);
+    const settings = await atraceUpdateAttendanceSettings(lateArrivalDraft.value, earlyLeaveDraft.value, allowLatenessMakeup.value, roundingMinutes.value, namespaceSlug.value);
     lateArrivalTime.value = settings.lateArrivalThreshold;
     earlyLeaveTime.value = settings.earlyLeaveThreshold;
     allowLatenessMakeup.value = settings.allowLatenessMakeup;
+    roundingMinutes.value = settings.roundingMinutes ?? 0;
     showSettings.value = false;
     // Late/earlyLeave flags on already-loaded records were computed against
     // the previous thresholds server-side -- reload so the table/accordions

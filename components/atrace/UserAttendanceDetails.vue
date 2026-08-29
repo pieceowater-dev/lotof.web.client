@@ -25,6 +25,9 @@ type DailyAttendance = {
   attended: boolean;
   legitimate: boolean;
   reason?: string;
+  incompleteCheckout?: boolean;
+  autoClosedCheckout?: boolean;
+  timezone?: string;
 };
 
 const attendanceRecords = ref<DailyAttendance[]>([]);
@@ -71,32 +74,35 @@ async function loadAttendanceDetails() {
   }
 }
 
-function formatTime(timestamp: number): string {
+function formatTime(timestamp: number, tz?: string): string {
   if (!timestamp) return '-';
   try {
     return new Date(timestamp * 1000).toLocaleTimeString('ru-RU', {
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      timeZone: tz || undefined,
     });
   } catch {
     return '-';
   }
 }
 
-function isTodayLocal(date: string): boolean {
-  return date === new Date().toISOString().split('T')[0];
-}
-
-// The backend reuses firstCheckIn as lastCheckOut when there's no distinct
-// closing scan. Only call that "still on shift" for *today* -- a past day
-// with no check-out means the person left without scanning out, so their
-// last recorded time stands in as the departure rather than a placeholder.
+// The backend flags whether the shift is over and the checkout is missing.
+//   - incomplete + auto-closed -> lastCheckOut was filled at the shift end;
+//     show it, marked as an estimate.
+//   - incomplete only -> left with no closing scan, nothing to estimate.
+//   - otherwise, if firstCheckIn == lastCheckOut it's a still-open shift.
 function formatCheckOut(record: DailyAttendance): string {
-  const noCheckout = !record.lastCheckOut || record.lastCheckOut === record.firstCheckIn;
-  if (noCheckout && isTodayLocal(record.date)) {
+  if (record.incompleteCheckout && record.autoClosedCheckout && record.lastCheckOut) {
+    return `${formatTime(record.lastCheckOut, record.timezone)} · ${t('app.autoEstimate') || 'авто'}`;
+  }
+  if (record.incompleteCheckout) {
+    return t('app.checkoutNotRecorded') || 'не отмечен';
+  }
+  if (!record.lastCheckOut || record.lastCheckOut === record.firstCheckIn) {
     return t('app.stillOnShift') || '—';
   }
-  return formatTime(record.lastCheckOut || record.firstCheckIn);
+  return formatTime(record.lastCheckOut, record.timezone);
 }
 
 function formatDate(date: string): string {
@@ -199,7 +205,7 @@ watch(() => [props.userId, props.startDate, props.endDate], () => {
                 {{ formatDate(record.date) }}
               </td>
               <td class="px-3 py-2 text-center">
-                {{ formatTime(record.firstCheckIn) }}
+                {{ formatTime(record.firstCheckIn, record.timezone) }}
               </td>
               <td class="px-3 py-2 text-center">
                 {{ formatCheckOut(record) }}
