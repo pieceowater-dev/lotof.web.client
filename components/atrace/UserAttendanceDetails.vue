@@ -83,15 +83,20 @@ function formatTime(timestamp: number): string {
   }
 }
 
-// The backend reuses firstCheckIn as lastCheckOut when there's no real
-// closing scan yet (lone check-in / still-open shift). Rendering that as a
-// "check-out" equal to the check-in makes it look like the person arrived
-// and left in the same minute -- show a "still on shift" placeholder instead.
+function isTodayLocal(date: string): boolean {
+  return date === new Date().toISOString().split('T')[0];
+}
+
+// The backend reuses firstCheckIn as lastCheckOut when there's no distinct
+// closing scan. Only call that "still on shift" for *today* -- a past day
+// with no check-out means the person left without scanning out, so their
+// last recorded time stands in as the departure rather than a placeholder.
 function formatCheckOut(record: DailyAttendance): string {
-  if (!record.lastCheckOut || record.lastCheckOut === record.firstCheckIn) {
+  const noCheckout = !record.lastCheckOut || record.lastCheckOut === record.firstCheckIn;
+  if (noCheckout && isTodayLocal(record.date)) {
     return t('app.stillOnShift') || '—';
   }
-  return formatTime(record.lastCheckOut);
+  return formatTime(record.lastCheckOut || record.firstCheckIn);
 }
 
 function formatDate(date: string): string {

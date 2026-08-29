@@ -171,13 +171,15 @@ function getDayTimeInfo(date: string, records: AtraceRecord[]) {
   const lastRecord = records[records.length - 1];
 
   // An odd number of scans means the last one is a check-in, not a
-  // departure -- the shift is still open. Showing that timestamp as a
-  // "departure" (identical to arrival on a single-scan day) reads as
-  // "arrived and left at the same minute", which is simply wrong.
+  // check-out. On *today* that's a shift still in progress -- show "still
+  // on shift" rather than a bogus departure equal to the last scan. On a
+  // past day, though, the shift is long over: the person left without ever
+  // checking out, so their last scan is the best departure we have.
   const shiftOpen = records.length % 2 === 1;
+  const stillOnShift = shiftOpen && isToday(date);
 
   const firstTime = formatTime(firstRecord).time;
-  const lastTime = shiftOpen ? null : formatTime(lastRecord).time;
+  const lastTime = stillOnShift ? null : formatTime(lastRecord).time;
 
   // Prefer the backend's own paired work-time calculation (correctly
   // subtracts a lunch-break gap, ignores an odd/still-open trailing
