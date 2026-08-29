@@ -182,7 +182,7 @@ export async function compressImageForUpload(
   // createImageBitmap has historically choked on progressive / CMYK / EXIF
   // JPEGs) and applies EXIF orientation for free; createImageBitmap is the
   // fallback.
-  let source: CanvasImageSource;
+  let source: HTMLImageElement | ImageBitmap;
   let width: number;
   let height: number;
   let bitmap: ImageBitmap | null = null;
