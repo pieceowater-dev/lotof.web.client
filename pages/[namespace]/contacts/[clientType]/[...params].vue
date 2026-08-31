@@ -564,7 +564,10 @@ async function handleRefreshFromRemote() {
 <template>
   <div class="flex flex-col">
     <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
-      <div class="text-left" data-tour="contacts-title">
+      <div
+        class="text-left"
+        data-tour="contacts-title"
+      >
         <h1 class="text-2xl font-semibold">
           {{ t('app.contacts') }}
         </h1>
@@ -590,10 +593,19 @@ async function handleRefreshFromRemote() {
           >
             {{ t('contacts.segments') }}
           </UButton> -->
-          <UButton 
-            icon="lucide:settings" 
-            size="xs" 
-            color="primary" 
+          <UButton
+            icon="lucide:ticket"
+            size="xs"
+            color="primary"
+            variant="soft"
+            :to="`/${nsSlug}/contacts/memberships`"
+          >
+            {{ t('membership.nav') || 'Абонементы' }}
+          </UButton>
+          <UButton
+            icon="lucide:settings"
+            size="xs"
+            color="primary"
             variant="soft"
             data-tour="contacts-settings-btn"
             :to="`/${nsSlug}/contacts/settings`"
@@ -607,7 +619,10 @@ async function handleRefreshFromRemote() {
     <!-- Filters and Create Button -->
     <div class="px-4 py-4 flex-shrink-0">
       <div class="flex items-center justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-2 overflow-x-auto" data-tour="contacts-type-filter">
+        <div
+          class="flex items-center gap-2 overflow-x-auto"
+          data-tour="contacts-type-filter"
+        >
           <button
             v-for="type in ['ALL', 'INDIVIDUAL', 'LEGAL']"
             :key="type"
@@ -718,8 +733,8 @@ async function handleRefreshFromRemote() {
     >
       <ClientsTable 
         v-model:search-query="searchQuery" 
-        :clients="filteredClients"
         v-model:selected-tags="selectedTags"
+        :clients="filteredClients"
         :loading="loading"
         :page="page"
         :page-size="pageSize"

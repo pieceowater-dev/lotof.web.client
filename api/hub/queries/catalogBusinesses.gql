@@ -29,6 +29,7 @@ query CatalogBusinesses(
       isActive
       avgRating
       reviewCount
+      source
     }
     info {
       count

@@ -53,6 +53,7 @@ export type CatalogBusiness = {
   name: Scalars["String"]["output"];
   namespaceSlug: Scalars["String"]["output"];
   reviewCount: Scalars["Int"]["output"];
+  source: Scalars["String"]["output"];
   sourceBranchId: Scalars["String"]["output"];
 };
 
@@ -60,6 +61,7 @@ export type CatalogBusinessFilter = {
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
   data?: InputMaybe<DefaultFilterInput>;
   namespaceSlug?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
   tagId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
@@ -748,6 +750,7 @@ export type CatalogBusinessesQuery = {
       isActive: boolean;
       avgRating: number;
       reviewCount: number;
+      source: string;
     }>;
     info: { __typename?: "PaginationInfo"; count: number };
   };
@@ -1608,6 +1611,10 @@ export const CatalogBusinessesDocument = {
                       {
                         kind: "Field",
                         name: { kind: "Name", value: "reviewCount" },
+                      },
+                      {
+                        kind: "Field",
+                        name: { kind: "Name", value: "source" },
                       },
                     ],
                   },

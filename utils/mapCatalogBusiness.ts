@@ -27,6 +27,17 @@ function paletteFor(id: string) {
   return PALETTE[hash % PALETTE.length];
 }
 
+// The tenant's own public storefront route depends on which lota product the
+// catalog row was synced from: lota Contacts memberships («абонементы») live
+// at /to/<slug>/memberships, everything else (lota Menu) at /to/<slug>/menu.
+// `source` is a recent field -- read it defensively so this keeps working
+// against a hub schema/codegen that predates it (falls back to MENU).
+function storefrontPath(business: CatalogBusiness): string {
+  const source = (business as { source?: string }).source;
+  if (source === 'CONTACTS') return `/to/${business.namespaceSlug}/memberships`;
+  return `/to/${business.namespaceSlug}/menu`;
+}
+
 export function toDisplayBusiness(business: CatalogBusiness, categories: CatalogCategory[]): MockBusiness {
   const category = categories.find((c) => c.id === business.categoryId);
   const { gradient, iconColor } = paletteFor(business.id);
@@ -42,7 +53,7 @@ export function toDisplayBusiness(business: CatalogBusiness, categories: Catalog
     // badge is a promo/status label on mock cards (e.g. "Новинка") -- city
     // isn't that, so it's left unset here rather than repurposing the slot.
     logoUrl: business.logoUrl || undefined,
-    to: `/to/${business.namespaceSlug}/menu`,
+    to: storefrontPath(business),
     // reviewCount gates rating, not the other way around -- a business with
     // zero reviews has avgRating 0 from the DB, which is a real value, not
     // "no rating yet", so checking it alone would show "0" on every fresh
@@ -63,8 +74,11 @@ export function dedupeByBrand(businesses: CatalogBusiness[]): CatalogBusiness[] 
   const seen = new Set<string>();
   const result: CatalogBusiness[] = [];
   for (const b of businesses) {
-    if (seen.has(b.namespaceSlug)) continue;
-    seen.add(b.namespaceSlug);
+    // Key on namespace + source so a tenant that runs both lota Menu and
+    // lota Contacts memberships shows one card per product, not one total.
+    const key = `${b.namespaceSlug}:${(b as { source?: string }).source || 'MENU'}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     result.push(b);
   }
   return result;

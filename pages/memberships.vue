@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { menuBusinesses, type MockBusiness, type MockReview } from '@/utils/mockCatalog';
+import { usePatronAuth } from '@/composables/usePatronAuth';
+import { resolveSiteUrl } from '@/utils/siteUrl';
+import type { MockBusiness, MockReview } from '@/utils/mockCatalog';
 import {
   getCatalogBusinesses,
   getCatalogCategories,
-  getCatalogTags,
   getCatalogFavorites,
   toggleCatalogFavorite,
   getCatalogReviews,
-  type CatalogTag,
 } from '@/api/hub/catalog';
 import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
 import { maskProfanity } from '@/utils/profanityFilter';
@@ -18,23 +18,17 @@ import { logError } from '@/utils/logger';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
+// Single-vertical view of the Catalog: lota Contacts membership pages only
+// (gyms, studios, pools). A full analog of pages/stores.vue — deliberately
+// separate from lota Menu storefronts, never mixed.
 const { t } = useI18n();
-
 const { token: patronToken, login: patronLogin } = usePatronAuth();
 
-// Single-vertical filtered view of the Catalog: lota Menu businesses only
-// (cafes, restaurants, delivery). Real taxonomy (Tag, the aggregated
-// per-tenant Menu category names -- not CatalogCategory, the fixed 5-row
-// business-type list), real filtering -- deduped by brand (see
-// utils/mapCatalogBusiness.ts's dedupeByBrand) so a tenant with several
-// branches shows one card; the storefront itself handles branch selection
-// once a Patron gets there.
-const tags = ref<CatalogTag[]>([]);
-const activeTagId = ref<string | null>(null);
-const favoritesOnly = ref(false);
+const isMembership = (b: { source?: string }) => (b.source || 'MENU') === 'CONTACTS';
 
 const realBusinesses = ref<MockBusiness[] | null>(null);
 const reviews = ref<MockReview[]>([]);
+const favoritesOnly = ref(false);
 
 const searchQuery = ref('');
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
@@ -45,23 +39,16 @@ function onSearchInput() {
 
 async function loadBusinesses() {
   try {
-    const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
+    const [categoriesResp, businessesResp] = await Promise.all([
       getCatalogCategories(),
-      getCatalogTags(),
       getCatalogBusinesses({
-        tagId: activeTagId.value,
         search: searchQuery.value.trim() || undefined,
         length: FilterPaginationLengthEnum.OneHundred,
       }),
     ]);
-    tags.value = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
-    // lota Menu venues only — lota Contacts membership pages live on /memberships.
-    const deduped = dedupeByBrand(businessesResp.rows).filter(
-      (b) => ((b as { source?: string }).source || 'MENU') !== 'CONTACTS',
-    );
+    const deduped = dedupeByBrand(businessesResp.rows).filter(isMembership);
     realBusinesses.value = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
 
-    // Bounded fan-out -- see pages/catalog.vue's loadCatalogFeed for why.
     const perBusiness = await Promise.all(
       deduped.slice(0, 10).map(async (b) => {
         try {
@@ -70,7 +57,7 @@ async function loadBusinesses() {
             key: r.id,
             author: maskProfanity(r.authorName),
             business: maskProfanity(b.name),
-            businessTo: `/to/${b.namespaceSlug}/menu`,
+            businessTo: `/to/${b.namespaceSlug}/memberships`,
             rating: r.rating,
             date: formatReviewDate(r.createdAt),
             text: maskProfanity(r.body),
@@ -82,7 +69,7 @@ async function loadBusinesses() {
     );
     reviews.value = perBusiness.flat().slice(0, 6);
   } catch (e) {
-    logError('[stores] failed to load real catalog businesses', e);
+    logError('[memberships] failed to load catalog businesses', e);
   }
 }
 
@@ -96,15 +83,8 @@ function formatReviewDate(iso: string): string {
 
 onMounted(loadBusinesses);
 
-function selectTag(id: string | null) {
-  activeTagId.value = id;
-  loadBusinesses();
-}
-
 const displayedBusinesses = computed(() => {
-  // No mock fallback while a search is active -- an intentional "nothing
-  // matched" result should say so, not quietly show unrelated mock cards.
-  const items = realBusinesses.value ?? (searchQuery.value.trim() ? [] : menuBusinesses);
+  const items = realBusinesses.value ?? [];
   return favoritesOnly.value ? items.filter((b) => favoriteIds.value.has(b.key)) : items;
 });
 
@@ -114,7 +94,7 @@ onMounted(async () => {
   try {
     favoriteIds.value = new Set(await getCatalogFavorites(patronToken.value));
   } catch (e) {
-    logError('[stores] failed to load favorites', e);
+    logError('[memberships] failed to load favorites', e);
   }
 });
 
@@ -144,7 +124,7 @@ async function toggleFavorite(key: string) {
     else reconciled.delete(key);
     favoriteIds.value = reconciled;
   } catch (e) {
-    logError('[stores] toggleFavorite failed', e);
+    logError('[memberships] toggleFavorite failed', e);
     const rollback = new Set(favoriteIds.value);
     if (wasFavorite) rollback.add(key);
     else rollback.delete(key);
@@ -154,10 +134,10 @@ async function toggleFavorite(key: string) {
 
 const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 useSeoMeta({
-  title: () => `${t('home.storesTitle') || 'Заведения'} — lota`,
-  description: () => t('home.storesSubtitle') || 'Кафе, рестораны и доставка на lota Menu',
+  title: () => `${t('membership.nav') || 'Абонементы'} — lota`,
+  description: () => t('home.membershipsSubtitle') || 'Абонементы в залы, студии и бассейны',
   ogType: 'website',
-  ogUrl: `${siteUrl}/stores`,
+  ogUrl: `${siteUrl}/memberships`,
 });
 </script>
 
@@ -177,64 +157,46 @@ useSeoMeta({
 
       <div>
         <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('home.storesTitle') || 'Заведения' }}
+          {{ t('membership.nav') || 'Абонементы' }}
         </h1>
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          {{ t('home.storesSubtitle') || 'Кафе, рестораны и доставка на lota Menu' }}
+          {{ t('home.membershipsSubtitle') || 'Абонементы в залы, студии и бассейны' }}
         </p>
       </div>
 
       <div class="flex flex-col gap-8">
-        <!-- Categories: real per-tenant Menu category names, actually
-             filters the grid below. "Избранное" is a separate quick filter
-             (client-side, narrows to favorited businesses). -->
-        <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
-          <div class="flex gap-2">
-            <button
-              type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="activeTagId === null && !favoritesOnly
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="favoritesOnly = false; selectTag(null)"
-            >
-              <UIcon
-                name="lucide:layout-grid"
-                class="w-4 h-4"
-              />
-              {{ t('home.allCategories') || 'Все' }}
-            </button>
-            <button
-              type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="favoritesOnly
-                ? 'bg-rose-500 text-white border-rose-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="toggleFavoritesOnly"
-            >
-              <UIcon
-                name="lucide:heart"
-                class="w-4 h-4"
-                :class="favoritesOnly && 'fill-white'"
-              />
-              {{ t('home.favoritesFilter') || 'Избранное' }}
-            </button>
-            <button
-              v-for="tag in tags"
-              :key="tag.id"
-              type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="activeTagId === tag.id && !favoritesOnly
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="favoritesOnly = false; selectTag(tag.id)"
-            >
-              {{ tag.name }}
-            </button>
-          </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+            :class="!favoritesOnly
+              ? 'bg-amber-500 text-white border-amber-500'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+            @click="favoritesOnly = false"
+          >
+            <UIcon
+              name="lucide:layout-grid"
+              class="w-4 h-4"
+            />
+            {{ t('home.allCategories') || 'Все' }}
+          </button>
+          <button
+            type="button"
+            class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+            :class="favoritesOnly
+              ? 'bg-rose-500 text-white border-rose-500'
+              : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+            @click="toggleFavoritesOnly"
+          >
+            <UIcon
+              name="lucide:heart"
+              class="w-4 h-4"
+              :class="favoritesOnly && 'fill-white'"
+            />
+            {{ t('home.favoritesFilter') || 'Избранное' }}
+          </button>
         </div>
 
-        <!-- Search -->
         <div class="relative">
           <UIcon
             name="lucide:search"
@@ -249,12 +211,11 @@ useSeoMeta({
           >
         </div>
 
-        <!-- Businesses grid -->
         <p
           v-if="!displayedBusinesses.length"
           class="text-sm text-gray-400 py-10 text-center"
         >
-          {{ t('home.noSearchResults') || 'Ничего не найдено' }}
+          {{ t('home.membershipsEmpty') || 'Пока нет заведений с абонементами' }}
         </p>
         <div
           v-else
@@ -274,13 +235,3 @@ useSeoMeta({
     </div>
   </div>
 </template>
-
-<style scoped>
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-</style>
