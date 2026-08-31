@@ -60,15 +60,23 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // ever seeing the page, since nothing below exempts it either -- it has
   // no "/atrace" substring, so isAtraceRoute never applied to save it.
   if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/goods' || to.path === '/chekalka') return;
-  // /catalog and its single-vertical filtered views (/stores, /services) are
-  // the public Patron-facing marketplace -- never require a hub token to
-  // browse (see pages/catalog.vue, which only asks a visitor to log in as a
-  // Patron, and does so inline, never via this middleware).
-  if (to.path === '/catalog' || to.path === '/stores' || to.path === '/services') return;
+  // /catalog and its single-vertical filtered views (/stores, /services,
+  // /memberships) are the public Patron-facing marketplace -- never require a
+  // hub token to browse (see pages/catalog.vue, which only asks a visitor to
+  // log in as a Patron, and does so inline, never via this middleware).
+  if (
+    to.path === '/catalog' ||
+    to.path === '/stores' ||
+    to.path === '/services' ||
+    to.path === '/memberships'
+  )
+    return;
   // Allow public access to public post page
   if (/^\/to\/[^/]+\/atrace\/post\/[\w-]+$/.test(to.path)) return;
   // Allow public, unauthenticated access to the public storefront page
   if (/^\/to\/[^/]+\/menu(\/|$)/.test(to.path)) return;
+  // Allow public, unauthenticated access to the public memberships storefront
+  if (/^\/to\/[^/]+\/memberships(\/|$)/.test(to.path)) return;
   // Allow public, unauthenticated access to the public task tracking page
   if (/^\/to\/[^/]+\/track(\/|$)/.test(to.path)) return;
   if (process.server) return;
