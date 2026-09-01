@@ -52,12 +52,13 @@
           <input
             v-model="search"
             type="text"
-            :placeholder="t('admin.searchNamespaces') || 'Поиск по названию или слагу'"
+            :placeholder="t('admin.searchNamespaces') || 'Название, слаг, имя, почта, телефон'"
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-          <span>{{ t('admin.totalNamespaces') }}: {{ total }}</span>
+          <span v-if="searchActive">{{ t('admin.found') || 'Найдено' }}: {{ displayTotal }}</span>
+          <span v-else>{{ t('admin.totalNamespaces') }}: {{ total }}</span>
           <span class="inline-flex items-center gap-1">
             <Icon name="lucide:building" class="h-3.5 w-3.5 text-sky-500" />
             {{ t('admin.companyNamespaces') }}: {{ statsLoading ? '…' : companyCount }}
@@ -69,11 +70,11 @@
         </div>
       </div>
 
-      <div v-if="loading && !rows.length" class="flex justify-center py-16">
+      <div v-if="showSpinner" class="flex justify-center py-16">
         <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-slate-400" />
       </div>
 
-      <div v-else-if="!rows.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+      <div v-else-if="!displayRows.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
         {{ t('admin.noNamespacesFound') || 'Неймспейсы не найдены' }}
       </div>
 
@@ -93,7 +94,7 @@
               </tr>
             </thead>
             <tbody>
-              <template v-for="row in rows" :key="row.id">
+              <template v-for="row in displayRows" :key="row.id">
                 <tr class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900">
                   <td class="px-4 py-4">
                     <button
@@ -244,7 +245,7 @@
         <UPagination
           v-model="page"
           :page-count="pageSize"
-          :total="total"
+          :total="displayTotal"
           size="xs"
         />
       </div>
@@ -284,13 +285,14 @@ const expanded = ref<Record<string, boolean>>({});
 const healthExpanded = ref<Record<string, boolean>>({});
 const healthLoading = ref<Record<string, boolean>>({});
 const healthData = ref<Record<string, AppHealthStatus[]>>({});
-// Full platform-wide list (also feeds the company/employee counts below).
-// The pinned "favorites" section reads from this so a starred namespace
-// stays visible no matter which page of `rows` is loaded or what's typed
-// in the search box.
+// Full platform-wide list (loaded once by loadStats). Feeds the
+// company/employee counts, the pinned "favorites" section, and the
+// name/email/phone search -- all of which need every namespace regardless
+// of which page of `rows` the server returned.
 const allRows = ref<AdminNamespaceRow[]>([]);
-
-const totalPages = computed(() => Math.ceil(total.value / pageSize));
+const statsLoading = ref(true);
+const companyCount = ref(0);
+const employeeCount = ref(0);
 
 const favoriteRows = computed(() => {
   const set = new Set(favoriteIds.value);
@@ -298,6 +300,57 @@ const favoriteRows = computed(() => {
     .filter((r) => set.has(r.id))
     .sort((a, b) => a.title.localeCompare(b.title));
 });
+
+// Search: an empty box keeps the fast server-paginated `rows`; as soon as
+// something is typed we switch to filtering the full in-memory `allRows`
+// (already fetched for the stats/favorites) so the query can also reach
+// the owner's and members' name / email / phone -- e.g. typing "Серик"
+// finds the namespace whose owner is Серик, which the server-side
+// title/slug-only search never would. Space-separated terms are ANDed, so
+// "серик gmail" narrows further.
+const searchActive = computed(() => search.value.trim().length > 0);
+
+function namespaceHaystack(r: AdminNamespaceRow): string {
+  const parts: Array<string | null | undefined> = [
+    r.title,
+    r.slug,
+    r.ownerInfo?.username,
+    r.ownerInfo?.email,
+    r.ownerInfo?.phone,
+  ];
+  for (const m of r.memberInfos || []) {
+    parts.push(m.username, m.email, m.phone);
+  }
+  return parts.filter(Boolean).join(' ').toLowerCase();
+}
+
+const filteredRows = computed(() => {
+  const terms = search.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  if (!terms.length) return [];
+  return allRows.value.filter((r) => {
+    const haystack = namespaceHaystack(r);
+    return terms.every((term) => haystack.includes(term));
+  });
+});
+
+// What the table actually renders + paginates: the client-filtered list
+// while searching (sliced here since there's no server round-trip), the
+// server page otherwise.
+const displayRows = computed(() => {
+  if (!searchActive.value) return rows.value;
+  const start = (page.value - 1) * pageSize;
+  return filteredRows.value.slice(start, start + pageSize);
+});
+const displayTotal = computed(() => (searchActive.value ? filteredRows.value.length : total.value));
+const totalPages = computed(() => Math.ceil(displayTotal.value / pageSize));
+
+// While searching, results come from allRows -- show the spinner until
+// that first full fetch lands rather than a misleading "nothing found".
+const showSpinner = computed(() =>
+  searchActive.value
+    ? statsLoading.value && !allRows.value.length
+    : loading.value && !rows.value.length,
+);
 
 // Jump from a favorite card to that namespace's row in the table below,
 // where health/members can be inspected. Reuses the existing search box
@@ -405,12 +458,8 @@ function employerHint(n: AdminNamespaceRow): string {
   return label ? `${t('admin.employeeOf')} ${label}` : t('admin.employeeNamespaceHint');
 }
 
-// Full platform-wide list, fetched once to compute the
-// "Компаний"/"Сотрудников" counts and to back the pinned favorites section
-// (see allRows) -- independent of the paginated `rows` used for the table.
-const statsLoading = ref(true);
-const companyCount = ref(0);
-const employeeCount = ref(0);
+// Fetches the full platform list into allRows (see its declaration) and
+// derives the "Компаний"/"Сотрудников" counts from it.
 async function loadStats() {
   if (!token.value) return;
   statsLoading.value = true;
@@ -460,6 +509,8 @@ watch(page, () => {
     suppressPageWatch = false;
     return;
   }
+  // While searching, paging is a pure client-side slice of filteredRows.
+  if (searchActive.value) return;
   loadPage();
 });
 
@@ -471,7 +522,9 @@ watch(search, () => {
     page.value = 1;
     await nextTick();
     suppressPageWatch = false;
-    loadPage();
+    // Searching filters allRows in memory -- no fetch needed. Only hit the
+    // server to restore the default paginated view once the box is cleared.
+    if (!searchActive.value) loadPage();
   }, 350);
 });
 
