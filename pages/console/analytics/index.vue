@@ -31,12 +31,24 @@
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           <div
             v-for="card in kpiCards"
-            :key="card.label"
-            class="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+            :key="card.key"
+            class="relative rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
-                <div class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ card.label }}</div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ card.label }}</span>
+                  <button
+                    v-if="card.info"
+                    type="button"
+                    class="flex-shrink-0 text-slate-300 transition-colors hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-300"
+                    :aria-label="t('admin.kpiWhatAndFormula') || 'Что это и как считается'"
+                    :aria-expanded="openKpiInfo === card.key"
+                    @click.stop="toggleKpiInfo(card.key)"
+                  >
+                    <Icon name="lucide:info" class="h-3.5 w-3.5" />
+                  </button>
+                </div>
                 <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ card.value }}</div>
                 <div v-if="card.sub" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ card.sub }}</div>
               </div>
@@ -44,8 +56,20 @@
                 <Icon :name="card.icon" class="h-4.5 w-4.5" :class="card.iconColor" />
               </div>
             </div>
+
+            <div
+              v-if="openKpiInfo === card.key"
+              class="absolute left-4 right-4 top-12 z-20 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              @click.stop
+            >
+              <div class="mb-1 font-semibold text-slate-900 dark:text-white">{{ card.label }}</div>
+              {{ card.info }}
+            </div>
           </div>
         </div>
+
+        <!-- Outside-click catcher for the KPI info popovers -->
+        <div v-if="openKpiInfo" class="fixed inset-0 z-10" @click="openKpiInfo = null" />
 
         <!-- Namespace growth -->
         <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
@@ -890,83 +914,111 @@ const avgAppsPerNamespace = computed(() => {
 
 const kpiCards = computed(() => [
   {
+    key: 'totalNamespaces',
     label: t('admin.totalNamespaces'),
     value: String(namespaces.value.length),
     sub: `+${newNamespacesLast30Days.value} ${t('admin.last30DaysShort')}`,
+    info: t('admin.kpiInfoTotalNamespaces'),
     icon: 'lucide:box',
     iconBg: 'bg-blue-50 dark:bg-blue-900/20',
     iconColor: 'text-blue-600 dark:text-blue-400',
   },
   {
+    key: 'billingAccounts',
     label: t('admin.billingAccounts'),
     value: String(billingData.value?.adminAccounts?.total ?? 0),
+    info: t('admin.kpiInfoBillingAccounts'),
     icon: 'lucide:building-2',
     iconBg: 'bg-orange-50 dark:bg-orange-900/20',
     iconColor: 'text-orange-600 dark:text-orange-400',
   },
   {
+    key: 'activeSubscriptions',
     label: t('admin.activeSubscriptions'),
     value: String(activeSubscriptions.value),
+    info: t('admin.kpiInfoActiveSubscriptions'),
     icon: 'lucide:credit-card',
     iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
+    key: 'pricingPlans',
     label: t('admin.pricingPlans'),
     value: String((billingData.value?.adminPlans || []).filter(p => p.status !== 'PLAN_ARCHIVED').length),
+    info: t('admin.kpiInfoPricingPlans'),
     icon: 'lucide:tag',
     iconBg: 'bg-violet-50 dark:bg-violet-900/20',
     iconColor: 'text-violet-600 dark:text-violet-400',
   },
   {
+    key: 'companyNamespaces',
     label: t('admin.companyNamespaces'),
     value: String(companyNamespaceCount.value),
     sub: t('admin.companyNamespacesDesc'),
+    info: t('admin.kpiInfoCompanyNamespaces'),
     icon: 'lucide:building',
     iconBg: 'bg-sky-50 dark:bg-sky-900/20',
     iconColor: 'text-sky-600 dark:text-sky-400',
   },
   {
+    key: 'employeeNamespaces',
     label: t('admin.employeeNamespaces'),
     value: String(employeeNamespaceCount.value),
     sub: t('admin.employeeNamespacesDesc'),
+    info: t('admin.kpiInfoEmployeeNamespaces'),
     icon: 'lucide:user',
     iconBg: 'bg-rose-50 dark:bg-rose-900/20',
     iconColor: 'text-rose-600 dark:text-rose-400',
   },
   {
+    key: 'referredNamespaces',
     label: t('admin.referredNamespaces'),
     value: String(referredNamespaceCount.value),
     sub: t('admin.referredNamespacesDesc'),
+    info: t('admin.kpiInfoReferredNamespaces'),
     icon: 'lucide:link',
     iconBg: 'bg-teal-50 dark:bg-teal-900/20',
     iconColor: 'text-teal-600 dark:text-teal-400',
   },
   {
+    key: 'activeNamespaces24h',
     label: t('admin.activeNamespaces24h') || 'Активны за 24ч',
     value: String(activeLast24hCount.value),
     sub: `${activeLast7dCount.value} ${t('admin.activeNamespaces7dShort') || 'за 7 дней'}`,
+    info: t('admin.kpiInfoActiveNamespaces24h'),
     icon: 'lucide:activity',
     iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
     iconColor: 'text-emerald-600 dark:text-emerald-400',
   },
   {
+    key: 'estimatedMrr',
     label: t('admin.estimatedMrr') || 'MRR (оценка)',
     value: formatMoney(estimatedMrrCents.value),
     sub: `${activeSubs.value.length} ${t('admin.activeSubscriptions')?.toLowerCase() || 'активных подписок'}`,
+    info: t('admin.kpiInfoEstimatedMrr'),
     icon: 'lucide:banknote',
     iconBg: 'bg-green-50 dark:bg-green-900/20',
     iconColor: 'text-green-600 dark:text-green-400',
   },
   {
+    key: 'namespacesNoApps',
     label: t('admin.namespacesNoApps') || 'Без приложений',
     value: String(noAppNamespaceCount.value),
     sub: `${avgAppsPerNamespace.value.toFixed(1)} ${t('admin.avgAppsPerNamespace') || 'приложений/неймспейс'}`,
+    info: t('admin.kpiInfoNamespacesNoApps'),
     icon: 'lucide:package-x',
     iconBg: 'bg-amber-50 dark:bg-amber-900/20',
     iconColor: 'text-amber-600 dark:text-amber-400',
   },
 ]);
+
+// Which KPI card's "what & how it's computed" popover is open (card.key), or
+// null. Toggled by the (i) button; a transparent full-screen layer behind
+// the panel closes it on any outside click without a global listener.
+const openKpiInfo = ref<string | null>(null);
+function toggleKpiInfo(key: string) {
+  openKpiInfo.value = openKpiInfo.value === key ? null : key;
+}
 
 // ─── Namespace growth chart (single series -> sequential blue, no legend) ─
 // chartW tracks the real rendered width of the SVG's container so the
