@@ -21,6 +21,13 @@ export type AdminNamespaceRow = {
   // The namespace whose referral link (see /people) this signup came
   // through, null if it wasn't referred.
   referredByNamespace: { id: string; title: string; slug: string } | null
+  // Self-reported business vertical (e.g. "restaurant_cafe"), null/empty if
+  // the owner never picked one in Quick Setup.
+  businessType: string | null
+  // Most recent time the owner or any member last had an active hub session
+  // (RFC3339), null if nobody has one on record. A coarse "is this
+  // namespace still in use" proxy -- see hub.gtw's attachActivity.
+  lastActiveAt: string | null
 }
 
 const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
@@ -59,6 +66,8 @@ const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
           title
           slug
         }
+        businessType
+        lastActiveAt
       }
       info {
         count

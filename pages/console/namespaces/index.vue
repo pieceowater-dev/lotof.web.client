@@ -80,7 +80,7 @@
 
       <div v-else class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
         <div class="overflow-x-auto">
-          <table class="w-full min-w-[1290px] text-left text-sm">
+          <table class="w-full min-w-[1390px] text-left text-sm">
             <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
               <tr>
                 <th class="w-10 px-4 py-3"><span class="sr-only">{{ t('admin.favorite') || 'Избранное' }}</span></th>
@@ -90,6 +90,7 @@
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.health') || 'Здоровье' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.members') || 'Участники' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.source') || 'Источник' }}</th>
+                <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.lastActive') || 'Активность' }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
               </tr>
             </thead>
@@ -180,10 +181,19 @@
                     <span v-if="row.leadSource" class="font-mono text-[10px] text-slate-600 dark:text-slate-400">{{ row.leadSource }}</span>
                     <span v-else class="text-slate-400 text-xs">&mdash;</span>
                   </td>
+                  <td class="px-6 py-4">
+                    <span
+                      class="inline-flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400"
+                      :title="row.lastActiveAt || ''"
+                    >
+                      <span class="h-1.5 w-1.5 rounded-full" :class="lastActiveDotClass(row.lastActiveAt, loadedAt)" />
+                      {{ relativeLastActive(row.lastActiveAt, loadedAt) }}
+                    </span>
+                  </td>
                   <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ formatDate(row.createdAt) }}</td>
                 </tr>
                 <tr v-if="healthExpanded[row.id]" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <td colspan="8" class="px-6 py-4">
+                  <td colspan="9" class="px-6 py-4">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
                       {{ t('admin.health') || 'Здоровье' }}
                     </div>
@@ -214,7 +224,7 @@
                   </td>
                 </tr>
                 <tr v-if="expanded[row.id] && row.memberInfos?.length" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
-                  <td colspan="8" class="px-6 py-4">
+                  <td colspan="9" class="px-6 py-4">
                     <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
                       {{ t('admin.members') || 'Участники' }}
                     </div>
@@ -265,6 +275,7 @@ import {
   type AdminNamespaceRow,
   type AppHealthStatus,
 } from '@/api/hub/admin';
+import { relativeLastActive, lastActiveDotClass } from '@/utils/lastActive';
 
 definePageMeta({
   middleware: 'admin',
@@ -293,6 +304,9 @@ const allRows = ref<AdminNamespaceRow[]>([]);
 const statsLoading = ref(true);
 const companyCount = ref(0);
 const employeeCount = ref(0);
+// "Now" snapshot for the relative activity column, refreshed each load so
+// every row's "N ч назад" is measured against the same instant.
+const loadedAt = ref(Date.now());
 
 const favoriteRows = computed(() => {
   const set = new Set(favoriteIds.value);
@@ -488,6 +502,7 @@ async function loadPage() {
     const res = await hubGetAdminNamespacesPage(token.value, page.value, 'TWENTY', search.value.trim() || undefined);
     rows.value = res.rows;
     total.value = res.total;
+    loadedAt.value = Date.now();
   } catch (e) {
     console.error('[console/namespaces] Failed to load namespaces', e);
   } finally {

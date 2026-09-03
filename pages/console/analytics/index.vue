@@ -28,7 +28,7 @@
 
       <div v-else class="space-y-10">
         <!-- KPI cards -->
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-7">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           <div
             v-for="card in kpiCards"
             :key="card.label"
@@ -131,6 +131,141 @@
           </div>
         </div>
 
+        <!-- Namespace activity -->
+        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.namespaceActivity') || 'Активность неймспейсов' }}</h3>
+          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.namespaceActivityDesc') }}</p>
+          <div class="space-y-2.5">
+            <div v-for="bucket in activityBuckets" :key="bucket.key" class="flex items-center gap-3">
+              <span class="w-28 shrink-0 text-xs text-slate-600 dark:text-slate-400">{{ bucket.label }}</span>
+              <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                <div
+                  class="h-full rounded transition-all"
+                  :class="bucket.colorClass"
+                  :style="{ width: (namespaces.length ? Math.max(bucket.value ? 3 : 0, (bucket.value / namespaces.length) * 100) : 0) + '%' }"
+                />
+              </div>
+              <span class="w-10 shrink-0 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">{{ bucket.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product adoption: installed vs paid -->
+        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.productAdoption') || 'Продукты: установлено vs платно' }}</h3>
+          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.productAdoptionDesc') }}</p>
+          <div class="flex h-52 items-end gap-4 px-2">
+            <div v-for="p in productAdoption" :key="p.key" class="group flex flex-1 flex-col items-center">
+              <div class="mb-1.5 flex items-end gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
+                <span>{{ p.installed }}</span>
+                <span class="text-slate-400">/</span>
+                <span class="text-emerald-600 dark:text-emerald-400">{{ p.paid }}</span>
+              </div>
+              <div class="flex h-36 w-full items-end justify-center gap-1">
+                <div
+                  class="w-1/3 rounded-t bg-slate-200 transition-all dark:bg-slate-700"
+                  :style="{ height: barHeightPct(p.installed, productAdoptionMax) + '%' }"
+                  :title="`${t('admin.installedLabel')}: ${p.installed}`"
+                />
+                <div
+                  class="w-1/3 rounded-t transition-all"
+                  :class="p.colorClass"
+                  :style="{ height: barHeightPct(p.paid, productAdoptionMax) + '%' }"
+                  :title="`${t('admin.paidLabel')}: ${p.paid}`"
+                />
+              </div>
+              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">{{ p.label }}</span>
+            </div>
+          </div>
+          <div class="mt-4 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-slate-200 dark:bg-slate-700" />{{ t('admin.installedLabel') || 'Установлено' }}</span>
+            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-blue-600 dark:bg-blue-500" />{{ t('admin.paidLabel') || 'Платно' }}</span>
+          </div>
+        </div>
+
+        <!-- Revenue & subscriptions -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.revenueAndSubs') || 'Выручка и подписки' }}</h3>
+            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.estimatedMrrDesc') }}</p>
+            <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ formatMoney(estimatedMrrCents) }}</div>
+            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.estimatedMrr') || 'MRR (оценка)' }}</div>
+            <div class="mt-5">
+              <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('admin.subscriptionStatuses') || 'Статусы подписок' }}</div>
+              <div v-if="!subscriptionStatusRows.length" class="text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
+              <div v-else class="flex flex-wrap gap-2">
+                <span
+                  v-for="row in subscriptionStatusRows"
+                  :key="row.status"
+                  class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+                  :class="row.status === 'ACTIVE'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300'
+                    : row.status === 'PAST_DUE'
+                      ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/40 dark:bg-rose-900/20 dark:text-rose-300'
+                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'"
+                >
+                  {{ row.status }}
+                  <span class="font-bold">{{ row.value }}</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h3 class="mb-4 font-bold text-slate-900 dark:text-white">{{ t('admin.planDistribution') || 'Активные подписки по планам' }}</h3>
+            <div v-if="!planDistribution.length" class="py-8 text-center text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
+            <div v-else class="space-y-2.5">
+              <div v-for="row in planDistribution" :key="row.name" class="flex items-center gap-3">
+                <span class="w-32 shrink-0 truncate text-xs text-slate-600 dark:text-slate-400" :title="row.name">{{ row.name }}</span>
+                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                  <div class="h-full rounded bg-violet-500 transition-all dark:bg-violet-400" :style="{ width: row.pct + '%' }" />
+                </div>
+                <span class="w-8 shrink-0 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">{{ row.value }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Business verticals + new namespaces per month -->
+        <div class="grid gap-6 lg:grid-cols-2">
+          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.businessVerticals') || 'Вертикали бизнеса' }}</h3>
+            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.businessVerticalsDesc') }}</p>
+            <div class="space-y-2.5">
+              <div v-for="row in verticalBreakdown" :key="row.key" class="flex items-center gap-3">
+                <span class="w-36 shrink-0 truncate text-xs text-slate-600 dark:text-slate-400" :title="row.label">{{ row.label }}</span>
+                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                  <div
+                    class="h-full rounded transition-all"
+                    :class="row.key === '__unset__' ? 'bg-slate-300 dark:bg-slate-600' : 'bg-sky-500 dark:bg-sky-400'"
+                    :style="{ width: row.pct + '%' }"
+                  />
+                </div>
+                <span class="w-8 shrink-0 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">{{ row.value }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.newNamespacesPerMonth') || 'Новые неймспейсы по месяцам' }}</h3>
+            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.newNamespacesPerMonthDesc') }}</p>
+            <div v-if="newPerMonth.length < 2" class="py-8 text-center text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
+            <div v-else class="flex h-40 items-end gap-1.5">
+              <div v-for="(m, i) in newPerMonth" :key="i" class="group flex flex-1 flex-col items-center">
+                <div class="mb-1 text-[10px] font-semibold text-slate-600 dark:text-slate-300">{{ m.value }}</div>
+                <div class="flex h-28 w-full items-end">
+                  <div
+                    class="w-full rounded-t bg-blue-500 transition-all dark:bg-blue-400"
+                    :style="{ height: Math.max(m.value ? 4 : 0, (m.value / newPerMonthMax) * 100) + '%' }"
+                    :title="`${m.label}: ${m.value}`"
+                  />
+                </div>
+                <span class="mt-1.5 text-[10px] text-slate-500 dark:text-slate-400">{{ m.label }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Recent namespaces -->
         <div>
           <div class="mb-4 flex items-center justify-between">
@@ -155,12 +290,13 @@
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.owner') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.phone') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.leadSource') }}</th>
+                    <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.lastActive') || 'Активность' }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.created') }}</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-if="!recentNamespaces.length">
-                    <td colspan="6" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
+                    <td colspan="7" class="px-6 py-6 text-center text-slate-500">{{ t('admin.notEnoughData') }}</td>
                   </tr>
                   <tr
                     v-for="ns in recentNamespaces"
@@ -214,6 +350,12 @@
                         class="rounded-full bg-violet-50 px-2 py-0.5 font-mono text-[11px] text-violet-700 hover:underline dark:bg-violet-900/20 dark:text-violet-300"
                       >{{ leadSourceLabel(ns.leadSource) }}</a>
                       <span v-else class="text-slate-400">—</span>
+                    </td>
+                    <td class="px-6 py-3">
+                      <span class="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                        <span class="h-2 w-2 rounded-full" :class="activityDotClass(ns.lastActiveAt)" />
+                        {{ relativeActivity(ns.lastActiveAt) }}
+                      </span>
                     </td>
                     <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
                   </tr>
@@ -476,6 +618,8 @@ import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { hubGetAdminNamespaces, type AdminNamespaceRow } from '@/api/hub/admin';
 import { capitalGetAdminBillingInfo, type AdminBillingInfo } from '@/api/capital/admin';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
+import { relativeLastActive, lastActiveDotClass, activeWithin } from '@/utils/lastActive';
 import {
   hubListDeepLinkCategories,
   hubListDeepLinks,
@@ -502,6 +646,10 @@ const loading = ref(true);
 const loadError = ref('');
 const namespaces = ref<AdminNamespaceRow[]>([]);
 const billingData = ref<AdminBillingInfo | null>(null);
+// Snapshot of "now" taken when the data loads, so every relative-time and
+// activity-window calc on the page agrees rather than each drifting with
+// Date.now() as the user reads.
+const loadedAt = ref(Date.now());
 
 async function load() {
   if (!token.value) return;
@@ -514,6 +662,7 @@ async function load() {
     ]);
     namespaces.value = nsResult.rows;
     billingData.value = billingResult;
+    loadedAt.value = Date.now();
   } catch (e: any) {
     loadError.value = e?.message || 'Не удалось загрузить аналитику';
   } finally {
@@ -561,6 +710,183 @@ function employerHint(n: AdminNamespaceRow): string {
   const label = employerLabel(n);
   return label ? `${t('admin.employeeOf')} ${label}` : t('admin.employeeNamespaceHint');
 }
+
+// Every current product, in a stable colour order -- drives the per-app
+// subscription chart, the installed-vs-paid chart, and (by applicationCode)
+// the plan/subscription joins. Keep in sync with config/apps.ts's ALL_APPS.
+const APPS = [
+  { key: 'atrace', label: 'A-Trace', applicationCode: 'pieceowater.atrace', colorClass: 'bg-blue-600 dark:bg-blue-500' },
+  { key: 'contacts', label: 'Contacts', applicationCode: 'pieceowater.contacts', colorClass: 'bg-orange-500 dark:bg-orange-500' },
+  { key: 'menu', label: 'Orders', applicationCode: 'pieceowater.menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
+  { key: 'issues', label: 'Issues', applicationCode: 'pieceowater.issues', colorClass: 'bg-indigo-500 dark:bg-indigo-400' },
+  { key: 'goods', label: 'Goods', applicationCode: 'pieceowater.goods', colorClass: 'bg-rose-500 dark:bg-rose-400' },
+] as const;
+
+// ─── Namespace activity (owner/member last hub session, see api lastActiveAt) ─
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function lastActiveMs(n: AdminNamespaceRow): number | null {
+  if (!n.lastActiveAt) return null;
+  const t = new Date(n.lastActiveAt).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+const activeLast24hCount = computed(() => namespaces.value.filter((n) => activeWithin(n.lastActiveAt, loadedAt.value, DAY_MS)).length);
+const activeLast7dCount = computed(() => namespaces.value.filter((n) => activeWithin(n.lastActiveAt, loadedAt.value, 7 * DAY_MS)).length);
+
+const activityBuckets = computed(() => {
+  const b = { d1: 0, d7: 0, d30: 0, older: 0, never: 0 };
+  for (const n of namespaces.value) {
+    const ms = lastActiveMs(n);
+    if (ms === null) { b.never += 1; continue; }
+    const age = loadedAt.value - ms;
+    if (age <= DAY_MS) b.d1 += 1;
+    else if (age <= 7 * DAY_MS) b.d7 += 1;
+    else if (age <= 30 * DAY_MS) b.d30 += 1;
+    else b.older += 1;
+  }
+  return [
+    { key: 'd1', label: t('admin.activityWithin24h') || '≤ 24 часов', value: b.d1, colorClass: 'bg-emerald-500' },
+    { key: 'd7', label: t('admin.activityWithin7d') || '≤ 7 дней', value: b.d7, colorClass: 'bg-lime-500' },
+    { key: 'd30', label: t('admin.activityWithin30d') || '≤ 30 дней', value: b.d30, colorClass: 'bg-amber-500' },
+    { key: 'older', label: t('admin.activityOver30d') || '> 30 дней', value: b.older, colorClass: 'bg-orange-500' },
+    { key: 'never', label: t('admin.activityNever') || 'Нет данных', value: b.never, colorClass: 'bg-slate-300 dark:bg-slate-700' },
+  ];
+});
+
+function relativeActivity(iso: string | null): string {
+  return iso ? relativeLastActive(iso, loadedAt.value) : (t('admin.activityNever') || 'нет данных');
+}
+function activityDotClass(iso: string | null): string {
+  return lastActiveDotClass(iso, loadedAt.value);
+}
+
+// ─── Revenue (estimated MRR) + subscription health ──────────────────────
+function planMonthlyCents(plan: AdminBillingInfo['adminPlans'][number]): number {
+  const cents = plan.amountCents || 0;
+  switch ((plan.interval || '').toLowerCase()) {
+    case 'year': case 'yearly': case 'annual': case 'annually': return Math.round(cents / 12);
+    case 'quarter': case 'quarterly': return Math.round(cents / 3);
+    case 'week': case 'weekly': return Math.round((cents * 52) / 12);
+    case 'day': case 'daily': return Math.round((cents * 365) / 12);
+    default: return cents; // month / unknown -> treat as monthly
+  }
+}
+
+const activeSubs = computed(() =>
+  (billingData.value?.adminSubscriptions?.subscriptions || []).filter((s) => s.status === 'ACTIVE'),
+);
+const plansById = computed(() => {
+  const m = new Map<string, AdminBillingInfo['adminPlans'][number]>();
+  for (const p of billingData.value?.adminPlans || []) m.set(p.id, p);
+  return m;
+});
+
+const currencyCode = computed(() => (billingData.value?.adminPlans || [])[0]?.currency?.toUpperCase() || 'KZT');
+const estimatedMrrCents = computed(() => {
+  let total = 0;
+  for (const s of activeSubs.value) {
+    const plan = plansById.value.get(s.planId);
+    if (plan) total += planMonthlyCents(plan) * (s.quantity || 1);
+  }
+  return total;
+});
+function formatMoney(cents: number): string {
+  const amount = cents / 100;
+  try {
+    return new Intl.NumberFormat('ru-RU', { style: 'currency', currency: currencyCode.value, maximumFractionDigits: 0 }).format(amount);
+  } catch {
+    return `${Math.round(amount).toLocaleString('ru-RU')} ${currencyCode.value}`;
+  }
+}
+
+const subscriptionStatusRows = computed(() => {
+  const all = billingData.value?.adminSubscriptions?.subscriptions || [];
+  const counts = new Map<string, number>();
+  for (const s of all) counts.set(s.status, (counts.get(s.status) || 0) + 1);
+  const order = ['ACTIVE', 'TRIALING', 'PAST_DUE', 'PAUSED', 'CANCELED', 'EXPIRED'];
+  return [...counts.entries()]
+    .sort((a, b) => {
+      const ia = order.indexOf(a[0]); const ib = order.indexOf(b[0]);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    })
+    .map(([status, value]) => ({ status, value }));
+});
+
+const planDistribution = computed(() => {
+  const counts = new Map<string, number>();
+  for (const s of activeSubs.value) {
+    const plan = plansById.value.get(s.planId);
+    const name = plan ? plan.name : '—';
+    counts.set(name, (counts.get(name) || 0) + 1);
+  }
+  const max = Math.max(...counts.values(), 1);
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([name, value]) => ({ name, value, pct: Math.round((value / max) * 100) }));
+});
+
+// ─── Per-product adoption: installed (namespace app row) vs paying ──────
+const productAdoption = computed(() =>
+  APPS.map((app) => {
+    const installed = namespaces.value.filter((n) => (n.apps || []).some((a) => a.appBundle === app.applicationCode)).length;
+    const paid = activeSubs.value.filter((s) => plansById.value.get(s.planId)?.applicationCode === app.applicationCode).length;
+    return { key: app.key, label: app.label, installed, paid, colorClass: app.colorClass };
+  }),
+);
+const productAdoptionMax = computed(() => Math.max(...productAdoption.value.map((p) => p.installed), 1));
+
+// ─── Business verticals ───────────────────────────────────────────────
+function verticalLabel(value: string): string {
+  const opt = BUSINESS_TYPES.find((o) => o.value === value);
+  return opt ? t(opt.titleKey) : value;
+}
+const verticalBreakdown = computed(() => {
+  const counts = new Map<string, number>();
+  for (const n of namespaces.value) {
+    const key = n.businessType && n.businessType.trim() ? n.businessType.trim() : '__unset__';
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+  const max = Math.max(...counts.values(), 1);
+  return [...counts.entries()]
+    .map(([key, value]) => ({
+      key,
+      label: key === '__unset__' ? (t('admin.verticalUnset') || 'Не указано') : verticalLabel(key),
+      value,
+      pct: Math.round((value / max) * 100),
+    }))
+    .sort((a, b) => b.value - a.value);
+});
+
+// ─── New namespaces per month (last 12) ────────────────────────────────
+const newPerMonth = computed(() => {
+  const buckets = new Map<string, number>();
+  for (const n of namespaces.value) {
+    if (!n.createdAt) continue;
+    const d = new Date(n.createdAt);
+    if (Number.isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    buckets.set(key, (buckets.get(key) || 0) + 1);
+  }
+  const keys = [...buckets.keys()].sort().slice(-12);
+  return keys.map((key) => {
+    const [y, mo] = key.split('-').map(Number);
+    return {
+      label: new Date(y, mo - 1, 1).toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' }),
+      value: buckets.get(key) || 0,
+    };
+  });
+});
+const newPerMonthMax = computed(() => Math.max(...newPerMonth.value.map((m) => m.value), 1));
+
+// ─── Signup quality ───────────────────────────────────────────────────
+const noAppNamespaceCount = computed(() => namespaces.value.filter((n) => !(n.apps && n.apps.length)).length);
+const avgAppsPerNamespace = computed(() => {
+  if (!namespaces.value.length) return 0;
+  const total = namespaces.value.reduce((sum, n) => sum + (n.apps?.length || 0), 0);
+  return total / namespaces.value.length;
+});
 
 const kpiCards = computed(() => [
   {
@@ -615,6 +941,30 @@ const kpiCards = computed(() => [
     icon: 'lucide:link',
     iconBg: 'bg-teal-50 dark:bg-teal-900/20',
     iconColor: 'text-teal-600 dark:text-teal-400',
+  },
+  {
+    label: t('admin.activeNamespaces24h') || 'Активны за 24ч',
+    value: String(activeLast24hCount.value),
+    sub: `${activeLast7dCount.value} ${t('admin.activeNamespaces7dShort') || 'за 7 дней'}`,
+    icon: 'lucide:activity',
+    iconBg: 'bg-emerald-50 dark:bg-emerald-900/20',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
+  {
+    label: t('admin.estimatedMrr') || 'MRR (оценка)',
+    value: formatMoney(estimatedMrrCents.value),
+    sub: `${activeSubs.value.length} ${t('admin.activeSubscriptions')?.toLowerCase() || 'активных подписок'}`,
+    icon: 'lucide:banknote',
+    iconBg: 'bg-green-50 dark:bg-green-900/20',
+    iconColor: 'text-green-600 dark:text-green-400',
+  },
+  {
+    label: t('admin.namespacesNoApps') || 'Без приложений',
+    value: String(noAppNamespaceCount.value),
+    sub: `${avgAppsPerNamespace.value.toFixed(1)} ${t('admin.avgAppsPerNamespace') || 'приложений/неймспейс'}`,
+    icon: 'lucide:package-x',
+    iconBg: 'bg-amber-50 dark:bg-amber-900/20',
+    iconColor: 'text-amber-600 dark:text-amber-400',
   },
 ]);
 
@@ -741,14 +1091,6 @@ const growthTooltipStyle = computed(() => {
   };
 });
 
-// ─── Per-app active subscriptions (categorical slots 1-3: blue/orange/aqua) ─
-const APPS = [
-  { key: 'atrace', label: 'A-Trace', applicationCode: 'pieceowater.atrace', colorClass: 'bg-blue-600 dark:bg-blue-500' },
-  { key: 'contacts', label: 'Contacts', applicationCode: 'pieceowater.contacts', colorClass: 'bg-orange-500 dark:bg-orange-500' },
-  { key: 'menu', label: 'Orders', applicationCode: 'pieceowater.menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
-  { key: 'issues', label: 'Issues', applicationCode: 'pieceowater.issues', colorClass: 'bg-indigo-500 dark:bg-indigo-400' },
-] as const;
-
 const appBars = computed(() => {
   const subs = (billingData.value?.adminSubscriptions?.subscriptions || []).filter(s => s.status === 'ACTIVE');
   const plans = billingData.value?.adminPlans || [];
@@ -791,10 +1133,12 @@ const TARGET_OPTIONS = computed(() => [
   { value: 'pieceowater.contacts', label: 'Contacts (в приложение)' },
   { value: 'pieceowater.menu', label: 'Orders (в приложение)' },
   { value: 'pieceowater.issues', label: 'Issues (в приложение)' },
+  { value: 'pieceowater.goods', label: 'Goods (в приложение)' },
   { value: 'landing:atrace', label: 'A-Trace (лендинг)' },
   { value: 'landing:contacts', label: 'Contacts (лендинг)' },
   { value: 'landing:menu', label: 'Orders (лендинг)' },
   { value: 'landing:issues', label: 'Issues (лендинг)' },
+  { value: 'landing:goods', label: 'Goods (лендинг)' },
   // Not a real app bundle -- /chekalka is a standalone conversion page for
   // chekalka.kz-sourced traffic only (see pages/chekalka.vue), so it's
   // special-cased in server/routes/l/[code].get.ts rather than resolved
