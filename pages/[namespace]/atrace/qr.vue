@@ -191,6 +191,32 @@ async function runCheck() {
   }
 }
 
+// Static QR (m=3) is a fixed, non-expiring link -- unlike TOTP/dynamic QR
+// (a few seconds' validity) or a typed phrase (needs active input each
+// time), the exact same URL stays live indefinitely. Auto-firing the check
+// the instant this page mounted meant ANY passive re-trigger of that URL --
+// a phone restoring a backgrounded tab, an impatient re-tap of the same
+// sticker a minute later once the cooldown had *just* lapsed -- silently
+// recorded a brand-new, fully real check-in with no user action taken and
+// no confirmation shown. Confirmed live: one member picked up a phantom
+// checkout 72 minutes after their real one; another racked up 12 real
+// scans in one day from repeated ~61s-apart re-triggers. Now static QR
+// shows a button instead of firing on mount -- every check-in this method
+// records requires one deliberate tap, so a stale reload can no longer
+// create one on its own.
+const showConfirmButton = ref(false);
+const confirming = ref(false);
+
+async function onConfirmClick() {
+  if (confirming.value) return;
+  confirming.value = true;
+  await runCheck();
+  // runCheck always navigates away (success/fail/wait) or throws into its
+  // own catch -- confirming only needs resetting if somehow neither
+  // happened (defensive, not expected in practice).
+  confirming.value = false;
+}
+
 function paranoidAntiSpamAndScrubUrl() {
   if (!process.client) return;
   try {
@@ -220,7 +246,12 @@ function paranoidAntiSpamAndScrubUrl() {
 
 onMounted(() => {
   const allowed = paranoidAntiSpamAndScrubUrl();
-  if (allowed) runCheck();
+  if (!allowed) return;
+  if (qMethodNum.value === '3') {
+    showConfirmButton.value = true;
+  } else {
+    runCheck();
+  }
 });
 </script>
 
@@ -234,13 +265,37 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
-            {{ t('app.atraceCheckingHeader') }}
+            {{ showConfirmButton && !confirming ? (t('app.atraceConfirmHeader') || 'Отметка о присутствии') : t('app.atraceCheckingHeader') }}
           </h3>
         </div>
       </template>
 
       <div class="py-8">
-        <div class="flex flex-col items-center text-center gap-4">
+        <div
+          v-if="showConfirmButton && !confirming"
+          class="flex flex-col items-center text-center gap-4"
+        >
+          <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
+            <UIcon
+              name="i-heroicons-qr-code"
+              class="h-9 w-9 text-emerald-600"
+            />
+          </div>
+          <p class="text-lg text-gray-700 dark:text-gray-300">
+            {{ t('app.atraceConfirmText') || 'Нажмите, чтобы отметиться' }}
+          </p>
+          <UButton
+            size="lg"
+            color="primary"
+            @click="onConfirmClick"
+          >
+            {{ t('app.atraceConfirmButton') || 'Отметиться' }}
+          </UButton>
+        </div>
+        <div
+          v-else
+          class="flex flex-col items-center text-center gap-4"
+        >
           <div class="h-16 w-16 rounded-full bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center">
             <div
               class="h-9 w-9 rounded-full border-[3px] border-emerald-200 border-t-emerald-600 animate-spin"
