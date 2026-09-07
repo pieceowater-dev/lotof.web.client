@@ -165,16 +165,16 @@ async function initMap() {
 
     map = L.map(mapContainer.value).setView(center, zoom);
 
-    // Use different tile layers based on theme
-    if (isDark) {
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap contributors © CARTO'
-      }).addTo(map);
-    } else {
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(map);
-    }
+    // Used to be CARTO's dark_all basemap for dark mode -- CARTO's free
+    // anonymous basemaps now require an API key, every tile came back as a
+    // literal "API KEY REQUIRED" watermark instead of a map (confirmed
+    // live). Raw OpenStreetMap tiles need no key and still work; the
+    // dark-mode "map-tiles-dark" class (global CSS below) inverts them to
+    // approximate a dark map instead of switching tile source.
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      className: isDark ? 'map-tiles-dark' : undefined,
+    }).addTo(map);
 
     marker = L.marker(center, { draggable: true }).addTo(map);
 
@@ -457,3 +457,13 @@ watch(() => props.modelValue, (isOpen) => {
     </UCard>
   </UModal>
 </template>
+
+<style>
+/* Not scoped: Leaflet injects these <img> tiles itself, outside Vue's
+   template, so a scoped selector's data-attribute would never match them.
+   Approximates a dark map from the same light OSM tiles used in light mode
+   (see initMap's comment on why this replaced the CARTO dark_all layer). */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+</style>

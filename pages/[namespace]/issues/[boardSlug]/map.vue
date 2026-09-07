@@ -153,14 +153,18 @@ async function initMap() {
     shadowUrl: (await import('leaflet/dist/images/marker-shadow.png')).default,
   });
   map = L.map(mapEl.value as HTMLElement).setView(DEFAULT_CENTER, 11);
-  // CartoDB's light basemap instead of raw OSM tiles -- much more muted
-  // (pale grays, no billboard-bright landuse fills), reads better alongside
-  // this app's light UI and the colored priority pins need to stand out
-  // against it.
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20,
+  // Used to be CartoDB's light basemap (more muted than raw OSM -- pale
+  // grays, no billboard-bright landuse fills -- read better alongside this
+  // app's light UI with the colored priority pins standing out against it),
+  // but CARTO's free anonymous basemaps now require an API key -- every
+  // tile came back as a literal "API KEY REQUIRED" watermark, confirmed
+  // live. Raw OpenStreetMap tiles need no key and still work; the CSS
+  // filter below approximates the same muted look on top of them.
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    subdomains: 'abc',
+    maxZoom: 19,
+    className: 'issues-map-muted-tiles',
   }).addTo(map);
   syncMarkers();
   syncCourierMarkers();
@@ -433,3 +437,13 @@ onBeforeUnmount(() => {
     />
   </div>
 </template>
+
+<style>
+/* Not scoped: Leaflet injects these <img> tiles itself, outside Vue's
+   template, so a scoped selector's data-attribute would never match them.
+   Approximates the muted look raw OSM tiles didn't have on their own (see
+   initMap's comment on why this replaced the CARTO layer). */
+.issues-map-muted-tiles {
+  filter: saturate(0.35) brightness(1.08) contrast(0.92);
+}
+</style>

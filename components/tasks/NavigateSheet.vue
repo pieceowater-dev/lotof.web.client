@@ -46,10 +46,14 @@ async function initMap() {
   L = await import('leaflet');
   const center: [number, number] = [props.task.lat, props.task.lng];
   map = L.map(mapEl.value).setView(center, 15);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20,
+  // CARTO's free anonymous basemaps (basemaps.cartocdn.com) now require an
+  // API key -- every tile came back as a literal "API KEY REQUIRED"
+  // watermark image instead of a map, confirmed live. Raw OpenStreetMap
+  // tiles need no key and still work.
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    subdomains: 'abc',
+    maxZoom: 19,
   }).addTo(map);
   taskMarker = L.marker(center, { icon: taskIcon() }).addTo(map);
   syncMePosition();

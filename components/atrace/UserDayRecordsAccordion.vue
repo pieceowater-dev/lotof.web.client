@@ -500,7 +500,12 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
           class="border-t border-inherit"
         >
           <table class="w-full text-xs">
-            <thead class="bg-gray-50 dark:bg-gray-900/50">
+            <thead class="bg-gray-50 dark:bg-gray-900/50 sticky top-8 z-10">
+              <!-- top-8 = the outer stats table's own sticky header's row
+                   height (AttendanceStatsTable.vue's thead: py-2 + text-xs
+                   line-height = 32px) -- both live in the same scrolling
+                   container, so this one has to sit right below that one,
+                   not at top-0 (which would tuck it behind/under it). -->
               <tr>
                 <th class="px-2 sm:px-3 py-1.5 text-left font-medium">
                   {{ t('app.date') }}
