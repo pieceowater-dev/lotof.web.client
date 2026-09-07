@@ -198,22 +198,37 @@ onMounted(async () => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Namespace selector -->
-      <div v-if="allNamespaces.length > 1" class="mb-8 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-        <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-          {{ t('app.currentNamespace') || 'Пространство' }}
+      <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
+      <div v-if="allNamespaces.length > 1" class="mb-8">
+        <p class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          {{ t('app.currentNamespace') || 'Выбранное пространство' }}
         </p>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             v-for="slug in allNamespaces"
             :key="slug"
-            class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors"
+            type="button"
+            class="snap-start flex-shrink-0 w-40 sm:w-44 rounded-2xl border p-3 text-left transition-all"
             :class="ns === slug
-              ? 'border-primary-600 bg-primary-600 text-white'
-              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-500 shadow-sm'
+              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'"
             @click="switchNs(slug)"
           >
-            {{ titleBySlug(slug) || slug }}
+            <div class="flex items-start justify-between gap-2">
+              <span class="min-w-0">
+                <span class="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {{ titleBySlug(slug) || slug }}
+                </span>
+                <span class="mt-0.5 block truncate font-mono text-[11px] text-gray-500 dark:text-gray-400">
+                  {{ slug }}
+                </span>
+              </span>
+              <UIcon
+                v-if="ns === slug"
+                name="lucide:check-circle-2"
+                class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-600 dark:text-primary-400"
+              />
+            </div>
           </button>
         </div>
       </div>
