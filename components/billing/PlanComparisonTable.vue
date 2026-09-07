@@ -82,7 +82,7 @@ const groups = computed(() => {
 
 <template>
   <FeatureComparisonTable
-    v-if="plans.length > 1"
+    v-if="plans.length >= 1"
     :columns="columns"
     :groups="groups"
     :subtitle="t('app.comparePlansSubtitle') || 'Выберите тариф под свою нагрузку'"

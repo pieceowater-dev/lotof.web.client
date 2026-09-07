@@ -106,7 +106,7 @@ const groups = computed(() => {
 
 <template>
   <FeatureComparisonTable
-    v-if="bundles.length > 1"
+    v-if="bundles.length >= 1"
     :columns="columns"
     :groups="groups"
     :subtitle="t('app.compareBundlesSubtitle') || 'Что входит в каждую сборку и какие лимиты вы получаете'"
