@@ -203,6 +203,31 @@ export async function capitalArchiveBundle(token: string, id: string): Promise<B
   return res.archiveBundle;
 }
 
+// Admin: confirm an out-of-band cash payment and activate the whole bundle for
+// a namespace (fan-out). capital.billing.manage gated, no ownership check.
+export async function capitalConfirmBundleCashPayment(
+  token: string,
+  namespace: string,
+  bundleCode: string
+): Promise<ActivateBundlePayload> {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation ConfirmBundleCashPayment($namespace: String!, $bundleCode: String!) {
+      confirmBundleCashPayment(namespace: $namespace, bundleCode: $bundleCode) {
+        success
+        message
+        error
+        results { applicationCode planCode subscriptionId status }
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ confirmBundleCashPayment: ActivateBundlePayload }>(mutation, {
+    namespace,
+    bundleCode,
+  });
+  return res.confirmBundleCashPayment;
+}
+
 export async function capitalCancelBundle(token: string, namespace: string, bundleCode: string): Promise<CancelBundlePayload> {
   setGlobalAuthToken(token);
   const mutation = /* GraphQL */ `

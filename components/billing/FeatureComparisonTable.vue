@@ -36,19 +36,19 @@ function isEmpty(v: CellValue): boolean {
       </p>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <div class="overflow-x-auto">
+    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+      <div class="max-h-[75vh] overflow-auto rounded-2xl">
         <table class="w-full min-w-[640px] border-collapse text-sm">
           <thead>
-            <tr class="border-b border-gray-200 dark:border-gray-700">
-              <th class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 w-[38%]">
+            <tr>
+              <th class="sticky left-0 top-0 z-30 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 w-[38%]">
                 {{ t('app.compareFeatureCol') || 'Возможность' }}
               </th>
               <th
                 v-for="col in columns"
                 :key="col.key"
-                class="px-4 py-3 text-center align-bottom"
-                :class="col.highlight ? 'bg-primary-50 dark:bg-primary-900/20' : ''"
+                class="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 px-4 py-3 text-center align-bottom"
+                :class="col.highlight ? 'bg-primary-50 dark:bg-primary-900' : 'bg-white dark:bg-gray-800'"
               >
                 <div class="font-bold text-gray-900 dark:text-white">{{ col.title }}</div>
                 <div v-if="col.subtitle" class="mt-0.5 text-xs font-normal text-gray-500 dark:text-gray-400">

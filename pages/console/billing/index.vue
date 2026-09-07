@@ -8,6 +8,14 @@
       <template v-if="activeTab === 'plans' || activeTab === 'subscriptions'" #actions>
         <button
           v-if="activeTab === 'plans' && isBundlesView"
+          class="flex items-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-emerald-700 hover:bg-emerald-50 transition-colors dark:text-emerald-400 dark:hover:bg-emerald-900/20"
+          @click="openBundleCashModal"
+        >
+          <Icon name="lucide:banknote" class="h-4 w-4" />
+          <span>{{ t('admin.confirmCashPayment') || 'Оплата наличными' }}</span>
+        </button>
+        <button
+          v-if="activeTab === 'plans' && isBundlesView"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
           @click="openCreateBundle"
         >
@@ -495,6 +503,13 @@
     @close="closeBundleModal"
     @submit="submitBundleModal"
   />
+  <ConsoleBillingBundleCashPaymentModal
+    v-model:modal="bundleCashModal"
+    v-model:form="bundleCashForm"
+    :active-bundles="activeBundlesForCash"
+    @close="closeBundleCashModal"
+    @submit="submitBundleCashModal"
+  />
 </div> <!-- End min-h-screen -->
 </template>
 
@@ -503,7 +518,7 @@ import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { capitalGetAdminBillingInfo, capitalGetAllAdminPlans, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, capitalCancelSubscription, type AdminBillingInfo } from '@/api/capital/admin';
-import { capitalAdminListBundles, capitalCreateBundle, capitalUpdateBundle, capitalArchiveBundle, type Bundle } from '@/api/capital/bundles';
+import { capitalAdminListBundles, capitalCreateBundle, capitalUpdateBundle, capitalArchiveBundle, capitalConfirmBundleCashPayment, type Bundle } from '@/api/capital/bundles';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -834,6 +849,52 @@ async function onArchiveBundle(b: Bundle) {
     await refreshBundles();
   } catch (e: any) {
     toast.add({ title: t('admin.bundleSaveFailed') || 'Не удалось архивировать сборку', description: e?.message, color: 'red' });
+  }
+}
+
+// ─── Confirm cash payment for a whole bundle ───────────────────────────────
+const bundleCashModal = reactive({ open: false, saving: false, error: '' });
+const bundleCashForm = reactive({ namespace: '', bundleCode: '' });
+const activeBundlesForCash = computed(() => bundles.value.filter((b) => b.status !== 'ARCHIVED'));
+
+function openBundleCashModal() {
+  bundleCashForm.namespace = '';
+  bundleCashForm.bundleCode = '';
+  bundleCashModal.error = '';
+  bundleCashModal.open = true;
+}
+function closeBundleCashModal() {
+  if (bundleCashModal.saving) return;
+  bundleCashModal.open = false;
+}
+async function submitBundleCashModal() {
+  if (!token.value) return;
+  bundleCashModal.error = '';
+  if (!bundleCashForm.namespace) {
+    bundleCashModal.error = t('admin.namespaceSlugRequired') || 'Укажите слаг неймспейса';
+    return;
+  }
+  if (!bundleCashForm.bundleCode) {
+    bundleCashModal.error = t('admin.bundleRequired') || 'Выберите сборку';
+    return;
+  }
+  bundleCashModal.saving = true;
+  try {
+    const res = await capitalConfirmBundleCashPayment(token.value, bundleCashForm.namespace, bundleCashForm.bundleCode);
+    if (!res.success) {
+      bundleCashModal.error = res.error || res.message || (t('admin.cashPaymentFailed') || 'Не удалось подтвердить оплату');
+      return;
+    }
+    toast.add({
+      title: t('admin.cashPaymentConfirmed') || 'Оплата наличными подтверждена',
+      description: `${res.results.length} ${t('admin.appsActivated') || 'приложений подключено'}`,
+      color: 'green',
+    });
+    bundleCashModal.open = false;
+  } catch (e: any) {
+    bundleCashModal.error = e?.message || (t('admin.cashPaymentFailed') || 'Не удалось подтвердить оплату');
+  } finally {
+    bundleCashModal.saving = false;
   }
 }
 
