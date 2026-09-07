@@ -565,7 +565,8 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
 };
 
 type ProjectId = (typeof projects)[number]['id'];
-const selectedProject = ref<ProjectId>('atrace');
+// Open on the "Готовые сборки" tab -- bundles are the headline offer.
+const selectedProject = ref<ProjectId>('bundles');
 const selectedProjectTitle = computed(() => {
   return projects.find(p => p.id === selectedProject.value)?.title || selectedProject.value;
 });
@@ -852,6 +853,9 @@ async function refreshData() {
     return;
   }
   if (isBundlesView.value) {
+    // Bundles have their own loader (bundlesLoading); make sure the page-level
+    // spinner doesn't stay stuck when the console opens straight on this tab.
+    loading.value = false;
     return;
   }
   loading.value = true;
