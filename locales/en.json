@@ -230,6 +230,8 @@
     "atraceConfirmHeader": "Check in",
     "atraceConfirmText": "Tap to check in",
     "atraceConfirmButton": "Check in",
+    "atraceConfirmGeoHint": "We'll also ask for your location, to confirm you're actually here",
+    "atraceGeoDeniedHint": "Location isn't available: your browser remembered the denial and won't ask again on its own. To turn it back on, open this site's settings in your browser (usually the lock icon next to the address) and allow location.",
     "atraceRecordedRedirecting": "Redirecting home in",
     "atraceRecordedWaiting": "Please wait",
     "atraceRecordedRetryIn": "Retrying in",

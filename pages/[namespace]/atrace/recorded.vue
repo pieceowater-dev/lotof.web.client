@@ -24,6 +24,11 @@ const isWaiting = computed(() => {
   return v.toLowerCase?.() === 'wait' && parseInt(route.query.wait as string) > 0;
 });
 const isPendingOnboarding = computed(() => ((route.query.ok as string) || '').toLowerCase?.() === 'pending');
+// Set by qr.vue when the check-in's geolocation attempt came back denied --
+// purely informational (the check-in above already succeeded or failed on
+// its own), a nudge toward fixing it manually since the browser won't
+// re-prompt on its own after an explicit denial.
+const geoDenied = computed(() => route.query.geoDenied === '1');
 const waitSecondsInitial = computed(() => Math.max(1, parseInt((route.query.wait as string) || '0') || 0));
 
 // Reason codes set by qr.vue's classifyCheckFailure -- a bare "не удалось
@@ -261,6 +266,17 @@ onBeforeUnmount(() => {
             />
             <p class="text-2xl font-bold text-emerald-600">
               {{ t('app.atraceRecordedSuccess') }}
+            </p>
+
+            <p
+              v-if="geoDenied"
+              class="text-xs text-amber-600 dark:text-amber-400 max-w-sm flex items-start gap-1.5 text-left bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2"
+            >
+              <UIcon
+                name="i-heroicons-map-pin"
+                class="h-4 w-4 shrink-0 mt-0.5"
+              />
+              <span>{{ t('app.atraceGeoDeniedHint') }}</span>
             </p>
 
             <!-- Countdown progress -->

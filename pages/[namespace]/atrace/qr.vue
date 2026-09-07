@@ -151,19 +151,24 @@ async function runCheck() {
       return;
     }
 
-    // Request geolocation (skip only if the browser permission is a real,
-    // explicit denial). alwaysPrompt: check-in is exactly the situation
+    // Request geolocation. alwaysPrompt: check-in is exactly the situation
     // getGeolocationOnce's normal 24h "don't re-nag" cooldown is wrong for --
     // a post can require a confirmed location for the check-in to count at
     // all, so silently giving up on asking again after one dismissed/timed-
     // out dialog would fail every check-in in between with no visible reason.
+    // Always attempted, even if the browser's permission is already
+    // 'denied' -- see getGeolocationOnce's own comment on why that can't be
+    // turned into a fresh prompt, but the attempt is what surfaces `denied`
+    // for the hint below.
     let latitude: number | undefined;
     let longitude: number | undefined;
+    let geoDenied = false;
     if (process.client) {
       try {
         const coords = await getGeolocationOnce({ timeout: 5000, enableHighAccuracy: false }, { alwaysPrompt: true });
         latitude = coords.latitude;
         longitude = coords.longitude;
+        geoDenied = !!coords.denied;
       } catch (e) {
         logError('[atrace/qr] Geolocation request failed', e);
       }
@@ -182,7 +187,15 @@ async function runCheck() {
     useAnalytics().track('atrace_check', { method: methodEnum, ok });
     // Set cooldown for static QR regardless of result to avoid spam
     if (qMethodNum.value === '3') setCooldown();
-    router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: ok ? '1' : '0' } });
+    // geoDenied never blocks the check-in itself (already succeeded/failed
+    // above on its own merits) -- it just tells the recorded page whether to
+    // show a one-time hint about turning location back on manually, since
+    // that's the only way left once the browser has actually denied it.
+    router.replace({
+      name: 'namespace-atrace-recorded',
+      params: { namespace: nsSlug.value },
+      query: { ok: ok ? '1' : '0', ...(geoDenied ? { geoDenied: '1' } : {}) }
+    });
   } catch (e: unknown) {
     logError('[atrace/qr] runCheck failed', e);
     router.replace({ name: 'namespace-atrace-recorded', params: { namespace: nsSlug.value }, query: { ok: '0', reason: classifyCheckFailure(e) } });
@@ -283,6 +296,17 @@ onMounted(() => {
           </div>
           <p class="text-lg text-gray-700 dark:text-gray-300">
             {{ t('app.atraceConfirmText') || 'Нажмите, чтобы отметиться' }}
+          </p>
+          <!-- Explains the location prompt before the browser's own dialog
+               interrupts with no context -- people are far less likely to
+               reflexively tap "Не разрешать" on a request they understand
+               the reason for. -->
+          <p class="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1 -mt-2">
+            <UIcon
+              name="i-heroicons-map-pin"
+              class="h-3.5 w-3.5 shrink-0"
+            />
+            {{ t('app.atraceConfirmGeoHint') || 'Мы также попросим доступ к геолокации, чтобы подтвердить, что вы на месте' }}
           </p>
           <UButton
             size="lg"

@@ -1,6 +1,13 @@
 export type GeoPoint = {
   latitude?: number;
   longitude?: number;
+  // True when the browser's own permission state was 'denied' going into
+  // this call -- lets a caller offer the person a way to fix it themselves
+  // (e.g. "open your browser's site settings and allow location"), since
+  // no web API can make the browser re-show its native prompt after an
+  // explicit denial; that's a deliberate cross-browser restriction, not
+  // something any site's code can work around.
+  denied?: boolean;
 };
 
 /**
@@ -45,9 +52,16 @@ export async function getGeolocationOnce(options?: PositionOptions, opts?: { alw
     try {
       const status = await (navigator as any).permissions.query({ name: 'geolocation' as PermissionName });
       permissionState = status.state;
-      if (permissionState === 'denied') {
-        return {};
-      }
+      // Deliberately NOT short-circuiting on 'denied' here: no web API can
+      // make the browser re-show its native permission dialog after an
+      // explicit denial (every major browser blocks that outright, by
+      // design, so a site can't nag around a real "no"), so a bare denial
+      // check gains nothing by skipping the actual call below -- it fails
+      // the exact same way either way. Always attempting instead means a
+      // permission the person re-granted from their browser's own site
+      // settings since our last check gets picked up immediately, and the
+      // caller still finds out it was denied (see the `denied` field) to
+      // offer a way to fix it themselves.
       if (permissionState === 'prompt' && !opts?.alwaysPrompt) {
         // Avoid re-prompting on every visit if the user very recently saw
         // the prompt and didn't decide -- but only for a bounded window, so
@@ -66,7 +80,7 @@ export async function getGeolocationOnce(options?: PositionOptions, opts?: { alw
   return await new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
-      () => resolve({}),
+      () => resolve({ denied: permissionState === 'denied' }),
       options || { timeout: 5000, enableHighAccuracy: false }
     );
   });
