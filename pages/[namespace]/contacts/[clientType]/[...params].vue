@@ -563,9 +563,9 @@ async function handleRefreshFromRemote() {
 
 <template>
   <div class="flex flex-col">
-    <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div
-        class="text-left"
+        class="text-left min-w-0"
         data-tour="contacts-title"
       >
         <h1 class="text-xl sm:text-2xl font-semibold">
@@ -573,8 +573,8 @@ async function handleRefreshFromRemote() {
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.contactsSubtitle') }}</span>
       </div>
-      <div>
-        <div class="flex gap-2">
+      <div class="min-w-0">
+        <div class="flex flex-wrap gap-2">
           <UButton 
             icon="lucide:tag" 
             size="xs"

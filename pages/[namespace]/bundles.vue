@@ -291,7 +291,7 @@ onMounted(async () => {
           <div
             v-for="b in displayedBundles"
             :key="b.id"
-            class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            class="relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
           >
             <!-- Trial ribbon -->
             <div v-if="b.trialDays > 0" class="absolute top-0 right-0">
@@ -303,7 +303,7 @@ onMounted(async () => {
               </div>
             </div>
 
-            <div class="p-6 pt-12">
+            <div class="flex flex-1 flex-col p-6 pt-12">
               <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-1">
                 {{ t('app.bundle') || 'Готовая сборка' }}
               </p>
@@ -328,7 +328,7 @@ onMounted(async () => {
               </div>
 
               <!-- Included apps -->
-              <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+              <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   {{ t('app.bundleContains') || 'Входит' }}
                 </p>

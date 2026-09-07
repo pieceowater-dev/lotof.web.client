@@ -154,7 +154,7 @@ onMounted(() => {
         <h1 class="text-xl sm:text-2xl font-semibold">{{ t('tasks.title') || 'Boards' }}</h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('tasks.subtitle') || 'Kanban boards for your team' }}</span>
       </div>
-      <div class="flex items-center gap-2 self-start">
+      <div class="flex flex-wrap items-center gap-2 self-start">
         <UButton
           v-if="isOwnerOrManager"
           icon="lucide:settings"
