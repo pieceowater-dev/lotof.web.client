@@ -521,7 +521,7 @@ onMounted(() => {
 <template>
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between flex-shrink-0 gap-2">
-      <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
+      <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
       <div class="flex items-center gap-1.5 flex-wrap justify-end">
         <UButton
           v-if="staffRole === 'OWNER'"

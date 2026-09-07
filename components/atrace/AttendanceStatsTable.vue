@@ -734,7 +734,7 @@ function formatNumber(val: number, fractionDigits = 0) {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period Filter, Legend & Settings -->
-    <div class="mb-3 flex flex-wrap items-center gap-3">
+    <div class="mb-3 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
       <!-- Period Filter Buttons -->
       <div class="flex flex-wrap gap-1.5">
         <UButton 
@@ -770,7 +770,7 @@ function formatNumber(val: number, fractionDigits = 0) {
       </div>
 
       <!-- Export and Settings Buttons -->
-      <div class="flex flex-col md:flex-row gap-2 md:gap-1.5 md:items-center">
+      <div class="flex flex-wrap gap-x-1 gap-y-1.5 md:items-center">
         <UButton
           v-if="canManageAttendance"
           size="xs"
@@ -808,25 +808,27 @@ function formatNumber(val: number, fractionDigits = 0) {
         </UButton>
       </div>
 
-      <!-- Member search -- replaced the always-on legend swatches; the
-           legend itself moved into the info-button modal below (both
-           mobile and desktop now use it, not just mobile). -->
-      <UInput
-        v-model="memberSearchQuery"
-        icon="i-heroicons-magnifying-glass"
-        size="xs"
-        class="ml-auto w-40 sm:w-56"
-        :placeholder="t('app.searchMemberPlaceholder') || 'Поиск по сотруднику'"
-      />
-
-      <!-- Legend info button -->
-      <UButton
-        icon="lucide:info"
-        size="xs"
-        color="gray"
-        variant="ghost"
-        @click="showLegendModal = true"
-      />
+      <!-- Member search + legend -- replaced the always-on legend swatches;
+           the legend itself moved into the info-button modal below (both
+           mobile and desktop now use it, not just mobile). Own row on
+           mobile, right-aligned on desktop. -->
+      <div class="flex items-center gap-1.5 md:ml-auto">
+        <UInput
+          v-model="memberSearchQuery"
+          icon="i-heroicons-magnifying-glass"
+          size="xs"
+          class="flex-1 md:w-56 md:flex-none"
+          :placeholder="t('app.searchMemberPlaceholder') || 'Поиск по сотруднику'"
+        />
+        <UButton
+          icon="lucide:info"
+          size="xs"
+          color="gray"
+          variant="ghost"
+          class="flex-shrink-0"
+          @click="showLegendModal = true"
+        />
+      </div>
     </div>
 
     <!-- Export Error -->
@@ -947,7 +949,7 @@ function formatNumber(val: number, fractionDigits = 0) {
       </div>
       <table
         v-else
-        class="w-full text-sm"
+        class="w-full min-w-[680px] text-sm"
       >
         <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
           <tr>
@@ -995,16 +997,17 @@ function formatNumber(val: number, fractionDigits = 0) {
               :data-tour="index === 0 ? 'attendance-table' : undefined"
               @click="postId ? toggleUserDetails(user.userId) : null"
             >
-              <td class="px-3 py-2 text-center">
+              <td class="px-2 sm:px-3 py-2 text-center">
                 <UButton
                   v-if="!postId && canManageSalary"
                   data-tour="calculate-btn"
                   size="xs"
                   variant="soft"
                   icon="i-heroicons-calculator"
+                  :title="t('app.calculate')"
                   @click.stop="openSalaryCalculator(user.userId)"
                 >
-                  {{ t('app.calculate') }}
+                  <span class="hidden sm:inline">{{ t('app.calculate') }}</span>
                 </UButton>
                 <UIcon
                   v-else

@@ -880,18 +880,18 @@ async function handleCreateOrder(payload: any) {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left" data-tour="menu-title">
-        <h1 class="text-2xl font-semibold">
+        <h1 class="text-xl sm:text-2xl font-semibold">
           {{ t('menu.title') || 'Orders' }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('menu.subtitle') || 'Every order from your storefronts, in one place' }}</span>
       </div>
-      <div class="flex items-center gap-2 self-start">
+      <div class="flex flex-wrap items-center gap-2 self-start">
         <UButton
           icon="lucide:store"
           size="xs"
           color="emerald"
           variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
+          class="whitespace-nowrap gap-2"
           :ui="{ rounded: 'rounded-xl' }"
           :to="`/to/${nsSlug}/menu`"
           target="_blank"
@@ -903,7 +903,7 @@ async function handleCreateOrder(payload: any) {
           size="xs"
           color="violet"
           variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
+          class="whitespace-nowrap gap-2"
           :ui="{ rounded: 'rounded-xl' }"
           :to="`/to/${nsSlug}/menu/board`"
           target="_blank"
@@ -917,7 +917,7 @@ async function handleCreateOrder(payload: any) {
           size="xs"
           color="primary"
           variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
+          class="whitespace-nowrap gap-2"
           :ui="{ rounded: 'rounded-xl' }"
           :to="`/${nsSlug}/menu/settings`"
           data-tour="menu-settings-btn"

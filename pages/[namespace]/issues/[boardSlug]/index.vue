@@ -666,7 +666,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <UButton icon="lucide:layout-grid" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues?pick=1`">
           {{ t('tasks.boards') || 'Boards' }}
         </UButton>
-        <h1 class="text-2xl font-semibold truncate" data-tour="issues-title">{{ board?.name || '...' }}</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold truncate" data-tour="issues-title">{{ board?.name || '...' }}</h1>
       </div>
       <div class="flex items-center gap-2 self-start flex-wrap">
         <UButton v-if="geoMapEnabled" icon="lucide:map" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/map`">

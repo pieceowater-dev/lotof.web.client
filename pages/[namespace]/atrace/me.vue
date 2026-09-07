@@ -276,7 +276,7 @@ onMounted(() => {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-auto">
     <div class="flex justify-between items-center mb-4 flex-shrink-0">
       <div class="text-left">
-        <h1 class="text-2xl font-semibold">
+        <h1 class="text-xl sm:text-2xl font-semibold">
           {{ t('app.myStats') || 'Моя статистика' }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.myStatsSubtitle') || 'График, посещаемость и зарплата' }}</span>

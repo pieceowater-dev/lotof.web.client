@@ -79,8 +79,8 @@ async function subscribe(b: Bundle) {
   const token = hubToken();
   if (!token) return;
 
-  // No payment gateway: a paid bundle with no trial goes through sales contact.
-  if (b.amountCents > 0 && b.trialDays === 0) {
+  // No acquiring yet -- every paid bundle goes through the sales-contact modal.
+  if (b.amountCents > 0) {
     useContactUsModal().open({ app: 'bundle', planName: b.name });
     return;
   }

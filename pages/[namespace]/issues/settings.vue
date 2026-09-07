@@ -209,7 +209,7 @@ onMounted(() => {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-2xl font-semibold">{{ t('tasks.settings') || 'Settings' }}</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold">{{ t('tasks.settings') || 'Settings' }}</h1>
       </div>
       <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
         <UButton

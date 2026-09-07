@@ -373,22 +373,23 @@ onBeforeUnmount(() => {
       :banners="leaveApprovalBanners"
       @dismiss="dismissLeaveApprovalBanner"
     />
-    <div class="flex justify-between items-center mb-4 mt-4 px-4 flex-shrink-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div
-        class="text-left"
+        class="text-left min-w-0"
         data-tour="atrace-title"
       >
-        <h1 class="text-2xl font-semibold">
+        <h1 class="text-xl sm:text-xl sm:text-2xl font-semibold">
           {{ t('app.atraceTitle') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 flex-shrink-0">
         <UButton
           icon="lucide:user-round"
           size="xs"
           color="gray"
           variant="soft"
+          class="flex-1 sm:flex-none justify-center"
           :to="`/${nsSlug}/atrace/me`"
         >
           {{ t('app.myStats') || 'Моя статистика' }}
@@ -396,13 +397,14 @@ onBeforeUnmount(() => {
         <div
           v-if="canSeeSettings"
           data-tour="settings-btn"
+          class="flex-1 sm:flex-none"
         >
           <UButton
             icon="lucide:settings"
             size="xs"
             color="primary"
             variant="soft"
-            class="relative"
+            class="relative w-full justify-center"
             :to="`/${nsSlug}/atrace/settings`"
           >
             {{ t('app.atraceManagement') || 'Управление' }}

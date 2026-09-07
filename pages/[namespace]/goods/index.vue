@@ -181,7 +181,7 @@ onMounted(async () => {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
       <div>
-        <h1 data-tour="goods-warehouse-title" class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
+        <h1 data-tour="goods-warehouse-title" class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">

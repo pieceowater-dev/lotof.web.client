@@ -124,7 +124,9 @@ async function subscribe(b: Bundle) {
   const token = hubToken();
   if (!token || !ns.value) return;
 
-  if (b.amountCents > 0 && b.trialDays === 0) {
+  // No acquiring yet -- every paid bundle routes to the sales-contact modal
+  // (same "talk to a human" flow as a paid plan without a usable trial).
+  if (b.amountCents > 0) {
     useContactUsModal().open({ app: 'bundle', planName: b.name });
     return;
   }
@@ -183,7 +185,7 @@ onMounted(async () => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
               {{ t('app.bundles') || 'Готовые сборки' }}
             </h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -198,6 +200,8 @@ onMounted(async () => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
       <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
       <div v-if="allNamespaces.length > 1" class="mb-8">
         <p class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">

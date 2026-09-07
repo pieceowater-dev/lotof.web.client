@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
       <UButton icon="lucide:arrow-left" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}`">
         {{ t('app.back') || 'Back' }}
       </UButton>
-      <h1 class="text-2xl font-semibold truncate">{{ t('tasks.mapView') || 'Map view' }} — {{ board?.name || '...' }}</h1>
+      <h1 class="text-xl sm:text-2xl font-semibold truncate">{{ t('tasks.mapView') || 'Map view' }} — {{ board?.name || '...' }}</h1>
       <span v-if="courierLocations.length" class="flex items-center gap-1.5 text-xs text-gray-500 flex-shrink-0 ml-auto">
         <span class="h-2.5 w-2.5 rounded-full bg-blue-500 border border-white shadow-sm" />
         {{ courierLocations.length }} {{ t('tasks.mapCouriers') || 'Couriers' }}

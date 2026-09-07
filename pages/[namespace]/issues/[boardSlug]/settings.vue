@@ -381,7 +381,7 @@ onMounted(load);
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-5 flex-shrink-0 gap-3">
       <div class="text-left min-w-0">
-        <h1 class="text-2xl font-semibold truncate">{{ t('tasks.boardSettings') || 'Board settings' }}</h1>
+        <h1 class="text-xl sm:text-2xl font-semibold truncate">{{ t('tasks.boardSettings') || 'Board settings' }}</h1>
         <span class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ board?.name }}</span>
       </div>
       <div class="flex items-center gap-2 self-start flex-shrink-0">

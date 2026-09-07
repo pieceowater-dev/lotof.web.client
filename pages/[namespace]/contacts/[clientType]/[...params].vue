@@ -568,7 +568,7 @@ async function handleRefreshFromRemote() {
         class="text-left"
         data-tour="contacts-title"
       >
-        <h1 class="text-2xl font-semibold">
+        <h1 class="text-xl sm:text-2xl font-semibold">
           {{ t('app.contacts') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.contactsSubtitle') }}</span>
