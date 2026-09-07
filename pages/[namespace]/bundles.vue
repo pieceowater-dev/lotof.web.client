@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
@@ -13,17 +13,20 @@ import {
   type Bundle,
 } from '@/api/capital/bundles';
 
-// /ns/bundles -- a flat catalogue of every bundle, scoped to the currently
-// selected namespace (same selection the /hub dashboard uses). Reached from the
-// "current namespace" accordion on /hub. A bundle is one priced offer covering
-// several apps; connecting it activates a per-app subscription for each.
+// /{namespace}/bundles -- a flat catalogue of every ready-made bundle, scoped to
+// the namespace in the URL. Reached from the "current namespace" accordion on
+// /hub. A bundle is one priced offer covering several apps; connecting it
+// activates a per-app subscription for each.
 const { t } = useI18n();
+const route = useRoute();
 const router = useRouter();
 const toast = useToast();
-const { user, isLoggedIn, initialized, fetchUser, login } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug, load: loadNamespaces } = useNamespace();
+const { isLoggedIn, fetchUser, login } = useAuth();
+const { all: allNamespaces, setNamespace, titleBySlug, load: loadNamespaces } = useNamespace();
 
-useSeoMeta({ title: () => t('app.bundles') || 'Бандлы', robotsNoindex: true });
+const ns = computed(() => String(route.params.namespace || ''));
+
+useSeoMeta({ title: () => t('app.bundles') || 'Готовые сборки', robotsNoindex: true });
 useHead({ titleTemplate: (s) => s ?? 'lota' });
 
 const bundles = ref<Bundle[]>([]);
@@ -52,6 +55,14 @@ function isActive(b: Bundle): boolean {
   return activeCodes.value.includes(b.code);
 }
 
+// Switch the working namespace by navigating -- keeps the URL and the global
+// selection in lock-step.
+function switchNs(slug: string) {
+  if (slug === ns.value) return;
+  setNamespace(slug);
+  router.push(`/${slug}/bundles`);
+}
+
 async function loadBundles() {
   const token = hubToken();
   if (!token) return;
@@ -68,12 +79,12 @@ async function loadBundles() {
 
 async function loadActive() {
   const token = hubToken();
-  if (!token || !selectedNS.value) {
+  if (!token || !ns.value) {
     activeCodes.value = [];
     return;
   }
   try {
-    activeCodes.value = await capitalGetActiveBundles(token, selectedNS.value);
+    activeCodes.value = await capitalGetActiveBundles(token, ns.value);
   } catch {
     activeCodes.value = [];
   }
@@ -81,7 +92,7 @@ async function loadActive() {
 
 async function subscribe(b: Bundle) {
   const token = hubToken();
-  if (!token || !selectedNS.value) return;
+  if (!token || !ns.value) return;
 
   if (b.amountCents > 0 && b.trialDays === 0) {
     useContactUsModal().open({ app: 'bundle', planName: b.name });
@@ -91,10 +102,10 @@ async function subscribe(b: Bundle) {
 
   activatingCode.value = b.code;
   try {
-    const res = await capitalActivateBundle(token, selectedNS.value, b.code, 'cash');
+    const res = await capitalActivateBundle(token, ns.value, b.code, 'cash');
     if (!res.success) {
       toast.add({
-        title: t('app.bundleActivateFailed') || 'Не удалось подключить бандл',
+        title: t('app.bundleActivateFailed') || 'Не удалось подключить сборку',
         description: res.error || res.message,
         color: 'red',
       });
@@ -103,11 +114,11 @@ async function subscribe(b: Bundle) {
     try {
       useAnalytics().track('bundle_subscribed', { bundle: b.code });
     } catch {}
-    toast.add({ title: t('app.bundleConnected') || 'Бандл подключён', description: b.name, color: 'green' });
+    toast.add({ title: t('app.bundleConnected') || 'Сборка подключена', description: b.name, color: 'green' });
     await loadActive();
   } catch (e: any) {
     toast.add({
-      title: t('app.bundleActivateFailed') || 'Не удалось подключить бандл',
+      title: t('app.bundleActivateFailed') || 'Не удалось подключить сборку',
       description: e?.message,
       color: 'red',
     });
@@ -116,15 +127,19 @@ async function subscribe(b: Bundle) {
   }
 }
 
-watch(selectedNS, () => loadActive());
+watch(ns, () => {
+  setNamespace(ns.value);
+  loadActive();
+});
 
 onMounted(async () => {
   await nextTick();
   await fetchUser();
   if (!isLoggedIn.value) {
-    login('/ns/bundles');
+    login(route.fullPath);
     return;
   }
+  if (ns.value) setNamespace(ns.value);
   await loadNamespaces().catch(() => {});
   await loadBundles();
   await loadActive();
@@ -137,10 +152,10 @@ onMounted(async () => {
       <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
         <div>
           <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ t('app.bundles') || 'Бандлы' }}
+            {{ t('app.bundles') || 'Готовые сборки' }}
           </h1>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('app.bundlesPageSubtitle') || 'Наборы тарифов сразу на несколько приложений' }}
+            {{ t('app.bundlesPageSubtitle') || 'Готовые наборы приложений в одном тарифе' }}
           </p>
         </div>
         <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" @click="router.push('/hub')">
@@ -160,10 +175,10 @@ onMounted(async () => {
             v-for="slug in allNamespaces"
             :key="slug"
             class="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm font-semibold transition-colors"
-            :class="selectedNS === slug
+            :class="ns === slug
               ? 'border-primary-600 bg-primary-600 text-white'
               : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300'"
-            @click="setNamespace(slug)"
+            @click="switchNs(slug)"
           >
             {{ titleBySlug(slug) || slug }}
           </button>
@@ -178,7 +193,7 @@ onMounted(async () => {
         v-else-if="!visibleBundles.length"
         class="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center text-sm text-gray-500 dark:text-gray-400"
       >
-        {{ t('app.noBundlesYet') || 'Бандлов пока нет' }}
+        {{ t('app.noBundlesYet') || 'Готовых сборок пока нет' }}
       </div>
 
       <div v-else class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -195,7 +210,7 @@ onMounted(async () => {
           </div>
 
           <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-300">
-            {{ t('app.bundle') || 'Бандл' }}
+            {{ t('app.bundle') || 'Готовая сборка' }}
           </p>
           <h3 class="mt-1 text-lg font-bold text-gray-900 dark:text-white">{{ b.name }}</h3>
           <p v-if="b.description" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ b.description }}</p>
@@ -231,7 +246,7 @@ onMounted(async () => {
             class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-center font-bold text-white"
           >
             <UIcon name="i-heroicons-check-circle" class="mr-1 inline h-5 w-5" />
-            {{ t('app.bundleConnectedForNs', { ns: titleBySlug(selectedNS) || selectedNS }) || 'Подключено' }}
+            {{ t('app.bundleConnectedForNs', { ns: titleBySlug(ns) || ns }) || 'Подключено' }}
           </div>
           <UButton
             v-else
@@ -243,7 +258,7 @@ onMounted(async () => {
             :disabled="activatingCode !== null"
             @click="subscribe(b)"
           >
-            {{ t('app.connectBundle') || 'Подключить бандл' }}
+            {{ t('app.connectBundle') || 'Подключить сборку' }}
           </UButton>
         </div>
       </div>

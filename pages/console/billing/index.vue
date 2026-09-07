@@ -12,7 +12,7 @@
           @click="openCreateBundle"
         >
           <Icon name="lucide:plus" class="h-4 w-4" />
-          <span>{{ t('admin.newBundle') || 'Новый бандл' }}</span>
+          <span>{{ t('admin.newBundle') || 'Новая сборка' }}</span>
         </button>
         <button
           v-if="activeTab === 'plans' && !isBundlesView"
@@ -194,7 +194,7 @@
           <div v-if="isBundlesView">
             <div class="mb-4 flex items-center justify-between">
               <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-                {{ t('admin.bundles') || 'Бандлы' }}
+                {{ t('admin.bundles') || 'Готовые сборки' }}
               </h3>
             </div>
 
@@ -206,7 +206,7 @@
               v-else-if="!groupedBundles.length"
               class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
             >
-              {{ t('admin.noBundleCreated') || 'Бандлов пока нет' }}
+              {{ t('admin.noBundleCreated') || 'Сборок пока нет' }}
             </div>
 
             <div v-else class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -519,8 +519,8 @@ const loading = ref(true);
 const billingData = ref<AdminBillingInfo | null>(null);
 
 const projects = [
-  // "Бандлы" first: multi-app offers live above the per-app point plans.
-  { id: 'bundles', appCode: '', title: 'Бандлы', icon: 'lucide:layers' },
+  // "Готовые сборки" first: multi-app offers live above the per-app point plans.
+  { id: 'bundles', appCode: '', title: 'Готовые сборки', icon: 'lucide:layers' },
   { id: 'atrace', appCode: 'pieceowater.atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', appCode: 'pieceowater.contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
   { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' },
@@ -666,7 +666,7 @@ async function refreshBundles() {
     bundles.value = await capitalAdminListBundles(token.value);
   } catch (e) {
     console.error('[billing] failed to load bundles', e);
-    toast.add({ title: t('admin.bundleLoadFailed') || 'Не удалось загрузить бандлы', color: 'red' });
+    toast.add({ title: t('admin.bundleLoadFailed') || 'Не удалось загрузить сборки', color: 'red' });
   } finally {
     bundlesLoading.value = false;
   }
@@ -743,7 +743,7 @@ async function submitBundleModal() {
   if (!token.value) return;
   bundleModal.error = '';
   if (!bundleForm.name.trim()) {
-    bundleModal.error = t('admin.bundleNameRequired') || 'Введите название бандла';
+    bundleModal.error = t('admin.bundleNameRequired') || 'Введите название сборки';
     return;
   }
   const chosen = Object.values(bundleForm.tiers).filter(Boolean);
@@ -789,7 +789,7 @@ async function submitBundleModal() {
         }
         throw yearlyErr;
       }
-      toast.add({ title: t('admin.bundleCreated') || 'Бандл создан', color: 'green' });
+      toast.add({ title: t('admin.bundleCreated') || 'Сборка создана', color: 'green' });
     } else if (bundleModal.id) {
       const { items, missing } = collectBundleItems(bundleModal.interval);
       if (missing.length) {
@@ -805,12 +805,12 @@ async function submitBundleModal() {
         items,
         replaceItems: true,
       });
-      toast.add({ title: t('admin.bundleUpdated') || 'Бандл обновлён', color: 'green' });
+      toast.add({ title: t('admin.bundleUpdated') || 'Сборка обновлена', color: 'green' });
     }
     bundleModal.open = false;
     await refreshBundles();
   } catch (e: any) {
-    bundleModal.error = e?.message || (t('admin.bundleSaveFailed') || 'Не удалось сохранить бандл');
+    bundleModal.error = e?.message || (t('admin.bundleSaveFailed') || 'Не удалось сохранить сборку');
   } finally {
     bundleModal.saving = false;
   }
@@ -820,7 +820,7 @@ async function onArchiveBundle(b: Bundle) {
   if (!token.value) return;
   const { confirm } = useConfirm();
   const ok = await confirm({
-    title: t('admin.archiveBundleConfirmTitle') || 'Архивировать бандл?',
+    title: t('admin.archiveBundleConfirmTitle') || 'Архивировать сборку?',
     message: `«${b.name}» (${b.code})`,
     confirmLabel: t('admin.archive') || 'Архивировать',
     color: 'red',
@@ -829,10 +829,10 @@ async function onArchiveBundle(b: Bundle) {
   if (!ok) return;
   try {
     await capitalArchiveBundle(token.value, b.id);
-    toast.add({ title: t('admin.bundleArchived') || 'Бандл архивирован', color: 'green' });
+    toast.add({ title: t('admin.bundleArchived') || 'Сборка архивирована', color: 'green' });
     await refreshBundles();
   } catch (e: any) {
-    toast.add({ title: t('admin.bundleSaveFailed') || 'Не удалось архивировать бандл', description: e?.message, color: 'red' });
+    toast.add({ title: t('admin.bundleSaveFailed') || 'Не удалось архивировать сборку', description: e?.message, color: 'red' });
   }
 }
 

@@ -88,7 +88,7 @@ async function subscribe(b: Bundle) {
     const res = await capitalActivateBundle(token, props.namespace, b.code, 'cash');
     if (!res.success) {
       toast.add({
-        title: t('app.bundleActivateFailed') || 'Не удалось подключить бандл',
+        title: t('app.bundleActivateFailed') || 'Не удалось подключить сборку',
         description: res.error || res.message,
         color: 'red',
       });
@@ -98,7 +98,7 @@ async function subscribe(b: Bundle) {
       useAnalytics().track('bundle_subscribed', { bundle: b.code });
     } catch {}
     toast.add({
-      title: t('app.bundleConnected') || 'Бандл подключён',
+      title: t('app.bundleConnected') || 'Сборка подключена',
       description: b.name,
       color: 'green',
     });
@@ -106,7 +106,7 @@ async function subscribe(b: Bundle) {
     emit('activated');
   } catch (e: any) {
     toast.add({
-      title: t('app.bundleActivateFailed') || 'Не удалось подключить бандл',
+      title: t('app.bundleActivateFailed') || 'Не удалось подключить сборку',
       description: e?.message,
       color: 'red',
     });
@@ -123,7 +123,7 @@ onMounted(load);
     <div class="mb-4 flex items-center gap-2">
       <UIcon name="lucide:layers" class="h-5 w-5 text-primary-600 dark:text-primary-300" />
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-        {{ t('app.bundlesForThisApp') || 'Бандлы с этим приложением' }}
+        {{ t('app.bundlesForThisApp') || 'Готовые сборки с этим приложением' }}
       </h2>
     </div>
 
@@ -141,7 +141,7 @@ onMounted(load);
         </div>
 
         <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-300">
-          {{ t('app.bundle') || 'Бандл' }}
+          {{ t('app.bundle') || 'Готовая сборка' }}
         </p>
         <h3 class="mt-1 text-lg font-bold text-gray-900 dark:text-white">{{ b.name }}</h3>
         <p v-if="b.description" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ b.description }}</p>
@@ -189,7 +189,7 @@ onMounted(load);
           :disabled="activatingCode !== null"
           @click="subscribe(b)"
         >
-          {{ t('app.connectBundle') || 'Подключить бандл' }}
+          {{ t('app.connectBundle') || 'Подключить сборку' }}
         </UButton>
       </div>
     </div>

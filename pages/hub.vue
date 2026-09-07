@@ -839,7 +839,8 @@ watch(user, (u) => {
             </div>
 
             <NuxtLink
-              to="/ns/bundles"
+              v-if="selectedNS"
+              :to="`/${selectedNS}/bundles`"
               class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-gray-800/70 px-4 py-3 transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
             >
               <span class="flex items-center gap-3">
@@ -847,7 +848,7 @@ watch(user, (u) => {
                   <UIcon name="lucide:layers" class="w-5 h-5" />
                 </span>
                 <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ t('app.bundles') || 'Бандлы' }}
+                  {{ t('app.bundles') || 'Готовые сборки' }}
                 </span>
               </span>
               <UIcon name="lucide:arrow-right" class="w-4 h-4 text-blue-500 dark:text-blue-400" />

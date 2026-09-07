@@ -8,7 +8,7 @@
       <div class="mx-auto my-8 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
           <h3 class="text-lg font-bold text-slate-900 dark:text-white">
-            {{ bundleModal.mode === 'create' ? (t('admin.newBundle') || 'Новый бандл') : (t('admin.editBundleTitle') || 'Изменить бандл') }}
+            {{ bundleModal.mode === 'create' ? (t('admin.newBundle') || 'Новая сборка') : (t('admin.editBundleTitle') || 'Изменить сборку') }}
           </h3>
           <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="$emit('close')">
             <Icon name="lucide:x" class="h-4 w-4" />
@@ -17,7 +17,7 @@
 
         <div class="max-h-[70vh] space-y-4 overflow-y-auto p-5">
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundleName') || 'Название бандла' }} *</label>
+            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundleName') || 'Название сборки' }} *</label>
             <input
               v-model="bundleForm.name"
               type="text"
@@ -76,10 +76,10 @@
               />
             </div>
           </div>
-          <p class="text-[11px] text-slate-400">{{ t('admin.bundleCreatesBothIntervals') || 'Создаются месячный и годовой бандлы одновременно.' }}</p>
+          <p class="text-[11px] text-slate-400">{{ t('admin.bundleCreatesBothIntervals') || 'Создаются месячная и годовая сборки одновременно.' }}</p>
 
           <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-            <div class="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundleIncludes') || 'Приложения в бандле' }} *</div>
+            <div class="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundleIncludes') || 'Приложения в сборке' }} *</div>
             <div class="space-y-2.5">
               <div v-for="app in apps" :key="app.appCode" class="flex items-center gap-3">
                 <label class="flex min-w-0 flex-1 items-center gap-2">
