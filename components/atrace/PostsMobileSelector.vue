@@ -16,15 +16,27 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-// USelectMenu doesn't accept null, so bridge selectedPostId (which can be
-// null before posts finish loading) through an empty-string-safe computed.
+// "All locations" is '' everywhere outside this component (selectedPostId
+// prop/emit, index.vue, PostsCardScroller, AttendancePanel all compare
+// against ''). Nuxt UI's USelectMenu can't actually display that selection
+// though -- its internal `label` computed starts with `if (!props.modelValue)
+// return null`, and '' is falsy, so the field silently renders blank
+// whenever "all locations" is selected (confirmed: the dropdown itself
+// still shows the right item checked, only the closed-field label is
+// empty). ALL_SENTINEL is purely local plumbing to give USelectMenu a
+// truthy value to key off of; get/set translate it back to '' at the prop
+// boundary so nothing outside this component has to know about it.
+const ALL_SENTINEL = '__all__';
 const selectedPostIdForMenu = computed({
-  get: () => props.selectedPostId ?? '',
-  set: (val: string) => emit('update:selectedPostId', val),
+  get: () => {
+    const id = props.selectedPostId ?? '';
+    return id === '' ? ALL_SENTINEL : id;
+  },
+  set: (val: string) => emit('update:selectedPostId', val === ALL_SENTINEL ? '' : val),
 });
 
 const menuOptions = computed(() => [
-  ...(props.posts.length > 0 ? [{ value: '', label: t('app.allLocations') || 'All locations' }] : []),
+  ...(props.posts.length > 0 ? [{ value: ALL_SENTINEL, label: t('app.allLocations') || 'All locations' }] : []),
   ...props.posts.filter(p => p.title && p.title.trim()).map(p => {
     const parts = [p.title.trim()];
     if (p.location?.city?.trim()) parts.push(p.location.city);
