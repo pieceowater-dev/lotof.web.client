@@ -784,13 +784,13 @@ watch(user, (u) => {
         </div>
 
         <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-          <button
-            type="button"
-            class="w-full flex items-center justify-between gap-3 text-left"
-            :aria-expanded="namespaceAccordionOpen"
-            @click="toggleNamespaceAccordion"
-          >
-            <div class="flex min-w-0 items-center gap-3">
+          <div class="w-full flex items-center gap-2 md:gap-3">
+            <button
+              type="button"
+              class="flex min-w-0 flex-1 items-center gap-3 text-left"
+              :aria-expanded="namespaceAccordionOpen"
+              @click="toggleNamespaceAccordion"
+            >
               <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
                 <UIcon name="lucide:building-2" class="w-5 h-5" />
               </div>
@@ -802,13 +802,31 @@ watch(user, (u) => {
                   {{ (selectedNS && (titleBySlug(selectedNS) || selectedNS)) || (t('app.selectNamespace') || 'Select active workspace') }}
                 </h3>
               </div>
-            </div>
-            <UIcon
-              name="lucide:chevron-down"
-              class="w-5 h-5 flex-shrink-0 text-gray-500 dark:text-gray-400 transition-transform"
-              :class="namespaceAccordionOpen ? 'rotate-180' : ''"
-            />
-          </button>
+            </button>
+
+            <NuxtLink
+              v-if="selectedNS"
+              :to="`/${selectedNS}/bundles`"
+              class="flex-shrink-0 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-gray-800/70 px-2.5 py-1.5 text-xs font-semibold text-blue-700 dark:text-blue-300 transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
+              @click.stop
+            >
+              <UIcon name="lucide:layers" class="w-4 h-4" />
+              <span class="hidden sm:inline">{{ t('app.bundles') || 'Готовые сборки' }}</span>
+            </NuxtLink>
+
+            <button
+              type="button"
+              class="flex-shrink-0"
+              :aria-label="t('app.currentNamespace') || 'Namespace'"
+              @click="toggleNamespaceAccordion"
+            >
+              <UIcon
+                name="lucide:chevron-down"
+                class="w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform"
+                :class="namespaceAccordionOpen ? 'rotate-180' : ''"
+              />
+            </button>
+          </div>
 
           <div v-show="namespaceAccordionOpen" class="mt-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -837,22 +855,6 @@ watch(user, (u) => {
                 </div>
               </button>
             </div>
-
-            <NuxtLink
-              v-if="selectedNS"
-              :to="`/${selectedNS}/bundles`"
-              class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-gray-800/70 px-4 py-3 transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
-            >
-              <span class="flex items-center gap-3">
-                <span class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
-                  <UIcon name="lucide:layers" class="w-5 h-5" />
-                </span>
-                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ t('app.bundles') || 'Готовые сборки' }}
-                </span>
-              </span>
-              <UIcon name="lucide:arrow-right" class="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            </NuxtLink>
           </div>
         </div>
 
