@@ -774,7 +774,7 @@ onMounted(() => {
             </div>
             <div v-if="!activePriceList?.items?.length" class="text-center py-4 text-sm text-gray-400">—</div>
           </div>
-          <div class="grid grid-cols-3 gap-2 items-end pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-end pt-2 border-t border-gray-100 dark:border-gray-800">
             <USelectMenu v-model="priceItemDraft.goodId" :options="goods.map((g) => ({ label: g.name, value: g.id }))" value-attribute="value" option-attribute="label" size="sm" :placeholder="t('goods.good')" :popper="{ strategy: 'fixed' }" class="col-span-2" />
             <UInput v-model.number="priceItemDraft.priceCents" type="number" min="0" size="sm" placeholder="Cents" />
           </div>
@@ -815,7 +815,7 @@ onMounted(() => {
           </div>
 
           <div class="rounded-lg border border-gray-200 dark:border-gray-800 p-3 space-y-2">
-            <div class="grid grid-cols-4 gap-2 items-end">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 items-end">
               <USelectMenu v-model="recipeItemDraft.goodId" :options="goods.map((g) => ({ label: g.name, value: g.id }))" value-attribute="value" option-attribute="label" size="sm" :placeholder="t('goods.good')" :popper="{ strategy: 'fixed' }" class="col-span-2" />
               <USelectMenu v-model="recipeItemDraft.unitId" :options="units.map((u) => ({ label: u.symbol, value: u.id }))" value-attribute="value" option-attribute="label" size="sm" :placeholder="t('goods.unit')" :popper="{ strategy: 'fixed' }" />
               <UInput v-model.number="recipeItemDraft.quantityPerUnit" type="number" min="0" step="0.01" size="sm" :placeholder="t('goods.quantityPerUnit')" />

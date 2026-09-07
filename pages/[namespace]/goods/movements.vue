@@ -487,7 +487,7 @@ onMounted(loadAll);
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.movementType')">
-            <div class="grid grid-cols-4 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 v-for="tab in CREATE_TABS"
                 :key="tab.key"

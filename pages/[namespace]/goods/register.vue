@@ -791,7 +791,7 @@ onMounted(async () => {
         </div>
 
         <div data-tour="goods-register-products" class="flex-1 overflow-y-auto -mx-1 px-1">
-          <div v-if="visibleGoods.length" class="grid grid-cols-4 gap-3 pb-2">
+          <div v-if="visibleGoods.length" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 pb-2">
             <!-- padding-bottom:100% (not the aspect-ratio property) makes a
                  responsive square whose height always equals its own resolved
                  width -- aspect-ratio's interaction with CSS Grid's auto row
