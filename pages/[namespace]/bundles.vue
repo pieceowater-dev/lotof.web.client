@@ -13,10 +13,9 @@ import {
   type Bundle,
 } from '@/api/capital/bundles';
 
-// /{namespace}/bundles -- a flat catalogue of every ready-made bundle, scoped to
-// the namespace in the URL. Reached from the "current namespace" accordion on
-// /hub. A bundle is one priced offer covering several apps; connecting it
-// activates a per-app subscription for each.
+// /{namespace}/bundles -- ready-made bundles (each covers several apps), scoped
+// to the namespace in the URL. Laid out like the per-app /plans screens: a
+// monthly/yearly toggle up top, one card per bundle for the chosen interval.
 const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
@@ -33,6 +32,7 @@ const bundles = ref<Bundle[]>([]);
 const activeCodes = ref<string[]>([]);
 const loading = ref(true);
 const activatingCode = ref<string | null>(null);
+const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 
 function hubToken(): string | null {
   return useCookie<string | null>('token', { path: '/' }).value;
@@ -50,13 +50,16 @@ function formatPrice(amountCents: number, currency: string): string {
 }
 
 const visibleBundles = computed(() => bundles.value.filter((b) => b.status !== 'ARCHIVED'));
+const monthlyBundles = computed(() => visibleBundles.value.filter((b) => b.interval === 'MONTH'));
+const yearlyBundles = computed(() => visibleBundles.value.filter((b) => b.interval === 'YEAR'));
+const displayedBundles = computed(() =>
+  selectedInterval.value === 'monthly' ? monthlyBundles.value : yearlyBundles.value
+);
 
 function isActive(b: Bundle): boolean {
   return activeCodes.value.includes(b.code);
 }
 
-// Switch the working namespace by navigating -- keeps the URL and the global
-// selection in lock-step.
 function switchNs(slug: string) {
   if (slug === ns.value) return;
   setNamespace(slug);
@@ -89,6 +92,12 @@ async function loadActive() {
     activeCodes.value = [];
   }
 }
+
+// If a yearly bundle is already active, open on the yearly tab.
+watch([bundles, activeCodes], () => {
+  const active = visibleBundles.value.find((b) => activeCodes.value.includes(b.code));
+  if (active) selectedInterval.value = active.interval === 'YEAR' ? 'yearly' : 'monthly';
+});
 
 async function subscribe(b: Bundle) {
   const token = hubToken();
@@ -148,25 +157,28 @@ onMounted(async () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Header -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
-            {{ t('app.bundles') || 'Готовые сборки' }}
-          </h1>
-          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('app.bundlesPageSubtitle') || 'Готовые наборы приложений в одном тарифе' }}
-          </p>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+              {{ t('app.bundles') || 'Готовые сборки' }}
+            </h1>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {{ t('app.bundlesPageSubtitle') || 'Готовые наборы приложений в одном тарифе' }}
+            </p>
+          </div>
+          <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" class="min-w-fit gap-2" @click="router.push('/hub')">
+            <span class="hidden sm:inline">{{ t('app.back') || 'Назад' }}</span>
+          </UButton>
         </div>
-        <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" @click="router.push('/hub')">
-          <span class="hidden sm:inline">{{ t('app.back') || 'Назад' }}</span>
-        </UButton>
       </div>
     </div>
 
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Namespace selector -->
-      <div v-if="allNamespaces.length > 1" class="mb-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
+      <div v-if="allNamespaces.length > 1" class="mb-8 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
         <p class="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {{ t('app.currentNamespace') || 'Пространство' }}
         </p>
@@ -185,83 +197,147 @@ onMounted(async () => {
         </div>
       </div>
 
-      <div v-if="loading" class="flex justify-center py-16">
-        <UIcon name="svg-spinners:ring-resize" class="h-10 w-10 text-primary-600" />
+      <!-- Loading -->
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
       </div>
 
-      <div
-        v-else-if="!visibleBundles.length"
-        class="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-12 text-center text-sm text-gray-500 dark:text-gray-400"
-      >
-        {{ t('app.noBundlesYet') || 'Готовых сборок пока нет' }}
-      </div>
-
-      <div v-else class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        <div
-          v-for="b in visibleBundles"
-          :key="b.id"
-          class="relative flex flex-col rounded-2xl border-2 border-primary-200 dark:border-primary-800 bg-white dark:bg-gray-800 p-5"
-        >
-          <div
-            v-if="b.trialDays > 0"
-            class="absolute right-0 top-0 rounded-bl-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white"
-          >
-            {{ b.trialDays }} {{ t('app.daysTrial') || 'дн. триал' }}
+      <template v-else>
+        <!-- Interval Toggle -->
+        <div v-if="visibleBundles.length" class="flex justify-center mb-8">
+          <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+            <button
+              :class="[
+                'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+                selectedInterval === 'monthly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              ]"
+              @click="selectedInterval = 'monthly'"
+            >
+              {{ t('app.monthly') || 'Помесячно' }}
+            </button>
+            <button
+              :class="[
+                'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+                selectedInterval === 'yearly'
+                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              ]"
+              @click="selectedInterval = 'yearly'"
+            >
+              <span>{{ t('app.yearly') || 'Годовая' }}</span>
+              <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
+                {{ t('app.bestPrice') || 'Выгодно' }}
+              </span>
+            </button>
           </div>
-
-          <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-300">
-            {{ t('app.bundle') || 'Готовая сборка' }}
-          </p>
-          <h3 class="mt-1 text-lg font-bold text-gray-900 dark:text-white">{{ b.name }}</h3>
-          <p v-if="b.description" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ b.description }}</p>
-
-          <div class="mt-3 flex items-baseline gap-1.5">
-            <span class="text-3xl font-bold text-gray-900 dark:text-white">
-              {{ b.trialDays > 0 ? '0' : formatPrice(b.amountCents, b.currency) }}
-            </span>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-              / {{ b.interval === 'YEAR' ? (t('app.year') || 'год') : (t('app.month') || 'мес') }}
-            </span>
-          </div>
-
-          <div class="mt-3 flex-1 border-t border-gray-100 dark:border-gray-700 pt-3">
-            <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-              {{ t('app.bundleContains') || 'Входит' }}
-            </p>
-            <ul class="space-y-1">
-              <li
-                v-for="it in b.items"
-                :key="it.applicationCode + it.planCode"
-                class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
-              >
-                <UIcon name="lucide:check" class="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-                <span class="font-medium">{{ appLabel(it.applicationCode) }}</span>
-                <span v-if="it.planName" class="text-gray-500 dark:text-gray-400">· {{ it.planName }}</span>
-              </li>
-            </ul>
-          </div>
-
-          <div
-            v-if="isActive(b)"
-            class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-center font-bold text-white"
-          >
-            <UIcon name="i-heroicons-check-circle" class="mr-1 inline h-5 w-5" />
-            {{ t('app.bundleConnectedForNs', { ns: titleBySlug(ns) || ns }) || 'Подключено' }}
-          </div>
-          <UButton
-            v-else
-            block
-            size="lg"
-            color="primary"
-            class="mt-4 font-semibold"
-            :loading="activatingCode === b.code"
-            :disabled="activatingCode !== null"
-            @click="subscribe(b)"
-          >
-            {{ t('app.connectBundle') || 'Подключить сборку' }}
-          </UButton>
         </div>
-      </div>
+
+        <!-- Empty -->
+        <div
+          v-if="!displayedBundles.length"
+          class="text-center py-12"
+        >
+          <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
+          <p class="text-gray-500 dark:text-gray-400">
+            {{ visibleBundles.length ? (t('app.noBundlesForInterval') || 'Сборок с таким периодом нет') : (t('app.noBundlesYet') || 'Готовых сборок пока нет') }}
+          </p>
+        </div>
+
+        <!-- Bundles grid -->
+        <div v-else class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div
+            v-for="b in displayedBundles"
+            :key="b.id"
+            class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+          >
+            <!-- Trial ribbon -->
+            <div v-if="b.trialDays > 0" class="absolute top-0 right-0">
+              <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
+                <div class="flex items-center gap-1.5">
+                  <UIcon name="i-heroicons-gift" class="w-4 h-4" />
+                  <span class="text-xs font-bold">{{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="p-6 pt-12">
+              <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-1">
+                {{ t('app.bundle') || 'Готовая сборка' }}
+              </p>
+              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">{{ b.description }}</p>
+
+              <!-- Price -->
+              <div class="mb-6">
+                <div class="flex items-baseline gap-2">
+                  <span class="text-4xl font-bold text-gray-900 dark:text-white">
+                    {{ b.trialDays > 0 ? '0' : formatPrice(b.amountCents, b.currency) }}
+                  </span>
+                  <span class="text-lg text-gray-500 dark:text-gray-400">
+                    / {{ selectedInterval === 'monthly' ? (t('app.month') || 'мес') : (t('app.year') || 'год') }}
+                  </span>
+                </div>
+                <div v-if="b.trialDays > 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  {{ t('app.afterTrial') || 'После пробного периода' }}:
+                  <span class="font-semibold">{{ formatPrice(b.amountCents, b.currency) }}</span>
+                  / {{ selectedInterval === 'monthly' ? (t('app.month') || 'мес') : (t('app.year') || 'год') }}
+                </div>
+              </div>
+
+              <!-- Included apps -->
+              <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                  {{ t('app.bundleContains') || 'Входит' }}
+                </p>
+                <div
+                  v-for="it in b.items"
+                  :key="it.applicationCode + it.planCode"
+                  class="flex items-start gap-3"
+                >
+                  <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                    <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                  </div>
+                  <span class="text-sm text-gray-700 dark:text-gray-300">
+                    <span class="font-semibold">{{ appLabel(it.applicationCode) }}</span>
+                    <span v-if="it.planName" class="text-gray-500 dark:text-gray-400"> · {{ it.planName }}</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- CTA -->
+              <UButton
+                v-if="!isActive(b)"
+                block
+                size="lg"
+                color="primary"
+                :disabled="activatingCode !== null"
+                class="font-semibold"
+                @click="subscribe(b)"
+              >
+                <template v-if="activatingCode === b.code">
+                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                  {{ t('app.connecting') || 'Подключаем...' }}
+                </template>
+                <template v-else>
+                  {{ t('app.connectBundle') || 'Подключить сборку' }}
+                </template>
+              </UButton>
+              <div
+                v-else
+                class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+              >
+                <div class="flex items-center justify-center gap-2">
+                  <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
+                  <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
     </div>
   </div>
 </template>

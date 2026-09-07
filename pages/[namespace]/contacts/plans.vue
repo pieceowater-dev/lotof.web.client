@@ -344,7 +344,7 @@ watch([plans, activeSubscription], () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <ContactSupportBanner class="mb-8" />
 
-      <BillingBundlesForApp application-code="pieceowater.contacts" :namespace="nsSlug" />
+      <BillingBundlesForApp application-code="pieceowater.contacts" :namespace="nsSlug" :interval="selectedInterval" />
 
       <!-- Interval Toggle -->
       <div class="flex justify-center mb-8">

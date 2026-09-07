@@ -676,6 +676,7 @@
     "bundleConnectedForNs": "Подключено для {ns}",
     "bundleActivateFailed": "Не удалось подключить сборку",
     "noBundlesYet": "Готовых сборок пока нет",
+    "noBundlesForInterval": "Сборок с таким периодом нет",
     "afterTrial": "После пробного периода",
     "daysFreeTrial": "дней бесплатного пробного периода",
     "freeForever": "Бесплатно навсегда",

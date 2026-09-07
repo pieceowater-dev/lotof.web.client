@@ -12,12 +12,13 @@ import {
   type Bundle,
 } from '@/api/capital/bundles';
 
-// Shows the bundles that include this application, above the app's own
-// point plans. A bundle is one priced offer covering several apps; subscribing
-// to it activates a per-app subscription for every app it contains.
+// Bundles that include this application, shown above the app's own point plans
+// on the /plans screen -- same card style, and it follows the page's own
+// monthly/yearly toggle via the `interval` prop.
 const props = defineProps<{
   applicationCode: string; // e.g. "pieceowater.atrace"
   namespace: string;
+  interval?: 'monthly' | 'yearly';
 }>();
 
 const emit = defineEmits<{ (e: 'activated'): void }>();
@@ -49,7 +50,10 @@ function isActive(b: Bundle): boolean {
   return activeCodes.value.includes(b.code);
 }
 
-const visibleBundles = computed(() => bundles.value.filter((b) => b.status !== 'ARCHIVED'));
+const wantInterval = computed(() => (props.interval === 'yearly' ? 'YEAR' : 'MONTH'));
+const visibleBundles = computed(() =>
+  bundles.value.filter((b) => b.status !== 'ARCHIVED' && b.interval === wantInterval.value)
+);
 
 async function load() {
   loading.value = true;
@@ -120,77 +124,97 @@ onMounted(load);
 
 <template>
   <section v-if="!loading && visibleBundles.length" class="mb-10">
-    <div class="mb-4 flex items-center gap-2">
+    <div class="mb-5 flex items-center gap-2">
       <UIcon name="lucide:layers" class="h-5 w-5 text-primary-600 dark:text-primary-300" />
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
         {{ t('app.bundlesForThisApp') || 'Готовые сборки с этим приложением' }}
       </h2>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
       <div
         v-for="b in visibleBundles"
         :key="b.id"
-        class="relative rounded-2xl border-2 border-primary-200 dark:border-primary-800 bg-primary-50/40 dark:bg-primary-900/10 p-5"
+        class="relative bg-white dark:bg-gray-800 rounded-2xl border border-primary-200 dark:border-primary-800 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
       >
-        <div
-          v-if="b.trialDays > 0"
-          class="absolute right-0 top-0 rounded-bl-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white"
-        >
-          {{ b.trialDays }} {{ t('app.daysTrial') || 'дн. триал' }}
+        <div v-if="b.trialDays > 0" class="absolute top-0 right-0">
+          <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
+            <div class="flex items-center gap-1.5">
+              <UIcon name="i-heroicons-gift" class="w-4 h-4" />
+              <span class="text-xs font-bold">{{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}</span>
+            </div>
+          </div>
         </div>
 
-        <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-300">
-          {{ t('app.bundle') || 'Готовая сборка' }}
-        </p>
-        <h3 class="mt-1 text-lg font-bold text-gray-900 dark:text-white">{{ b.name }}</h3>
-        <p v-if="b.description" class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ b.description }}</p>
-
-        <div class="mt-3 flex items-baseline gap-1.5">
-          <span class="text-3xl font-bold text-gray-900 dark:text-white">
-            {{ b.trialDays > 0 ? '0' : formatPrice(b.amountCents, b.currency) }}
-          </span>
-          <span class="text-sm text-gray-500 dark:text-gray-400">
-            / {{ b.interval === 'YEAR' ? (t('app.year') || 'год') : (t('app.month') || 'мес') }}
-          </span>
-        </div>
-
-        <div class="mt-3 border-t border-primary-100 dark:border-primary-800/60 pt-3">
-          <p class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            {{ t('app.bundleContains') || 'Входит' }}
+        <div class="p-6 pt-12">
+          <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-1">
+            {{ t('app.bundle') || 'Готовая сборка' }}
           </p>
-          <ul class="space-y-1">
-            <li
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">{{ b.description }}</p>
+
+          <div class="mb-6">
+            <div class="flex items-baseline gap-2">
+              <span class="text-4xl font-bold text-gray-900 dark:text-white">
+                {{ b.trialDays > 0 ? '0' : formatPrice(b.amountCents, b.currency) }}
+              </span>
+              <span class="text-lg text-gray-500 dark:text-gray-400">
+                / {{ b.interval === 'YEAR' ? (t('app.year') || 'год') : (t('app.month') || 'мес') }}
+              </span>
+            </div>
+            <div v-if="b.trialDays > 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              {{ t('app.afterTrial') || 'После пробного периода' }}:
+              <span class="font-semibold">{{ formatPrice(b.amountCents, b.currency) }}</span>
+              / {{ b.interval === 'YEAR' ? (t('app.year') || 'год') : (t('app.month') || 'мес') }}
+            </div>
+          </div>
+
+          <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {{ t('app.bundleContains') || 'Входит' }}
+            </p>
+            <div
               v-for="it in b.items"
               :key="it.applicationCode + it.planCode"
-              class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300"
+              class="flex items-start gap-3"
             >
-              <UIcon name="lucide:check" class="h-3.5 w-3.5 text-primary-600 dark:text-primary-400" />
-              <span class="font-medium">{{ appLabel(it.applicationCode) }}</span>
-              <span v-if="it.planName" class="text-gray-500 dark:text-gray-400">· {{ it.planName }}</span>
-            </li>
-          </ul>
-        </div>
+              <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
+                <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+              </div>
+              <span class="text-sm text-gray-700 dark:text-gray-300">
+                <span class="font-semibold">{{ appLabel(it.applicationCode) }}</span>
+                <span v-if="it.planName" class="text-gray-500 dark:text-gray-400"> · {{ it.planName }}</span>
+              </span>
+            </div>
+          </div>
 
-        <div
-          v-if="isActive(b)"
-          class="mt-4 w-full rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 py-3 text-center font-bold text-white"
-        >
-          <UIcon name="i-heroicons-check-circle" class="mr-1 inline h-5 w-5" />
-          {{ t('app.activePlan') || 'Подключено!' }}
+          <UButton
+            v-if="!isActive(b)"
+            block
+            size="lg"
+            color="primary"
+            :disabled="activatingCode !== null"
+            class="font-semibold"
+            @click="subscribe(b)"
+          >
+            <template v-if="activatingCode === b.code">
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+              {{ t('app.connecting') || 'Подключаем...' }}
+            </template>
+            <template v-else>
+              {{ t('app.connectBundle') || 'Подключить сборку' }}
+            </template>
+          </UButton>
+          <div
+            v-else
+            class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+          >
+            <div class="flex items-center justify-center gap-2">
+              <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
+              <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
+            </div>
+          </div>
         </div>
-        <UButton
-          v-else
-          block
-          size="lg"
-          color="primary"
-          class="mt-4 font-semibold"
-          :loading="activatingCode === b.code"
-          :disabled="activatingCode !== null"
-          @click="subscribe(b)"
-        >
-          {{ t('app.connectBundle') || 'Подключить сборку' }}
-        </UButton>
       </div>
     </div>
   </section>

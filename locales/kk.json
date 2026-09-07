@@ -627,6 +627,7 @@
     "bundleConnectedForNs": "{ns} үшін қосылды",
     "bundleActivateFailed": "Бандлды қосу мүмкін болмады",
     "noBundlesYet": "Әзірге бандлдар жоқ",
+    "noBundlesForInterval": "Бұл кезеңге бандлдар жоқ",
     "afterTrial": "Сынақ мерзімінен кейін",
     "daysFreeTrial": "күндік тегін сынақ",
     "freeForever": "Әрқашан тегін",
