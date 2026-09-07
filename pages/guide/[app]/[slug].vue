@@ -43,7 +43,8 @@ const { t, locale } = useI18n();
 
 // Host the visitor is actually on -- legal docs carry a `{{site}}` token so
 // the rendered policy names lota.tools / lota.kz / a mirror, not a literal.
-const currentHost = useRequestURL().host;
+// xForwardedHost so a cluster ingress hop doesn't collapse it to localhost.
+const currentHost = useRequestURL({ xForwardedHost: true }).host;
 
 const appParam = computed(() => String(route.params.app || '').toLowerCase());
 const app = computed(() => guideAppFromParam(appParam.value));

@@ -300,7 +300,13 @@ export default defineNuxtConfig({
     },
     prerender: {
       crawlLinks: isProduction,
-      routes: ['/', '/feed']
+      routes: ['/', '/feed'],
+      // Everything reachable from the footer that renders live backend data
+      // must NOT be baked at build time: guide/legal docs are CMS content
+      // (the capital seeder rewrites them on deploy) and also depend on the
+      // request host for their {{site}} token; the catalog family pulls the
+      // aggregation service. Keep these server-rendered per request.
+      ignore: ['/guide', '/catalog', '/stores', '/services', '/news']
     },
     compressPublicAssets: true,
     routeRules: {

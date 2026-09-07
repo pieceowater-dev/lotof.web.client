@@ -182,7 +182,7 @@ const isOpen = defineModel<boolean>({ default: false });
 const { t, locale } = useI18n();
 // Legal docs embed a `{{site}}` token so the rendered text names the host
 // the visitor is on (lota.tools / lota.kz / a mirror).
-const currentHost = import.meta.client ? window.location.host : useRequestURL().host;
+const currentHost = import.meta.client ? window.location.host : useRequestURL({ xForwardedHost: true }).host;
 const { currentTour, currentAppName, currentGuideApp } = useGuideContext();
 const { startTour, reset } = useOnboarding();
 

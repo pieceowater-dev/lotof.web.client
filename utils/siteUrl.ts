@@ -36,6 +36,12 @@ export function resolveSiteHost(raw?: unknown): string {
  * (`useRequestURL().host`); a blank one falls back to the configured site.
  */
 export function fillSiteHost(text: string, host?: string | null): string {
-  const clean = (typeof host === 'string' ? host.trim() : '') || resolveSiteHost();
+  let clean = typeof host === 'string' ? host.trim().toLowerCase() : '';
+  // A prerender / build context has no real request host (`localhost`, an
+  // IP, or empty) -- fall back to the configured public site so a baked
+  // page never shows "localhost" as the operator's domain.
+  if (!clean || clean.startsWith('localhost') || clean.startsWith('127.0.0.1') || clean === '0.0.0.0') {
+    clean = resolveSiteHost();
+  }
   return text.replace(/\{\{\s*site\s*\}\}/g, clean);
 }
