@@ -837,6 +837,21 @@ watch(user, (u) => {
                 </div>
               </button>
             </div>
+
+            <NuxtLink
+              to="/ns/bundles"
+              class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-gray-800/70 px-4 py-3 transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
+            >
+              <span class="flex items-center gap-3">
+                <span class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
+                  <UIcon name="lucide:layers" class="w-5 h-5" />
+                </span>
+                <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  {{ t('app.bundles') || 'Бандлы' }}
+                </span>
+              </span>
+              <UIcon name="lucide:arrow-right" class="w-4 h-4 text-blue-500 dark:text-blue-400" />
+            </NuxtLink>
           </div>
         </div>
 

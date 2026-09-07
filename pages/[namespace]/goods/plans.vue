@@ -296,6 +296,8 @@ watch([plans, activeSubscription], () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <ContactSupportBanner class="mb-8" />
 
+      <BillingBundlesForApp application-code="pieceowater.goods" :namespace="nsSlug" />
+
       <div class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
           <button

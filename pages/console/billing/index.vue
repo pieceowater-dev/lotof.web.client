@@ -7,7 +7,15 @@
     >
       <template v-if="activeTab === 'plans' || activeTab === 'subscriptions'" #actions>
         <button
-          v-if="activeTab === 'plans'"
+          v-if="activeTab === 'plans' && isBundlesView"
+          class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
+          @click="openCreateBundle"
+        >
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span>{{ t('admin.newBundle') || 'Новый бандл' }}</span>
+        </button>
+        <button
+          v-if="activeTab === 'plans' && !isBundlesView"
           class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30"
           @click="openCreatePlan"
         >
@@ -70,6 +78,7 @@
             {{ t('admin.plans') }}
           </button>
           <button
+            v-if="!isBundlesView"
             @click="activeTab = 'accounts'"
             :class="[
               'px-4 py-2 font-semibold transition-all duration-200',
@@ -81,6 +90,7 @@
             {{ t('admin.accounts') }}
           </button>
           <button
+            v-if="!isBundlesView"
             @click="activeTab = 'subscriptions'"
             :class="[
               'px-4 py-2 font-semibold transition-all duration-200',
@@ -92,6 +102,7 @@
             {{ t('admin.subscriptions') }}
           </button>
           <button
+            v-if="!isBundlesView"
             @click="activeTab = 'invoices'"
             :class="[
               'px-4 py-2 font-semibold transition-all duration-200',
@@ -179,17 +190,103 @@
 
         <!-- Plans Tab -->
         <div v-show="activeTab === 'plans'">
-          <div class="mb-4 flex items-center justify-between">
+          <!-- Bundles management (first card = bundle, then per-app point plans) -->
+          <div v-if="isBundlesView">
+            <div class="mb-4 flex items-center justify-between">
+              <h3 class="text-lg font-bold text-slate-900 dark:text-white">
+                {{ t('admin.bundles') || 'Бандлы' }}
+              </h3>
+            </div>
+
+            <div v-if="bundlesLoading" class="flex justify-center py-12">
+              <Icon name="svg-spinners:ring-resize" class="h-8 w-8 text-blue-600" />
+            </div>
+
+            <div
+              v-else-if="!groupedBundles.length"
+              class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+            >
+              {{ t('admin.noBundleCreated') || 'Бандлов пока нет' }}
+            </div>
+
+            <div v-else class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div
+                v-for="group in groupedBundles"
+                :key="group.name"
+                class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+              >
+                <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ group.name }}</h4>
+                <p v-if="group.rows[0].description" class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ group.rows[0].description }}</p>
+
+                <div class="mt-3 rounded-lg border border-slate-100 p-3 dark:border-slate-800">
+                  <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ t('admin.bundleIncludes') || 'Входит' }}</p>
+                  <ul class="space-y-1">
+                    <li
+                      v-for="it in group.rows[0].items"
+                      :key="it.applicationCode + it.planCode"
+                      class="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300"
+                    >
+                      <Icon name="lucide:check" class="h-3 w-3 text-blue-600" />
+                      <span class="font-medium">{{ appTitle(it.applicationCode) }}</span>
+                      <span v-if="it.planName" class="text-slate-400">· {{ it.planName }}</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div class="mt-4 space-y-3">
+                  <div
+                    v-for="b in group.rows"
+                    :key="b.id"
+                    class="rounded-lg border border-slate-100 p-3 dark:border-slate-800"
+                    :class="b.status === 'ARCHIVED' ? 'opacity-50' : ''"
+                  >
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="text-xl font-bold text-slate-900 dark:text-white">
+                        {{ (b.amountCents / 100).toFixed(0) }} {{ b.currency }}
+                        <span class="text-xs font-normal text-slate-500">/{{ t(`admin.interval.${b.interval.toLowerCase()}`) }}</span>
+                      </div>
+                      <span
+                        v-if="b.status === 'ARCHIVED'"
+                        class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      >{{ t('admin.archived') }}</span>
+                    </div>
+                    <div class="mt-2 flex flex-col gap-2">
+                      <span class="break-all font-mono text-[11px] text-slate-400">{{ b.code }}</span>
+                      <div class="flex items-center gap-1.5">
+                        <button
+                          class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          @click="openEditBundle(b)"
+                        >
+                          <Icon name="lucide:pencil" class="h-3 w-3" />
+                          {{ t('admin.edit') }}
+                        </button>
+                        <button
+                          v-if="b.status !== 'ARCHIVED'"
+                          class="flex items-center gap-1 rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                          @click="onArchiveBundle(b)"
+                        >
+                          <Icon name="lucide:archive" class="h-3 w-3" />
+                          {{ t('admin.archive') }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="mb-4 flex items-center justify-between">
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">
               {{ t('admin.pricingPlans') }} · {{ selectedProjectTitle }}
             </h3>
           </div>
 
-          <div v-if="!selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+          <div v-if="!isBundlesView && !selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
             {{ t('admin.noPlanCreated') }}
           </div>
 
-          <div v-else class="grid gap-6 md:grid-cols-3">
+          <div v-else-if="!isBundlesView" class="grid gap-6 md:grid-cols-3">
             <div
               v-for="group in groupedProjectPlans"
               :key="group.name"
@@ -389,6 +486,15 @@
     @close="closeCashPaymentModal"
     @submit="submitCashPaymentModal"
   />
+  <ConsoleBillingBundleModal
+    v-model:bundle-modal="bundleModal"
+    v-model:bundle-form="bundleForm"
+    :apps="bundleApps"
+    :tier-options-by-app="tierOptionsByApp"
+    :generated-code-prefix="bundleGeneratedCodePrefix"
+    @close="closeBundleModal"
+    @submit="submitBundleModal"
+  />
 </div> <!-- End min-h-screen -->
 </template>
 
@@ -397,6 +503,7 @@ import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { capitalGetAdminBillingInfo, capitalGetAllAdminPlans, capitalCreatePlan, capitalUpdatePlan, capitalArchivePlan, capitalConfirmCashPayment, capitalCancelSubscription, type AdminBillingInfo } from '@/api/capital/admin';
+import { capitalAdminListBundles, capitalCreateBundle, capitalUpdateBundle, capitalArchiveBundle, type Bundle } from '@/api/capital/bundles';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
@@ -412,6 +519,8 @@ const loading = ref(true);
 const billingData = ref<AdminBillingInfo | null>(null);
 
 const projects = [
+  // "Бандлы" first: multi-app offers live above the per-app point plans.
+  { id: 'bundles', appCode: '', title: 'Бандлы', icon: 'lucide:layers' },
   { id: 'atrace', appCode: 'pieceowater.atrace', title: 'Lota A-Trace', icon: 'lucide:scan-line' },
   { id: 'contacts', appCode: 'pieceowater.contacts', title: 'Lota Contacts', icon: 'lucide:users-round' },
   { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' },
@@ -492,14 +601,257 @@ function resolvePlanDescription(plan: { description?: string | null; code: strin
   return t('app.' + raw) || raw;
 }
 
+// ─── Bundles (multi-application offers) ────────────────────────────────────
+const isBundlesView = computed(() => selectedProject.value === 'bundles');
+const bundles = ref<Bundle[]>([]);
+const bundlesLoading = ref(false);
+
+// The real apps a bundle can include -- every project chip except "bundles".
+const bundleApps = computed(() =>
+  projects.filter(p => p.id !== 'bundles').map(p => ({ appCode: p.appCode, title: p.title, icon: p.icon }))
+);
+
+// tier name -> shown per app in the modal; a "tier" is a plan-name group
+// (same grouping as groupedProjectPlans), resolved to concrete -monthly /
+// -yearly plan codes on submit.
+const tierOptionsByApp = computed(() => {
+  const out: Record<string, string[]> = {};
+  for (const app of bundleApps.value) {
+    const names = new Set<string>();
+    for (const p of allPlans.value) {
+      if (p.applicationCode === app.appCode && p.status !== 'PLAN_ARCHIVED') names.add(p.name);
+    }
+    out[app.appCode] = Array.from(names);
+  }
+  return out;
+});
+
+const bundleModal = reactive({
+  open: false,
+  mode: 'create' as 'create' | 'edit',
+  id: null as string | null,
+  interval: 'MONTH' as 'MONTH' | 'YEAR',
+  saving: false,
+  error: '',
+});
+const bundleForm = reactive({
+  name: '',
+  description: '',
+  currency: 'KZT',
+  trialDays: 0,
+  monthlyPrice: 0,
+  yearlyPrice: 0,
+  tiers: {} as Record<string, string>,
+});
+
+const bundleGeneratedCodePrefix = computed(() => `kz.bundle.${slugifyPlanName(bundleForm.name)}`);
+
+// A bundle row comes back grouped by name (a monthly + a yearly row), like plans.
+const groupedBundles = computed(() => {
+  const groups = new Map<string, Bundle[]>();
+  for (const b of bundles.value) {
+    if (!groups.has(b.name)) groups.set(b.name, []);
+    groups.get(b.name)!.push(b);
+  }
+  return Array.from(groups.entries()).map(([name, rows]) => ({
+    name,
+    rows: [...rows].sort((a, b) => (a.interval === b.interval ? 0 : a.interval === 'MONTH' ? -1 : 1)),
+  }));
+});
+
+async function refreshBundles() {
+  if (!token.value) return;
+  bundlesLoading.value = true;
+  try {
+    bundles.value = await capitalAdminListBundles(token.value);
+  } catch (e) {
+    console.error('[billing] failed to load bundles', e);
+    toast.add({ title: t('admin.bundleLoadFailed') || 'Не удалось загрузить бандлы', color: 'red' });
+  } finally {
+    bundlesLoading.value = false;
+  }
+}
+
+function appTitle(appCode: string): string {
+  return bundleApps.value.find(a => a.appCode === appCode)?.title || appCode;
+}
+
+function planCodeFor(appCode: string, tierName: string, interval: 'MONTH' | 'YEAR'): string | null {
+  const p = allPlans.value.find(
+    x => x.applicationCode === appCode && x.name === tierName && x.interval === interval && x.status !== 'PLAN_ARCHIVED'
+  );
+  return p ? p.code : null;
+}
+
+function openCreateBundle() {
+  bundleModal.mode = 'create';
+  bundleModal.id = null;
+  bundleModal.interval = 'MONTH';
+  bundleModal.error = '';
+  bundleForm.name = '';
+  bundleForm.description = '';
+  bundleForm.currency = 'KZT';
+  bundleForm.trialDays = 0;
+  bundleForm.monthlyPrice = 0;
+  bundleForm.yearlyPrice = 0;
+  bundleForm.tiers = {};
+  bundleModal.open = true;
+}
+
+function openEditBundle(b: Bundle) {
+  bundleModal.mode = 'edit';
+  bundleModal.id = b.id;
+  bundleModal.interval = b.interval;
+  bundleModal.error = '';
+  bundleForm.name = b.name;
+  bundleForm.description = b.description || '';
+  bundleForm.currency = b.currency;
+  bundleForm.trialDays = b.trialDays;
+  bundleForm.monthlyPrice = b.interval === 'MONTH' ? b.amountCents / 100 : 0;
+  bundleForm.yearlyPrice = b.interval === 'YEAR' ? b.amountCents / 100 : 0;
+  // Reverse-map member plan codes back to their tier name for the picker.
+  const tiers: Record<string, string> = {};
+  for (const it of b.items) {
+    const plan = allPlans.value.find(p => p.code === it.planCode);
+    tiers[it.applicationCode] = plan ? plan.name : '';
+  }
+  bundleForm.tiers = tiers;
+  bundleModal.open = true;
+}
+
+function closeBundleModal() {
+  if (bundleModal.saving) return;
+  bundleModal.open = false;
+}
+
+function collectBundleItems(interval: 'MONTH' | 'YEAR'): { items: Array<{ applicationCode: string; planCode: string }>; missing: string[] } {
+  const items: Array<{ applicationCode: string; planCode: string }> = [];
+  const missing: string[] = [];
+  for (const [appCode, tierName] of Object.entries(bundleForm.tiers)) {
+    if (!tierName) continue;
+    const code = planCodeFor(appCode, tierName, interval);
+    if (!code) {
+      missing.push(`${appTitle(appCode)} · ${tierName} (${interval === 'MONTH' ? 'monthly' : 'yearly'})`);
+      continue;
+    }
+    items.push({ applicationCode: appCode, planCode: code });
+  }
+  return { items, missing };
+}
+
+async function submitBundleModal() {
+  if (!token.value) return;
+  bundleModal.error = '';
+  if (!bundleForm.name.trim()) {
+    bundleModal.error = t('admin.bundleNameRequired') || 'Введите название бандла';
+    return;
+  }
+  const chosen = Object.values(bundleForm.tiers).filter(Boolean);
+  if (chosen.length < 2) {
+    bundleModal.error = t('admin.bundleNeedsTwoApps') || 'Выберите минимум два приложения с тарифами';
+    return;
+  }
+
+  bundleModal.saving = true;
+  try {
+    if (bundleModal.mode === 'create') {
+      const prefix = bundleGeneratedCodePrefix.value;
+      const monthly = collectBundleItems('MONTH');
+      const yearly = collectBundleItems('YEAR');
+      if (monthly.missing.length || yearly.missing.length) {
+        bundleModal.error = (t('admin.bundleMissingPlans') || 'Нет тарифов для') + ': ' + [...monthly.missing, ...yearly.missing].join(', ');
+        return;
+      }
+      const created: any = await capitalCreateBundle(token.value, {
+        code: `${prefix}-monthly`,
+        name: bundleForm.name.trim(),
+        description: bundleForm.description.trim() || undefined,
+        currency: bundleForm.currency.trim().toUpperCase(),
+        interval: 'MONTH',
+        amountCents: Math.round(bundleForm.monthlyPrice * 100),
+        trialDays: bundleForm.trialDays || 0,
+        items: monthly.items,
+      });
+      try {
+        await capitalCreateBundle(token.value, {
+          code: `${prefix}-yearly`,
+          name: bundleForm.name.trim(),
+          description: bundleForm.description.trim() || undefined,
+          currency: bundleForm.currency.trim().toUpperCase(),
+          interval: 'YEAR',
+          amountCents: Math.round(bundleForm.yearlyPrice * 100),
+          trialDays: bundleForm.trialDays || 0,
+          items: yearly.items,
+        });
+      } catch (yearlyErr: any) {
+        if (created?.id) {
+          try { await capitalArchiveBundle(token.value, created.id); } catch { /* leave orphan for manual cleanup */ }
+        }
+        throw yearlyErr;
+      }
+      toast.add({ title: t('admin.bundleCreated') || 'Бандл создан', color: 'green' });
+    } else if (bundleModal.id) {
+      const { items, missing } = collectBundleItems(bundleModal.interval);
+      if (missing.length) {
+        bundleModal.error = (t('admin.bundleMissingPlans') || 'Нет тарифов для') + ': ' + missing.join(', ');
+        return;
+      }
+      const price = bundleModal.interval === 'MONTH' ? bundleForm.monthlyPrice : bundleForm.yearlyPrice;
+      await capitalUpdateBundle(token.value, bundleModal.id, {
+        name: bundleForm.name.trim(),
+        description: bundleForm.description.trim() || undefined,
+        amountCents: Math.round(price * 100),
+        trialDays: bundleForm.trialDays || 0,
+        items,
+        replaceItems: true,
+      });
+      toast.add({ title: t('admin.bundleUpdated') || 'Бандл обновлён', color: 'green' });
+    }
+    bundleModal.open = false;
+    await refreshBundles();
+  } catch (e: any) {
+    bundleModal.error = e?.message || (t('admin.bundleSaveFailed') || 'Не удалось сохранить бандл');
+  } finally {
+    bundleModal.saving = false;
+  }
+}
+
+async function onArchiveBundle(b: Bundle) {
+  if (!token.value) return;
+  const { confirm } = useConfirm();
+  const ok = await confirm({
+    title: t('admin.archiveBundleConfirmTitle') || 'Архивировать бандл?',
+    message: `«${b.name}» (${b.code})`,
+    confirmLabel: t('admin.archive') || 'Архивировать',
+    color: 'red',
+    icon: 'lucide:archive',
+  });
+  if (!ok) return;
+  try {
+    await capitalArchiveBundle(token.value, b.id);
+    toast.add({ title: t('admin.bundleArchived') || 'Бандл архивирован', color: 'green' });
+    await refreshBundles();
+  } catch (e: any) {
+    toast.add({ title: t('admin.bundleSaveFailed') || 'Не удалось архивировать бандл', description: e?.message, color: 'red' });
+  }
+}
+
 // Watch for project changes for automatic data refresh
 watch(selectedProject, () => {
+  if (isBundlesView.value) {
+    activeTab.value = 'plans';
+    refreshBundles();
+    return;
+  }
   refreshData();
 });
 
 async function refreshData() {
   if (!token.value) {
     console.warn('[billing] No auth token available in refreshData');
+    return;
+  }
+  if (isBundlesView.value) {
     return;
   }
   loading.value = true;
@@ -536,6 +888,7 @@ onMounted(async () => {
     capitalGetAllAdminPlans(token.value)
       .then((plans) => { allPlans.value = plans; })
       .catch((e) => console.error('[billing] Failed to fetch all-project plans', e));
+    refreshBundles();
   }
 });
 
