@@ -22,6 +22,7 @@ const products = [
   { to: '/menu', label: 'lota Orders' },
   { to: '/contacts', label: 'lota Contacts' },
   { to: '/atrace', label: 'lota A-Trace' },
+  { to: '/goods', label: 'lota Goods' },
 ];
 
 const resources = computed(() => [

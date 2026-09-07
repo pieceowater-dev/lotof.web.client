@@ -56,27 +56,25 @@ function dismiss() {
   >
     <div
       v-if="visible"
-      class="fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-safe-or-4"
+      class="fixed inset-x-0 bottom-0 z-50 flex justify-center px-2.5 pb-safe-or-4"
     >
       <div
-        class="pointer-events-auto flex w-full max-w-xl flex-col gap-2 rounded-xl border border-gray-200 bg-white/95 px-4 py-3 text-xs text-gray-500 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-400 sm:flex-row sm:items-center sm:gap-3"
+        class="pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-[11px] leading-snug text-gray-500 shadow-md backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-400"
       >
-        <p class="min-w-0 flex-1 leading-relaxed">
-          {{ t('legal.cookieNotice') || 'Мы используем только необходимые cookie для работы сервиса и обезличенную аналитику.' }}
+        <p class="min-w-0 flex-1">
+          {{ t('legal.cookieNotice') || 'Только необходимые cookie и обезличенная аналитика.' }}
           <NuxtLink
             to="/guide/global/cookies"
+            target="_blank"
+            rel="noopener noreferrer"
             class="whitespace-nowrap underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
           >
             {{ t('legal.cookieMore') || 'Подробнее' }}
           </NuxtLink>
         </p>
-        <button
-          type="button"
-          class="shrink-0 self-end rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-gray-700 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-200 sm:self-auto"
-          @click="dismiss"
-        >
+        <UButton size="xs" color="primary" variant="soft" class="flex-shrink-0" @click="dismiss">
           {{ t('legal.cookieAccept') || 'Хорошо' }}
-        </button>
+        </UButton>
       </div>
     </div>
   </Transition>

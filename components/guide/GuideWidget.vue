@@ -180,6 +180,9 @@ import type { GuideApp, GuideArticle, GuideArticleListItem, GuideCategory } from
 const isOpen = defineModel<boolean>({ default: false });
 
 const { t, locale } = useI18n();
+// Legal docs embed a `{{site}}` token so the rendered text names the host
+// the visitor is on (lota.tools / lota.kz / a mirror).
+const currentHost = import.meta.client ? window.location.host : useRequestURL().host;
 const { currentTour, currentAppName, currentGuideApp } = useGuideContext();
 const { startTour, reset } = useOnboarding();
 
@@ -207,7 +210,7 @@ function localeExcerpt(article: GuideArticleListItem): string {
 function localeContentHtml(article: GuideArticle): string {
   const suffix = localeSuffix();
   const raw = (article[`content${suffix}` as 'contentRu'] || article.contentRu || '') as string;
-  return renderMarkdownSafe(stripLeadingHeading(raw));
+  return renderMarkdownSafe(stripLeadingHeading(fillSiteHost(raw, currentHost)));
 }
 
 function appLabel(app: GuideApp): string {

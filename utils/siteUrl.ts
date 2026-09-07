@@ -27,3 +27,15 @@ export function resolveSiteUrl(raw?: unknown): string {
 export function resolveSiteHost(raw?: unknown): string {
   return resolveSiteUrl(raw).replace(/^https?:\/\//, '').replace(/\/+$/, '');
 }
+
+/**
+ * Substitutes the `{{site}}` token used inside lota Гид legal documents with
+ * the host the visitor is actually on (lota.tools, lota.kz, a future mirror),
+ * so a rendered policy always names the current domain rather than a
+ * hard-coded one. `host` should be the live request host
+ * (`useRequestURL().host`); a blank one falls back to the configured site.
+ */
+export function fillSiteHost(text: string, host?: string | null): string {
+  const clean = (typeof host === 'string' ? host.trim() : '') || resolveSiteHost();
+  return text.replace(/\{\{\s*site\s*\}\}/g, clean);
+}

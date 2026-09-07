@@ -41,6 +41,10 @@ import { renderMarkdownSafe, stripLeadingHeading } from '@/utils/renderMarkdown'
 const route = useRoute();
 const { t, locale } = useI18n();
 
+// Host the visitor is actually on -- legal docs carry a `{{site}}` token so
+// the rendered policy names lota.tools / lota.kz / a mirror, not a literal.
+const currentHost = useRequestURL().host;
+
 const appParam = computed(() => String(route.params.app || '').toLowerCase());
 const app = computed(() => guideAppFromParam(appParam.value));
 const slug = computed(() => String(route.params.slug || ''));
@@ -75,7 +79,7 @@ const localeContentHtml = computed(() => {
   if (!article.value) return '';
   const suffix = localeSuffix();
   const raw = (article.value[`content${suffix}` as 'contentRu'] || article.value.contentRu || '') as string;
-  return renderMarkdownSafe(stripLeadingHeading(raw));
+  return renderMarkdownSafe(stripLeadingHeading(fillSiteHost(raw, currentHost)));
 });
 
 const localeExcerpt = computed(() => {
