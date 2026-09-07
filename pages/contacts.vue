@@ -47,7 +47,7 @@ const steps = [
 ];
 
 const whoFor = [
-  t('landing.contacts.who1') || 'Малый бизнес',
+  t('landing.contacts.who1') || 'Бизнес',
   t('landing.contacts.who2') || 'Сфера услуг',
   t('landing.contacts.who3') || 'Салоны и клиники',
   t('landing.contacts.who4') || 'Отделы продаж',

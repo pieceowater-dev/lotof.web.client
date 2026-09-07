@@ -714,7 +714,7 @@
           }
         },
         "mini": {
-          "description": "Compact plan for small businesses",
+          "description": "Compact plan for businesses",
           "feature": {
             "max_employees": "Up to 5 active employees",
             "max_posts": "Up to 1 location"
@@ -2914,7 +2914,7 @@
     "linkCopied": "Ссылка скопирована"
   },
   "footer": {
-    "tagline": "Tools to run a small business: orders, attendance, tasks, customers, inventory and bookings.",
+    "tagline": "Tools to run a business: orders, attendance, tasks, customers, inventory and bookings.",
     "products": "Products",
     "resources": "Resources",
     "news": "News"

@@ -24,9 +24,19 @@ const route = useRoute();
 const router = useRouter();
 const toast = useToast();
 const { isLoggedIn, fetchUser, login } = useAuth();
-const { all: allNamespaces, setNamespace, titleBySlug, load: loadNamespaces } = useNamespace();
+const { all: allNamespaces, selected: globalNs, setNamespace, titleBySlug, load: loadNamespaces } = useNamespace();
 
 const ns = computed(() => String(route.params.namespace || ''));
+
+// Only switch the global selection to a namespace the user actually belongs to
+// -- otherwise a stray URL segment (e.g. the literal "/ns/bundles") would get
+// added to the namespace list and make the switcher appear for single-space users.
+function syncGlobalNs() {
+  if (ns.value && allNamespaces.value.includes(ns.value)) setNamespace(ns.value);
+}
+
+// Show the space switcher only when there's a real choice.
+const showNsSwitcher = computed(() => allNamespaces.value.filter(Boolean).length > 1);
 
 useSeoMeta({ title: () => t('app.bundles') || 'Готовые сборки', robotsNoindex: true });
 useHead({ titleTemplate: (s) => s ?? 'lota' });
@@ -160,7 +170,7 @@ async function subscribe(b: Bundle) {
 }
 
 watch(ns, () => {
-  setNamespace(ns.value);
+  syncGlobalNs();
   loadActive();
 });
 
@@ -171,8 +181,14 @@ onMounted(async () => {
     login(route.fullPath);
     return;
   }
-  if (ns.value) setNamespace(ns.value);
   await loadNamespaces().catch(() => {});
+  // Stray/typed URL segment that isn't one of the user's spaces -> bounce to
+  // their current one so the page always operates on a real namespace.
+  if (ns.value && allNamespaces.value.length && !allNamespaces.value.includes(ns.value) && globalNs.value) {
+    router.replace(`/${globalNs.value}/bundles`);
+    return;
+  }
+  syncGlobalNs();
   await loadBundles();
   await loadActive();
 });
@@ -203,7 +219,7 @@ onMounted(async () => {
       <ContactSupportBanner class="mb-8" />
 
       <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
-      <div v-if="allNamespaces.length > 1" class="mb-8">
+      <div v-if="showNsSwitcher" class="mb-8">
         <p class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
           {{ t('app.currentNamespace') || 'Выбранное пространство' }}
         </p>

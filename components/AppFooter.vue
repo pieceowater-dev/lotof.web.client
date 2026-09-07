@@ -60,7 +60,7 @@ const socials = [
             <span class="text-base font-semibold text-gray-900 dark:text-white">lota</span>
           </NuxtLink>
           <p class="mt-2 max-w-xs text-xs leading-relaxed text-gray-500 dark:text-gray-400">
-            {{ t('footer.tagline') || 'Инструменты для управления малым бизнесом: заказы, посещаемость, задачи, клиенты, склад и запись.' }}
+            {{ t('footer.tagline') || 'Инструменты для управления бизнесом: заказы, посещаемость, задачи, клиенты, склад и запись.' }}
           </p>
           <div class="mt-3 flex items-center gap-1">
             <UButton
