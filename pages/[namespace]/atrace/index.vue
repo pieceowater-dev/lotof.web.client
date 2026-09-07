@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
         class="text-left min-w-0"
         data-tour="atrace-title"
       >
-        <h1 class="text-xl sm:text-xl sm:text-2xl font-semibold">
+        <h1 class="text-xl sm:text-2xl font-semibold">
           {{ t('app.atraceTitle') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
