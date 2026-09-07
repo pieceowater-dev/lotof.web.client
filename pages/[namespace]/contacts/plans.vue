@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
@@ -569,6 +570,13 @@ watch([plans, activeSubscription], () => {
           </div>
         </div>
       </div>
+      <PlanComparisonTable
+        v-if="!loading && !error"
+        :plans="displayedPlans"
+        :active-plan-id="activeSubscription?.planId"
+        :currency="displayedPlans[0]?.currency"
+      />
+
 
       <!-- Empty State -->
       <div

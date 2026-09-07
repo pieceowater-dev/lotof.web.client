@@ -10,8 +10,11 @@ import {
   capitalListBundles,
   capitalGetActiveBundles,
   capitalActivateBundle,
+  capitalListPlans,
   type Bundle,
+  type CapitalPlan,
 } from '@/api/capital/bundles';
+import BundleComparisonTable from '@/components/billing/BundleComparisonTable.vue';
 
 // /{namespace}/bundles -- ready-made bundles (each covers several apps), scoped
 // to the namespace in the URL. Laid out like the per-app /plans screens: a
@@ -33,6 +36,8 @@ const activeCodes = ref<string[]>([]);
 const loading = ref(true);
 const activatingCode = ref<string | null>(null);
 const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
+// planCode -> per-app plan (for the comparison table's limit rows)
+const planLookup = ref<Record<string, CapitalPlan>>({});
 
 function hubToken(): string | null {
   return useCookie<string | null>('token', { path: '/' }).value;
@@ -72,12 +77,28 @@ async function loadBundles() {
   loading.value = true;
   try {
     bundles.value = await capitalListBundles(token);
+    void loadMemberPlans(token);
   } catch (e) {
     logError('[bundles] failed to list bundles', e);
     bundles.value = [];
   } finally {
     loading.value = false;
   }
+}
+
+// Pull the plans of every app referenced by a bundle so the comparison table
+// can show real limits. Best-effort -- the table just omits limit rows if this
+// fails.
+async function loadMemberPlans(token: string) {
+  const appCodes = Array.from(
+    new Set(bundles.value.flatMap((b) => b.items.map((it) => it.applicationCode)))
+  );
+  const lists = await Promise.all(
+    appCodes.map((c) => capitalListPlans(token, c).catch(() => [] as CapitalPlan[]))
+  );
+  const map: Record<string, CapitalPlan> = {};
+  for (const list of lists) for (const p of list) map[p.code] = p;
+  planLookup.value = map;
 }
 
 async function loadActive() {
@@ -336,6 +357,15 @@ onMounted(async () => {
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Comparison table -->
+        <div class="max-w-6xl mx-auto">
+          <BundleComparisonTable
+            :bundles="displayedBundles"
+            :plan-lookup="planLookup"
+            :active-codes="activeCodes"
+          />
         </div>
       </template>
     </div>

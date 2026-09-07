@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
@@ -460,6 +461,13 @@ watch([plans, activeSubscription], () => {
           </div>
         </div>
       </div>
+      <PlanComparisonTable
+        v-if="!loading && !error"
+        :plans="displayedPlans"
+        :active-plan-id="activeSubscription?.planId"
+        :currency="displayedPlans[0]?.currency"
+      />
+
 
       <div v-if="!loading && !error && displayedPlans.length === 0" class="text-center py-12">
         <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />

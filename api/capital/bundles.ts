@@ -68,6 +68,37 @@ export async function capitalListBundles(token: string, applicationCode?: string
   return res.bundles ?? [];
 }
 
+export type CapitalPlan = {
+  id: string;
+  code: string;
+  name: string;
+  interval: 'MONTH' | 'YEAR';
+  amountCents: number;
+  trialDays: number;
+  metadataJson?: string | null;
+};
+
+// capital `plans` is @auth -- usable from the hub-level bundles page (bundle
+// comparison table needs each member plan's limits).
+export async function capitalListPlans(token: string, applicationCode: string): Promise<CapitalPlan[]> {
+  setGlobalAuthToken(token);
+  const query = /* GraphQL */ `
+    query Plans($applicationCode: String!) {
+      plans(applicationCode: $applicationCode) {
+        id
+        code
+        name
+        interval
+        amountCents
+        trialDays
+        metadataJson
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ plans: CapitalPlan[] }>(query, { applicationCode });
+  return res.plans ?? [];
+}
+
 export async function capitalGetActiveBundles(token: string, namespace: string): Promise<string[]> {
   setGlobalAuthToken(token);
   const query = /* GraphQL */ `
