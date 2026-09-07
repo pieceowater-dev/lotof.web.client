@@ -86,6 +86,7 @@ function handleGetStarted() {
           </a>
         </div>
         <p class="mt-6 text-xs text-gray-400">{{ t('landing.freeTierHint') || 'Бесплатный тариф навсегда — карта не нужна' }}</p>
+        <LegalLinks context="login" class="mt-3" />
       </div>
     </section>
 

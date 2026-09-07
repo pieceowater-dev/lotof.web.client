@@ -386,6 +386,8 @@ onMounted(async () => {
             :active-codes="activeCodes"
           />
         </div>
+
+        <LegalLinks context="payment" class="mt-8" />
       </template>
     </div>
   </div>

@@ -82,6 +82,20 @@ export function usePatronAuth() {
   function logout() {
     token.value = null;
     me.value = null;
+    if (process.client) {
+      // HAS_PATRON_SESSION is what AppHeader checks before opportunistically
+      // calling /patron-auth/refresh on catalog pages -- leaving it set made
+      // a page reload silently sign the visitor back in.
+      try { localStorage.removeItem(LSKeys.HAS_PATRON_SESSION); } catch {}
+      // patron_refresh_token is httpOnly, so JS can't delete it -- the server
+      // has to expire it (and revoke it). Fire-and-forget: local state above
+      // is already cleared, this just stops the refresh-token from
+      // resurrecting the session on the next load.
+      void fetch(`${hubApiBase}/patron-auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      }).catch(() => {});
+    }
   }
 
   return { token, me, loading, isLoggedIn, fetchMe, refreshToken, login, logout };

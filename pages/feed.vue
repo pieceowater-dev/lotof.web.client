@@ -409,10 +409,6 @@ useSeoMeta({
     </div>
 
     </div>
-
-    <div class="m-4 mt-auto">
-      <AppFooter />
-    </div>
   </div>
 </template>
 

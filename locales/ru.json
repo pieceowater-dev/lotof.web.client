@@ -2451,7 +2451,7 @@
     "phone": "Телефон",
     "contactPerson": "Контактное лицо",
     "identity": "ИНН/Идентификатор",
-    "linkToContacts": "Связанный клиент в Contacts",
+    "linkToContacts": "Клиент в Contacts",
     "priceHistory": "История цен",
     "priceHistoryEmpty": "По этому товару ещё не было приёмок",
     "noSupplier": "Без поставщика",
@@ -2547,7 +2547,6 @@
     "integrations": "Интеграции",
     "contactsIntegration": "Интеграция с Contacts",
     "contactsIntegrationHint": "Позволяет искать клиентов из Contacts при добавлении поставщика и создавать юрлицо автоматически, если ничего не найдено. Требует подписки обеих сторон на приложение Contacts.",
-    "linkToContacts": "Клиент в Contacts",
     "linkToContactsSearchPlaceholder": "Поиск по названию, телефону или БИН/ИИН",
     "linkToContactsNotFound": "Ничего не найдено в Contacts.",
     "linkToContactsCreateHint": "Создать новое юрлицо в Contacts с этим названием?",
@@ -2946,5 +2945,24 @@
     "seoTitle": "SEO заголовок",
     "seoDescription": "SEO описание",
     "linkCopied": "Ссылка скопирована"
+  },
+  "footer": {
+    "tagline": "Инструменты для управления малым бизнесом: заказы, посещаемость, задачи, клиенты, склад и запись.",
+    "products": "Продукты",
+    "resources": "Ресурсы",
+    "news": "Новости"
+  },
+  "legal": {
+    "docsTitle": "Правовые документы",
+    "terms": "Пользовательское соглашение",
+    "offer": "Публичная оферта",
+    "privacy": "Политика конфиденциальности",
+    "personalData": "Обработка персональных данных",
+    "cookies": "Файлы cookie",
+    "agreeLogin": "Продолжая, вы соглашаетесь с",
+    "agreePayment": "Оформляя подписку, вы принимаете",
+    "cookieNotice": "Мы используем только необходимые cookie для входа и работы сервиса и обезличенную аналитику, чтобы делать lota лучше.",
+    "cookieAccept": "Хорошо",
+    "cookieMore": "Подробнее"
   }
 }

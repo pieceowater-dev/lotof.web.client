@@ -780,6 +780,7 @@ watch([articlesSearch, selectedArticleTag], () => {
             <span class="truncate">{{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : (t('app.hubRibbonCta') || 'Войти через Google') }}</span>
           </button>
         </div>
+        <LegalLinks v-if="!isLoggedIn" context="login" align="start" class="mt-2 px-1" />
       </div>
 
       <!-- Auto-rotating carousel: each slide owns its own light gradient.
@@ -1041,10 +1042,6 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
       </div>
 
-    </div>
-
-    <div class="m-4 mt-auto">
-      <AppFooter />
     </div>
   </div>
 </template>

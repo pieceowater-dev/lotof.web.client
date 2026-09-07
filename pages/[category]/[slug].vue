@@ -1275,9 +1275,6 @@ onBeforeUnmount(() => {
       />
     </section>
 
-    <div class="relative z-10 mx-auto mt-10 w-full max-w-[1280px]">
-      <LazyAppFooter />
-    </div>
   </main>
 </template>
 

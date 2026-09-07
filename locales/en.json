@@ -2912,5 +2912,24 @@
     "seoTitle": "SEO заголовок",
     "seoDescription": "SEO описание",
     "linkCopied": "Ссылка скопирована"
+  },
+  "footer": {
+    "tagline": "Tools to run a small business: orders, attendance, tasks, customers, inventory and bookings.",
+    "products": "Products",
+    "resources": "Resources",
+    "news": "News"
+  },
+  "legal": {
+    "docsTitle": "Legal",
+    "terms": "Terms of Use",
+    "offer": "Public Offer",
+    "privacy": "Privacy Policy",
+    "personalData": "Personal Data Processing",
+    "cookies": "Cookie Policy",
+    "agreeLogin": "By continuing, you agree to the",
+    "agreePayment": "By subscribing, you accept the",
+    "cookieNotice": "We use only the cookies needed to sign you in and run the service, plus anonymised analytics to improve lota.",
+    "cookieAccept": "Got it",
+    "cookieMore": "Learn more"
   }
 }

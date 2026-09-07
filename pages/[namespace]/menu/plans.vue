@@ -448,6 +448,8 @@ watch([plans, activeSubscription], () => {
           </div>
         </div>
       </div>
+      <LegalLinks context="payment" class="mt-8" />
+
       <PlanComparisonTable
         v-if="!loading && !error"
         :plans="displayedPlans"
