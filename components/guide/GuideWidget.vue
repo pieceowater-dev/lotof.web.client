@@ -183,7 +183,7 @@ const { t, locale } = useI18n();
 // Legal docs embed a `{{site}}` token so the rendered text names the host
 // the visitor is on (lota.tools / lota.kz / a mirror).
 const currentHost = import.meta.client ? window.location.host : useRequestURL({ xForwardedHost: true }).host;
-const { currentTour, currentAppName, currentGuideApp } = useGuideContext();
+const { currentAppId, currentTour, currentAppName, currentGuideApp } = useGuideContext();
 const { startTour, reset } = useOnboarding();
 
 function localeSuffix(): 'Ru' | 'Kk' | 'En' {
@@ -231,7 +231,11 @@ const browsableApps = computed(() => GUIDE_APP_IDS.map((id) => {
     guideApp: GUIDE_APP_BY_ID[id],
     label: app ? t(app.titleKey) : id,
     icon: app?.icon || 'lucide:layout-grid',
-    isCurrent: GUIDE_APP_BY_ID[id] === currentGuideApp.value,
+    // Compare the concrete app id, not the mapped GuideApp: Goods maps to
+    // GLOBAL (it has no dedicated GuideApp), so `=== currentGuideApp` marked
+    // Goods "current" on every non-app page (/hub, /, guide) where
+    // currentGuideApp falls back to GLOBAL.
+    isCurrent: id === currentAppId.value,
   };
 }));
 
