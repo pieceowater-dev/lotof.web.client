@@ -216,6 +216,36 @@ onMounted(async () => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="visibleBundles.length" class="flex justify-center mb-8">
+        <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+          <button
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'monthly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+            @click="selectedInterval = 'monthly'"
+          >
+            {{ t('app.monthly') || 'Помесячно' }}
+          </button>
+          <button
+            :class="[
+              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
+              selectedInterval === 'yearly'
+                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
+                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+            ]"
+            @click="selectedInterval = 'yearly'"
+          >
+            <span>{{ t('app.yearly') || 'Годовая' }}</span>
+            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+              <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
+              {{ t('app.bestPrice') || 'Выгодно' }}
+            </span>
+          </button>
+        </div>
+      </div>
       <ContactSupportBanner class="mb-8" />
 
       <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
@@ -259,37 +289,6 @@ onMounted(async () => {
       </div>
 
       <template v-else>
-        <!-- Interval Toggle -->
-        <div v-if="visibleBundles.length" class="flex justify-center mb-8">
-          <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
-            <button
-              :class="[
-                'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-                selectedInterval === 'monthly'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              ]"
-              @click="selectedInterval = 'monthly'"
-            >
-              {{ t('app.monthly') || 'Помесячно' }}
-            </button>
-            <button
-              :class="[
-                'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-                selectedInterval === 'yearly'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-              ]"
-              @click="selectedInterval = 'yearly'"
-            >
-              <span>{{ t('app.yearly') || 'Годовая' }}</span>
-              <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
-                <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
-                {{ t('app.bestPrice') || 'Выгодно' }}
-              </span>
-            </button>
-          </div>
-        </div>
 
         <!-- Empty -->
         <div
@@ -385,15 +384,17 @@ onMounted(async () => {
                   {{ t('app.connectBundle') || 'Подключить сборку' }}
                 </template>
               </UButton>
-              <div
+              <UButton
                 v-else
-                class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+                block
+                size="lg"
+                color="emerald"
+                variant="solid"
+                icon="i-heroicons-check-circle"
+                class="pointer-events-none font-semibold"
               >
-                <div class="flex items-center justify-center gap-2">
-                  <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
-                  <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
-                </div>
-              </div>
+                {{ t('app.activePlan') || 'Подключено!' }}
+              </UButton>
             </div>
           </div>
         </div>

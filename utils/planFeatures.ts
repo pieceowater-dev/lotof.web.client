@@ -29,10 +29,28 @@ export function parsePlanFeatures(metadataJson?: string | null): PlanFeature[] {
   return [];
 }
 
-export function planFeatureLabel(f: PlanFeature, t: (k: string, ...a: any[]) => string): string {
+function humanizeKey(key: string): string {
+  const s = key.replace(/^max_/, '').replace(/_/g, ' ').trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : key;
+}
+
+// Label for a single feature row on a plan card / comparison table.
+// Resolution order (metadata `label` is unreliable -- some seeded plans store
+// a namespaced key that has no translation, e.g.
+// "pieceowater.issues.start.feature.max_boards"):
+//   1. app.planFeature.<key>  -- localised template with "{value}" baked in
+//   2. a real (non-namespaced) label from metadata -> "<label>: <value>"
+//   3. humanised key          -> "Boards: <value>"
+export function planFeatureLabel(f: PlanFeature, t: (k: string, params?: Record<string, string | number>) => string): string {
+  const byKey = t('app.planFeature.' + f.key, { value: f.value as string | number });
+  if (byKey) return byKey;
+
   const raw = (f.label || '').trim();
-  if (raw) return t('app.' + raw) || raw;
-  return f.key;
+  if (raw && !raw.includes('.')) {
+    const l = t('app.' + raw);
+    return `${l || raw}: ${f.value}`;
+  }
+  return `${humanizeKey(f.key)}: ${f.value}`;
 }
 
 // Stable display order + de-dup for a set of feature keys drawn from several

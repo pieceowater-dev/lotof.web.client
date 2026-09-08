@@ -604,7 +604,20 @@
     "planFeature": {
       "max_clients": "{value} клиентке дейін",
       "max_custom_fields": "{value} қолданушы өрісіне дейін",
-      "max_loyalty_programs": "{value} адалдық бағдарламасына дейін"
+      "max_loyalty_programs": "{value} адалдық бағдарламасына дейін",
+      "max_boards": "{value} тақтаға дейін",
+      "max_staff": "{value} қызметкерге дейін",
+      "max_employees": "{value} қызметкерге дейін",
+      "max_posts": "{value} локацияға дейін",
+      "max_locations": "{value} локацияға дейін",
+      "max_branches": "{value} филиалға дейін",
+      "max_goods": "{value} тауарға дейін",
+      "max_warehouses": "{value} қоймаға дейін",
+      "max_registers": "{value} кассаға дейін",
+      "max_menu_items": "{value} мәзір позициясына дейін",
+      "max_promobanners": "{value} промо-баннерге дейін",
+      "max_badges": "{value} бейджге дейін",
+      "max_links": "{value} сілтемеге дейін"
     },
     "subscriptionPlans": "Тариф жоспарлары",
     "choosePlanDescription": "Командаңызға лайық тариф жоспарын таңдаңыз",

@@ -209,15 +209,17 @@ onMounted(load);
               {{ t('app.connectBundle') || 'Подключить сборку' }}
             </template>
           </UButton>
-          <div
+          <UButton
             v-else
-            class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+            block
+            size="lg"
+            color="emerald"
+            variant="solid"
+            icon="i-heroicons-check-circle"
+            class="pointer-events-none font-semibold"
           >
-            <div class="flex items-center justify-center gap-2">
-              <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
-              <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
-            </div>
-          </div>
+            {{ t('app.activePlan') || 'Подключено!' }}
+          </UButton>
         </div>
       </div>
     </div>

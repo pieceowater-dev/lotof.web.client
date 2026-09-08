@@ -659,7 +659,20 @@
     "planFeature": {
       "max_clients": "Up to {value} clients",
       "max_custom_fields": "Up to {value} custom fields",
-      "max_loyalty_programs": "Up to {value} loyalty programs"
+      "max_loyalty_programs": "Up to {value} loyalty programs",
+      "max_boards": "Up to {value} boards",
+      "max_staff": "Up to {value} team members",
+      "max_employees": "Up to {value} team members",
+      "max_posts": "Up to {value} locations",
+      "max_locations": "Up to {value} locations",
+      "max_branches": "Up to {value} branches",
+      "max_goods": "Up to {value} products",
+      "max_warehouses": "Up to {value} warehouses",
+      "max_registers": "Up to {value} registers",
+      "max_menu_items": "Up to {value} menu items",
+      "max_promobanners": "Up to {value} promo banners",
+      "max_badges": "Up to {value} badges",
+      "max_links": "Up to {value} links"
     },
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",

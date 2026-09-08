@@ -84,6 +84,17 @@ function getPlanFeatures(plan: Plan): PlanFeature[] {
   return [];
 }
 
+function formatPlanFeature(feature: PlanFeature): string {
+  // metadata `label` is unreliable (some seeded plans store a namespaced key
+  // with no translation), so resolve by feature.key first.
+  const byKey = t('app.planFeature.' + feature.key, { value: feature.value as any });
+  if (byKey) return byKey;
+  const raw = String(feature.label || '').trim();
+  if (raw && !raw.includes('.')) return `${t('app.' + raw) || raw}: ${feature.value}`;
+  const human = feature.key.replace(/^max_/, '').replace(/_/g, ' ');
+  return `${human ? human.charAt(0).toUpperCase() + human.slice(1) : feature.key}: ${feature.value}`;
+}
+
 // Fetch plans
 async function fetchPlans() {
   loading.value = true;
@@ -325,11 +336,6 @@ watch([plans, activeSubscription], () => {
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <ContactSupportBanner class="mb-8" />
-
-      <BillingBundlesForApp application-code="pieceowater.atrace" :namespace="nsSlug" :interval="selectedInterval" />
-
-      <!-- Interval Toggle -->
       <div class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
           <button
@@ -363,6 +369,11 @@ watch([plans, activeSubscription], () => {
           </button>
         </div>
       </div>
+      <ContactSupportBanner class="mb-8" />
+
+      <BillingBundlesForApp application-code="pieceowater.atrace" :namespace="nsSlug" :interval="selectedInterval" />
+
+      <!-- Interval Toggle -->
 
       <!-- Loading State -->
       <div
@@ -394,7 +405,7 @@ watch([plans, activeSubscription], () => {
         <div
           v-for="plan in displayedPlans"
           :key="plan.id"
-          class="relative bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+          class="relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
         >
           <!-- Trial Badge -->
           <div
@@ -412,14 +423,14 @@ watch([plans, activeSubscription], () => {
             </div>
           </div>
 
-          <div class="p-6 pt-12">
+          <div class="flex flex-1 flex-col p-6 pt-12">
             <!-- Plan Name -->
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {{ plan.name }}
             </h3>
 
             <!-- Description -->
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 line-clamp-2 min-h-[2.5rem]">
               {{ t('app.' + plan.description) || plan.description }}
             </p>
 
@@ -448,7 +459,7 @@ watch([plans, activeSubscription], () => {
             </div>
 
             <!-- Features -->
-            <div class="space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+            <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
               <!-- Trial Days -->
               <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
@@ -480,7 +491,7 @@ watch([plans, activeSubscription], () => {
                   />
                 </div>
                 <span class="text-sm text-gray-700 dark:text-gray-300">
-                  {{ t('app.' + feature.label) || feature.label }}
+                  {{ formatPlanFeature(feature) }}
                 </span>
               </div>
 
@@ -541,18 +552,17 @@ watch([plans, activeSubscription], () => {
             </UButton>
 
             <!-- Active Plan Badge -->
-            <div
+            <UButton
               v-else
-              class="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-center font-bold shadow-lg"
+              block
+              size="lg"
+              color="emerald"
+              variant="solid"
+              icon="i-heroicons-check-circle"
+              class="pointer-events-none font-semibold"
             >
-              <div class="flex items-center justify-center gap-2">
-                <UIcon
-                  name="i-heroicons-check-circle"
-                  class="w-6 h-6"
-                />
-                <span class="text-lg">{{ t('app.activePlan') || 'Подключено!' }}</span>
-              </div>
-            </div>
+              {{ t('app.activePlan') || 'Подключено!' }}
+            </UButton>
           </div>
         </div>
       </div>
