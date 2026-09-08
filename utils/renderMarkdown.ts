@@ -40,6 +40,31 @@ export function renderMarkdownSafe(source: string): string {
   return getDOMPurify().sanitize(rawHtml, { ADD_ATTR: ['target', 'rel'] });
 }
 
+// sanitizeHtml is for content that is ALREADY HTML (not markdown) but is
+// authored by someone -- e.g. publication bodies from the console editor.
+// Without this, a `v-html` of that string is stored XSS for every reader.
+// DOMPurify keeps structural tags (details/summary) and data-* attributes,
+// strips <script>, on* handlers and javascript: URLs. SSR has no DOM, so it
+// falls back to the same dangerous-scheme strip renderMarkdownSafe uses.
+export function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  if (typeof window === 'undefined') return stripUnsafeHtmlSSR(html);
+  return getDOMPurify().sanitize(html, { ADD_ATTR: ['target', 'rel'] });
+}
+
+// Best-effort SSR strip (no DOM available for DOMPurify): drop script/style/
+// frame elements, inline event handlers and dangerous URL schemes so the
+// first server-rendered paint is safe; the client re-sanitises with DOMPurify
+// on hydration.
+function stripUnsafeHtmlSSR(html: string): string {
+  return stripDangerousUrlSchemes(
+    html
+      .replace(/<\s*(script|style|iframe|object|embed|link|meta|base)\b[\s\S]*?<\s*\/\s*\1\s*>/gi, '')
+      .replace(/<\s*(script|style|iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
+      .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, ''),
+  );
+}
+
 // Guide articles are authored with a leading "## Title" line that restates
 // the article's own title (kept for readability in the console editor and
 // for content copied elsewhere). Reader-facing views already render the

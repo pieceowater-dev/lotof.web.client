@@ -732,7 +732,9 @@ function stripDuplicatedLead(markdown: string, title: string): string {
 
 const sanitizedArticleBody = computed(() => stripDuplicatedLead(article.value?.body || '', articleTitle.value));
 
-const articleHtml = computed(() => sanitizedArticleBody.value);
+// The publication body is author-supplied HTML (console editor) rendered via
+// v-html -- must be sanitised or it is stored XSS for every reader.
+const articleHtml = computed(() => sanitizeHtml(sanitizedArticleBody.value));
 
 function stripHtmlTags(value: string): string {
   return String(value || '')
