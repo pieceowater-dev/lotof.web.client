@@ -216,6 +216,8 @@ onMounted(async () => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
       <div v-if="visibleBundles.length" class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
           <button
@@ -246,7 +248,6 @@ onMounted(async () => {
           </button>
         </div>
       </div>
-      <ContactSupportBanner class="mb-8" />
 
       <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
       <div v-if="showNsSwitcher" class="mb-8">
@@ -302,7 +303,7 @@ onMounted(async () => {
         </div>
 
         <!-- Bundles grid -->
-        <div v-else class="grid md:grid-cols-2 xl:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div v-else class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
           <div
             v-for="b in displayedBundles"
             :key="b.id"
@@ -384,17 +385,13 @@ onMounted(async () => {
                   {{ t('app.connectBundle') || 'Подключить сборку' }}
                 </template>
               </UButton>
-              <UButton
+              <div
                 v-else
-                block
-                size="lg"
-                color="emerald"
-                variant="solid"
-                icon="i-heroicons-check-circle"
-                class="pointer-events-none font-semibold"
+                class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
               >
+                <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
                 {{ t('app.activePlan') || 'Подключено!' }}
-              </UButton>
+              </div>
             </div>
           </div>
         </div>

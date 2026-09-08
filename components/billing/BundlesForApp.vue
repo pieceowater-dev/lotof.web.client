@@ -131,7 +131,7 @@ onMounted(load);
       </h2>
     </div>
 
-    <div class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
       <div
         v-for="b in visibleBundles"
         :key="b.id"
@@ -209,17 +209,13 @@ onMounted(load);
               {{ t('app.connectBundle') || 'Подключить сборку' }}
             </template>
           </UButton>
-          <UButton
+          <div
             v-else
-            block
-            size="lg"
-            color="emerald"
-            variant="solid"
-            icon="i-heroicons-check-circle"
-            class="pointer-events-none font-semibold"
+            class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
           >
+            <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
             {{ t('app.activePlan') || 'Подключено!' }}
-          </UButton>
+          </div>
         </div>
       </div>
     </div>

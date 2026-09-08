@@ -314,6 +314,8 @@ watch([plans, activeSubscription], () => {
     </div>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <ContactSupportBanner class="mb-8" />
+
       <div class="flex justify-center mb-8">
         <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
           <button
@@ -344,7 +346,6 @@ watch([plans, activeSubscription], () => {
           </button>
         </div>
       </div>
-      <ContactSupportBanner class="mb-8" />
 
       <BillingBundlesForApp application-code="pieceowater.issues" :namespace="nsSlug" :interval="selectedInterval" />
 
@@ -455,17 +456,13 @@ watch([plans, activeSubscription], () => {
               </template>
             </UButton>
 
-            <UButton
+            <div
               v-else
-              block
-              size="lg"
-              color="emerald"
-              variant="solid"
-              icon="i-heroicons-check-circle"
-              class="pointer-events-none font-semibold"
+              class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
             >
+              <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
               {{ t('app.activePlan') || 'Подключено!' }}
-            </UButton>
+            </div>
           </div>
         </div>
       </div>
