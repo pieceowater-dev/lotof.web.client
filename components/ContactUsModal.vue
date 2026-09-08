@@ -34,7 +34,7 @@
           :href="whatsappHref"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
+          class="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
           @click="() => trackContactClick('whatsapp')"
         >
           <Icon name="simple-icons:whatsapp" class="h-4 w-4" />

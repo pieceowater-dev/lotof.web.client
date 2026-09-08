@@ -16,12 +16,12 @@
         </div>
 
         <div class="max-h-[70vh] space-y-4 overflow-y-auto p-5">
-          <div class="flex items-center gap-3 rounded-xl border-2 border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-900/20">
-            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
+          <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-700 dark:bg-slate-800/50">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
               <Icon :name="selectedProjectIcon" class="h-5 w-5" />
             </div>
             <div>
-              <div class="text-[10px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">{{ t('admin.planForApp') }}</div>
+              <div class="text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('admin.planForApp') }}</div>
               <div class="text-base font-bold text-slate-900 dark:text-white">{{ selectedProjectTitle }}</div>
             </div>
           </div>
@@ -63,7 +63,7 @@
           </button>
           <button
             :disabled="cashPaymentModal.saving"
-            class="flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-60 transition-colors"
+            class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95 disabled:opacity-60"
             @click="$emit('submit')"
           >
             <Icon v-if="cashPaymentModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
