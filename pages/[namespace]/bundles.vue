@@ -330,8 +330,12 @@ onMounted(async () => {
               <div class="mb-6">
                 <div class="flex items-baseline gap-2">
                   <span class="text-4xl font-bold text-gray-900 dark:text-white">
-                    {{ b.trialDays > 0 ? '0' : formatPrice(b.amountCents, b.currency) }}
+                    {{ formatPrice(b.trialDays > 0 ? 0 : b.amountCents, b.currency) }}
                   </span>
+                  <s
+                    v-if="b.trialDays > 0 && b.amountCents > 0"
+                    class="text-xl font-semibold text-gray-400 line-through dark:text-gray-500"
+                  >{{ formatPrice(b.amountCents, b.currency) }}</s>
                   <span class="text-lg text-gray-500 dark:text-gray-400">
                     / {{ selectedInterval === 'monthly' ? (t('app.month') || 'мес') : (t('app.year') || 'год') }}
                   </span>
