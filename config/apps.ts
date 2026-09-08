@@ -103,6 +103,6 @@ export const ALL_APPS: AppConfig[] = [
     icon: 'lucide:calendar-check',
     titleKey: 'app.plans',
     descriptionKey: 'app.plansDesc',
-    canAdd: false,
+    canAdd: true,
   },
 ];

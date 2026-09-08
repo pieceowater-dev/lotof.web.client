@@ -96,6 +96,7 @@ export default defineNuxtConfig({
     '/api-menu/**': { proxy: buildApiProxyTarget(process.env.VITE_API_MENU, '/api-menu', 8095) },
     '/api-tasks/**': { proxy: buildApiProxyTarget(process.env.VITE_API_TASKS, '/api-tasks', 8096) },
     '/api-goods/**': { proxy: buildApiProxyTarget(process.env.VITE_API_GOODS, '/api-goods', 8097) },
+    '/api-plans/**': { proxy: buildApiProxyTarget(process.env.VITE_API_PLANS, '/api-plans', 8098) },
   },
   
   // Removed invalid generate.fallback (not part of current Nuxt 3 typing). For SPA fallback, provide a 404.html in /public.

@@ -8,6 +8,7 @@ export const CookieKeys = {
   MENU_TOKEN: 'menu-token',
   TASKS_TOKEN: 'tasks-token',
   GOODS_TOKEN: 'goods-token',
+  PLANS_TOKEN: 'plans-token',
   // Namespace-less Patron identity (see hub.gtw's PatronAuthService) --
   // deliberately its own cookie, never mixed with TOKEN (the namespace-owning
   // hub User session), matching backend's dedicated patron_token cookie.
@@ -24,6 +25,7 @@ export const LSKeys = {
   MENU_TOKEN_NS: 'menuTokenNs',
   TASKS_TOKEN_NS: 'tasksTokenNs',
   GOODS_TOKEN_NS: 'goodsTokenNs',
+  PLANS_TOKEN_NS: 'plansTokenNs',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',
