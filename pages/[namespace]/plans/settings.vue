@@ -131,6 +131,13 @@ const PLANS_ROLES: PlansRole[] = ['MANAGER', 'RECEPTIONIST', 'MASTER', 'VIEWER']
 const roleLabelRu: Record<string, string> = {
   OWNER: 'Владелец', MANAGER: 'Менеджер', RECEPTIONIST: 'Администратор', MASTER: 'Мастер', VIEWER: 'Наблюдатель',
 };
+// USelectMenu renders an empty trigger when the model value is '' — so the
+// "no access" choice carries a non-empty sentinel ('NONE') that's mapped back
+// to '' in the change handler.
+const roleOptions = computed(() => [
+  { label: '— ' + (t('plans.noRole') || 'нет доступа'), value: 'NONE' },
+  ...PLANS_ROLES.map(r => ({ label: roleLabelRu[r], value: r })),
+]);
 // roles that may also be a bookable master (senior to MASTER in the hierarchy)
 const CAN_ALSO_BE_MASTER = ['OWNER', 'MANAGER', 'RECEPTIONIST'];
 const members = ref<Array<{ id: string; userId: string; username: string; email: string; nickname?: string | null }>>([]);
@@ -417,47 +424,49 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
             </div>
 
             <div v-if="staffLoading" class="py-8 flex justify-center"><UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-primary-500" /></div>
-            <div v-else class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-              <div v-for="row in staffView" :key="row.member.userId" class="p-3.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <div v-else class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
+              <div v-for="row in staffView" :key="row.member.userId"
+                   class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors">
                 <img v-if="row.master?.photoUrl" :src="row.master.photoUrl" alt=""
                      class="w-9 h-9 rounded-full object-cover flex-shrink-0 bg-gray-100 dark:bg-gray-800" />
                 <span v-else class="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
                       :style="{ background: (row.isMasterOn && row.master?.color) || '#94a3b8' }">
                   {{ (row.member.nickname || row.member.username || row.member.email).slice(0, 1).toUpperCase() }}
                 </span>
-                <div class="flex-1 min-w-[150px]">
-                  <div class="font-medium text-gray-900 dark:text-white truncate">{{ row.member.nickname || row.member.username || row.member.email }}</div>
+                <div class="min-w-0 flex-1">
+                  <div class="font-medium text-sm text-gray-900 dark:text-white truncate">{{ row.member.nickname || row.member.username || row.member.email }}</div>
                   <div class="text-xs text-gray-500 truncate">{{ row.member.email }}</div>
                 </div>
 
-                <!-- role -->
-                <UBadge v-if="row.isOwner" color="amber" variant="subtle" size="xs">{{ roleLabelRu.OWNER }}</UBadge>
-                <UBadge v-else-if="!canManageStaff" :color="row.role ? 'primary' : 'gray'" variant="subtle" size="xs">
-                  {{ row.role ? roleLabelRu[row.role] : (t('plans.noRole') || 'нет доступа') }}
-                </UBadge>
-                <USelectMenu
-                  v-else
-                  :model-value="row.role"
-                  :options="[{ label: '— ' + (t('plans.noRole') || 'нет доступа'), value: '' }, ...PLANS_ROLES.map(r => ({ label: roleLabelRu[r], value: r }))]"
-                  value-attribute="value" option-attribute="label" size="xs" class="w-36"
-                  :loading="roleSaving === row.member.userId" :popper="{ strategy: 'fixed' }"
-                  @update:model-value="(v: string) => setMemberRole(row.member.userId, v)" />
+                <div class="flex items-center gap-2 flex-shrink-0">
+                  <!-- master schedule / edit -->
+                  <template v-if="row.isMasterOn && row.master">
+                    <UButton size="2xs" variant="ghost" color="gray" icon="lucide:calendar-clock"
+                             :title="t('plans.schedule') || 'График'" @click="openMasterSchedule(row.master.id)" />
+                    <UButton size="2xs" variant="ghost" color="gray" icon="lucide:pencil"
+                             :title="t('common.edit') || 'Редактировать'" @click="openMst(row.master)" />
+                  </template>
 
-                <!-- "принимает записи как мастер" — for roles senior to MASTER; locked-on for MASTER -->
-                <label v-if="row.canBeMaster" class="flex items-center gap-1.5 text-xs text-gray-500">
+                  <!-- "принимает записи как мастер" -->
                   <UToggle
-                    :model-value="row.isMasterOn" size="sm"
+                    v-if="row.canBeMaster"
+                    :model-value="row.isMasterOn" size="sm" :title="t('plans.asMaster') || 'мастер'"
                     :disabled="row.role === 'MASTER' || !canManageStaff || roleSaving === row.member.userId"
                     @update:model-value="(v: boolean) => setMemberIsMaster(row.member.userId, v)" />
-                  {{ t('plans.asMaster') || 'мастер' }}
-                </label>
 
-                <template v-if="row.isMasterOn && row.master">
-                  <UButton size="xs" variant="soft" color="gray" icon="lucide:calendar-clock" @click="openMasterSchedule(row.master.id)">
-                    <span class="hidden sm:inline">{{ t('plans.schedule') || 'График' }}</span>
-                  </UButton>
-                  <UButton size="2xs" variant="ghost" color="gray" icon="lucide:pencil" @click="openMst(row.master)" />
-                </template>
+                  <!-- role -->
+                  <UBadge v-if="row.isOwner" color="amber" variant="subtle" class="w-40 justify-center">{{ roleLabelRu.OWNER }}</UBadge>
+                  <UBadge v-else-if="!canManageStaff" :color="row.role ? 'primary' : 'gray'" variant="subtle" class="w-40 justify-center">
+                    {{ row.role ? roleLabelRu[row.role] : (t('plans.noRole') || 'нет доступа') }}
+                  </UBadge>
+                  <USelectMenu
+                    v-else
+                    :model-value="row.role || 'NONE'"
+                    :options="roleOptions"
+                    value-attribute="value" option-attribute="label" size="sm" class="w-40"
+                    :loading="roleSaving === row.member.userId" :popper="{ strategy: 'fixed' }"
+                    @update:model-value="(v: string) => setMemberRole(row.member.userId, v === 'NONE' ? '' : v)" />
+                </div>
               </div>
               <p v-if="!staffView.length" class="p-4 text-sm text-gray-500">
                 {{ t('plans.noMembers') || 'В неймспейсе пока только вы. Пригласите сотрудников по email.' }}

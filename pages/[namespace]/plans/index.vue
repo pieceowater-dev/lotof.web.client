@@ -268,13 +268,13 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
   <div class="h-full flex flex-col p-4 min-h-0 gap-3">
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center flex-shrink-0">
       <div class="min-w-0">
-        <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('app.plans') }}</h1>
+        <h1 data-tour="plans-title" class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('app.plans') }}</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
           {{ t('plans.subtitle') || 'Онлайн-запись клиентов и расписание мастеров' }}
         </p>
       </div>
       <UButton
-        v-if="isOwnerOrManager" icon="lucide:settings" size="xs" color="primary" variant="soft"
+        v-if="isOwnerOrManager" data-tour="plans-settings-btn" icon="lucide:settings" size="xs" color="primary" variant="soft"
         class="self-start sm:self-auto flex-shrink-0"
         :to="`/${nsSlug}/plans/settings`"
       >
@@ -305,7 +305,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         {{ t('plans.today') || 'Сегодня' }}
       </UButton>
 
-      <div class="flex items-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
+      <div data-tour="plans-views" class="flex items-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
         <button
           v-for="v in VIEWS" :key="v.key" type="button"
           class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
@@ -318,6 +318,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
 
       <button
         type="button"
+        data-tour="plans-live"
         class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors"
         :class="autoRefresh
           ? 'border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40'
@@ -339,7 +340,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         :options="locationOptions" value-attribute="value" option-attribute="label"
         size="xs" icon="lucide:map-pin" class="min-w-[9rem]" :popper="{ strategy: 'fixed' }" />
 
-      <UButton v-if="canManageCalendar" icon="lucide:plus" size="xs" @click="openCreate()">
+      <UButton v-if="canManageCalendar" data-tour="plans-new-btn" icon="lucide:plus" size="xs" @click="openCreate()">
         {{ t('plans.newBooking') || 'Новая запись' }}
       </UButton>
     </div>

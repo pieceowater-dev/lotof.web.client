@@ -71,12 +71,19 @@ const svcModal = ref(false);
 const svcSaving = ref(false);
 const svcEditing = ref<PlansService | null>(null);
 const svcForm = reactive({ name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: true, color: '#7c3aed', description: '' });
-function openSvc(s?: PlansService) {
+// masters allowed to perform this service; empty = anyone
+const svcMasterIds = ref<string[]>([]);
+async function openSvc(s?: PlansService) {
   svcEditing.value = s || null;
   Object.assign(svcForm, s
     ? { name: s.name, categoryId: s.categoryId || '', durationMinutes: s.durationMinutes, bufferAfterMinutes: s.bufferAfterMinutes, price: s.price, requiresMaster: s.requiresMaster, color: s.color || '#7c3aed', description: s.description }
     : { name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: true, color: '#7c3aed', description: '' });
+  svcMasterIds.value = [];
   svcModal.value = true;
+  if (s) {
+    try { svcMasterIds.value = (await plansApi.serviceMasters(nsSlug.value, s.id)).map(x => x.masterId); }
+    catch { /* leave empty */ }
+  }
 }
 async function saveSvc() {
   if (!svcForm.name.trim() || svcForm.durationMinutes <= 0) {
@@ -85,13 +92,18 @@ async function saveSvc() {
   svcSaving.value = true;
   try {
     const input: any = { ...svcForm, name: svcForm.name.trim(), categoryId: svcForm.categoryId || null };
+    let serviceId = svcEditing.value?.id;
     if (svcEditing.value) {
       await plansApi.updateService(nsSlug.value, {
         id: svcEditing.value.id, isActive: svcEditing.value.isActive, sortOrder: svcEditing.value.sortOrder,
         imageUrl: svcEditing.value.imageUrl, ...input,
       });
     } else {
-      await plansApi.createService(nsSlug.value, input);
+      const created = await plansApi.createService(nsSlug.value, input);
+      serviceId = created.id;
+    }
+    if (serviceId) {
+      await plansApi.setServiceMasters(nsSlug.value, serviceId, svcMasterIds.value.map(masterId => ({ masterId })));
     }
     svcModal.value = false; await loadAll();
   } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
@@ -309,6 +321,14 @@ onMounted(async () => {
               <UToggle v-model="svcForm.requiresMaster" />
             </UFormGroup>
           </div>
+          <UFormGroup :label="t('plans.serviceMasters') || 'Кто выполняет'" :hint="t('plans.serviceMastersHint') || 'Пусто — любой мастер'">
+            <USelectMenu
+              v-model="svcMasterIds" multiple
+              :options="masters.map(m => ({ label: m.name, value: m.id }))"
+              value-attribute="value" option-attribute="label"
+              :placeholder="t('plans.anyMaster') || 'Любой мастер'"
+              :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">

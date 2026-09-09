@@ -131,6 +131,60 @@ export const menuTour: TourConfig = {
   ],
 };
 
+export const plansTour: TourConfig = {
+  id: 'plans-intro',
+  steps: [
+    {
+      id: 'welcome',
+      target: '[data-tour="plans-title"]',
+      titleKey: 'app.tourPlansWelcomeTitle',
+      contentKey: 'app.tourPlansWelcomeContent',
+      placement: 'bottom',
+      highlightPadding: 12,
+    },
+    {
+      id: 'views',
+      target: '[data-tour="plans-views"]',
+      titleKey: 'app.tourPlansViewsTitle',
+      contentKey: 'app.tourPlansViewsContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+    {
+      id: 'new-booking',
+      target: '[data-tour="plans-new-btn"]',
+      titleKey: 'app.tourPlansNewTitle',
+      contentKey: 'app.tourPlansNewContent',
+      placement: 'left',
+      highlightPadding: 10,
+    },
+    {
+      id: 'live',
+      target: '[data-tour="plans-live"]',
+      titleKey: 'app.tourPlansLiveTitle',
+      contentKey: 'app.tourPlansLiveContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+    {
+      id: 'settings',
+      target: '[data-tour="plans-settings-btn"]',
+      titleKey: 'app.tourPlansSettingsTitle',
+      contentKey: 'app.tourPlansSettingsContent',
+      placement: 'bottom',
+      highlightPadding: 10,
+    },
+    {
+      id: 'help-button',
+      target: '[data-tour="help-button"]',
+      titleKey: 'app.tourPlansHelpTitle',
+      contentKey: 'app.tourPlansHelpContent',
+      placement: 'bottom',
+      highlightPadding: 8,
+    },
+  ],
+};
+
 export const goodsTour: TourConfig = {
   id: 'goods-intro',
   steps: [

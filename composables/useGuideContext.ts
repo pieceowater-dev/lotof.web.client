@@ -2,7 +2,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS } from '@/config/apps';
-import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour } from '@/config/tours';
+import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, plansTour } from '@/config/tours';
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
@@ -14,6 +14,7 @@ const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   issues: issuesTour,
   contacts: contactsTour,
   goods: goodsTour,
+  plans: plansTour,
 };
 
 export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods', 'plans'];

@@ -27,15 +27,10 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const toast = useToast();
 
-// Narrow iOS-style bottom sheet: rises from the bottom, centred, capped at
-// max-w-lg on desktop, near-full-width on phones. `height: h-auto` sizes to
-// content up to the inner max-h cap.
-const sheetUi = {
-  width: 'w-screen max-w-lg mx-auto',
-  height: 'h-auto',
-  rounded: 'rounded-t-2xl',
-  shadow: 'shadow-2xl',
-};
+// A plain centred dialog — narrow, content-height, scrolls internally past
+// ~80vh. (USlideover's flex-1 base fights every width/height override for a
+// bottom sheet, which is why it kept coming out full-width and stretched.)
+const sheetUi = { width: 'sm:max-w-lg' };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   NEW: { label: t('plans.statusNew') || 'Новая', color: 'blue' },
@@ -142,15 +137,12 @@ watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.
 </script>
 
 <template>
-  <USlideover
+  <UModal
     :model-value="modelValue"
-    side="bottom"
     :ui="sheetUi"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
-    <div v-if="booking" class="flex flex-col max-h-[88vh]">
-      <div class="mx-auto mt-2 mb-1 h-1 w-9 flex-shrink-0 rounded-full bg-gray-300 dark:bg-gray-700" />
-
+    <div v-if="booking" class="flex flex-col max-h-[85vh]">
       <!-- header -->
       <div class="flex items-start justify-between gap-3 px-5 pt-3 pb-4 border-b border-gray-200 dark:border-gray-800">
         <div class="min-w-0">
@@ -272,5 +264,5 @@ watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.
         >{{ t('plans.reschedule') || 'Перенести' }}</UButton>
       </div>
     </div>
-  </USlideover>
+  </UModal>
 </template>

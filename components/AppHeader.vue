@@ -279,7 +279,11 @@ function handleMenuSelect(app: AppConfig) {
 }
 
 function isAppActive(app: AppConfig) {
-  return route.path.includes(`/${app.address}`);
+  // Match the address as the path segment right after the namespace
+  // (`/<ns>/<address>` or `/<ns>/<address>/...`), NOT as a substring — a
+  // per-app tariff page like `/<ns>/goods/plans` otherwise lit up both
+  // "Goods" and "Запись".
+  return new RegExp(`^/[^/]+/${app.address}(/|$)`).test(route.path);
 }
 
 function debouncedUpdateMenuMode() {
