@@ -668,7 +668,10 @@
       "max_menu_items": "До {value} позиций меню",
       "max_promobanners": "До {value} промо-баннеров",
       "max_badges": "До {value} бейджей",
-      "max_links": "До {value} ссылок"
+      "max_links": "До {value} ссылок",
+      "max_masters": "До {value} мастеров",
+      "max_services": "До {value} услуг",
+      "max_bookings_per_month": "До {value} записей в месяц"
     },
     "subscriptionPlans": "Тарифные планы",
     "choosePlanDescription": "Выберите тарифный план для вашей команды",

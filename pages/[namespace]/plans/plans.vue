@@ -34,8 +34,9 @@ const activeSubscription = ref<Subscription | null>(null);
 const redirectingAfterReturn = ref(false);
 const subscriptionFetchFailed = ref(false);
 
-const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH'));
-const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR'));
+const byPrice = (a: Plan, b: Plan) => a.amountCents - b.amountCents;
+const monthlyPlans = computed(() => plans.value.filter(p => p.interval === 'MONTH').sort(byPrice));
+const yearlyPlans = computed(() => plans.value.filter(p => p.interval === 'YEAR').sort(byPrice));
 const displayedPlans = computed(() => selectedInterval.value === 'monthly' ? monthlyPlans.value : yearlyPlans.value);
 
 function isPlanActive(plan: Plan): boolean {

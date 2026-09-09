@@ -228,6 +228,8 @@ export default defineEventHandler(async (event) => {
     xmlUrl(`${siteUrl}/issues`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/contacts`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/menu`, today, 'weekly', '0.9'),
+    xmlUrl(`${siteUrl}/goods`, today, 'weekly', '0.9'),
+    xmlUrl(`${siteUrl}/plans`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/feed`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/news`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/guide`, today, 'weekly', '0.9'),
