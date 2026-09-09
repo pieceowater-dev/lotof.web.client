@@ -114,6 +114,20 @@ function appRoutePath(app: AppConfig): string | null {
   return sharedAppRoutePath(app, ns);
 }
 
+// The external, customer-facing page for the apps that have one — opened in
+// a new tab straight from the app's own dashboard tile (no separate tile).
+const STOREFRONT_BY_ADDRESS: Record<string, string> = {
+  menu: 'menu',
+  contacts: 'memberships',
+  plans: 'plans',
+};
+function storefrontPath(app: AppConfig): string | null {
+  const ns = selectedNS.value || allNamespaces.value?.[0];
+  const seg = STOREFRONT_BY_ADDRESS[app.address];
+  if (!ns || !seg) return null;
+  return `/to/${ns}/${seg}`;
+}
+
 const handleEditPeople = () => router.push('/people');
 
 async function handleAppClick(appAddress: string) {
@@ -729,22 +743,35 @@ watch(user, (u) => {
               </button>
 
               <template v-for="app in dashboardApps" :key="app.bundle">
-                <NuxtLink
+                <div
                   v-if="appInstalled[app.bundle] && appRoutePath(app)"
-                  :to="appRoutePath(app) || '/'"
-                  class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
+                  class="group relative rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800 flex flex-col"
                 >
-                  <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                    <UIcon
-                      :name="app.icon"
-                      class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
-                    />
-                  </div>
-                  <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
-                  <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
-                    {{ t('app.open') || 'Open' }}
-                  </p>
-                </NuxtLink>
+                  <NuxtLink :to="appRoutePath(app) || '/'" class="flex flex-col items-center">
+                    <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
+                      <UIcon
+                        :name="app.icon"
+                        class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
+                      />
+                    </div>
+                    <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t(app.titleKey) }}</p>
+                    <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
+                      {{ t('app.open') || 'Open' }}
+                    </p>
+                  </NuxtLink>
+                  <!-- external customer-facing page, right on the app's tile -->
+                  <a
+                    v-if="storefrontPath(app)"
+                    :href="storefrontPath(app) || '#'"
+                    target="_blank"
+                    rel="noopener"
+                    class="mt-2 inline-flex items-center justify-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                  >
+                    <UIcon name="lucide:store" class="w-3 h-3" />
+                    {{ t('app.externalStorefront') || 'Витрина' }}
+                    <UIcon name="lucide:external-link" class="w-2.5 h-2.5 opacity-70" />
+                  </a>
+                </div>
 
                 <button
                   v-else
@@ -764,21 +791,6 @@ watch(user, (u) => {
                   </p>
                 </button>
               </template>
-
-              <NuxtLink
-                v-if="appInstalled['pieceowater.menu']"
-                :to="`/to/${selectedNS}/menu`"
-                target="_blank"
-                class="group rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
-              >
-                <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
-                  <UIcon name="lucide:store" class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]" />
-                </div>
-                <p class="mt-2 text-sm font-medium text-gray-800 dark:text-gray-100 line-clamp-1">{{ t('menu.storefront') || 'Storefront' }}</p>
-                <p class="mt-1 text-[11px] leading-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text font-semibold">
-                  {{ t('app.open') || 'Open' }}
-                </p>
-              </NuxtLink>
             </div>
           </div>
         </div>
