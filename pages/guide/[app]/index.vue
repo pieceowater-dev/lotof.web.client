@@ -73,6 +73,8 @@ const resolvedAppLabel = computed(() => {
     case 'MENU': return t('app.menu');
     case 'CONTACTS': return t('app.clients');
     case 'ATRACE': return t('app.attendance');
+    case 'GOODS': return t('app.goods');
+    case 'PLANS': return t('app.plans');
     case 'LANDING': return t('guide.appLanding');
     default: return t('guide.appGlobal');
   }
@@ -84,6 +86,8 @@ const resolvedAppIcon = computed(() => {
     case 'MENU': return 'lucide:receipt-text';
     case 'CONTACTS': return 'lucide:briefcase';
     case 'ATRACE': return 'lucide:qr-code';
+    case 'GOODS': return 'lucide:package';
+    case 'PLANS': return 'lucide:calendar-check';
     case 'LANDING': return 'lucide:home';
     default: return 'lucide:help-circle';
   }

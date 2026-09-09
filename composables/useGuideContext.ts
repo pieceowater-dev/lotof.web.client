@@ -6,9 +6,9 @@ import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour } from '@/con
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
-export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace' | 'goods';
+export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace' | 'goods' | 'plans';
 
-const APP_TOURS: Record<GuideAppId, TourConfig> = {
+const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   atrace: atraceTour,
   menu: menuTour,
   issues: issuesTour,
@@ -16,9 +16,9 @@ const APP_TOURS: Record<GuideAppId, TourConfig> = {
   goods: goodsTour,
 };
 
-export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods'];
+export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods', 'plans'];
 
-const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE'];
+const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE', 'GOODS', 'PLANS'];
 
 /** Route param ("issues") -> GuideApp ("ISSUES"), or null if not a known app. */
 export function guideAppFromParam(param: string): GuideApp | null {
@@ -36,10 +36,8 @@ export const GUIDE_APP_BY_ID: Record<GuideAppId, GuideApp> = {
   menu: 'MENU',
   contacts: 'CONTACTS',
   atrace: 'ATRACE',
-  // Hub's guide-content backend doesn't have a GOODS GuideApp value yet --
-  // fall back to GLOBAL content rather than sending an app the backend
-  // would reject. Revisit once Goods gets its own Guide articles.
-  goods: 'GLOBAL',
+  goods: 'GOODS',
+  plans: 'PLANS',
 };
 
 /**
@@ -60,6 +58,7 @@ export function useGuideContext() {
   const isMenuRoute = computed(() => /^\/[^/]+\/menu\/?$/.test(route.path));
   const isIssuesRoute = computed(() => /^\/[^/]+\/issues\/(?!plans$|settings$|zen$)[^/]+\/?$/.test(route.path));
   const isGoodsRoute = computed(() => /^\/[^/]+\/goods(\/|$)/.test(route.path));
+  const isPlansRoute = computed(() => /^\/[^/]+\/plans(\/|$)/.test(route.path));
   const isConsoleRoute = computed(() => route.path.startsWith('/console'));
   const isPublicationRoute = computed(() => /^\/(blog|whatsnew|articles|academy|news)\//.test(route.path));
 
@@ -69,13 +68,14 @@ export function useGuideContext() {
     if (isMenuRoute.value) return 'menu';
     if (isIssuesRoute.value) return 'issues';
     if (isGoodsRoute.value) return 'goods';
+    if (isPlansRoute.value) return 'plans';
     return null;
   });
 
   const currentTour = computed<TourConfig | null>(() => {
     const id = currentAppId.value;
     if (!id || isConsoleRoute.value || isPublicationRoute.value) return null;
-    return APP_TOURS[id];
+    return APP_TOURS[id] ?? null;
   });
 
   const currentAppName = computed<string | null>(() => {

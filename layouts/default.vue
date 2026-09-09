@@ -5,7 +5,10 @@
          the bottom of the viewport even when a page's content is shorter than
          the screen, while still letting tall pages scroll normally. -->
     <main class="main-scroll flex-1 min-h-0 overflow-auto w-full flex flex-col pt-20 pb-safe-or-4">
-      <div class="flex-1">
+      <!-- min-h-0 so a page that opts into `h-full` (goods, plans calendar) can
+           actually bound its own height and scroll internally instead of
+           stretching `main`. Normal auto-height pages are unaffected. -->
+      <div class="flex-1 min-h-0">
         <slot />
       </div>
       <AppFooter :variant="footerVariant" class="flex-shrink-0" />

@@ -26,6 +26,7 @@ export const LSKeys = {
   TASKS_TOKEN_NS: 'tasksTokenNs',
   GOODS_TOKEN_NS: 'goodsTokenNs',
   PLANS_TOKEN_NS: 'plansTokenNs',
+  PLANS_CAL_AUTOREFRESH: 'plansCalAutoRefresh',
   DEVICE_ID: 'device-id',
   DEVICE_FINGERPRINT: 'device-fp',
   DEVICE_FINGERPRINT_META: 'device-fp-meta',

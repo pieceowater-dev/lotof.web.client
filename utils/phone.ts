@@ -97,3 +97,15 @@ export function formatDisplayPhoneUniversal(value: string): string {
   const formatted = asYouType.input(input);
   return formatted || input;
 }
+
+// Live "as you type" mask for phone inputs — feed the raw field value, get a
+// nicely spaced string back to write straight back into the field. Keeps a
+// trailing "+" or lone digits intact so the caret doesn't fight the user.
+export function formatPhoneAsYouType(value: string): string {
+  const sanitized = sanitizePhoneInput(String(value || ''));
+  if (!sanitized) return '';
+  const digits = sanitized.replace(/\D/g, '');
+  const seed = sanitized.trim().startsWith('+') ? sanitized : (digits ? `+${digits}` : sanitized);
+  const out = new AsYouType(DEFAULT_COUNTRY).input(seed);
+  return out || sanitized;
+}

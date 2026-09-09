@@ -1,0 +1,276 @@
+<script lang="ts" setup>
+// Booking detail + quick actions, shown as a narrow iOS-style bottom sheet.
+// View mode: read-only summary + status flow. Edit mode: name / phone /
+// comment inline, plus a reschedule sub-panel for date + master.
+import { useI18n } from '@/composables/useI18n';
+import { plansApi, type PlansBooking, type PlansMaster, type PlansAvailableSlot } from '@/api/plans/ops';
+import PhoneInput from '@/components/ui/PhoneInput.vue';
+
+const props = withDefaults(defineProps<{
+  modelValue: boolean;
+  nsSlug: string;
+  booking: PlansBooking | null;
+  master: PlansMaster | null;
+  masters?: PlansMaster[];
+  serviceName?: string;
+  canManage: boolean;        // create / reschedule / edit fields
+  canSetStatus?: boolean;    // change the booking's status (a master may, for their clients)
+}>(), { canSetStatus: undefined, masters: () => [] });
+
+const maySetStatus = computed(() => props.canSetStatus ?? props.canManage);
+
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void;
+  (e: 'changed'): void;
+}>();
+
+const { t } = useI18n();
+const toast = useToast();
+
+// Narrow iOS-style bottom sheet: rises from the bottom, centred, capped at
+// max-w-lg on desktop, near-full-width on phones. `height: h-auto` sizes to
+// content up to the inner max-h cap.
+const sheetUi = {
+  width: 'w-screen max-w-lg mx-auto',
+  height: 'h-auto',
+  rounded: 'rounded-t-2xl',
+  shadow: 'shadow-2xl',
+};
+
+const STATUS_META: Record<string, { label: string; color: string }> = {
+  NEW: { label: t('plans.statusNew') || 'Новая', color: 'blue' },
+  CONFIRMED: { label: t('plans.statusConfirmed') || 'Подтверждена', color: 'primary' },
+  COMPLETED: { label: t('plans.statusCompleted') || 'Завершена', color: 'emerald' },
+  CANCELLED: { label: t('plans.statusCancelled') || 'Отменена', color: 'red' },
+  NO_SHOW: { label: t('plans.statusNoShow') || 'Не пришёл', color: 'amber' },
+};
+function nextStatuses(s: string): string[] {
+  if (s === 'NEW') return ['CONFIRMED', 'CANCELLED'];
+  if (s === 'CONFIRMED') return ['COMPLETED', 'NO_SHOW', 'CANCELLED'];
+  return [];
+}
+
+const busy = ref(false);
+function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('ru', { day: 'numeric', month: 'long', weekday: 'long' }); }
+function fmtTime(iso: string) { return new Date(iso).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }); }
+
+const masterOptions = computed(() => {
+  const list = props.masters.length ? props.masters : (props.master ? [props.master] : []);
+  return [{ label: t('plans.anyMaster') || 'Без мастера', value: '' }, ...list.map(m => ({ label: m.name, value: m.id }))];
+});
+
+async function setStatus(status: string) {
+  if (!props.booking) return;
+  busy.value = true;
+  try {
+    await plansApi.updateBookingStatus(props.nsSlug, props.booking.id, status);
+    toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
+    emit('changed');
+    emit('update:modelValue', false);
+  } catch (e: any) {
+    toast.add({ title: t('common.error') || 'Ошибка', description: e?.message, color: 'red' });
+  } finally { busy.value = false; }
+}
+
+// --- edit (name / phone / comment) ---
+const editMode = ref(false);
+const editForm = reactive({ name: '', phone: '', comment: '' });
+function openEdit() {
+  if (!props.booking) return;
+  editForm.name = props.booking.clientName || '';
+  editForm.phone = props.booking.clientPhone || '';
+  editForm.comment = props.booking.comment || '';
+  editMode.value = true;
+}
+async function saveEdit() {
+  if (!props.booking || !editForm.name.trim() || !editForm.phone.trim()) return;
+  busy.value = true;
+  try {
+    await plansApi.updateBooking(props.nsSlug, props.booking.id, editForm.name.trim(), editForm.phone.trim(), editForm.comment.trim() || null);
+    toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
+    emit('changed');
+    editMode.value = false;
+    emit('update:modelValue', false);
+  } catch (e: any) {
+    toast.add({ title: t('common.error') || 'Ошибка', description: e?.message, color: 'red' });
+  } finally { busy.value = false; }
+}
+
+// --- reschedule (date + master + slot) ---
+const reMode = ref(false);
+const reDate = ref('');
+const reMaster = ref('');
+const reSlots = ref<PlansAvailableSlot[]>([]);
+const reSlot = ref('');
+const reLoading = ref(false);
+
+function openReschedule() {
+  if (!props.booking) return;
+  reMode.value = true;
+  reDate.value = props.booking.startAt.slice(0, 10);
+  reMaster.value = props.booking.masterId || '';
+  reSlot.value = '';
+  loadReSlots();
+}
+async function loadReSlots() {
+  if (!props.booking) return;
+  reLoading.value = true;
+  try {
+    const lines = await plansApi.bookingServices(props.nsSlug, props.booking.id);
+    const svcId = lines[0]?.serviceId;
+    if (!svcId) { reSlots.value = []; return; }
+    reSlots.value = await plansApi.availableSlots(props.nsSlug, props.booking.locationId, svcId, reDate.value, reMaster.value || undefined);
+  } catch { reSlots.value = []; }
+  finally { reLoading.value = false; }
+}
+watch([reDate, reMaster], () => { if (reMode.value) loadReSlots(); });
+
+async function confirmReschedule() {
+  if (!props.booking || !reSlot.value) return;
+  busy.value = true;
+  try {
+    await plansApi.rescheduleBooking(props.nsSlug, props.booking.id, reSlot.value, reMaster.value || undefined);
+    toast.add({ title: t('plans.rescheduled') || 'Запись перенесена', color: 'emerald' });
+    emit('changed');
+    emit('update:modelValue', false);
+  } catch (e: any) {
+    toast.add({ title: t('common.error') || 'Ошибка', description: e?.message, color: 'red' });
+  } finally { busy.value = false; reMode.value = false; }
+}
+
+watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.value = false; } });
+</script>
+
+<template>
+  <USlideover
+    :model-value="modelValue"
+    side="bottom"
+    :ui="sheetUi"
+    @update:model-value="(v: boolean) => emit('update:modelValue', v)"
+  >
+    <div v-if="booking" class="flex flex-col max-h-[88vh]">
+      <div class="mx-auto mt-2 mb-1 h-1 w-9 flex-shrink-0 rounded-full bg-gray-300 dark:bg-gray-700" />
+
+      <!-- header -->
+      <div class="flex items-start justify-between gap-3 px-5 pt-3 pb-4 border-b border-gray-200 dark:border-gray-800">
+        <div class="min-w-0">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">
+            {{ editMode ? (t('plans.editBooking') || 'Изменить запись') : booking.clientName }}
+          </h3>
+          <a v-if="!editMode" :href="`tel:${booking.clientPhone}`" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">{{ booking.clientPhone }}</a>
+        </div>
+        <div class="flex items-center gap-2 flex-shrink-0">
+          <UBadge :color="(STATUS_META[booking.status]?.color as any) || 'gray'" variant="subtle">
+            {{ STATUS_META[booking.status]?.label || booking.status }}
+          </UBadge>
+          <UButton icon="lucide:x" size="xs" variant="ghost" color="gray" @click="emit('update:modelValue', false)" />
+        </div>
+      </div>
+
+      <!-- body -->
+      <div class="flex-1 min-h-0 overflow-y-auto px-5 py-4">
+        <!-- EDIT MODE: client fields -->
+        <div v-if="editMode" class="space-y-3">
+          <UFormGroup :label="t('plans.clientName') || 'Имя клиента'">
+            <UInput v-model="editForm.name" size="md" icon="i-heroicons-user" />
+          </UFormGroup>
+          <UFormGroup :label="t('plans.phone') || 'Телефон'">
+            <PhoneInput v-model="editForm.phone" size="md" />
+          </UFormGroup>
+          <UFormGroup :label="t('plans.comment') || 'Комментарий'">
+            <UTextarea v-model="editForm.comment" :rows="2" autoresize />
+          </UFormGroup>
+          <button type="button" class="text-xs text-primary-600 dark:text-primary-400 inline-flex items-center gap-1" @click="openReschedule">
+            <UIcon name="lucide:calendar-clock" class="w-3.5 h-3.5" />
+            {{ t('plans.changeDateMaster') || 'Изменить дату / мастера' }}
+          </button>
+        </div>
+
+        <!-- VIEW MODE: summary -->
+        <div v-else class="space-y-4">
+          <div>
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.when') || 'Когда' }}</div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 capitalize">{{ fmtDate(booking.startAt) }}</div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ fmtTime(booking.startAt) }} – {{ fmtTime(booking.endAt) }}</div>
+          </div>
+          <div>
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.master') || 'Мастер' }}</div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <span v-if="master" class="w-2 h-2 rounded-full" :style="{ background: master.color || '#7c3aed' }" />
+              {{ master?.name || (t('plans.anyMaster') || 'Без мастера') }}
+            </div>
+          </div>
+          <div v-if="serviceName">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.service') || 'Услуга' }}</div>
+            <div class="text-sm text-gray-900 dark:text-gray-100">{{ serviceName }}</div>
+          </div>
+          <div v-if="booking.totalPrice">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.price') || 'Стоимость' }}</div>
+            <div class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ booking.totalPrice }}</div>
+          </div>
+          <div v-if="booking.comment">
+            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.comment') || 'Комментарий' }}</div>
+            <div class="text-sm text-gray-700 dark:text-gray-300">{{ booking.comment }}</div>
+          </div>
+          <div v-if="booking.cancellationReason">
+            <div class="text-xs font-medium text-red-400 uppercase tracking-wide mb-1">{{ t('plans.cancelReason') || 'Причина отмены' }}</div>
+            <div class="text-sm text-red-600 dark:text-red-400">{{ booking.cancellationReason }}</div>
+          </div>
+        </div>
+
+        <!-- reschedule sub-panel -->
+        <div v-if="reMode" class="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
+          <h4 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('plans.reschedule') || 'Перенести' }}</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <UFormGroup :label="t('plans.date') || 'Дата'">
+              <UInput v-model="reDate" type="date" size="sm" :min="new Date().toISOString().slice(0,10)" />
+            </UFormGroup>
+            <UFormGroup :label="t('plans.master') || 'Мастер'">
+              <USelectMenu
+                v-model="reMaster" size="sm"
+                :options="masterOptions"
+                value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+            </UFormGroup>
+          </div>
+          <div v-if="reLoading" class="text-sm text-gray-500 py-1">{{ t('common.loading') || 'Загрузка…' }}</div>
+          <div v-else-if="!reSlots.length" class="text-sm text-gray-500 py-1">{{ t('plans.noSlotsDay') || 'Свободных окон нет' }}</div>
+          <div v-else class="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
+            <UButton v-for="s in reSlots" :key="s.startAt" size="xs"
+                     :variant="reSlot === s.startAt ? 'solid' : 'soft'" :color="reSlot === s.startAt ? 'primary' : 'gray'"
+                     @click="reSlot = s.startAt">{{ fmtTime(s.startAt) }}</UButton>
+          </div>
+          <div class="flex justify-end gap-2">
+            <UButton size="xs" variant="ghost" color="gray" @click="reMode = false">{{ t('common.cancel') || 'Отмена' }}</UButton>
+            <UButton size="xs" :loading="busy" :disabled="!reSlot" @click="confirmReschedule">{{ t('plans.moveHere') || 'Перенести' }}</UButton>
+          </div>
+        </div>
+      </div>
+
+      <!-- footer actions -->
+      <div v-if="editMode" class="px-5 py-3.5 border-t border-gray-200 dark:border-gray-800 flex items-center justify-end gap-2">
+        <UButton size="sm" variant="ghost" color="gray" @click="editMode = false">{{ t('common.cancel') || 'Отмена' }}</UButton>
+        <UButton size="sm" :loading="busy" :disabled="!editForm.name.trim() || !editForm.phone.trim()" @click="saveEdit">
+          {{ t('common.save') || 'Сохранить' }}
+        </UButton>
+      </div>
+      <div v-else-if="(maySetStatus || canManage) && !reMode" class="px-5 py-3.5 border-t border-gray-200 dark:border-gray-800 flex flex-wrap items-center gap-2">
+        <template v-if="maySetStatus">
+          <UButton
+            v-for="s in nextStatuses(booking.status)" :key="s"
+            size="sm" variant="soft" :color="(STATUS_META[s]?.color as any) || 'gray'"
+            :loading="busy" @click="setStatus(s)"
+          >{{ STATUS_META[s]?.label || s }}</UButton>
+        </template>
+        <span class="flex-1" />
+        <UButton
+          v-if="canManage"
+          size="sm" variant="ghost" color="gray" icon="lucide:pencil" @click="openEdit"
+        >{{ t('common.edit') || 'Изменить' }}</UButton>
+        <UButton
+          v-if="canManage && (booking.status === 'NEW' || booking.status === 'CONFIRMED')"
+          size="sm" variant="ghost" color="gray" icon="lucide:calendar-clock" @click="openReschedule"
+        >{{ t('plans.reschedule') || 'Перенести' }}</UButton>
+      </div>
+    </div>
+  </USlideover>
+</template>

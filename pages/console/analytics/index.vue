@@ -744,6 +744,7 @@ const APPS = [
   { key: 'menu', label: 'Orders', applicationCode: 'pieceowater.menu', colorClass: 'bg-teal-500 dark:bg-teal-400' },
   { key: 'issues', label: 'Issues', applicationCode: 'pieceowater.issues', colorClass: 'bg-indigo-500 dark:bg-indigo-400' },
   { key: 'goods', label: 'Goods', applicationCode: 'pieceowater.goods', colorClass: 'bg-rose-500 dark:bg-rose-400' },
+  { key: 'plans', label: 'Запись', applicationCode: 'pieceowater.plans', colorClass: 'bg-violet-500 dark:bg-violet-400' },
 ] as const;
 
 // ─── Namespace activity (owner/member last hub session, see api lastActiveAt) ─
@@ -1186,11 +1187,13 @@ const TARGET_OPTIONS = computed(() => [
   { value: 'pieceowater.menu', label: 'Orders (в приложение)' },
   { value: 'pieceowater.issues', label: 'Issues (в приложение)' },
   { value: 'pieceowater.goods', label: 'Goods (в приложение)' },
+  { value: 'pieceowater.plans', label: 'Запись (в приложение)' },
   { value: 'landing:atrace', label: 'A-Trace (лендинг)' },
   { value: 'landing:contacts', label: 'Contacts (лендинг)' },
   { value: 'landing:menu', label: 'Orders (лендинг)' },
   { value: 'landing:issues', label: 'Issues (лендинг)' },
   { value: 'landing:goods', label: 'Goods (лендинг)' },
+  { value: 'landing:plans', label: 'Запись (лендинг)' },
   // Not a real app bundle -- /chekalka is a standalone conversion page for
   // chekalka.kz-sourced traffic only (see pages/chekalka.vue), so it's
   // special-cased in server/routes/l/[code].get.ts rather than resolved

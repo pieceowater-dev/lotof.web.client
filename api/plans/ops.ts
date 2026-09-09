@@ -40,7 +40,8 @@ export interface PlansBookingSummary { total: number; completed: number; cancell
 export interface PlansMasterLoad { masterId: string; bookingCount: number; bookedMinutes: number; availableMinutes: number; }
 
 const LOCATION_FIELDS = `id name address phone lat lng isActive isPrimary slug timezone description categoryTags createdAt`;
-const WH_FIELDS = `id locationId masterId dayOfWeek startTime endTime isDayOff`;
+const LOC_WH_FIELDS = `id locationId dayOfWeek startTime endTime isDayOff`;
+const MST_WH_FIELDS = `id masterId dayOfWeek startTime endTime isDayOff`;
 const SERVICE_FIELDS = `id categoryId name description durationMinutes bufferAfterMinutes price requiresMaster color imageUrl isActive sortOrder createdAt`;
 const MASTER_FIELDS = `id locationId name photoUrl bio phone staffId atraceMemberId color sortOrder isActive createdAt`;
 const BOOKING_FIELDS = `id locationId masterId clientId clientName clientPhone startAt endAt status source sourceTag comment publicToken totalPrice createdBy createdAt confirmedAt cancelledAt cancellationReason`;
@@ -63,9 +64,9 @@ export const plansApi = {
   deleteLocation: (ns: string, id: string) =>
     q<{ deletePlansLocation: { success: boolean } }>(ns, `mutation($id:ID!){ deletePlansLocation(id:$id){ success } }`, { id }).then(r => r.deletePlansLocation.success),
   locationWorkingHours: (ns: string, locationId: string) =>
-    q<{ plansLocationWorkingHours: PlansWorkingHours[] }>(ns, `query($l:ID!){ plansLocationWorkingHours(locationId:$l){ ${WH_FIELDS} } }`, { l: locationId }).then(r => r.plansLocationWorkingHours),
+    q<{ plansLocationWorkingHours: PlansWorkingHours[] }>(ns, `query($l:ID!){ plansLocationWorkingHours(locationId:$l){ ${LOC_WH_FIELDS} } }`, { l: locationId }).then(r => r.plansLocationWorkingHours),
   setLocationWorkingHours: (ns: string, locationId: string, hours: any[]) =>
-    q<{ setPlansLocationWorkingHours: PlansWorkingHours[] }>(ns, `mutation($l:ID!,$h:[WorkingHoursDayInput!]!){ setPlansLocationWorkingHours(locationId:$l,hours:$h){ ${WH_FIELDS} } }`, { l: locationId, h: hours }).then(r => r.setPlansLocationWorkingHours),
+    q<{ setPlansLocationWorkingHours: PlansWorkingHours[] }>(ns, `mutation($l:ID!,$h:[WorkingHoursDayInput!]!){ setPlansLocationWorkingHours(locationId:$l,hours:$h){ ${LOC_WH_FIELDS} } }`, { l: locationId, h: hours }).then(r => r.setPlansLocationWorkingHours),
 
   // categories + services
   categories: (ns: string) =>
@@ -93,9 +94,9 @@ export const plansApi = {
   deleteMaster: (ns: string, id: string) =>
     q<{ deletePlansMaster: { success: boolean } }>(ns, `mutation($id:ID!){ deletePlansMaster(id:$id){ success } }`, { id }).then(r => r.deletePlansMaster.success),
   masterWorkingHours: (ns: string, masterId: string) =>
-    q<{ plansMasterWorkingHours: PlansWorkingHours[] }>(ns, `query($m:ID!){ plansMasterWorkingHours(masterId:$m){ ${WH_FIELDS} } }`, { m: masterId }).then(r => r.plansMasterWorkingHours),
+    q<{ plansMasterWorkingHours: PlansWorkingHours[] }>(ns, `query($m:ID!){ plansMasterWorkingHours(masterId:$m){ ${MST_WH_FIELDS} } }`, { m: masterId }).then(r => r.plansMasterWorkingHours),
   setMasterWorkingHours: (ns: string, masterId: string, hours: any[]) =>
-    q<{ setPlansMasterWorkingHours: PlansWorkingHours[] }>(ns, `mutation($m:ID!,$h:[WorkingHoursDayInput!]!){ setPlansMasterWorkingHours(masterId:$m,hours:$h){ ${WH_FIELDS} } }`, { m: masterId, h: hours }).then(r => r.setPlansMasterWorkingHours),
+    q<{ setPlansMasterWorkingHours: PlansWorkingHours[] }>(ns, `mutation($m:ID!,$h:[WorkingHoursDayInput!]!){ setPlansMasterWorkingHours(masterId:$m,hours:$h){ ${MST_WH_FIELDS} } }`, { m: masterId, h: hours }).then(r => r.setPlansMasterWorkingHours),
   masterServices: (ns: string, masterId: string) =>
     q<{ masterServices: PlansMasterService[] }>(ns, `query($m:ID!){ masterServices(masterId:$m){ id masterId serviceId customDurationMinutes customPrice } }`, { m: masterId }).then(r => r.masterServices),
   setMasterServices: (ns: string, masterId: string, items: any[]) =>
@@ -118,6 +119,8 @@ export const plansApi = {
     q<{ createBooking: PlansBooking }>(ns, `mutation($input:CreatePlansBookingInput!){ createBooking(input:$input){ ${BOOKING_FIELDS} } }`, { input }).then(r => r.createBooking),
   updateBookingStatus: (ns: string, id: string, status: string, comment?: string) =>
     q<{ updateBookingStatus: PlansBooking }>(ns, `mutation($id:ID!,$s:String!,$c:String){ updateBookingStatus(id:$id,status:$s,comment:$c){ ${BOOKING_FIELDS} } }`, { id, s: status, c: comment }).then(r => r.updateBookingStatus),
+  updateBooking: (ns: string, id: string, clientName: string, clientPhone: string, comment?: string | null) =>
+    q<{ updateBooking: PlansBooking }>(ns, `mutation($id:ID!,$n:String!,$p:String!,$c:String){ updateBooking(id:$id,clientName:$n,clientPhone:$p,comment:$c){ ${BOOKING_FIELDS} } }`, { id, n: clientName, p: clientPhone, c: comment ?? null }).then(r => r.updateBooking),
   rescheduleBooking: (ns: string, id: string, startAt: string, masterId?: string) =>
     q<{ rescheduleBooking: PlansBooking }>(ns, `mutation($id:ID!,$s:String!,$m:ID){ rescheduleBooking(id:$id,startAt:$s,masterId:$m){ ${BOOKING_FIELDS} } }`, { id, s: startAt, m: masterId }).then(r => r.rescheduleBooking),
   availableSlots: (ns: string, locationId: string, serviceId: string, date: string, masterId?: string) =>
@@ -140,7 +143,19 @@ export const plansApi = {
     q<{ summarizeBookings: PlansBookingSummary }>(ns, `query($f:String,$t:String){ summarizeBookings(from:$f,to:$t){ total completed cancelled noShow revenue } }`, { f: from, t: to }).then(r => r.summarizeBookings),
   masterLoad: (ns: string, from?: string, to?: string) =>
     q<{ masterLoad: PlansMasterLoad[] }>(ns, `query($f:String,$t:String){ masterLoad(from:$f,to:$t){ masterId bookingCount bookedMinutes availableMinutes } }`, { f: from, t: to }).then(r => r.masterLoad),
+
+  // staff (namespace members × plans role)
+  staff: (ns: string) =>
+    q<{ plansStaff: { rows: PlansStaffRow[] } }>(ns, `query{ plansStaff { rows { id userId role } } }`).then(r => r.plansStaff.rows),
+  createStaff: (ns: string, userId: string, role: string) =>
+    q<{ createPlansStaff: PlansStaffRow }>(ns, `mutation($i:CreatePlansStaffInput!){ createPlansStaff(input:$i){ id userId role } }`, { i: { userId, role } }).then(r => r.createPlansStaff),
+  updateStaffRole: (ns: string, id: string, role: string) =>
+    q<{ updatePlansStaffRole: PlansStaffRow }>(ns, `mutation($i:UpdatePlansStaffRoleInput!){ updatePlansStaffRole(input:$i){ id userId role } }`, { i: { id, role } }).then(r => r.updatePlansStaffRole),
+  deleteStaff: (ns: string, id: string) =>
+    q<{ deletePlansStaff: { success: boolean } }>(ns, `mutation($id:ID!){ deletePlansStaff(id:$id){ success } }`, { id }).then(r => r.deletePlansStaff.success),
 };
+
+export interface PlansStaffRow { id: string; userId: string; role: string; }
 
 // ---------- public (unauthenticated; namespace via header) ----------
 
@@ -152,7 +167,7 @@ export const plansPublicApi = {
   settings: (ns: string) => pub<{ publicPlansSettings: PlansSettings }>(ns, `query{ publicPlansSettings { ${SETTINGS_FIELDS} } }`).then(r => r.publicPlansSettings),
   location: (ns: string, slug: string) => pub<{ publicLocation: PlansLocation | null }>(ns, `query($s:String!){ publicLocation(slug:$s){ ${LOCATION_FIELDS} } }`, { s: slug }).then(r => r.publicLocation),
   locations: (ns: string) => pub<{ publicLocations: { rows: PlansLocation[] } }>(ns, `query{ publicLocations { rows { ${LOCATION_FIELDS} } } }`).then(r => r.publicLocations.rows),
-  locationWorkingHours: (ns: string, locationId: string) => pub<{ publicLocationWorkingHours: PlansWorkingHours[] }>(ns, `query($l:ID!){ publicLocationWorkingHours(locationId:$l){ ${WH_FIELDS} } }`, { l: locationId }).then(r => r.publicLocationWorkingHours),
+  locationWorkingHours: (ns: string, locationId: string) => pub<{ publicLocationWorkingHours: PlansWorkingHours[] }>(ns, `query($l:ID!){ publicLocationWorkingHours(locationId:$l){ ${LOC_WH_FIELDS} } }`, { l: locationId }).then(r => r.publicLocationWorkingHours),
   categories: (ns: string) => pub<{ publicServiceCategories: { rows: ServiceCategory[] } }>(ns, `query{ publicServiceCategories { rows { id parentId name sortOrder isActive } } }`).then(r => r.publicServiceCategories.rows),
   services: (ns: string) => pub<{ publicServices: { rows: PlansService[] } }>(ns, `query{ publicServices { rows { ${SERVICE_FIELDS} } } }`).then(r => r.publicServices.rows),
   masters: (ns: string, serviceId?: string, locationId?: string) => pub<{ publicMasters: { rows: PlansMaster[] } }>(ns, `query($s:ID,$l:ID){ publicMasters(serviceId:$s,locationId:$l){ rows { ${MASTER_FIELDS} } } }`, { s: serviceId, l: locationId }).then(r => r.publicMasters.rows),
@@ -168,4 +183,13 @@ export const plansPublicApi = {
     pub<{ publicCancelBooking: PlansBooking }>(ns, `mutation($t:String!,$r:String){ publicCancelBooking(publicToken:$t,reason:$r){ ${BOOKING_FIELDS} } }`, { t: token, r: reason }).then(r => r.publicCancelBooking),
   rescheduleBooking: (ns: string, token: string, startAt: string, masterId?: string) =>
     pub<{ publicRescheduleBooking: PlansBooking }>(ns, `mutation($t:String!,$s:String!,$m:ID){ publicRescheduleBooking(publicToken:$t,startAt:$s,masterId:$m){ ${BOOKING_FIELDS} } }`, { t: token, s: startAt, m: masterId }).then(r => r.publicRescheduleBooking),
+  bookingServices: (ns: string, token: string) =>
+    pub<{ publicBookingServices: PlansBookingLine[] }>(ns, `query($t:String!){ publicBookingServices(publicToken:$t){ id bookingId serviceId serviceName durationMinutesAtBooking } }`, { t: token }).then(r => r.publicBookingServices),
+  // A logged-in Patron's own bookings at this business — identity from a
+  // verified patron token, not a phone number.
+  myBookings: (ns: string, patronToken: string) =>
+    plansClient.request<{ myPlansBookings: PlansBooking[] }>(
+      `query{ myPlansBookings { ${BOOKING_FIELDS} } }`, {},
+      { headers: { Namespace: ns, Authorization: `Bearer ${patronToken}` } },
+    ).then(r => r.myPlansBookings),
 };

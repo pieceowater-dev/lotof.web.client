@@ -13,9 +13,15 @@ export async function plansRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: s
   try {
     return await fn();
   } catch (error: any) {
-    const isUnauthorized = error?.response?.errors?.some((e: any) =>
-      typeof e.message === 'string' && e.message.includes('PlansAuthorization token is invalid'),
-    );
+    // The gateway rejects a request with no app token ("token is missing for
+    // key \"PlansAuthorization\"") differently from an expired/invalid one
+    // ("PlansAuthorization token is invalid"). Both mean the same thing to us:
+    // (re)exchange the hub token for a plans token and retry once.
+    const isUnauthorized = error?.response?.errors?.some((e: any) => {
+      const m = typeof e?.message === 'string' ? e.message : '';
+      return m.includes('PlansAuthorization token is invalid')
+        || (m.includes('PlansAuthorization') && (m.includes('missing') || m.includes('unauthorized')));
+    });
     if (isUnauthorized) {
       try { useCookie(CookieKeys.PLANS_TOKEN).value = null as any; } catch {}
       setPlansAppToken(null);

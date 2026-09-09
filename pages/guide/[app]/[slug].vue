@@ -56,6 +56,8 @@ const resolvedAppLabel = computed(() => {
     case 'MENU': return t('app.menu');
     case 'CONTACTS': return t('app.clients');
     case 'ATRACE': return t('app.attendance');
+    case 'GOODS': return t('app.goods');
+    case 'PLANS': return t('app.plans');
     case 'LANDING': return t('guide.appLanding');
     default: return t('guide.appGlobal');
   }
