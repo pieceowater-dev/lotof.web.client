@@ -35,6 +35,7 @@ function paletteFor(id: string) {
 function storefrontPath(business: CatalogBusiness): string {
   const source = (business as { source?: string }).source;
   if (source === 'CONTACTS') return `/to/${business.namespaceSlug}/memberships`;
+  if (source === 'PLANS') return `/to/${business.namespaceSlug}/plans`;
   return `/to/${business.namespaceSlug}/menu`;
 }
 

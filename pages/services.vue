@@ -1,23 +1,41 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { getCatalogBusinesses, type CatalogBusiness } from '@/api/hub/catalog';
+import { FilterPaginationLengthEnum } from '@/api/__generated__/hub-types';
+import { logError } from '@/utils/logger';
 
 const { t } = useI18n();
 
-// Single-vertical filtered view of the Catalog: lota Plans businesses only
-// (booking/appointment-based services). Unlike /catalog and /stores, this
-// page has no real data source at all yet -- lota Plans isn't aggregated
-// into lotof.hub.msvc.core (see that repo's BusinessSource.PLANS, reserved
-// but unused). A genuine empty state, not fabricated mock businesses,
-// since real ones now appear next to this on /catalog and /stores.
-const categories = [
-  { key: 'barbershop', icon: 'lucide:scissors', label: 'Барбершопы' },
-  { key: 'nails', icon: 'lucide:sparkles', label: 'Маникюр' },
-  { key: 'spa', icon: 'lucide:flower-2', label: 'Спа и массаж' },
-  { key: 'beauty', icon: 'lucide:wand-2', label: 'Косметология' },
-  { key: 'lashes', icon: 'lucide:eye', label: 'Ресницы и брови' },
-] as const;
-const activeCategory = ref('barbershop');
+// A single-vertical view of the Catalog: lota Plans businesses only
+// (appointment/booking services). Real data now — plans.gtw's catalogsync
+// pushes each tenant's locations into lotof.hub.msvc.core with source=PLANS.
+const businesses = ref<CatalogBusiness[]>([]);
+const loading = ref(true);
+
+const plansBusinesses = computed(() => {
+  // Dedupe by namespace — one card per salon, not per location.
+  const seen = new Set<string>();
+  return businesses.value
+    .filter((b) => (b.source || 'MENU') === 'PLANS')
+    .filter((b) => {
+      const key = b.namespaceSlug || b.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+});
+
+onMounted(async () => {
+  try {
+    const { rows } = await getCatalogBusinesses({ length: FilterPaginationLengthEnum.OneHundred });
+    businesses.value = rows;
+  } catch (e) {
+    logError('[services] failed to load catalog businesses', e);
+  } finally {
+    loading.value = false;
+  }
+});
 
 const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
 useSeoMeta({
@@ -44,49 +62,50 @@ useSeoMeta({
         <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ t('home.servicesSubtitle') || 'Запись и бронирование на lota Plans' }}</p>
       </div>
 
-      <div class="flex flex-col gap-8">
-        <!-- Categories -->
-        <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
-          <div class="flex gap-2">
-            <button
-              v-for="cat in categories"
-              :key="cat.key"
-              type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
-              :class="activeCategory === cat.key
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
-              @click="activeCategory = cat.key"
-            >
-              <UIcon :name="cat.icon" class="w-4 h-4" />
-              {{ cat.label }}
-            </button>
-          </div>
-        </div>
+      <div v-if="loading" class="py-16 flex justify-center">
+        <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-gray-400" />
+      </div>
 
-        <!-- No real lota Plans aggregation yet -- see script comment above. -->
-        <div class="rounded-3xl p-8 md:p-10 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-3">
-          <div class="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-            <UIcon name="lucide:scissors" class="w-7 h-7 text-violet-500" />
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            {{ t('home.servicesComingSoonTitle') || 'Скоро здесь появятся заведения' }}
-          </h3>
-          <p class="max-w-md text-sm text-gray-500 dark:text-gray-400">
-            {{ t('home.servicesComingSoonSubtitle') || 'lota Plans пока не подключена к каталогу — запись и бронирование появятся здесь позже.' }}
-          </p>
+      <div v-else-if="!plansBusinesses.length"
+           class="rounded-3xl p-8 md:p-10 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col items-center text-center gap-3">
+        <div class="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
+          <UIcon name="lucide:calendar-check" class="w-7 h-7 text-violet-500" />
         </div>
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+          {{ t('home.servicesComingSoonTitle') || 'Здесь пока нет заведений' }}
+        </h3>
+        <p class="max-w-md text-sm text-gray-500 dark:text-gray-400">
+          {{ t('home.servicesEmptySubtitle') || 'Салоны и мастера с онлайн-записью на lota Plans появятся здесь.' }}
+        </p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <NuxtLink
+          v-for="b in plansBusinesses"
+          :key="b.id"
+          :to="`/to/${b.namespaceSlug}/plans`"
+          class="group rounded-3xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+        >
+          <div class="h-32 bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/20 flex items-center justify-center">
+            <img v-if="b.logoUrl" :src="b.logoUrl" alt="" class="h-16 w-16 rounded-2xl object-contain bg-white shadow-sm" />
+            <UIcon v-else name="lucide:calendar-check" class="w-10 h-10 text-violet-400" />
+          </div>
+          <div class="p-4">
+            <div class="flex items-center justify-between gap-2">
+              <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ b.name }}</h3>
+              <span v-if="b.reviewCount" class="flex items-center gap-1 text-xs text-amber-500 flex-shrink-0">
+                <UIcon name="lucide:star" class="w-3.5 h-3.5 fill-current" /> {{ b.avgRating.toFixed(1) }}
+              </span>
+            </div>
+            <p v-if="b.address" class="mt-1 text-xs text-gray-500 dark:text-gray-400 truncate">{{ b.address }}</p>
+            <p v-else-if="b.description" class="mt-1 text-xs text-gray-500 dark:text-gray-400 line-clamp-2">{{ b.description }}</p>
+            <span class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400">
+              {{ t('home.bookNow') || 'Записаться' }}
+              <UIcon name="lucide:arrow-right" class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+            </span>
+          </div>
+        </NuxtLink>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-</style>

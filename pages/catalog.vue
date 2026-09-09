@@ -133,6 +133,7 @@ const favoritesOnly = ref(false);
 const realBusinesses = ref<MockBusiness[] | null>(null);
 // lota Contacts membership pages — their own row, kept apart from lota Menu.
 const realMemberships = ref<MockBusiness[] | null>(null);
+const realPlans = ref<MockBusiness[] | null>(null);
 const favoriteIds = ref<Set<string>>(new Set());
 const reviews = ref<MockReview[]>([]);
 
@@ -158,12 +159,16 @@ async function loadCatalogFeed() {
     const allDeduped = dedupeByBrand(businessesResp.rows)
       .slice()
       .sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
-    // lota Menu storefronts and lota Contacts membership pages are kept in
-    // separate rows — never mixed (product decision).
-    const isMembership = (b: (typeof allDeduped)[number]) => ((b as { source?: string }).source || 'MENU') === 'CONTACTS';
-    const menuRows = allDeduped.filter((b) => !isMembership(b)).slice(0, 10);
+    // lota Menu storefronts, lota Contacts membership pages and lota Plans
+    // booking pages are kept in separate rows — never mixed (product decision).
+    const srcOf = (b: (typeof allDeduped)[number]) => ((b as { source?: string }).source || 'MENU');
+    const isMembership = (b: (typeof allDeduped)[number]) => srcOf(b) === 'CONTACTS';
+    const isPlans = (b: (typeof allDeduped)[number]) => srcOf(b) === 'PLANS';
+    const menuRows = allDeduped.filter((b) => srcOf(b) === 'MENU').slice(0, 10);
     const memberRows = allDeduped.filter(isMembership).slice(0, 10);
+    const plansRows = allDeduped.filter(isPlans).slice(0, 10);
     realMemberships.value = memberRows.length ? memberRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
+    realPlans.value = plansRows.length ? plansRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
     const deduped = menuRows;
     if (deduped.length > 0) {
       realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
@@ -238,6 +243,7 @@ function narrowToFavorites(list: MockBusiness[] | null) {
 }
 const realBusinessesFiltered = computed(() => narrowToFavorites(realBusinesses.value));
 const realMembershipsFiltered = computed(() => narrowToFavorites(realMemberships.value));
+const realPlansFiltered = computed(() => narrowToFavorites(realPlans.value));
 
 // Feed rows: real lota Menu venues, then real lota Contacts membership pages
 // (kept as a separate row — never mixed), then the lota Plans mock
@@ -246,8 +252,9 @@ const realMembershipsFiltered = computed(() => narrowToFavorites(realMemberships
 const businessSections = computed(() => [
   { key: 'popular', title: 'Заведения на lota', to: '/stores', items: realBusinessesFiltered.value },
   { key: 'memberships', title: t('membership.nav') || 'Абонементы', to: '/memberships', items: realMembershipsFiltered.value },
-  { key: 'barbers', title: 'Стрижка и барбершопы', to: '/services', items: favoritesOnly.value ? [] : plansBarbershops },
-  { key: 'beauty', title: 'Красота и уход', to: '/services', items: favoritesOnly.value ? [] : plansBeauty },
+  { key: 'plans', title: t('home.servicesTitle') || 'Запись онлайн', to: '/services', items: realPlansFiltered.value },
+  { key: 'barbers', title: 'Стрижка и барбершопы', to: '/services', items: favoritesOnly.value || realPlans.value ? [] : plansBarbershops },
+  { key: 'beauty', title: 'Красота и уход', to: '/services', items: favoritesOnly.value || realPlans.value ? [] : plansBeauty },
 ]);
 
 async function toggleFavorite(key: string) {
