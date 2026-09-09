@@ -6,6 +6,8 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { MenuBadge } from '@/api/menu/badge/list';
 import { useMenuPlanLimits } from '@/composables/useMenuPlanLimits';
+import ColorSwatch from '@/components/ui/ColorSwatch.vue';
+import { BADGE_TEXT_COLORS } from '@/utils/color';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -273,12 +275,12 @@ watch(() => props.modelValue, async (open) => {
               </UPopover>
             </UFormGroup>
           </div>
-          <div class="grid grid-cols-2 gap-3">
+          <div class="space-y-3">
             <UFormGroup :label="t('menu.bgColor') || 'Background color'">
-              <input v-model="form.bgColor" type="color" class="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent">
+              <ColorSwatch v-model="form.bgColor" size="sm" />
             </UFormGroup>
             <UFormGroup :label="t('menu.textColor') || 'Text color'">
-              <input v-model="form.textColor" type="color" class="h-9 w-full rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent">
+              <ColorSwatch v-model="form.textColor" :palette="BADGE_TEXT_COLORS" size="sm" />
             </UFormGroup>
           </div>
         </div>

@@ -2,13 +2,13 @@
 // A small fixed palette of colour swatches — never a raw colour wheel.
 // Tenants pick from curated on-brand hues so nothing eye-searing lands on
 // a public page. Used for master / service dot colours across lota Plans.
-import { PLANS_BRAND_COLORS } from '@/utils/color';
+import { BRAND_COLORS } from '@/utils/color';
 
 const props = withDefaults(defineProps<{
   modelValue?: string | null;
   palette?: string[];
   size?: 'sm' | 'md';
-}>(), { modelValue: '', palette: () => PLANS_BRAND_COLORS, size: 'md' });
+}>(), { modelValue: '', palette: () => BRAND_COLORS, size: 'md' });
 
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 

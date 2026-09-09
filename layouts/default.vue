@@ -36,9 +36,17 @@ const QUIET_FOOTER = /^\/(console(\/|$)|[^/]+\/(menu|atrace|issues|contacts|good
 // `h-full`-rooted workspace pages that manage their own internal scroll —
 // console pages are normal scrolling content and must NOT be in here (their
 // footer was overlapping because of the shared min-h-0).
-const WORKSPACE_PAGE = /^\/[^/]+\/(menu|atrace|issues|contacts|goods|bundles|plans)(\/|$)/;
+const WORKSPACE_PAGE = /^\/[^/]+\/(menu|atrace|issues|contacts|goods|plans)(\/|$)/;
 
-const isWorkspacePage = computed(() => WORKSPACE_PAGE.test(route.path));
+// …but the tariff / bundle pricing pages that live under a namespace
+// (`/ns/bundles`, `/ns/plans/plans`) are tall auto-height scrolling pages,
+// NOT h-full shells — with min-h-0 the content box shrinks below its
+// content and the footer rides up over it. Exclude them.
+const PRICING_PAGE = /^\/[^/]+\/(bundles|plans\/plans)(\/|$)/;
+
+const isWorkspacePage = computed(
+  () => WORKSPACE_PAGE.test(route.path) && !PRICING_PAGE.test(route.path),
+);
 
 const footerVariant = computed<'full' | 'minimal'>(() =>
   QUIET_FOOTER.test(route.path) ? 'minimal' : 'full',

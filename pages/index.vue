@@ -13,7 +13,12 @@ import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, format
 
 // Composables
 const { user, isLoggedIn, initialized, justLoggedOut, fetchUser, login } = useAuth();
-const { selected: selectedNS } = useNamespace();
+const { selected: selectedNS, all: allNamespaces } = useNamespace();
+// The bare "/" route never runs the namespace middleware, so selectedNS can
+// still be empty for a beat after hydration while useNamespace's own watcher
+// resolves it. Fall back to the first known namespace so the per-namespace
+// storefront links on the app cards aren't hidden in that window.
+const dashboardNs = computed(() => selectedNS.value || allNamespaces.value?.[0] || '');
 const { set: setPreferredSpace } = usePreferredSpace();
 
 const router = useRouter();
@@ -257,7 +262,7 @@ const STOREFRONT_APPS: Record<string, { path: (ns: string) => string; labelKey: 
 
 function toCard(app: AppConfig) {
   const routePath = appRoutePath(app);
-  const ns = selectedNS.value;
+  const ns = dashboardNs.value;
   const sf = STOREFRONT_APPS[app.address];
   return {
     key: app.bundle,

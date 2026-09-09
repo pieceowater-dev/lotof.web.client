@@ -34,10 +34,11 @@ export function getContrastTextColor(backgroundHex: string, dark = '#111827', li
   return contrastWithBlack > contrastWithWhite ? dark : light
 }
 
-// Curated brand-colour presets for lota Plans (public booking page header).
-// A short list of tasteful, on-brand hues so tenants don't hand-pick
-// eye-searing values from a raw colour wheel.
-export const PLANS_BRAND_COLORS: string[] = [
+// Curated brand-colour presets. A short list of tasteful, on-brand hues so
+// tenants pick from swatches instead of hand-picking eye-searing values off
+// a raw colour wheel — used for every brand / accent / dot colour across
+// lota Plans, Menu and Contacts (there are no `<input type=color>` fields).
+export const BRAND_COLORS: string[] = [
   '#7c3aed', // violet (default)
   '#4f46e5', // indigo
   '#2563eb', // blue
@@ -53,4 +54,20 @@ export const PLANS_BRAND_COLORS: string[] = [
   '#c026d3', // fuchsia
   '#4b5563', // slate
   '#111827', // near-black
+]
+
+// Back-compat alias — earlier code imported this name.
+export const PLANS_BRAND_COLORS = BRAND_COLORS
+
+// Foreground presets for badge / chip text: white plus a few dark tones
+// that stay readable on the light and mid-tone backgrounds above.
+export const BADGE_TEXT_COLORS: string[] = [
+  '#ffffff', // white
+  '#111827', // near-black
+  '#374151', // gray
+  '#1e3a8a', // deep blue
+  '#3730a3', // deep indigo
+  '#065f46', // deep emerald
+  '#7c2d12', // deep orange-brown
+  '#831843', // deep rose
 ]

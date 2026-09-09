@@ -4,6 +4,7 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
+import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { getContrastTextColor } from '@/utils/color';
 import { parseSocialLinks, serializeSocialLinks, socialIcon, socialLabel, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
 import { CURRENCIES, formatMoney } from '@/utils/currency';
@@ -247,16 +248,10 @@ onMounted(load);
         <div v-else-if="activeSection === 'colors'" class="rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <UFormGroup :label="t('menu.primaryColor') || 'Primary color'">
-              <div class="flex items-center gap-2">
-                <input v-model="form.primaryColor" type="color" class="h-9 w-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent flex-shrink-0">
-                <UInput v-model="form.primaryColor" size="lg" placeholder="#3b82f6" class="flex-1" />
-              </div>
+              <ColorSwatch v-model="form.primaryColor" />
             </UFormGroup>
             <UFormGroup :label="t('menu.secondaryColor') || 'Secondary color'">
-              <div class="flex items-center gap-2">
-                <input v-model="form.secondaryColor" type="color" class="h-9 w-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent flex-shrink-0">
-                <UInput v-model="form.secondaryColor" size="lg" placeholder="#3e5f52" class="flex-1" />
-              </div>
+              <ColorSwatch v-model="form.secondaryColor" />
             </UFormGroup>
           </div>
         </div>
