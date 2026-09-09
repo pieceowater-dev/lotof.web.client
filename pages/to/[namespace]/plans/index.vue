@@ -101,10 +101,16 @@ async function pickService(s: PlansService) {
   try {
     eligibleMasters.value = (await plansPublicApi.masters(nsSlug.value, s.id, location.value?.id)).filter(m => m.isActive);
   } catch (e) { logError('[plans public] masters', e); }
+  // Skip the master step entirely unless the service actually requires the
+  // client to pick one: "requiresMaster: false" means any available master
+  // (or a resource-style booking — court, field, bay — with no masters at
+  // all). The slot's own masterIds resolve the assignment at submit.
+  if (!s.requiresMaster || !eligibleMasters.value.length) {
+    chosenMasterId.value = '';
+    goToSlots();
+    return;
+  }
   step.value = 2;
-  // No masters to choose from (resource-style booking: courts, fields, bays)
-  // -> skip straight to time selection.
-  if (!eligibleMasters.value.length && !s.requiresMaster) { chosenMasterId.value = ''; goToSlots(); }
 }
 
 function goToSlots() { step.value = 3; loadDays(); loadSlots(); }

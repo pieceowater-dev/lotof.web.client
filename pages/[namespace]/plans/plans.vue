@@ -80,6 +80,25 @@ async function fetchActiveSubscription() {
   }
 }
 
+// A namespace can end up with an active Plans subscription (e.g. via the
+// Lota Ultimate bundle) without the app ever being registered in
+// namespace_apps — the home tile then still says "Подключить". Self-heal:
+// whenever we see an active subscription, make sure the app is installed.
+async function ensureAppInstalledIfSubscribed() {
+  if (!activeSubscription.value) return;
+  const hubToken = useCookie<string | null>('token', { path: '/' }).value;
+  if (!hubToken) return;
+  try {
+    const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+    await hubAddAppToNamespace(hubToken, nsSlug.value, APP_BUNDLE);
+  } catch (e) {
+    const msg = getErrorMessage(e, t).toLowerCase();
+    if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
+      console.error('ensureAppInstalledIfSubscribed:', e);
+    }
+  }
+}
+
 async function redirectIfAlreadySubscribed() {
   if (redirectingAfterReturn.value) return;
   if (!activeSubscription.value) return;
@@ -197,6 +216,7 @@ onMounted(async () => {
 
   await fetchPlans();
   await fetchActiveSubscription();
+  await ensureAppInstalledIfSubscribed();
   await redirectIfAlreadySubscribed();
   await autoSelectFreePlanIfNeeded();
 });

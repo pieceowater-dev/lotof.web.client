@@ -153,6 +153,25 @@ async function subscribe(b: Bundle) {
       });
       return;
     }
+    // Capital now has a subscription per app in the bundle, but the apps
+    // still have to be registered in the namespace (hub's namespace_apps) or
+    // the home tiles keep showing "Подключить". Mirror what the per-app
+    // tariff page does after a single subscribe.
+    try {
+      const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+      await Promise.all(
+        [...new Set(b.items.map((it) => it.applicationCode))].filter(Boolean).map(async (appBundle) => {
+          try { await hubAddAppToNamespace(token, ns.value, appBundle); }
+          catch (installErr: any) {
+            const msg = String(installErr?.message || '').toLowerCase();
+            if (!msg.includes('already exists') && !msg.includes('already in the namespace')) throw installErr;
+          }
+        }),
+      );
+    } catch (e) {
+      logError('[bundles] app install after bundle activate failed', e);
+    }
+
     try {
       useAnalytics().track('bundle_subscribed', { bundle: b.code });
     } catch {}
