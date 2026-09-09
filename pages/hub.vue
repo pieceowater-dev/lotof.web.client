@@ -745,10 +745,10 @@ watch(user, (u) => {
               <template v-for="app in dashboardApps" :key="app.bundle">
                 <div
                   v-if="appInstalled[app.bundle] && appRoutePath(app)"
-                  class="group relative rounded-2xl p-3 text-center transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800 flex flex-col"
+                  class="group relative rounded-2xl transition-all bg-white/85 dark:bg-gray-800 hover:shadow-md border border-blue-200 dark:border-blue-800"
                 >
-                  <NuxtLink :to="appRoutePath(app) || '/'" class="flex flex-col items-center">
-                    <div class="mx-auto w-14 h-14 rounded-2xl flex items-center justify-center">
+                  <NuxtLink :to="appRoutePath(app) || '/'" class="flex flex-col items-center p-3 text-center">
+                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center">
                       <UIcon
                         :name="app.icon"
                         class="w-8 h-8 bg-gradient-to-r from-blue-600 to-emerald-500 [background-color:transparent]"
@@ -759,17 +759,19 @@ watch(user, (u) => {
                       {{ t('app.open') || 'Open' }}
                     </p>
                   </NuxtLink>
-                  <!-- external customer-facing page, right on the app's tile -->
+                  <!-- external customer-facing page — small corner button,
+                       opens in a new tab, never steals the tile's own click -->
                   <a
                     v-if="storefrontPath(app)"
                     :href="storefrontPath(app) || '#'"
                     target="_blank"
                     rel="noopener"
-                    class="mt-2 inline-flex items-center justify-center gap-1 rounded-lg border border-gray-200 dark:border-gray-700 px-2 py-1 text-[10px] font-semibold text-gray-500 dark:text-gray-400 hover:border-blue-300 hover:text-blue-600 dark:hover:text-blue-300 transition-colors"
+                    :title="t('app.externalStorefront') || 'Витрина'"
+                    :aria-label="t('app.externalStorefront') || 'Витрина'"
+                    class="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gray-100 text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:bg-gray-700/70 dark:text-gray-400 dark:hover:bg-blue-900/40 dark:hover:text-blue-300 transition-colors"
+                    @click.stop
                   >
-                    <UIcon name="lucide:store" class="w-3 h-3" />
-                    {{ t('app.externalStorefront') || 'Витрина' }}
-                    <UIcon name="lucide:external-link" class="w-2.5 h-2.5 opacity-70" />
+                    <UIcon name="lucide:store" class="h-3.5 w-3.5" />
                   </a>
                 </div>
 
