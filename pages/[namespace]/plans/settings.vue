@@ -10,9 +10,9 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { logError } from '@/utils/logger';
 import PlansImageUpload from '@/components/plans/PlansImageUpload.vue';
 import PhoneInput from '@/components/ui/PhoneInput.vue';
+import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { plansApi, type PlansLocation, type PlansSettings, type PlansShareLink, type PlansMaster, type PlansService } from '@/api/plans/ops';
 import { parseSocialLinks, serializeSocialLinks, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
-import { PLANS_BRAND_COLORS } from '@/utils/color';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -511,20 +511,10 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
               <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('plans.colors') || 'Цвета' }}</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <UFormGroup :label="t('plans.primaryColor') || 'Основной цвет'" :help="t('plans.primaryColorHint') || 'Цвет шапки публичной страницы'">
-                  <div class="flex flex-wrap gap-2">
-                    <button v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
-                      class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
-                      :class="(settings.primaryColor || '').toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
-                      :style="{ background: c }" @click="settings.primaryColor = c" />
-                  </div>
+                  <ColorSwatch v-model="settings.primaryColor" />
                 </UFormGroup>
                 <UFormGroup :label="t('plans.secondaryColor') || 'Дополнительный цвет'">
-                  <div class="flex flex-wrap gap-2">
-                    <button v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
-                      class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
-                      :class="(settings.secondaryColor || '').toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
-                      :style="{ background: c }" @click="settings.secondaryColor = c" />
-                  </div>
+                  <ColorSwatch v-model="settings.secondaryColor" />
                 </UFormGroup>
               </div>
             </div>
@@ -728,14 +718,12 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
               </UFormGroup>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <UFormGroup :label="t('plans.location') || 'Точка'" required>
-              <USelectMenu v-model="mstForm.locationId" :options="locationOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
-            </UFormGroup>
-            <UFormGroup :label="t('plans.color') || 'Цвет'">
-              <input type="color" v-model="mstForm.color" class="w-full h-9 rounded border border-gray-200 dark:border-gray-700 bg-transparent" />
-            </UFormGroup>
-          </div>
+          <UFormGroup :label="t('plans.location') || 'Точка'" required>
+            <USelectMenu v-model="mstForm.locationId" :options="locationOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+          <UFormGroup :label="t('plans.color') || 'Цвет'">
+            <ColorSwatch v-model="mstForm.color" size="sm" />
+          </UFormGroup>
           <UFormGroup :label="t('plans.bio') || 'Описание'">
             <UInput v-model="mstForm.bio" />
           </UFormGroup>

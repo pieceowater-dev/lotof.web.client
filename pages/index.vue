@@ -247,8 +247,18 @@ function appRoutePath(app: AppConfig): string | null {
   return sharedAppRoutePath(app, ns);
 }
 
+// Apps with a public, customer-facing page reachable straight from the
+// dashboard tile (opens in a new tab — see AppCard's storefront button).
+const STOREFRONT_APPS: Record<string, { path: (ns: string) => string; labelKey: string; fallback: string }> = {
+  menu: { path: (ns) => `/to/${ns}/menu`, labelKey: 'app.externalStorefront', fallback: 'Витрина' },
+  contacts: { path: (ns) => `/to/${ns}/memberships`, labelKey: 'app.externalMemberships', fallback: 'Абонементы' },
+  plans: { path: (ns) => `/to/${ns}/plans`, labelKey: 'app.externalBookingPage', fallback: 'Страница записи' },
+};
+
 function toCard(app: AppConfig) {
   const routePath = appRoutePath(app);
+  const ns = selectedNS.value;
+  const sf = STOREFRONT_APPS[app.address];
   return {
     key: app.bundle,
     icon: app.icon,
@@ -261,6 +271,8 @@ function toCard(app: AppConfig) {
       : (app.canAdd ? () => handleGetApp(app) : undefined),
     installed: appInstalled[app.bundle] ?? false,
     canAdd: app.canAdd,
+    storefrontTo: sf && ns ? sf.path(ns) : undefined,
+    storefrontLabel: sf ? (t(sf.labelKey) || sf.fallback) : undefined,
   };
 }
 

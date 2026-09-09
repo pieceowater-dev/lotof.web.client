@@ -4,8 +4,8 @@ import { usePlansAuth } from '@/composables/usePlansAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { getErrorMessage } from '@/utils/types/errors';
 import { plansApi } from '@/api/plans/ops';
-import { PLANS_BRAND_COLORS } from '@/utils/color';
 import PlansImageUpload from '@/components/plans/PlansImageUpload.vue';
+import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -151,15 +151,7 @@ async function finish() {
           </div>
         </div>
         <UFormGroup :label="t('plans.primaryColor') || 'Основной цвет'" :hint="t('plans.primaryColorHint') || 'Цвет шапки публичной страницы'">
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
-              class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
-              :class="brand.primaryColor.toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
-              :style="{ background: c }"
-              @click="brand.primaryColor = c"
-            />
-          </div>
+          <ColorSwatch v-model="brand.primaryColor" />
         </UFormGroup>
         <UFormGroup :label="t('plans.welcomeMessage') || 'Приветствие'">
           <UTextarea v-model="brand.welcomeMessage" :rows="2" autoresize :placeholder="t('plans.welcomePlaceholder') || 'Пара слов для клиентов на странице записи'" />

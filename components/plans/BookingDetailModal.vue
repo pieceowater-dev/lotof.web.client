@@ -144,19 +144,21 @@ watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.
   >
     <div v-if="booking" class="flex flex-col max-h-[85vh]">
       <!-- header -->
-      <div class="flex items-start justify-between gap-3 px-5 pt-3 pb-4 border-b border-gray-200 dark:border-gray-800">
-        <div class="min-w-0">
+      <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+        <span class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"
+              :style="{ background: master?.color || '#7c3aed' }">
+          {{ (booking.clientName || '?').slice(0, 1).toUpperCase() }}
+        </span>
+        <div class="min-w-0 flex-1">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white truncate">
             {{ editMode ? (t('plans.editBooking') || 'Изменить запись') : booking.clientName }}
           </h3>
-          <a v-if="!editMode" :href="`tel:${booking.clientPhone}`" class="text-sm text-primary-600 dark:text-primary-400 hover:underline">{{ booking.clientPhone }}</a>
+          <a v-if="!editMode" :href="`tel:${booking.clientPhone}`" class="text-sm text-primary-600 dark:text-primary-400 hover:underline tabular-nums">{{ booking.clientPhone }}</a>
         </div>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <UBadge :color="(STATUS_META[booking.status]?.color as any) || 'gray'" variant="subtle">
-            {{ STATUS_META[booking.status]?.label || booking.status }}
-          </UBadge>
-          <UButton icon="lucide:x" size="xs" variant="ghost" color="gray" @click="emit('update:modelValue', false)" />
-        </div>
+        <UBadge :color="(STATUS_META[booking.status]?.color as any) || 'gray'" variant="subtle" class="flex-shrink-0">
+          {{ STATUS_META[booking.status]?.label || booking.status }}
+        </UBadge>
+        <UButton icon="lucide:x" size="xs" variant="ghost" color="gray" class="flex-shrink-0" @click="emit('update:modelValue', false)" />
       </div>
 
       <!-- body -->
@@ -179,34 +181,46 @@ watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.
         </div>
 
         <!-- VIEW MODE: summary -->
-        <div v-else class="space-y-4">
-          <div>
-            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.when') || 'Когда' }}</div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 capitalize">{{ fmtDate(booking.startAt) }}</div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ fmtTime(booking.startAt) }} – {{ fmtTime(booking.endAt) }}</div>
-          </div>
-          <div>
-            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.master') || 'Мастер' }}</div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <span v-if="master" class="w-2 h-2 rounded-full" :style="{ background: master.color || '#7c3aed' }" />
-              {{ master?.name || (t('plans.anyMaster') || 'Без мастера') }}
+        <div v-else class="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-white/[0.03] divide-y divide-gray-100 dark:divide-gray-800">
+          <div class="flex items-start gap-3 px-3.5 py-3">
+            <UIcon name="lucide:calendar" class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs text-gray-400">{{ t('plans.when') || 'Когда' }}</div>
+              <div class="text-sm text-gray-900 dark:text-gray-100 capitalize">{{ fmtDate(booking.startAt) }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 tabular-nums">{{ fmtTime(booking.startAt) }} – {{ fmtTime(booking.endAt) }}</div>
             </div>
           </div>
-          <div v-if="serviceName">
-            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.service') || 'Услуга' }}</div>
-            <div class="text-sm text-gray-900 dark:text-gray-100">{{ serviceName }}</div>
+          <div class="flex items-center gap-3 px-3.5 py-3">
+            <UIcon name="lucide:user" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div class="min-w-0 flex-1">
+              <div class="text-xs text-gray-400">{{ t('plans.master') || 'Мастер' }}</div>
+              <div class="text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span v-if="master" class="w-2 h-2 rounded-full flex-shrink-0" :style="{ background: master.color || '#7c3aed' }" />
+                {{ master?.name || (t('plans.anyMaster') || 'Без мастера') }}
+              </div>
+            </div>
           </div>
-          <div v-if="booking.totalPrice">
-            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.price') || 'Стоимость' }}</div>
-            <div class="text-sm text-gray-900 dark:text-gray-100 tabular-nums">{{ booking.totalPrice }}</div>
+          <div v-if="serviceName" class="flex items-center gap-3 px-3.5 py-3">
+            <UIcon name="lucide:scissors" class="w-4 h-4 text-gray-400 flex-shrink-0" />
+            <div class="min-w-0 flex-1">
+              <div class="text-xs text-gray-400">{{ t('plans.service') || 'Услуга' }}</div>
+              <div class="text-sm text-gray-900 dark:text-gray-100">{{ serviceName }}</div>
+            </div>
+            <span v-if="booking.totalPrice" class="text-sm font-semibold text-gray-900 dark:text-gray-100 tabular-nums flex-shrink-0">{{ booking.totalPrice }}</span>
           </div>
-          <div v-if="booking.comment">
-            <div class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">{{ t('plans.comment') || 'Комментарий' }}</div>
-            <div class="text-sm text-gray-700 dark:text-gray-300">{{ booking.comment }}</div>
+          <div v-if="booking.comment" class="flex items-start gap-3 px-3.5 py-3">
+            <UIcon name="lucide:message-square" class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs text-gray-400">{{ t('plans.comment') || 'Комментарий' }}</div>
+              <div class="text-sm text-gray-700 dark:text-gray-300">{{ booking.comment }}</div>
+            </div>
           </div>
-          <div v-if="booking.cancellationReason">
-            <div class="text-xs font-medium text-red-400 uppercase tracking-wide mb-1">{{ t('plans.cancelReason') || 'Причина отмены' }}</div>
-            <div class="text-sm text-red-600 dark:text-red-400">{{ booking.cancellationReason }}</div>
+          <div v-if="booking.cancellationReason" class="flex items-start gap-3 px-3.5 py-3">
+            <UIcon name="lucide:x-circle" class="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+            <div class="min-w-0">
+              <div class="text-xs text-red-400">{{ t('plans.cancelReason') || 'Причина отмены' }}</div>
+              <div class="text-sm text-red-600 dark:text-red-400">{{ booking.cancellationReason }}</div>
+            </div>
           </div>
         </div>
 

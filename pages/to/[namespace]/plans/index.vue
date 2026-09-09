@@ -48,6 +48,17 @@ const onAccent = computed(() => getContrastTextColor(accent.value));
 const currency = computed(() => settings.value?.currency || '');
 const socialLinks = computed(() => parseSocialLinks(settings.value?.socialLinks));
 
+// Back-to-Catalog: shown only when the visitor actually arrived from
+// /catalog or /stores (a client-side NuxtLink hop leaves that path in
+// history.state.back). A hard refresh / direct link clears it → button
+// hides, since there's no known origin to go back to. Same behaviour as
+// the lota Menu storefront.
+const backHref = ref<string | null>(null);
+onMounted(() => {
+  const back = window.history.state?.back as string | undefined;
+  if (back === '/catalog' || back === '/stores') backHref.value = back;
+});
+
 useHead(() => ({
   title: `${t('plans.book') || 'Онлайн-запись'} — ${brandName.value}`,
   meta: [{ name: 'description', content: settings.value?.welcomeMessage || `${t('plans.book') || 'Онлайн-запись'} — ${brandName.value}` }],
@@ -251,6 +262,16 @@ function fmtDateTime(iso: string) {
         <!-- brand hero band (tenant's own primary colour) -->
         <div :style="{ backgroundColor: accent }">
           <div class="max-w-3xl mx-auto px-4 pt-7 pb-8">
+            <button
+              v-if="backHref"
+              type="button"
+              class="mb-3 inline-flex items-center gap-1.5 text-xs font-medium opacity-90 hover:opacity-100 transition-opacity"
+              :style="{ color: onAccent }"
+              @click="navigateTo(backHref)"
+            >
+              <UIcon name="lucide:arrow-left" class="w-3.5 h-3.5" />
+              {{ t('menu.backToCatalog') || 'Каталог' }}
+            </button>
             <div class="flex items-start gap-4">
               <div class="w-20 h-20 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
                 <img v-if="settings?.logoUrl" :src="settings.logoUrl" alt="" class="w-full h-full object-contain p-1.5" />

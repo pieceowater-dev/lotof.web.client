@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { logError } from '@/utils/logger';
 import PlansNavTabs from '@/components/plans/PlansNavTabs.vue';
 import PhoneInput from '@/components/ui/PhoneInput.vue';
+import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { plansApi, type PlansService, type PlansMaster, type ServiceCategory, type PlansLocation } from '@/api/plans/ops';
 
 const { t } = useI18n();
@@ -70,14 +71,14 @@ async function delCat(c: ServiceCategory) {
 const svcModal = ref(false);
 const svcSaving = ref(false);
 const svcEditing = ref<PlansService | null>(null);
-const svcForm = reactive({ name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: true, color: '#7c3aed', description: '' });
+const svcForm = reactive({ name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: false, color: '#7c3aed', description: '' });
 // masters allowed to perform this service; empty = anyone
 const svcMasterIds = ref<string[]>([]);
 async function openSvc(s?: PlansService) {
   svcEditing.value = s || null;
   Object.assign(svcForm, s
     ? { name: s.name, categoryId: s.categoryId || '', durationMinutes: s.durationMinutes, bufferAfterMinutes: s.bufferAfterMinutes, price: s.price, requiresMaster: s.requiresMaster, color: s.color || '#7c3aed', description: s.description }
-    : { name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: true, color: '#7c3aed', description: '' });
+    : { name: '', categoryId: '', durationMinutes: 30, bufferAfterMinutes: 0, price: 0, requiresMaster: false, color: '#7c3aed', description: '' });
   svcMasterIds.value = [];
   svcModal.value = true;
   if (s) {
@@ -313,14 +314,15 @@ onMounted(async () => {
               <UInput v-model.number="svcForm.price" type="number" min="0" />
             </UFormGroup>
           </div>
-          <div class="flex items-center gap-3">
-            <UFormGroup :label="t('plans.color') || 'Цвет'">
-              <input type="color" v-model="svcForm.color" class="w-10 h-8 rounded border border-gray-200 dark:border-gray-700 bg-transparent" />
-            </UFormGroup>
-            <UFormGroup class="flex-1" :label="t('plans.requiresMaster') || 'Требуется выбор мастера'">
-              <UToggle v-model="svcForm.requiresMaster" />
-            </UFormGroup>
-          </div>
+          <UFormGroup :label="t('plans.color') || 'Цвет'">
+            <ColorSwatch v-model="svcForm.color" size="sm" />
+          </UFormGroup>
+          <UFormGroup
+            :label="t('plans.requiresMaster') || 'Требуется выбор мастера'"
+            :help="t('plans.requiresMasterHint') || 'Выключено — запись на ресурс (корт, поле, бокс) или к любому свободному мастеру'"
+          >
+            <UToggle v-model="svcForm.requiresMaster" />
+          </UFormGroup>
           <UFormGroup :label="t('plans.serviceMasters') || 'Кто выполняет'" :hint="t('plans.serviceMastersHint') || 'Пусто — любой мастер'">
             <USelectMenu
               v-model="svcMasterIds" multiple
@@ -358,7 +360,7 @@ onMounted(async () => {
             <USelectMenu v-model="mstForm.locationId" :options="locationOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
           </UFormGroup>
           <UFormGroup :label="t('plans.color') || 'Цвет'">
-            <input type="color" v-model="mstForm.color" class="w-10 h-8 rounded border border-gray-200 dark:border-gray-700 bg-transparent" />
+            <ColorSwatch v-model="mstForm.color" size="sm" />
           </UFormGroup>
           <UFormGroup :label="t('plans.performsServices') || 'Оказывает услуги'">
             <div class="flex flex-col gap-1.5 max-h-44 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 p-2">

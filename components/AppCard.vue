@@ -64,7 +64,7 @@
         {{ props.description }}
       </p>
 
-      <div class="mt-auto pt-1">
+      <div class="mt-auto pt-1 flex flex-wrap items-center gap-2">
         <UButton
           :to="props.to"
           :disabled="!props.action && !props.to"
@@ -79,6 +79,20 @@
           ]"
           :label="props.installed ? t('app.open') : (props.canAdd ? t('app.getApp') : t('app.comingSoon'))"
           @click="props.to ? undefined : props.action?.()"
+        />
+        <!-- external storefront / public page — opens in a new tab so it's
+             clearly a separate customer-facing site, not another admin screen -->
+        <UButton
+          v-if="props.installed && props.storefrontTo"
+          :to="props.storefrontTo"
+          target="_blank"
+          rel="noopener"
+          color="gray"
+          variant="outline"
+          icon="lucide:external-link"
+          trailing
+          class="w-fit px-3"
+          :label="props.storefrontLabel || t('app.externalStorefront') || 'Витрина'"
         />
       </div>
     </div>
@@ -99,6 +113,8 @@ const props = defineProps<{
     action?: () => void | Promise<void>
     installed?: boolean // if false -> show "Get App"
     canAdd?: boolean
+    storefrontTo?: string   // external customer-facing page (opens new tab)
+    storefrontLabel?: string
 }>();
 
 const isInstalled = computed(() => !!props.installed);
