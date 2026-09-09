@@ -11,6 +11,8 @@ import { logError } from '@/utils/logger';
 import PlansImageUpload from '@/components/plans/PlansImageUpload.vue';
 import PhoneInput from '@/components/ui/PhoneInput.vue';
 import { plansApi, type PlansLocation, type PlansSettings, type PlansShareLink, type PlansMaster, type PlansService } from '@/api/plans/ops';
+import { parseSocialLinks, serializeSocialLinks, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
+import { PLANS_BRAND_COLORS } from '@/utils/color';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -27,6 +29,10 @@ watch(role, (r) => { if (r && !isOwnerOrManager.value) navigateTo(`/${nsSlug.val
 const booting = ref(true);
 const saving = ref(false);
 const settings = ref<PlansSettings | null>(null);
+const socialLinksList = ref<SocialLink[]>([]);
+const socialPlatformOptions = SOCIAL_PLATFORMS.map((p) => ({ label: p.label, value: p.value }));
+function addSocialLink() { socialLinksList.value.push({ name: 0, link: '' }); }
+function removeSocialLink(i: number) { socialLinksList.value.splice(i, 1); }
 const locations = ref<PlansLocation[]>([]);
 const shareLinks = ref<PlansShareLink[]>([]);
 const masters = ref<PlansMaster[]>([]);
@@ -61,6 +67,7 @@ async function loadAll() {
       plansApi.services(nsSlug.value, true),
     ]);
     settings.value = s; locations.value = l; shareLinks.value = sl; masters.value = m; services.value = sv;
+    socialLinksList.value = parseSocialLinks(s?.socialLinks);
   } catch (e) {
     logError('[plans/settings] load', e);
     toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
@@ -247,9 +254,10 @@ async function saveSettings() {
   saving.value = true;
   try {
     const s = settings.value;
+    const socialLinks = serializeSocialLinks(socialLinksList.value.filter((x) => x.link.trim()));
     settings.value = await plansApi.upsertSettings(nsSlug.value, {
       name: s.name, logoUrl: s.logoUrl, primaryColor: s.primaryColor, secondaryColor: s.secondaryColor,
-      welcomeMessage: s.welcomeMessage, socialLinks: s.socialLinks, seoTitle: s.seoTitle, seoDescription: s.seoDescription,
+      welcomeMessage: s.welcomeMessage, socialLinks, seoTitle: s.seoTitle, seoDescription: s.seoDescription,
       currency: s.currency, autoConfirmBookings: s.autoConfirmBookings, minLeadTimeMinutes: s.minLeadTimeMinutes,
       maxAdvanceDays: s.maxAdvanceDays, cancellationWindowHours: s.cancellationWindowHours, defaultBufferMinutes: s.defaultBufferMinutes,
       reminderFirstHoursBefore: s.reminderFirstHoursBefore, reminderSecondHoursBefore: s.reminderSecondHoursBefore ?? null,
@@ -502,18 +510,37 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
             <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
               <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('plans.colors') || 'Цвета' }}</h3>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <UFormGroup :label="t('plans.primaryColor') || 'Основной цвет'">
-                  <div class="flex items-center gap-2">
-                    <input v-model="settings.primaryColor" type="color" class="h-9 w-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent flex-shrink-0" />
-                    <UInput v-model="settings.primaryColor" size="lg" placeholder="#7c3aed" class="flex-1" />
+                <UFormGroup :label="t('plans.primaryColor') || 'Основной цвет'" :help="t('plans.primaryColorHint') || 'Цвет шапки публичной страницы'">
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
+                      class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
+                      :class="(settings.primaryColor || '').toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
+                      :style="{ background: c }" @click="settings.primaryColor = c" />
                   </div>
                 </UFormGroup>
                 <UFormGroup :label="t('plans.secondaryColor') || 'Дополнительный цвет'">
-                  <div class="flex items-center gap-2">
-                    <input v-model="settings.secondaryColor" type="color" class="h-9 w-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer bg-transparent flex-shrink-0" />
-                    <UInput v-model="settings.secondaryColor" size="lg" placeholder="#c026d3" class="flex-1" />
+                  <div class="flex flex-wrap gap-2">
+                    <button v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
+                      class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
+                      :class="(settings.secondaryColor || '').toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
+                      :style="{ background: c }" @click="settings.secondaryColor = c" />
                   </div>
                 </UFormGroup>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('plans.socialLinks') || 'Соцсети' }}</h3>
+                <UButton size="2xs" variant="soft" color="gray" icon="lucide:plus" @click="addSocialLink">{{ t('common.add') || 'Добавить' }}</UButton>
+              </div>
+              <p class="text-xs text-gray-400">{{ t('plans.socialLinksHint') || 'Показываются в подвале публичной страницы записи' }}</p>
+              <div v-if="!socialLinksList.length" class="text-xs text-gray-400 py-1">{{ t('plans.noSocialLinks') || 'Пока не добавлено' }}</div>
+              <div v-for="(link, i) in socialLinksList" :key="i" class="flex items-center gap-2">
+                <USelectMenu v-model="link.name" :options="socialPlatformOptions" value-attribute="value" option-attribute="label"
+                             size="sm" class="w-40 flex-shrink-0" :popper="{ strategy: 'fixed' }" />
+                <UInput v-model="link.link" size="sm" class="flex-1" placeholder="https://instagram.com/..." />
+                <UButton size="2xs" variant="ghost" color="red" icon="lucide:trash-2" @click="removeSocialLink(i)" />
               </div>
             </div>
 

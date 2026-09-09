@@ -7,6 +7,8 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { LSKeys } from '@/utils/storageKeys';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { plansTour } from '@/config/tours';
 import PlansNavTabs from '@/components/plans/PlansNavTabs.vue';
 import PlansCalendar from '@/components/plans/PlansCalendar.vue';
 import BookingFormModal from '@/components/plans/BookingFormModal.vue';
@@ -257,8 +259,21 @@ onMounted(async () => {
   } finally {
     booting.value = false;
     startLive();
+    maybeStartTour();
   }
 });
+
+// Auto-run the intro tour right after onboarding (?tour=1) or on a fresh
+// calendar the owner hasn't toured yet.
+function maybeStartTour() {
+  const { isCompleted, startTour } = useOnboarding();
+  const asked = route.query.tour === '1';
+  if (isCompleted(plansTour.id) && !asked) return;
+  if (!isOwnerOrManager.value) return;
+  if (!asked && bookings.value.length) return;
+  setTimeout(() => startTour(plansTour), asked ? 700 : 1200);
+  if (asked) navigateTo({ query: {} }, { replace: true });
+}
 onBeforeUnmount(stopLive);
 watch([selectedDate, view], () => loadBookings());
 watch(selectedLocationId, async () => { await loadLocationHours(); await loadBookings(); });
@@ -273,13 +288,20 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           {{ t('plans.subtitle') || 'Онлайн-запись клиентов и расписание мастеров' }}
         </p>
       </div>
-      <UButton
-        v-if="isOwnerOrManager" data-tour="plans-settings-btn" icon="lucide:settings" size="xs" color="primary" variant="soft"
-        class="self-start sm:self-auto flex-shrink-0"
-        :to="`/${nsSlug}/plans/settings`"
-      >
-        {{ t('plans.settings') || 'Настройки' }}
-      </UButton>
+      <div class="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+        <UButton
+          data-tour="plans-public-link" icon="lucide:external-link" size="xs" color="gray" variant="soft"
+          :to="`/to/${nsSlug}/plans`" target="_blank"
+        >
+          {{ t('plans.openPublicPage') || 'Страница записи' }}
+        </UButton>
+        <UButton
+          v-if="isOwnerOrManager" data-tour="plans-settings-btn" icon="lucide:settings" size="xs" color="primary" variant="soft"
+          :to="`/${nsSlug}/plans/settings`"
+        >
+          {{ t('plans.settings') || 'Настройки' }}
+        </UButton>
+      </div>
     </div>
 
     <div class="flex-shrink-0"><PlansNavTabs /></div>

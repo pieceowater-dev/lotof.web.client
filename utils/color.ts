@@ -33,3 +33,24 @@ export function getContrastTextColor(backgroundHex: string, dark = '#111827', li
   const contrastWithBlack = contrastRatio(bgLum, 0)
   return contrastWithBlack > contrastWithWhite ? dark : light
 }
+
+// Curated brand-colour presets for lota Plans (public booking page header).
+// A short list of tasteful, on-brand hues so tenants don't hand-pick
+// eye-searing values from a raw colour wheel.
+export const PLANS_BRAND_COLORS: string[] = [
+  '#7c3aed', // violet (default)
+  '#4f46e5', // indigo
+  '#2563eb', // blue
+  '#0891b2', // cyan
+  '#0d9488', // teal
+  '#059669', // emerald
+  '#65a30d', // lime
+  '#ca8a04', // amber
+  '#ea580c', // orange
+  '#dc2626', // red
+  '#e11d48', // rose
+  '#db2777', // pink
+  '#c026d3', // fuchsia
+  '#4b5563', // slate
+  '#111827', // near-black
+]

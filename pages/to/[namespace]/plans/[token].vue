@@ -122,7 +122,10 @@ const statusMeta = computed(() => {
       <div v-else-if="!patron.isLoggedIn.value" class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 text-center flex flex-col items-center gap-3">
         <UIcon name="lucide:lock" class="w-8 h-8 text-gray-300" />
         <p class="text-sm text-gray-500">{{ t('plans.trackSignInHint') || 'Войдите как клиент lota, чтобы открыть запись.' }}</p>
-        <UButton block icon="lucide:log-in" @click="patron.login()">{{ t('plans.signInAsClient') || 'Войти как клиент' }}</UButton>
+        <UButton block color="white" variant="solid" class="ring-1 ring-gray-300 dark:ring-gray-600" @click="patron.login()">
+          <UIcon name="simple-icons:google" class="w-4 h-4" />
+          {{ t('app.login') || 'Войти' }}
+        </UButton>
       </div>
 
       <div v-else-if="loading" class="py-24 flex justify-center">

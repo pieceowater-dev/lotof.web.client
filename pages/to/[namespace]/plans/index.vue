@@ -60,6 +60,12 @@ const location = computed<PlansLocation | null>(() => {
 
 // ---------------- wizard ----------------
 const step = ref<1 | 2 | 3 | 4>(1);
+// true when the service needs no master pick — the wizard is then 2 steps
+// (service -> time), not 3.
+const masterStepSkipped = ref(false);
+const totalSteps = computed(() => (masterStepSkipped.value ? 2 : 3));
+// which progress segment the current step lights up
+const progressStep = computed(() => (masterStepSkipped.value && step.value === 3 ? 2 : step.value));
 const chosenService = ref<PlansService | null>(null);
 const chosenMasterId = ref<string>('');
 const chosenDate = ref<string>(new Date().toISOString().slice(0, 10));
@@ -106,10 +112,12 @@ async function pickService(s: PlansService) {
   // (or a resource-style booking — court, field, bay — with no masters at
   // all). The slot's own masterIds resolve the assignment at submit.
   if (!s.requiresMaster || !eligibleMasters.value.length) {
+    masterStepSkipped.value = true;
     chosenMasterId.value = '';
     goToSlots();
     return;
   }
+  masterStepSkipped.value = false;
   step.value = 2;
 }
 
@@ -280,9 +288,9 @@ function fmtDateTime(iso: string) {
           <div class="max-w-2xl mx-auto px-4 py-6 sm:py-8">
             <!-- step progress -->
             <div v-if="step < 4" class="flex items-center gap-1.5 mb-4">
-              <span v-for="n in 3" :key="n" class="flex-1 h-1 rounded-full transition-colors"
-                    :style="{ background: step > n - 1 ? accent : '' }"
-                    :class="step > n - 1 ? '' : 'bg-gray-200 dark:bg-gray-800'" />
+              <span v-for="n in totalSteps" :key="n" class="flex-1 h-1 rounded-full transition-colors"
+                    :style="{ background: progressStep > n - 1 ? accent : '' }"
+                    :class="progressStep > n - 1 ? '' : 'bg-gray-200 dark:bg-gray-800'" />
             </div>
 
             <div class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 sm:p-6 shadow-sm">
@@ -358,7 +366,7 @@ function fmtDateTime(iso: string) {
 
               <!-- STEP 3: day + slot + contact -->
               <div v-else-if="step === 3" class="flex flex-col gap-3">
-                <button class="text-xs text-gray-400 flex items-center gap-1 self-start" @click="step = 2">
+                <button class="text-xs text-gray-400 flex items-center gap-1 self-start" @click="step = masterStepSkipped ? 1 : 2">
                   <UIcon name="lucide:arrow-left" class="w-3.5 h-3.5" />{{ t('common.back') || 'Назад' }}
                 </button>
                 <h2 class="font-semibold text-lg text-gray-900 dark:text-white">{{ t('plans.chooseTime') || 'Выберите время' }}</h2>
@@ -479,8 +487,9 @@ function fmtDateTime(iso: string) {
           <p class="text-gray-500">
             {{ t('plans.trackSignInHint') || 'Войдите как клиент lota, чтобы видеть все свои записи здесь.' }}
           </p>
-          <UButton block icon="lucide:log-in" @click="patron.login()">
-            {{ t('plans.signInAsClient') || 'Войти как клиент' }}
+          <UButton block color="white" variant="solid" class="ring-1 ring-gray-300 dark:ring-gray-600" @click="patron.login()">
+            <UIcon name="simple-icons:google" class="w-4 h-4" />
+            {{ t('app.login') || 'Войти' }}
           </UButton>
           <div class="pt-2 border-t border-gray-100 dark:border-gray-800">
             <p class="text-gray-400 mb-2">{{ t('plans.trackByLinkHint') || 'Или откройте последнюю запись по сохранённой ссылке:' }}</p>

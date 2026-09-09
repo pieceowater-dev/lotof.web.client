@@ -4,6 +4,7 @@ import { usePlansAuth } from '@/composables/usePlansAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { getErrorMessage } from '@/utils/types/errors';
 import { plansApi } from '@/api/plans/ops';
+import { PLANS_BRAND_COLORS } from '@/utils/color';
 import PlansImageUpload from '@/components/plans/PlansImageUpload.vue';
 
 const { t } = useI18n();
@@ -110,7 +111,7 @@ async function finish() {
     });
 
     toast.add({ title: t('common.success') || 'Готово', description: t('plans.onboardingDone') || 'Готово! Отметьте мастеров в «Сотрудниках» и делитесь ссылкой записи.', color: 'emerald' });
-    navigateTo(`/${nsSlug.value}/plans`);
+    navigateTo(`/${nsSlug.value}/plans?tour=1`);
   } catch (e) {
     toast.add({ title: t('common.error') || 'Ошибка', description: getErrorMessage(e, t), color: 'red' });
   } finally { busy.value = false; }
@@ -150,9 +151,14 @@ async function finish() {
           </div>
         </div>
         <UFormGroup :label="t('plans.primaryColor') || 'Основной цвет'" :hint="t('plans.primaryColorHint') || 'Цвет шапки публичной страницы'">
-          <div class="flex items-center gap-2">
-            <input v-model="brand.primaryColor" type="color" class="h-9 w-12 rounded border border-gray-200 dark:border-gray-700 bg-transparent cursor-pointer" />
-            <UInput v-model="brand.primaryColor" size="sm" class="w-32" />
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="c in PLANS_BRAND_COLORS" :key="c" type="button"
+              class="h-8 w-8 rounded-lg border-2 transition-transform hover:scale-110"
+              :class="brand.primaryColor.toLowerCase() === c ? 'border-gray-900 dark:border-white scale-110' : 'border-transparent'"
+              :style="{ background: c }"
+              @click="brand.primaryColor = c"
+            />
           </div>
         </UFormGroup>
         <UFormGroup :label="t('plans.welcomeMessage') || 'Приветствие'">
