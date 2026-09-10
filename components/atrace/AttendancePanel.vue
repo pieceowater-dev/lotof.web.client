@@ -24,8 +24,12 @@ const route = useRoute();
 // Same gate as AttendanceStatsTable's export/settings: attendance/manage is
 // what a Manager/Admin/Owner has and a Teammate doesn't -- so the Analytics
 // view (namespace-wide, other people's patterns) is exactly this audience.
-const { can: canDo } = useAtracePermissions(computed(() => (route.params.namespace as string) || ''));
+// useAtracePermissions is lazy -- nothing populates `allowed` until
+// loadPermissions() is actually called, so without this the toggle stays
+// hidden for everyone.
+const { can: canDo, loadPermissions } = useAtracePermissions(computed(() => (route.params.namespace as string) || ''));
 const canManageAttendance = computed(() => canDo('tracker.attendance.manage'));
+onMounted(() => { loadPermissions(); });
 
 const view = ref<'table' | 'analytics'>('table');
 </script>
