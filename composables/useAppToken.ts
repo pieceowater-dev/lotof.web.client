@@ -22,6 +22,17 @@ export interface AppTokenConfig {
 export function createAppTokenComposable(config: AppTokenConfig) {
   const { cookieKey, tsKey, nsKey, storageProbeKey, ttlMs, label, getSetAppToken, getExchangeFn } = config
 
+  // One in-flight ensure() per namespace, shared across every component that
+  // calls this product's token composable. Without it, a single page open
+  // fires three or more concurrent ensure() calls (the page itself, the
+  // permissions lookup, the stats table...), each running the full 6-attempt
+  // retry loop -- so a backend that's merely slow to warm up (cold pod after
+  // idle, HPA still settling) gets hit by 3x the exchange traffic and every
+  // one of those chains can time out. Collapsing them to a single exchange is
+  // both gentler on the backend and stops the triple "attempt 1/6 failed"
+  // console spam.
+  const inFlight = new Map<string, Promise<string | null>>()
+
   return function useAppToken() {
     function canUseStorage(): boolean {
       if (typeof window === 'undefined') return false
@@ -68,7 +79,21 @@ export function createAppTokenComposable(config: AppTokenConfig) {
       } catch {}
     }
 
-    async function ensure(nsSlug: string, hubToken?: string | null): Promise<string | null> {
+    function ensure(nsSlug: string, hubToken?: string | null): Promise<string | null> {
+      // Dedupe concurrent callers only while an exchange is actually running
+      // (the fast cookie-hit path below doesn't touch the map). Keyed by
+      // namespace so switching namespace isn't blocked by a stale in-flight.
+      const key = nsSlug || '_'
+      const running = inFlight.get(key)
+      if (running) return running
+      const p = ensureInner(nsSlug, hubToken).finally(() => {
+        if (inFlight.get(key) === p) inFlight.delete(key)
+      })
+      inFlight.set(key, p)
+      return p
+    }
+
+    async function ensureInner(nsSlug: string, hubToken?: string | null): Promise<string | null> {
       const cookie = useCookie<string | null>(cookieKey, { path: '/' })
       const storageAvailable = canUseStorage()
       const storedNs = readStoredNamespace()
@@ -136,8 +161,19 @@ export function createAppTokenComposable(config: AppTokenConfig) {
             // that currently rides out a blip like that, so this keeps
             // retrying through all maxAttempts regardless of message.
             if (attempt < maxAttempts) {
-              const isTenantWarmup = String((e as any)?.message || '').includes('tenant migration in progress')
-              await sleep(isTenantWarmup ? 1500 : 300)
+              const msg = String((e as any)?.message || '')
+              const isTenantWarmup = msg.includes('tenant migration in progress')
+              // A deadline-exceeded / unavailable here means the backend chain
+              // (gtw -> tracker -> hub) is cold or CPU-starved and needs real
+              // time to come good -- a 300ms nap just burns retries against a
+              // service that isn't back yet. Back off progressively instead.
+              const isBackendCold = /deadline exceeded|unavailable|context deadline/i.test(msg)
+              const backoff = isTenantWarmup
+                ? 1500
+                : isBackendCold
+                  ? Math.min(1000 * 2 ** (attempt - 1), 8000)
+                  : 300
+              await sleep(backoff)
             }
           }
         }
