@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
+import { BOARD_TEMPLATES, boardTemplatePayload, type BoardTemplateId } from '@/config/issuesBoardTemplates';
 import { hubGetNamespaceBusinessType } from '@/api/hub/namespaces/businessType';
 
 const { t, locale } = useI18n();
@@ -32,11 +33,18 @@ const isOpen = computed({
 // generic default.
 const form = reactive({ name: '' });
 const selectedBusinessType = ref<BusinessType | null>(null);
+const selectedTemplate = ref<BoardTemplateId>('basic');
+
+// The Quick-Setup business-type picker only makes sense for the plain
+// "basic" board -- a template (e.g. the sales funnel) brings its own
+// task-type preset, so showing both would be a conflicting choice.
+const showBusinessTypePicker = computed(() => props.isFirstBoard && selectedTemplate.value === 'basic');
 
 watch(() => props.modelValue, async (open) => {
   if (!open) return;
   form.name = '';
   selectedBusinessType.value = null;
+  selectedTemplate.value = 'basic';
   if (props.isFirstBoard && props.namespaceId && token.value) {
     try {
       const current = await hubGetNamespaceBusinessType(token.value, props.namespaceId);
@@ -56,7 +64,12 @@ function handleClose() {
 function handleSubmit() {
   if (!isFormValid.value) return;
   const payload: Record<string, any> = { name: form.name.trim() };
-  if (props.isFirstBoard && selectedBusinessType.value) {
+
+  // Template preset (columns / integration flags / task-type businessType).
+  // No-op for the "basic" template.
+  Object.assign(payload, boardTemplatePayload(selectedTemplate.value, locale.value));
+
+  if (showBusinessTypePicker.value && selectedBusinessType.value) {
     payload.businessType = selectedBusinessType.value;
     payload.locale = locale.value;
     if (props.namespaceId && token.value) {
@@ -84,7 +97,31 @@ function handleSubmit() {
           {{ t('tasks.createBoardHint') || 'You can set up columns, modules and integrations afterwards, from Board settings.' }}
         </p>
 
-        <div v-if="isFirstBoard">
+        <div>
+          <label class="mb-1.5 block text-xs font-medium text-gray-500">
+            {{ t('tasks.boardTemplate') || 'Template' }}
+          </label>
+          <div class="space-y-1.5">
+            <button
+              v-for="tpl in BOARD_TEMPLATES"
+              :key="tpl.id"
+              type="button"
+              class="flex w-full items-start gap-2.5 rounded-lg border p-2.5 text-left transition-colors"
+              :class="selectedTemplate === tpl.id
+                ? 'border-primary bg-primary-50 dark:bg-primary-900/20'
+                : 'border-gray-200 hover:border-primary/50 dark:border-gray-700'"
+              @click="selectedTemplate = tpl.id"
+            >
+              <UIcon :name="tpl.icon" class="mt-0.5 h-4 w-4 flex-shrink-0" :class="selectedTemplate === tpl.id ? 'text-primary' : 'text-gray-400'" />
+              <span class="min-w-0">
+                <span class="block text-sm font-medium" :class="selectedTemplate === tpl.id ? 'text-primary dark:text-primary-300' : ''">{{ t(tpl.titleKey) }}</span>
+                <span class="block text-[11px] text-gray-400">{{ t(tpl.descKey) }}</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="showBusinessTypePicker">
           <label class="mb-1.5 block text-xs font-medium text-gray-500">
             {{ t('onboarding.quickSetupTitle') || 'Quick Setup' }}
           </label>

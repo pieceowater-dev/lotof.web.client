@@ -181,6 +181,7 @@ const form = reactive({
   geoMap: false,
   zenMode: false,
   menuIntegration: false,
+  contactsIntegration: false,
   cycles: false,
   cycleCarryOver: 'backlog' as 'backlog' | 'next',
 });
@@ -228,14 +229,17 @@ async function regenerateWebhookSecret() {
 // toggle for Menu if the tenant never installed it. Reuses the same Hub
 // check the home dashboard uses to grey out "coming soon" apps.
 const menuAppInstalled = ref(false);
+const contactsAppInstalled = ref(false);
 async function loadInstalledApps() {
   if (!hubToken.value || !nsSlug.value) return;
   try {
     const { hubAreAppsInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
-    const installed = await hubAreAppsInNamespace(hubToken.value, nsSlug.value, ['pieceowater.menu']);
+    const installed = await hubAreAppsInNamespace(hubToken.value, nsSlug.value, ['pieceowater.menu', 'pieceowater.contacts']);
     menuAppInstalled.value = !!installed['pieceowater.menu'];
+    contactsAppInstalled.value = !!installed['pieceowater.contacts'];
   } catch {
     menuAppInstalled.value = false;
+    contactsAppInstalled.value = false;
   }
 }
 
@@ -269,6 +273,7 @@ function populateForm(b: TaskBoard) {
   form.cycleCarryOver = (flags as any).cycle_carry_over === 'next' ? 'next' : 'backlog';
   const integrations = parseFlags(b.integrationFlags);
   form.menuIntegration = !!integrations.menu;
+  form.contactsIntegration = !!integrations.contacts;
   statuses.value = parseStatuses(b.statuses);
   webhookSecret.value = b.webhookSecret || '';
 }
@@ -359,7 +364,10 @@ async function handleSave() {
       // overwritten on every board update regardless of what's passed.
       deliveryConfirmationMode: 'none',
       featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
-      integrationFlags: JSON.stringify({ menu: form.menuIntegration && menuAppInstalled.value }),
+      integrationFlags: JSON.stringify({
+        menu: form.menuIntegration && menuAppInstalled.value,
+        contacts: form.contactsIntegration && contactsAppInstalled.value,
+      }),
       statuses: JSON.stringify(serializedStatuses),
     });
     useToast().add({ title: t('tasks.boardUpdated') || 'Board updated', color: 'primary' });
@@ -585,6 +593,19 @@ onMounted(load);
               </label>
               <p v-if="!menuAppInstalled" class="text-xs text-gray-400 mt-2">
                 {{ t('tasks.menuNotInstalled') || 'lota Orders is not installed in this namespace' }}
+              </p>
+            </UCard>
+
+            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+              <label class="flex items-start gap-3 cursor-pointer" :class="!contactsAppInstalled && 'opacity-50'">
+                <UToggle v-model="form.contactsIntegration" size="sm" class="mt-0.5" :disabled="!contactsAppInstalled" />
+                <span>
+                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:contact" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagContactsIntegrationTitle') || 'Contacts integration' }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagContactsIntegration') || 'Link a lota Contacts client to any issue on this board' }}</span>
+                </span>
+              </label>
+              <p v-if="!contactsAppInstalled" class="text-xs text-gray-400 mt-2">
+                {{ t('tasks.contactsNotInstalled') || 'lota Contacts is not installed in this namespace' }}
               </p>
             </UCard>
 

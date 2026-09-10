@@ -10,6 +10,7 @@ import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { maskProfanity } from '@/utils/profanityFilter';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
+import TaskClientLink from '@/components/tasks/TaskClientLink.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskMember } from '@/api/tasks/task/members';
@@ -32,6 +33,9 @@ const props = defineProps<{
   hasPendingUpdate?: boolean;
   cyclesEnabled?: boolean;
   cycles?: Cycle[];
+  // Owning board's integration_flags.contacts -- turns on the "link a lota
+  // Contacts client" widget in the Contact section.
+  contactsIntegrationEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -462,6 +466,10 @@ watch(() => [props.modelValue, props.task?.id], () => {
   loadActivity();
 });
 
+function onClientLinkChanged(updated: TaskItem) {
+  emit('changed', updated);
+}
+
 const refreshingSnapshot = ref(false);
 async function handleRefreshSnapshot() {
   if (!props.task) return;
@@ -725,7 +733,7 @@ async function handleDelete() {
           <UIcon name="lucide:contact" class="w-3.5 h-3.5" />
           {{ t('tasks.client') || 'Contact' }}
           <UButton
-            v-if="task.clientId"
+            v-if="task.clientId && !contactsIntegrationEnabled"
             icon="lucide:refresh-cw"
             size="2xs"
             color="gray"
@@ -738,6 +746,13 @@ async function handleDelete() {
           </UButton>
         </h4>
         <div class="space-y-2">
+          <TaskClientLink
+            v-if="contactsIntegrationEnabled"
+            :task="task"
+            :ns-slug="nsSlug"
+            :integration-enabled="!!contactsIntegrationEnabled"
+            @changed="onClientLinkChanged"
+          />
           <div class="flex items-center gap-1.5">
             <UInput v-model="clientNameDraft" size="sm" class="flex-1" :placeholder="t('tasks.clientName') || 'Contact name'" @blur="commitClientName" />
             <UBadge v-if="task.clientIsVipSnapshot" color="yellow" variant="soft" size="xs">{{ t('tasks.vip') || 'VIP' }}</UBadge>

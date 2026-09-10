@@ -34,6 +34,9 @@ const UpdateTaskCycleDocument = /* GraphQL */ `
 const RefreshClientSnapshotDocument = /* GraphQL */ `
   mutation RefreshClientSnapshot($taskId: ID!) { refreshClientSnapshot(taskId: $taskId) { ${TASK_FIELDS} } }
 `;
+const LinkTaskClientDocument = /* GraphQL */ `
+  mutation LinkTaskClient($taskId: ID!, $clientId: String) { linkTaskClient(taskId: $taskId, clientId: $clientId) { ${TASK_FIELDS} } }
+`;
 const UploadTaskDeliveryPhotoDocument = /* GraphQL */ `
   mutation UploadTaskDeliveryPhoto($taskId: ID!, $file: Upload!) {
     uploadTaskDeliveryPhoto(taskId: $taskId, file: $file) { ${TASK_FIELDS} }
@@ -138,6 +141,22 @@ export async function tasksRefreshClientSnapshot(tasksToken: string, namespaceSl
       { headers: { IssuesAuthorization: `Bearer ${tasksToken}`, Namespace: namespaceSlug, ...devHeaders } },
     );
     return res.refreshClientSnapshot;
+  }, namespaceSlug);
+}
+
+// Links (clientId set) or unlinks (clientId null/'') a Contacts client to an
+// existing task — the gateway resolves the name/phone/VIP snapshot from
+// Contacts once, server-side. Mirrors menuLinkOrderClient.
+export async function tasksLinkTaskClient(
+  tasksToken: string, namespaceSlug: string, taskId: string, clientId: string | null,
+) {
+  const devHeaders = await getDeviceHeaders();
+  return tasksRequestWithRefresh(async () => {
+    const res = await tasksClient.request<{ linkTaskClient: TaskItem }>(
+      LinkTaskClientDocument, { taskId, clientId: clientId || null },
+      { headers: { IssuesAuthorization: `Bearer ${tasksToken}`, Namespace: namespaceSlug, ...devHeaders } },
+    );
+    return res.linkTaskClient;
   }, namespaceSlug);
 }
 

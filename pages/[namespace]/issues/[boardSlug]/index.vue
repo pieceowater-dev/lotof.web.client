@@ -79,6 +79,13 @@ const cyclesEnabled = computed(() => {
     return false;
   }
 });
+const contactsIntegrationEnabled = computed(() => {
+  try {
+    return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).contacts : false);
+  } catch {
+    return false;
+  }
+});
 
 // Sprints: once the module is on, the sprint bar is just always part of the
 // board (no separate "Sprints" mode to switch into) -- narrows tasks down to
@@ -907,6 +914,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       :has-pending-update="!!pendingTaskUpdate"
       :cycles-enabled="cyclesEnabled"
       :cycles="cycles"
+      :contacts-integration-enabled="contactsIntegrationEnabled"
       @changed="handleTaskChanged"
       @deleted="handleTaskDeleted"
       @apply-pending-update="applyPendingTaskUpdate"
