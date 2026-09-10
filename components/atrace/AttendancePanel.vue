@@ -5,7 +5,7 @@ import { useI18n } from '@/composables/useI18n';
 import { useRoute } from 'vue-router';
 import { useAtracePermissions } from '@/composables/useAtracePermissions';
 
-defineProps<{
+const props = defineProps<{
   selectedPostId: string | null;
   selectedPostTitle: string;
   selectedPostLocationLine: string;
@@ -25,11 +25,25 @@ const route = useRoute();
 // what a Manager/Admin/Owner has and a Teammate doesn't -- so the Analytics
 // view (namespace-wide, other people's patterns) is exactly this audience.
 // useAtracePermissions is lazy -- nothing populates `allowed` until
-// loadPermissions() is actually called, so without this the toggle stays
-// hidden for everyone.
-const { can: canDo, loadPermissions } = useAtracePermissions(computed(() => (route.params.namespace as string) || ''));
+// loadPermissions() is actually called.
+const nsSlug = computed(() => (route.params.namespace as string) || '');
+const { can: canDo, loadPermissions } = useAtracePermissions(nsSlug);
 const canManageAttendance = computed(() => canDo('tracker.attendance.manage'));
-onMounted(() => { loadPermissions(); });
+
+// Drive the permission fetch off `props.loading` rather than onMounted: on a
+// hard refresh the atrace token is already in the cookie, but on client-side
+// nav from the home page it is still being minted when this mounts, so an
+// onMounted call raced it and silently came back empty -- the toggle then
+// only showed after a manual refresh. The parent clears `loading` once it has
+// fetched posts, which means the atrace token is warm; re-run if the
+// namespace changes too.
+watch(
+  [() => props.loading, nsSlug],
+  ([loading, ns]) => {
+    if (!loading && ns) loadPermissions();
+  },
+  { immediate: true },
+);
 
 const view = ref<'table' | 'analytics'>('table');
 </script>
