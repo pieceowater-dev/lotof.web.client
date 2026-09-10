@@ -13,13 +13,21 @@ import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vu
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string; outcome: string }
 
 // Menu's actual order-status enum (order.ent.go orderStatusLabels) -- a
 // status here must match one of these exactly, or UpdateOrderStatus rejects
 // it with "unknown order status" (case-sensitive, no normalization). Labels
 // reuse Menu's own translations (pages/menu/index.vue's statusLabel) so the
 // two apps describe the same status the same way.
+// Funnel-outcome marker for a terminal column — read only by the funnel
+// analytics view, stored as an extra `outcome` key in statuses_json.
+const OUTCOME_OPTIONS = computed(() => [
+  { value: '', label: '—' },
+  { value: 'won', label: t('tasks.outcomeWon') || 'Won' },
+  { value: 'lost', label: t('tasks.outcomeLost') || 'Lost' },
+]);
+
 const ORDER_STATUS_OPTIONS = computed(() => [
   { value: '', label: '—' },
   { value: 'NEW', label: t('menu.statusNew') || 'New' },
@@ -256,7 +264,7 @@ function parseStatuses(json?: string): StatusRow[] {
       // broken automation target sitting in old boards.
       let mapsTo = String(s.maps_to || '');
       if (mapsTo === 'delivered') mapsTo = 'COMPLETED';
-      return { key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), mapsTo };
+      return { key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), mapsTo, outcome: String(s.outcome || '') };
     });
   } catch {
     return [];
@@ -304,11 +312,11 @@ async function load() {
 }
 
 function addStatus() {
-  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '' }];
+  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '' }];
 }
 function insertStatusAfter(idx: number) {
   const arr = [...statuses.value];
-  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '' });
+  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '' });
   statuses.value = arr;
 }
 async function removeStatus(idx: number) {
@@ -348,7 +356,7 @@ async function handleSave() {
     let key = s.key.trim() || slugifyKey(s.label);
     while (usedKeys.has(key)) key += '_2';
     usedKeys.add(key);
-    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.mapsTo || '', color: s.color || '' };
+    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.mapsTo || '', outcome: (s.isTerminal && s.outcome) ? s.outcome : '', color: s.color || '' };
   });
   saving.value = true;
   try {
@@ -545,6 +553,21 @@ onMounted(load);
                   <UCheckbox v-model="s.isRequired" />
                   {{ t('tasks.statusRequired') || 'Required' }}
                 </label>
+                <USelectMenu
+                  v-if="s.isTerminal"
+                  v-model="s.outcome"
+                  :options="OUTCOME_OPTIONS"
+                  value-attribute="value"
+                  option-attribute="label"
+                  size="sm"
+                  class="w-32 flex-shrink-0"
+                  :popper="{ strategy: 'fixed' }"
+                  :title="t('tasks.statusOutcomeHint') || 'Funnel analytics splits closed deals into won vs lost by this'"
+                >
+                  <template #label>
+                    <span class="truncate">{{ OUTCOME_OPTIONS.find((o) => o.value === s.outcome)?.label || (t('tasks.statusOutcome') || 'Outcome') }}</span>
+                  </template>
+                </USelectMenu>
                 <USelectMenu
                   v-if="menuIntegrationEnabled"
                   v-model="s.mapsTo"

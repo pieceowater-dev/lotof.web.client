@@ -18,6 +18,10 @@ interface TemplateColumn {
   is_terminal?: boolean;
   required?: boolean;
   maps_to?: string;
+  // Funnel outcome marker for a terminal column — read by the funnel
+  // analytics view to split closed deals into won vs lost. Stored as an
+  // extra key in statuses_json; the backend round-trips it untouched.
+  outcome?: 'won' | 'lost';
   color?: '' | 'blue' | 'green' | 'red' | 'yellow';
 }
 
@@ -38,8 +42,8 @@ const SALES_FUNNEL_COLUMNS: TemplateColumn[] = [
   { key: 'qualified', label: { ru: 'Квалифицирован', kk: 'Біліктілік', en: 'Qualified' }, color: 'blue' },
   { key: 'proposal', label: { ru: 'КП отправлено', kk: 'КҰ жіберілді', en: 'Proposal sent' }, color: 'yellow' },
   { key: 'negotiation', label: { ru: 'Переговоры', kk: 'Келіссөздер', en: 'Negotiation' }, color: 'yellow' },
-  { key: 'won', label: { ru: 'Сделка', kk: 'Мәміле', en: 'Won' }, is_terminal: true, color: 'green' },
-  { key: 'lost', label: { ru: 'Отказ', kk: 'Бас тарту', en: 'Lost' }, is_terminal: true, color: 'red' },
+  { key: 'won', label: { ru: 'Сделка', kk: 'Мәміле', en: 'Won' }, is_terminal: true, outcome: 'won', color: 'green' },
+  { key: 'lost', label: { ru: 'Отказ', kk: 'Бас тарту', en: 'Lost' }, is_terminal: true, outcome: 'lost', color: 'red' },
 ];
 
 export const BOARD_TEMPLATES: BoardTemplate[] = [
@@ -86,6 +90,7 @@ export function boardTemplatePayload(
         is_terminal: !!c.is_terminal,
         required: !!c.required,
         maps_to: c.maps_to || '',
+        outcome: c.outcome || '',
         color: c.color || '',
       })),
     );
