@@ -25,7 +25,11 @@ const {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <!-- min-h-full, NOT min-h-screen: this renders inside the app shell's
+       already-height-bounded <main>, so a full 100vh here forced a phantom
+       viewport of empty grey below the cards and shoved the footer out of
+       view ("прилип/обрезан"). -->
+  <div class="min-h-full bg-gray-50 dark:bg-gray-900">
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex items-center justify-between">
@@ -85,8 +89,12 @@ const {
         </div>
       </div>
 
-      <BillingBundlesForApp :application-code="appBundle" :namespace="nsSlug" :interval="selectedInterval" />
-
+      <div class="mb-5 flex items-center gap-2">
+        <UIcon name="lucide:credit-card" class="h-5 w-5 text-primary-600 dark:text-primary-300" />
+        <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+          {{ t('app.tariffsSectionTitle') || 'Тарифы' }}
+        </h2>
+      </div>
 
       <div v-if="loading" class="flex justify-center items-center py-12">
         <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
@@ -102,7 +110,7 @@ const {
         class="mb-6"
       />
 
-      <div v-else class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <div v-else class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4 mx-auto">
         <div
           v-for="plan in displayedPlans"
           :key="plan.id"
@@ -204,6 +212,23 @@ const {
           </div>
         </div>
       </div>
+
+      <div v-if="!loading && !error && displayedPlans.length === 0" class="text-center py-12">
+        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
+        <p class="text-gray-500 dark:text-gray-400">
+          {{ t('app.noPlansAvailable') || 'No plans available' }}
+        </p>
+      </div>
+
+      <!-- Bundles are a distinct thing from the app's own tariffs: separate
+           section, its own header, a rule between them. -->
+      <BillingBundlesForApp
+        :application-code="appBundle"
+        :namespace="nsSlug"
+        :interval="selectedInterval"
+        class="mt-14 border-t border-gray-200 dark:border-gray-800 pt-10"
+      />
+
       <LegalLinks context="payment" class="mt-8" />
 
       <PlanComparisonTable
@@ -212,14 +237,6 @@ const {
         :active-plan-id="activeSubscription?.planId"
         :currency="displayedPlans[0]?.currency"
       />
-
-
-      <div v-if="!loading && !error && displayedPlans.length === 0" class="text-center py-12">
-        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
-        <p class="text-gray-500 dark:text-gray-400">
-          {{ t('app.noPlansAvailable') || 'No plans available' }}
-        </p>
-      </div>
     </div>
   </div>
 </template>
