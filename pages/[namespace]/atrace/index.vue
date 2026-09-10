@@ -364,7 +364,14 @@ onBeforeUnmount(() => {
 <template>
   <FilterModal v-model="isFilterOpen" />
 
-  <div class="flex flex-col">
+  <!-- h-full + min-h-0: this page is a workspace shell (layouts/default.vue
+       applies min-h-0 to the slot box for it), and its own content area is
+       meant to bound its height and scroll internally -- the header/tabs/
+       post-picker siblings are all flex-shrink-0, AttendancePanel's body is
+       flex-1. Without h-full here the root just grew with its content, which
+       only looked fine while that content was short; a tall view (the
+       Analytics tab) then overflowed and the footer rode up over it. -->
+  <div class="flex flex-col h-full min-h-0">
     <CoverageApprovalBanner
       :banners="coverageApprovalBanners"
       @dismiss="dismissCoverageApprovalBanner"
@@ -431,7 +438,7 @@ onBeforeUnmount(() => {
 
     <div
       v-if="isRouteTab"
-      class="px-4 mt-2 flex-shrink-0"
+      class="px-4 mt-2 flex-1 min-h-0 overflow-y-auto"
     >
       <RouteStatsCard
         :route="activeRoute"
