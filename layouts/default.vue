@@ -39,10 +39,11 @@ const QUIET_FOOTER = /^\/(console(\/|$)|[^/]+\/(menu|atrace|issues|contacts|good
 const WORKSPACE_PAGE = /^\/[^/]+\/(menu|atrace|issues|contacts|goods|plans)(\/|$)/;
 
 // …but the tariff / bundle pricing pages that live under a namespace
-// (`/ns/bundles`, `/ns/plans/plans`) are tall auto-height scrolling pages,
-// NOT h-full shells — with min-h-0 the content box shrinks below its
-// content and the footer rides up over it. Exclude them.
-const PRICING_PAGE = /^\/[^/]+\/(bundles|plans\/plans)(\/|$)/;
+// (`/ns/bundles`, `/ns/plans/plans`, and `/ns/<app>/plans` for every app)
+// are tall auto-height scrolling pages, NOT h-full shells — with min-h-0 the
+// content box shrinks below its content and the footer rides up over it
+// ("прилип"). Exclude them so they grow with their content like `/` does.
+const PRICING_PAGE = /^\/[^/]+\/(bundles|(?:menu|atrace|issues|contacts|goods|plans)\/plans)(\/|$)/;
 
 const isWorkspacePage = computed(
   () => WORKSPACE_PAGE.test(route.path) && !PRICING_PAGE.test(route.path),
