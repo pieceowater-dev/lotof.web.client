@@ -9,7 +9,7 @@ export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
   const all = useState<string[]>('namespaces_all', () => []);
   // Keep a cache of records to resolve id by slug when needed
-  type NsRecord = { id: string; slug: string; title?: string };
+  type NsRecord = { id: string; slug: string; title?: string; owner?: string };
   const records = useState<NsRecord[]>('namespaces_records', () => []);
 
   const { user, token } = useAuth();
@@ -125,7 +125,7 @@ export function useNamespace() {
       const { hubNamespacesList } = await import('@/api/hub/namespaces/list');
       loadPromise = (async () => {
         const data = await hubNamespacesList(token.value as string, search, 1);
-        records.value = data.rows.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
+        records.value = data.rows.map(r => ({ id: r.id, slug: r.slug, title: r.title, owner: (r as { owner?: string }).owner }));
         const slugs = records.value.map(r => r.slug);
         all.value = slugs;
         lastLoadedToken.value = token.value as string;
@@ -148,8 +148,8 @@ export function useNamespace() {
     }
   }
 
-  function applyLoaded(list: Array<{ id: string; slug: string; title?: string }>, tokenValue?: string | null) {
-    records.value = list.map(r => ({ id: r.id, slug: r.slug, title: r.title }));
+  function applyLoaded(list: Array<{ id: string; slug: string; title?: string; owner?: string }>, tokenValue?: string | null) {
+    records.value = list.map(r => ({ id: r.id, slug: r.slug, title: r.title, owner: r.owner }));
     const slugs = records.value.map(r => r.slug);
     all.value = slugs;
     if (tokenValue) lastLoadedToken.value = tokenValue;
@@ -193,6 +193,14 @@ export function useNamespace() {
     if (!slug) return undefined;
     return records.value.find(r => r.slug === slug)?.title;
   }
+  function ownerBySlug(slug?: string): string | undefined {
+    if (!slug) return undefined;
+    return records.value.find(r => r.slug === slug)?.owner;
+  }
+  // Reflect a rename locally without a full refetch.
+  function setTitleForSlug(slug: string, title: string) {
+    records.value = records.value.map(r => (r.slug === slug ? { ...r, title } : r));
+  }
 
-  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug, titleBySlug, applyLoaded };
+  return { all, selected, setNamespace, syncFromRoute, load, loading, error, idBySlug, titleBySlug, ownerBySlug, setTitleForSlug, applyLoaded };
 }

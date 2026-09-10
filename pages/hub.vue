@@ -20,8 +20,53 @@ import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, format
 // / before / became the public marketing landing page. It always requires
 // a hub session; see the redirect-to-login guard in onMounted below.
 const { user, token, isLoggedIn, initialized, justLoggedOut, fetchUser, login, logout } = useAuth();
-const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug } = useNamespace();
+const { selected: selectedNS, all: allNamespaces, setNamespace, titleBySlug, idBySlug, ownerBySlug, setTitleForSlug } = useNamespace();
 const { hasPhone: phoneGateHasPhone } = usePhoneGate();
+
+// --- Rename current namespace (owner only; the slug never changes) ---
+const isRenamingNs = ref(false);
+const renameNsValue = ref('');
+const renameNsSaving = ref(false);
+const canRenameSelectedNs = computed(
+  () => !!selectedNS.value && !!user.value?.id && ownerBySlug(selectedNS.value) === user.value.id,
+);
+function startRenameNs() {
+  renameNsValue.value = titleBySlug(selectedNS.value) || selectedNS.value || '';
+  isRenamingNs.value = true;
+  nextTick(() => {
+    const el = document.getElementById('ns-rename-input') as HTMLInputElement | null;
+    el?.focus();
+    el?.select();
+  });
+}
+function cancelRenameNs() {
+  isRenamingNs.value = false;
+  renameNsValue.value = '';
+}
+async function saveRenameNs() {
+  const slug = selectedNS.value;
+  const id = idBySlug(slug);
+  const title = renameNsValue.value.trim();
+  if (!slug || !id || !token.value) return;
+  if (!title) {
+    toast.add({ title: t('app.error') || 'Ошибка', description: t('app.namespaceNameRequired') || 'Введите название', color: 'red' });
+    return;
+  }
+  if (title === (titleBySlug(slug) || '')) { cancelRenameNs(); return; }
+  renameNsSaving.value = true;
+  try {
+    const { hubRenameNamespace } = await import('@/api/hub/namespaces/update');
+    const res = await hubRenameNamespace(token.value, id, slug, title);
+    setTitleForSlug(slug, res.title);
+    isRenamingNs.value = false;
+    toast.add({ title: t('app.saved') || 'Сохранено', description: res.title, color: 'green' });
+  } catch (e) {
+    logError('[hub] rename namespace failed', e);
+    toast.add({ title: t('app.error') || 'Ошибка', description: t('app.namespaceRenameFailed') || 'Не удалось переименовать', color: 'red' });
+  } finally {
+    renameNsSaving.value = false;
+  }
+}
 
 const router = useRouter();
 const toast = useToast();
@@ -246,7 +291,7 @@ const handleSaveProfile = async () => {
 
 const { t, locale, setLocale } = useI18n();
 
-useSeoMeta({ title: () => t('app.hubTitle') || 'lota — Рабочее пространство', robotsNoindex: true });
+useSeoMeta({ title: () => t('app.hubTitle') || 'lota — Рабочее пространство', robots: 'noindex, nofollow' });
 useHead({ titleTemplate: (s) => s ?? 'lota' });
 
 const greeting = computed(() => {
@@ -798,7 +843,50 @@ watch(user, (u) => {
         </div>
 
         <div class="mt-4 rounded-3xl p-5 md:p-6 bg-gradient-to-br from-blue-50/90 to-blue-100/70 dark:from-gray-800 dark:to-gray-900 border border-blue-100/70 dark:border-gray-700 shadow-sm">
-          <div class="w-full flex items-center gap-2 md:gap-3">
+          <!-- Rename mode: inline form (owner only; slug never changes) -->
+          <form
+            v-if="isRenamingNs"
+            class="w-full flex items-center gap-2 md:gap-3"
+            @submit.prevent="saveRenameNs"
+          >
+            <div class="w-9 h-9 flex-shrink-0 rounded-xl bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300">
+              <UIcon name="lucide:building-2" class="w-5 h-5" />
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-[11px] font-semibold uppercase tracking-wide text-blue-600/80 dark:text-blue-400/80">
+                {{ t('app.renameNamespace') || 'Переименовать пространство' }}
+              </p>
+              <input
+                id="ns-rename-input"
+                v-model="renameNsValue"
+                type="text"
+                maxlength="64"
+                :placeholder="t('app.namespaceName') || 'Название'"
+                class="mt-0.5 w-full rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-900 px-2.5 py-1.5 text-base md:text-lg font-bold text-gray-900 dark:text-gray-100 outline-none focus:border-blue-400 dark:focus:border-blue-600"
+                @keydown.esc="cancelRenameNs"
+              />
+              <p class="mt-1 text-[11px] text-gray-400 dark:text-gray-500 truncate">
+                {{ t('app.slugCannotChange') || 'Адрес (slug) не меняется' }}: <span class="font-mono">{{ selectedNS }}</span>
+              </p>
+            </div>
+            <button
+              type="submit"
+              :disabled="renameNsSaving"
+              class="flex-shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-95 disabled:opacity-60"
+            >
+              <UIcon :name="renameNsSaving ? 'lucide:loader-2' : 'lucide:check'" class="w-4 h-4" :class="renameNsSaving ? 'animate-spin' : ''" />
+              <span class="hidden sm:inline">{{ t('app.save') || 'Сохранить' }}</span>
+            </button>
+            <button
+              type="button"
+              class="flex-shrink-0 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              @click="cancelRenameNs"
+            >
+              {{ t('app.cancel') || 'Отмена' }}
+            </button>
+          </form>
+
+          <div v-else class="w-full flex items-center gap-2 md:gap-3">
             <button
               type="button"
               class="flex min-w-0 flex-1 items-center gap-3 text-left"
@@ -816,6 +904,17 @@ watch(user, (u) => {
                   {{ (selectedNS && (titleBySlug(selectedNS) || selectedNS)) || (t('app.selectNamespace') || 'Select active workspace') }}
                 </h3>
               </div>
+            </button>
+
+            <button
+              v-if="canRenameSelectedNs"
+              type="button"
+              class="flex-shrink-0 inline-flex items-center justify-center rounded-xl border border-blue-200 dark:border-blue-800 bg-white/80 dark:bg-gray-800/70 p-1.5 text-blue-700 dark:text-blue-300 transition-all hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm"
+              :aria-label="t('app.renameNamespace') || 'Переименовать пространство'"
+              :title="t('app.renameNamespace') || 'Переименовать пространство'"
+              @click.stop="startRenameNs"
+            >
+              <UIcon name="lucide:pencil" class="w-4 h-4" />
             </button>
 
             <NuxtLink

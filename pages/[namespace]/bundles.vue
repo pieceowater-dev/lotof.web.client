@@ -38,7 +38,7 @@ function syncGlobalNs() {
 // Show the space switcher only when there's a real choice.
 const showNsSwitcher = computed(() => allNamespaces.value.filter(Boolean).length > 1);
 
-useSeoMeta({ title: () => t('app.bundles') || 'Готовые сборки', robotsNoindex: true });
+useSeoMeta({ title: () => t('app.bundles') || 'Готовые сборки', robots: 'noindex, nofollow' });
 useHead({ titleTemplate: (s) => s ?? 'lota' });
 
 const bundles = ref<Bundle[]>([]);
