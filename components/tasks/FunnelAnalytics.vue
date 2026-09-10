@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-// Funnel analytics panel for a lota Issues board. Pure client-side reduction
-// of the board's deals (see useIssuesFunnelAnalytics) — stage funnel,
-// stage-to-stage conversion, win rate, cycle times, weekly throughput.
+// Funnel analytics panel for a lota Issues board — stage funnel,
+// stage-to-stage conversion, per-stage dwell time, win rate, cycle times,
+// pipeline value, weekly throughput. The aggregation runs server-side (see
+// useIssuesFunnelAnalytics / lotof.issues.gtw funnelAnalytics).
 import { useI18n } from '@/composables/useI18n';
 import { useIssuesFunnelAnalytics, type FunnelStageDef } from '@/composables/useIssuesFunnelAnalytics';
 
@@ -50,6 +51,12 @@ function fmtDays(v: number | null | undefined): string {
 function fmtPct(v: number | null | undefined): string {
   return v == null ? '—' : `${Math.round(v * 100)}%`;
 }
+function fmtMoney(v: number | null | undefined): string {
+  if (!v) return '0';
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 10_000) return `${Math.round(v / 1000)}k`;
+  return Math.round(v).toLocaleString('ru-RU');
+}
 
 const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w) => [w.created, w.won]) || [1])));
 </script>
@@ -91,7 +98,6 @@ const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w
           <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
             <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('tasks.funnelTotalDeals') || 'Deals' }}</div>
             <div class="text-2xl font-semibold mt-0.5">{{ result.totalDeals }}</div>
-            <div v-if="result.capped" class="text-[11px] text-amber-500 mt-0.5">≈ {{ t('tasks.funnelCapped') || 'first 5000 shown' }}</div>
           </div>
           <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
             <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('tasks.funnelWon') || 'Won' }}</div>
@@ -110,6 +116,22 @@ const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w
           </div>
         </div>
 
+        <!-- Pipeline value (only when deals carry an amount) -->
+        <div v-if="result.hasDealAmounts" class="grid grid-cols-3 gap-2.5">
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('tasks.funnelPipeline') || 'Pipeline' }}</div>
+            <div class="text-xl font-semibold mt-0.5">{{ fmtMoney(result.openDealAmount) }}</div>
+          </div>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('tasks.funnelRevenueWon') || 'Won revenue' }}</div>
+            <div class="text-xl font-semibold mt-0.5 text-emerald-600 dark:text-emerald-400">{{ fmtMoney(result.wonDealAmount) }}</div>
+          </div>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+            <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('tasks.funnelAvgDeal') || 'Avg deal (won)' }}</div>
+            <div class="text-xl font-semibold mt-0.5">{{ fmtMoney(result.wonCount ? result.wonDealAmount / result.wonCount : 0) }}</div>
+          </div>
+        </div>
+
         <!-- Stage funnel -->
         <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">{{ t('tasks.funnelByStage') || 'Stages' }}</h4>
@@ -119,6 +141,9 @@ const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w
               <div class="flex items-baseline justify-between gap-2 mb-1">
                 <span class="text-sm font-medium truncate">{{ st.label }}</span>
                 <span class="text-xs text-gray-400 flex-shrink-0">
+                  <span v-if="st.avgDwellDays != null" class="mr-2" :title="t('tasks.funnelDwellHint') || 'Average time a deal spends in this stage'">
+                    ⏱ {{ fmtDays(st.avgDwellDays) }}
+                  </span>
                   <span v-if="st.conversionFromPrev != null" class="mr-2" :class="st.conversionFromPrev < 1 ? 'text-amber-500' : 'text-emerald-500'">
                     {{ fmtPct(st.conversionFromPrev) }}
                   </span>
@@ -138,7 +163,7 @@ const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w
               <span class="text-sm font-medium">{{ t('tasks.funnelOutcome') || 'Outcome' }}</span>
               <span class="text-xs text-gray-400">
                 {{ t('tasks.funnelWon') || 'Won' }} {{ result.wonCount }} · {{ t('tasks.funnelLost') || 'Lost' }} {{ result.lostCount }}
-                <span v-if="result.closedNoOutcomeCount"> · {{ t('tasks.funnelClosedOther') || 'closed (other)' }} {{ result.closedNoOutcomeCount }}</span>
+                <span v-if="result.closedOtherCount"> · {{ t('tasks.funnelClosedOther') || 'closed (other)' }} {{ result.closedOtherCount }}</span>
               </span>
             </div>
             <div class="flex h-2.5 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">

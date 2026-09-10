@@ -86,6 +86,16 @@ const contactsIntegrationEnabled = computed(() => {
     return false;
   }
 });
+// A board is "funnel-shaped" once any terminal column is marked won/lost --
+// that's what turns on the deal-amount field and the funnel analytics view.
+const funnelEnabled = computed(() => {
+  try {
+    const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
+    return Array.isArray(arr) && arr.some((s: any) => s.outcome === 'won' || s.outcome === 'lost');
+  } catch {
+    return false;
+  }
+});
 
 // Sprints: once the module is on, the sprint bar is just always part of the
 // board (no separate "Sprints" mode to switch into) -- narrows tasks down to
@@ -903,6 +913,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       :task-types="taskTypes"
       :member-options="memberOptions"
       :geo-map-enabled="geoMapEnabled"
+      :deal-fields-enabled="funnelEnabled"
       :saving="savingTask"
       @submit="handleTaskSubmit"
     />
@@ -918,6 +929,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       :cycles-enabled="cyclesEnabled"
       :cycles="cycles"
       :contacts-integration-enabled="contactsIntegrationEnabled"
+      :deal-fields-enabled="funnelEnabled"
       @changed="handleTaskChanged"
       @deleted="handleTaskDeleted"
       @apply-pending-update="applyPendingTaskUpdate"

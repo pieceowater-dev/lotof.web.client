@@ -36,6 +36,8 @@ const props = defineProps<{
   // Owning board's integration_flags.contacts -- turns on the "link a lota
   // Contacts client" widget in the Contact section.
   contactsIntegrationEnabled?: boolean;
+  // Board is funnel-shaped (has a won/lost column) -- show the deal-value field.
+  dealFieldsEnabled?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -94,6 +96,8 @@ async function saveField(patch: Record<string, any>) {
       clientPhoneSnapshot: props.task.clientPhoneSnapshot || undefined,
       dueAt: props.task.dueAt || undefined,
       estimateValue: props.task.estimateValue ?? undefined,
+      dealAmount: props.task.dealAmount ?? undefined,
+      dealCurrency: props.task.dealCurrency ?? undefined,
       ...patch,
     });
     emit('changed', updated);
@@ -172,6 +176,20 @@ watch(() => props.task?.estimateValue, (v) => { estimateDraft.value = v ?? undef
 function commitEstimate() {
   if ((estimateDraft.value ?? undefined) === (props.task?.estimateValue ?? undefined)) return;
   saveField({ estimateValue: estimateDraft.value ?? undefined });
+}
+
+// --- Deal value (funnel boards only) ---
+const dealAmountDraft = ref<number | undefined>(undefined);
+const dealCurrencyDraft = ref('KZT');
+watch(() => props.task?.id, () => {
+  dealAmountDraft.value = props.task?.dealAmount ?? undefined;
+  dealCurrencyDraft.value = props.task?.dealCurrency || 'KZT';
+}, { immediate: true });
+function commitDeal() {
+  const amt = dealAmountDraft.value ?? undefined;
+  const cur = (dealCurrencyDraft.value || 'KZT').trim();
+  if ((amt ?? null) === (props.task?.dealAmount ?? null) && cur === (props.task?.dealCurrency || 'KZT')) return;
+  saveField({ dealAmount: amt, dealCurrency: amt != null ? cur : undefined });
 }
 
 // --- Contact (name / phone with mask+validation / address) ---
@@ -670,6 +688,13 @@ async function handleDelete() {
             <div v-if="estimateLabel">
               <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.estimateValue') || 'Estimate' }} ({{ estimateLabel }})</div>
               <UInput v-model.number="estimateDraft" type="number" min="0" step="0.5" @blur="commitEstimate" />
+            </div>
+          </div>
+          <div v-if="dealFieldsEnabled">
+            <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dealAmount') || 'Deal amount' }}</div>
+            <div class="flex gap-2">
+              <UInput v-model.number="dealAmountDraft" type="number" min="0" step="1" class="flex-1" :placeholder="t('tasks.dealAmountPlaceholder') || '0'" @blur="commitDeal" />
+              <UInput v-model="dealCurrencyDraft" class="w-24" maxlength="8" placeholder="KZT" @blur="commitDeal" />
             </div>
           </div>
           <div :class="cyclesEnabled ? 'grid grid-cols-2 gap-3' : ''">

@@ -30,6 +30,8 @@ export interface TaskItem {
   escalatedAt?: string | null;
   estimateValue?: number | null;
   visitedStatuses?: string[];
+  dealAmount?: number | null;
+  dealCurrency?: string | null;
 }
 
 export interface TasksFilter {
@@ -57,7 +59,7 @@ const TasksBundleDocument = /* GraphQL */ `
         id boardId taskTypeId title description status assigneeUserId priority
         textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
         orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-        escalatedAt estimateValue visitedStatuses
+        escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
       }
       info { count }
     }

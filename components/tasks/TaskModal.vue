@@ -16,6 +16,8 @@ const props = defineProps<{
   taskTypes: TaskType[];
   memberOptions: { label: string; value: string }[];
   geoMapEnabled?: boolean;
+  // Board is funnel-shaped (has a won/lost column) -- show the deal-value field.
+  dealFieldsEnabled?: boolean;
   saving?: boolean;
 }>();
 
@@ -42,6 +44,8 @@ const form = reactive({
   clientPhoneSnapshot: '',
   dueAt: '',
   estimateValue: undefined as number | undefined,
+  dealAmount: undefined as number | undefined,
+  dealCurrency: 'KZT',
 });
 
 const selectedTaskType = computed(() => props.taskTypes.find((tt) => tt.id === form.taskTypeId));
@@ -76,6 +80,8 @@ watch(() => props.modelValue, (open) => {
   form.clientPhoneSnapshot = '';
   form.dueAt = '';
   form.estimateValue = undefined;
+  form.dealAmount = undefined;
+  form.dealCurrency = 'KZT';
   showContactSection.value = !!(props.geoMapEnabled || selectedTaskType.value?.requiresLocation);
   showMapPicker.value = false;
 }, { immediate: true });
@@ -120,6 +126,8 @@ function handleSubmit() {
     clientPhoneSnapshot: form.clientPhoneSnapshot.trim() || undefined,
     dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : undefined,
     estimateValue: estimateLabel.value ? form.estimateValue : undefined,
+    dealAmount: props.dealFieldsEnabled && form.dealAmount != null ? Number(form.dealAmount) : undefined,
+    dealCurrency: props.dealFieldsEnabled && form.dealAmount != null ? (form.dealCurrency.trim() || 'KZT') : undefined,
   });
 }
 </script>
@@ -193,6 +201,13 @@ function handleSubmit() {
 
         <UFormGroup v-if="estimateLabel" :label="`${t('tasks.estimateValue') || 'Estimate'} (${estimateLabel})`">
           <UInput v-model.number="form.estimateValue" type="number" min="0" step="0.5" size="lg" class="w-32" />
+        </UFormGroup>
+
+        <UFormGroup v-if="dealFieldsEnabled" :label="t('tasks.dealAmount') || 'Deal amount'">
+          <div class="flex gap-2">
+            <UInput v-model.number="form.dealAmount" type="number" min="0" step="1" size="lg" class="flex-1" :placeholder="t('tasks.dealAmountPlaceholder') || '0'" />
+            <UInput v-model="form.dealCurrency" size="lg" class="w-24" maxlength="8" placeholder="KZT" />
+          </div>
         </UFormGroup>
 
         <UFormGroup :label="t('tasks.description') || 'Description'" :hint="t('tasks.markdownSupported') || 'Markdown supported'">

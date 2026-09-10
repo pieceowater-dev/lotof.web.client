@@ -10,7 +10,7 @@ const TASK_FIELDS = `
   id boardId taskTypeId title description status assigneeUserId priority
   textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
   orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-  escalatedAt estimateValue visitedStatuses
+  escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
 `;
 
 const UpdateTaskDocument = /* GraphQL */ `
@@ -53,6 +53,8 @@ export interface UpdateTaskInput {
   clientPhoneSnapshot?: string;
   dueAt?: string;
   estimateValue?: number;
+  dealAmount?: number;
+  dealCurrency?: string;
 }
 
 export async function tasksUpdateTask(tasksToken: string, namespaceSlug: string, input: UpdateTaskInput) {

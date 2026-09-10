@@ -9,7 +9,7 @@ const CreateTaskDocument = /* GraphQL */ `
       id boardId taskTypeId title description status assigneeUserId priority
       textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
       orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-      escalatedAt estimateValue visitedStatuses
+      escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
     }
   }
 `;
@@ -35,6 +35,8 @@ export interface CreateTaskInput {
   // Omit to leave the task in the backlog (no cycle).
   cycleId?: string;
   estimateValue?: number;
+  dealAmount?: number;
+  dealCurrency?: string;
 }
 
 export async function tasksCreateTask(tasksToken: string, namespaceSlug: string, input: CreateTaskInput) {
