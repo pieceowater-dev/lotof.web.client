@@ -379,6 +379,10 @@ watch([plans, activeSubscription], () => {
               {{ plan.name }}
             </h3>
 
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 line-clamp-2 min-h-[2.5rem]">
+              {{ t('app.' + plan.description) || plan.description }}
+            </p>
+
             <div class="mb-6">
               <div class="flex items-baseline gap-2">
                 <span class="text-4xl font-bold text-gray-900 dark:text-white">

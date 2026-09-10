@@ -308,7 +308,6 @@ watch([plans, activeSubscription], () => {
 
 <template>
   <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
-    <!-- Header -->
     <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex items-center justify-between">
@@ -334,7 +333,6 @@ watch([plans, activeSubscription], () => {
       </div>
     </div>
 
-    <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <ContactSupportBanner class="mb-8" />
 
@@ -362,10 +360,7 @@ watch([plans, activeSubscription], () => {
           >
             <span>{{ t('app.yearly') || 'Yearly' }}</span>
             <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
-              <UIcon
-                name="i-heroicons-sparkles"
-                class="w-3 h-3 mr-0.5"
-              />
+              <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
               {{ t('app.bestPrice') || 'Best price' }}
             </span>
           </button>
@@ -374,20 +369,11 @@ watch([plans, activeSubscription], () => {
 
       <BillingBundlesForApp application-code="pieceowater.atrace" :namespace="nsSlug" :interval="selectedInterval" />
 
-      <!-- Interval Toggle -->
 
-      <!-- Loading State -->
-      <div
-        v-if="loading"
-        class="flex justify-center items-center py-12"
-      >
-        <UIcon
-          name="i-heroicons-arrow-path"
-          class="w-8 h-8 animate-spin text-primary-500"
-        />
+      <div v-if="loading" class="flex justify-center items-center py-12">
+        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
       </div>
 
-      <!-- Error State -->
       <UAlert
         v-else-if="error"
         icon="i-heroicons-exclamation-triangle"
@@ -398,44 +384,30 @@ watch([plans, activeSubscription], () => {
         class="mb-6"
       />
 
-      <!-- Plans Grid -->
-      <div
-        v-else
-        class="grid md:grid-cols-2 gap-6 max-w-5xl mx-auto"
-      >
+      <div v-else class="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
         <div
           v-for="plan in displayedPlans"
           :key="plan.id"
           class="relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
         >
-          <!-- Trial Badge -->
-          <div
-            v-if="plan.trialDays > 0"
-            class="absolute top-0 right-0"
-          >
+          <div v-if="plan.trialDays > 0" class="absolute top-0 right-0">
             <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
               <div class="flex items-center gap-1.5">
-                <UIcon
-                  name="i-heroicons-gift"
-                  class="w-4 h-4"
-                />
+                <UIcon name="i-heroicons-gift" class="w-4 h-4" />
                 <span class="text-xs font-bold">{{ plan.trialDays }} {{ t('app.daysTrial') || 'days trial' }}</span>
               </div>
             </div>
           </div>
 
           <div class="flex flex-1 flex-col p-6 pt-12">
-            <!-- Plan Name -->
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
               {{ plan.name }}
             </h3>
 
-            <!-- Description -->
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 line-clamp-2 min-h-[2.5rem]">
               {{ t('app.' + plan.description) || plan.description }}
             </p>
 
-            <!-- Price -->
             <div class="mb-6">
               <div class="flex items-baseline gap-2">
                 <span class="text-4xl font-bold text-gray-900 dark:text-white">
@@ -449,25 +421,17 @@ watch([plans, activeSubscription], () => {
                   / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
                 </span>
               </div>
-              <div
-                v-if="plan.trialDays > 0"
-                class="mt-2 text-sm text-gray-600 dark:text-gray-400"
-              >
+              <div v-if="plan.trialDays > 0" class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 {{ t('app.afterTrial') || 'После триала' }}:
                 <span class="font-semibold">{{ formatPrice(plan.amountCents, plan.currency) }}</span>
                 / {{ selectedInterval === 'monthly' ? (t('app.month') || 'month') : (t('app.year') || 'year') }}
               </div>
             </div>
 
-            <!-- Features -->
             <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
-              <!-- Trial Days -->
               <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                  <UIcon
-                    name="i-heroicons-check"
-                    class="w-3 h-3 text-primary-600 dark:text-primary-400"
-                  />
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
                 </div>
                 <span class="text-sm text-gray-700 dark:text-gray-300">
                   <template v-if="plan.trialDays === 0">
@@ -479,57 +443,20 @@ watch([plans, activeSubscription], () => {
                 </span>
               </div>
 
-              <!-- Plan-specific features from metadata -->
               <div
                 v-for="feature in getPlanFeatures(plan)"
                 :key="feature.key"
                 class="flex items-start gap-3"
               >
                 <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                  <UIcon
-                    name="i-heroicons-check"
-                    class="w-3 h-3 text-primary-600 dark:text-primary-400"
-                  />
+                  <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
                 </div>
                 <span class="text-sm text-gray-700 dark:text-gray-300">
                   {{ formatPlanFeature(feature) }}
                 </span>
               </div>
-
-              <!-- Included Seats (legacy) -->
-              <div
-                v-if="plan.includedSeats > 0"
-                class="flex items-start gap-3"
-              >
-                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                  <UIcon
-                    name="i-heroicons-check"
-                    class="w-3 h-3 text-primary-600 dark:text-primary-400"
-                  />
-                </div>
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  <span class="font-semibold">{{ plan.includedSeats }}</span> {{ t('app.includedSeats') || 'included seats' }}
-                </span>
-              </div>
-
-              <!-- Included Units (legacy) -->
-              <div
-                v-if="plan.includedUnits > 0"
-                class="flex items-start gap-3"
-              >
-                <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                  <UIcon
-                    name="i-heroicons-check"
-                    class="w-3 h-3 text-primary-600 dark:text-primary-400"
-                  />
-                </div>
-                <span class="text-sm text-gray-700 dark:text-gray-300">
-                  <span class="font-semibold">{{ plan.includedUnits }}</span> {{ t('app.includedUnits') || 'included units' }}
-                </span>
-              </div>
             </div>
 
-            <!-- CTA Button -->
             <UButton
               v-if="!isPlanActive(plan)"
               block
@@ -541,10 +468,7 @@ watch([plans, activeSubscription], () => {
               @click="subscribePlan(plan)"
             >
               <template v-if="subscribingPlanCode === plan.code">
-                <UIcon
-                  name="i-heroicons-arrow-path"
-                  class="w-4 h-4 mr-2 animate-spin"
-                />
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
                 {{ t('app.connecting') || 'Connecting...' }}
               </template>
               <template v-else>
@@ -552,7 +476,6 @@ watch([plans, activeSubscription], () => {
               </template>
             </UButton>
 
-            <!-- Active Plan Badge -->
             <div
               v-else
               class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
@@ -573,15 +496,8 @@ watch([plans, activeSubscription], () => {
       />
 
 
-      <!-- Empty State -->
-      <div
-        v-if="!loading && !error && displayedPlans.length === 0"
-        class="text-center py-12"
-      >
-        <UIcon
-          name="i-heroicons-inbox"
-          class="w-12 h-12 mx-auto text-gray-400 mb-4"
-        />
+      <div v-if="!loading && !error && displayedPlans.length === 0" class="text-center py-12">
+        <UIcon name="i-heroicons-inbox" class="w-12 h-12 mx-auto text-gray-400 mb-4" />
         <p class="text-gray-500 dark:text-gray-400">
           {{ t('app.noPlansAvailable') || 'No plans available' }}
         </p>
