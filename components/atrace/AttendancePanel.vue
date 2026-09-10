@@ -35,13 +35,16 @@ const view = ref<'table' | 'analytics'>('table');
 </script>
 
 <template>
-  <div class="hidden md:flex justify-between items-center mb-5 mt-5 px-4 flex-shrink-0">
+  <div class="hidden md:flex justify-between items-center mb-2 mt-3 px-4 flex-shrink-0">
     <div class="text-left">
-      <h2 class="text-lg font-medium">
+      <h2 class="text-sm font-medium text-gray-600 dark:text-gray-300">
         {{ t('app.attendance') }} —
         {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
       </h2>
-      <span v-if="selectedPostId !== ''">{{ selectedPostLocationLine }}</span>
+      <span
+        v-if="selectedPostId !== ''"
+        class="text-xs text-gray-400"
+      >{{ selectedPostLocationLine }}</span>
     </div>
   </div>
 

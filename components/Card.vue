@@ -222,10 +222,10 @@ const dropdownItems = [
 <template>
   <div
     :class="selected ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-400 dark:to-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md hover:shadow-sm'"
-    class="p-4 rounded-xl w-60 max-w-[90vw] sm:max-w-xs cursor-pointer flex-shrink-0 min-h-[100px] self-stretch flex flex-col relative transition-shadow duration-200"
+    class="p-3 rounded-xl w-60 max-w-[90vw] sm:max-w-xs cursor-pointer flex-shrink-0 min-h-[76px] self-stretch flex flex-col relative transition-shadow duration-200"
     @click="emit('select', post)"
   >
-    <div class="flex items-center gap-2 mb-2">
+    <div class="flex items-center gap-2 mb-1">
       <h3
         class="text-lg font-semibold truncate min-w-0 flex-1"
         :title="post.title"
@@ -282,7 +282,7 @@ const dropdownItems = [
     <!-- Flexible spacer to push bottom section down when there is little content -->
     <div class="flex-1" />
     <!-- Reserve space for one description line to keep cards equal height -->
-    <div class="mt-1 h-5">
+    <div class="mt-0.5 h-5">
       <p
         v-if="hasDescription"
         class="text-xs truncate"

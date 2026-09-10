@@ -380,12 +380,12 @@ onBeforeUnmount(() => {
       :banners="leaveApprovalBanners"
       @dismiss="dismissLeaveApprovalBanner"
     />
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 mt-4 px-4 flex-shrink-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-2 mt-2 px-4 flex-shrink-0">
       <div
         class="text-left min-w-0"
         data-tour="atrace-title"
       >
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-lg sm:text-xl font-semibold">
           {{ t('app.atraceTitle') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
