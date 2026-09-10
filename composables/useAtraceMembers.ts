@@ -40,13 +40,34 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  // Pagination
+  // Search + pagination. Search matches nickname / username / email (the
+  // three things visible in the table's first two columns), then
+  // paginatedMembers slices the filtered set -- membersFilteredCount is
+  // what the table's footer should show as `total`.
+  const membersSearch = ref('');
   const membersPage = ref(1);
   const membersPageCount = ref(10);
+
+  const filteredMembers = computed(() => {
+    const q = membersSearch.value.trim().toLowerCase();
+    if (!q) return members.value;
+    return members.value.filter((m) =>
+      [m.nickname, m.username, m.email].some((v) => (v || '').toLowerCase().includes(q)),
+    );
+  });
+  const membersFilteredCount = computed(() => filteredMembers.value.length);
+
   const paginatedMembers = computed(() => {
     const start = (membersPage.value - 1) * membersPageCount.value;
     const end = start + membersPageCount.value;
-    return members.value.slice(start, end);
+    return filteredMembers.value.slice(start, end);
+  });
+
+  // A stale page number after the result set shrinks (typed a query, or
+  // deactivated someone) would show an empty page with no way back.
+  watch([membersSearch, membersFilteredCount], () => {
+    const lastPage = Math.max(1, Math.ceil(membersFilteredCount.value / membersPageCount.value));
+    if (membersPage.value > lastPage) membersPage.value = lastPage;
   });
 
   // Cache to prevent duplicate concurrent requests
@@ -463,7 +484,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
 
   return {
     members, roles, loading, error,
-    membersPage, membersPageCount, paginatedMembers,
+    membersSearch, membersPage, membersPageCount, paginatedMembers, membersFilteredCount,
     isEditMemberOpen, editingMember, editForm,
     loadMembers, loadRoles, openEditMember, handleSaveMember, toggleMemberActive,
 

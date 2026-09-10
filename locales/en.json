@@ -918,6 +918,8 @@
       "title": "Members Management",
       "subtitle": "Manage active members and their permissions",
       "activeCount": "Active Members",
+      "searchPlaceholder": "Search by name or email",
+      "noSearchResults": "No one found",
       "user": "User",
       "status": "Status",
       "actions": "Actions",

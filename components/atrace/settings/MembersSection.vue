@@ -23,7 +23,7 @@ const isEditingSelf = computed(() => {
 
 const {
   members, roles, loading, error,
-  membersPage, membersPageCount, paginatedMembers,
+  membersSearch, membersPage, membersPageCount, paginatedMembers, membersFilteredCount,
   isEditMemberOpen, editingMember, editForm,
   loadMembers, loadRoles, openEditMember, handleSaveMember, toggleMemberActive,
 } = useAtraceMembers(nsSlug);
@@ -46,9 +46,19 @@ onMounted(async () => {
 
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <h2 class="text-base font-medium mb-3">
-      {{ t('app.members') || 'Members' }}
-    </h2>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <h2 class="text-base font-medium">
+        {{ t('app.members') || 'Members' }}
+      </h2>
+      <UInput
+        v-if="!loading && !error && members.length > 0"
+        v-model="membersSearch"
+        icon="i-heroicons-magnifying-glass"
+        size="sm"
+        :placeholder="t('atrace.members.searchPlaceholder') || 'Поиск по имени или email'"
+        class="w-full sm:w-64"
+      />
+    </div>
 
     <div
       v-if="loading"
@@ -71,6 +81,13 @@ onMounted(async () => {
     </div>
 
     <div
+      v-else-if="membersFilteredCount === 0"
+      class="text-gray-500 text-center py-8"
+    >
+      {{ t('atrace.members.noSearchResults') || 'Никого не найдено' }}
+    </div>
+
+    <div
       v-else
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table"
     >
@@ -80,7 +97,7 @@ onMounted(async () => {
         :rows="paginatedMembers"
         :columns="columns"
         :loading="loading"
-        :total="members.length"
+        :total="membersFilteredCount"
         :pagination="true"
       >
         <template #username-data="{ row }">
