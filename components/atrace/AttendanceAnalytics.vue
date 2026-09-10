@@ -73,6 +73,7 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
   'frequently-late': { icon: 'i-heroicons-clock', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagLate') || 'Часто опаздывает' },
   'frequently-early': { icon: 'i-heroicons-arrow-left-on-rectangle', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagEarly') || 'Часто уходит раньше' },
   'low-attendance': { icon: 'i-heroicons-chart-bar', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagLowAttendance') || 'Низкая посещаемость' },
+  'config-hint': { icon: 'i-heroicons-information-circle', color: 'text-blue-600 dark:text-blue-400', label: t('app.analyticsFlagConfig') || 'Настройка' },
 };
 </script>
 
@@ -131,20 +132,20 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
               {{ t('app.analyticsKpiAttendance') || 'Посещаемость' }}
             </div>
             <div class="text-2xl font-semibold mt-0.5">
-              {{ pct(data.attendanceRate.value) }}
+              {{ pct(data.turnoutRate.value) }}
             </div>
             <div
               class="text-xs mt-0.5"
-              :class="deltaColor(data.attendanceRate.delta, false)"
+              :class="deltaColor(data.turnoutRate.delta, false)"
             >
-              <span v-if="deltaPP(data.attendanceRate.delta)">{{ deltaArrow(data.attendanceRate.delta) }} {{ deltaPP(data.attendanceRate.delta) }}</span>
+              <span v-if="deltaPP(data.turnoutRate.delta)">{{ deltaArrow(data.turnoutRate.delta) }} {{ deltaPP(data.turnoutRate.delta) }}</span>
               <span
                 v-else
                 class="text-gray-400"
               >{{ t('app.analyticsNoTrend') || 'нет данных для сравнения' }}</span>
             </div>
             <div class="text-[11px] text-gray-400 mt-0.5">
-              {{ data.attendedDays }} / {{ data.requiredDays }} {{ t('app.analyticsDaysShort') || 'дн.' }}
+              {{ data.daysPresent }} / {{ data.requiredDays }} {{ t('app.analyticsDaysShort') || 'дн.' }}
             </div>
           </div>
 
@@ -257,8 +258,8 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
             class="divide-y divide-gray-100 dark:divide-gray-800"
           >
             <li
-              v-for="ins in data.insights"
-              :key="ins.userId + ins.kind"
+              v-for="(ins, i) in data.insights"
+              :key="(ins.userId || 'hint') + ins.kind + i"
               class="py-2 flex items-start gap-2.5"
             >
               <UIcon
@@ -266,7 +267,16 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
                 class="w-4 h-4 mt-0.5 shrink-0"
                 :class="insightMeta[ins.kind].color"
               />
-              <div class="min-w-0">
+              <div
+                v-if="ins.kind === 'config-hint'"
+                class="text-xs text-gray-600 dark:text-gray-300"
+              >
+                {{ ins.detail }}
+              </div>
+              <div
+                v-else
+                class="min-w-0"
+              >
                 <div class="text-sm font-medium truncate">
                   {{ ins.name }}
                 </div>

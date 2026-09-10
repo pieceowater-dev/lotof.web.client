@@ -1,51 +1,54 @@
 import type { ComputedRef } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { useAtraceActiveMembers } from '@/composables/useAtraceActiveMembers';
 import { logError } from '@/utils/logger';
 
 // "Как дела" analytics for the attendance area -- trends and per-member
 // patterns a manager would otherwise have to eyeball out of the raw stats
 // table (or ask someone to dig out of the DB). Built entirely on two
 // already-deployed queries -- getAllUsersStats (per-member aggregates,
-// current + previous equal-length period for deltas) and
-// exportDailyAttendance (per-day rows, for arrival times and the
-// "checked in, never checked out" signal) -- so there's no backend piece.
-// Salary is deliberately out of scope here.
+// current + previous equal-length period) and exportDailyAttendance
+// (per-day rows) -- so there's no backend piece. Salary is out of scope.
+//
+// Every rate here is over DAYS PRESENT (a day with any check-in, counted
+// from the export rows), not getAllUsersStats.attendedDays -- "attended"
+// there means the day met the full hours requirement, so late/early/geo
+// counts (which aren't a subset of it) would produce >100% rates against
+// it. Inactive members are filtered out, same as the stats table does.
 
 export type AnalyticsInsightKind =
   | 'no-show'
   | 'no-checkout'
   | 'frequently-late'
   | 'frequently-early'
-  | 'low-attendance';
+  | 'low-attendance'
+  | 'config-hint';
 
 export type AnalyticsInsight = {
   userId: string;
   name: string;
   kind: AnalyticsInsightKind;
   detail: string;
-  severity: number; // higher = surface first
+  severity: number;
 };
 
 export type ArrivalBucket = { label: string; count: number; pct: number };
 
 export type Kpi = {
-  // 0..1 for rates, raw hours for avgHoursPerDay
-  value: number;
-  // percentage-point change vs the previous equal-length period, or null
-  // when that period had nothing to compare against
-  delta: number | null;
+  value: number; // 0..1 for rates, raw hours for avgHoursPerDay
+  delta: number | null; // pp change vs previous equal-length period, null if none
 };
 
 export type AttendanceAnalyticsData = {
   memberCount: number;
-  attendedDays: number;
+  daysPresent: number;
   requiredDays: number;
-  attendanceRate: Kpi;
+  turnoutRate: Kpi; // days present / required days
   avgHoursPerDay: Kpi;
   lateRate: Kpi;
   earlyLeaveRate: Kpi;
   geoConfirmRate: Kpi;
-  openShiftRate: Kpi; // days someone checked in but never closed the shift
+  openShiftRate: Kpi;
   arrivalBuckets: ArrivalBucket[];
   medianArrival: string | null;
   insights: AnalyticsInsight[];
@@ -56,11 +59,10 @@ type UsersStatsRow = {
   username?: string;
   workDays: number;
   attendedDays: number;
-  legitimateAbsences: number;
-  totalWorkedHours: number;
   lateDays: number;
   earlyLeaveDays: number;
   geoConfirmedDays: number;
+  totalWorkedHours: number;
   hasScheduleAssignment: boolean;
 };
 
@@ -90,16 +92,18 @@ function daysBetweenInclusive(start: string, end: string): number {
   return Math.max(1, Math.round((b - a) / 86400000) + 1);
 }
 
-// Local minutes-since-midnight of a unix-seconds instant, read in tz.
-function localMinutes(unixSec: number, tz?: string): number | null {
-  if (!unixSec) return null;
+// unixMs: exportDailyAttendance returns firstCheckIn/lastCheckOut in
+// MILLISECONDS (unlike the per-record/reprocess endpoints, which are in
+// seconds) -- keep this in step with that source.
+function localMinutes(unixMs: number, tz?: string): number | null {
+  if (!unixMs) return null;
   try {
     const parts = new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
       timeZone: tz || undefined,
-    }).formatToParts(new Date(unixSec * 1000));
+    }).formatToParts(new Date(unixMs));
     const h = Number(parts.find((p) => p.type === 'hour')?.value);
     const m = Number(parts.find((p) => p.type === 'minute')?.value);
     if (Number.isNaN(h) || Number.isNaN(m)) return null;
@@ -119,8 +123,32 @@ function rate(numer: number, denom: number): number {
   return denom > 0 ? numer / denom : 0;
 }
 
+// Number of days in the export set where this person actually checked in
+// (any scan). The "open shift" subset: exactly one scan, so first == last,
+// and the day resolved as neither attended nor a justified absence.
+function presenceFromDaily(rows: DailyRow[]) {
+  const present = new Map<string, number>();
+  const open = new Map<string, number>();
+  const arrivalMins: number[] = [];
+  let totalPresent = 0;
+  let totalOpen = 0;
+  for (const row of rows) {
+    if (!row.firstCheckIn) continue;
+    totalPresent++;
+    present.set(row.userId, (present.get(row.userId) || 0) + 1);
+    if (row.firstCheckIn === row.lastCheckOut && !row.attended && !row.legitimate) {
+      totalOpen++;
+      open.set(row.userId, (open.get(row.userId) || 0) + 1);
+    }
+    const mins = localMinutes(row.firstCheckIn, row.timezone);
+    if (mins !== null) arrivalMins.push(mins);
+  }
+  return { present, open, arrivalMins, totalPresent, totalOpen };
+}
+
 export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
   const { t } = useI18n();
+  const { activeUserIds, loadActiveMembers } = useAtraceActiveMembers(nsSlug);
 
   const data = ref<AttendanceAnalyticsData | null>(null);
   const loading = ref(false);
@@ -136,13 +164,26 @@ export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
 
       const { atraceGetAllUsersStats, atraceExportDailyAttendance } = await import('@/api/atrace/attendance/stats');
 
-      const [curStats, prevStats, dailyRows] = await Promise.all([
+      const [curStats, prevStats, curDaily, prevDaily] = await Promise.all([
         atraceGetAllUsersStats(startDate, endDate, postId ?? null, nsSlug.value) as Promise<UsersStatsRow[]>,
         atraceGetAllUsersStats(prevStart, prevEnd, postId ?? null, nsSlug.value).catch(() => [] as UsersStatsRow[]) as Promise<UsersStatsRow[]>,
         atraceExportDailyAttendance(startDate, endDate, nsSlug.value).catch(() => [] as DailyRow[]) as Promise<DailyRow[]>,
+        atraceExportDailyAttendance(prevStart, prevEnd, nsSlug.value).catch(() => [] as DailyRow[]) as Promise<DailyRow[]>,
+        loadActiveMembers(),
       ]);
 
-      data.value = compute(curStats, prevStats, dailyRows);
+      // If getActiveMembers came back empty (query failed / brand-new
+      // namespace) don't filter everything to nothing -- fall back to
+      // "keep all".
+      const active = activeUserIds.value;
+      const keep = (uid: string) => active.size === 0 || active.has(uid);
+
+      data.value = compute(
+        curStats.filter((r) => keep(r.userId)),
+        prevStats.filter((r) => keep(r.userId)),
+        curDaily.filter((r) => keep(r.userId)),
+        prevDaily.filter((r) => keep(r.userId)),
+      );
     } catch (e: unknown) {
       logError('[useAtraceAnalytics] load failed', e);
       error.value = t('app.analyticsLoadFailed') || 'Не удалось загрузить аналитику';
@@ -152,23 +193,23 @@ export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
     }
   }
 
-  function compute(cur: UsersStatsRow[], prev: UsersStatsRow[], daily: DailyRow[]): AttendanceAnalyticsData {
+  function compute(cur: UsersStatsRow[], prev: UsersStatsRow[], curDaily: DailyRow[], prevDaily: DailyRow[]): AttendanceAnalyticsData {
     const sum = (rows: UsersStatsRow[], pick: (r: UsersStatsRow) => number) =>
       rows.reduce((acc, r) => acc + (pick(r) || 0), 0);
 
-    const curReq = sum(cur, (r) => r.workDays);
-    const curAtt = sum(cur, (r) => r.attendedDays);
-    const curLate = sum(cur, (r) => r.lateDays);
-    const curEarly = sum(cur, (r) => r.earlyLeaveDays);
-    const curGeo = sum(cur, (r) => r.geoConfirmedDays);
-    const curHours = sum(cur, (r) => r.totalWorkedHours);
+    const curP = presenceFromDaily(curDaily);
+    const prevP = presenceFromDaily(prevDaily);
 
+    const curReq = sum(cur, (r) => r.workDays);
     const prevReq = sum(prev, (r) => r.workDays);
-    const prevAtt = sum(prev, (r) => r.attendedDays);
+    const curLate = sum(cur, (r) => r.lateDays);
     const prevLate = sum(prev, (r) => r.lateDays);
+    const curEarly = sum(cur, (r) => r.earlyLeaveDays);
     const prevEarly = sum(prev, (r) => r.earlyLeaveDays);
+    const curGeo = sum(cur, (r) => r.geoConfirmedDays);
     const prevGeo = sum(prev, (r) => r.geoConfirmedDays);
-    const prevHours = sum(prev, (r) => r.totalWorkedHours);
+    const curHours = curDaily.reduce((a, r) => a + (r.workedHours || 0), 0);
+    const prevHours = prevDaily.reduce((a, r) => a + (r.workedHours || 0), 0);
 
     const kpi = (curN: number, curD: number, prevN: number, prevD: number): Kpi => {
       const value = rate(curN, curD);
@@ -176,43 +217,13 @@ export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
       return { value, delta };
     };
 
-    // "checked in, never closed the shift" -- one scan only, so first ==
-    // last, and the day resolved as neither attended nor a justified
-    // absence. exportDailyAttendance carries no checkCount, but this
-    // signature is unambiguous for the dominant case.
-    const perUserAppeared = new Map<string, number>();
-    const perUserOpen = new Map<string, number>();
-    let totalAppeared = 0;
-    let totalOpen = 0;
-    const arrivalMins: number[] = [];
-
-    for (const row of daily) {
-      if (!row.firstCheckIn) continue;
-      totalAppeared++;
-      perUserAppeared.set(row.userId, (perUserAppeared.get(row.userId) || 0) + 1);
-      const isOpen =
-        row.firstCheckIn === row.lastCheckOut && !row.attended && !row.legitimate;
-      if (isOpen) {
-        totalOpen++;
-        perUserOpen.set(row.userId, (perUserOpen.get(row.userId) || 0) + 1);
-      }
-      const mins = localMinutes(row.firstCheckIn, row.timezone);
-      if (mins !== null) arrivalMins.push(mins);
-    }
-
-    // Previous-period open-shift rate: derived the same way would need
-    // another export call; not worth a second round trip -- openShiftRate
-    // just has no delta.
-    const openShiftRate: Kpi = {
-      value: rate(totalOpen, totalAppeared),
-      delta: null,
-    };
+    const openShiftRate = kpi(curP.totalOpen, curP.totalPresent, prevP.totalOpen, prevP.totalPresent);
 
     // Arrival distribution: 30-min bins across the working morning, with
     // catch-alls on both ends.
     const BIN = 30;
-    const FIRST = 6 * 60; // 06:00
-    const LAST = 11 * 60; // 11:00 -> last labelled bin is 10:30-11:00
+    const FIRST = 6 * 60;
+    const LAST = 11 * 60;
     const bins: ArrivalBucket[] = [];
     bins.push({ label: `${t('app.analyticsArrivalBefore') || 'до'} ${minutesToHHMM(FIRST)}`, count: 0, pct: 0 });
     for (let m = FIRST; m < LAST; m += BIN) {
@@ -224,97 +235,96 @@ export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
       if (mins >= LAST) return bins.length - 1;
       return 1 + Math.floor((mins - FIRST) / BIN);
     };
-    for (const mins of arrivalMins) bins[binIndex(mins)].count++;
-    const arrTotal = arrivalMins.length;
+    for (const mins of curP.arrivalMins) bins[binIndex(mins)].count++;
+    const arrTotal = curP.arrivalMins.length;
     for (const b of bins) b.pct = arrTotal > 0 ? b.count / arrTotal : 0;
 
     let medianArrival: string | null = null;
-    if (arrivalMins.length) {
-      const sorted = [...arrivalMins].sort((a, b) => a - b);
+    if (curP.arrivalMins.length) {
+      const sorted = [...curP.arrivalMins].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
       const med = sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
       medianArrival = minutesToHHMM(med);
     }
 
+    // Namespace-wide rates, used to decide whether a per-member late/early
+    // flag is actually an individual pattern or just everyone tripping a
+    // threshold that doesn't match this workplace's real shift.
+    const nsLateRate = rate(curLate, curP.totalPresent);
+    const nsEarlyRate = rate(curEarly, curP.totalPresent);
+    const nsGeoRate = rate(curGeo, curP.totalPresent);
+    const lateIsIndividual = nsLateRate < 0.3;
+    const earlyIsIndividual = nsEarlyRate < 0.4;
+
     // Per-member flags.
     const insights: AnalyticsInsight[] = [];
+
+    if (!earlyIsIndividual && curP.totalPresent > 0) {
+      insights.push({
+        userId: '', name: '', kind: 'config-hint',
+        detail:
+          `${t('app.analyticsEarlyThresholdHint') || 'Ранние уходы срабатывают почти у всех'} (${Math.round(nsEarlyRate * 100)}%) — ` +
+          (t('app.analyticsEarlyThresholdHint2') || 'скорее всего, порог раннего ухода не совпадает с реальным концом смены; проверьте настройки посещаемости'),
+        severity: 5,
+      });
+    }
+    if (curP.totalPresent >= 10 && nsGeoRate < 0.1) {
+      insights.push({
+        userId: '', name: '', kind: 'config-hint',
+        detail:
+          `${t('app.analyticsGeoHint') || 'Гео-подтверждение почти не собирается'} (${Math.round(nsGeoRate * 100)}%) — ` +
+          (t('app.analyticsGeoHint2') || 'большинство сотрудников не дали браузеру доступ к геолокации'),
+        severity: 4,
+      });
+    }
+
     for (const r of cur) {
       const name = r.username?.trim() || r.userId.slice(0, 8);
-      const appeared = perUserAppeared.get(r.userId) || 0;
-      const open = perUserOpen.get(r.userId) || 0;
+      const daysPresent = curP.present.get(r.userId) || 0;
+      const open = curP.open.get(r.userId) || 0;
+      const D = (n: number) => `${n} ${t('app.analyticsOutOf') || 'из'}`;
+      const dd = t('app.analyticsDaysShort') || 'дн.';
 
-      if (r.hasScheduleAssignment && r.workDays > 0 && r.attendedDays === 0) {
+      if (r.hasScheduleAssignment && r.workDays > 0 && daysPresent === 0) {
         insights.push({
-          userId: r.userId,
-          name,
-          kind: 'no-show',
-          detail:
-            (t('app.analyticsNoShowDetail') || 'ни одной отметки за период, норма') +
-            ` ${r.workDays} ` +
-            (t('app.analyticsDaysShort') || 'дн.'),
+          userId: r.userId, name, kind: 'no-show',
+          detail: `${t('app.analyticsNoShowDetail') || 'ни одной отметки за период, норма'} ${r.workDays} ${dd}`,
           severity: 100,
         });
-        continue; // no point also flagging lateness for someone who never came
+        continue;
       }
 
-      if (appeared >= 3 && rate(open, appeared) >= 0.5) {
-        const ratioPct = Math.round(rate(open, appeared) * 100);
+      if (daysPresent >= 3 && rate(open, daysPresent) >= 0.5) {
+        const ratioPct = Math.round(rate(open, daysPresent) * 100);
         insights.push({
-          userId: r.userId,
-          name,
-          kind: 'no-checkout',
-          detail:
-            (t('app.analyticsNoCheckoutDetail') || 'не закрыл смену') +
-            ` ${open} ${t('app.analyticsOutOf') || 'из'} ${appeared} ` +
-            (t('app.analyticsDaysShort') || 'дн.') +
-            ` (${ratioPct}%)`,
+          userId: r.userId, name, kind: 'no-checkout',
+          detail: `${t('app.analyticsNoCheckoutDetail') || 'не закрыл смену'} ${D(open)} ${daysPresent} ${dd} (${ratioPct}%)`,
           severity: 60 + ratioPct / 5,
         });
       }
 
-      if (r.attendedDays >= 3 && rate(r.lateDays, r.attendedDays) >= 0.4) {
+      if (lateIsIndividual && daysPresent >= 3 && rate(r.lateDays, daysPresent) >= 0.4) {
         insights.push({
-          userId: r.userId,
-          name,
-          kind: 'frequently-late',
-          detail:
-            (t('app.analyticsLateDetail') || 'опаздывал') +
-            ` ${r.lateDays} ${t('app.analyticsOutOf') || 'из'} ${r.attendedDays} ` +
-            (t('app.analyticsDaysShort') || 'дн.'),
-          severity: 40 + rate(r.lateDays, r.attendedDays) * 20,
+          userId: r.userId, name, kind: 'frequently-late',
+          detail: `${t('app.analyticsLateDetail') || 'опаздывал'} ${D(r.lateDays)} ${daysPresent} ${dd}`,
+          severity: 40 + rate(r.lateDays, daysPresent) * 20,
         });
       }
 
-      if (r.attendedDays >= 3 && rate(r.earlyLeaveDays, r.attendedDays) >= 0.4) {
+      if (earlyIsIndividual && daysPresent >= 3 && rate(r.earlyLeaveDays, daysPresent) >= 0.4) {
         insights.push({
-          userId: r.userId,
-          name,
-          kind: 'frequently-early',
-          detail:
-            (t('app.analyticsEarlyDetail') || 'уходил раньше') +
-            ` ${r.earlyLeaveDays} ${t('app.analyticsOutOf') || 'из'} ${r.attendedDays} ` +
-            (t('app.analyticsDaysShort') || 'дн.'),
-          severity: 35 + rate(r.earlyLeaveDays, r.attendedDays) * 20,
+          userId: r.userId, name, kind: 'frequently-early',
+          detail: `${t('app.analyticsEarlyDetail') || 'уходил раньше'} ${D(r.earlyLeaveDays)} ${daysPresent} ${dd}`,
+          severity: 35 + rate(r.earlyLeaveDays, daysPresent) * 20,
         });
       }
 
-      if (
-        r.hasScheduleAssignment &&
-        r.attendedDays > 0 &&
-        r.workDays > 0 &&
-        rate(r.attendedDays, r.workDays) < 0.6
-      ) {
-        const pct = Math.round(rate(r.attendedDays, r.workDays) * 100);
+      if (r.hasScheduleAssignment && daysPresent > 0 && r.workDays > 0 && rate(daysPresent, r.workDays) < 0.6) {
+        const p = Math.round(rate(daysPresent, r.workDays) * 100);
         insights.push({
-          userId: r.userId,
-          name,
-          kind: 'low-attendance',
-          detail:
-            (t('app.analyticsLowAttendanceDetail') || 'посещаемость') +
-            ` ${pct}% (${r.attendedDays} ${t('app.analyticsOutOf') || 'из'} ${r.workDays} ` +
-            (t('app.analyticsDaysShort') || 'дн.') +
-            `)`,
-          severity: 20 + (60 - pct) / 3,
+          userId: r.userId, name, kind: 'low-attendance',
+          detail: `${t('app.analyticsLowAttendanceDetail') || 'посещаемость'} ${p}% (${D(daysPresent)} ${r.workDays} ${dd})`,
+          severity: 20 + (60 - p) / 3,
         });
       }
     }
@@ -322,16 +332,16 @@ export function useAtraceAnalytics(nsSlug: ComputedRef<string>) {
 
     return {
       memberCount: cur.length,
-      attendedDays: curAtt,
+      daysPresent: curP.totalPresent,
       requiredDays: curReq,
-      attendanceRate: kpi(curAtt, curReq, prevAtt, prevReq),
+      turnoutRate: kpi(curP.totalPresent, curReq, prevP.totalPresent, prevReq),
       avgHoursPerDay: {
-        value: rate(curHours, curAtt),
-        delta: prevAtt > 0 ? rate(curHours, curAtt) - rate(prevHours, prevAtt) : null,
+        value: rate(curHours, curP.totalPresent),
+        delta: prevP.totalPresent > 0 ? rate(curHours, curP.totalPresent) - rate(prevHours, prevP.totalPresent) : null,
       },
-      lateRate: kpi(curLate, curAtt, prevLate, prevAtt),
-      earlyLeaveRate: kpi(curEarly, curAtt, prevEarly, prevAtt),
-      geoConfirmRate: kpi(curGeo, curAtt, prevGeo, prevAtt),
+      lateRate: kpi(curLate, curP.totalPresent, prevLate, prevP.totalPresent),
+      earlyLeaveRate: kpi(curEarly, curP.totalPresent, prevEarly, prevP.totalPresent),
+      geoConfirmRate: kpi(curGeo, curP.totalPresent, prevGeo, prevP.totalPresent),
       openShiftRate,
       arrivalBuckets: bins,
       medianArrival,
