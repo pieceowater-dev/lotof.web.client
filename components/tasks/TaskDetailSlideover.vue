@@ -628,10 +628,13 @@ async function handleDelete() {
         <div
           v-else-if="task.description"
           class="md-content text-sm cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 py-0.5"
+          role="button"
+          tabindex="0"
           v-html="renderedDescription"
           @click="startDescriptionEdit"
+          @keydown.enter="startDescriptionEdit"
         />
-        <p v-else class="text-sm text-gray-400 italic cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 py-0.5" @click="startDescriptionEdit">
+        <p v-else class="text-sm text-gray-400 italic cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 py-0.5" role="button" tabindex="0" @click="startDescriptionEdit" @keydown.enter="startDescriptionEdit">
           {{ t('tasks.addDescription') || 'Add a description...' }}
         </p>
       </div>

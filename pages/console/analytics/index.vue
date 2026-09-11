@@ -528,6 +528,7 @@
         v-if="categoryModal.open"
         class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
         @click.self="closeCategoryModal"
+        @keydown.esc="closeCategoryModal"
       >
         <div class="mx-auto my-8 w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
           <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
@@ -576,6 +577,7 @@
         v-if="linkModal.open"
         class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
         @click.self="closeLinkModal"
+        @keydown.esc="closeLinkModal"
       >
         <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
           <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
@@ -647,6 +649,7 @@ import { hubGetAdminNamespaces, type AdminNamespaceRow } from '@/api/hub/admin';
 import { capitalGetAdminBillingInfo, type AdminBillingInfo } from '@/api/capital/admin';
 import { BUSINESS_TYPES } from '@/config/businessTypes';
 import { relativeLastActive, lastActiveDotClass, activeWithin } from '@/utils/lastActive';
+import { useEscapeToClose } from '@/composables/useEscapeToClose';
 import {
   hubListDeepLinkCategories,
   hubListDeepLinks,
@@ -1301,6 +1304,8 @@ function closeCategoryModal() {
   categoryModal.open = false;
 }
 
+useEscapeToClose(computed(() => categoryModal.open), closeCategoryModal);
+
 async function submitCategoryModal() {
   if (!token.value) return;
   categoryModal.error = '';
@@ -1378,6 +1383,8 @@ function closeLinkModal() {
   if (linkModal.saving) return;
   linkModal.open = false;
 }
+
+useEscapeToClose(computed(() => linkModal.open), closeLinkModal);
 
 async function submitLinkModal() {
   if (!token.value) return;

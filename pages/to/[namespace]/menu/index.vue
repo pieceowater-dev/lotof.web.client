@@ -1013,7 +1013,10 @@ useHead(() => {
               class="text-sm mt-0.5 cursor-pointer"
               :class="isDescriptionExpanded ? '' : 'line-clamp-2'"
               :style="{ color: onPrimaryText, opacity: 0.85 }"
+              role="button"
+              tabindex="0"
               @click="isDescriptionExpanded = !isDescriptionExpanded"
+              @keydown.enter="isDescriptionExpanded = !isDescriptionExpanded"
             >
               {{ maskProfanity(data.storefront.brandSettings.welcomeMessage) }}
             </p>
@@ -1511,7 +1514,9 @@ useHead(() => {
                 :class="(selectedModifiers[group.id] || []).includes(opt.id)
                   ? 'border-primary-400 bg-primary-50 dark:bg-primary-950/30'
                   : 'border-gray-200 dark:border-gray-800'"
+                tabindex="0"
                 @click="toggleModifierOption(group, opt.id)"
+                @keydown.enter="toggleModifierOption(group, opt.id)"
               >
                 <span class="flex items-center gap-2 text-sm text-gray-800 dark:text-gray-200">
                   <span
