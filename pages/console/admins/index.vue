@@ -221,10 +221,11 @@
         </p>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label for="admin-contact-phone" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
               {{ t('admin.contactPhone') }}
             </label>
             <input
+              id="admin-contact-phone"
               v-model="contactPhone"
               type="text"
               placeholder="+7 700 000 00 00"
@@ -232,10 +233,11 @@
             />
           </div>
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            <label for="admin-contact-whatsapp" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
               {{ t('admin.contactWhatsapp') }}
             </label>
             <input
+              id="admin-contact-whatsapp"
               v-model="contactWhatsapp"
               type="text"
               placeholder="+7 700 000 00 00"
@@ -270,10 +272,11 @@
 
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+            <label for="admin-invite-email" class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
               Email
             </label>
             <input
+              id="admin-invite-email"
               v-model="inviteEmail"
               type="email"
               placeholder="admin@example.com"
@@ -282,10 +285,11 @@
           </div>
 
           <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+            <label for="admin-invite-role" class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
               {{ t('admin.role') }}
             </label>
             <select
+              id="admin-invite-role"
               v-model.number="inviteRole"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
@@ -330,10 +334,11 @@
 
         <div class="space-y-4">
           <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
+            <label for="admin-change-role" class="mb-2 block text-sm font-semibold text-slate-900 dark:text-white">
               {{ t('admin.role') }}
             </label>
             <select
+              id="admin-change-role"
               v-model.number="selectedRole"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >

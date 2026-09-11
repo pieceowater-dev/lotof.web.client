@@ -1210,13 +1210,14 @@ function formatNumber(val: number, fractionDigits = 0) {
           <!-- Inputs -->
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="flex flex-col min-w-0">
-              <label class="text-sm mb-1">{{ t('app.startDate') }}</label>
+              <label for="attendance-start-date" class="text-sm mb-1">{{ t('app.startDate') }}</label>
               <div class="relative max-w-full overflow-hidden">
                 <UIcon
                   name="i-heroicons-calendar"
                   class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
                 />
                 <input
+                  id="attendance-start-date"
                   v-model="customStartDate"
                   type="date"
                   class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
@@ -1225,13 +1226,14 @@ function formatNumber(val: number, fractionDigits = 0) {
               </div>
             </div>
             <div class="flex flex-col min-w-0">
-              <label class="text-sm mb-1">{{ t('app.endDate') }}</label>
+              <label for="attendance-end-date" class="text-sm mb-1">{{ t('app.endDate') }}</label>
               <div class="relative max-w-full overflow-hidden">
                 <UIcon
                   name="i-heroicons-calendar"
                   class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"
                 />
                 <input
+                  id="attendance-end-date"
                   v-model="customEndDate"
                   type="date"
                   class="date-input-ios w-full max-w-full pl-9 pr-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700 text-sm"
@@ -1323,8 +1325,9 @@ function formatNumber(val: number, fractionDigits = 0) {
           <!-- Salary Input -->
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="sm:col-span-2">
-              <label class="text-sm font-medium mb-2 block">{{ t('app.salary') }}</label>
+              <label for="attendance-salary" class="text-sm font-medium mb-2 block">{{ t('app.salary') }}</label>
               <input
+                id="attendance-salary"
                 v-model="salaryInput"
                 type="number"
                 :disabled="salaryLoading"
@@ -1333,8 +1336,9 @@ function formatNumber(val: number, fractionDigits = 0) {
               >
             </div>
             <div>
-              <label class="text-sm font-medium mb-2 block">{{ t('app.currency') || 'Валюта' }}</label>
+              <label for="attendance-salary-currency" class="text-sm font-medium mb-2 block">{{ t('app.currency') || 'Валюта' }}</label>
               <USelectMenu
+                id="attendance-salary-currency"
                 v-model="salaryCurrency"
                 :options="currencyOptions"
                 value-attribute="value"
@@ -1350,8 +1354,9 @@ function formatNumber(val: number, fractionDigits = 0) {
             class="grid grid-cols-1 sm:grid-cols-2 gap-3"
           >
             <div v-if="overtimeRates.length > 0">
-              <label class="text-sm font-medium mb-2 block">{{ t('app.overtimeRate') || 'Ставка переработки' }}</label>
+              <label for="attendance-overtime-rate" class="text-sm font-medium mb-2 block">{{ t('app.overtimeRate') || 'Ставка переработки' }}</label>
               <select
+                id="attendance-overtime-rate"
                 v-model="salaryOvertimeRateId"
                 class="w-full px-3 py-2 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
               >
