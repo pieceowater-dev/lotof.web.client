@@ -141,8 +141,9 @@ const prettyJson = computed(() => {
       <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">{{ t('admin.editor.schemaFields') }}</p>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaCanonicalUrl') }}</label>
+        <label for="schema-canonical-url" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaCanonicalUrl') }}</label>
         <input
+          id="schema-canonical-url"
           :value="article.canonicalUrl"
           @input="emit('update:article', { canonicalUrl: ($event.target as HTMLInputElement).value })"
           type="url"
@@ -153,8 +154,9 @@ const prettyJson = computed(() => {
 
       <div class="grid grid-cols-1 gap-3">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaAuthorUrl') }}</label>
+          <label for="schema-author-url" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaAuthorUrl') }}</label>
           <input
+            id="schema-author-url"
             :value="article.authorUrl"
             @input="emit('update:article', { authorUrl: ($event.target as HTMLInputElement).value })"
             type="url"
@@ -164,8 +166,9 @@ const prettyJson = computed(() => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaAuthorRole') }}</label>
+          <label for="schema-author-role" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaAuthorRole') }}</label>
           <input
+            id="schema-author-role"
             :value="article.authorRole"
             @input="emit('update:article', { authorRole: ($event.target as HTMLInputElement).value })"
             type="text"
@@ -175,8 +178,9 @@ const prettyJson = computed(() => {
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaUpdatedAt') }}</label>
+          <label for="schema-updated-at" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaUpdatedAt') }}</label>
           <input
+            id="schema-updated-at"
             :value="article.updatedAt"
             @input="emit('update:article', { updatedAt: ($event.target as HTMLInputElement).value })"
             type="datetime-local"
@@ -188,8 +192,9 @@ const prettyJson = computed(() => {
       <div class="pt-2 border-t border-slate-100 dark:border-slate-800" />
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaSourceUrl') }}</label>
+        <label for="schema-source-url" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaSourceUrl') }}</label>
         <input
+          id="schema-source-url"
           :value="article.sourceUrl"
           @input="emit('update:article', { sourceUrl: ($event.target as HTMLInputElement).value })"
           type="url"
@@ -199,8 +204,9 @@ const prettyJson = computed(() => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaSourceName') }}</label>
+        <label for="schema-source-name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaSourceName') }}</label>
         <input
+          id="schema-source-name"
           :value="article.sourceName"
           @input="emit('update:article', { sourceName: ($event.target as HTMLInputElement).value })"
           type="text"
@@ -212,8 +218,9 @@ const prettyJson = computed(() => {
       <div class="pt-2 border-t border-slate-100 dark:border-slate-800" />
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedBy') }}</label>
+        <label for="schema-reviewed-by" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedBy') }}</label>
         <input
+          id="schema-reviewed-by"
           :value="article.reviewedBy"
           @input="emit('update:article', { reviewedBy: ($event.target as HTMLInputElement).value })"
           type="text"
@@ -223,8 +230,9 @@ const prettyJson = computed(() => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedByUrl') }}</label>
+        <label for="schema-reviewed-by-url" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedByUrl') }}</label>
         <input
+          id="schema-reviewed-by-url"
           :value="article.reviewedByUrl"
           @input="emit('update:article', { reviewedByUrl: ($event.target as HTMLInputElement).value })"
           type="url"
@@ -234,8 +242,9 @@ const prettyJson = computed(() => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedDate') }}</label>
+        <label for="schema-reviewed-date" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaReviewedDate') }}</label>
         <input
+          id="schema-reviewed-date"
           :value="article.reviewedDate"
           @input="emit('update:article', { reviewedDate: ($event.target as HTMLInputElement).value })"
           type="datetime-local"
@@ -246,8 +255,9 @@ const prettyJson = computed(() => {
       <div class="pt-2 border-t border-slate-100 dark:border-slate-800" />
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherName') }}</label>
+        <label for="schema-publisher-name" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherName') }}</label>
         <input
+          id="schema-publisher-name"
           :value="article.publisherName"
           @input="emit('update:article', { publisherName: ($event.target as HTMLInputElement).value })"
           type="text"
@@ -257,8 +267,9 @@ const prettyJson = computed(() => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherUrl') }}</label>
+        <label for="schema-publisher-url" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherUrl') }}</label>
         <input
+          id="schema-publisher-url"
           :value="article.publisherUrl"
           @input="emit('update:article', { publisherUrl: ($event.target as HTMLInputElement).value })"
           type="url"
@@ -268,8 +279,9 @@ const prettyJson = computed(() => {
       </div>
 
       <div>
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherLogo') }}</label>
+        <label for="schema-publisher-logo" class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">{{ t('admin.editor.schemaPublisherLogo') }}</label>
         <input
+          id="schema-publisher-logo"
           :value="article.publisherLogo"
           @input="emit('update:article', { publisherLogo: ($event.target as HTMLInputElement).value })"
           type="url"

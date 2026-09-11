@@ -27,12 +27,13 @@
       <UCard>
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideProduct') }}</label>
-            <USelectMenu v-model="form.app" :options="appOptions" value-attribute="value" option-attribute="label" @update:model-value="onAppChange" />
+            <label for="guide-product" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideProduct') }}</label>
+            <USelectMenu id="guide-product" v-model="form.app" :options="appOptions" value-attribute="value" option-attribute="label" @update:model-value="onAppChange" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideParentCategory') }}</label>
+            <label for="guide-parent-category" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideParentCategory') }}</label>
             <USelectMenu
+              id="guide-parent-category"
               :model-value="form.categoryId ?? ''"
               :options="categoryOptions"
               value-attribute="value"
@@ -41,8 +42,8 @@
             />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
-            <UInput v-model.number="form.sortOrder" type="number" />
+            <label for="guide-sort-order" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
+            <UInput id="guide-sort-order" v-model.number="form.sortOrder" type="number" />
           </div>
         </div>
         <div class="mt-4">
@@ -70,61 +71,61 @@
 
         <div v-show="activeLocale === 'Ru'" class="space-y-4">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Русский)</label>
-            <UInput v-model="form.titleRu" />
+            <label for="guide-title-ru" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Русский)</label>
+            <UInput id="guide-title-ru" v-model="form.titleRu" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Русский)</label>
-            <UTextarea v-model="form.excerptRu" :rows="2" />
+            <label for="guide-excerpt-ru" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Русский)</label>
+            <UTextarea id="guide-excerpt-ru" v-model="form.excerptRu" :rows="2" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Русский, Markdown)</label>
+            <label for="guide-content-ru" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Русский, Markdown)</label>
             <div
               v-if="preview"
               class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
               v-html="renderMarkdownSafe(form.contentRu || '')"
             />
-            <UTextarea v-else v-model="form.contentRu" :rows="16" class="font-mono text-sm" />
+            <UTextarea v-else id="guide-content-ru" v-model="form.contentRu" :rows="16" class="font-mono text-sm" />
           </div>
         </div>
 
         <div v-show="activeLocale === 'Kk'" class="space-y-4">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Қазақша)</label>
-            <UInput v-model="form.titleKk" />
+            <label for="guide-title-kk" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (Қазақша)</label>
+            <UInput id="guide-title-kk" v-model="form.titleKk" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Қазақша)</label>
-            <UTextarea v-model="form.excerptKk" :rows="2" />
+            <label for="guide-excerpt-kk" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (Қазақша)</label>
+            <UTextarea id="guide-excerpt-kk" v-model="form.excerptKk" :rows="2" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Қазақша, Markdown)</label>
+            <label for="guide-content-kk" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Қазақша, Markdown)</label>
             <div
               v-if="preview"
               class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
               v-html="renderMarkdownSafe(form.contentKk || '')"
             />
-            <UTextarea v-else v-model="form.contentKk" :rows="16" class="font-mono text-sm" />
+            <UTextarea v-else id="guide-content-kk" v-model="form.contentKk" :rows="16" class="font-mono text-sm" />
           </div>
         </div>
 
         <div v-show="activeLocale === 'En'" class="space-y-4">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (English)</label>
-            <UInput v-model="form.titleEn" />
+            <label for="guide-title-en" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideTitle') }} (English)</label>
+            <UInput id="guide-title-en" v-model="form.titleEn" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (English)</label>
-            <UTextarea v-model="form.excerptEn" :rows="2" />
+            <label for="guide-excerpt-en" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideExcerpt') }} (English)</label>
+            <UTextarea id="guide-excerpt-en" v-model="form.excerptEn" :rows="2" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (English, Markdown)</label>
+            <label for="guide-content-en" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (English, Markdown)</label>
             <div
               v-if="preview"
               class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
               v-html="renderMarkdownSafe(form.contentEn || '')"
             />
-            <UTextarea v-else v-model="form.contentEn" :rows="16" class="font-mono text-sm" />
+            <UTextarea v-else id="guide-content-en" v-model="form.contentEn" :rows="16" class="font-mono text-sm" />
           </div>
         </div>
       </UCard>
