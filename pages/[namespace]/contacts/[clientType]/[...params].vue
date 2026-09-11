@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'workspace' });
+
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useContactsToken } from '@/composables/useContactsToken';

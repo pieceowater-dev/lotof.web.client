@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { getCatalogBusinesses, type CatalogBusiness } from '@/api/hub/catalog';

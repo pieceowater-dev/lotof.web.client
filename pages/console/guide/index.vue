@@ -237,7 +237,7 @@ import {
   guideUpdateCategory,
 } from '@/api/guide/admin';
 
-definePageMeta({ middleware: 'console-access' });
+definePageMeta({ layout: 'quiet', middleware: 'console-access' });
 
 const { t } = useI18n();
 useHead({ title: 'Гид — Консоль' });

@@ -7,7 +7,7 @@ import ProductLanding from '@/components/marketing/ProductLanding.vue';
 // for this top-level file would collide with it -- a duplicate route name
 // corrupts Vue Router's matcher for BOTH routes, not just one, which is
 // what broke /:namespace/atrace/:type?/:id? navigation entirely.
-definePageMeta({ name: 'landing-atrace' });
+definePageMeta({ layout: 'full', name: 'landing-atrace' });
 
 const { t } = useI18n();
 

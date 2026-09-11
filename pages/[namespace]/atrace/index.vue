@@ -38,6 +38,7 @@ const { t } = useI18n();
 const { titleBySlug } = useNamespace();
 
 definePageMeta({
+    layout: 'workspace',
     name: 'atrace',
     path: '/:namespace/atrace/:type?/:id?',
     middleware: (to) => {

@@ -53,6 +53,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS } from '@/config/apps';

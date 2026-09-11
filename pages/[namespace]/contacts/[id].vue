@@ -30,6 +30,7 @@ import ContactDynamicFields from '@/components/contacts/ContactDynamicFields.vue
 import TagsModal from '@/components/contacts/TagsModal.vue';
 
 definePageMeta({
+  layout: 'workspace',
   viewTransition: false,
 });
 

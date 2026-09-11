@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import OnboardingWizard from '@/components/goods/OnboardingWizard.vue';

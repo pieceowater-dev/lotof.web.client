@@ -522,6 +522,7 @@ import { capitalAdminListBundles, capitalCreateBundle, capitalUpdateBundle, capi
 import AdminHeader from '@/components/admin/AdminHeader.vue';
 
 definePageMeta({
+  layout: 'quiet',
   middleware: 'admin',
 });
 

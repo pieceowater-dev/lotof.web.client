@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { getApiBasePath } from '@/utils/api-base';

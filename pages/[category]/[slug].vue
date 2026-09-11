@@ -10,6 +10,7 @@ import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
 import { toGqlCategory, fromGqlCategory, CATEGORY_TO_GQL } from '@/utils/publicationCategory';
 
 definePageMeta({
+  layout: 'full',
   viewTransition: false,
   path: '/:category(blog|whatsnew|articles|academy|news)/:slug',
 });

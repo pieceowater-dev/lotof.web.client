@@ -4,7 +4,7 @@ import ProductLanding from '@/components/marketing/ProductLanding.vue';
 
 // Explicit unique route name -- a duplicate name corrupts Vue Router's
 // matcher (see pages/atrace.vue).
-definePageMeta({ name: 'landing-plans' });
+definePageMeta({ layout: 'full', name: 'landing-plans' });
 
 const { t } = useI18n();
 

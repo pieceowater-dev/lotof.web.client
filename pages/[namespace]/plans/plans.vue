@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'quiet' });
+
 import { useI18n } from '@/composables/useI18n';
 import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
 import { usePlansToken } from '@/composables/usePlansToken';

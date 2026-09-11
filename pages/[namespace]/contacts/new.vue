@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'workspace' });
+
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useRouter, useRoute } from 'vue-router';

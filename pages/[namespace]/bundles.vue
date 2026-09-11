@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'quiet' });
+
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';

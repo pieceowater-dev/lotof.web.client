@@ -9,7 +9,7 @@ import GuideArticleEditor from '@/components/console/GuideArticleEditor.vue';
 import type { GuideApp } from '@/api/guide/public';
 import { guideCreateArticle, type GuideArticleInput } from '@/api/guide/admin';
 
-definePageMeta({ middleware: 'console-access' });
+definePageMeta({ layout: 'quiet', middleware: 'console-access' });
 useHead({ title: 'Новая статья Гида — Консоль' });
 
 const route = useRoute();

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { computed, onMounted, ref } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { menuBusinesses, type MockBusiness, type MockReview } from '@/utils/mockCatalog';

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 // Inventory counting used to be one-item-at-a-time via a picker modal, with
 // no visible list of what still needed counting and no discrepancy shown
 // anywhere despite the API already returning it per item. This redesign

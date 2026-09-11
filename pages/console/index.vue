@@ -160,6 +160,7 @@ import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import { useImpersonation } from '@/composables/useImpersonation';
 
 definePageMeta({
+  layout: 'quiet',
   middleware: 'console-access',
 });
 

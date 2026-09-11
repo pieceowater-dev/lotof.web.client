@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'workspace' });
+
 const route = useRoute();
 
 const nsSlug = route.params.namespace as string;

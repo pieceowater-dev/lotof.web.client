@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'quiet' });
+
 import AppPlansPage from '@/components/billing/AppPlansPage.vue';
 import type { AppPlansPageConfig } from '@/composables/useAppPlansPage';
 import { useMenuToken } from '@/composables/useMenuToken';

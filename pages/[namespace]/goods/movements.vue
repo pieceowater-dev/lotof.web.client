@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 // Replaces purchases.vue + receiving.vue + transfers.vue + writeoffs.vue --
 // those four pages were ~175-227 lines each of near-identical "record a
 // stock movement" boilerplate (see the redesign plan). This unifies them

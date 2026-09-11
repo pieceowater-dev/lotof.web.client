@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useAtraceToken } from '@/composables/useAtraceToken';

@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 import { useI18n } from '@/composables/useI18n';
 import { useConfirm } from '@/composables/useConfirm';
 import { useTasksToken } from '@/composables/useTasksToken';

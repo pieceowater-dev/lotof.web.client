@@ -388,6 +388,7 @@ import {
 } from '@/api/capital/admin';
 
 definePageMeta({
+  layout: 'quiet',
   middleware: 'admin',
 });
 

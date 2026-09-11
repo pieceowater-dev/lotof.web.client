@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
 import { useI18n } from '@/composables/useI18n';
 import StaffSection from '@/components/menu/settings/StaffSection.vue';
 import BrandSection from '@/components/menu/settings/BrandSection.vue';

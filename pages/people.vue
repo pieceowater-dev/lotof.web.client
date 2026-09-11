@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { ref, computed, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';

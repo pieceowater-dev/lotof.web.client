@@ -1,4 +1,6 @@
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';

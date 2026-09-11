@@ -278,6 +278,7 @@ import {
 import { relativeLastActive, lastActiveDotClass } from '@/utils/lastActive';
 
 definePageMeta({
+  layout: 'quiet',
   middleware: 'admin',
 });
 

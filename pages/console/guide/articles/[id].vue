@@ -23,7 +23,7 @@ import { useAuth } from '@/composables/useAuth';
 import GuideArticleEditor from '@/components/console/GuideArticleEditor.vue';
 import { consoleGetGuideArticle, guideDeleteArticle, guideUpdateArticle, type GuideArticleInput } from '@/api/guide/admin';
 
-definePageMeta({ middleware: 'console-access' });
+definePageMeta({ layout: 'quiet', middleware: 'console-access' });
 useHead({ title: 'Редактирование статьи Гида — Консоль' });
 
 const route = useRoute();

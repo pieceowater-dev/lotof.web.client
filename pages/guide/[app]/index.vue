@@ -54,6 +54,8 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({ layout: 'full' });
+
 import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
