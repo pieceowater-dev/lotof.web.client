@@ -223,7 +223,10 @@ const dropdownItems = [
   <div
     :class="selected ? 'bg-gradient-to-br from-blue-400 to-blue-600 dark:from-blue-400 dark:to-blue-600 text-white shadow-lg' : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-md hover:shadow-sm'"
     class="p-3 rounded-xl w-60 max-w-[90vw] sm:max-w-xs cursor-pointer flex-shrink-0 min-h-[76px] self-stretch flex flex-col relative transition-shadow duration-200"
+    role="button"
+    tabindex="0"
     @click="emit('select', post)"
+    @keydown.enter="emit('select', post)"
   >
     <div class="flex items-center gap-2 mb-1">
       <h3

@@ -445,7 +445,10 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
         <div class="flex items-center justify-between px-3 py-2">
           <div
             class="flex items-center gap-2 cursor-pointer hover:opacity-80 flex-1"
+            role="button"
+            tabindex="0"
             @click="toggleDay(date)"
+            @keydown.enter="toggleDay(date)"
           >
             <UIcon
               :name="isDayExpanded(date) ? 'i-heroicons-chevron-down' : 'i-heroicons-chevron-right'"

@@ -378,7 +378,10 @@ const goHome = () => {
         v-else
         ref="brandRef"
         class="flex items-center space-x-1 cursor-pointer shrink-0"
+        role="button"
+        tabindex="0"
         @click="goHome"
+        @keydown.enter="goHome"
       >
         <picture>
           <source srcset="/assets/logo.webp" type="image/webp">

@@ -2,6 +2,7 @@
 import { computed, watch, nextTick, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { useI18n } from '@/composables/useI18n';
+import { useEscapeToClose } from '@/composables/useEscapeToClose';
 
 const { t } = useI18n();
 const {
@@ -15,6 +16,8 @@ const {
   previousStep,
   skipTour,
 } = useOnboarding();
+
+useEscapeToClose(isRunning, skipTour);
 
 // Highlight element position and size
 const highlightRect = ref<{ top: number; left: number; width: number; height: number; padding: number } | null>(null);
@@ -274,6 +277,7 @@ const stepContent = computed(() => {
       <div
         class="fixed inset-0 z-[9998]"
         @click="skipTour"
+        @keydown.esc="skipTour"
       />
 
       <!-- Dark backdrop with rounded cutout around target -->
