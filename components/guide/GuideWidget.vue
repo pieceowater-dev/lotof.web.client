@@ -263,7 +263,13 @@ async function loadFaq() {
 
     const entries = await Promise.all(faqItems.value.map(async (item) => {
       const full = await guideGetArticleBySlug(item.app, item.slug).catch(() => null);
-      return [item.id, full ? localeContentHtml(full) : localeExcerpt(item)] as const;
+      // localeExcerpt is plain admin-authored text (a <UTextarea>, not the
+      // markdown editor localeContentHtml's source goes through) but this
+      // whole cache feeds a v-html sink either way -- sanitize it too, or a
+      // compromised/careless console-Editor account could inject a
+      // <script> here (this is the fallback used while/if the full
+      // article body fails to load).
+      return [item.id, full ? localeContentHtml(full) : sanitizeHtml(localeExcerpt(item))] as const;
     }));
     faqContentCache.value = Object.fromEntries(entries);
   } catch {
@@ -273,7 +279,8 @@ async function loadFaq() {
 
 const faqAccordionItems = computed(() => faqItems.value.map((item) => ({
   label: localeTitle(item),
-  contentHtml: faqContentCache.value[item.id] || localeExcerpt(item),
+  // Same v-html sink as above -- same sanitize-the-raw-excerpt rule.
+  contentHtml: faqContentCache.value[item.id] || sanitizeHtml(localeExcerpt(item)),
 })));
 
 // -- Drill-down navigator ----------------------------------------------
