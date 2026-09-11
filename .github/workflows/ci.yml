@@ -32,6 +32,8 @@ jobs:
         run: npm run typecheck
       - name: Lint
         run: npm run lint
+      - name: Test
+        run: npm run test
 
   build-and-push:
     runs-on: ubuntu-latest
