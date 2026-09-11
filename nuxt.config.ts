@@ -349,7 +349,13 @@ export default defineNuxtConfig({
   experimental: {
     payloadExtraction: false,
     renderJsonPayloads: false,
-    componentIslands: isProduction,
+    // Was `isProduction` -- prod-only, so a rendering divergence (if one
+    // ever appeared) would only ever be reproducible in prod, never in dev
+    // (FRONTEND_AUDIT.md B3). Nothing in the app actually uses islands
+    // (no .server.vue components, no <NuxtIsland>), so off everywhere is
+    // the correct call for now, not "on everywhere" -- flip this only once
+    // islands are deliberately adopted somewhere.
+    componentIslands: false,
     // Nuxt's default "inline critical CSS into every page's HTML" ended up
     // inlining ~200 KiB of <style> per page (most of this app's whole CSS
     // footprint, not just what's critical for that one route) -- shipped
