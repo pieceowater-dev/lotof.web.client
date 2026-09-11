@@ -154,7 +154,13 @@ module.exports = {
     // input/button inside, confirmed by reading their source) as broken,
     // alongside genuine gaps. Relaxed to `some` -- either pattern satisfies
     // it, matching how the rule is normally used elsewhere.
-    'vuejs-accessibility/label-has-for': ['warn', { required: { some: ['nesting', 'id'] } }],
+    // `controlComponents` matters separately from `required`: the rule's own
+    // nesting check only recognizes bare HTML control tags (input/select/
+    // textarea/...) by default, so `<label><UToggle/>...</label>` still
+    // failed nesting too until these were listed -- confirmed by reading the
+    // rule's own validateNesting() (dist/rules/label-has-for.js), not
+    // assumed from the `some` change alone.
+    'vuejs-accessibility/label-has-for': ['warn', { required: { some: ['nesting', 'id'] }, controlComponents: ['UToggle', 'UCheckbox', 'URadio'] }],
     'vuejs-accessibility/media-has-caption': 'warn',
     'vuejs-accessibility/mouse-events-have-key-events': 'warn',
     'vuejs-accessibility/no-access-key': 'warn',
