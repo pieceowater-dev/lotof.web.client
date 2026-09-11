@@ -13,6 +13,8 @@
     "codegen": "graphql-codegen --config codegen.ts",
     "codegen:watch": "graphql-codegen --config codegen.ts --watch",
     "locales:check": "node scripts/check-locales.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -53,6 +55,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "@vue/test-utils": "^2.5.0",
     "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^9.33.0",
     "graphql": "^16.9.0",
     "jsdom": "^24.1.3",
