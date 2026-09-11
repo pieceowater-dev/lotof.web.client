@@ -27,8 +27,9 @@
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.namespaceSlug') || 'Слаг неймспейса' }} *</label>
+            <label for="bundle-cash-namespace" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.namespaceSlug') || 'Слаг неймспейса' }} *</label>
             <input
+              id="bundle-cash-namespace"
               v-model.trim="form.namespace"
               type="text"
               class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-mono outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -37,8 +38,9 @@
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundles') || 'Готовая сборка' }} *</label>
+            <label for="bundle-cash-bundle" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.bundles') || 'Готовая сборка' }} *</label>
             <select
+              id="bundle-cash-bundle"
               v-model="form.bundleCode"
               class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >

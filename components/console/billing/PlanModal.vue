@@ -28,8 +28,9 @@
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planName') }} *</label>
+            <label for="plan-name" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planName') }} *</label>
             <input
+              id="plan-name"
               v-model="planForm.name"
               type="text"
               class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -38,8 +39,9 @@
           </div>
 
           <div>
-            <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planDescription') }}</label>
+            <label for="plan-description" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planDescription') }}</label>
             <textarea
+              id="plan-description"
               v-model="planForm.description"
               rows="2"
               class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white resize-none"
@@ -48,8 +50,9 @@
 
           <div class="grid grid-cols-2 gap-3">
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.currency') }} *</label>
+              <label for="plan-currency" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.currency') }} *</label>
               <select
+                id="plan-currency"
                 v-model="planForm.currency"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               >
@@ -57,8 +60,9 @@
               </select>
             </div>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.trialDays') }}</label>
+              <label for="plan-trial-days" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.trialDays') }}</label>
               <input
+                id="plan-trial-days"
                 v-model.number="planForm.trialDays"
                 type="number"
                 min="0"
@@ -70,8 +74,9 @@
           <template v-if="planModal.mode === 'create'">
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.monthlyPrice') }} *</label>
+                <label for="plan-monthly-price" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.monthlyPrice') }} *</label>
                 <input
+                  id="plan-monthly-price"
                   v-model.number="planForm.monthlyPrice"
                   type="number"
                   min="0"
@@ -79,8 +84,9 @@
                 />
               </div>
               <div>
-                <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.yearlyPrice') }} *</label>
+                <label for="plan-yearly-price" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.yearlyPrice') }} *</label>
                 <input
+                  id="plan-yearly-price"
                   v-model.number="planForm.yearlyPrice"
                   type="number"
                   min="0"
@@ -90,8 +96,9 @@
             </div>
             <p class="text-[11px] text-slate-400">{{ t('admin.planCreatesBothIntervals') }}</p>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planCode') }}</label>
+              <label for="plan-code" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planCode') }}</label>
               <input
+                id="plan-code"
                 :value="generatedCodePrefix"
                 type="text"
                 disabled
@@ -102,10 +109,11 @@
 
           <template v-else>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              <label for="plan-amount" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {{ t('admin.price') }} ({{ planModal.plan?.interval === 'YEAR' ? t('admin.interval.year') : t('admin.interval.month') }}) *
               </label>
               <input
+                id="plan-amount"
                 v-model.number="planForm.amount"
                 type="number"
                 min="0"
@@ -118,8 +126,9 @@
             <div class="mb-2 text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.planLimits') }}</div>
             <div class="grid grid-cols-2 gap-3">
               <div v-for="limit in currentLimitKeys" :key="limit.key">
-                <label class="mb-1 block text-[11px] text-slate-500 dark:text-slate-400">{{ limit.label }}</label>
+                <label :for="`plan-limit-${limit.key}`" class="mb-1 block text-[11px] text-slate-500 dark:text-slate-400">{{ limit.label }}</label>
                 <input
+                  :id="`plan-limit-${limit.key}`"
                   v-model="planForm.limits[limit.key]"
                   type="number"
                   min="0"
