@@ -1,4 +1,4 @@
-query ListClients($filter: DefaultFilterInput) {
+query ListClients($filter: ClientFilterInput) {
   clients(filter: $filter) {
     rows {
       client {
