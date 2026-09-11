@@ -25,6 +25,8 @@ import type { CodegenConfig } from '@graphql-codegen/cli';
 const hubBaseUrl = process.env.VITE_API_HUB || 'http://localhost:8080';
 const atraceBaseUrl = process.env.VITE_API_ATRACE; // optional
 const capitalBaseUrl = process.env.VITE_API_CAPITAL; // optional
+const contactsBaseUrl = process.env.VITE_API_CONTACTS; // optional
+const menuBaseUrl = process.env.VITE_API_MENU; // optional
 
 const withQueryPath = (baseUrl: string) => `${baseUrl.replace(/\/$/, '')}/query`;
 
@@ -63,6 +65,41 @@ if (capitalBaseUrl) {
     // Same useTypeImports gap as atrace above -- not independently verified
     // against a live capital.gtw, but the failure mode is identical (this
     // plugin's output shape doesn't depend on which schema it read).
+    config: { avoidOptionals: false, useTypeImports: true }
+  };
+}
+
+// contacts/menu had never been added at all (not even behind an env flag) --
+// only 1 .gql document exists for contacts, 0 for menu, so this mostly just
+// generates full schema types (still useful for spot-checking hand-typed
+// responses against the real schema) rather than typed operations, until
+// someone extracts the ~200 inline query strings across both into .gql (D1's
+// documents note in the summary table above).
+//
+// contacts.gtw specifically (checked 2026-09-11, live local instance):
+// ENABLE_PLAYGROUND=true is not enough here -- unlike hub/atrace.gtw's
+// AroundOperations middleware that flips DisableIntrospection off that same
+// flag, contacts.gtw builds its gqlgen handler with the bare `handler.New(
+// ...)` and never registers `extension.Introspection{}` at all (see
+// internal/pkg/_generic/gql.module.go in that repo) -- introspection isn't
+// gated there, it's simply never wired up. Codegen against it will keep
+// failing with "introspection disabled" until that's added on the backend;
+// this is a lotof.contacts.gtw change, out of scope for this repo. Menu not
+// independently checked but likely the same gap (same era/pattern).
+if (contactsBaseUrl) {
+  generates['api/__generated__/contacts-types.ts'] = {
+    schema: withQueryPath(contactsBaseUrl),
+    documents: ['api/contacts/**/*.gql'],
+    plugins,
+    config: { avoidOptionals: false, useTypeImports: true }
+  };
+}
+
+if (menuBaseUrl) {
+  generates['api/__generated__/menu-types.ts'] = {
+    schema: withQueryPath(menuBaseUrl),
+    documents: ['api/menu/**/*.gql'],
+    plugins,
     config: { avoidOptionals: false, useTypeImports: true }
   };
 }
