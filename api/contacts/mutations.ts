@@ -1,5 +1,5 @@
 import { contactsClient, setContactsAppToken } from '../clients';
-import type { ClientsListResponse, ClientRow } from './listClients';
+import type { ClientRow } from './listClients';
 
 const CREATE_INDIVIDUAL_CLIENT_MUTATION = /* GraphQL */ `
   mutation CreateIndividualClient($input: CreateIndividualClientInput!) {

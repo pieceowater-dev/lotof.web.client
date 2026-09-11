@@ -242,7 +242,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }
@@ -255,7 +255,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }
@@ -268,7 +268,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }
@@ -288,7 +288,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }
@@ -301,7 +301,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }
@@ -314,7 +314,7 @@ export class ApiClient {
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
-          } catch (retryError) {
+          } catch (_retryError) {
             // If retry still fails, throw original error
             throw error;
           }

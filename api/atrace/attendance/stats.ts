@@ -73,16 +73,6 @@ const GET_ATTENDANCE_REPORT = `
   }
 `;
 
-const GET_USERS_BY_IDS = `
-  query GetUsersByIDs($ids: [ID!]!) {
-    getUsersByIDs(ids: $ids) {
-      id
-      username
-      email
-    }
-  }
-`;
-
 const EXPORT_DAILY_ATTENDANCE = `
   query ExportDailyAttendance($startDate: String!, $endDate: String!) {
     exportDailyAttendance(input: { startDate: $startDate, endDate: $endDate }) {

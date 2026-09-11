@@ -1,4 +1,4 @@
-import { menuClient, setMenuAppToken } from '@/api/clients';
+import { setMenuAppToken } from '@/api/clients';
 import { menuGetAppToken } from '@/api/menu/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';

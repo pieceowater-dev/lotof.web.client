@@ -74,7 +74,7 @@ export async function hubAddAppToNamespace(
     try {
       const nsOnly = await hubClient.request<PrecheckResp>(NS_ONLY_QUERY, { namespaceSlug });
       namespaceId = nsOnly?.namespaces?.rows?.find?.(r => r.slug === namespaceSlug)?.id ?? undefined;
-    } catch (fallbackErr) {
+    } catch (_fallbackErr) {
       // If both fail, attempt to glean from partial data
       const data = (err as any)?.response?.data as PrecheckResp | undefined;
       namespaceId = data?.isAppInNamespace?.namespaceID ?? undefined;

@@ -1,4 +1,4 @@
-import { tasksClient, setTasksAppToken } from '@/api/clients';
+import { setTasksAppToken } from '@/api/clients';
 import { tasksGetAppToken } from '@/api/tasks/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';

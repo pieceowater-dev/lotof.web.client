@@ -8,7 +8,7 @@ export interface SetMemberActiveInput {
 export async function setMemberActive(
   namespaceSlug: string,
   input: SetMemberActiveInput,
-  token?: string
+  _token?: string
 ): Promise<Member> {
   const response = await fetch(`/api/atrace/members/setActive`, {
     method: 'POST',
@@ -35,7 +35,7 @@ export async function setMemberActive(
   return data
 }
 
-export async function getActiveMembersCount(token?: string): Promise<number> {
+export async function getActiveMembersCount(_token?: string): Promise<number> {
   const response = await fetch(`/api/atrace/members/count`, {
     method: 'GET',
   })
@@ -56,7 +56,7 @@ export async function getActiveMembersCount(token?: string): Promise<number> {
 export async function getActiveMembers(
   page: number = 1,
   pageSize: number = 20,
-  token?: string
+  _token?: string
 ): Promise<Member[]> {
   const query = new URLSearchParams({
     page: page.toString(),

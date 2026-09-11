@@ -1,4 +1,4 @@
-import { goodsClient, setGoodsAppToken } from '@/api/clients';
+import { setGoodsAppToken } from '@/api/clients';
 import { goodsGetAppToken } from '@/api/goods/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';

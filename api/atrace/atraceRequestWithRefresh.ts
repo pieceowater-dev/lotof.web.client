@@ -1,4 +1,4 @@
-import { atraceClient, setAtraceAppToken } from '@/api/clients';
+import { setAtraceAppToken } from '@/api/clients';
 import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
