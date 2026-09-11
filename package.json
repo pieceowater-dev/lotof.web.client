@@ -51,6 +51,7 @@
     "@typescript-eslint/eslint-plugin": "^8.58.0",
     "@typescript-eslint/parser": "^8.58.0",
     "@vitest/coverage-v8": "^4.1.11",
+    "@vue/test-utils": "^2.5.0",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.33.0",
     "graphql": "^16.9.0",
