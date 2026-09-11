@@ -4,6 +4,7 @@
       v-if="planModal.open"
       class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
       @click.self="$emit('close')"
+      @keydown.esc="$emit('close')"
     >
       <div class="mx-auto my-8 w-full max-w-lg rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
         <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
@@ -156,8 +157,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { CURRENCIES } from '@/utils/currency';
+import { useEscapeToClose } from '@/composables/useEscapeToClose';
 
 type PlanRow = {
   id: string;
@@ -193,7 +196,9 @@ defineProps<{
   selectedProjectTitle: string;
 }>();
 
-defineEmits<{ (e: 'close'): void; (e: 'submit'): void }>();
+const emit = defineEmits<{ (e: 'close'): void; (e: 'submit'): void }>();
 
 const { t } = useI18n();
+
+useEscapeToClose(computed(() => planModal.value.open), () => emit('close'));
 </script>

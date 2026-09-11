@@ -3,6 +3,7 @@
     v-if="open"
     class="fixed inset-0 z-[70] overflow-y-auto p-4 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm"
     @click.self="$emit('cancel')"
+    @keydown.esc="$emit('cancel')"
   >
     <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
       <div class="p-5 border-b border-slate-100 dark:border-slate-800">
@@ -31,6 +32,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useEscapeToClose } from '@/composables/useEscapeToClose'
+
 interface Props {
   open: boolean
   title: string
@@ -40,12 +44,14 @@ interface Props {
   variant?: 'danger' | 'primary'
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   variant: 'primary'
 })
 
-defineEmits<{
+const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+useEscapeToClose(computed(() => props.open), () => emit('cancel'))
 </script>
