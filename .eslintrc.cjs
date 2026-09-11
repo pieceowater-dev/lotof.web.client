@@ -12,7 +12,7 @@ module.exports = {
     ecmaVersion: 'latest',
     sourceType: 'module'
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'vuejs-accessibility'],
   globals: {
     // Vue 3 auto-imports
     ref: 'readonly',
@@ -129,6 +129,32 @@ module.exports = {
     'vue/attributes-order': 'warn',
     'vue/html-closing-bracket-newline': 'warn',
     'vue/first-attribute-linebreak': 'warn',
+    // eslint-plugin-vuejs-accessibility (FRONTEND_AUDIT.md J2): its own
+    // `recommended` config sets every one of these to 'error', which would
+    // fail the required CI lint step the moment it's added -- this repo has
+    // never run an a11y linter before, so the real violation count is
+    // unknown until it's actually measured. Warn everywhere first; ratchet
+    // individual rules to error once their count is at (or planned to) 0.
+    'vuejs-accessibility/alt-text': 'warn',
+    'vuejs-accessibility/anchor-has-content': 'warn',
+    'vuejs-accessibility/aria-props': 'warn',
+    'vuejs-accessibility/aria-role': 'warn',
+    'vuejs-accessibility/aria-unsupported-elements': 'warn',
+    'vuejs-accessibility/click-events-have-key-events': 'warn',
+    'vuejs-accessibility/form-control-has-label': 'warn',
+    'vuejs-accessibility/heading-has-content': 'warn',
+    'vuejs-accessibility/iframe-has-title': 'warn',
+    'vuejs-accessibility/interactive-supports-focus': 'warn',
+    'vuejs-accessibility/label-has-for': 'warn',
+    'vuejs-accessibility/media-has-caption': 'warn',
+    'vuejs-accessibility/mouse-events-have-key-events': 'warn',
+    'vuejs-accessibility/no-access-key': 'warn',
+    'vuejs-accessibility/no-autofocus': 'warn',
+    'vuejs-accessibility/no-distracting-elements': 'warn',
+    'vuejs-accessibility/no-redundant-roles': 'warn',
+    'vuejs-accessibility/no-static-element-interactions': 'warn',
+    'vuejs-accessibility/role-has-required-aria-props': 'warn',
+    'vuejs-accessibility/tabindex-no-positive': 'warn',
   },
   ignorePatterns: ['api/__generated__/**', '.nuxt/**', '.output/**']
 };
