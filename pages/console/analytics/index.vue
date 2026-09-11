@@ -541,8 +541,9 @@
           </div>
           <div class="space-y-4 p-5">
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategoryName') }} *</label>
+              <label for="deep-link-category-name" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategoryName') }} *</label>
               <input
+                id="deep-link-category-name"
                 v-model="categoryForm.name"
                 type="text"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
@@ -590,8 +591,9 @@
           </div>
           <div class="space-y-4 p-5">
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategories') }}</label>
+              <label for="deep-link-category" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkCategories') }}</label>
               <select
+                id="deep-link-category"
                 v-model="linkForm.categoryId"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               >
@@ -600,8 +602,9 @@
               </select>
             </div>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkTarget') }} *</label>
+              <label for="deep-link-target" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkTarget') }} *</label>
               <select
+                id="deep-link-target"
                 v-model="linkForm.target"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
               >
@@ -609,8 +612,9 @@
               </select>
             </div>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkLabel') }}</label>
+              <label for="deep-link-label" class="mb-1.5 block text-xs font-semibold text-slate-700 dark:text-slate-300">{{ t('admin.deepLinkLabel') }}</label>
               <input
+                id="deep-link-label"
                 v-model="linkForm.label"
                 type="text"
                 class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"

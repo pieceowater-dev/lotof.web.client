@@ -68,12 +68,13 @@ function removeDraftItem(idx: number) {
 
     <div class="grid grid-cols-12 gap-2">
       <div :style="{ gridColumn: `span ${goodCol}` }">
-        <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.good') }}</label>
-        <GoodPicker v-model="itemDraft.goodId" :goods="goods" />
+        <label for="movement-item-good" class="text-xs text-gray-400 mb-1 block">{{ t('goods.good') }}</label>
+        <GoodPicker id="movement-item-good" v-model="itemDraft.goodId" :goods="goods" />
       </div>
       <div v-if="showUnit" class="col-span-2">
-        <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.unit') }}</label>
+        <label for="movement-item-unit" class="text-xs text-gray-400 mb-1 block">{{ t('goods.unit') }}</label>
         <USelectMenu
+          id="movement-item-unit"
           v-model="itemDraft.unitId"
           :options="units.map((u) => ({ label: u.symbol, value: u.id }))"
           value-attribute="value"
@@ -83,12 +84,12 @@ function removeDraftItem(idx: number) {
         />
       </div>
       <div :style="{ gridColumn: `span ${qtyCol}` }">
-        <label class="text-xs text-gray-400 mb-1 block">{{ t('goods.quantity') }}</label>
-        <UInput v-model.number="itemDraft.quantity" type="number" min="0" size="sm" />
+        <label for="movement-item-quantity" class="text-xs text-gray-400 mb-1 block">{{ t('goods.quantity') }}</label>
+        <UInput id="movement-item-quantity" v-model.number="itemDraft.quantity" type="number" min="0" size="sm" />
       </div>
       <div v-for="f in extraFields" :key="f.key" :style="{ gridColumn: `span ${f.colSpan || 12 - goodCol - (showUnit ? 2 : 0) - qtyCol}` }">
-        <label class="text-xs text-gray-400 mb-1 block">{{ t(f.labelKey) }}</label>
-        <UInput v-model="itemDraft[f.key]" :type="f.type" :min="f.min" :step="f.step" size="sm" />
+        <label :for="`movement-item-${f.key}`" class="text-xs text-gray-400 mb-1 block">{{ t(f.labelKey) }}</label>
+        <UInput :id="`movement-item-${f.key}`" v-model="itemDraft[f.key]" :type="f.type" :min="f.min" :step="f.step" size="sm" />
       </div>
     </div>
     <UButton size="sm" color="gray" variant="soft" icon="lucide:plus" :disabled="!itemDraft.goodId || (showUnit && !itemDraft.unitId)" @click="addDraftItem">
