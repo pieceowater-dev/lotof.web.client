@@ -75,7 +75,7 @@ watch([nsSlug, postId], () => {
 });
 
 
-import CryptoJS from 'crypto-js';
+import { md5 } from '@/utils/md5';
 
 // Server controls refresh interval - frontend doesn't set default
 const REFRESH_INTERVAL = ref<number | null>(null);
@@ -221,7 +221,7 @@ function startWs() {
 
   polling.value = true;
   qrError.value = '';
-  const secret = CryptoJS.MD5(pin.value).toString();
+  const secret = md5(pin.value);
 
   const wsUrl = getApiWsUrl('atrace', '/api/v1/atrace/qr/stream', {
     namespace: nsSlug.value,

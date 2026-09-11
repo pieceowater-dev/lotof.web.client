@@ -17,6 +17,7 @@ import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
 import { QRMethod } from '@/utils/constants';
 import { logError } from '@/utils/logger';
+import { md5 } from '@/utils/md5';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useAuth } from '@/composables/useAuth';
 import { useOnboarding } from '@/composables/useOnboarding';
@@ -264,8 +265,7 @@ async function loadFirstLocationCheckinQr(created: { id: string; pin: string }) 
     firstLocationCheckinQrImage.value = null;
     try {
         const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
-        const CryptoJS = (await import('crypto-js')).default;
-        const secret = CryptoJS.MD5(created.pin).toString();
+        const secret = md5(created.pin);
         const res = await qrGenPublic(created.id, QRMethod.QR_STATIC, secret, nsSlug.value);
         const qr = res?.qr;
         firstLocationCheckinQrImage.value = qr && !qr.startsWith('data:') ? `data:image/png;base64,${qr}` : qr || null;

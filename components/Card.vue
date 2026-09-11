@@ -3,6 +3,7 @@ import { ref, computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { QRMethod } from '@/utils/constants';
+import { md5 } from '@/utils/md5';
 import { useClipboard } from '@vueuse/core';
 import PinPrompt from '@/components/PinPrompt.vue';
 import QRPrintCard from '@/components/QRPrintCard.vue';
@@ -182,8 +183,7 @@ function openPrintDialog() {
 
 async function doPrintWithPin(pin: string, ns: string) {
   const { qrGenPublic } = await import('@/api/atrace/record/qrgen');
-  const CryptoJS = (await import('crypto-js')).default;
-  const secret = CryptoJS.MD5(pin).toString();
+  const secret = md5(pin);
 
   qrPrintCardLoading.value = true;
   const res = await qrGenPublic(props.post.id, QRMethod.QR_STATIC, secret, ns);
