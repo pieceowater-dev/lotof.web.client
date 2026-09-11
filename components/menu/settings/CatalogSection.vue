@@ -623,7 +623,10 @@ onMounted(async () => {
                 : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800/50',
               isChild ? 'pl-7 pr-3' : 'px-3',
             ]"
+            role="button"
+            tabindex="0"
             @click="selectedCategoryId = c.id"
+            @keydown.enter="selectedCategoryId = c.id"
           >
             <span class="truncate flex items-center gap-1.5">
               <UIcon v-if="isChild" name="lucide:corner-down-right" class="w-3 h-3 text-gray-400 flex-shrink-0" />

@@ -51,7 +51,10 @@ const statusColor = computed(() => {
         ? 'border-emerald-500 dark:border-emerald-400 ring-2 ring-emerald-200 dark:ring-emerald-900/50'
         : 'border-transparent hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-xl'
     "
+    role="button"
+    tabindex="0"
     @click="emit('select', client)"
+    @keydown.enter="emit('select', client)"
   >
     <div class="flex flex-col h-full">
       <div class="flex items-start justify-between mb-2">

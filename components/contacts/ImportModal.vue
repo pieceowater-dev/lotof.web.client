@@ -364,7 +364,11 @@ async function handleImport() {
             :class="isDragOver
               ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20'
               : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 hover:bg-gray-50 dark:hover:bg-gray-800/40'"
+            role="button"
+            tabindex="0"
             @click="triggerFilePicker"
+            @keydown.enter="triggerFilePicker"
+            @keydown.space.prevent="triggerFilePicker"
             @drop.prevent="onDrop"
             @dragover="onDragOver"
             @dragleave="onDragLeave"

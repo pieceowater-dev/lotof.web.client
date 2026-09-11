@@ -178,7 +178,10 @@ watch(() => props.isOpen, (newVal) => {
                   ? 'bg-emerald-100 dark:bg-emerald-900 border border-emerald-300 dark:border-emerald-700'
                   : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'
               ]"
+              role="button"
+              tabindex="0"
               @click="selectSegment(segment)"
+              @keydown.enter="selectSegment(segment)"
             >
               <div class="flex items-center justify-between">
                 <span>{{ maskProfanity(segment.name) }}</span>
