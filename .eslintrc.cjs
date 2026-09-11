@@ -145,7 +145,16 @@ module.exports = {
     'vuejs-accessibility/heading-has-content': 'warn',
     'vuejs-accessibility/iframe-has-title': 'warn',
     'vuejs-accessibility/interactive-supports-focus': 'warn',
-    'vuejs-accessibility/label-has-for': 'warn',
+    // Default `required: { every: ['nesting', 'id'] }` demands BOTH a
+    // wrapping <label> AND a for/id pair on every label, even though either
+    // one alone is already a fully valid, accessible association per HTML5/
+    // WCAG (<label><input></label> needs no for/id at all). That default
+    // flagged ~100 already-correct `<label><UCheckbox/>...</label>`-style
+    // wraps (Nuxt UI's UCheckbox/UToggle/URadio all render a real native
+    // input/button inside, confirmed by reading their source) as broken,
+    // alongside genuine gaps. Relaxed to `some` -- either pattern satisfies
+    // it, matching how the rule is normally used elsewhere.
+    'vuejs-accessibility/label-has-for': ['warn', { required: { some: ['nesting', 'id'] } }],
     'vuejs-accessibility/media-has-caption': 'warn',
     'vuejs-accessibility/mouse-events-have-key-events': 'warn',
     'vuejs-accessibility/no-access-key': 'warn',

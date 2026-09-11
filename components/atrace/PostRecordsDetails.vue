@@ -370,8 +370,9 @@ watch(itemsPerPage, () => {
         </div>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
-            <label class="text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</label>
+            <label for="post-records-rows-per-page" class="text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</label>
             <select
+              id="post-records-rows-per-page"
               v-model="itemsPerPage"
               class="border rounded px-2 py-1 bg-white dark:bg-gray-800 dark:border-gray-700"
             >

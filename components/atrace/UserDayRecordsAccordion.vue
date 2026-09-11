@@ -641,8 +641,9 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
 
         <div class="flex flex-col gap-4">
           <div>
-            <label class="text-sm mb-1">{{ t('app.enterReason') }}</label>
+            <label for="user-day-records-reason" class="text-sm mb-1">{{ t('app.enterReason') }}</label>
             <textarea
+              id="user-day-records-reason"
               v-model="reason"
               rows="3"
               class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-emerald-500 dark:bg-gray-800 dark:border-gray-700"

@@ -38,9 +38,10 @@ const { t } = useI18n();
 
         <!-- Period selector -->
         <div class="flex flex-wrap items-center gap-2 flex-shrink-0">
-          <label class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
+          <label for="route-employee-progress-start" class="text-xs font-medium text-gray-500 dark:text-gray-400 whitespace-nowrap">{{ t('app.period') || 'Период' }}:</label>
           <div class="flex items-center gap-2 flex-nowrap">
             <UInput
+              id="route-employee-progress-start"
               :model-value="progressStart"
               type="date"
               size="sm"

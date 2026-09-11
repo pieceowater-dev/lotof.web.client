@@ -60,8 +60,9 @@ const menuOptions = computed(() => [
     </template>
     <template v-else>
       <div class="flex gap-2 items-center">
-        <label class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
+        <label for="posts-mobile-selector" class="text-sm font-medium whitespace-nowrap">{{ t('app.location') || 'Локация' }}:</label>
         <USelectMenu
+          id="posts-mobile-selector"
           v-model="selectedPostIdForMenu"
           :options="menuOptions"
           value-attribute="value"
