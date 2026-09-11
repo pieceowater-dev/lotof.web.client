@@ -3,6 +3,12 @@
   "extends": "./.nuxt/tsconfig.json",
   "compilerOptions": {
     "ignoreDeprecations": "5.0",
+    // Measured individually (2026-09-11), not assumed: noUncheckedIndexedAccess
+    // (307 errors) and exactOptionalPropertyTypes (247 errors) both flood the
+    // build the moment they're enabled -- exactly what FRONTEND_AUDIT.md F2
+    // warned about -- so neither is on. noImplicitOverride is clean (0 errors)
+    // and stays enabled.
+    "noImplicitOverride": true,
     "paths": {
       // Re-add Nuxt internal aliases lost when overriding paths (TS does not merge 'paths' from extended configs)
       "#app": ["./node_modules/nuxt/dist/app"],
