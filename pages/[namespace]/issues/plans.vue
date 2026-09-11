@@ -21,7 +21,7 @@ const config: AppPlansPageConfig = {
       : null;
   },
   subscribe: async ({ nsSlug, appToken, planCode }) => {
-    const s = await tasksSubscribePlan(appToken, nsSlug, planCode);
+    const s = await tasksSubscribePlan({ tasksToken: appToken, nsSlug, planCode });
     return s
       ? { planId: s.planId, planCode: null, status: s.status, trialEndsAt: s.trialEndsAt ?? null }
       : null;

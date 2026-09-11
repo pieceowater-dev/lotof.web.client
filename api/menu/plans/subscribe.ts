@@ -29,15 +29,22 @@ export type Subscription = {
   trialEndDate?: string;
 };
 
-export async function subscribeToMenuPlan(
-  namespaceSlug: string,
-  planCode: string,
-  appBundle: string = 'pieceowater.menu',
-  hubToken?: string | null
-): Promise<Subscription> {
+// Object parameter, not positional args (FRONTEND_AUDIT.md D3) -- see the
+// comment on tasksSubscribePlan for why.
+export async function subscribeToMenuPlan({
+  nsSlug,
+  planCode,
+  appBundle = 'pieceowater.menu',
+  hubToken,
+}: {
+  nsSlug: string;
+  planCode: string;
+  appBundle?: string;
+  hubToken?: string | null;
+}): Promise<Subscription> {
   const resolvedHubToken = hubToken ?? useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   const headers: Record<string, string> = {
-    Namespace: namespaceSlug,
+    Namespace: nsSlug,
   };
   if (resolvedHubToken) {
     headers.Authorization = `Bearer ${resolvedHubToken}`;

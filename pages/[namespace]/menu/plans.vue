@@ -22,7 +22,7 @@ const config: AppPlansPageConfig = {
       : null;
   },
   subscribe: async ({ nsSlug, hubToken, planCode }) => {
-    const s = await subscribeToMenuPlan(nsSlug, planCode, APP_BUNDLE, hubToken);
+    const s = await subscribeToMenuPlan({ nsSlug, planCode, appBundle: APP_BUNDLE, hubToken });
     return s
       ? { planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
       : null;

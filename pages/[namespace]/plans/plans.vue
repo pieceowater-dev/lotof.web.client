@@ -176,7 +176,7 @@ async function subscribePlan(plan: Plan) {
     const plansToken = await ensure(nsSlug.value, hubToken);
     if (!plansToken) throw new Error('Failed to get plans token');
 
-    activeSubscription.value = await subscribeToPlansPlan(nsSlug.value, plan.code, hubToken);
+    activeSubscription.value = await subscribeToPlansPlan({ nsSlug: nsSlug.value, planCode: plan.code, hubToken });
 
     toast.add({
       title: t('common.success') || 'Готово',

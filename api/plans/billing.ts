@@ -26,9 +26,19 @@ export async function getPlansPlans(ns: string, includeArchived = false): Promis
   return res.getPlans;
 }
 
-export async function subscribeToPlansPlan(ns: string, planCode: string, hubToken?: string | null): Promise<Subscription> {
+// Object parameter, not positional args (FRONTEND_AUDIT.md D3) -- see the
+// comment on tasksSubscribePlan in api/tasks/plans/subscribe.ts for why.
+export async function subscribeToPlansPlan({
+  nsSlug,
+  planCode,
+  hubToken,
+}: {
+  nsSlug: string;
+  planCode: string;
+  hubToken?: string | null;
+}): Promise<Subscription> {
   const doc = /* GraphQL */ `mutation($planCode:String!,$appBundle:String!){ subscribePlan(planCode:$planCode,appBundle:$appBundle){ id namespace applicationCode planId planCode status startDate endDate trialEndDate } }`;
-  const res = await plansClient.request<{ subscribePlan: Subscription }>(doc, { planCode, appBundle: APP }, { headers: hubHeaders(ns, hubToken) });
+  const res = await plansClient.request<{ subscribePlan: Subscription }>(doc, { planCode, appBundle: APP }, { headers: hubHeaders(nsSlug, hubToken) });
   return res.subscribePlan;
 }
 
