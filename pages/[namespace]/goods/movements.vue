@@ -443,8 +443,9 @@ onMounted(loadAll);
 
           <!-- Purchase order status -->
           <div v-if="detailRow.kind === 'purchase'">
-            <label class="text-xs text-gray-400 mb-1 block">{{ t('common.status') }}</label>
+            <label for="movement-po-status" class="text-xs text-gray-400 mb-1 block">{{ t('common.status') }}</label>
             <USelectMenu
+              id="movement-po-status"
               :model-value="(detailDoc as any).status"
               :options="PO_STATUS_OPTIONS"
               value-attribute="value"

@@ -795,8 +795,8 @@ async function handleDelete() {
           />
           <p v-if="phoneLooksInvalid" class="text-xs text-red-500">{{ t('contacts.invalidPhone') || 'Invalid phone format' }}</p>
           <div>
-            <label class="text-[11px] text-gray-400 mb-1 block">{{ t('tasks.address') || 'Contact address' }}</label>
-            <UInput v-model="addressDraft" size="sm" :placeholder="t('tasks.addressPlaceholder') || 'Free-text address'" @blur="commitAddress" />
+            <label for="task-contact-address" class="text-[11px] text-gray-400 mb-1 block">{{ t('tasks.address') || 'Contact address' }}</label>
+            <UInput id="task-contact-address" v-model="addressDraft" size="sm" :placeholder="t('tasks.addressPlaceholder') || 'Free-text address'" @blur="commitAddress" />
           </div>
         </div>
       </div>

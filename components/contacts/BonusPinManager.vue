@@ -243,11 +243,12 @@ defineExpose({
             v-if="hasOldPin"
             class="space-y-2"
           >
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label for="bonus-pin-old" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t('common.currentPin') }}
             </label>
             <div class="relative">
               <input
+                id="bonus-pin-old"
                 v-model="formData.oldPin"
                 :type="showOldPin ? 'text' : 'password'"
                 maxlength="4"
@@ -271,11 +272,12 @@ defineExpose({
 
           <!-- New PIN Field -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label for="bonus-pin-new" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t('common.newPin') }}
             </label>
             <div class="relative">
               <input
+                id="bonus-pin-new"
                 v-model="formData.newPin"
                 :type="showNewPin ? 'text' : 'password'"
                 maxlength="4"
@@ -302,11 +304,12 @@ defineExpose({
 
           <!-- Confirm PIN Field -->
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label for="bonus-pin-confirm" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t('common.confirmPin') }}
             </label>
             <div class="relative">
               <input
+                id="bonus-pin-confirm"
                 v-model="formData.confirmPin"
                 :type="showConfirmPin ? 'text' : 'password'"
                 maxlength="4"
