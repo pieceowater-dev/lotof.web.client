@@ -41,6 +41,8 @@ interface Emits {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  identityDisplayValues: () => ({}),
+  relatedClientTargets: () => ({}),
   editMode: false,
   editingPhones: () => [],
   editingEmails: () => [],

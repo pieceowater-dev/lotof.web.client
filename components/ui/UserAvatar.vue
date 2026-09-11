@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<{
   // if their display name changes) -- defaults to `name`.
   seed?: string | null;
   size?: 'xs' | 'sm' | 'md' | 'lg';
-}>(), { size: 'md' });
+}>(), { name: null, seed: null, size: 'md' });
 
 const initials = computed(() => getInitials(props.name));
 const palette = computed(() => getAvatarPalette(props.seed ?? props.name));

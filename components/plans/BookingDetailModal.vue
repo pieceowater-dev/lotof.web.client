@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<{
   serviceName?: string;
   canManage: boolean;        // create / reschedule / edit fields
   canSetStatus?: boolean;    // change the booking's status (a master may, for their clients)
-}>(), { canSetStatus: undefined, masters: () => [] });
+}>(), { canSetStatus: undefined, masters: () => [], serviceName: '' });
 
 const maySetStatus = computed(() => props.canSetStatus ?? props.canManage);
 

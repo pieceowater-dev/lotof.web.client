@@ -10,7 +10,9 @@ const { t } = useI18n();
 const props = withDefaults(defineProps<{
   modelValue?: string | null;
   nsSlug: string;
-}>(), {});
+}>(), {
+  modelValue: null,
+});
 
 const emit = defineEmits<{
   (e: 'update:modelValue', v: string): void;

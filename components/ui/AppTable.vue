@@ -13,7 +13,9 @@ const props = withDefaults(defineProps<{
   // Flag to enable pagination
   pagination?: boolean
 }>(), {
+  emptyIcon: 'lucide:bird',
   total: null,
+  pageCountOptions: () => [10, 25, 50, 100],
   pagination: false
 })
 

@@ -14,6 +14,7 @@ const props = withDefaults(defineProps<{
   /** 'cover' fills the frame (photos); 'contain' never crops (logos). */
   fit?: 'cover' | 'contain';
 }>(), {
+  modelValue: null,
   aspect: 'wide',
   fit: 'cover',
 });

@@ -15,7 +15,7 @@ const props = withDefaults(defineProps<{
   // Showcase (view-only) mode: hides the add/stepper button entirely, since
   // there's nothing to add to -- ordering is off for this storefront.
   orderingDisabled?: boolean;
-}>(), { orderingDisabled: false });
+}>(), { currency: null, orderingDisabled: false });
 
 const emit = defineEmits<{
   (e: 'open'): void;

@@ -28,5 +28,5 @@ withDefaults(defineProps<{
   title: string;
   description?: string;
   size?: 'sm' | 'lg';
-}>(), { size: 'sm' });
+}>(), { description: '', size: 'sm' });
 </script>

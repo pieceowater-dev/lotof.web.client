@@ -6,7 +6,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 
 const { t } = useI18n();
-const props = withDefaults(defineProps<{ modelValue?: string | null; nsSlug: string; label?: string }>(), {});
+const props = withDefaults(defineProps<{ modelValue?: string | null; nsSlug: string; label?: string }>(), { modelValue: null, label: '' });
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
 const fileInput = ref<HTMLInputElement | null>(null);
