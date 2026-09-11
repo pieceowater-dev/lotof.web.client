@@ -1,6 +1,6 @@
 # 0003: One `layouts/default.vue` for marketing + workspace + console, chosen by path regex
 
-**Status:** accepted as historical, superseded — this one *is* a mistake, kept documented so the fix isn't repeated
+**Status:** superseded (`9e30df0`) — fixed, kept as a record of what the mistake was and why
 
 ## Context
 
@@ -25,22 +25,43 @@ layouts from the start. The regex approach has already caused a real
 pattern is inherently fragile: any new route added anywhere in the app has
 to be checked against three regexes to know what its layout will do.
 
-The fix (`FRONTEND_AUDIT.md` H1) is `layouts/marketing.vue` /
-`workspace.vue` / `console.vue`, with pages choosing via
-`definePageMeta({ layout: 'workspace' })`, and the 13 `layout: false`
-pages becoming a `layout: 'bare'` instead. Not done yet — it's rated 🟨 in
-the audit specifically because the three regexes encode real, sometimes
-non-obvious accumulated behavior, and porting them has to be done
-line-by-line against their own comments, then checked by eye on at least
-`/`, `/hub`, `/catalog`, `/console/*`, `/{ns}/menu`, `/{ns}/bundles`,
-`/{ns}/menu/plans` (the last two are exactly where the footer broke
-before).
+The fix (`FRONTEND_AUDIT.md` H1, shipped `9e30df0`) is 3 named layouts —
+`layouts/full.vue` (full footer, normal scroll — marketing pages),
+`layouts/quiet.vue` (minimal footer, normal scroll — `/console/*` and the
+`/:ns/bundles` + `/:ns/<app>/plans` pricing sub-pages), `layouts/workspace.vue`
+(minimal footer, `min-h-0` internal scroll — the app workspace pages
+themselves) — with `definePageMeta({ layout: 'full' | 'quiet' | 'workspace' })`
+set on all 68 pages that don't already opt out via `layout: false`. The
+category for each page was computed by a small script running the *exact*
+`QUIET_FOOTER`/`WORKSPACE_PAGE`/`PRICING_PAGE` regexes from the old
+`layouts/default.vue` against that page's route pattern, rather than
+re-guessed by eye — this guarantees the per-page assignment reproduces the
+regex's own behavior instead of a fresh (and possibly wrong) reading of it.
+The 13 `layout: false` pages were left untouched: `layout: false` is
+already an explicit, correct choice for them (none of the 3 new layouts
+fit a storefront/kiosk), so no separate `'bare'` layout was added.
+
+`layouts/default.vue` itself was **not deleted** — it's left in place,
+unused, as a zero-risk fallback for any future page that omits `layout:`.
+
+Verified before deploy: typecheck/lint/test/build all green; a curl-based
+structural check (footer `mt-6` vs `mt-12` class, `min-h-0` wrapper class
+presence) against the built production server across all 3 categories and
+every edge case named below, matching the old regex's predicted output
+exactly; a Playwright hydration/console-error check run against both the
+pre-change and post-change build, confirming the only warnings present
+(an unrelated hydration notice and a connection-refused from a
+backend call not reachable in this local preview) are identical on both,
+i.e. pre-existing and not caused by this change.
 
 ## Consequences
 
-- New routes should still go through `QUIET_FOOTER`/`WORKSPACE_PAGE`/
-  `PRICING_PAGE` today — that's still the live mechanism — but be aware
-  it's slated for replacement, not a pattern to extend further if
-  avoidable.
-- When the H1 migration happens, do it as its own dedicated pass with the
-  manual route checklist above, not bundled into an unrelated change.
+- New routes now need an explicit `definePageMeta({ layout: ... })` (or
+  `layout: false`) — there is no more automatic regex fallback in active
+  use. `layouts/default.vue`'s regex is still there and still correct, but
+  nothing references it anymore; treat it as a safety net, not something to
+  keep extending.
+- The three checked-in-and-verified route classes to keep in mind for any
+  new page: `/`, `/hub`, `/catalog` (→ `full`); `/console/*`,
+  `/{ns}/bundles`, `/{ns}/<app>/plans` (→ `quiet`); `/{ns}/<app>` and its
+  sub-routes other than `/plans` (→ `workspace`).
