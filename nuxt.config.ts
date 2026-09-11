@@ -317,7 +317,29 @@ export default defineNuxtConfig({
           'X-Frame-Options': 'DENY',
           'X-XSS-Protection': '1; mode=block',
           'Referrer-Policy': 'strict-origin-when-cross-origin',
-          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          // Report-Only: observes and logs violations to the browser console,
+          // never blocks anything (FRONTEND_AUDIT.md L8). 'unsafe-inline' on
+          // script/style reflects real usage today (Nuxt's hydration payload
+          // ships as an inline <script>, and Vue/Tailwind rely on inline
+          // style="" attributes) -- this is a second rubric that layers on
+          // top of the sanitizer/HttpOnly work (L2/L3), not a step toward
+          // dropping either. img/connect allow the map tile hosts (Leaflet);
+          // everything else the app talks to (API, amplitude) already goes
+          // through this same origin via the /api-*/** proxies and
+          // /api/analytics/collect, so 'self' covers it without listing
+          // third-party domains here.
+          'Content-Security-Policy-Report-Only':
+            "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline'; " +
+            "style-src 'self' 'unsafe-inline'; " +
+            "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
+            "font-src 'self' data:; " +
+            "connect-src 'self' wss: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
+            "frame-ancestors 'none'; " +
+            "base-uri 'self'; " +
+            "form-action 'self'; " +
+            "object-src 'none'"
         }
       }
     }
