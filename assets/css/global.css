@@ -1,3 +1,33 @@
+/* ==========================================================================
+   Known inline-style exceptions (FRONTEND_AUDIT.md G2)
+   Documented here so a future reader doesn't "fix" these back to the
+   broken/impossible alternative.
+   ==========================================================================
+
+   1. `style="aspect-ratio: ...; "` on <img>/<div> across many components.
+      Tailwind's aspect-square / aspect-video / aspect-auto utilities
+      generate ZERO CSS in this project -- nuxt/ui's aspect-ratio plugin
+      clobbers the theme's aspect-ratio scale, so those classes compile to
+      nothing. Inline `aspect-ratio` is the deliberate workaround, not an
+      oversight. Do not replace it with `class="aspect-square"` etc.
+      without first confirming (build output, computed styles) that the
+      plugin conflict has actually been fixed upstream.
+
+   2. Most other inline `:style="{ ... }"` bindings in .vue files encode
+      values computed at runtime that cannot be Tailwind utility classes by
+      construction: progress-bar widths/heights derived from live data
+      (funnel/analytics charts), per-record colors coming from user data
+      (task-type color, map-marker color), and third-party HTML strings
+      (Leaflet marker icons). These are not a "convert to classes" backlog
+      item -- there is no static class that expresses a value known only
+      at render time.
+
+   A small remainder (a couple of hardcoded pixel values, e.g. a fixed
+   min/max-width on one card) genuinely could be Tailwind classes; those
+   were left alone here since touching component markup is out of scope
+   for a CSS-file-only, zero-behavior-risk change -- see G2 in the audit.
+   ========================================================================== */
+
 /* Global base styles: set Nunito Sans as the default for Latin; fall back to system fonts for other scripts */
 html, body, #__nuxt {
   width: 100%;
