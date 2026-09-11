@@ -31,7 +31,10 @@ export async function plansRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: s
       if (!hubToken) throw error;
       const newToken = await plansGetAppToken(hubToken, nsSlug);
       if (newToken) {
-        useCookie(CookieKeys.PLANS_TOKEN, { path: '/' }).value = newToken;
+        // Match the attributes the initial write uses (composables/useAppToken.ts)
+        // -- without them the cookie loses Secure/SameSite the moment it's
+        // rewritten here, i.e. after the very first refresh (FRONTEND_AUDIT.md L2).
+        useCookie(CookieKeys.PLANS_TOKEN, { path: '/', sameSite: 'lax', secure: !import.meta.dev, maxAge: 60 * 60 * 24 * 6 }).value = newToken;
         setPlansAppToken(newToken);
         return await fn();
       }

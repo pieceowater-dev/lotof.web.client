@@ -188,9 +188,9 @@ export function createAppTokenComposable(config: AppTokenConfig) {
           setAppToken(token)
         } catch {}
         // secure:false would ship an app token over plain HTTP in
-        // production; process.dev is only true for local `nuxt dev`, so
+        // production; import.meta.dev is only true for local `nuxt dev`, so
         // this is secure everywhere it actually matters.
-        useCookie(cookieKey, { path: '/', sameSite: 'lax', secure: !process.dev, maxAge: 60 * 60 * 24 * 6 }).value = token
+        useCookie(cookieKey, { path: '/', sameSite: 'lax', secure: !import.meta.dev, maxAge: 60 * 60 * 24 * 6 }).value = token
         if (typeof window !== 'undefined') {
           try { localStorage.setItem(tsKey, String(Date.now())) } catch {}
         }

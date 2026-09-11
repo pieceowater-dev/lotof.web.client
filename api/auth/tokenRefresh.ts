@@ -29,7 +29,10 @@ export async function refreshAccessToken(): Promise<boolean> {
     // If server returns new token in response body, use it directly
     if (data?.token) {
       try {
-        const tokenCookie = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' });
+        // sameSite/secure kept explicit here (no other client-side write of
+        // this cookie sets them either -- see FRONTEND_AUDIT.md L2 for the
+        // per-service tokens' version of the same gap).
+        const tokenCookie = useCookie<string | null>(CookieKeys.TOKEN, { path: '/', sameSite: 'lax', secure: !import.meta.dev });
         tokenCookie.value = data.token;
         // Update global auth token for API client
         const { setGlobalAuthToken } = await import('@/api/clients');
@@ -50,7 +53,7 @@ export async function refreshAccessToken(): Promise<boolean> {
         const newToken = cookies[CookieKeys.TOKEN];
         if (newToken) {
           try {
-            const tokenCookie = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' });
+            const tokenCookie = useCookie<string | null>(CookieKeys.TOKEN, { path: '/', sameSite: 'lax', secure: !import.meta.dev });
             tokenCookie.value = newToken;
             const { setGlobalAuthToken } = await import('@/api/clients');
             setGlobalAuthToken(newToken);
