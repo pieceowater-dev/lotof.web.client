@@ -1,130 +1,109 @@
 import { GraphQLClient } from 'graphql-request';
-import type { Ref } from 'vue';
 import { logError, logWarn } from '@/utils/logger';
 import { getApiBaseUrl } from '@/utils/api-base';
 
-// Reactive token holder (shared across clients)
-let tokenRef: Ref<string | null> | null = null; // hub token (Authorization)
-let atraceTokenRef: Ref<string | null> | null = null; // atrace app token (AtraceAuthorization)
-let contactsTokenRef: Ref<string | null> | null = null; // contacts app token (ContactsAuthorization)
-let menuTokenRef: Ref<string | null> | null = null; // menu app token (MenuAuthorization)
-let tasksTokenRef: Ref<string | null> | null = null; // tasks (Issues) app token (IssuesAuthorization)
-let goodsTokenRef: Ref<string | null> | null = null; // goods app token (GoodsAuthorization)
-let plansTokenRef: Ref<string | null> | null = null; // plans app token (PlansAuthorization)
+// ---- Per-request auth state ------------------------------------------------
+// Everything below used to be cached in module-level `let`s. On the Node SSR
+// server a module is instantiated once per *process*, not once per request,
+// so whichever request populated one of those `let`s first left it there for
+// every other concurrent request on the same process to read (or overwrite)
+// -- a real cross-user leak (see FRONTEND_AUDIT.md E1). Nothing here may be
+// memoized in module scope; each accessor re-resolves it on every call.
 
-function getTokenRef() {
-  if (!tokenRef) {
-    // useState so it survives across HMR in dev
-    tokenRef = useState<string | null>('global_auth_token', () => null);
-  }
-  return tokenRef;
-}
+type ServiceKey = 'hub' | 'atrace' | 'contacts' | 'menu' | 'tasks' | 'goods' | 'plans';
 
-function getAtraceTokenRef() {
-  if (!atraceTokenRef) {
-    atraceTokenRef = useState<string | null>('atrace_app_token', () => null);
-  }
-  return atraceTokenRef;
-}
+// useState() is already request-scoped by Nuxt (keyed off the current
+// nuxtApp's payload.state), so the fix is simply to never cache the Ref it
+// returns -- call useState() itself every time instead of once.
+const TOKEN_STATE_KEY: Record<ServiceKey, string> = {
+  hub: 'global_auth_token',
+  atrace: 'atrace_app_token',
+  contacts: 'contacts_app_token',
+  menu: 'menu_app_token',
+  tasks: 'tasks_app_token',
+  goods: 'goods_app_token',
+  plans: 'plans_app_token',
+};
 
-function getContactsTokenRef() {
-  if (!contactsTokenRef) {
-    contactsTokenRef = useState<string | null>('contacts_app_token', () => null);
-  }
-  return contactsTokenRef;
-}
-
-function getMenuTokenRef() {
-  if (!menuTokenRef) {
-    menuTokenRef = useState<string | null>('menu_app_token', () => null);
-  }
-  return menuTokenRef;
-}
-
-function getTasksTokenRef() {
-  if (!tasksTokenRef) {
-    tasksTokenRef = useState<string | null>('tasks_app_token', () => null);
-  }
-  return tasksTokenRef;
-}
-
-function getGoodsTokenRef() {
-  if (!goodsTokenRef) {
-    goodsTokenRef = useState<string | null>('goods_app_token', () => null);
-  }
-  return goodsTokenRef;
-}
-
-function getPlansTokenRef() {
-  if (!plansTokenRef) {
-    plansTokenRef = useState<string | null>('plans_app_token', () => null);
-  }
-  return plansTokenRef;
+function tokenRef(service: ServiceKey) {
+  return useState<string | null>(TOKEN_STATE_KEY[service], () => null);
 }
 
 export function setGlobalAuthToken(token: string | null) {
-  getTokenRef().value = token;
+  tokenRef('hub').value = token;
 }
 
 export function setAtraceAppToken(token: string | null) {
-  getAtraceTokenRef().value = token;
+  tokenRef('atrace').value = token;
 }
 
 export function setContactsAppToken(token: string | null) {
-  getContactsTokenRef().value = token;
+  tokenRef('contacts').value = token;
 }
 
 export function setMenuAppToken(token: string | null) {
-  getMenuTokenRef().value = token;
+  tokenRef('menu').value = token;
 }
 
 export function setTasksAppToken(token: string | null) {
-  getTasksTokenRef().value = token;
+  tokenRef('tasks').value = token;
 }
 
 export function setGoodsAppToken(token: string | null) {
-  getGoodsTokenRef().value = token;
+  tokenRef('goods').value = token;
 }
 
 export function setPlansAppToken(token: string | null) {
-  getPlansTokenRef().value = token;
+  tokenRef('plans').value = token;
 }
 
+// "Unauthorized" callbacks are plain functions, not serializable state, so
+// they can't live in useState. They're keyed off the current nuxtApp
+// instance instead, via WeakMap: on the client there's one instance for the
+// whole tab's session (same lifetime the old module-level `let` had); on
+// SSR every request gets its own fresh instance, so concurrent requests can
+// no longer see or invoke each other's handler.
 type UnauthorizedHandler = () => void | Promise<void>;
-let unauthorizedHandler: UnauthorizedHandler | null = null;
-let atraceUnauthorizedHandler: UnauthorizedHandler | null = null;
-let contactsUnauthorizedHandler: UnauthorizedHandler | null = null;
-let menuUnauthorizedHandler: UnauthorizedHandler | null = null;
-let tasksUnauthorizedHandler: UnauthorizedHandler | null = null;
-let goodsUnauthorizedHandler: UnauthorizedHandler | null = null;
-let plansUnauthorizedHandler: UnauthorizedHandler | null = null;
+type NuxtAppInstance = ReturnType<typeof useNuxtApp>;
+
+const unauthorizedHandlers = new WeakMap<NuxtAppInstance, Partial<Record<ServiceKey, UnauthorizedHandler>>>();
+
+function handlerBag() {
+  const app = useNuxtApp();
+  let bag = unauthorizedHandlers.get(app);
+  if (!bag) {
+    bag = {};
+    unauthorizedHandlers.set(app, bag);
+  }
+  return bag;
+}
 
 export function setUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  unauthorizedHandler = fn;
+  handlerBag().hub = fn ?? undefined;
 }
 
 export function setAtraceUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  atraceUnauthorizedHandler = fn;
+  handlerBag().atrace = fn ?? undefined;
 }
 
 export function setContactsUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  contactsUnauthorizedHandler = fn;
+  handlerBag().contacts = fn ?? undefined;
 }
 
 export function setMenuUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  menuUnauthorizedHandler = fn;
+  handlerBag().menu = fn ?? undefined;
 }
 
 export function setTasksUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  tasksUnauthorizedHandler = fn;
+  handlerBag().tasks = fn ?? undefined;
 }
 
 export function setGoodsUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  goodsUnauthorizedHandler = fn;
+  handlerBag().goods = fn ?? undefined;
 }
 
 export function setPlansUnauthorizedHandler(fn: UnauthorizedHandler | null) {
-  plansUnauthorizedHandler = fn;
+  handlerBag().plans = fn ?? undefined;
 }
 
 type ApiClientOptions = {
@@ -188,26 +167,26 @@ export class ApiClient {
     retryCount: number = 0
   ): Promise<T> {
     // Merge headers each call to always use latest token + any provided headers
-    const t = getTokenRef().value;
+    const t = tokenRef('hub').value;
     const headers: Record<string, string> = {};
     // For atrace client, send AtraceAuthorization if we have it, regardless of hub token presence
     if (this.authHeader === 'AtraceAuthorization') {
-      const at = getAtraceTokenRef().value;
+      const at = tokenRef('atrace').value;
       if (at) headers[this.authHeader] = `Bearer ${at}`;
     } else if (this.authHeader === 'ContactsAuthorization') {
-      const ct = getContactsTokenRef().value;
+      const ct = tokenRef('contacts').value;
       if (ct) headers[this.authHeader] = `Bearer ${ct}`;
     } else if (this.authHeader === 'MenuAuthorization') {
-      const mt = getMenuTokenRef().value;
+      const mt = tokenRef('menu').value;
       if (mt) headers[this.authHeader] = `Bearer ${mt}`;
     } else if (this.authHeader === 'IssuesAuthorization') {
-      const tt = getTasksTokenRef().value;
+      const tt = tokenRef('tasks').value;
       if (tt) headers[this.authHeader] = `Bearer ${tt}`;
     } else if (this.authHeader === 'PlansAuthorization') {
-      const pt = getPlansTokenRef().value;
+      const pt = tokenRef('plans').value;
       if (pt) headers['PlansAuthorization'] = `Bearer ${pt}`;
     } else if (this.authHeader === 'GoodsAuthorization') {
-      const gt = getGoodsTokenRef().value;
+      const gt = tokenRef('goods').value;
       if (gt) headers[this.authHeader] = `Bearer ${gt}`;
     } else if (this.authHeader === 'CapitalAuthorization') {
       if (t) headers[this.authHeader] = `Bearer ${t}`;
@@ -259,7 +238,7 @@ export class ApiClient {
         logWarn('Atrace unauthorized detected, invoking atrace handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await atraceUnauthorizedHandler?.();
+          await handlerBag().atrace?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -272,7 +251,7 @@ export class ApiClient {
         logWarn('Menu unauthorized detected, invoking menu handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await menuUnauthorizedHandler?.();
+          await handlerBag().menu?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -285,7 +264,7 @@ export class ApiClient {
         logWarn('Tasks unauthorized detected, invoking tasks handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await tasksUnauthorizedHandler?.();
+          await handlerBag().tasks?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -297,7 +276,7 @@ export class ApiClient {
       } else if (isPlansUnauthorized) {
         logWarn('Plans unauthorized detected, invoking plans handler');
         try {
-          await plansUnauthorizedHandler?.();
+          await handlerBag().plans?.();
         } catch (e) {
           logError('plans unauthorized handler failed', e);
         }
@@ -305,7 +284,7 @@ export class ApiClient {
         logWarn('Goods unauthorized detected, invoking goods handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await goodsUnauthorizedHandler?.();
+          await handlerBag().goods?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -318,7 +297,7 @@ export class ApiClient {
         logWarn('Hub unauthorized detected, invoking handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await unauthorizedHandler?.();
+          await handlerBag().hub?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
@@ -331,7 +310,7 @@ export class ApiClient {
         logWarn('Capital unauthorized detected, invoking handler');
         if (retryCount === 0) {
           // Try refresh once before giving up
-          await unauthorizedHandler?.();
+          await handlerBag().hub?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
