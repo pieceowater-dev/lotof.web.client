@@ -174,8 +174,9 @@
     <Modal v-model="categoryModalOpen" :header="categoryModalTitle">
       <div class="space-y-4">
         <div>
-          <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideParentCategory') }}</label>
+          <label for="guide-category-parent" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideParentCategory') }}</label>
           <USelectMenu
+            id="guide-category-parent"
             v-model="categoryForm.parentId"
             :options="parentCategoryOptions"
             value-attribute="value"
@@ -184,16 +185,16 @@
         </div>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">Название (RU)</label>
-            <UInput v-model="categoryForm.nameRu" />
+            <label for="guide-category-name-ru" class="mb-1 block text-xs font-medium text-slate-500">Название (RU)</label>
+            <UInput id="guide-category-name-ru" v-model="categoryForm.nameRu" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">Название (KK)</label>
-            <UInput v-model="categoryForm.nameKk" />
+            <label for="guide-category-name-kk" class="mb-1 block text-xs font-medium text-slate-500">Название (KK)</label>
+            <UInput id="guide-category-name-kk" v-model="categoryForm.nameKk" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">Название (EN)</label>
-            <UInput v-model="categoryForm.nameEn" />
+            <label for="guide-category-name-en" class="mb-1 block text-xs font-medium text-slate-500">Название (EN)</label>
+            <UInput id="guide-category-name-en" v-model="categoryForm.nameEn" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-3">
@@ -202,8 +203,8 @@
             <GuideIconPicker v-model="categoryForm.icon" />
           </div>
           <div>
-            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
-            <UInput v-model.number="categoryForm.sortOrder" type="number" />
+            <label for="guide-category-sort-order" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideSortOrder') }}</label>
+            <UInput id="guide-category-sort-order" v-model.number="categoryForm.sortOrder" type="number" />
           </div>
         </div>
         <UCheckbox v-model="categoryForm.isActive" :label="t('admin.guideActive')" />

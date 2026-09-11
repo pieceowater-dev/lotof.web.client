@@ -282,10 +282,11 @@ async function deleteTier(tier: Tier) {
 
         <!-- Name -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label for="loyalty-tier-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {{ t('app.name') || 'Name' }} *
           </label>
-          <input 
+          <input
+            id="loyalty-tier-name"
             v-model="formData.name"
             type="text"
             placeholder="Gold, Silver, Platinum..."
@@ -296,10 +297,11 @@ async function deleteTier(tier: Tier) {
         <!-- Level -->
         <div class="grid grid-cols-2 gap-2">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="loyalty-tier-level" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {{ t('app.level') || 'Level' }} *
             </label>
-            <input 
+            <input
+              id="loyalty-tier-level"
               v-model.number="formData.level"
               type="number"
               min="1"
@@ -307,10 +309,11 @@ async function deleteTier(tier: Tier) {
             >
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label for="loyalty-tier-bonus-multiplier" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {{ t('app.bonusMultiplier') || 'Bonus Multiplier' }} *
             </label>
-            <input 
+            <input
+              id="loyalty-tier-bonus-multiplier"
               v-model.number="formData.bonusMultiplier"
               type="number"
               min="1"
@@ -322,10 +325,11 @@ async function deleteTier(tier: Tier) {
 
         <!-- Description -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label for="loyalty-tier-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {{ t('app.description') || 'Description' }}
           </label>
-          <textarea 
+          <textarea
+            id="loyalty-tier-description"
             v-model="formData.description"
             rows="2"
             placeholder="Describe this tier..."
@@ -335,10 +339,11 @@ async function deleteTier(tier: Tier) {
 
         <!-- Threshold -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label for="loyalty-tier-threshold" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {{ t('app.qualificationThreshold') || 'Qualification Threshold' }} *
           </label>
-          <input 
+          <input
+            id="loyalty-tier-threshold"
             v-model.number="formData.qualificationThreshold"
             type="number"
             min="0"
@@ -370,11 +375,12 @@ async function deleteTier(tier: Tier) {
 
         <!-- Benefits -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label for="loyalty-tier-benefits" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             {{ t('app.benefits') || 'Benefits' }}
           </label>
           <div class="flex gap-2 mb-2">
-            <input 
+            <input
+              id="loyalty-tier-benefits"
               v-model="benefitsInput"
               type="text"
               placeholder="e.g., Free shipping"
