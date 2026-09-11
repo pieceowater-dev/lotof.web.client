@@ -1,9 +1,21 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import * as XLSX from 'xlsx';
+import type * as XLSXModule from 'xlsx';
 import { contactsImportClients, type ImportRow, type ImportBatchResult, type ImportProgress } from '@/api/contacts/importClients';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useI18n } from '@/composables/useI18n';
+
+// This modal is always mounted on the contacts settings page (it's toggled
+// via UModal's v-model, not a v-if around the component itself), so a
+// top-level `import 'xlsx'` shipped the ~1 MB library to everyone who opens
+// that page, whether or not they ever import a file. Loaded on demand
+// instead, the first time a file is actually picked; cached after that so
+// picking a second file doesn't re-fetch it.
+let xlsxPromise: Promise<typeof XLSXModule> | null = null;
+function loadXlsx() {
+  if (!xlsxPromise) xlsxPromise = import('xlsx');
+  return xlsxPromise;
+}
 
 const props = defineProps<{
   modelValue: boolean;
@@ -88,6 +100,7 @@ async function parseFileHeader(f: File) {
 
   try {
     const buffer = await f.arrayBuffer();
+    const XLSX = await loadXlsx();
     const wb = XLSX.read(buffer, { type: 'array' });
     const ws = wb.Sheets[wb.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '' });
@@ -130,6 +143,7 @@ async function buildRows(): Promise<ImportRow[]> {
   if (!file.value) return [];
 
   const buffer = await file.value.arrayBuffer();
+  const XLSX = await loadXlsx();
   const wb = XLSX.read(buffer, { type: 'array' });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rawRows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1, defval: '' });
