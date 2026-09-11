@@ -1,0 +1,13 @@
+mutation CreateDeepLink($input: CreateDeepLinkInput!) {
+  createDeepLink(input: $input) {
+    id
+    code
+    categoryId
+    target
+    label
+    clickCount
+    registrationCount
+    appInstallCount
+    createdAt
+  }
+}

@@ -1,0 +1,3 @@
+mutation DeleteDeepLink($id: ID!) {
+  deleteDeepLink(id: $id)
+}

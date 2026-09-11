@@ -1,0 +1,13 @@
+query AdminDeepLinks($categoryId: ID) {
+  adminDeepLinks(categoryId: $categoryId) {
+    id
+    code
+    categoryId
+    target
+    label
+    clickCount
+    registrationCount
+    appInstallCount
+    createdAt
+  }
+}

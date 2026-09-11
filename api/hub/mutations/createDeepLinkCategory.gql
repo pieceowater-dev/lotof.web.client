@@ -1,0 +1,7 @@
+mutation CreateDeepLinkCategory($input: CreateDeepLinkCategoryInput!) {
+  createDeepLinkCategory(input: $input) {
+    id
+    name
+    createdAt
+  }
+}

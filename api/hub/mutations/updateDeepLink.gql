@@ -1,0 +1,13 @@
+mutation UpdateDeepLink($id: ID!, $input: UpdateDeepLinkInput!) {
+  updateDeepLink(id: $id, input: $input) {
+    id
+    code
+    categoryId
+    target
+    label
+    clickCount
+    registrationCount
+    appInstallCount
+    createdAt
+  }
+}

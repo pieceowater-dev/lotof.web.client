@@ -1236,7 +1236,7 @@ async function loadDeepLinks() {
   }
 }
 
-function categoryName(categoryId: string | null): string {
+function categoryName(categoryId: string | null | undefined): string {
   if (!categoryId) return t('admin.uncategorized') || 'Без категории';
   return deepLinkCategories.value.find(c => c.id === categoryId)?.name || '—';
 }

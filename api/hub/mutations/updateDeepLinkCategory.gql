@@ -1,0 +1,7 @@
+mutation UpdateDeepLinkCategory($id: ID!, $input: UpdateDeepLinkCategoryInput!) {
+  updateDeepLinkCategory(id: $id, input: $input) {
+    id
+    name
+    createdAt
+  }
+}
