@@ -10,7 +10,9 @@ const props = defineProps<{
   preventClose?: boolean  // disable backdrop-click/Escape dismissal, for gates the user must complete
 }>();
 
-const emit = defineEmits(['update:modelValue']);
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void;
+}>();
 
 const initialFocusEl = ref<HTMLElement | null>(null);
 

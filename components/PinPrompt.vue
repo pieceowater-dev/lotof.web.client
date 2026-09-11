@@ -60,7 +60,10 @@ const props = defineProps({
   description: { type: String, default: '' },
   errorText: { type: String, default: '' },
 });
-const emit = defineEmits(['update:modelValue', 'submit']);
+const emit = defineEmits<{
+  (e: 'update:modelValue', v: boolean): void;
+  (e: 'submit', pin: string): void;
+}>();
 const pinInput = ref('');
 const error = ref('');
 

@@ -17,7 +17,11 @@ const {
 const { titleBySlug } = useNamespace();
 const currentNsLabel = computed(() => titleBySlug(currentNamespace) || currentNamespace);
 
-const emit = defineEmits(['edit-profile', 'edit-people', 'switch-namespace']);
+const emit = defineEmits<{
+  (e: 'edit-profile'): void;
+  (e: 'edit-people'): void;
+  (e: 'switch-namespace', slug: string): void;
+}>();
 
 const items: { label: string; click: () => void }[][] = [
     allNamespaces.map((ns: string) => ({ label: titleBySlug(ns) || ns, click: () => emit('switch-namespace', ns) }))
