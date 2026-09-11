@@ -102,6 +102,11 @@ module.exports = {
   },
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],
+    // Visibility only (warn, not error) -- ~480 existing `: any`/`as any`
+    // (FRONTEND_AUDIT.md A3/F1) would turn the required CI lint step red
+    // the moment this becomes 'error'. Warn now so the count stops growing
+    // silently; ratchet to error once there's a real plan to pay it down.
+    '@typescript-eslint/no-explicit-any': 'warn',
     // Disable base rule in favour of TypeScript-aware version
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
