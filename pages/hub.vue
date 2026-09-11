@@ -1137,7 +1137,14 @@ watch(user, (u) => {
               <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.feed') || 'Feed' }}</h2>
             </div>
 
-            <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
+            <NuxtErrorBoundary>
+              <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />
+              <template #error>
+                <p class="text-sm text-gray-400 dark:text-gray-500">
+                  {{ t('app.feedUnavailable') || 'Не удалось загрузить ленту' }}
+                </p>
+              </template>
+            </NuxtErrorBoundary>
 
             <div
               v-if="canAutoLoadMoreFeedPosts"
@@ -1147,18 +1154,20 @@ watch(user, (u) => {
             />
           </section>
 
-          <FeedSidebarWidget
-            v-if="popularArticleTags.length > 0 || whatsNewSidebarPosts.length > 0"
-            :articles-search="articlesSearch"
-            :selected-tag="selectedArticleTag"
-            :popular-tags="popularArticleTags"
-            :whats-new-posts="whatsNewSidebarPosts"
-            :is-mobile-viewport="isMobileFeedViewport"
-            :is-feed-section-in-view="isFeedSectionInView"
-            @update:articles-search="articlesSearch = $event"
-            @update:selected-tag="selectedArticleTag = $event"
-            @open="handleOpenPost"
-          />
+          <NuxtErrorBoundary v-if="popularArticleTags.length > 0 || whatsNewSidebarPosts.length > 0">
+            <FeedSidebarWidget
+              :articles-search="articlesSearch"
+              :selected-tag="selectedArticleTag"
+              :popular-tags="popularArticleTags"
+              :whats-new-posts="whatsNewSidebarPosts"
+              :is-mobile-viewport="isMobileFeedViewport"
+              :is-feed-section-in-view="isFeedSectionInView"
+              @update:articles-search="articlesSearch = $event"
+              @update:selected-tag="selectedArticleTag = $event"
+              @open="handleOpenPost"
+            />
+            <template #error />
+          </NuxtErrorBoundary>
         </div>
       </div>
 
