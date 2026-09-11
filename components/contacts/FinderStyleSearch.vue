@@ -319,6 +319,7 @@ onMounted(() => {
             ]"
             @click="selectTag(tag)"
             @mouseenter="highlightedIndex = index"
+            @focus="highlightedIndex = index"
           >
             <UIcon
               name="lucide:tag"

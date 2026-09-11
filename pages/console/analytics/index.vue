@@ -86,8 +86,11 @@
             <svg
               :viewBox="`0 0 ${chartW} ${chartH}`"
               class="h-56 w-full overflow-visible"
+              tabindex="0"
               @mousemove="onGrowthHover"
               @mouseleave="growthHoverIndex = null"
+              @focus="growthHoverIndex = growthSeries.length - 1"
+              @blur="growthHoverIndex = null"
             >
               <!-- baseline -->
               <line :x1="padL" :y1="chartH - padB" :x2="chartW - padR" :y2="chartH - padB" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />

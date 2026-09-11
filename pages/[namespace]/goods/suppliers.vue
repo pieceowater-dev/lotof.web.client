@@ -210,7 +210,7 @@ onMounted(loadAll);
       <div class="flex-1 min-h-0">
         <AppTable :rows="filteredSuppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
           <template #name-data="{ row }">
-            <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)">
+            <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)" @focusin="resolveContactsSummary(row)">
               <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEdit(supplierById.get(row.id)!)">
                 {{ maskProfanity(row.name) }}
               </button>

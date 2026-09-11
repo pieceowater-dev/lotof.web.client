@@ -163,6 +163,8 @@ watch(
           class="p-0.5"
           @mouseenter="hoverRating = i"
           @mouseleave="hoverRating = 0"
+          @focus="hoverRating = i"
+          @blur="hoverRating = 0"
           @click="rating = i"
         >
           <Icon
