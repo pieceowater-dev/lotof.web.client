@@ -320,6 +320,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           <input
             ref="dateInput" type="date" v-model="selectedDate"
             class="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+            aria-hidden="true"
             tabindex="-1"
           />
         </button>

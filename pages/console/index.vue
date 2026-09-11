@@ -39,6 +39,7 @@
           v-model="impersonateEmail"
           type="email"
           placeholder="email@..."
+          aria-label="Войти как (email)"
           class="min-w-0 flex-1 border-0 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 dark:text-white"
           @keyup.enter="onImpersonate"
         >

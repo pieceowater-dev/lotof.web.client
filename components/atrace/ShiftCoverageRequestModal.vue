@@ -89,6 +89,7 @@ async function submitRequest() {
           <input
             v-model="formDate"
             type="date"
+            :aria-label="t('app.date') || 'Дата'"
             class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
           >
         </UFormGroup>

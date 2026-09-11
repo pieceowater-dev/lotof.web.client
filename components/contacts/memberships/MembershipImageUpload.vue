@@ -81,6 +81,8 @@ function clearImage() {
       type="file"
       accept="image/*"
       class="hidden"
+      aria-hidden="true"
+      tabindex="-1"
       @change="onFileChange"
     >
 

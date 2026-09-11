@@ -49,6 +49,7 @@
             v-model="search"
             type="text"
             placeholder="Поиск по заголовку или адресу"
+            aria-label="Поиск по заголовку или адресу"
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>

@@ -77,6 +77,7 @@ watch(
             :value="props.articlesSearch"
             type="text"
             :placeholder="t('app.searchArticles') || 'Search articles'"
+            :aria-label="t('app.searchArticles') || 'Search articles'"
             class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
             @input="handleSearchInput"
           />
@@ -251,6 +252,7 @@ watch(
                   :value="props.articlesSearch"
                   type="text"
                   :placeholder="t('app.searchArticles') || 'Search articles'"
+                  :aria-label="t('app.searchArticles') || 'Search articles'"
                   class="w-full rounded-xl border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
                   @input="handleSearchInput"
                 />

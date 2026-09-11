@@ -1151,6 +1151,7 @@ useHead(() => {
                 v-model="searchQuery"
                 type="search"
                 :placeholder="t('menu.searchMenu') || 'Search menu'"
+                :aria-label="t('menu.searchMenu') || 'Search menu'"
                 class="w-full pl-9 pr-8 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                 @focus="searchFocused = true"
                 @blur="searchFocused = false"

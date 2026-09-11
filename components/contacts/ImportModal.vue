@@ -378,6 +378,8 @@ async function handleImport() {
               type="file"
               accept=".xlsx,.xls"
               class="hidden"
+              aria-hidden="true"
+              tabindex="-1"
               @change="onFileChange"
             >
             <div class="flex flex-col items-center justify-center py-8 px-4 text-center gap-2">

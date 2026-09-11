@@ -264,6 +264,7 @@ onMounted(() => {
         v-model="inputValue"
         type="text"
         :placeholder="localSelectedTags.length > 0 || localSearchQuery ? '' : t('contacts.searchPlaceholder') || 'Search or add tags...'"
+        :aria-label="t('contacts.searchPlaceholder') || 'Search or add tags...'"
         class="flex-1 min-w-[100px] bg-transparent border-none outline-none focus:outline-none focus:ring-0 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400"
         @input="handleInput"
         @focus="handleInputFocus"

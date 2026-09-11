@@ -118,6 +118,7 @@ async function submitRequest() {
             <input
               v-model="formStartDate"
               type="date"
+              :aria-label="t('app.leaveStartDate') || 'С'"
               class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
             >
           </UFormGroup>
@@ -125,6 +126,7 @@ async function submitRequest() {
             <input
               v-model="formEndDate"
               type="date"
+              :aria-label="t('app.leaveEndDate') || 'По'"
               class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
             >
           </UFormGroup>

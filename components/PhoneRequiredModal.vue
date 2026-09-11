@@ -93,6 +93,7 @@ async function submitPhone() {
           type="tel"
           autocomplete="tel"
           :placeholder="t('admin.phonePlaceholder') || '+7 700 000 00 00'"
+          :aria-label="t('admin.phoneGateTitle') || 'Подтвердите номер телефона'"
           class="w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:ring-2 dark:bg-gray-950 dark:text-white"
           :class="phoneLooksInvalid
             ? 'border-red-300 focus:border-red-400 focus:ring-red-500/30 dark:border-red-800'

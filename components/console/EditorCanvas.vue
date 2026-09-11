@@ -462,6 +462,7 @@
                           :value="String(item.a || '')"
                           rows="3"
                           placeholder="Ответ"
+                          aria-label="Ответ"
                           class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
                           @input="updateFaqField(block, faqIndex, 'a', ($event.target as HTMLTextAreaElement).value)"
                         />
@@ -489,6 +490,7 @@
                     <textarea
                       :value="block.content"
                       placeholder="&lt;div&gt;...&lt;/div&gt;"
+                      aria-label="HTML"
                       class="w-full px-4 py-3 font-mono text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 outline-none resize-none
                              focus:ring-2 focus:ring-blue-500"
                       rows="6"

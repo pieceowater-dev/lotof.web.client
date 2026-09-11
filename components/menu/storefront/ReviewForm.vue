@@ -178,6 +178,7 @@ watch(
         v-model="body"
         rows="3"
         :placeholder="t('menu.reviewPlaceholder') || 'Расскажите, как вам заведение'"
+        :aria-label="t('menu.reviewPlaceholder') || 'Расскажите, как вам заведение'"
         class="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none"
       />
       <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>

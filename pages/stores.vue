@@ -246,6 +246,7 @@ useSeoMeta({
             v-model="searchQuery"
             type="search"
             :placeholder="t('home.searchBusinesses') || 'Поиск заведений'"
+            :aria-label="t('home.searchBusinesses') || 'Поиск заведений'"
             class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
             @input="onSearchInput"
           >

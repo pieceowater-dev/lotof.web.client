@@ -535,6 +535,7 @@ onMounted(async () => {
               <input
                 v-model="patternForm.rotationAnchorDate"
                 type="date"
+                :aria-label="t('app.rotationAnchorDate') || 'Дата отсчёта'"
                 class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
               >
             </UFormGroup>
@@ -652,6 +653,7 @@ onMounted(async () => {
             <input
               v-model="formEffectiveFrom"
               type="date"
+              :aria-label="t('app.effectiveFrom') || 'Действует с'"
               class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
             >
           </UFormGroup>

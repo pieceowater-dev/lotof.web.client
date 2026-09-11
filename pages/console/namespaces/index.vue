@@ -53,6 +53,7 @@
             v-model="search"
             type="text"
             :placeholder="t('admin.searchNamespaces') || 'Название, слаг, имя, почта, телефон'"
+            :aria-label="t('admin.searchNamespaces') || 'Название, слаг, имя, почта, телефон'"
             class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
           >
         </div>

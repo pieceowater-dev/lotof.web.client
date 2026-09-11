@@ -102,6 +102,7 @@
                 <select
                   v-model="bundleForm.tiers[app.appCode]"
                   :disabled="!bundleForm.tiers[app.appCode] && !(tierOptionsByApp[app.appCode] || []).length"
+                  :aria-label="`${t('admin.bundlePickTier') || 'тариф'} — ${app.title}`"
                   class="w-40 flex-shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   <option value="">{{ t('admin.bundlePickTier') || '— тариф —' }}</option>

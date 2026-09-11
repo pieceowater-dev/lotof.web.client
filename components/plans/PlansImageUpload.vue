@@ -38,7 +38,7 @@ function clearImage() { emit('update:modelValue', ''); }
 
 <template>
   <div>
-    <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="onFileChange" />
+    <input ref="fileInput" type="file" accept="image/*" class="hidden" aria-hidden="true" tabindex="-1" @change="onFileChange" />
 
     <div v-if="modelValue"
          class="group relative flex-shrink-0 w-28 h-28 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
