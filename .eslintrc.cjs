@@ -50,6 +50,8 @@ module.exports = {
     useRequestURL: 'readonly',
     useRequestHeaders: 'readonly',
     useRequestFetch: 'readonly',
+    refreshCookie: 'readonly',
+    reloadNuxtApp: 'readonly',
     // Nuxt server (H3)
     defineEventHandler: 'readonly',
     defineNitroPlugin: 'readonly',
@@ -65,6 +67,7 @@ module.exports = {
     setCookie: 'readonly',
     setHeader: 'readonly',
     setResponseStatus: 'readonly',
+    setResponseHeader: 'readonly',
     // Nuxt UI / other auto-imported
     useToast: 'readonly',
     useI18n: 'readonly',
@@ -80,12 +83,22 @@ module.exports = {
     useMenuStaffRole: 'readonly',
     useGoodsToken: 'readonly',
     useGoodsStaffRole: 'readonly',
+    usePatronAuth: 'readonly',
+    usePreferredSpace: 'readonly',
+    useTasksToken: 'readonly',
+    // App-specific auto-imported utils (utils/siteUrl.ts, utils/renderMarkdown.ts)
+    DEFAULT_SITE_URL: 'readonly',
+    fillSiteHost: 'readonly',
+    resolveSiteHost: 'readonly',
+    resolveSiteUrl: 'readonly',
+    sanitizeHtml: 'readonly',
     // Browser API types (used as TypeScript type annotations, not runtime values)
     PositionOptions: 'readonly',
     PermissionState: 'readonly',
     PermissionName: 'readonly',
     ScrollBehavior: 'readonly',
     BlobPart: 'readonly',
+    GeolocationPosition: 'readonly',
   },
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],
