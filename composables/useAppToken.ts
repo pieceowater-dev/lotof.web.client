@@ -1,4 +1,4 @@
-import { logError } from '@/utils/logger'
+import { logError, logWarn } from '@/utils/logger'
 
 // Shared factory behind useAtraceToken/useMenuToken/useTasksToken/
 // useContactsToken -- the four were ~150 identical lines apiece, differing
@@ -101,7 +101,7 @@ export function createAppTokenComposable(config: AppTokenConfig) {
       const shouldForceByNs = storageAvailable && !storedNs && !!cookie.value && !!hubToken && !!nsSlug
 
       if (cookie.value && (hasNsMismatch || shouldForceByNs)) {
-        try { cookie.value = null as any } catch {}
+        try { cookie.value = null as any } catch (e) { logWarn(`[${label}] failed to clear token cookie (ns mismatch/force)`, e) }
         try { localStorage.removeItem(tsKey) } catch {}
         clearStoredNamespace()
         await clearInMemoryToken()
@@ -129,7 +129,7 @@ export function createAppTokenComposable(config: AppTokenConfig) {
         }
         try {
           cookie.value = null as any
-        } catch {}
+        } catch (e) { logWarn(`[${label}] failed to clear stale token cookie`, e) }
       }
 
       if (!hubToken) return null
@@ -207,7 +207,7 @@ export function createAppTokenComposable(config: AppTokenConfig) {
     }
 
     function clear() {
-      try { useCookie(cookieKey, { path: '/' }).value = null as any } catch {}
+      try { useCookie(cookieKey, { path: '/' }).value = null as any } catch (e) { logWarn(`[${label}] failed to clear token cookie`, e) }
       if (typeof window !== 'undefined') {
         try { localStorage.removeItem(tsKey) } catch {}
         try { localStorage.removeItem(nsKey) } catch {}

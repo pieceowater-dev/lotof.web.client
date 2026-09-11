@@ -2,6 +2,7 @@
 import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
 import { isSafeRelativePath } from '@/utils/safeRelativePath';
+import { logWarn } from '@/utils/logger';
 
 definePageMeta({
   layout: false
@@ -93,8 +94,8 @@ function tryCloseTabOrGoHome() {
 }
 
 function goHomeAndBurn() {
-  try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any; } catch {}
-  try { useCookie(CookieKeys.TOKEN, { path: '/' }).value = null as any; } catch {}
+  try { useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' }).value = null as any; } catch (e) { logWarn('[atrace/recorded] failed to clear atrace token cookie', e); }
+  try { useCookie(CookieKeys.TOKEN, { path: '/' }).value = null as any; } catch (e) { logWarn('[atrace/recorded] failed to clear hub token cookie', e); }
   router.push('/');
 }
 

@@ -3,6 +3,7 @@ import { plansGetAppToken } from '@/api/plans/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { usePlansToken } from '@/composables/usePlansToken';
+import { logWarn } from '@/utils/logger';
 
 /**
  * Wraps a plansClient request and, on a "PlansAuthorization token is
@@ -23,9 +24,9 @@ export async function plansRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: s
         || (m.includes('PlansAuthorization') && (m.includes('missing') || m.includes('unauthorized')));
     });
     if (isUnauthorized) {
-      try { useCookie(CookieKeys.PLANS_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.PLANS_TOKEN).value = null as any; } catch (e) { logWarn('[plans] failed to clear token cookie', e); }
       setPlansAppToken(null);
-      try { usePlansToken().clear(); } catch {}
+      try { usePlansToken().clear(); } catch (e) { logWarn('[plans] failed to clear token state', e); }
       const { token } = useAuth();
       const hubToken = token.value;
       if (!hubToken) throw error;

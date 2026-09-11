@@ -3,6 +3,7 @@ import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
+import { logWarn } from '@/utils/logger';
 
 export type AtraceRecord = {
   id: string;
@@ -93,7 +94,7 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
       typeof e.message === 'string' && e.message.includes('AtraceAuthorization token is invalid')
     );
     if (isUnauthorized) {
-      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch (e) { logWarn('[atrace] failed to clear token cookie', e); }
       setAtraceAppToken(null);
       const { token } = useAuth();
       const hubToken = token.value;

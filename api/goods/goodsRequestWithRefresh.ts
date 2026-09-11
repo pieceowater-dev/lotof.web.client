@@ -3,6 +3,7 @@ import { goodsGetAppToken } from '@/api/goods/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { useGoodsToken } from '@/composables/useGoodsToken';
+import { logWarn } from '@/utils/logger';
 
 /**
  * Universal wrapper for goodsClient requests with auto-refresh on GoodsAuthorization error.
@@ -18,9 +19,9 @@ export async function goodsRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: s
     );
     if (isUnauthorized) {
       // Clear old token
-      try { useCookie(CookieKeys.GOODS_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.GOODS_TOKEN).value = null as any; } catch (e) { logWarn('[goods] failed to clear token cookie', e); }
       setGoodsAppToken(null);
-      try { useGoodsToken().clear(); } catch {}
+      try { useGoodsToken().clear(); } catch (e) { logWarn('[goods] failed to clear token state', e); }
       // Try to get new token using hub token
       const { token } = useAuth();
       const hubToken = token.value;

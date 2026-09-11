@@ -3,6 +3,7 @@ import { atraceGetAppToken } from '@/api/atrace/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { useAtraceToken } from '@/composables/useAtraceToken';
+import { logWarn } from '@/utils/logger';
 
 /**
  * Resolves the namespace slug for an Atrace API call. Prefers an explicit
@@ -41,9 +42,9 @@ export async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: 
     );
     if (isUnauthorized) {
       // Clear old token
-      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch (e) { logWarn('[atrace] failed to clear token cookie', e); }
       setAtraceAppToken(null);
-      try { useAtraceToken().clear(); } catch {}
+      try { useAtraceToken().clear(); } catch (e) { logWarn('[atrace] failed to clear token state', e); }
       // Try to get new token using hub token
       const { token } = useAuth();
       const hubToken = token.value;

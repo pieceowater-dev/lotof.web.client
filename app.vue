@@ -54,7 +54,7 @@ import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { setAtraceUnauthorizedHandler } from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
-import { log } from '@/utils/logger';
+import { log, logWarn } from '@/utils/logger';
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
@@ -290,7 +290,7 @@ onMounted(() => {
     try {
       const cookie = useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' });
       cookie.value = null;
-    } catch {}
+    } catch (e) { logWarn('[app.vue] failed to clear atrace token cookie', e); }
   });
 });
 

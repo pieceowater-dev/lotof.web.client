@@ -178,8 +178,8 @@ export function useAuth() {
         }
 
         // Explicitly clear known app cookies via Nuxt helper as well
-  try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
-  try { useCookie(CookieKeys.TOKEN).value = null as any; } catch {}
+  try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch (e) { logWarn('[auth] failed to clear atrace token cookie', e); }
+  try { useCookie(CookieKeys.TOKEN).value = null as any; } catch (e) { logWarn('[auth] failed to clear hub token cookie', e); }
 
         // Optional: clear anon selection to avoid bleeding across sessions
         const mapRaw = localStorage.getItem(LSKeys.SELECTED_NAMESPACE_BY_USER);

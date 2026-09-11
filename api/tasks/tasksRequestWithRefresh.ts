@@ -3,6 +3,7 @@ import { tasksGetAppToken } from '@/api/tasks/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { useTasksToken } from '@/composables/useTasksToken';
+import { logWarn } from '@/utils/logger';
 
 /**
  * Universal wrapper for tasksClient requests with auto-refresh on
@@ -18,9 +19,9 @@ export async function tasksRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: s
     );
     if (isUnauthorized) {
       // Clear old token
-      try { useCookie(CookieKeys.TASKS_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.TASKS_TOKEN).value = null as any; } catch (e) { logWarn('[tasks] failed to clear token cookie', e); }
       setTasksAppToken(null);
-      try { useTasksToken().clear(); } catch {}
+      try { useTasksToken().clear(); } catch (e) { logWarn('[tasks] failed to clear token state', e); }
       // Try to get new token using hub token
       const { token } = useAuth();
       const hubToken = token.value;

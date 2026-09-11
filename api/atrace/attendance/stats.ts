@@ -4,6 +4,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { getDeviceHeaders } from '@/utils/device';
 import { resolveAtraceNsSlug } from '@/api/atrace/atraceRequestWithRefresh';
+import { logWarn } from '@/utils/logger';
 
 type UserAttendanceStats = {
   userId: string;
@@ -113,7 +114,7 @@ async function atraceRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: string)
     );
     if (isUnauthorized) {
       // Clear old token
-      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.ATRACE_TOKEN).value = null as any; } catch (e) { logWarn('[atrace] failed to clear token cookie', e); }
       setAtraceAppToken(null);
       // Try to get new token using hub token
       const { token } = useAuth();

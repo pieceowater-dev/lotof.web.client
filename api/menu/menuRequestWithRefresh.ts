@@ -3,6 +3,7 @@ import { menuGetAppToken } from '@/api/menu/auth/getAppToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAuth } from '@/composables/useAuth';
 import { useMenuToken } from '@/composables/useMenuToken';
+import { logWarn } from '@/utils/logger';
 
 /**
  * Universal wrapper for menuClient requests with auto-refresh on MenuAuthorization error.
@@ -18,9 +19,9 @@ export async function menuRequestWithRefresh<T>(fn: () => Promise<T>, nsSlug: st
     );
     if (isUnauthorized) {
       // Clear old token
-      try { useCookie(CookieKeys.MENU_TOKEN).value = null as any; } catch {}
+      try { useCookie(CookieKeys.MENU_TOKEN).value = null as any; } catch (e) { logWarn('[menu] failed to clear token cookie', e); }
       setMenuAppToken(null);
-      try { useMenuToken().clear(); } catch {}
+      try { useMenuToken().clear(); } catch (e) { logWarn('[menu] failed to clear token state', e); }
       // Try to get new token using hub token
       const { token } = useAuth();
       const hubToken = token.value;
