@@ -3,7 +3,8 @@ module.exports = {
   env: { browser: true, es2023: true, node: true },
   extends: [
     'eslint:recommended',
-    'plugin:vue/vue3-recommended'
+    'plugin:vue/vue3-recommended',
+    'plugin:@typescript-eslint/recommended'
   ],
   parser: 'vue-eslint-parser',
   parserOptions: {
@@ -110,6 +111,12 @@ module.exports = {
     // Disable base rule in favour of TypeScript-aware version
     'no-unused-vars': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+    // `cond ? doA() : doB()` as a bare statement is a real, intentional
+    // pattern in this codebase (e.g. pages/[namespace]/plans/index.vue's
+    // showPicker()-or-click() fallback) -- allow it and short-circuit
+    // (`a && b()`) rather than have @typescript-eslint/recommended flag
+    // working code as a mistake.
+    '@typescript-eslint/no-unused-expressions': ['error', { allowTernary: true, allowShortCircuit: true }],
     // Allow empty catch/block statements (common pattern for intentional no-ops)
     'no-empty': ['warn', { allowEmptyCatch: true }],
     'vue/multi-word-component-names': 'off',

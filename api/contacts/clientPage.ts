@@ -230,12 +230,12 @@ export async function getClientPageData(
     },
   );
 
-  let resolvedClient = data.client || data.clientByShortId || null;
+  const resolvedClient = data.client || data.clientByShortId || null;
   let identities = data.clientIdentities?.rows || [];
-  let tags = data.clientTags?.tags || resolvedClient?.tags || [];
+  const tags = data.clientTags?.tags || resolvedClient?.tags || [];
   let events = data.clientEvents?.rows || [];
-  let bonusBalance = data.bonusBalance || null;
-  let stampCards = data.stampCards?.rows || [];
+  const bonusBalance = data.bonusBalance || null;
+  const stampCards = data.stampCards?.rows || [];
 
   const resolvedClientId = resolvedClient?.client.id || '';
 
