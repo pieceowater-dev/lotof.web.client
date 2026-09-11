@@ -1,0 +1,61 @@
+query PeopleBootstrap(
+  $namespacesFilter: DefaultFilterInput
+  $friendsStatus: FriendshipStatus
+  $membersFilter: MembersFilter
+  $friendSearchSearch: String
+  $friendSearchPage: Int
+  $friendSearchLength: FilterPaginationLengthEnum
+) {
+  namespaces(filter: $namespacesFilter) {
+    rows {
+      id
+      title
+      slug
+      description
+      owner
+    }
+    info {
+      count
+    }
+  }
+  myFriends(filter: { status: $friendsStatus }) {
+    rows {
+      id
+      status
+      initiatedByMe
+      friend {
+        id
+        username
+        email
+      }
+    }
+    info {
+      count
+    }
+  }
+  members(filter: $membersFilter) {
+    id
+    userId
+    username
+    email
+  }
+  friendsForDropdown: myFriends(
+    filter: {
+      status: ACCEPTED
+      data: { search: $friendSearchSearch, pagination: { page: $friendSearchPage, length: $friendSearchLength } }
+    }
+  ) {
+    rows {
+      id
+      status
+      friend {
+        id
+        username
+        email
+      }
+    }
+    info {
+      count
+    }
+  }
+}

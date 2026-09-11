@@ -1,36 +1,12 @@
 import { hubClient, setGlobalAuthToken } from '@/api/clients';
-import type { FilterPaginationLengthEnum } from '@/api/__generated__/hub-types';
+import { BootstrapDocument, type BootstrapQuery, type FilterPaginationLengthEnum } from '@gql-hub';
 
-const BOOTSTRAP_QUERY = /* GraphQL */ `
-  query Bootstrap($filter: DefaultFilterInput) {
-    me {
-      id
-      username
-      email
-      phone
-    }
-    namespaces(filter: $filter) {
-      rows {
-        id
-        title
-        slug
-        description
-        owner
-      }
-      info {
-        count
-      }
-    }
-  }
-`;
-
-export type BootstrapResponse = {
-  me: { id: string; username: string; email: string; phone?: string | null } | null;
-  namespaces: {
-    rows: Array<{ id: string; title: string; slug: string; description?: string | null; owner: string }>;
-    info?: { count?: number | null } | null;
-  } | null;
-};
+// D2/D4: was an inline query string + a hand-maintained BootstrapResponse
+// type (see deeplinks.ts/admin.ts for the same conversion, done first --
+// full rationale there). This is the hottest path of the three converted so
+// far: hubBootstrap runs on every hub page load, not just in the admin
+// console, so the live schema check below mattered more here than usual.
+export type BootstrapResponse = BootstrapQuery;
 
 export async function hubBootstrap(
   token: string,
@@ -46,5 +22,5 @@ export async function hubBootstrap(
   };
 
   setGlobalAuthToken(token);
-  return hubClient.request<BootstrapResponse>(BOOTSTRAP_QUERY, variables);
+  return hubClient.request<BootstrapQuery>(BootstrapDocument, variables);
 }

@@ -1,0 +1,20 @@
+query Bootstrap($filter: DefaultFilterInput) {
+  me {
+    id
+    username
+    email
+    phone
+  }
+  namespaces(filter: $filter) {
+    rows {
+      id
+      title
+      slug
+      description
+      owner
+    }
+    info {
+      count
+    }
+  }
+}
