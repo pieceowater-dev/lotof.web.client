@@ -353,6 +353,7 @@ const statusLabel: Record<string, string> = {
             :src="mapSrc"
             class="w-full h-56"
             loading="lazy"
+            title="Карта расположения"
           />
           <a
             v-if="brand.address"

@@ -5,9 +5,8 @@
 <template>
   <div>
     <!-- Main content wrapper with proper ARIA -->
-    <main 
-      id="main-content" 
-      role="main"
+    <main
+      id="main-content"
       :aria-label="ariaLabel || 'Основное содержимое'"
     >
       <slot />

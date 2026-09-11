@@ -1688,7 +1688,7 @@ useHead(() => {
         </template>
         <div v-if="cart.length" class="space-y-4">
           <div v-for="line in cart" :key="`${line.menuItemId}::${modifiersKey(line.modifiers)}`" class="flex items-center gap-3">
-            <img v-if="line.imageUrl" :src="line.imageUrl" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
+            <img v-if="line.imageUrl" :src="line.imageUrl" alt="" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
             <div v-else class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
               <Icon name="lucide:package" class="w-5 h-5 text-gray-300 dark:text-gray-700" />
             </div>
