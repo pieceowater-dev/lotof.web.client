@@ -6,7 +6,6 @@
 .nuxt
 .nitro
 .cache
-.env
 dist
 build
 
