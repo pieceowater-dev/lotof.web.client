@@ -448,6 +448,7 @@ function copyUrl() {
                 <img
                   v-if="form.logoUrl"
                   :src="form.logoUrl"
+                  :alt="t('membership.logo') || 'Логотип'"
                   class="w-full h-full object-contain p-1"
                 >
                 <UIcon

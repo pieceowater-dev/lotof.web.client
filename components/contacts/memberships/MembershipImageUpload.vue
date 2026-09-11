@@ -91,6 +91,7 @@ function clearImage() {
     >
       <img
         :src="modelValue"
+        :alt="t('app.uploadedImage') || 'Изображение'"
         class="w-full h-full"
         :class="fit === 'contain' ? 'object-contain p-2' : 'object-cover'"
       >

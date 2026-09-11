@@ -42,7 +42,7 @@ function clearImage() { emit('update:modelValue', ''); }
 
     <div v-if="modelValue"
          class="group relative flex-shrink-0 w-28 h-28 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40">
-      <img :src="modelValue" class="w-full h-full object-contain" />
+      <img :src="modelValue" :alt="label || t('plans.uploadLogo') || 'Логотип'" class="w-full h-full object-contain" />
       <div class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex flex-col items-center justify-center gap-1 opacity-0 group-hover:opacity-100">
         <UButton square size="2xs" color="white" variant="solid" :loading="uploading" @click="pickFile">
           <UIcon name="lucide:upload" class="h-3.5 w-3.5" />

@@ -71,7 +71,7 @@ function clearImage() {
       class="group relative flex-shrink-0 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40"
       :class="aspect === 'square' ? 'w-28 h-28' : 'aspect-video w-full'"
     >
-      <img :src="modelValue" class="w-full h-full" :class="fit === 'contain' ? 'object-contain p-2' : 'object-cover'">
+      <img :src="modelValue" :alt="t('app.uploadedImage') || 'Изображение'" class="w-full h-full" :class="fit === 'contain' ? 'object-contain p-2' : 'object-cover'">
       <div
         class="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
         :class="aspect === 'square' ? 'flex-col gap-1' : 'flex-row gap-2'"

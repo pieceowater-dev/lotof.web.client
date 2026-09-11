@@ -179,6 +179,7 @@ const statusLabel: Record<string, string> = {
             <img
               v-if="brand.logoUrl"
               :src="brand.logoUrl"
+              :alt="brand.name || t('membership.logo') || 'Логотип'"
               class="w-20 h-20 rounded-2xl object-cover border-4 border-white dark:border-gray-950 bg-white shrink-0"
             >
             <div class="pb-1 min-w-0">
