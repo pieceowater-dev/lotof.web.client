@@ -486,18 +486,18 @@
     "analyticsViewAnalytics": "Analytics",
     "analyticsLast30": "30 days",
     "analyticsLoadFailed": "Could not load analytics",
-    "analyticsNoTrend": "no data to compare",
+    "analyticsNoTrend": "nothing to compare with",
     "analyticsPP": "pp",
     "analyticsHoursShort": "h",
-    "analyticsMinShort": "m",
-    "analyticsDaysShort": "d",
-    "analyticsDayShort": "d",
+    "analyticsMinShort": "min",
+    "analyticsDaysShort": "days",
+    "analyticsDayShort": "per day",
     "analyticsOutOf": "of",
     "analyticsKpiAttendance": "Attendance",
-    "analyticsKpiAvgHours": "Avg hours worked",
+    "analyticsKpiAvgHours": "Hours per shift",
     "analyticsKpiLate": "Late arrivals",
     "analyticsKpiEarly": "Early leaves",
-    "analyticsKpiGeo": "Geo-confirmed",
+    "analyticsKpiGeo": "Location-confirmed check-ins",
     "analyticsKpiOpenShift": "Open shifts",
     "analyticsOpenShiftHint": "checked in but never closed the shift",
     "analyticsNeedsAttention": "Needs attention",
@@ -522,6 +522,48 @@
     "analyticsEarlyThresholdHint2": "the early-leave threshold probably doesn't match the real end of the shift — check attendance settings",
     "analyticsGeoHint": "Geo-confirmation is barely being captured",
     "analyticsGeoHint2": "most employees haven't granted the browser location access",
+    "analyticsUnitHour": "h",
+    "analyticsUnitMin": "min",
+    "analyticsUnitDays": "days",
+    "analyticsPerDay": "per day",
+    "analyticsVsPrevPeriod": "vs. previous period",
+    "analyticsTypicalArrival": "typical arrival",
+    "analyticsHelpAria": "How it's computed and what it means",
+    "analyticsHelpFormula": "How it's computed",
+    "analyticsHelpMeaning": "What it means",
+    "analyticsHelpImprove": "How to improve it",
+    "analyticsHelp": {
+      "attendance": {
+        "formula": "Days worked ÷ scheduled days, across all active employees for the period.",
+        "meaning": "How reliably people show up overall. 100% means everyone worked every scheduled day.",
+        "improve": "Follow up with the people who miss a lot of days (the \"Needs attention\" list below). Check the schedules are right and that everyone knows checking in is required."
+      },
+      "avgHours": {
+        "formula": "Total hours worked ÷ number of days worked (from check-in data).",
+        "meaning": "How long an average working day runs. Compare it to the expected shift length.",
+        "improve": "If it's low, people leave early or don't close their shift on time. If it's high, that's overtime or shifts closed late."
+      },
+      "late": {
+        "formula": "Days with a late arrival ÷ days worked, across all employees.",
+        "meaning": "How often people arrive after the shift start. What counts as late is set in attendance settings.",
+        "improve": "Talk to the people listed below. Make sure the shift start time in the schedule matches reality."
+      },
+      "early": {
+        "formula": "Days with an early leave ÷ days worked.",
+        "meaning": "How often people leave before the shift ends.",
+        "improve": "If it fires for almost everyone, the threshold probably doesn't match the real shift end — fix it in settings. Otherwise handle it case by case."
+      },
+      "geo": {
+        "formula": "Days where the check-in was confirmed by location ÷ days worked.",
+        "meaning": "Share of check-ins made on site (the browser confirmed coordinates). Low means either you don't require location or people don't grant access.",
+        "improve": "Turn on required location on check-in and ask employees to allow browser location access."
+      },
+      "openShift": {
+        "formula": "Days where someone checked in but never checked out and the shift didn't auto-close ÷ days worked.",
+        "meaning": "How often people forget to check out. Those days are counted wrong and distort the hours.",
+        "improve": "Remind people to check out. Set up shift auto-close so forgotten shifts don't break the stats."
+      }
+    },
     "customRangeTitle": "Custom Date Range",
     "applyRange": "Apply Range",
     "invalidDateRange": "Invalid date range",
