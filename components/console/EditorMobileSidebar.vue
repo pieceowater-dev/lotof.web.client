@@ -3,6 +3,7 @@
     <div
       class="fixed inset-0 z-40 bg-black/40 dark:bg-black/60 transition-opacity"
       @click="$emit('close')"
+      @keydown.esc="$emit('close')"
     />
     <aside
       class="fixed top-0 right-0 bottom-0 z-50 w-72 border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col shadow-xl transition-transform"
@@ -63,6 +64,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
 interface Block {
   type: string
@@ -75,7 +77,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-defineEmits<{
+const emit = defineEmits<{
   'update:article': [Partial<any>]
   'upload-featured-image': [File]
   'add-block': []
@@ -84,6 +86,11 @@ defineEmits<{
 
 const { t } = useI18n()
 const sidebarTab = ref<'settings' | 'seo'>('settings')
+
+// Entirely v-if-gated by the parent (Editor.vue's isMobileSidebarOpen) --
+// this component only exists while open, so "is it open" is just "is it
+// mounted": true for as long as this instance is alive.
+useEscapeToClose(computed(() => true), () => emit('close'))
 
 const seoScore = computed(() => {
   let score = 0

@@ -1,14 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { useEscapeToClose } from '@/composables/useEscapeToClose'
 
-defineProps<{
+const props = defineProps<{
   open: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   'update:open': [boolean]
   'add': [string]
 }>()
+
+useEscapeToClose(computed(() => props.open), () => emit('update:open', false))
 
 const { t } = useI18n()
 
@@ -69,6 +73,7 @@ const blockGroups = [
       v-if="open"
       class="fixed inset-0 z-50 overflow-y-auto p-4 bg-slate-900/30 dark:bg-black/50 backdrop-blur-md"
       @click.self="$emit('update:open', false)"
+      @keydown.esc="$emit('update:open', false)"
     >
       <div class="mx-auto my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
         <!-- Header -->
