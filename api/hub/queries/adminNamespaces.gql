@@ -1,0 +1,43 @@
+query AdminNamespaces($page: Int!, $length: FilterPaginationLengthEnum!, $search: String) {
+  adminNamespaces(filter: { search: $search, pagination: { page: $page, length: $length } }) {
+    rows {
+      id
+      title
+      slug
+      createdAt
+      leadSource
+      ownerInfo {
+        username
+        email
+        phone
+      }
+      memberInfos {
+        id
+        username
+        email
+        phone
+      }
+      apps {
+        id
+        namespaceID
+        appBundle
+      }
+      ownerOtherNamespaceCount
+      ownerEmployerNamespaces {
+        id
+        title
+        slug
+      }
+      referredByNamespace {
+        id
+        title
+        slug
+      }
+      businessType
+      lastActiveAt
+    }
+    info {
+      count
+    }
+  }
+}

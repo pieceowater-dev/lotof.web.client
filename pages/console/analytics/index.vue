@@ -779,10 +779,10 @@ const activityBuckets = computed(() => {
   ];
 });
 
-function relativeActivity(iso: string | null): string {
+function relativeActivity(iso: string | null | undefined): string {
   return iso ? relativeLastActive(iso, loadedAt.value) : (t('admin.activityNever') || 'нет данных');
 }
-function activityDotClass(iso: string | null): string {
+function activityDotClass(iso: string | null | undefined): string {
   return lastActiveDotClass(iso, loadedAt.value);
 }
 
@@ -1170,7 +1170,7 @@ const recentNamespaces = computed(() => {
     .slice(0, 10);
 });
 
-function formatDate(raw: string | null): string {
+function formatDate(raw: string | null | undefined): string {
   if (!raw) return '—';
   const parsed = new Date(raw);
   if (Number.isNaN(parsed.getTime())) return raw;

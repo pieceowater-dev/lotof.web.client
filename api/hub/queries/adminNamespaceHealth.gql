@@ -1,0 +1,12 @@
+query AdminNamespaceHealth($namespaceId: ID!) {
+  adminNamespaceHealth(namespaceId: $namespaceId) {
+    apps {
+      appBundle
+      reachable
+      schemaReady
+      appliedVersion
+      targetVersion
+      error
+    }
+  }
+}

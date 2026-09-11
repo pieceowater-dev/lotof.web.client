@@ -442,7 +442,7 @@ function healthSummaryLabel(id: string): string {
   return t('admin.healthOk') || 'OK';
 }
 
-function formatDate(value: string | null): string {
+function formatDate(value: string | null | undefined): string {
   if (!value) return '—';
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return '—';

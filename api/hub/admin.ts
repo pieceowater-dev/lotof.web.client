@@ -1,80 +1,24 @@
 import { hubClient, setGlobalAuthToken } from '@/api/clients'
+import {
+  AdminNamespacesDocument,
+  AdminNamespaceHealthDocument,
+  type AdminNamespacesQuery,
+  type AdminNamespaceHealthQuery,
+  type FilterPaginationLengthEnum,
+} from '@gql-hub'
 
-export type AdminNamespaceRow = {
-  id: string
-  title: string
-  slug: string
-  createdAt: string | null
-  leadSource: string | null
-  ownerInfo: { username: string; email: string; phone?: string | null } | null
-  memberInfos: Array<{ id: string; username: string; email: string; phone?: string | null }> | null
-  apps: Array<{ id: string; namespaceID: string; appBundle: string }> | null
-  // How many OTHER namespaces this namespace's owner is also a member of.
-  // 0 (or null before the field existed) = "Компания": they only ever run
-  // this one namespace. >0 = "Сотрудник": an auto-created personal
-  // namespace whose owner immediately joined someone else's instead, so
-  // this one sits unused.
-  ownerOtherNamespaceCount: number | null
-  // The other namespace(s) the owner actually belongs to, when
-  // ownerOtherNamespaceCount > 0 -- i.e. which company they work for.
-  ownerEmployerNamespaces: Array<{ id: string; title: string; slug: string }> | null
-  // The namespace whose referral link (see /people) this signup came
-  // through, null if it wasn't referred.
-  referredByNamespace: { id: string; title: string; slug: string } | null
-  // Self-reported business vertical (e.g. "restaurant_cafe"), null/empty if
-  // the owner never picked one in Quick Setup.
-  businessType: string | null
-  // Most recent time the owner or any member last had an active hub session
-  // (RFC3339), null if nobody has one on record. A coarse "is this
-  // namespace still in use" proxy -- see hub.gtw's attachActivity.
-  lastActiveAt: string | null
-}
+// D2/D4: was hand-typed inline query strings + manually maintained response
+// types, kept in sync with the schema by hand (see deeplinks.ts for the same
+// conversion, done first, with the full rationale). Query shapes below are
+// byte-identical to what was here before -- codegen's document validation
+// against the live schema confirmed it, this didn't just change formatting.
 
-const ADMIN_NAMESPACES_QUERY = /* GraphQL */ `
-  query AdminNamespaces($page: Int!, $length: FilterPaginationLengthEnum!, $search: String) {
-    adminNamespaces(filter: { search: $search, pagination: { page: $page, length: $length } }) {
-      rows {
-        id
-        title
-        slug
-        createdAt
-        leadSource
-        ownerInfo {
-          username
-          email
-          phone
-        }
-        memberInfos {
-          id
-          username
-          email
-          phone
-        }
-        apps {
-          id
-          namespaceID
-          appBundle
-        }
-        ownerOtherNamespaceCount
-        ownerEmployerNamespaces {
-          id
-          title
-          slug
-        }
-        referredByNamespace {
-          id
-          title
-          slug
-        }
-        businessType
-        lastActiveAt
-      }
-      info {
-        count
-      }
-    }
-  }
-`
+// Comments on individual fields (ownerOtherNamespaceCount, businessType,
+// lastActiveAt, ...) preserved from the original hand-written type -- they
+// document real product behavior, not the codegen mechanics, and are still
+// true of the generated shape below.
+export type AdminNamespaceRow = NonNullable<AdminNamespacesQuery['adminNamespaces']>['rows'][number]
+export type AppHealthStatus = NonNullable<AdminNamespaceHealthQuery['adminNamespaceHealth']>['apps'][number]
 
 export async function hubGetAdminNamespacesPage(
   token: string,
@@ -83,36 +27,13 @@ export async function hubGetAdminNamespacesPage(
   search?: string
 ): Promise<{ rows: AdminNamespaceRow[]; total: number }> {
   setGlobalAuthToken(token || null)
-  const res = await hubClient.request<{ adminNamespaces: { rows: AdminNamespaceRow[]; info: { count: number } } }>(
-    ADMIN_NAMESPACES_QUERY,
-    { page, length, search: search || undefined }
-  )
+  const res = await hubClient.request<AdminNamespacesQuery>(AdminNamespacesDocument, {
+    page,
+    length: length as FilterPaginationLengthEnum,
+    search: search || undefined,
+  })
   return { rows: res.adminNamespaces?.rows || [], total: res.adminNamespaces?.info?.count || 0 }
 }
-
-export type AppHealthStatus = {
-  appBundle: string
-  reachable: boolean
-  schemaReady: boolean
-  appliedVersion: string | null
-  targetVersion: string | null
-  error: string | null
-}
-
-const ADMIN_NAMESPACE_HEALTH_QUERY = /* GraphQL */ `
-  query AdminNamespaceHealth($namespaceId: ID!) {
-    adminNamespaceHealth(namespaceId: $namespaceId) {
-      apps {
-        appBundle
-        reachable
-        schemaReady
-        appliedVersion
-        targetVersion
-        error
-      }
-    }
-  }
-`
 
 // hubGetAdminNamespaceHealth is deliberately separate from the bulk
 // adminNamespaces list load above -- it's an on-demand troubleshooting
@@ -120,10 +41,7 @@ const ADMIN_NAMESPACE_HEALTH_QUERY = /* GraphQL */ `
 // run for every row on page load.
 export async function hubGetAdminNamespaceHealth(token: string, namespaceId: string): Promise<AppHealthStatus[]> {
   setGlobalAuthToken(token || null)
-  const res = await hubClient.request<{ adminNamespaceHealth: { apps: AppHealthStatus[] } }>(
-    ADMIN_NAMESPACE_HEALTH_QUERY,
-    { namespaceId }
-  )
+  const res = await hubClient.request<AdminNamespaceHealthQuery>(AdminNamespaceHealthDocument, { namespaceId })
   return res.adminNamespaceHealth?.apps || []
 }
 
@@ -137,10 +55,10 @@ export async function hubGetAdminNamespaces(token: string): Promise<{ rows: Admi
   // loop until we've collected every row (platform is small enough today
   // that this is normally a single request).
   for (let iteration = 0; iteration < 25; iteration += 1) {
-    const res = await hubClient.request<{ adminNamespaces: { rows: AdminNamespaceRow[]; info: { count: number } } }>(
-      ADMIN_NAMESPACES_QUERY,
-      { page, length: 'ONE_HUNDRED' }
-    )
+    const res = await hubClient.request<AdminNamespacesQuery>(AdminNamespacesDocument, {
+      page,
+      length: 'ONE_HUNDRED' as FilterPaginationLengthEnum,
+    })
     const batch = res.adminNamespaces?.rows || []
     rows.push(...batch)
     total = res.adminNamespaces?.info?.count || rows.length
