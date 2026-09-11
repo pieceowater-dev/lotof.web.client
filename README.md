@@ -30,7 +30,7 @@ npm run dev        # http://localhost:3000
 Backend services are expected behind this app's own `/api-*` proxy paths in
 both dev and prod (see `nuxt.config.ts` → `routeRules`), so a plain `npm run
 dev` talks to whatever `VITE_API_*` env vars resolve to, or `127.0.0.1:<port>`
-per service by default. Copy `example.env` to `.env.local` and override only
+per service by default. Copy `.env.example` to `.env.local` and override only
 the services you're actually running locally — see the comments in that file
 for each service's default port.
 
