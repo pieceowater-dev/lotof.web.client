@@ -43,6 +43,7 @@
 import { ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
+import Modal from '@/components/ui/Modal.vue';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
 import { hubGetNamespaceBusinessType, hubSetNamespaceBusinessType } from '@/api/hub/namespaces/businessType';
 

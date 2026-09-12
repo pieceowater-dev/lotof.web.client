@@ -48,6 +48,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import Modal from '@/components/ui/Modal.vue';
 import { useContactUsModal } from '@/composables/useContactUsModal';
 import { useContactSettings } from '@/composables/useContactSettings';
 

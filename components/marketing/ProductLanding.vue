@@ -5,6 +5,7 @@
 // fifth product later) gets consistency for free instead of four bespoke
 // one-off designs.
 import { useI18n } from '@/composables/useI18n';
+import LegalLinks from '@/components/ui/LegalLinks.vue';
 
 const { t } = useI18n();
 

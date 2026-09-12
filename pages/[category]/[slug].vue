@@ -2,11 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
-import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
 import { capitalGetPublicPublicationByRoute, publicationBlocksToHtml } from '@/api/publications';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
 import { LSKeys } from '@/utils/storageKeys';
 import { formatPublishedDate, estimateReadTimeMinutes } from '@/utils/markdown';
+import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { toGqlCategory, fromGqlCategory, CATEGORY_TO_GQL } from '@/utils/publicationCategory';
 
 definePageMeta({

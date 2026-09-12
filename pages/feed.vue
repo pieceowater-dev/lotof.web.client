@@ -3,7 +3,8 @@ definePageMeta({ layout: 'full' });
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
+import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 
 const { t, locale } = useI18n();
 

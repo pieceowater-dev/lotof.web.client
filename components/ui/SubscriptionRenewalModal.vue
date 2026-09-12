@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import Modal from '@/components/ui/Modal.vue';
 import type { SubscriptionStatus } from '@/api/atrace/subscription/plan';
 import { useI18n } from '@/composables/useI18n';
 

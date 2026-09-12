@@ -3,12 +3,14 @@ definePageMeta({ layout: 'quiet' });
 
 import { useI18n } from '@/composables/useI18n';
 import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
+import ContactSupportBanner from '@/components/ui/ContactSupportBanner.vue';
 import { usePlansToken } from '@/composables/usePlansToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useContactUsModal } from '@/composables/useContactUsModal';
 import { useDowngradeBlockedModal, parseDowngradeRegressions } from '@/composables/useDowngradeBlockedModal';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlansPlans, subscribeToPlansPlan, getActivePlansSubscription, type Plan, type Subscription } from '@/api/plans/billing';
+import LegalLinks from '@/components/ui/LegalLinks.vue';
 
 interface PlanFeature { key: string; value: number | string; label: string; }
 

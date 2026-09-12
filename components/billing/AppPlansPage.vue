@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
+import ContactSupportBanner from '@/components/ui/ContactSupportBanner.vue';
 import { useAppPlansPage, type AppPlansPageConfig } from '@/composables/useAppPlansPage';
+import LegalLinks from '@/components/ui/LegalLinks.vue';
 
 const props = defineProps<{ config: AppPlansPageConfig }>();
 

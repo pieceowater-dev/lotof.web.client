@@ -9,13 +9,14 @@ import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { hubUpdateProfile } from '@/api/hub/updateMyPhone';
 import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 import { usePhoneGate } from '@/composables/usePhoneGate';
-import Modal from '@/components/Modal.vue';
+import Modal from '@/components/ui/Modal.vue';
 import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
-import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
+import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
 // /hub is the authenticated workspace -- the dashboard that used to live on

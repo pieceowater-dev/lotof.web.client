@@ -227,6 +227,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useConfirm } from '@/composables/useConfirm';
 import { slugFromNames } from '@/utils/slug';
 import GuideIconPicker from '@/components/guide/GuideIconPicker.vue';
+import Modal from '@/components/ui/Modal.vue';
 import type { GuideApp, GuideArticleListItem, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import {
   consoleListGuideArticles,

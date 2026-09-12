@@ -42,6 +42,7 @@
 
 <script setup lang="ts">
 import { useI18n } from '@/composables/useI18n';
+import Modal from '@/components/ui/Modal.vue';
 import { useDowngradeBlockedModal, featureLabelKey } from '@/composables/useDowngradeBlockedModal';
 
 const { t } = useI18n();

@@ -17,6 +17,8 @@ import {
   type CapitalPlan,
 } from '@/api/capital/bundles';
 import BundleComparisonTable from '@/components/billing/BundleComparisonTable.vue';
+import ContactSupportBanner from '@/components/ui/ContactSupportBanner.vue';
+import LegalLinks from '@/components/ui/LegalLinks.vue';
 
 // /{namespace}/bundles -- ready-made bundles (each covers several apps), scoped
 // to the namespace in the URL. Laid out like the per-app /plans screens: a

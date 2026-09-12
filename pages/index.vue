@@ -10,7 +10,10 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
-import type { HomeFeedPost } from '@/components/HomePostsFeed.vue';
+import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
+import AppCard from '@/components/ui/AppCard.vue';
+import LegalLinks from '@/components/ui/LegalLinks.vue';
+import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
 
 // Composables

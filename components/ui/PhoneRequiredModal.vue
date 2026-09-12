@@ -4,6 +4,7 @@ import { useI18n } from '@/composables/useI18n';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { hubUpdateMyPhone } from '@/api/hub/updateMyPhone';
 import { CookieKeys } from '@/utils/storageKeys';
+import Modal from '@/components/ui/Modal.vue';
 import { useAuth } from '@/composables/useAuth';
 import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
 
