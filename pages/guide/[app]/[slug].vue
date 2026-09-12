@@ -32,7 +32,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'full' });
 
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { guideAppFromParam } from '@/composables/useGuideContext';
@@ -65,8 +65,26 @@ const resolvedAppLabel = computed(() => {
   }
 });
 
-const loading = ref(true);
-const article = ref<GuideArticle | null>(null);
+// B1: useAsyncData (not onMounted) so the server actually renders the
+// article instead of an empty shell -- and unlike a plain top-level
+// `await`, its result rides the Nuxt payload, so hydration reuses the
+// SSR fetch instead of silently re-requesting it client-side. Static key
+// is correct (not derived from slug): this page component is reused
+// across article-to-article navigation (no custom NuxtPage key forces a
+// remount), so `watch` below is what triggers the refetch on param
+// change, same as the `watch([appParam, slug], load)` it replaces.
+const { data: article, pending: loading } = await useAsyncData<GuideArticle | null>(
+  'guide-article',
+  async () => {
+    if (!app.value || !slug.value) return null;
+    try {
+      return await guideGetArticleBySlug(app.value, slug.value);
+    } catch {
+      return null;
+    }
+  },
+  { watch: [appParam, slug] },
+);
 
 function localeSuffix(): 'Ru' | 'Kk' | 'En' {
   if (locale.value === 'kk') return 'Kk';
@@ -116,27 +134,4 @@ useHead(() => ({
   // content -- indexing that page would be a soft-404.
   meta: (!loading.value && !article.value) ? [{ name: 'robots', content: 'noindex, follow' }] : [],
 }));
-
-async function load() {
-  if (!app.value || !slug.value) {
-    loading.value = false;
-    article.value = null;
-    return;
-  }
-  loading.value = true;
-  try {
-    article.value = await guideGetArticleBySlug(app.value, slug.value);
-  } catch {
-    article.value = null;
-  } finally {
-    loading.value = false;
-  }
-}
-
-// Awaited at the top level (not via watch immediate) so Nuxt's automatic
-// page-level <Suspense> waits for it during SSR -- otherwise the server
-// sends down the loading skeleton and real content only appears after
-// client hydration fetches it.
-watch([appParam, slug], load);
-await load();
 </script>
