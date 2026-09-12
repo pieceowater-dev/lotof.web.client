@@ -56,7 +56,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'full' });
 
-import { computed, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { guideAppFromParam } from '@/composables/useGuideContext';
@@ -120,9 +120,33 @@ useHead(() => ({
   meta: !app.value ? [{ name: 'robots', content: 'noindex, follow' }] : [],
 }));
 
-const loading = ref(true);
-const categories = ref<GuideCategory[]>([]);
-const articles = ref<GuideArticleListItem[]>([]);
+// B1: useAsyncData (not onMounted) so the server actually renders the
+// article list instead of an empty shell, and the SSR result rides the
+// Nuxt payload instead of hydration silently re-fetching it (same
+// pattern as pages/guide/[app]/[slug].vue). Static key is correct: this
+// page component is reused across app-to-app navigation, so `watch:
+// [appParam]` is what triggers the refetch, not the key.
+const { data: guideData, pending: loading } = await useAsyncData(
+  'guide-categories-articles',
+  async () => {
+    if (!app.value) return { categories: [] as GuideCategory[], articles: [] as GuideArticleListItem[] };
+    try {
+      const [cats, arts] = await Promise.all([
+        guideListCategories(app.value),
+        guideListArticles(app.value),
+      ]);
+      return { categories: cats, articles: arts };
+    } catch {
+      // A backend hiccup should render the existing "no articles" empty state,
+      // not crash SSR to a 500 -- a page that's supposed to be in the sitemap
+      // must never hard-fail just because the upstream gateway blipped.
+      return { categories: [] as GuideCategory[], articles: [] as GuideArticleListItem[] };
+    }
+  },
+  { watch: [appParam] },
+);
+const categories = computed(() => guideData.value?.categories ?? []);
+const articles = computed(() => guideData.value?.articles ?? []);
 
 function localeSuffix(): 'Ru' | 'Kk' | 'En' {
   if (locale.value === 'kk') return 'Kk';
@@ -143,31 +167,6 @@ function localeExcerpt(article: GuideArticleListItem): string {
 function localeName(category: GuideCategory): string {
   const suffix = localeSuffix();
   return (category[`name${suffix}` as 'nameRu'] || category.nameRu || category.slug) as string;
-}
-
-async function load() {
-  if (!app.value) {
-    loading.value = false;
-    return;
-  }
-  loading.value = true;
-  try {
-    const [cats, arts] = await Promise.all([
-      guideListCategories(app.value),
-      guideListArticles(app.value),
-    ]);
-    categories.value = cats;
-    articles.value = arts;
-  } catch {
-    // A backend hiccup should render the existing "no articles" empty state
-    // (see pages/guide/[app]/[slug].vue's load(), which already does this),
-    // not crash SSR to a 500 -- a page that's supposed to be in the sitemap
-    // must never hard-fail just because the upstream gateway blipped.
-    categories.value = [];
-    articles.value = [];
-  } finally {
-    loading.value = false;
-  }
 }
 
 type Group = { key: string; title: string; icon: string; articles: GuideArticleListItem[] };
@@ -193,10 +192,4 @@ const groups = computed<Group[]>(() => {
   return result;
 });
 
-// Awaited at the top level (not via watch immediate) so Nuxt's automatic
-// page-level <Suspense> waits for it during SSR -- otherwise the server
-// sends down the loading skeleton and real content only appears after
-// client hydration fetches it.
-watch(appParam, load);
-await load();
 </script>
