@@ -28,52 +28,8 @@ const { token: patronToken, login: patronLogin } = usePatronAuth();
 
 const isMembership = (b: { source?: string }) => (b.source || 'MENU') === 'CONTACTS';
 
-const realBusinesses = ref<MockBusiness[] | null>(null);
-const reviews = ref<MockReview[]>([]);
 const favoritesOnly = ref(false);
-
 const searchQuery = ref('');
-let searchDebounce: ReturnType<typeof setTimeout> | null = null;
-function onSearchInput() {
-  if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(loadBusinesses, 350);
-}
-
-async function loadBusinesses() {
-  try {
-    const [categoriesResp, businessesResp] = await Promise.all([
-      getCatalogCategories(),
-      getCatalogBusinesses({
-        search: searchQuery.value.trim() || undefined,
-        length: FilterPaginationLengthEnum.OneHundred,
-      }),
-    ]);
-    const deduped = dedupeByBrand(businessesResp.rows).filter(isMembership);
-    realBusinesses.value = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
-
-    const perBusiness = await Promise.all(
-      deduped.slice(0, 10).map(async (b) => {
-        try {
-          const list = await getCatalogReviews(b.id);
-          return list.map((r) => ({
-            key: r.id,
-            author: maskProfanity(r.authorName),
-            business: maskProfanity(b.name),
-            businessTo: `/to/${b.namespaceSlug}/memberships`,
-            rating: r.rating,
-            date: formatReviewDate(r.createdAt),
-            text: maskProfanity(r.body),
-          }));
-        } catch {
-          return [];
-        }
-      }),
-    );
-    reviews.value = perBusiness.flat().slice(0, 6);
-  } catch (e) {
-    logError('[memberships] failed to load catalog businesses', e);
-  }
-}
 
 function formatReviewDate(iso: string): string {
   try {
@@ -83,7 +39,62 @@ function formatReviewDate(iso: string): string {
   }
 }
 
-onMounted(loadBusinesses);
+// B1: useAsyncData (not onMounted) so the server renders the real catalog
+// list instead of an empty shell, and the SSR result rides the Nuxt
+// payload instead of a client-side refetch after hydration. Public,
+// unauthenticated query. Search still needs a debounced explicit refetch
+// (not the `watch` option, which has no debounce), so the search box
+// below calls `refreshCatalog()` directly instead of a raw reload
+// function -- favorites stay separate, further down, genuinely client-only
+// since they depend on the patron auth token.
+const { data: catalogData, refresh: refreshCatalog } = await useAsyncData(
+  'memberships-catalog',
+  async () => {
+    try {
+      const [categoriesResp, businessesResp] = await Promise.all([
+        getCatalogCategories(),
+        getCatalogBusinesses({
+          search: searchQuery.value.trim() || undefined,
+          length: FilterPaginationLengthEnum.OneHundred,
+        }),
+      ]);
+      const deduped = dedupeByBrand(businessesResp.rows).filter(isMembership);
+      const realBusinesses = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
+
+      const perBusiness = await Promise.all(
+        deduped.slice(0, 10).map(async (b) => {
+          try {
+            const list = await getCatalogReviews(b.id);
+            return list.map((r) => ({
+              key: r.id,
+              author: maskProfanity(r.authorName),
+              business: maskProfanity(b.name),
+              businessTo: `/to/${b.namespaceSlug}/memberships`,
+              rating: r.rating,
+              date: formatReviewDate(r.createdAt),
+              text: maskProfanity(r.body),
+            }));
+          } catch {
+            return [];
+          }
+        }),
+      );
+      const reviews = perBusiness.flat().slice(0, 6);
+      return { realBusinesses, reviews };
+    } catch (e) {
+      logError('[memberships] failed to load catalog businesses', e);
+      return { realBusinesses: null as MockBusiness[] | null, reviews: [] as MockReview[] };
+    }
+  },
+);
+const realBusinesses = computed(() => catalogData.value?.realBusinesses ?? null);
+const reviews = computed(() => catalogData.value?.reviews ?? []);
+
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => refreshCatalog(), 350);
+}
 
 const displayedBusinesses = computed(() => {
   const items = realBusinesses.value ?? [];
