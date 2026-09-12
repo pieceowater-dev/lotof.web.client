@@ -10,7 +10,7 @@ import { parseSocialLinks, socialLabel } from '@/utils/social';
 
 // Order customerName/phone/deliveryAddress and item names are free text a
 // customer or staff member typed in, not app-controlled strings -- same
-// unescaped-HTML-injection risk components/Card.vue's openPrintDialog once
+// unescaped-HTML-injection risk components/ui/Card.vue's openPrintDialog once
 // had (see its escapeHtml comment), so every one of those goes through this
 // before landing in the printable HTML document.
 function escapeHtml(value: string): string {

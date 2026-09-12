@@ -58,10 +58,10 @@ import { log, logWarn } from '@/utils/logger';
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
-import SubscriptionRenewalModal from '@/components/SubscriptionRenewalModal.vue';
-import PhoneRequiredModal from '@/components/PhoneRequiredModal.vue';
-import ContactUsModal from '@/components/ContactUsModal.vue';
-import DowngradeBlockedModal from '@/components/DowngradeBlockedModal.vue';
+import SubscriptionRenewalModal from '@/components/ui/SubscriptionRenewalModal.vue';
+import PhoneRequiredModal from '@/components/ui/PhoneRequiredModal.vue';
+import ContactUsModal from '@/components/ui/ContactUsModal.vue';
+import DowngradeBlockedModal from '@/components/ui/DowngradeBlockedModal.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();

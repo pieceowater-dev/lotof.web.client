@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { log, logWarn } from '@/utils/logger';
 import { getApiWsUrl } from '@/utils/api-base';
-import PinPrompt from '@/components/PinPrompt.vue';
+import PinPrompt from '@/components/ui/PinPrompt.vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { dynamicLS } from '@/utils/storageKeys';

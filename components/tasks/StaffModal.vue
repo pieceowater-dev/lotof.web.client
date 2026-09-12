@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
 import type { TasksStaffRoleValue } from '@/api/tasks/staff/list';
-import StaffRoleModal from '@/components/StaffRoleModal.vue';
+import StaffRoleModal from '@/components/ui/StaffRoleModal.vue';
 
 const { t } = useI18n();
 

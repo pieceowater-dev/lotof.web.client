@@ -13,7 +13,7 @@
 // internals script-setup doesn't expose on the instance anyway.
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
-import StaffRoleModal, { type StaffRoleOption } from '@/components/StaffRoleModal.vue';
+import StaffRoleModal, { type StaffRoleOption } from '@/components/ui/StaffRoleModal.vue';
 
 const roleOptions: StaffRoleOption[] = [
   { label: 'No role', value: 'NONE' },

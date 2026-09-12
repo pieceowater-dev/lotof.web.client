@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import Card from '@/components/Card.vue';
+import Card from '@/components/ui/Card.vue';
 import { useI18n } from '@/composables/useI18n';
 import type { Post } from '@/types/atrace';
 

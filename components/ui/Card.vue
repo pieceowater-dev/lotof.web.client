@@ -5,8 +5,8 @@ import { useI18n } from '@/composables/useI18n';
 import { QRMethod } from '@/utils/constants';
 import { md5 } from '@/utils/md5';
 import { useClipboard } from '@vueuse/core';
-import PinPrompt from '@/components/PinPrompt.vue';
-import QRPrintCard from '@/components/QRPrintCard.vue';
+import PinPrompt from '@/components/ui/PinPrompt.vue';
+import QRPrintCard from '@/components/ui/QRPrintCard.vue';
 
 type Post = {
   id: string;

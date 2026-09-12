@@ -1,6 +1,6 @@
 // Opens a new window, writes a full printable HTML document into it, and
 // triggers the browser print dialog -- same window.open + document.write +
-// @media print approach as components/Card.vue's openPrintDialog, factored
+// @media print approach as components/ui/Card.vue's openPrintDialog, factored
 // out because this one renders arbitrary rich-text document bodies (a
 // printed order document) rather than a fixed QR-code card layout.
 //
