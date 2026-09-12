@@ -26,6 +26,10 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
+import AppHeader from '@/components/ui/AppHeader.vue';
+import AppFooter from '@/components/ui/AppFooter.vue';
+import TourGuide from '@/components/ui/TourGuide.vue';
+import CookieNotice from '@/components/ui/CookieNotice.vue';
 
 const route = useRoute();
 

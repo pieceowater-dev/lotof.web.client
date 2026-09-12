@@ -17,6 +17,11 @@
 </template>
 
 <script lang="ts" setup>
+import AppHeader from '@/components/ui/AppHeader.vue';
+import AppFooter from '@/components/ui/AppFooter.vue';
+import TourGuide from '@/components/ui/TourGuide.vue';
+import CookieNotice from '@/components/ui/CookieNotice.vue';
+
 // H1: one of 3 layouts extracted verbatim from the old layouts/default.vue
 // regex (git history), for the per-namespace app workspace pages themselves
 // (not their /plans pricing sub-page, which uses layouts/quiet.vue instead).

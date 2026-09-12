@@ -16,6 +16,11 @@
 </template>
 
 <script lang="ts" setup>
+import AppHeader from '@/components/ui/AppHeader.vue';
+import AppFooter from '@/components/ui/AppFooter.vue';
+import TourGuide from '@/components/ui/TourGuide.vue';
+import CookieNotice from '@/components/ui/CookieNotice.vue';
+
 // H1: one of 3 layouts extracted verbatim from the old layouts/default.vue
 // regex (git history), for pages outside any workspace app and outside
 // /console -- marketing/public pages, plus the bare /:namespace page. Full
