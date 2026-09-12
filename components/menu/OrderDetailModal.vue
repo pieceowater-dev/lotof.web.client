@@ -1372,7 +1372,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin text-gray-400" />
       </div>
       <div v-else-if="selectedProductDetail" class="space-y-4">
-        <div class="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+        <div class="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center" style="aspect-ratio: 16 / 9">
           <img v-if="selectedProductDetail.imageUrl" :src="selectedProductDetail.imageUrl" :alt="selectedProductDetail.imageAlt || selectedProductDetail.name" class="w-full h-full object-cover">
           <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
         </div>

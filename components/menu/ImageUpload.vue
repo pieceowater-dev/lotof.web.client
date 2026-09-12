@@ -72,7 +72,8 @@ function clearImage() {
     <div
       v-if="modelValue"
       class="group relative flex-shrink-0 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40"
-      :class="aspect === 'square' ? 'w-28 h-28' : 'aspect-video w-full'"
+      :class="aspect === 'square' ? 'w-28 h-28' : 'w-full'"
+      :style="aspect === 'wide' ? 'aspect-ratio: 16 / 9' : ''"
     >
       <img :src="modelValue" :alt="t('app.uploadedImage') || 'Изображение'" class="w-full h-full" :class="fit === 'contain' ? 'object-contain p-2' : 'object-cover'">
       <div
@@ -109,7 +110,8 @@ function clearImage() {
       v-else
       type="button"
       class="flex flex-shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-600 text-gray-400 hover:text-primary-500 transition-colors"
-      :class="aspect === 'square' ? 'w-28 h-28' : 'aspect-video w-full'"
+      :class="aspect === 'square' ? 'w-28 h-28' : 'w-full'"
+      :style="aspect === 'wide' ? 'aspect-ratio: 16 / 9' : ''"
       :disabled="uploading"
       @click="pickFile"
     >

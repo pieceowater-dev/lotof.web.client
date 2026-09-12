@@ -1464,7 +1464,7 @@ useHead(() => {
         </template>
 
         <div class="space-y-4">
-          <div class="w-full aspect-video rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+          <div class="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center" style="aspect-ratio: 16 / 9">
             <img
               v-if="selectedItem.imageUrl"
               :src="selectedItem.imageUrl"
@@ -1669,7 +1669,7 @@ useHead(() => {
           </div>
         </template>
         <div class="space-y-4">
-          <img :src="selectedBanner.imageUrl" :alt="maskProfanity(selectedBanner.imageAlt || selectedBanner.title)" class="w-full aspect-video object-cover rounded-xl">
+          <img :src="selectedBanner.imageUrl" :alt="maskProfanity(selectedBanner.imageAlt || selectedBanner.title)" class="w-full object-cover rounded-xl" style="aspect-ratio: 16 / 9">
           <p v-if="selectedBanner.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             {{ maskProfanity(selectedBanner.description) }}
           </p>

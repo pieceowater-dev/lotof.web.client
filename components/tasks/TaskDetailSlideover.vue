@@ -807,7 +807,11 @@ async function handleDelete() {
           {{ t('tasks.deliveryPhoto') || 'Delivery photo' }}
         </h4>
         <a :href="deliveryPhotoFullUrl" target="_blank">
-          <img :src="deliveryPhotoFullUrl" class="rounded-lg max-h-48 object-cover" :alt="t('tasks.deliveryPhoto') || 'Delivery photo'" />
+          <!-- Real photo of unknown/arbitrary aspect ratio -- a fixed
+               aspect-ratio would wrongly crop non-16:9 shots, so this only
+               reserves a partial min-height (not the full max-h-48) to
+               bound the worst-case shift instead of eliminating it outright. -->
+          <img :src="deliveryPhotoFullUrl" class="rounded-lg max-h-48 object-cover" style="min-height: 120px" :alt="t('tasks.deliveryPhoto') || 'Delivery photo'" />
         </a>
       </div>
 

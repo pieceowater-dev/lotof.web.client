@@ -971,6 +971,7 @@ watch([articlesSearch, selectedArticleTag], () => {
                 :alt="post.imageAlt"
                 class="h-56 w-full object-cover"
                 :loading="idx === 0 ? 'eager' : 'lazy'"
+                :fetchpriority="idx === 0 ? 'high' : 'auto'"
                 decoding="async"
                 width="1200"
                 height="630"

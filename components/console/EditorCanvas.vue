@@ -297,10 +297,15 @@
                     </div>
                   </div>
                   <div v-else class="relative group/img">
+                    <!-- Admin-uploaded article image of arbitrary aspect
+                         ratio -- no design-intended ratio to force here, so
+                         this only reserves a placeholder min-height to bound
+                         the shift rather than eliminate it outright. -->
                     <img
                       :src="block.attrs.src"
                       :alt="block.attrs.alt || 'Image'"
                       class="w-full rounded-xl object-cover shadow-sm"
+                      style="min-height: 200px"
                     />
                     <!-- Caption & alt -->
                     <div class="mt-3 space-y-1.5">

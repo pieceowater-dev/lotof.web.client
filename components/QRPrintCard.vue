@@ -81,8 +81,8 @@ const hasContent = computed(() => !!props.title || !!props.address);
               <img
                 :src="props.qrImage"
                 alt="QR Code"
-                class="qr-image w-full max-w-md h-auto aspect-square object-contain"
-                style="max-width: 320px; min-width: 220px;"
+                class="qr-image w-full max-w-md object-contain"
+                style="max-width: 320px; min-width: 220px; aspect-ratio: 1 / 1;"
               >
               <!-- Post ID всегда показываем -->
               <div class="post-id mt-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
