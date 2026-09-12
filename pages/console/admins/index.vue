@@ -373,7 +373,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import AdminHeader from '@/components/admin/AdminHeader.vue';
@@ -409,8 +409,6 @@ type AdminRow = CapitalAdmin & {
   isOwner: boolean;
 };
 
-const admins = ref<AdminRow[]>([]);
-const loading = ref(false);
 const inviteLoading = ref(false);
 const actionLoading = ref(false);
 const showInviteModal = ref(false);
@@ -420,12 +418,6 @@ const inviteRole = ref(2);
 const selectedRole = ref(2);
 const selectedAdminId = ref('');
 const selectedAdminName = ref('');
-const errorMessage = ref('');
-
-const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
-const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
-const editorCount = computed(() => admins.value.filter((a) => a.role === 2).length);
-const canManageAdmins = computed(() => admins.value.some((admin) => admin.isCurrent && admin.isOwner));
 
 function toRoleKey(role: number): AdminRow['roleKey'] {
   if (role === 0) return 'superAdmin';
@@ -490,19 +482,54 @@ function mapRow(a: CapitalAdmin): AdminRow {
   };
 }
 
-async function loadAdmins() {
-  if (!token.value) return;
-  loading.value = true;
-  errorMessage.value = '';
-  try {
-    const list = await capitalListAdmins(token.value);
-    admins.value = list.map(mapRow);
-  } catch (e: any) {
-    errorMessage.value = e?.message || t('admin.loadAdminsFailed');
-  } finally {
-    loading.value = false;
-  }
-}
+// B1: useAsyncData (not onMounted) so the server renders the real admin
+// list + saved contact settings instead of an empty shell. Both are
+// direct hub-token API calls (useAuth()'s token, useCookie()-backed) --
+// no dynamic-import token-exchange in the chain, so none of the SSR
+// context-loss risk fixed in useAppToken.ts (f146c64) applies here.
+// contactPhone/contactWhatsapp are user-editable form fields, not pure
+// display data, so they're plain refs seeded once from the fetch result
+// below rather than derived computeds (which would fight the user's typing).
+type AdminsPageData = { admins: AdminRow[]; contactPhone: string; contactWhatsapp: string; errorMessage: string };
+const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await useAsyncData<AdminsPageData>(
+  'console-admins',
+  async () => {
+    if (!user.value?.id) await fetchUser();
+    if (!token.value) return { admins: [], contactPhone: '', contactWhatsapp: '', errorMessage: '' };
+
+    let admins: AdminRow[] = [];
+    let errorMessage = '';
+    try {
+      const list = await capitalListAdmins(token.value);
+      admins = list.map(mapRow);
+    } catch (e: any) {
+      errorMessage = e?.message || t('admin.loadAdminsFailed');
+    }
+
+    let contactPhone = '';
+    let contactWhatsapp = '';
+    try {
+      const settings = await capitalGetContactSettings(token.value);
+      contactPhone = settings?.phone || '';
+      contactWhatsapp = settings?.whatsapp || '';
+    } catch (e: any) {
+      console.error('[admins] Failed to load contact settings', e);
+    }
+
+    return { admins, contactPhone, contactWhatsapp, errorMessage };
+  },
+);
+const admins = computed(() => adminsPageData.value?.admins ?? []);
+const errorMessage = ref(adminsPageData.value?.errorMessage ?? '');
+watch(adminsPageData, (v) => { errorMessage.value = v?.errorMessage ?? ''; });
+
+const contactPhone = ref(adminsPageData.value?.contactPhone ?? '');
+const contactWhatsapp = ref(adminsPageData.value?.contactWhatsapp ?? '');
+
+const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
+const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
+const editorCount = computed(() => admins.value.filter((a) => a.role === 2).length);
+const canManageAdmins = computed(() => admins.value.some((admin) => admin.isCurrent && admin.isOwner));
 
 async function invite() {
   if (!token.value || !inviteEmail.value.trim()) return;
@@ -513,7 +540,7 @@ async function invite() {
     inviteEmail.value = '';
     inviteRole.value = 2;
     showInviteModal.value = false;
-    await loadAdmins();
+    await refreshAdmins();
   } catch (e: any) {
     errorMessage.value = e?.message || t('admin.inviteAdminFailed');
   } finally {
@@ -542,7 +569,7 @@ async function saveRoleChange() {
   try {
     await capitalChangeAdminRole(token.value, selectedAdminId.value, selectedRole.value);
     closeRoleModal();
-    await loadAdmins();
+    await refreshAdmins();
   } catch (e: any) {
     errorMessage.value = e?.message || t('admin.changeRoleFailed');
   } finally {
@@ -564,7 +591,7 @@ async function removeAdmin(id: string) {
   errorMessage.value = '';
   try {
     await capitalRemoveAdmin(token.value, id);
-    await loadAdmins();
+    await refreshAdmins();
   } catch (e: any) {
     errorMessage.value = e?.message || t('admin.removeAdminFailed');
   } finally {
@@ -572,22 +599,9 @@ async function removeAdmin(id: string) {
   }
 }
 
-const contactPhone = ref('');
-const contactWhatsapp = ref('');
 const contactSettingsSaving = ref(false);
 const contactSettingsSavedAt = ref('');
 const contactSettingsError = ref('');
-
-async function loadContactSettings() {
-  if (!token.value) return;
-  try {
-    const settings = await capitalGetContactSettings(token.value);
-    contactPhone.value = settings?.phone || '';
-    contactWhatsapp.value = settings?.whatsapp || '';
-  } catch (e: any) {
-    console.error('[admins] Failed to load contact settings', e);
-  }
-}
 
 async function saveContactSettings() {
   if (!token.value) return;
@@ -604,11 +618,4 @@ async function saveContactSettings() {
   }
 }
 
-onMounted(async () => {
-  if (!user.value?.id) {
-    await fetchUser();
-  }
-  await loadAdmins();
-  await loadContactSettings();
-});
 </script>
