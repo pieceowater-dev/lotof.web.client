@@ -122,7 +122,6 @@ onBeforeUnmount(() => {
 // utils/mapCatalogBusiness.ts's doc comments and hub.gtw's catalog.graphqls
 // for why this is CatalogTag, not CatalogCategory (the fixed 5-row
 // business-type list). Actually filters the grid below.
-const tags = ref<CatalogTag[]>([]);
 const activeTagId = ref<string | null>(null);
 // "Избранное" is a separate, client-side quick filter (not a server tagId)
 // -- narrows whatever's already loaded down to favorited businesses.
@@ -132,81 +131,9 @@ const favoritesOnly = ref(false);
 // (reviewCount as tiebreaker; unreviewed businesses sort last) and capped
 // at 10 for this homepage highlight row (see pages/stores.vue for the
 // full, uncapped list -- that's what "Все" links to).
-const realBusinesses = ref<MockBusiness[] | null>(null);
-// lota Contacts membership pages — their own row, kept apart from lota Menu.
-const realMemberships = ref<MockBusiness[] | null>(null);
-const realPlans = ref<MockBusiness[] | null>(null);
 const favoriteIds = ref<Set<string>>(new Set());
-const reviews = ref<MockReview[]>([]);
-
 const searchQuery = ref('');
 let searchDebounce: ReturnType<typeof setTimeout> | null = null;
-function onSearchInput() {
-  if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(loadCatalogFeed, 350);
-}
-
-async function loadCatalogFeed() {
-  try {
-    const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
-      getCatalogCategories(),
-      getCatalogTags(),
-      getCatalogBusinesses({
-        tagId: activeTagId.value,
-        search: searchQuery.value.trim() || undefined,
-        length: FilterPaginationLengthEnum.Fifty,
-      }),
-    ]);
-    tags.value = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
-    const allDeduped = dedupeByBrand(businessesResp.rows)
-      .slice()
-      .sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
-    // lota Menu storefronts, lota Contacts membership pages and lota Plans
-    // booking pages are kept in separate rows — never mixed (product decision).
-    const srcOf = (b: (typeof allDeduped)[number]) => ((b as { source?: string }).source || 'MENU');
-    const isMembership = (b: (typeof allDeduped)[number]) => srcOf(b) === 'CONTACTS';
-    const isPlans = (b: (typeof allDeduped)[number]) => srcOf(b) === 'PLANS';
-    const menuRows = allDeduped.filter((b) => srcOf(b) === 'MENU').slice(0, 10);
-    const memberRows = allDeduped.filter(isMembership).slice(0, 10);
-    const plansRows = allDeduped.filter(isPlans).slice(0, 10);
-    realMemberships.value = memberRows.length ? memberRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
-    realPlans.value = plansRows.length ? plansRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
-    const deduped = menuRows;
-    if (deduped.length > 0) {
-      realBusinesses.value = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
-
-      // Bounded fan-out (at most 10 businesses) -- no bulk "reviews for many
-      // businesses" query exists, and this list is already capped, so a
-      // handful of small requests is fine. Concatenated and capped again so
-      // the reviews grid doesn't grow unbounded either.
-      const perBusiness = await Promise.all(
-        deduped.map(async (b) => {
-          try {
-            const list = await getCatalogReviews(b.id);
-            return list.map((r) => ({
-              key: r.id,
-              author: maskProfanity(r.authorName),
-              business: maskProfanity(b.name),
-              businessTo: `/to/${b.namespaceSlug}/menu`,
-              rating: r.rating,
-              date: formatReviewDate(r.createdAt),
-              text: maskProfanity(r.body),
-            }));
-          } catch {
-            return [];
-          }
-        }),
-      );
-      reviews.value = perBusiness.flat().slice(0, 6);
-    } else {
-      realBusinesses.value = null;
-      reviews.value = [];
-    }
-  } catch (e) {
-    logError('[catalog] failed to load real catalog businesses', e);
-  }
-}
-
 function formatReviewDate(iso: string): string {
   try {
     return new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
@@ -215,11 +142,85 @@ function formatReviewDate(iso: string): string {
   }
 }
 
-onMounted(loadCatalogFeed);
+type CatalogFeed = {
+  tags: CatalogTag[];
+  realBusinesses: MockBusiness[] | null;
+  realMemberships: MockBusiness[] | null;
+  realPlans: MockBusiness[] | null;
+  reviews: MockReview[];
+};
+const emptyCatalogFeed: CatalogFeed = { tags: [], realBusinesses: null, realMemberships: null, realPlans: null, reviews: [] };
+
+const { data: catalogFeed, refresh: refreshCatalogFeed } = await useAsyncData<CatalogFeed>(
+  'catalog-feed',
+  async () => {
+    try {
+      const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
+        getCatalogCategories(),
+        getCatalogTags(),
+        getCatalogBusinesses({
+          tagId: activeTagId.value,
+          search: searchQuery.value.trim() || undefined,
+          length: FilterPaginationLengthEnum.Fifty,
+        }),
+      ]);
+      const tags = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
+      const allDeduped = dedupeByBrand(businessesResp.rows)
+        .slice()
+        .sort((a, b) => b.avgRating - a.avgRating || b.reviewCount - a.reviewCount);
+      const srcOf = (b: (typeof allDeduped)[number]) => ((b as { source?: string }).source || 'MENU');
+      const isMembership = (b: (typeof allDeduped)[number]) => srcOf(b) === 'CONTACTS';
+      const isPlans = (b: (typeof allDeduped)[number]) => srcOf(b) === 'PLANS';
+      const menuRows = allDeduped.filter((b) => srcOf(b) === 'MENU').slice(0, 10);
+      const memberRows = allDeduped.filter(isMembership).slice(0, 10);
+      const plansRows = allDeduped.filter(isPlans).slice(0, 10);
+      const realMemberships = memberRows.length ? memberRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
+      const realPlans = plansRows.length ? plansRows.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
+      const deduped = menuRows;
+      if (deduped.length > 0) {
+        const realBusinesses = deduped.map((b) => toDisplayBusiness(b, categoriesResp));
+        const perBusiness = await Promise.all(
+          deduped.map(async (b) => {
+            try {
+              const list = await getCatalogReviews(b.id);
+              return list.map((r) => ({
+                key: r.id,
+                author: maskProfanity(r.authorName),
+                business: maskProfanity(b.name),
+                businessTo: `/to/${b.namespaceSlug}/menu`,
+                rating: r.rating,
+                date: formatReviewDate(r.createdAt),
+                text: maskProfanity(r.body),
+              }));
+            } catch {
+              return [];
+            }
+          }),
+        );
+        const reviews = perBusiness.flat().slice(0, 6);
+        return { tags, realBusinesses, realMemberships, realPlans, reviews };
+      }
+      return { tags, realBusinesses: null, realMemberships, realPlans, reviews: [] };
+    } catch (e) {
+      logError('[catalog] failed to load real catalog businesses', e);
+      return emptyCatalogFeed;
+    }
+  },
+);
+const tags = computed(() => catalogFeed.value?.tags ?? []);
+const realBusinesses = computed(() => catalogFeed.value?.realBusinesses ?? null);
+const realMemberships = computed(() => catalogFeed.value?.realMemberships ?? null);
+const realPlans = computed(() => catalogFeed.value?.realPlans ?? null);
+const reviews = computed(() => catalogFeed.value?.reviews ?? []);
+
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => refreshCatalogFeed(), 350);
+}
 
 function selectTag(id: string | null) {
   activeTagId.value = id;
-  loadCatalogFeed();
+  refreshCatalogFeed();
 }
 
 onMounted(async () => {
