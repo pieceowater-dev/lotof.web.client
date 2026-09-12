@@ -31,62 +31,9 @@ const { token: patronToken, login: patronLogin } = usePatronAuth();
 // utils/mapCatalogBusiness.ts's dedupeByBrand) so a tenant with several
 // branches shows one card; the storefront itself handles branch selection
 // once a Patron gets there.
-const tags = ref<CatalogTag[]>([]);
 const activeTagId = ref<string | null>(null);
 const favoritesOnly = ref(false);
-
-const realBusinesses = ref<MockBusiness[] | null>(null);
-const reviews = ref<MockReview[]>([]);
-
 const searchQuery = ref('');
-let searchDebounce: ReturnType<typeof setTimeout> | null = null;
-function onSearchInput() {
-  if (searchDebounce) clearTimeout(searchDebounce);
-  searchDebounce = setTimeout(loadBusinesses, 350);
-}
-
-async function loadBusinesses() {
-  try {
-    const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
-      getCatalogCategories(),
-      getCatalogTags(),
-      getCatalogBusinesses({
-        tagId: activeTagId.value,
-        search: searchQuery.value.trim() || undefined,
-        length: FilterPaginationLengthEnum.OneHundred,
-      }),
-    ]);
-    tags.value = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
-    // lota Menu venues only — lota Contacts membership pages live on /memberships.
-    const deduped = dedupeByBrand(businessesResp.rows).filter(
-      (b) => ((b as { source?: string }).source || 'MENU') !== 'CONTACTS',
-    );
-    realBusinesses.value = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
-
-    // Bounded fan-out -- see pages/catalog.vue's loadCatalogFeed for why.
-    const perBusiness = await Promise.all(
-      deduped.slice(0, 10).map(async (b) => {
-        try {
-          const list = await getCatalogReviews(b.id);
-          return list.map((r) => ({
-            key: r.id,
-            author: maskProfanity(r.authorName),
-            business: maskProfanity(b.name),
-            businessTo: `/to/${b.namespaceSlug}/menu`,
-            rating: r.rating,
-            date: formatReviewDate(r.createdAt),
-            text: maskProfanity(r.body),
-          }));
-        } catch {
-          return [];
-        }
-      }),
-    );
-    reviews.value = perBusiness.flat().slice(0, 6);
-  } catch (e) {
-    logError('[stores] failed to load real catalog businesses', e);
-  }
-}
 
 function formatReviewDate(iso: string): string {
   try {
@@ -96,11 +43,72 @@ function formatReviewDate(iso: string): string {
   }
 }
 
-onMounted(loadBusinesses);
+// B1: useAsyncData (not onMounted) so the server renders the real catalog
+// list instead of an empty shell -- same pattern as memberships.vue
+// (a471e4c). Both the debounced search box and the immediate tag-select
+// buttons need to trigger a refetch, so both call the returned
+// `refresh()` below instead of a raw reload function. Favorites stay
+// separate, further down, genuinely client-only (patron auth token).
+const { data: catalogData, refresh: refreshBusinesses } = await useAsyncData(
+  'stores-catalog',
+  async () => {
+    try {
+      const [categoriesResp, tagsResp, businessesResp] = await Promise.all([
+        getCatalogCategories(),
+        getCatalogTags(),
+        getCatalogBusinesses({
+          tagId: activeTagId.value,
+          search: searchQuery.value.trim() || undefined,
+          length: FilterPaginationLengthEnum.OneHundred,
+        }),
+      ]);
+      const tags = tagsResp.map((tg) => ({ ...tg, name: maskProfanity(tg.name) }));
+      // lota Menu venues only — lota Contacts membership pages live on /memberships.
+      const deduped = dedupeByBrand(businessesResp.rows).filter(
+        (b) => ((b as { source?: string }).source || 'MENU') !== 'CONTACTS',
+      );
+      const realBusinesses = deduped.length > 0 ? deduped.map((b) => toDisplayBusiness(b, categoriesResp)) : null;
+
+      // Bounded fan-out -- see pages/catalog.vue's loadCatalogFeed for why.
+      const perBusiness = await Promise.all(
+        deduped.slice(0, 10).map(async (b) => {
+          try {
+            const list = await getCatalogReviews(b.id);
+            return list.map((r) => ({
+              key: r.id,
+              author: maskProfanity(r.authorName),
+              business: maskProfanity(b.name),
+              businessTo: `/to/${b.namespaceSlug}/menu`,
+              rating: r.rating,
+              date: formatReviewDate(r.createdAt),
+              text: maskProfanity(r.body),
+            }));
+          } catch {
+            return [];
+          }
+        }),
+      );
+      const reviews = perBusiness.flat().slice(0, 6);
+      return { tags, realBusinesses, reviews };
+    } catch (e) {
+      logError('[stores] failed to load real catalog businesses', e);
+      return { tags: [] as CatalogTag[], realBusinesses: null as MockBusiness[] | null, reviews: [] as MockReview[] };
+    }
+  },
+);
+const tags = computed(() => catalogData.value?.tags ?? []);
+const realBusinesses = computed(() => catalogData.value?.realBusinesses ?? null);
+const reviews = computed(() => catalogData.value?.reviews ?? []);
+
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => refreshBusinesses(), 350);
+}
 
 function selectTag(id: string | null) {
   activeTagId.value = id;
-  loadBusinesses();
+  refreshBusinesses();
 }
 
 const displayedBusinesses = computed(() => {
