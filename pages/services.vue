@@ -1,7 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'full' });
 
-import { ref, computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { getCatalogBusinesses, type CatalogBusiness } from '@/api/hub/catalog';
 import { FilterPaginationLengthEnum } from '@/api/__generated__/hub-types';
@@ -12,13 +12,29 @@ const { t } = useI18n();
 // A single-vertical view of the Catalog: lota Plans businesses only
 // (appointment/booking services). Real data now — plans.gtw's catalogsync
 // pushes each tenant's locations into lotof.hub.msvc.core with source=PLANS.
-const businesses = ref<CatalogBusiness[]>([]);
-const loading = ref(true);
+//
+// B1: useAsyncData (not onMounted) so the server renders the real list
+// instead of an empty shell + spinner, and the result rides the Nuxt
+// payload instead of a client-side refetch after hydration. Public,
+// unauthenticated query -- no token/window dependency to worry about.
+const { data: businesses, pending: loading } = await useAsyncData<CatalogBusiness[]>(
+  'services-catalog-businesses',
+  async () => {
+    try {
+      const { rows } = await getCatalogBusinesses({ length: FilterPaginationLengthEnum.OneHundred });
+      return rows;
+    } catch (e) {
+      logError('[services] failed to load catalog businesses', e);
+      return [];
+    }
+  },
+  { default: () => [] },
+);
 
 const plansBusinesses = computed(() => {
   // Dedupe by namespace — one card per salon, not per location.
   const seen = new Set<string>();
-  return businesses.value
+  return (businesses.value || [])
     .filter((b) => (b.source || 'MENU') === 'PLANS')
     .filter((b) => {
       const key = b.namespaceSlug || b.id;
@@ -26,17 +42,6 @@ const plansBusinesses = computed(() => {
       seen.add(key);
       return true;
     });
-});
-
-onMounted(async () => {
-  try {
-    const { rows } = await getCatalogBusinesses({ length: FilterPaginationLengthEnum.OneHundred });
-    businesses.value = rows;
-  } catch (e) {
-    logError('[services] failed to load catalog businesses', e);
-  } finally {
-    loading.value = false;
-  }
 });
 
 const siteUrl = resolveSiteUrl(useRuntimeConfig().public.siteUrl);
