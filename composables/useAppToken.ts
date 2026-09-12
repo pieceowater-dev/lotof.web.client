@@ -74,8 +74,15 @@ export function createAppTokenComposable(config: AppTokenConfig) {
 
     async function clearInMemoryToken() {
       try {
+        const nuxtApp = useNuxtApp()
         const setAppToken = await getSetAppToken()
-        setAppToken(null)
+        // B1/SSR: getSetAppToken() is a dynamic import() -- on the server,
+        // Nuxt's "current instance" tracking does not reliably survive that
+        // await, so a composable called straight after (setAppToken ->
+        // tokenRef() -> useState()) can throw "[nuxt] instance unavailable"
+        // even though we're still logically inside a valid request. Capture
+        // the instance before the await, re-enter it explicitly after.
+        nuxtApp.runWithContext(() => setAppToken(null))
       } catch {}
     }
 
@@ -94,6 +101,12 @@ export function createAppTokenComposable(config: AppTokenConfig) {
     }
 
     async function ensureInner(nsSlug: string, hubToken?: string | null): Promise<string | null> {
+      // Captured synchronously, before any await in this function -- the
+      // one point we're guaranteed Nuxt's "current instance" is set. Reused
+      // below via runWithContext() to re-enter it after every dynamic
+      // import()/sleep(), both of which can silently drop that context
+      // during SSR (see the comment on the exchange retry loop below).
+      const nuxtApp = useNuxtApp()
       const cookie = useCookie<string | null>(cookieKey, { path: '/' })
       const storageAvailable = canUseStorage()
       const storedNs = readStoredNamespace()
@@ -122,7 +135,7 @@ export function createAppTokenComposable(config: AppTokenConfig) {
         if (!shouldForceRefresh || !hubToken) {
           try {
             const setAppToken = await getSetAppToken()
-            setAppToken(cookie.value)
+            nuxtApp.runWithContext(() => setAppToken(cookie.value))
           } catch {}
           if (!storedNs && nsSlug) writeStoredNamespace(nsSlug)
           return cookie.value
@@ -145,7 +158,13 @@ export function createAppTokenComposable(config: AppTokenConfig) {
         const maxAttempts = 6
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           try {
-            token = await exchange(hubToken, nsSlug)
+            // exchange() ultimately calls ApiClient.request(), which reads
+            // the hub token via useState() (api/clients.ts's tokenRef()) --
+            // a Nuxt composable. On the server, the instance context needed
+            // for that is not reliably still set this far past the dynamic
+            // import() above (or, on retry, past the sleep() below), so
+            // re-enter it explicitly rather than call exchange() bare.
+            token = await nuxtApp.runWithContext(() => exchange(hubToken, nsSlug))
             if (token) break
           } catch (e) {
             lastError = e
@@ -185,12 +204,14 @@ export function createAppTokenComposable(config: AppTokenConfig) {
 
         try {
           const setAppToken = await getSetAppToken()
-          setAppToken(token)
+          nuxtApp.runWithContext(() => setAppToken(token))
         } catch {}
         // secure:false would ship an app token over plain HTTP in
         // production; import.meta.dev is only true for local `nuxt dev`, so
         // this is secure everywhere it actually matters.
-        useCookie(cookieKey, { path: '/', sameSite: 'lax', secure: !import.meta.dev, maxAge: 60 * 60 * 24 * 6 }).value = token
+        nuxtApp.runWithContext(() => {
+          useCookie(cookieKey, { path: '/', sameSite: 'lax', secure: !import.meta.dev, maxAge: 60 * 60 * 24 * 6 }).value = token
+        })
         if (typeof window !== 'undefined') {
           try { localStorage.setItem(tsKey, String(Date.now())) } catch {}
         }

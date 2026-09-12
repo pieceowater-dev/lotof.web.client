@@ -27,6 +27,13 @@ beforeEach(() => {
   cookieStore.clear();
   localStorage.clear();
   vi.stubGlobal('useCookie', fakeUseCookie);
+  // ensureInner() calls useNuxtApp() once (synchronously, before any await)
+  // and reuses its runWithContext() to re-enter Nuxt's SSR instance context
+  // after each dynamic import()/sleep() -- both real risk points for losing
+  // it during actual SSR (see the comment in useAppToken.ts). Outside a real
+  // Nuxt app there's no context to preserve, so just running the callback
+  // immediately is the correct fake here.
+  vi.stubGlobal('useNuxtApp', () => ({ runWithContext: (fn: () => unknown) => fn() }));
 });
 
 afterEach(() => {
