@@ -52,7 +52,14 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { setAtraceUnauthorizedHandler } from '@/api/clients';
+import {
+  setAtraceUnauthorizedHandler,
+  setContactsUnauthorizedHandler,
+  setMenuUnauthorizedHandler,
+  setGoodsUnauthorizedHandler,
+  setTasksUnauthorizedHandler,
+  setPlansUnauthorizedHandler,
+} from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
 import { log, logWarn } from '@/utils/logger';
 import { useI18n } from '@/composables/useI18n';
@@ -283,14 +290,57 @@ onMounted(() => {
     window.addEventListener('load', onPageLoad);
   }
   
-  // Register handler for atrace token expiration - just clear the token
-  // The page will automatically retry with a fresh token
+  // Register a per-app "token expired" handler for every app gateway, not
+  // just atrace -- ApiClient.requestWithRetry() (api/clients.ts) already
+  // detects a 401/unauthorized response for each of them and calls
+  // handlerBag().<app>?.() before retrying once, but contacts/menu/goods/
+  // tasks/plans never had a handler registered here, so that retry silently
+  // did nothing and the original error always won. Clearing the stale cookie
+  // is all a handler needs to do: the app's own token composable (useAtrace/
+  // Contacts/Menu/Goods/Tasks/PlansToken) notices it's gone on the next
+  // ensure() call and mints a fresh one -- same as the atrace handler this
+  // was copied from.
   setAtraceUnauthorizedHandler(() => {
     log('[app.vue] Atrace token expired, clearing for refresh');
     try {
       const cookie = useCookie(CookieKeys.ATRACE_TOKEN, { path: '/' });
       cookie.value = null;
     } catch (e) { logWarn('[app.vue] failed to clear atrace token cookie', e); }
+  });
+  setContactsUnauthorizedHandler(() => {
+    log('[app.vue] Contacts token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.CONTACTS_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear contacts token cookie', e); }
+  });
+  setMenuUnauthorizedHandler(() => {
+    log('[app.vue] Menu token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.MENU_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear menu token cookie', e); }
+  });
+  setGoodsUnauthorizedHandler(() => {
+    log('[app.vue] Goods token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.GOODS_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear goods token cookie', e); }
+  });
+  setTasksUnauthorizedHandler(() => {
+    log('[app.vue] Tasks token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.TASKS_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear tasks token cookie', e); }
+  });
+  setPlansUnauthorizedHandler(() => {
+    log('[app.vue] Plans token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.PLANS_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear plans token cookie', e); }
   });
 });
 

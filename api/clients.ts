@@ -212,6 +212,9 @@ export class ApiClient {
       const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
       );
+      const isContactsUnauthorized = this.authHeader === 'ContactsAuthorization' && (
+        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('contactsauthorization token is invalid'))
+      );
       const isMenuUnauthorized = this.authHeader === 'MenuAuthorization' && (
         status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('menuauthorization token is invalid'))
       );
@@ -239,6 +242,19 @@ export class ApiClient {
         if (retryCount === 0) {
           // Try refresh once before giving up
           await handlerBag().atrace?.();
+          // Retry request once with new token
+          try {
+            return await this.requestWithRetry<T>(query, variables, options, 1);
+          } catch (_retryError) {
+            // If retry still fails, throw original error
+            throw error;
+          }
+        }
+      } else if (isContactsUnauthorized) {
+        logWarn('Contacts unauthorized detected, invoking contacts handler');
+        if (retryCount === 0) {
+          // Try refresh once before giving up
+          await handlerBag().contacts?.();
           // Retry request once with new token
           try {
             return await this.requestWithRetry<T>(query, variables, options, 1);
