@@ -20,13 +20,13 @@ const config: AppPlansPageConfig = {
   loadActiveSubscription: async ({ nsSlug, hubToken }) => {
     const s = await getActiveContactsSubscription(nsSlug, APP_BUNDLE, hubToken);
     return s
-      ? { planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
+      ? { id: s.id, planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
       : null;
   },
   subscribe: async ({ nsSlug, hubToken, planCode }) => {
     const s = await subscribeToContactsPlan(nsSlug, planCode, APP_BUNDLE, hubToken);
     return s
-      ? { planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
+      ? { id: s.id, planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
       : null;
   },
 };

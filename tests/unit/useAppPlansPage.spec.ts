@@ -162,6 +162,43 @@ describe('useAppPlansPage: load on mount', () => {
     );
   });
 
+  it('still auto-provisions the free plan when loadActiveSubscription returns capital.msvc.billing\'s synthetic no-real-subscription fallback (empty id)', async () => {
+    // capital.msvc.billing's GetActiveSubscriptionForNamespace answers with an
+    // in-memory, never-persisted "subscription" (id: "") when the namespace
+    // has nothing real yet, so /plans doesn't show "no plan" right after a
+    // deep-link install. Treating that object as "already subscribed" here
+    // would skip the real subscribe() call forever -- no tenant/subscription
+    // ever gets created, and no error surfaces either since nothing was
+    // attempted. This is the bug reported live: every app's free tier
+    // silently never activated for a namespace that only ever saw the
+    // synthetic fallback.
+    const free = makePlan({ id: 'p-free', code: 'free', amountCents: 0 });
+    const config = makeConfig({
+      loadPlans: vi.fn().mockResolvedValue({ plans: [free] }),
+      loadActiveSubscription: vi.fn().mockResolvedValue({ id: '', planId: 'p-free', status: 'ACTIVE' } as AppSubscription),
+    });
+    mountPage(config);
+    await flushPromises();
+
+    expect(config.subscribe).toHaveBeenCalledWith(
+      expect.objectContaining({ nsSlug: 'acme', planCode: 'free' }),
+    );
+  });
+
+  it('does not bounce back to returnTo on a synthetic (unreal) active subscription without ever subscribing', async () => {
+    routeQuery = { returnTo: '/acme/issues/board' };
+    // No free plan available here -- autoSelectFreePlanIfNeeded no-ops, so
+    // this isolates redirectIfAlreadySubscribed's own id check.
+    const config = makeConfig({
+      loadPlans: vi.fn().mockResolvedValue({ plans: [makePlan({ amountCents: 500000, trialDays: 0 })] }),
+      loadActiveSubscription: vi.fn().mockResolvedValue({ id: '', planId: 'plan-1', status: 'ACTIVE' } as AppSubscription),
+    });
+    mountPage(config);
+    await flushPromises();
+
+    expect(navigateTo).not.toHaveBeenCalled();
+  });
+
   it('does not auto-provision when the active-subscription fetch merely failed', async () => {
     // subscriptionFetchFailed must gate this -- a transient error fetching
     // the current subscription must never look like "confirmed nothing

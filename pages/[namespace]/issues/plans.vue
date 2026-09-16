@@ -19,13 +19,13 @@ const config: AppPlansPageConfig = {
   loadActiveSubscription: async ({ nsSlug, appToken }) => {
     const s = await tasksActiveSubscription(appToken, nsSlug);
     return s
-      ? { planId: s.planId, planCode: null, status: s.status, trialEndsAt: s.trialEndsAt ?? null }
+      ? { id: s.id, planId: s.planId, planCode: null, status: s.status, trialEndsAt: s.trialEndsAt ?? null }
       : null;
   },
   subscribe: async ({ nsSlug, appToken, planCode }) => {
     const s = await tasksSubscribePlan({ tasksToken: appToken, nsSlug, planCode });
     return s
-      ? { planId: s.planId, planCode: null, status: s.status, trialEndsAt: s.trialEndsAt ?? null }
+      ? { id: s.id, planId: s.planId, planCode: null, status: s.status, trialEndsAt: s.trialEndsAt ?? null }
       : null;
   },
 };

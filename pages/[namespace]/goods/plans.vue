@@ -20,13 +20,13 @@ const config: AppPlansPageConfig = {
   loadActiveSubscription: async ({ nsSlug, appToken }) => {
     const s = await getActiveGoodsSubscription(nsSlug, appToken, APP_BUNDLE);
     return s
-      ? { planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
+      ? { id: s.id, planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
       : null;
   },
   subscribe: async ({ nsSlug, appToken, planCode }) => {
     const s = await subscribeToGoodsPlan({ nsSlug, planCode, goodsToken: appToken, appBundle: APP_BUNDLE });
     return s
-      ? { planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
+      ? { id: s.id, planId: s.planId, planCode: s.planCode, status: s.status, trialEndsAt: s.trialEndDate ?? null }
       : null;
   },
 };

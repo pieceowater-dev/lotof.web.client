@@ -84,12 +84,22 @@ async function fetchActiveSubscription() {
   }
 }
 
+// capital.msvc.billing returns a synthetic, never-persisted subscription
+// (empty id) as a fallback when nothing real exists yet, so /plans doesn't
+// show "no plan" right after a deep-link install -- see
+// syntheticSubscriptionForPlan in subscription.svc.go. Only a persisted
+// subscription (non-empty id) counts as "already handled" below; treating
+// the synthetic one as real skipped the actual subscribe call entirely (no
+// tenant/subscription ever got created, no error either since nothing was
+// attempted) and just redirected away as if it had worked.
+const hasRealSubscription = computed(() => Boolean(activeSubscription.value?.id));
+
 // A namespace can end up with an active Plans subscription (e.g. via the
 // Lota Ultimate bundle) without the app ever being registered in
 // namespace_apps — the home tile then still says "Подключить". Self-heal:
 // whenever we see an active subscription, make sure the app is installed.
 async function ensureAppInstalledIfSubscribed() {
-  if (!activeSubscription.value) return;
+  if (!hasRealSubscription.value) return;
   const hubToken = useCookie<string | null>('token', { path: '/' }).value;
   if (!hubToken) return;
   try {
@@ -105,7 +115,7 @@ async function ensureAppInstalledIfSubscribed() {
 
 async function redirectIfAlreadySubscribed() {
   if (redirectingAfterReturn.value) return;
-  if (!activeSubscription.value) return;
+  if (!hasRealSubscription.value) return;
   if (!route.query.returnTo) return;
 
   const returnTo = resolveReturnTo();
@@ -147,7 +157,7 @@ function resolveReturnTo(): string {
 }
 
 async function autoSelectFreePlanIfNeeded() {
-  if (activeSubscription.value) return;
+  if (hasRealSubscription.value) return;
   if (subscriptionFetchFailed.value) return;
   if (route.query.manage) return;
   const freePlan = plans.value.find((p) => p.amountCents === 0);

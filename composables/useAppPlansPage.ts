@@ -28,6 +28,13 @@ export interface AppPlan {
 // Normalised across apps -- pages map their own subscription shape onto this
 // (e.g. trialEndDate -> trialEndsAt) before returning it.
 export interface AppSubscription {
+  // Empty/absent for the synthetic "no real subscription yet" fallback
+  // capital.msvc.billing returns so /plans doesn't show "no plan" right after
+  // a deep-link install (see syntheticSubscriptionForPlan, which deliberately
+  // leaves Id blank) -- never persisted, never a substitute for actually
+  // calling subscribe(). Must be checked before treating a subscription as
+  // real (see hasRealSubscription below).
+  id?: string | null;
   planId: string;
   planCode?: string | null;
   status?: string | null;
@@ -91,6 +98,13 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
   // autoSelectFreePlanIfNeeded() treat an already-paying namespace as if it
   // had nothing active and silently provision/downgrade it to the free tier.
   const subscriptionFetchFailed = ref(false);
+
+  // A synthetic fallback (empty id) means "nothing subscribed yet" for the
+  // purposes of auto-subscribing/redirecting -- only a persisted subscription
+  // counts as "already handled". Display logic (isPlanActive, the interval
+  // toggle) still treats it as active, which is correct: it IS the plan the
+  // namespace is effectively on.
+  const hasRealSubscription = computed(() => Boolean(activeSubscription.value?.id));
 
   const monthlyPlans = computed(() => plans.value.filter((p) => p.interval === 'MONTH'));
   const yearlyPlans = computed(() => plans.value.filter((p) => p.interval === 'YEAR'));
@@ -196,7 +210,7 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
 
   async function redirectIfAlreadySubscribed() {
     if (redirectingAfterReturn.value) return;
-    if (!activeSubscription.value) return;
+    if (!hasRealSubscription.value) return;
     // Only bounce back when something explicitly sent the user here to pick a
     // plan and resume elsewhere afterwards (?returnTo=...) -- direct
     // navigation (typed URL, "Upgrade Plan" link, a plan-limit modal) wants
@@ -223,7 +237,7 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
   // tier that costs nothing -- if a genuinely free plan (not a trial) exists
   // and nothing's subscribed yet, provision it automatically.
   async function autoSelectFreePlanIfNeeded() {
-    if (activeSubscription.value) return;
+    if (hasRealSubscription.value) return;
     if (subscriptionFetchFailed.value) return;
     if (route.query.manage) return;
     const freePlan = plans.value.find((p) => p.amountCents === 0);
