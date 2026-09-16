@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';
 import GuideArticleEditor from '@/components/console/GuideArticleEditor.vue';
@@ -32,26 +32,24 @@ const toast = useToast();
 const { token } = useAuth();
 
 const articleId = String(route.params.id || '').trim();
-const loading = ref(true);
-const loadError = ref('');
-const initialArticle = ref<Partial<GuideArticleInput>>({});
 
-async function load() {
-  loading.value = true;
-  loadError.value = '';
-  try {
+// B1: useAsyncData (not onMounted) so the server renders the real article
+// instead of a bare spinner. Same low-risk shape as the other console/
+// hub-token pages already migrated (admins/index.vue) -- direct hub-token
+// API call, no per-namespace app-token exchange in the chain.
+const { data: initialArticle, pending: loading, error: loadErrorRef } = await useAsyncData<Partial<GuideArticleInput>>(
+  'console-guide-article',
+  async () => {
     const article = await consoleGetGuideArticle(token.value || '', articleId);
-    if (!article) {
-      loadError.value = 'Статья не найдена';
-      return;
-    }
-    initialArticle.value = { ...article };
-  } catch (error: any) {
-    loadError.value = error?.message || 'Не удалось загрузить статью';
-  } finally {
-    loading.value = false;
-  }
-}
+    if (!article) throw new Error('Статья не найдена');
+    return { ...article };
+  },
+  { default: () => ({}) },
+);
+const loadError = computed(() => {
+  if (!loadErrorRef.value) return '';
+  return loadErrorRef.value.message || 'Не удалось загрузить статью';
+});
 
 async function onSave(input: GuideArticleInput) {
   await guideUpdateArticle(token.value || '', articleId, input);
@@ -64,6 +62,4 @@ async function onDelete() {
   toast.add({ title: 'Статья удалена', color: 'green' });
   await router.replace('/console/guide');
 }
-
-onMounted(load);
 </script>
