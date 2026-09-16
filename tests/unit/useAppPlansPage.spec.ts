@@ -199,6 +199,32 @@ describe('useAppPlansPage: load on mount', () => {
     expect(navigateTo).not.toHaveBeenCalled();
   });
 
+  it('installs the app when a real subscription already exists but the namespace never went through subscribePlan (bundle/admin/reconcile-sweep origin)', async () => {
+    // hubAddAppToNamespace is normally only called from inside subscribePlan()
+    // on success. A subscription can also arrive from a multi-app bundle, an
+    // admin's manual activation, or the free-subscription reconcile sweep --
+    // none of which ever call it, so namespace_apps never gets the row and
+    // Hub's dashboard tile is stuck on "not connected" forever even though
+    // billing already considers the app subscribed.
+    const config = makeConfig({
+      loadActiveSubscription: vi.fn().mockResolvedValue({ id: 'real-sub-1', planId: 'plan-1', status: 'ACTIVE' } as AppSubscription),
+    });
+    mountPage(config);
+    await flushPromises();
+
+    expect(h.addAppToNamespace).toHaveBeenCalledWith('hub-token-123', 'acme', 'pieceowater.issues');
+  });
+
+  it('does not try to install the app for a synthetic (unreal) active subscription', async () => {
+    const config = makeConfig({
+      loadActiveSubscription: vi.fn().mockResolvedValue({ id: '', planId: 'plan-1', status: 'ACTIVE' } as AppSubscription),
+    });
+    mountPage(config);
+    await flushPromises();
+
+    expect(h.addAppToNamespace).not.toHaveBeenCalled();
+  });
+
   it('does not auto-provision when the active-subscription fetch merely failed', async () => {
     // subscriptionFetchFailed must gate this -- a transient error fetching
     // the current subscription must never look like "confirmed nothing

@@ -208,6 +208,30 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
     }
   }
 
+  // A namespace can end up with a real, active subscription without the app
+  // ever being registered in namespace_apps -- subscribePlan() below is the
+  // only place that calls hubAddAppToNamespace, but a subscription can also
+  // arrive via a multi-app bundle, an admin's manual cash-payment activation,
+  // or the boot/6h ReconcileFreeSubscriptions sweep, none of which install
+  // the app. Hub's dashboard tile then keeps showing "not connected" forever
+  // even though billing is happy. Self-heal: whenever a real subscription is
+  // seen, make sure the app is actually installed too (mirrors
+  // pages/[namespace]/plans/plans.vue's ensureAppInstalledIfSubscribed).
+  async function ensureAppInstalledIfSubscribed() {
+    if (!hasRealSubscription.value) return;
+    const tk = hubToken();
+    if (!tk) return;
+    try {
+      const { hubAddAppToNamespace } = await import('@/api/hub/namespaces/addAppToNamespace');
+      await hubAddAppToNamespace(tk, nsSlug.value, config.appBundle);
+    } catch (e) {
+      const msg = getErrorMessage(e, t).toLowerCase();
+      if (!msg.includes('already exists') && !msg.includes('already in the namespace')) {
+        console.error('ensureAppInstalledIfSubscribed:', e);
+      }
+    }
+  }
+
   async function redirectIfAlreadySubscribed() {
     if (redirectingAfterReturn.value) return;
     if (!hasRealSubscription.value) return;
@@ -345,6 +369,7 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
 
     await fetchPlans();
     await fetchActiveSubscription();
+    await ensureAppInstalledIfSubscribed();
     await redirectIfAlreadySubscribed();
     await autoSelectFreePlanIfNeeded();
   });
