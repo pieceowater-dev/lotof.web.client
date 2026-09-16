@@ -30,7 +30,13 @@ const goBack = () => {
 };
 
 const plans = ref<Plan[]>([]);
-const loading = ref(false);
+// Starts true: onMounted's first step is usePlansToken().ensure(), which can
+// take a while (cold tenant schema, backend warming up), and runs before
+// fetchPlans() ever flips this on. A default of false left the page showing
+// nothing -- worse, briefly showing "no plans available" (loading=false,
+// error=null, displayedPlans=[] look identical to "genuinely no plans" until
+// data arrives) -- for that whole stretch.
+const loading = ref(true);
 const error = ref<string | null>(null);
 const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
 const subscribingPlanCode = ref<string | null>(null);
@@ -222,11 +228,11 @@ async function subscribePlan(plan: Plan) {
 
 onMounted(async () => {
   const hubToken = useCookie<string | null>('token', { path: '/' }).value;
-  if (!hubToken) { error.value = t('common.notAuthenticated') || 'Не авторизован'; return; }
+  if (!hubToken) { error.value = t('common.notAuthenticated') || 'Не авторизован'; loading.value = false; return; }
 
   const { ensure } = usePlansToken();
   const plansToken = await ensure(nsSlug.value, hubToken);
-  if (!plansToken) { error.value = t('common.notAuthenticated') || 'Не авторизован'; return; }
+  if (!plansToken) { error.value = t('common.notAuthenticated') || 'Не авторизован'; loading.value = false; return; }
 
   await fetchPlans();
   await fetchActiveSubscription();

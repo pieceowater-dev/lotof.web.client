@@ -87,7 +87,15 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
   const hubToken = () => useCookie<string | null>('token', { path: '/' }).value;
 
   const plans = ref<AppPlan[]>([]);
-  const loading = ref(false);
+  // Starts true, not false: onMounted's first step is config.token.ensure(),
+  // which can take a while (a cold tenant schema, a backend warming up after
+  // an HPA scale event -- useAppToken retries up to 6x with backoff up to
+  // 8s each) and runs *before* fetchPlans() ever flips this on. A default of
+  // false left the page showing nothing between mount and that point --
+  // worse, it briefly showed "no plans available" (loading=false, error=null,
+  // displayedPlans=[] all look identical to "genuinely no plans" until data
+  // arrives), not just a blank screen.
+  const loading = ref(true);
   const error = ref<string | null>(null);
   const selectedInterval = ref<'monthly' | 'yearly'>('monthly');
   const subscribingPlanCode = ref<string | null>(null);
@@ -359,11 +367,13 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
     const tk = hubToken();
     if (!tk) {
       error.value = t('common.notAuthenticated') || 'Not authenticated';
+      loading.value = false;
       return;
     }
     const appToken = await config.token.ensure(nsSlug.value, tk);
     if (!appToken) {
       error.value = t('common.notAuthenticated') || 'Not authenticated';
+      loading.value = false;
       return;
     }
 

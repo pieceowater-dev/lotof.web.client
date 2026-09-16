@@ -110,6 +110,39 @@ function mountPage(config: AppPlansPageConfig) {
 }
 
 describe('useAppPlansPage: load on mount', () => {
+  it('starts loading synchronously on mount, before token.ensure() (which can take a while -- a cold tenant, a backend warming up) even resolves', async () => {
+    // Regression: `loading` used to default to false and only flip on
+    // inside fetchPlans(), which onMounted only reaches after
+    // config.token.ensure() resolves. That left the page rendering nothing
+    // during the token exchange -- worse, briefly showing "no plans
+    // available" once past mount but still before fetchPlans, since
+    // loading=false/error=null/displayedPlans=[] look identical to
+    // "genuinely no plans" from the template's point of view.
+    let resolveEnsure!: (token: string) => void;
+    const config = makeConfig({
+      token: {
+        ensure: vi.fn(() => new Promise<string>((resolve) => { resolveEnsure = resolve; })),
+        current: vi.fn().mockReturnValue('app-token'),
+      },
+    });
+    const wrapper = mountPage(config);
+
+    expect(wrapper.vm.loading).toBe(true);
+
+    resolveEnsure('app-token');
+    await flushPromises();
+    expect(wrapper.vm.loading).toBe(false);
+  });
+
+  it('stops loading instead of spinning forever when there is no hub token', async () => {
+    cookieValue = null;
+    const wrapper = mountPage(makeConfig());
+    await flushPromises();
+
+    expect(wrapper.vm.loading).toBe(false);
+    expect(wrapper.vm.error).toBeTruthy();
+  });
+
   it('loads plans and active subscription, syncs the interval to the active plan', async () => {
     const yearlyActive = makePlan({ id: 'p-year', code: 'pro', interval: 'YEAR' });
     const config = makeConfig({
