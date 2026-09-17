@@ -571,6 +571,18 @@ const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await
 
     return { admins, contactPhone, contactWhatsapp, errorMessage };
   },
+  // Client-only. The B1 comment above predates this: SSR here turned out to
+  // race the page-level `admin` middleware (middleware/admin.ts), which is
+  // ALSO client-only (`if (process.server) return`) and makes its own
+  // separate capitalGetAdminByUserId call before this data-fetch's result
+  // ever gets a chance to hydrate cleanly -- on a plain reload this
+  // intermittently left the real SSR-rendered content stuck behind a client
+  // render that started from empty state ("system thinks I'm here for the
+  // first time"), while a client-side nav (no fresh SSR pass to race)
+  // always worked. Moving this to client-only removes the race outright:
+  // there's now exactly one code path, the one that was already proven to
+  // work every time.
+  { server: false },
 );
 const admins = computed(() => adminsPageData.value?.admins ?? []);
 const errorMessage = ref(adminsPageData.value?.errorMessage ?? '');
