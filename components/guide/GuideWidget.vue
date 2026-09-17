@@ -380,6 +380,14 @@ async function openArticle(parentLevel: Extract<NavLevel, { type: 'articles' }>,
 watch(isOpen, (open) => {
   if (!open) return;
   navStack.value = [{ type: 'apps' }];
+  // Land straight in the current app's section instead of the flat app
+  // list the visitor would otherwise have to click through -- they're
+  // already marked "current" there (see browsableApps' isCurrent), so
+  // starting collapsed just added a click. openCategories pushes on top
+  // of the 'apps' level already set above, so the back arrow still
+  // returns to the full list for browsing other apps.
+  const current = browsableApps.value.find((a) => a.isCurrent);
+  if (current) openCategories(current);
   loadFaq();
 }, { immediate: true });
 </script>

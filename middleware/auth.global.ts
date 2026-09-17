@@ -115,7 +115,15 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   // Soft, self-throttled nudge to add a phone number -- a no-op if one is
   // already on file, the gate is already open, or we nudged recently.
-  usePhoneGate().maybeNudge();
+  // Never on /console: it's lota staff's own internal ops tool, not a
+  // tenant/patron flow, and after MAX_DISMISSALS this escalates into a
+  // hard, non-dismissible blocking modal (see usePhoneGate.ts) -- which on
+  // this route just means an admin can no longer reach their own admin
+  // page on every reload, forever, with no way out except entering a
+  // phone number that has nothing to do with running the console.
+  if (!to.path.startsWith('/console')) {
+    usePhoneGate().maybeNudge();
+  }
 
   if (isAtraceRoute) {
     const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
