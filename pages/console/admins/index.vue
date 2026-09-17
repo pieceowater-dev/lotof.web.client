@@ -543,12 +543,12 @@ function mapRow(a: CapitalAdmin): AdminRow {
 // contactPhone/contactWhatsapp are user-editable form fields, not pure
 // display data, so they're plain refs seeded once from the fetch result
 // below rather than derived computeds (which would fight the user's typing).
-type AdminsPageData = { admins: AdminRow[]; contactPhone: string; contactWhatsapp: string; botSettings: BotSettings | null; errorMessage: string };
+type AdminsPageData = { admins: AdminRow[]; contactPhone: string; contactWhatsapp: string; errorMessage: string };
 const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await useAsyncData<AdminsPageData>(
   'console-admins',
   async () => {
     if (!user.value?.id) await fetchUser();
-    if (!token.value) return { admins: [], contactPhone: '', contactWhatsapp: '', botSettings: null, errorMessage: '' };
+    if (!token.value) return { admins: [], contactPhone: '', contactWhatsapp: '', errorMessage: '' };
 
     let admins: AdminRow[] = [];
     let errorMessage = '';
@@ -569,14 +569,7 @@ const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await
       console.error('[admins] Failed to load contact settings', e);
     }
 
-    let botSettings: BotSettings | null = null;
-    try {
-      botSettings = await capitalGetBotSettings(token.value);
-    } catch (e: any) {
-      console.error('[admins] Failed to load bot settings', e);
-    }
-
-    return { admins, contactPhone, contactWhatsapp, botSettings, errorMessage };
+    return { admins, contactPhone, contactWhatsapp, errorMessage };
   },
 );
 const admins = computed(() => adminsPageData.value?.admins ?? []);
@@ -586,8 +579,26 @@ watch(adminsPageData, (v) => { errorMessage.value = v?.errorMessage ?? ''; });
 const contactPhone = ref(adminsPageData.value?.contactPhone ?? '');
 const contactWhatsapp = ref(adminsPageData.value?.contactWhatsapp ?? '');
 
-const botSettings = ref<BotSettings | null>(adminsPageData.value?.botSettings ?? null);
-watch(adminsPageData, (v) => { botSettings.value = v?.botSettings ?? null; });
+// Client-only and deliberately outside the 'console-admins' useAsyncData
+// above: bot settings are secondary config, not the page's core content, so
+// a slow/failing capital.billing.manage permission check on this call must
+// never be able to stall the whole page's server-rendered response the way
+// bundling it into that blocking fetch would.
+const { data: botSettingsData } = await useAsyncData<BotSettings | null>(
+  'console-admins-bot-settings',
+  async () => {
+    if (!token.value) return null;
+    try {
+      return await capitalGetBotSettings(token.value);
+    } catch (e: any) {
+      console.error('[admins] Failed to load bot settings', e);
+      return null;
+    }
+  },
+  { server: false },
+);
+const botSettings = ref<BotSettings | null>(botSettingsData.value ?? null);
+watch(botSettingsData, (v) => { botSettings.value = v ?? null; });
 
 const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
 const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
