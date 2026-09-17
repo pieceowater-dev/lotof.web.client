@@ -1515,7 +1515,7 @@
     "contactSettingsSaved": "Saved",
     "contactSettingsSaveFailed": "Failed to save contact info",
     "botTitle": "Telegram notification bot",
-    "botDesc": "API key for the ops bot (lotof.tg.notifications), which polls capital hourly for new signups and sends Telegram notifications. The bot itself and its BotFather token are configured on your own server -- this is only the access key for this endpoint.",
+    "botDesc": "API key for the ops bot (lotof.tg.capital.bot), which polls capital hourly for new signups and sends Telegram notifications. The bot itself and its BotFather token are configured on your own server -- this is only the access key for this endpoint.",
     "botNotConfigured": "No key generated yet.",
     "botConfiguredHidden": "Key configured. For security it's only ever shown once, right after generation -- lost it? Regenerate.",
     "botShownOnce": "Copy it now -- this key won't be shown again.",

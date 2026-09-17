@@ -448,7 +448,7 @@ export type BotSettings = {
 };
 
 // The shared secret lota's ops Telegram bot (a separate process on its own
-// server, see lotof.tg.notifications) uses to authenticate against
+// server, see lotof.tg.capital.bot) uses to authenticate against
 // capital.gtw's /admin/bot endpoints -- capital.billing.manage-gated, same
 // as the rest of this file's admin-only calls.
 export async function capitalGetBotSettings(token: string): Promise<BotSettings> {
