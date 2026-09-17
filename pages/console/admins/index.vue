@@ -261,6 +261,56 @@
           </span>
         </div>
       </div>
+
+      <!-- Bot Integration (Telegram-бот уведомлений) -->
+      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <h4 class="font-bold text-slate-900 dark:text-white">{{ t('admin.botTitle') }}</h4>
+        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          {{ t('admin.botDesc') }}
+        </p>
+
+        <div v-if="botSettingsError" class="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200">
+          {{ botSettingsError }}
+        </div>
+
+        <div class="mt-4">
+          <!-- Freshly generated plaintext key -- the one and only time the server
+               ever hands it back. Never persisted, never reloaded from botSettings. -->
+          <div v-if="revealedBotApiKey">
+            <div class="mb-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
+              <Icon name="lucide:triangle-alert" class="h-4 w-4 shrink-0" />
+              <span>{{ t('admin.botShownOnce') }}</span>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <code class="flex-1 overflow-x-auto rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">{{ revealedBotApiKey }}</code>
+              <button
+                @click="copyBotApiKey"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+              >
+                <Icon name="lucide:copy" class="h-4 w-4" />
+                <span>{{ botApiKeyCopied ? t('admin.botCopied') : t('admin.botCopy') }}</span>
+              </button>
+            </div>
+          </div>
+          <div v-else-if="botSettings?.configured" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+            <Icon name="lucide:check-circle-2" class="h-4 w-4 text-green-600 dark:text-green-400" />
+            <span>{{ t('admin.botConfiguredHidden') }}</span>
+          </div>
+          <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+            {{ t('admin.botNotConfigured') }}
+          </div>
+        </div>
+
+        <div class="mt-4 flex items-center gap-3">
+          <button
+            @click="regenerateBotKey"
+            :disabled="botSettingsLoading"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ botSettingsLoading ? '...' : (botSettings?.configured ? t('admin.botRegenerate') : t('admin.botGenerate')) }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Invite Modal -->
@@ -384,7 +434,10 @@ import {
   capitalRemoveAdmin,
   capitalGetContactSettings,
   capitalUpdateContactSettings,
+  capitalGetBotSettings,
+  capitalRegenerateBotApiKey,
   type CapitalAdmin,
+  type BotSettings,
 } from '@/api/capital/admin';
 
 definePageMeta({
@@ -490,12 +543,12 @@ function mapRow(a: CapitalAdmin): AdminRow {
 // contactPhone/contactWhatsapp are user-editable form fields, not pure
 // display data, so they're plain refs seeded once from the fetch result
 // below rather than derived computeds (which would fight the user's typing).
-type AdminsPageData = { admins: AdminRow[]; contactPhone: string; contactWhatsapp: string; errorMessage: string };
+type AdminsPageData = { admins: AdminRow[]; contactPhone: string; contactWhatsapp: string; botSettings: BotSettings | null; errorMessage: string };
 const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await useAsyncData<AdminsPageData>(
   'console-admins',
   async () => {
     if (!user.value?.id) await fetchUser();
-    if (!token.value) return { admins: [], contactPhone: '', contactWhatsapp: '', errorMessage: '' };
+    if (!token.value) return { admins: [], contactPhone: '', contactWhatsapp: '', botSettings: null, errorMessage: '' };
 
     let admins: AdminRow[] = [];
     let errorMessage = '';
@@ -516,7 +569,14 @@ const { data: adminsPageData, refresh: refreshAdmins, pending: loading } = await
       console.error('[admins] Failed to load contact settings', e);
     }
 
-    return { admins, contactPhone, contactWhatsapp, errorMessage };
+    let botSettings: BotSettings | null = null;
+    try {
+      botSettings = await capitalGetBotSettings(token.value);
+    } catch (e: any) {
+      console.error('[admins] Failed to load bot settings', e);
+    }
+
+    return { admins, contactPhone, contactWhatsapp, botSettings, errorMessage };
   },
 );
 const admins = computed(() => adminsPageData.value?.admins ?? []);
@@ -525,6 +585,9 @@ watch(adminsPageData, (v) => { errorMessage.value = v?.errorMessage ?? ''; });
 
 const contactPhone = ref(adminsPageData.value?.contactPhone ?? '');
 const contactWhatsapp = ref(adminsPageData.value?.contactWhatsapp ?? '');
+
+const botSettings = ref<BotSettings | null>(adminsPageData.value?.botSettings ?? null);
+watch(adminsPageData, (v) => { botSettings.value = v?.botSettings ?? null; });
 
 const superAdminCount = computed(() => admins.value.filter((a) => a.role === 0).length);
 const adminCount = computed(() => admins.value.filter((a) => a.role === 1).length);
@@ -618,4 +681,51 @@ async function saveContactSettings() {
   }
 }
 
+const botSettingsLoading = ref(false);
+const botSettingsError = ref('');
+const botApiKeyCopied = ref(false);
+// The server only ever returns the plaintext key once, in
+// regenerateBotApiKey's response -- botSettings.apiKey (from the query) is
+// always empty. This ref holds that one-time value for display only; it's
+// never persisted and clears itself (and everything else in memory) on
+// reload/navigation.
+const revealedBotApiKey = ref('');
+
+async function copyBotApiKey() {
+  if (!revealedBotApiKey.value || !process.client) return;
+  try {
+    await navigator.clipboard.writeText(revealedBotApiKey.value);
+    botApiKeyCopied.value = true;
+    setTimeout(() => { botApiKeyCopied.value = false; }, 2000);
+  } catch (e) {
+    console.error('[admins] Failed to copy bot API key', e);
+  }
+}
+
+async function regenerateBotKey() {
+  if (!token.value) return;
+  const { confirm } = useConfirm();
+  if (botSettings.value?.configured) {
+    const confirmed = await confirm({
+      message: t('admin.botRegenerateConfirm'),
+      confirmLabel: t('admin.botRegenerate'),
+      color: 'red',
+      icon: 'lucide:refresh-cw',
+    });
+    if (!confirmed) return;
+  }
+
+  botSettingsLoading.value = true;
+  botSettingsError.value = '';
+  revealedBotApiKey.value = '';
+  try {
+    const updated = await capitalRegenerateBotApiKey(token.value);
+    botSettings.value = updated;
+    revealedBotApiKey.value = updated.apiKey;
+  } catch (e: any) {
+    botSettingsError.value = e?.message || t('admin.botRegenerateFailed');
+  } finally {
+    botSettingsLoading.value = false;
+  }
+}
 </script>

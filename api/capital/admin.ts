@@ -440,3 +440,43 @@ export async function capitalUpdateContactSettings(token: string, phone: string,
   const res = await capitalClient.request<{ updateContactSettings: ContactSettings }>(mutation, { phone, whatsapp });
   return res.updateContactSettings;
 }
+
+export type BotSettings = {
+  configured: boolean;
+  apiKey: string;
+  updatedAt?: string | null;
+};
+
+// The shared secret lota's ops Telegram bot (a separate process on its own
+// server, see lotof.tg.notifications) uses to authenticate against
+// capital.gtw's /admin/bot endpoints -- capital.billing.manage-gated, same
+// as the rest of this file's admin-only calls.
+export async function capitalGetBotSettings(token: string): Promise<BotSettings> {
+  setGlobalAuthToken(token);
+  const query = /* GraphQL */ `
+    query BotSettings {
+      botSettings {
+        configured
+        apiKey
+        updatedAt
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ botSettings: BotSettings }>(query);
+  return res.botSettings;
+}
+
+export async function capitalRegenerateBotApiKey(token: string): Promise<BotSettings> {
+  setGlobalAuthToken(token);
+  const mutation = /* GraphQL */ `
+    mutation RegenerateBotApiKey {
+      regenerateBotApiKey {
+        configured
+        apiKey
+        updatedAt
+      }
+    }
+  `;
+  const res = await capitalClient.request<{ regenerateBotApiKey: BotSettings }>(mutation);
+  return res.regenerateBotApiKey;
+}
