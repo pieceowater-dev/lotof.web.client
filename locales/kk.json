@@ -1371,6 +1371,8 @@
     "guideContent": "Мазмұны",
     "guideIsFaq": "Жиі қойылатын сұрақтарда көрсету",
     "guideArticleValidation": "Орыс тіліндегі тақырыбын енгізіңіз",
+    "guideSaveError": "Мақаланы сақтау мүмкін болмады",
+    "guideDeleteError": "Мақаланы жою мүмкін болмады",
     "editor": {
       "settings": "Жариялау",
       "seoTab": "SEO",

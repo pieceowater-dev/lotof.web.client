@@ -1529,6 +1529,8 @@
     "guideContent": "Содержание",
     "guideIsFaq": "Показывать в частых вопросах",
     "guideArticleValidation": "Укажите заголовок на русском",
+    "guideSaveError": "Не удалось сохранить статью",
+    "guideDeleteError": "Не удалось удалить статью",
     "totalNamespaces": "Всего неймспейсов",
     "searchNamespaces": "Название, слаг, имя, почта или телефон",
     "noNamespacesFound": "Неймспейсы не найдены",

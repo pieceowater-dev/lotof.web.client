@@ -1484,6 +1484,8 @@
     "guideContent": "Content",
     "guideIsFaq": "Show in frequently asked questions",
     "guideArticleValidation": "Enter a Russian title",
+    "guideSaveError": "Failed to save the article",
+    "guideDeleteError": "Failed to delete the article",
     "totalNamespaces": "Total namespaces",
     "searchNamespaces": "Name, slug, person, email or phone",
     "noNamespacesFound": "No namespaces found",

@@ -140,6 +140,8 @@ import { useAuth } from '@/composables/useAuth';
 import { useConfirm } from '@/composables/useConfirm';
 import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { slugFromNames } from '@/utils/slug';
+import { logError } from '@/utils/logger';
+import { getErrorMessage } from '@/utils/types/errors';
 import type { GuideApp, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import type { GuideArticleInput } from '@/api/guide/admin';
 import { consoleListGuideCategories } from '@/api/guide/admin';
@@ -235,6 +237,9 @@ async function handleSave(status: GuideArticleStatus) {
   saving.value = true;
   try {
     await props.onSave({ ...form, status, categoryId: form.categoryId || null });
+  } catch (e) {
+    logError('Failed to save guide article:', e);
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('admin.guideSaveError'), color: 'red' });
   } finally {
     saving.value = false;
   }
@@ -243,6 +248,11 @@ async function handleSave(status: GuideArticleStatus) {
 async function handleDelete() {
   if (!props.onDelete) return;
   if (!(await confirm({ message: t('admin.guideConfirmDeleteArticle') }))) return;
-  await props.onDelete();
+  try {
+    await props.onDelete();
+  } catch (e) {
+    logError('Failed to delete guide article:', e);
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('admin.guideDeleteError'), color: 'red' });
+  }
 }
 </script>
