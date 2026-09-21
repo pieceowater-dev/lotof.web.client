@@ -286,3 +286,15 @@ table [class*="border-green-"],
 .u-table [class*="border-green-"] {
   border-color: rgb(147 197 253) !important;
 }
+
+/* "- [ ] / - [x]" markdown task lists (see utils/renderMarkdown.ts) --
+   the checkbox glyph replaces the default bullet marker. */
+.prose li.task-list-item {
+  list-style: none;
+  margin-left: -1.5em;
+}
+.prose li.task-list-item span[aria-hidden="true"] {
+  display: inline-block;
+  width: 1.2em;
+  margin-right: 0.3em;
+}

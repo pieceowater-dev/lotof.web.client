@@ -1483,6 +1483,7 @@
     "guideExcerpt": "Excerpt",
     "guideContent": "Content",
     "guideInsertImage": "Insert image",
+    "guideInsertChecklist": "Insert checklist",
     "guideImageUploaded": "Image uploaded",
     "guideImageUploadError": "Failed to upload the image",
     "guideSaveFirstForImages": "Save the article first, then you can add images",

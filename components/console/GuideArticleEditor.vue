@@ -67,6 +67,15 @@
           <UButton
             size="xs"
             variant="ghost"
+            icon="lucide:list-checks"
+            :disabled="preview"
+            @click="insertChecklistTemplate"
+          >
+            {{ t('admin.guideInsertChecklist') }}
+          </UButton>
+          <UButton
+            size="xs"
+            variant="ghost"
             icon="lucide:image-plus"
             :loading="uploadingImage"
             :disabled="preview"
@@ -273,16 +282,17 @@ async function onContentImagePicked(event: Event) {
   }
 }
 
-// Inserts markdown image syntax at the focused textarea's cursor when that
+// Inserts a markdown snippet at the focused textarea's cursor when that
 // textarea belongs to the currently active locale (matched by its stable
 // id), otherwise appends to the end of that locale's content -- there's no
-// rich-text block model here to attach an "image block" to, just plain
-// markdown text per locale.
-function insertImageMarkdown(url: string, altSource: string) {
+// rich-text block model here to attach an "image block"/"checklist block"
+// to, just plain markdown text per locale. This is how a heading, a
+// paragraph, an inserted image, a checklist and another image all end up
+// interleaved in one document: each insertion lands wherever the cursor
+// was, same as typing would.
+function insertBlockAtCursor(snippet: string) {
   const locale = activeLocale.value;
   const fieldKey = CONTENT_FIELD_BY_LOCALE[locale];
-  const alt = altSource.replace(/[[\]]/g, '').trim();
-  const markdown = `![${alt}](${url})`;
   const textareaId = `guide-content-${locale.toLowerCase()}`;
   const current = form[fieldKey] || '';
 
@@ -293,12 +303,21 @@ function insertImageMarkdown(url: string, altSource: string) {
     const before = current.slice(0, start);
     const after = current.slice(end);
     const leadingNewline = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
-    form[fieldKey] = `${before}${leadingNewline}${markdown}\n${after}`;
+    form[fieldKey] = `${before}${leadingNewline}${snippet}\n${after}`;
     return;
   }
 
   const leadingNewline = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
-  form[fieldKey] = `${current}${leadingNewline}${markdown}\n`;
+  form[fieldKey] = `${current}${leadingNewline}${snippet}\n`;
+}
+
+function insertImageMarkdown(url: string, altSource: string) {
+  const alt = altSource.replace(/[[\]]/g, '').trim();
+  insertBlockAtCursor(`![${alt}](${url})`);
+}
+
+function insertChecklistTemplate() {
+  insertBlockAtCursor('- [ ] \n- [ ] \n- [ ] ');
 }
 
 async function handleSave(status: GuideArticleStatus) {

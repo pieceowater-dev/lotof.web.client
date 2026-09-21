@@ -1528,6 +1528,7 @@
     "guideExcerpt": "Краткое описание",
     "guideContent": "Содержание",
     "guideInsertImage": "Вставить картинку",
+    "guideInsertChecklist": "Вставить чеклист",
     "guideImageUploaded": "Изображение загружено",
     "guideImageUploadError": "Не удалось загрузить изображение",
     "guideSaveFirstForImages": "Сначала сохраните статью, чтобы можно было добавлять картинки",

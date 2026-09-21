@@ -33,9 +33,22 @@ function stripDangerousUrlSchemes(html: string): string {
   ));
 }
 
+// markdown-it has no built-in "- [ ] / - [x]" task-list support -- a plain
+// list item just renders with the literal "[ ]"/"[x]" as text. Turned into a
+// checkbox glyph with a regex pass on the rendered HTML (matches this file's
+// existing stripDangerousUrlSchemes approach) rather than pulling in a
+// third-party plugin for one syntax. Deliberately a plain unicode glyph, not
+// an <input type=checkbox> -- these are read-only status indicators on a
+// public guide article, not an interactive form.
+function renderTaskListItems(html: string): string {
+  return html
+    .replace(/<li>(\s*<p>)?\[ \]\s/g, '<li class="task-list-item">$1<span aria-hidden="true">☐</span> ')
+    .replace(/<li>(\s*<p>)?\[[xX]\]\s/g, '<li class="task-list-item">$1<span aria-hidden="true">☑</span> ');
+}
+
 export function renderMarkdownSafe(source: string): string {
   if (!source) return '';
-  const rawHtml = md.render(source);
+  const rawHtml = renderTaskListItems(md.render(source));
   if (typeof window === 'undefined') return stripDangerousUrlSchemes(rawHtml);
   return getDOMPurify().sanitize(rawHtml, { ADD_ATTR: ['target', 'rel'] });
 }
