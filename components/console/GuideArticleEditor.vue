@@ -68,7 +68,6 @@
             size="xs"
             variant="ghost"
             icon="lucide:list-checks"
-            :disabled="preview"
             @click="insertChecklistTemplate"
           >
             {{ t('admin.guideInsertChecklist') }}
@@ -78,13 +77,9 @@
             variant="ghost"
             icon="lucide:image-plus"
             :loading="uploadingImage"
-            :disabled="preview"
             @click="triggerImagePicker"
           >
             {{ t('admin.guideInsertImage') }}
-          </UButton>
-          <UButton size="xs" variant="ghost" :icon="preview ? 'lucide:pencil' : 'lucide:eye'" @click="preview = !preview">
-            {{ preview ? t('admin.guideEdit') : t('admin.guidePreview') }}
           </UButton>
           <input ref="contentFileInput" type="file" accept="image/*" class="hidden" @change="onContentImagePicked">
         </div>
@@ -99,13 +94,14 @@
             <UTextarea id="guide-excerpt-ru" v-model="form.excerptRu" :rows="2" />
           </div>
           <div>
-            <label for="guide-content-ru" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Русский, Markdown)</label>
-            <div
-              v-if="preview"
-              class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
-              v-html="renderMarkdownSafe(form.contentRu || '')"
-            />
-            <UTextarea v-else id="guide-content-ru" v-model="form.contentRu" :rows="16" class="font-mono text-sm" />
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Русский, Markdown)</label>
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <UTextarea id="guide-content-ru" v-model="form.contentRu" :rows="20" class="font-mono text-sm" />
+              <div
+                class="prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                v-html="renderMarkdownSafe(form.contentRu || '')"
+              />
+            </div>
           </div>
         </div>
 
@@ -119,13 +115,14 @@
             <UTextarea id="guide-excerpt-kk" v-model="form.excerptKk" :rows="2" />
           </div>
           <div>
-            <label for="guide-content-kk" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Қазақша, Markdown)</label>
-            <div
-              v-if="preview"
-              class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
-              v-html="renderMarkdownSafe(form.contentKk || '')"
-            />
-            <UTextarea v-else id="guide-content-kk" v-model="form.contentKk" :rows="16" class="font-mono text-sm" />
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (Қазақша, Markdown)</label>
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <UTextarea id="guide-content-kk" v-model="form.contentKk" :rows="20" class="font-mono text-sm" />
+              <div
+                class="prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                v-html="renderMarkdownSafe(form.contentKk || '')"
+              />
+            </div>
           </div>
         </div>
 
@@ -139,13 +136,14 @@
             <UTextarea id="guide-excerpt-en" v-model="form.excerptEn" :rows="2" />
           </div>
           <div>
-            <label for="guide-content-en" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (English, Markdown)</label>
-            <div
-              v-if="preview"
-              class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-slate-200 p-4 dark:border-slate-800 min-h-[16rem]"
-              v-html="renderMarkdownSafe(form.contentEn || '')"
-            />
-            <UTextarea v-else id="guide-content-en" v-model="form.contentEn" :rows="16" class="font-mono text-sm" />
+            <label class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideContent') }} (English, Markdown)</label>
+            <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              <UTextarea id="guide-content-en" v-model="form.contentEn" :rows="20" class="font-mono text-sm" />
+              <div
+                class="prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-lg border border-slate-200 p-4 dark:border-slate-800"
+                v-html="renderMarkdownSafe(form.contentEn || '')"
+              />
+            </div>
           </div>
         </div>
       </UCard>
@@ -181,7 +179,6 @@ const toast = useToast();
 const { confirm } = useConfirm();
 
 const saving = ref(false);
-const preview = ref(false);
 const uploadingImage = ref(false);
 const activeLocale = ref<'Ru' | 'Kk' | 'En'>('Ru');
 const contentFileInput = ref<HTMLInputElement | null>(null);
