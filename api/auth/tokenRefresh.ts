@@ -5,17 +5,27 @@ import { CookieKeys } from '@/utils/storageKeys';
 const hubApiBase = getApiBasePath('hub');
 
 /**
- * Refresh access token using the refresh token stored in httpOnly cookie
- * The refresh_token is automatically sent by the browser in cookies
+ * Refresh access token using the refresh token stored in httpOnly cookie.
+ * On the client, the browser attaches refresh_token to this request
+ * automatically (credentials: include). On the server there is no browser
+ * cookie jar to draw from -- this Nitro-side fetch is a brand new outbound
+ * request that carries nothing unless we forward the *incoming* request's
+ * Cookie header ourselves, so a server-rendered page (useAsyncData without
+ * lazy/client-only) can refresh an expired token same as a client-side call
+ * can.
  */
 export async function refreshAccessToken(): Promise<boolean> {
   try {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (process.server) {
+      const forwarded = useRequestHeaders(['cookie']);
+      if (forwarded.cookie) headers.cookie = forwarded.cookie;
+    }
+
     const response = await fetch(`${hubApiBase}/auth/refresh`, {
       method: 'POST',
       credentials: 'include', // Include cookies (refresh_token is httpOnly)
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
     });
 
     if (!response.ok) {

@@ -160,6 +160,22 @@ export class ApiClient {
     return this.requestWithRetry<T>(query, variables, options, 0);
   }
 
+  // Matches both "unauthorized" and the gRPC-originated "Unauthenticated"
+  // wording (e.g. "code = Unauthenticated desc = invalid token: ... token is
+  // expired") -- these are two different words, and a plain `.includes('unauthorized')`
+  // never matches the latter, which is what the backend actually sends for
+  // an expired/invalid JWT. That silently disabled the refresh/retry path
+  // below for the single most common auth failure (a session that's just
+  // outlived its 15-minute access token), across every one of these clients.
+  private isAuthError(status: number | undefined, messages: string[], extraNeedle?: string): boolean {
+    if (status === 401) return true;
+    return messages.some((m) => {
+      if (extraNeedle && m.includes(extraNeedle)) return true;
+      if (!m.includes('token')) return false;
+      return m.includes('unauthorized') || m.includes('unauthenticated') || m.includes('expired') || m.includes('invalid');
+    });
+  }
+
   private async requestWithRetry<T>(
     query: any,
     variables?: Record<string, any>,
@@ -209,30 +225,14 @@ export class ApiClient {
         ? rawErrors.map((e: any) => String(e?.message || '').toLowerCase())
         : [];
       const isOptimisticConflict = messages.some((m) => m.includes('version mismatch') || m.includes('update conflict'));
-      const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('atraceauthorization token is invalid'))
-      );
-      const isContactsUnauthorized = this.authHeader === 'ContactsAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('contactsauthorization token is invalid'))
-      );
-      const isMenuUnauthorized = this.authHeader === 'MenuAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('menuauthorization token is invalid'))
-      );
-      const isTasksUnauthorized = this.authHeader === 'IssuesAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('issuesauthorization token is invalid'))
-      );
-      const isGoodsUnauthorized = this.authHeader === 'GoodsAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('goodsauthorization token is invalid'))
-      );
-      const isPlansUnauthorized = this.authHeader === 'PlansAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') || m.includes('plansauthorization token is invalid'))
-      );
-      const isCapitalUnauthorized = this.authHeader === 'CapitalAuthorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
-      );
-      const isHubUnauthorized = this.authHeader === 'Authorization' && (
-        status === 401 || messages.some(m => m.includes('unauthorized') && m.includes('token'))
-      );
+      const isAtraceUnauthorized = this.authHeader === 'AtraceAuthorization' && this.isAuthError(status, messages, 'atraceauthorization token is invalid');
+      const isContactsUnauthorized = this.authHeader === 'ContactsAuthorization' && this.isAuthError(status, messages, 'contactsauthorization token is invalid');
+      const isMenuUnauthorized = this.authHeader === 'MenuAuthorization' && this.isAuthError(status, messages, 'menuauthorization token is invalid');
+      const isTasksUnauthorized = this.authHeader === 'IssuesAuthorization' && this.isAuthError(status, messages, 'issuesauthorization token is invalid');
+      const isGoodsUnauthorized = this.authHeader === 'GoodsAuthorization' && this.isAuthError(status, messages, 'goodsauthorization token is invalid');
+      const isPlansUnauthorized = this.authHeader === 'PlansAuthorization' && this.isAuthError(status, messages, 'plansauthorization token is invalid');
+      const isCapitalUnauthorized = this.authHeader === 'CapitalAuthorization' && this.isAuthError(status, messages);
+      const isHubUnauthorized = this.authHeader === 'Authorization' && this.isAuthError(status, messages);
 
       if (isRateLimited) {
         logWarn('Rate limit detected');

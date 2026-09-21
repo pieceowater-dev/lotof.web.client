@@ -194,8 +194,16 @@ export function useAuth() {
 
   const isLoggedIn = computed(() => !!user.value && !!token.value);
 
-  // Register global unauthorized handler once (with token refresh attempt)
-  if (process.client && !useState<boolean>('auth_handler_registered', () => false).value) {
+  // Register global unauthorized handler once (with token refresh attempt).
+  // Registered on the server too, not just process.client -- pages that
+  // server-render their data fetch (useAsyncData without lazy/client-only)
+  // hit an expired token during SSR just as often as on the client, and
+  // refreshAccessToken() forwards the incoming request's cookie there (see
+  // its own comment) so the refresh call actually has something to work
+  // with. The dedup guard itself is still safe per-request: unauthorizedHandlers
+  // is a WeakMap keyed by the current nuxtApp instance, which SSR gives a
+  // fresh one of per request.
+  if (!useState<boolean>('auth_handler_registered', () => false).value) {
     const reg = useState<boolean>('auth_handler_registered', () => false);
     setUnauthorizedHandler(async () => {
       log('[auth] Unauthorized detected, attempting token refresh');
