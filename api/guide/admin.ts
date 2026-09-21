@@ -1,4 +1,7 @@
 import { capitalClient, setGlobalAuthToken } from '@/api/clients';
+import { getApiBaseUrl } from '@/utils/api-base';
+import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload';
+import { assertUploadSize } from '@/utils/imageCompression';
 import type { GuideApp, GuideArticle, GuideArticleListItem, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 
 export type GuideCategoryInput = {
@@ -198,4 +201,75 @@ export async function guideDeleteArticle(token: string, id: string): Promise<boo
   setGlobalAuthToken(token);
   const res = await capitalClient.request<{ deleteGuideArticle: boolean }>(DELETE_GUIDE_ARTICLE_MUTATION, { id });
   return !!res.deleteGuideArticle;
+}
+
+const UPLOAD_GUIDE_ARTICLE_IMAGE_MUTATION = /* GraphQL */ `
+  mutation UploadGuideArticleImage($articleId: String!, $file: Upload!, $alt: String) {
+    uploadGuideArticleImage(articleId: $articleId, file: $file, alt: $alt) {
+      assetId
+      url
+      key
+      contentType
+      size
+    }
+  }
+`;
+
+// Uploads an image for inline use in a Guide article's markdown body (the
+// article must already exist -- an unsaved "create" draft has no id yet).
+// Mirrors capitalUploadPublicationImage's GraphQL-multipart shape exactly.
+export async function capitalUploadGuideArticleImage(
+  token: string,
+  articleId: string,
+  file: File,
+  options?: { alt?: string },
+): Promise<{ url: string; assetId: string; key: string; contentType: string; size: string }> {
+  assertUploadSize(file);
+  const operations = {
+    query: UPLOAD_GUIDE_ARTICLE_IMAGE_MUTATION,
+    variables: {
+      articleId,
+      file: null,
+      alt: options?.alt || null,
+    },
+  };
+
+  const { body, contentType } = await buildGraphqlUploadBody(operations, { file: ['variables.file'] }, 'file', file);
+
+  const headers: Record<string, string> = { 'Content-Type': contentType };
+  if (token) {
+    headers.CapitalAuthorization = `Bearer ${token}`;
+  }
+
+  const uploadUrl = `${getApiBaseUrl('capital')}/query`;
+
+  const response = await fetch(uploadUrl, {
+    method: 'POST',
+    headers,
+    body,
+    credentials: 'omit',
+  });
+
+  const result: any = await response.json().catch(() => ({}));
+  const lastMessage = String(result?.errors?.[0]?.message || result?.message || `Upload failed with status ${response.status}`);
+  if (!response.ok) {
+    throw new Error(lastMessage);
+  }
+
+  if (!result || result?.errors?.length) {
+    throw new Error(lastMessage || 'Upload failed');
+  }
+
+  const payload = result?.data?.uploadGuideArticleImage;
+  if (!payload?.url) {
+    throw new Error('Upload did not return image URL');
+  }
+
+  return {
+    url: String(payload.url),
+    assetId: String(payload.assetId || ''),
+    key: String(payload.key || ''),
+    contentType: String(payload.contentType || ''),
+    size: String(payload.size || ''),
+  };
 }

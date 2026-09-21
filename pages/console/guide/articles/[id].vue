@@ -10,6 +10,7 @@
   <GuideArticleEditor
     v-else
     mode="edit"
+    :article-id="articleId"
     :initial-article="initialArticle"
     :on-save="onSave"
     :on-delete="onDelete"

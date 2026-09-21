@@ -64,9 +64,20 @@
             {{ locale.label }}
           </UButton>
           <div class="flex-1" />
+          <UButton
+            size="xs"
+            variant="ghost"
+            icon="lucide:image-plus"
+            :loading="uploadingImage"
+            :disabled="preview"
+            @click="triggerImagePicker"
+          >
+            {{ t('admin.guideInsertImage') }}
+          </UButton>
           <UButton size="xs" variant="ghost" :icon="preview ? 'lucide:pencil' : 'lucide:eye'" @click="preview = !preview">
             {{ preview ? t('admin.guideEdit') : t('admin.guidePreview') }}
           </UButton>
+          <input ref="contentFileInput" type="file" accept="image/*" class="hidden" @change="onContentImagePicked">
         </div>
 
         <div v-show="activeLocale === 'Ru'" class="space-y-4">
@@ -142,12 +153,14 @@ import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { slugFromNames } from '@/utils/slug';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
+import { compressImageForUpload } from '@/utils/imageCompression';
 import type { GuideApp, GuideArticleStatus, GuideCategory } from '@/api/guide/public';
 import type { GuideArticleInput } from '@/api/guide/admin';
-import { consoleListGuideCategories } from '@/api/guide/admin';
+import { consoleListGuideCategories, capitalUploadGuideArticleImage } from '@/api/guide/admin';
 
 const props = defineProps<{
   mode: 'create' | 'edit';
+  articleId?: string;
   initialArticle?: Partial<GuideArticleInput>;
   onSave: (input: GuideArticleInput) => Promise<void>;
   onDelete?: () => Promise<void>;
@@ -160,7 +173,9 @@ const { confirm } = useConfirm();
 
 const saving = ref(false);
 const preview = ref(false);
+const uploadingImage = ref(false);
 const activeLocale = ref<'Ru' | 'Kk' | 'En'>('Ru');
+const contentFileInput = ref<HTMLInputElement | null>(null);
 
 const LOCALES: Array<{ code: 'Ru' | 'Kk' | 'En'; label: string }> = [
   { code: 'Ru', label: 'Русский' },
@@ -227,6 +242,64 @@ watch(() => props.initialArticle, (next) => {
 }, { deep: true });
 
 loadCategories();
+
+const CONTENT_FIELD_BY_LOCALE = { Ru: 'contentRu', Kk: 'contentKk', En: 'contentEn' } as const;
+
+function triggerImagePicker() {
+  if (!props.articleId) {
+    toast.add({ title: t('admin.guideSaveFirstForImages'), color: 'amber' });
+    return;
+  }
+  contentFileInput.value?.click();
+}
+
+async function onContentImagePicked(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0] ?? null;
+  input.value = '';
+  if (!file || !props.articleId) return;
+
+  uploadingImage.value = true;
+  try {
+    const compressed = await compressImageForUpload(file, { t });
+    const uploaded = await capitalUploadGuideArticleImage(token.value || '', props.articleId, compressed);
+    insertImageMarkdown(uploaded.url, file.name);
+    toast.add({ title: t('admin.guideImageUploaded'), color: 'green' });
+  } catch (e) {
+    logError('Failed to upload guide image:', e);
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('admin.guideImageUploadError'), color: 'red' });
+  } finally {
+    uploadingImage.value = false;
+  }
+}
+
+// Inserts markdown image syntax at the focused textarea's cursor when that
+// textarea belongs to the currently active locale (matched by its stable
+// id), otherwise appends to the end of that locale's content -- there's no
+// rich-text block model here to attach an "image block" to, just plain
+// markdown text per locale.
+function insertImageMarkdown(url: string, altSource: string) {
+  const locale = activeLocale.value;
+  const fieldKey = CONTENT_FIELD_BY_LOCALE[locale];
+  const alt = altSource.replace(/[[\]]/g, '').trim();
+  const markdown = `![${alt}](${url})`;
+  const textareaId = `guide-content-${locale.toLowerCase()}`;
+  const current = form[fieldKey] || '';
+
+  const active = document.activeElement as HTMLTextAreaElement | null;
+  if (active && active.tagName === 'TEXTAREA' && active.id === textareaId) {
+    const start = active.selectionStart ?? current.length;
+    const end = active.selectionEnd ?? current.length;
+    const before = current.slice(0, start);
+    const after = current.slice(end);
+    const leadingNewline = before.length > 0 && !before.endsWith('\n') ? '\n' : '';
+    form[fieldKey] = `${before}${leadingNewline}${markdown}\n${after}`;
+    return;
+  }
+
+  const leadingNewline = current.length > 0 && !current.endsWith('\n') ? '\n' : '';
+  form[fieldKey] = `${current}${leadingNewline}${markdown}\n`;
+}
 
 async function handleSave(status: GuideArticleStatus) {
   if (!form.slug.trim() || !form.titleRu.trim()) {
