@@ -87,6 +87,14 @@ export function useClientDynamicFields(deps: UseClientDynamicFieldsDeps) {
   function isDynamicFieldsEmptyStateError(error: unknown): boolean {
     const message = String((error as any)?.message || error || '').toLowerCase();
     const mentionsDynamicField = message.includes('dynamic field') || message.includes('dynamicfield');
+    // The gateways no longer pass internal error text to the browser, so a
+    // backend that reports "no rows" for an unconfigured tenant now arrives
+    // as a bare "internal error". A client with no dynamic fields is an empty
+    // state, not a failure, so keep treating it as one; the full error is in
+    // the gateway log with its trace_id.
+    if (message === 'internal error') {
+      return true;
+    }
     return (message.includes('not found') && mentionsDynamicField)
       || (message.includes('no rows') && mentionsDynamicField)
       || (message.includes('no data') && mentionsDynamicField)
