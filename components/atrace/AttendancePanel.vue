@@ -83,7 +83,7 @@ const view = ref<'table' | 'analytics'>('table');
 
   <div
     v-if="selectedPostId !== null"
-    class="flex-1 px-4 pb-safe-or-4 flex flex-col min-h-0"
+    class="flex-1 px-4 pb-1 flex flex-col min-h-0"
   >
     <div
       v-if="canManageAttendance"
