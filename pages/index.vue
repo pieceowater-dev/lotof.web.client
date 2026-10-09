@@ -12,6 +12,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
 import AppCard from '@/components/ui/AppCard.vue';
+import PromoVideo from '@/components/ui/PromoVideo.vue';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
 import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
@@ -874,6 +875,25 @@ watch([articlesSearch, selectedArticleTag], () => {
             :aria-label="t(slide.headlineKey)"
             @click="activeCatalogSlide = i"
           />
+        </div>
+      </div>
+
+      <!-- Promo video: video left, copy right. Lazy -- PromoVideo only
+           fetches the file once it's near the viewport. -->
+      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-4 md:pt-8 pb-10 md:pb-14">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          <PromoVideo
+            src="/media/brag.mp4"
+            poster="/assets/brag-poster.jpg"
+            :width="608"
+            :height="1080"
+            :sound-on-label="t('app.promoVideoSoundOn')"
+            :sound-off-label="t('app.promoVideoSoundOff')"
+          />
+          <div>
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
+            <p class="mt-3 text-base text-gray-600 dark:text-gray-300 max-w-md">{{ t('app.promoVideoDesc') }}</p>
+          </div>
         </div>
       </div>
 

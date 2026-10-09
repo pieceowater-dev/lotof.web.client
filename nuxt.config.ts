@@ -296,6 +296,7 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
+    serverAssets: [{ baseName: 'media', dir: new URL('./server/media', import.meta.url).pathname }],
     externals: {
       inline: ['xlsx']
     },
