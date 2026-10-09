@@ -71,31 +71,53 @@ const catalogFeatures = [
   { key: 'more', icon: 'lucide:sparkles', titleKey: 'app.catalogFeatureMoreTitle', descKey: 'app.catalogFeatureMoreDesc' },
 ] as const;
 
-// Plain (non-opacity-modified) Tailwind gradient utility classes render
-// fine in this app -- it's specifically the `/opacity` modifier on
-// gradient-stop classes that @nuxt/ui's regenerated color palette breaks
-// (see the removed inline-style workaround this used briefly). Going light
-// via genuinely light shades (50/100) sidesteps that landmine entirely.
-const catalogSlides = [
-  { key: 'businesses', icon: 'lucide:store', headlineKey: 'app.catalogSlideBusinessesTitle', descKey: 'app.catalogSlideBusinessesDesc', gradient: 'from-blue-50 to-indigo-100', iconColor: 'text-indigo-400', headlineColor: 'text-indigo-950', descColor: 'text-indigo-800', accentColor: 'rgba(129, 140, 248, 0.35)' },
-  { key: 'ratings', icon: 'lucide:star', headlineKey: 'app.catalogSlideRatingsTitle', descKey: 'app.catalogSlideRatingsDesc', gradient: 'from-amber-50 to-orange-100', iconColor: 'text-orange-400', headlineColor: 'text-amber-950', descColor: 'text-amber-800', accentColor: 'rgba(251, 146, 60, 0.35)' },
-  { key: 'services', icon: 'lucide:briefcase', headlineKey: 'app.catalogSlideServicesTitle', descKey: 'app.catalogSlideServicesDesc', gradient: 'from-rose-50 to-pink-100', iconColor: 'text-pink-400', headlineColor: 'text-rose-950', descColor: 'text-rose-800', accentColor: 'rgba(244, 114, 182, 0.35)' },
-  { key: 'more', icon: 'lucide:sparkles', headlineKey: 'app.catalogSlideMoreTitle', descKey: 'app.catalogSlideMoreDesc', gradient: 'from-fuchsia-50 to-purple-100', iconColor: 'text-purple-400', headlineColor: 'text-fuchsia-950', descColor: 'text-fuchsia-800', accentColor: 'rgba(192, 132, 252, 0.35)' },
+// Scroll reveal: elements fade up once as they enter the viewport
+// (IntersectionObserver, transform/opacity only; see .reveal in <style>).
+const vReveal = {
+  mounted(el: HTMLElement, binding: { value?: number }) {
+    el.classList.add('reveal');
+    if (binding.value) el.style.transitionDelay = `${binding.value}ms`;
+    if (typeof IntersectionObserver === 'undefined') {
+      el.classList.add('reveal-in');
+      return;
+    }
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add('reveal-in');
+          io.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+    );
+    io.observe(el);
+    (el as HTMLElement & { __revealIO?: IntersectionObserver }).__revealIO = io;
+  },
+  unmounted(el: HTMLElement & { __revealIO?: IntersectionObserver }) {
+    el.__revealIO?.disconnect();
+  },
+};
+
+// Marketing tiles for the logged-out "for business" bento (logged-in staff
+// see their real app dashboard instead). span = columns of the 6-col grid.
+const bizTiles = [
+  { id: 'menu', name: 'Orders', icon: 'lucide:receipt-text', descKey: 'app.homeProdOrders', span: 'md:col-span-4', big: true },
+  { id: 'atrace', name: 'A-Trace', icon: 'lucide:qr-code', descKey: 'app.homeProdAtrace', span: 'md:col-span-2', big: false },
+  { id: 'contacts', name: 'Contacts', icon: 'lucide:contact', descKey: 'app.homeProdContacts', span: 'md:col-span-2', big: false },
+  { id: 'goods', name: 'Goods', icon: 'lucide:package', descKey: 'app.homeProdGoods', span: 'md:col-span-2', big: false },
+  { id: 'issues', name: 'Issues', icon: 'lucide:clipboard-check', descKey: 'app.homeProdIssues', span: 'md:col-span-2', big: false },
+  { id: 'plans', name: 'Plans', icon: 'lucide:calendar-check', descKey: 'app.homeProdPlans', span: 'md:col-span-4', big: true },
 ] as const;
-
-const activeCatalogSlide = ref(0);
-let catalogSlideTimer: ReturnType<typeof setInterval> | null = null;
-
-onMounted(() => {
-  if (!process.client) return;
-  catalogSlideTimer = setInterval(() => {
-    activeCatalogSlide.value = (activeCatalogSlide.value + 1) % catalogSlides.length;
-  }, 4500);
-});
-
-onBeforeUnmount(() => {
-  if (catalogSlideTimer) clearInterval(catalogSlideTimer);
-});
+const customerSteps = [
+  { n: '01', titleKey: 'app.homeCStep1Title', descKey: 'app.homeCStep1Desc', icon: 'lucide:search' },
+  { n: '02', titleKey: 'app.homeCStep2Title', descKey: 'app.homeCStep2Desc', icon: 'lucide:shopping-bag' },
+  { n: '03', titleKey: 'app.homeCStep3Title', descKey: 'app.homeCStep3Desc', icon: 'lucide:heart' },
+] as const;
+const startSteps = [
+  { n: '01', titleKey: 'app.homeStep1Title', descKey: 'app.homeStep1Desc', icon: 'lucide:log-in' },
+  { n: '02', titleKey: 'app.homeStep2Title', descKey: 'app.homeStep2Desc', icon: 'lucide:layout-grid' },
+  { n: '03', titleKey: 'app.homeStep3Title', descKey: 'app.homeStep3Desc', icon: 'lucide:users' },
+] as const;
 
 onMounted(async () => {
   // 1) Wait a tick for cookies to be available after OAuth redirect
@@ -793,151 +815,126 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
       </ClientOnly>
 
-      <!-- Mobile-only "Работаете на lota?" callout, above the carousel --
-           the header ribbon has no room to spell this out on small
-           screens (just a bare button there), so on mobile it moves here
-           instead, where it's actually noticeable. -->
-      <div v-if="initialized" class="sm:hidden max-w-7xl mx-auto px-2 pt-4">
-        <div class="rounded-2xl px-4 py-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-3">
-          <p class="min-w-0 flex items-center gap-1.5 text-sm text-blue-900 dark:text-blue-200">
-            <UIcon name="lucide:briefcase" class="w-4 h-4 flex-shrink-0" />
-            <span class="truncate">{{ t('app.hubRibbonText') || 'Работаете на lota?' }}</span>
+      <!-- HERO: introduces lota and splits visitors into two paths --
+           customers (patrons) go to the Catalog, business staff to the Hub. -->
+      <section v-if="initialized" class="relative -mt-20 overflow-hidden">
+        <div class="hero-mesh pointer-events-none absolute inset-0" aria-hidden="true" />
+        <div class="relative max-w-7xl mx-auto px-4 pt-28 sm:pt-32 md:pt-40 pb-10 md:pb-14 text-center">
+          <span v-reveal class="eyebrow">{{ t('app.homeHeroEyebrow') }}</span>
+          <h1 v-reveal="80" class="mt-5 text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] text-gray-900 dark:text-white">
+            {{ t('app.homeHeroTitleA') }}<br>
+            <span class="grad-text">{{ t('app.homeHeroTitleB') }}</span>
+          </h1>
+          <p v-reveal="160" class="mt-4 mx-auto max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-gray-300">
+            {{ t('app.homeHeroLead') }}
           </p>
-          <button
-            type="button"
-            class="flex-shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/40 px-3 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
-            @click="handleGoToHub"
-          >
-            <svg v-if="!isLoggedIn" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-            </svg>
-            <span class="truncate">{{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : (t('app.hubRibbonCta') || 'Войти через Google') }}</span>
-          </button>
-        </div>
-        <LegalLinks v-if="!isLoggedIn" context="login" align="start" class="mt-2 px-1" />
-      </div>
 
-      <!-- Auto-rotating carousel: each slide owns its own light gradient.
-           No mode="out-in" -- old and new slides crossfade simultaneously
-           (default Transition behavior) so there's never an instant with
-           neither mounted, which is what flashed the page's white
-           background through earlier. A big decorative icon deliberately
-           bleeds past the card edge, clipped by the frame's
-           overflow-hidden. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-4 sm:pt-6 md:pt-8 pb-4 sm:pb-12 md:pb-16">
-        <div class="relative w-full h-[460px] sm:h-[460px] rounded-3xl overflow-hidden border border-gray-200 dark:border-gray-800">
-          <Transition name="catalog-fade">
-            <div
-              :key="activeCatalogSlide"
-              :class="['absolute inset-0 flex flex-col px-8 md:px-14 py-16 pt-8 bg-gradient-to-br', catalogSlides[activeCatalogSlide].gradient]"
-            >
-              <div class="flex items-center gap-2">
-                <div class="w-7 h-7 rounded-lg bg-white shadow-sm flex items-center justify-center flex-shrink-0">
-                  <picture>
-                    <source srcset="/assets/logo.webp" type="image/webp">
-                    <img src="/assets/logo.png" alt="Logo" width="18" height="18" class="h-[18px] w-[18px]">
-                  </picture>
-                </div>
-                <span class="text-sm font-semibold text-gray-700">{{ t('app.title') }}</span>
-              </div>
-
-              <div class="relative flex-1 flex items-center">
-                <div class="relative z-10 max-w-sm">
-                  <h2 :class="['text-2xl md:text-3xl font-bold leading-snug', catalogSlides[activeCatalogSlide].headlineColor]">
-                    {{ t(catalogSlides[activeCatalogSlide].headlineKey) }}
-                  </h2>
-                  <p :class="['mt-3 text-lg leading-relaxed', catalogSlides[activeCatalogSlide].descColor]">
-                    {{ t(catalogSlides[activeCatalogSlide].descKey) }}
-                  </p>
-                </div>
-
-                <!-- Accent glow behind the icon, in the slide's own hue, so
-                     the icon doesn't just float on the flat card gradient. -->
-                <div
-                  class="absolute -right-16 -bottom-16 sm:-right-10 sm:-bottom-10 md:-right-14 md:-bottom-14 w-96 h-96 sm:w-[34rem] sm:h-[34rem] md:w-[42rem] md:h-[42rem] rounded-full pointer-events-none"
-                  :style="{ background: `radial-gradient(circle, ${catalogSlides[activeCatalogSlide].accentColor} 0%, transparent 80%)` }"
-                />
-
-                <UIcon
-                  :name="catalogSlides[activeCatalogSlide].icon"
-                  :class="['absolute -right-10 -bottom-14 sm:-right-20 sm:-bottom-32 md:-right-28 md:-bottom-36 w-56 h-56 sm:w-[23rem] sm:h-[23rem] md:w-[29rem] md:h-[29rem] pointer-events-none opacity-60', catalogSlides[activeCatalogSlide].iconColor]"
-                />
-              </div>
-
-              <button
-                type="button"
-                class="relative z-10 self-start -mt-5 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-600 transition-all"
-                @click="handleGoToCatalog"
-              >
-                {{ t('app.goToCatalogCta') || 'Перейти в каталог' }}
-                <UIcon name="lucide:arrow-right" class="w-4 h-4" />
-              </button>
-            </div>
-          </Transition>
-        </div>
-
-        <div class="mt-4 flex items-center gap-1.5">
-          <button
-            v-for="(slide, i) in catalogSlides"
-            :key="slide.key"
-            type="button"
-            class="h-1.5 rounded-full transition-all"
-            :class="i === activeCatalogSlide ? 'w-6 bg-emerald-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'"
-            :aria-label="t(slide.headlineKey)"
-            @click="activeCatalogSlide = i"
-          />
-        </div>
-      </div>
-
-      <!-- Promo video: one full-width card (same frame as the carousel above,
-           so there's no hard seam between them) -- copy + CTA left, video
-           right. PromoVideo only fetches the file once it's near the
-           viewport and starts playing (muted) at >60% visible. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-4 pb-10 md:pb-14">
-        <div class="py-6 sm:px-6 md:px-10 md:py-8">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
-            <div class="pt-2 lg:pt-8">
-              <!-- Every slide's copy sits in the same grid cell, so the block is
-                   always as tall as the tallest one and nothing below it
-                   jumps when the slide changes; only the active one shows. -->
-              <div class="grid">
-                <div
-                  v-for="(slide, i) in promoSlides"
-                  :key="slide.id"
-                  class="col-start-1 row-start-1 transition-opacity duration-200"
-                  :class="i === activePromo ? 'opacity-100' : 'pointer-events-none opacity-0'"
-                  :aria-hidden="i !== activePromo"
-                >
-                  <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-5">
-                    <UIcon :name="slide.icon" class="w-7 h-7" />
+          <!-- Split hero: two halves of one surface. Hovering a half lets it
+               grow; the lota mark sits on the seam. -->
+          <div v-reveal="240" class="mt-8 md:mt-12 text-left">
+            <div class="bezel">
+              <div class="split relative flex flex-col md:flex-row overflow-hidden" style="border-radius: calc(2rem - 0.4rem)">
+                <div class="split-panel panel-client group relative flex min-h-[19rem] cursor-pointer flex-col overflow-hidden p-6 md:min-h-[28rem] md:p-10" role="button" tabindex="0" @click="handleGoToCatalog" @keydown.enter="handleGoToCatalog">
+                  <div class="relative z-10 flex items-start justify-between gap-4">
+                    <span class="eyebrow">{{ t('app.homePathClientTag') }}</span>
+                    <div class="icon-tile"><UIcon name="lucide:store" class="w-6 h-6" /></div>
                   </div>
-                  <h2 class="text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-gray-100">{{ t(slide.titleKey) }}</h2>
-                  <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300 max-w-lg">{{ t(slide.descKey) }}</p>
+                  <h2 class="relative z-10 mt-8 max-w-[21rem] text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-white">{{ t('app.homePathClientTitle') }}</h2>
+                  <p class="relative z-10 mt-3 max-w-[21rem] text-sm md:text-base leading-6 text-gray-600 dark:text-gray-300">{{ t('app.homePathClientDesc') }}</p>
+                  <div class="relative z-10 mt-auto pt-8">
+                    <span class="cta-pill cta-pill--ghost">
+                      {{ t('app.goToCatalogCta') }}
+                      <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+                    </span>
+                  </div>
+                  <!-- decorative floating chips -->
+                  <div class="chip float-a" style="right: 15%; top: 30%"><UIcon name="lucide:star" class="h-4 w-4 text-amber-500" />4.9</div>
+                  <div class="chip float-b" style="right: 12%; top: 46%"><UIcon name="lucide:heart" class="h-4 w-4 text-rose-500" />128</div>
+                  <div class="chip float-c" style="right: 16%; top: 62%"><UIcon name="lucide:gift" class="h-4 w-4 text-emerald-600" />+140</div>
                 </div>
-              </div>
-              <button
-                type="button"
-                class="mt-4 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
-                @click="handleGoToHub"
-              >
-                {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
-                <UIcon name="lucide:arrow-right" class="w-4 h-4" />
-              </button>
-              <div class="mt-6 flex items-center gap-1.5">
-                <button
-                  v-for="(slide, i) in promoSlides"
-                  :key="slide.id"
-                  type="button"
-                  class="h-1.5 rounded-full transition-all"
-                  :class="i === activePromo ? 'w-6 bg-emerald-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'"
-                  :aria-label="t(slide.titleKey)"
-                  @click="activePromo = i"
-                />
+
+                <div class="seam-slot pointer-events-none" aria-hidden="true">
+                  <div class="seam-badge">
+                    <picture>
+                      <source srcset="/assets/logo.webp" type="image/webp">
+                      <img src="/assets/logo.png" alt="" width="28" height="28" class="h-7 w-7">
+                    </picture>
+                  </div>
+                </div>
+
+                <div class="split-panel panel-biz group relative flex min-h-[19rem] cursor-pointer flex-col overflow-hidden p-6 md:min-h-[28rem] md:p-10" role="button" tabindex="0" @click="handleGoToHub" @keydown.enter="handleGoToHub">
+                  <div class="relative z-10 flex items-start justify-between gap-4">
+                    <span class="eyebrow">{{ t('app.homePathBizTag') }}</span>
+                    <div class="icon-tile"><UIcon name="lucide:briefcase" class="w-6 h-6" /></div>
+                  </div>
+                  <h2 class="relative z-10 mt-8 max-w-[21rem] text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-white">{{ t('app.homePathBizTitle') }}</h2>
+                  <p class="relative z-10 mt-3 max-w-[21rem] text-sm md:text-base leading-6 text-gray-600 dark:text-gray-300">{{ t('app.homePathBizDesc') }}</p>
+                  <div class="relative z-10 mt-auto pt-8">
+                    <span class="cta-pill cta-pill--primary">
+                      <svg v-if="!isLoggedIn" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                  </svg>
+                      {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : (t('app.hubRibbonCta') || 'Войти через Google') }}
+                      <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+                    </span>
+                  </div>
+                  <div class="chip float-b" style="right: 9%; top: 34%"><UIcon name="lucide:receipt-text" class="h-4 w-4 text-blue-600" />#128</div>
+                  <div class="chip float-c" style="right: 3%; top: 50%"><UIcon name="lucide:qr-code" class="h-4 w-4 text-blue-600" />08:58</div>
+                  <div class="chip float-a" style="right: 14%; top: 66%"><UIcon name="lucide:circle-check" class="h-4 w-4 text-emerald-600" />OK</div>
+                </div>
+
               </div>
             </div>
+          </div>
+
+          <div v-reveal="440" class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
+            <span v-for="k in ['homeFact1', 'homeFact2', 'homeFact3']" :key="k" class="inline-flex items-center gap-1.5">
+              <UIcon name="lucide:check" class="w-4 h-4 text-emerald-600" />
+              {{ t('app.' + k) }}
+            </span>
+          </div>
+          <LegalLinks v-if="!isLoggedIn" context="login" align="center" class="mt-4" />
+        </div>
+      </section>
+
+      <!-- MEET LOTA: the video deck + per-video copy -->
+      <section v-if="initialized" class="max-w-7xl mx-auto px-4 py-14 md:py-24">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
+          <div v-reveal class="lg:pt-6">
+            <span class="eyebrow">{{ t('app.homeSeeEyebrow') }}</span>
+            <div class="mt-6 grid">
+              <div
+                v-for="(slide, i) in promoSlides"
+                :key="slide.id"
+                class="col-start-1 row-start-1 transition-opacity duration-300"
+                :class="i === activePromo ? 'opacity-100' : 'pointer-events-none opacity-0'"
+                :aria-hidden="i !== activePromo"
+              >
+                <div class="icon-tile mb-6"><UIcon :name="slide.icon" class="w-6 h-6" /></div>
+                <h2 class="text-3xl md:text-4xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t(slide.titleKey) }}</h2>
+                <p class="mt-4 max-w-lg text-base md:text-lg leading-7 text-gray-600 dark:text-gray-300">{{ t(slide.descKey) }}</p>
+              </div>
+            </div>
+            <button type="button" class="cta-pill cta-pill--primary mt-8" @click="handleGoToHub">
+              {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
+              <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+            </button>
+            <div class="mt-8 flex items-center gap-1.5">
+              <button
+                v-for="(slide, i) in promoSlides"
+                :key="slide.id"
+                type="button"
+                class="h-1.5 rounded-full transition-all duration-500"
+                :class="i === activePromo ? 'w-6 bg-emerald-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'"
+                :aria-label="t(slide.titleKey)"
+                @click="activePromo = i"
+              />
+            </div>
+          </div>
+          <div v-reveal="160">
             <PromoVideoDeck
               v-model:active="activePromo"
               :slides="promoSlides as any"
@@ -948,56 +945,85 @@ watch([articlesSearch, selectedArticleTag], () => {
             />
           </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Catalog, explained -- and a second chance to click through. Same
-           width/left-aligned rhythm as the business services section below,
-           not a separate centered block. A bottom border + matching
-           vertical padding is the section divider -- no divider of its own
-           otherwise, this ran straight into "Business services" below it. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-4 py-10 md:py-14 border-b border-gray-100 dark:border-gray-800">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-            <div
-              v-for="feature in catalogFeatures"
-              :key="feature.key"
-              class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 sm:p-7"
-            >
-              <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-4">
-                <UIcon :name="feature.icon" class="w-8 h-8" />
-              </div>
-              <p class="text-xl font-semibold text-gray-900 dark:text-gray-100 leading-snug">{{ t(feature.titleKey) }}</p>
-              <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t(feature.descKey) }}</p>
-            </div>
-          </div>
-
-          <div>
-            <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-5">
-              <UIcon name="lucide:store" class="w-7 h-7" />
-            </div>
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{{ t('app.catalogCardTitle') || 'Каталог' }}</h2>
-            <p class="mt-3 text-base text-gray-600 dark:text-gray-300 max-w-md">
-              {{ t('app.catalogExplainer') || 'Каталог — удобный способ находить и выбирать бизнесы на lota: смотрите публичные витрины, меню и цены, оформляйте заказы и записывайтесь на услуги — без звонков и лишних действий.' }}
-            </p>
-            <button
-              type="button"
-              class="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
-              @click="handleGoToCatalog"
-            >
-              {{ t('app.open') || 'Открыть' }}
-              <UIcon name="lucide:arrow-right" class="w-4 h-4" />
+      <!-- CATALOG (about 60% of the page): what it is, how it works, the
+           customer profile. Business content follows, more compactly. -->
+      <section v-if="initialized" class="max-w-7xl mx-auto px-4 py-14 md:py-24">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+          <div v-reveal>
+            <span class="eyebrow">{{ t('app.homeCustEyebrow') }}</span>
+            <h2 class="mt-5 text-3xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t('app.homeCustTitle') }}</h2>
+            <p class="mt-4 max-w-lg text-base md:text-lg leading-7 text-gray-600 dark:text-gray-300">{{ t('app.catalogExplainer') }}</p>
+            <button type="button" class="cta-pill cta-pill--primary mt-8" @click="handleGoToCatalog">
+              {{ t('app.goToCatalogCta') }}
+              <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
             </button>
           </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+            <div v-for="(feature, i) in catalogFeatures" :key="feature.key" v-reveal="i * 100">
+              <div class="bezel h-full">
+                <div class="bezel-core h-full p-6">
+                  <div class="icon-tile"><UIcon :name="feature.icon" class="w-6 h-6" /></div>
+                  <p class="mt-6 text-lg font-bold leading-snug text-gray-900 dark:text-white">{{ t(feature.titleKey) }}</p>
+                  <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t(feature.descKey) }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      <!-- Business services -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-4 pt-10 md:pt-14 pb-10 md:pb-14 space-y-6 md:space-y-10 border-b border-gray-100 dark:border-gray-800">
-        <div>
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.businessServicesHeading') || 'Сервисы lota для бизнеса' }}</h3>
-          <p class="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">{{ t('app.businessServicesHint') || 'Приложения для управления бизнесом на платформе lota' }}</p>
+      <section v-if="initialized" class="max-w-7xl mx-auto px-4 py-14 md:py-24">
+        <div v-reveal class="mx-auto mb-10 md:mb-14 max-w-3xl text-center">
+          <span class="eyebrow">{{ t('app.homeCustHowEyebrow') }}</span>
+          <h2 class="mt-5 text-3xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t('app.homeCustHowTitle') }}</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
+          <div v-for="(step, i) in customerSteps" :key="step.n" v-reveal="i * 110">
+            <div class="bezel h-full">
+              <div class="bezel-core h-full p-6 md:p-8">
+                <div class="flex items-center justify-between">
+                  <span class="text-4xl font-extrabold tracking-tight grad-text">{{ step.n }}</span>
+                  <div class="icon-tile"><UIcon :name="step.icon" class="w-6 h-6" /></div>
+                </div>
+                <h3 class="mt-8 text-xl font-bold text-gray-900 dark:text-white">{{ t(step.titleKey) }}</h3>
+                <p class="mt-2 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t(step.descKey) }}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
+        <div v-reveal class="mt-4 md:mt-5">
+          <div class="bezel">
+            <div
+              class="relative flex flex-col gap-6 overflow-hidden p-6 text-white md:flex-row md:items-center md:justify-between md:p-10"
+              style="border-radius: calc(2rem - 0.4rem); background-image: linear-gradient(135deg, #2563eb, #10b981); box-shadow: 0 18px 40px -20px rgba(37, 99, 235, 0.6)"
+            >
+              <UIcon name="lucide:heart" class="pointer-events-none absolute -right-6 -bottom-12 h-56 w-56" style="opacity: 0.12" />
+              <div class="relative max-w-xl">
+                <h3 class="text-2xl md:text-3xl font-bold tracking-tight">{{ t('app.homeProfileTitle') }}</h3>
+                <p class="mt-3 text-base leading-7" style="opacity: 0.92">{{ t('app.homeProfileDesc') }}</p>
+              </div>
+              <button type="button" class="cta-pill relative flex-shrink-0 self-start md:self-auto" style="background: #fff; color: #0f172a" @click="handleGoToCatalog">
+                {{ t('app.goToCatalogCta') }}
+                <span class="cta-arrow" style="background: rgba(15, 23, 42, 0.08)"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- FOR BUSINESS (about 40%): staff see their real app dashboard;
+           everyone else a compact grid of the products leading to the Hub. -->
+      <section v-if="initialized" class="max-w-7xl mx-auto px-4 py-14 md:py-20">
+        <div v-reveal class="mb-8 md:mb-10 max-w-3xl">
+          <span class="eyebrow">{{ t('app.homeBizEyebrow') }}</span>
+          <h2 class="mt-5 text-2xl md:text-4xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t('app.homeBizTitle') }}</h2>
+          <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeBizDesc') }}</p>
+        </div>
+
+        <div v-if="isLoggedIn && (activeApps.length || possibleApps.length)" class="space-y-6 md:space-y-10">
         <div v-if="activeApps.length">
           <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
@@ -1015,7 +1041,49 @@ watch([articlesSearch, selectedArticleTag], () => {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+
+        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+          <div v-for="(tile, i) in bizTiles" :key="tile.id" v-reveal="(i % 3) * 100">
+            <div class="bezel bezel-hover group h-full cursor-pointer" role="button" tabindex="0" @click="handleGoToHub" @keydown.enter="handleGoToHub">
+              <div class="bezel-core relative flex h-full min-h-[11rem] flex-col overflow-hidden p-5 md:p-6">
+                <UIcon :name="tile.icon" class="pointer-events-none absolute -right-6 -bottom-8 h-40 w-40 text-gray-900 dark:text-white" style="opacity: 0.045" />
+                <div class="flex items-center gap-3">
+                  <div class="icon-tile"><UIcon :name="tile.icon" class="w-6 h-6" /></div>
+                  <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ tile.name }}</h3>
+                </div>
+                <p class="mt-4 text-sm md:text-base leading-6 text-gray-600 dark:text-gray-300">{{ t(tile.descKey) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-reveal class="mt-4 md:mt-5">
+          <div class="bezel">
+            <div class="bezel-core flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
+              <div class="max-w-2xl">
+                <h3 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.homeStartTitle') }}</h3>
+                <ol class="mt-3 flex flex-col gap-1.5 text-sm md:text-base text-gray-600 dark:text-gray-300">
+                  <li v-for="step in startSteps" :key="step.n" class="flex items-baseline gap-2">
+                    <span class="grad-text font-bold">{{ step.n }}</span>
+                    <span><b class="font-semibold text-gray-900 dark:text-white">{{ t(step.titleKey) }}.</b> {{ t(step.descKey) }}</span>
+                  </li>
+                </ol>
+              </div>
+              <div class="flex flex-shrink-0 flex-col items-start gap-3">
+                <button type="button" class="cta-pill cta-pill--primary" @click="handleGoToHub">
+                  {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
+                  <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+                </button>
+                <span class="inline-flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                  <UIcon name="lucide:gift" class="w-4 h-4 text-emerald-600" />
+                  {{ t('app.promoSlideReferralTitle') }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div v-if="initialized" ref="feedSectionRef" class="max-w-7xl mx-auto px-4 py-10 text-gray-700 dark:text-gray-300">
         <!-- News section above the article feed -->
@@ -1168,5 +1236,235 @@ watch([articlesSearch, selectedArticleTag], () => {
 .catalog-fade-enter-from,
 .catalog-fade-leave-to {
   opacity: 0;
+}
+
+/* ---- Home redesign ---- */
+.hero-mesh {
+  background:
+    radial-gradient(55% 45% at 12% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
+    radial-gradient(45% 40% at 92% 6%, rgba(16, 185, 129, 0.16), transparent 70%),
+    radial-gradient(40% 35% at 50% 100%, rgba(99, 102, 241, 0.08), transparent 70%);
+  -webkit-mask-image: linear-gradient(#000 65%, transparent);
+  mask-image: linear-gradient(#000 65%, transparent);
+}
+:global(.dark) .hero-mesh {
+  background:
+    radial-gradient(55% 45% at 12% 0%, rgba(37, 99, 235, 0.22), transparent 70%),
+    radial-gradient(45% 40% at 92% 6%, rgba(16, 185, 129, 0.18), transparent 70%);
+}
+
+.grad-text {
+  background-image: linear-gradient(90deg, #2563eb, #10b981);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #475569;
+  background: rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07);
+}
+:global(.dark) .eyebrow {
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.icon-tile {
+  display: flex;
+  height: 3.25rem;
+  width: 3.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  color: #fff;
+  background-image: linear-gradient(135deg, #2563eb, #10b981);
+  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.55);
+}
+
+/* Double bezel: a hairline outer tray holding a lighter inner core. */
+.bezel {
+  border-radius: 2rem;
+  padding: 0.4rem;
+  background: rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.bezel-core {
+  border-radius: calc(2rem - 0.4rem);
+  background: #fff;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 18px 40px -20px rgba(15, 23, 42, 0.18);
+}
+.bezel-hover:hover {
+  transform: translateY(-4px);
+}
+:global(.dark) .bezel {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+:global(.dark) .bezel-core {
+  background: #111827;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Pill CTA with the arrow in its own nested circle. */
+.cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  padding: 0.45rem 0.45rem 0.45rem 1.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.cta-pill:active {
+  transform: scale(0.98);
+}
+.cta-pill--primary {
+  color: #fff;
+  background-image: linear-gradient(90deg, #2563eb, #10b981);
+  box-shadow: 0 12px 28px -12px rgba(37, 99, 235, 0.65);
+}
+.cta-pill--ghost {
+  color: #0f172a;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+:global(.dark) .cta-pill--ghost {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.cta-arrow {
+  display: flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.cta-pill--ghost .cta-arrow,
+.cta-arrow--ghost {
+  background: rgba(15, 23, 42, 0.06);
+  color: inherit;
+}
+:global(.dark) .cta-pill--ghost .cta-arrow,
+:global(.dark) .cta-arrow--ghost {
+  background: rgba(255, 255, 255, 0.1);
+}
+.cta-pill:hover .cta-arrow,
+.group:hover .cta-arrow {
+  transform: translate(2px, -1px) scale(1.06);
+}
+
+/* Scroll reveal (transform/opacity only). */
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0);
+  transition:
+    opacity 0.9s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.9s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.reveal-in {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Split hero */
+.split-panel {
+  transition: flex-grow 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+}
+@media (min-width: 768px) {
+  .split-panel { flex: 1 1 0; }
+  .split:hover .split-panel { flex-grow: 0.86; }
+  .split .split-panel:hover { flex-grow: 1.28; }
+}
+.panel-client {
+  background-image: linear-gradient(155deg, #eff6ff 0%, #e0e7ff 100%);
+}
+.panel-biz {
+  background-image: linear-gradient(155deg, #ecfdf5 0%, #cffafe 100%);
+}
+:global(.dark) .panel-client { background-image: linear-gradient(155deg, #1e293b 0%, #1e1b4b 100%); }
+:global(.dark) .panel-biz { background-image: linear-gradient(155deg, #0f2a26 0%, #0c3040 100%); }
+
+.seam-slot {
+  position: relative;
+  z-index: 5;
+  display: none;
+  width: 0;
+  flex: none;
+}
+@media (min-width: 768px) {
+  .seam-slot { display: block; }
+}
+.seam-badge {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  display: flex;
+  height: 3.5rem;
+  width: 3.5rem;
+  margin: -1.75rem 0 0 -1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 10px 24px -8px rgba(15, 23, 42, 0.25);
+}
+:global(.dark) .seam-badge { background: #111827; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06), 0 10px 24px -8px rgba(0, 0, 0, 0.5); }
+
+.chip {
+  position: absolute;
+  z-index: 1;
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.25), inset 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+@media (min-width: 768px) {
+  .chip { display: inline-flex; }
+}
+:global(.dark) .chip { color: #fff; background: rgba(31, 41, 55, 0.92); }
+.float-a { animation: chip-float 6s ease-in-out infinite; }
+.float-b { animation: chip-float 7.5s ease-in-out -2s infinite; }
+.float-c { animation: chip-float 6.8s ease-in-out -4s infinite; }
+@keyframes chip-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-a, .float-b, .float-c { animation: none; }
 }
 </style>
