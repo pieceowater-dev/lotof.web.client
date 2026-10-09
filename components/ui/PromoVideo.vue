@@ -16,7 +16,8 @@ const wrapRef = ref<HTMLElement | null>(null);
 const videoRef = ref<HTMLVideoElement | null>(null);
 const loaded = ref(false);
 const muted = ref(true);
-let observer: IntersectionObserver | null = null;
+let loadObserver: IntersectionObserver | null = null;
+let playObserver: IntersectionObserver | null = null;
 
 function play() {
   videoRef.value?.play().catch(() => { /* autoplay blocked: poster stays, user can tap */ });
@@ -24,23 +25,34 @@ function play() {
 
 onMounted(() => {
   if (!wrapRef.value || typeof IntersectionObserver === 'undefined') return;
-  observer = new IntersectionObserver(
+  // Start fetching a bit before the block is on screen...
+  loadObserver = new IntersectionObserver(
     (entries) => {
-      const visible = entries.some((e) => e.isIntersecting);
-      if (visible && !loaded.value) {
+      if (entries.some((e) => e.isIntersecting)) {
         loaded.value = true;
-        nextTick(play);
-      } else if (loaded.value) {
-        if (visible) play();
-        else videoRef.value?.pause();
+        loadObserver?.disconnect();
       }
     },
-    { rootMargin: '200px 0px', threshold: 0.25 },
+    { rootMargin: '300px 0px' },
   );
-  observer.observe(wrapRef.value);
+  loadObserver.observe(wrapRef.value);
+  // ...but only play (muted) once more than 60% of it is visible.
+  playObserver = new IntersectionObserver(
+    (entries) => {
+      const visible = entries.some((e) => e.intersectionRatio > 0.6);
+      loaded.value = loaded.value || visible;
+      if (visible) nextTick(play);
+      else videoRef.value?.pause();
+    },
+    { threshold: [0, 0.6, 0.61] },
+  );
+  playObserver.observe(wrapRef.value);
 });
 
-onBeforeUnmount(() => observer?.disconnect());
+onBeforeUnmount(() => {
+  loadObserver?.disconnect();
+  playObserver?.disconnect();
+});
 
 function toggleSound() {
   if (!videoRef.value) return;
@@ -53,7 +65,7 @@ function toggleSound() {
 <template>
   <div
     ref="wrapRef"
-    class="relative mx-auto w-full max-w-[320px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg dark:border-gray-800"
+    class="relative mx-auto w-full max-w-[340px] overflow-hidden rounded-3xl bg-white shadow-lg dark:bg-gray-900"
     :style="{ aspectRatio: `${props.width} / ${props.height}` }"
   >
     <video
@@ -71,7 +83,7 @@ function toggleSound() {
     <button
       v-if="loaded"
       type="button"
-      class="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white backdrop-blur transition-colors hover:bg-black/70"
+      class="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-emerald-600 shadow-md backdrop-blur transition-colors hover:bg-white dark:bg-gray-800/90 dark:text-emerald-300"
       :aria-label="muted ? props.soundOnLabel : props.soundOffLabel"
       @click="toggleSound"
     >

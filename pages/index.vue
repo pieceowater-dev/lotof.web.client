@@ -878,21 +878,33 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
       </div>
 
-      <!-- Promo video: video left, copy right. Lazy -- PromoVideo only
-           fetches the file once it's near the viewport. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-4 md:pt-8 pb-10 md:pb-14">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          <PromoVideo
-            src="/media/brag.mp4"
-            poster="/assets/brag-poster.jpg"
-            :width="608"
-            :height="1080"
-            :sound-on-label="t('app.promoVideoSoundOn')"
-            :sound-off-label="t('app.promoVideoSoundOff')"
-          />
-          <div>
-            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
-            <p class="mt-3 text-base text-gray-600 dark:text-gray-300 max-w-md">{{ t('app.promoVideoDesc') }}</p>
+      <!-- Promo video: one full-width card (same frame as the carousel above,
+           so there's no hard seam between them) -- copy + CTA left, video
+           right. PromoVideo only fetches the file once it's near the
+           viewport and starts playing (muted) at >60% visible. -->
+      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pb-10 md:pb-14">
+        <div class="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-6 py-10 sm:px-10 md:px-14 md:py-14">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+            <div>
+              <h2 class="text-3xl md:text-5xl font-bold leading-tight text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
+              <p class="mt-5 text-lg md:text-xl leading-8 text-gray-700 dark:text-gray-300 max-w-xl">{{ t('app.promoVideoDesc') }}</p>
+              <button
+                type="button"
+                class="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-7 py-3.5 text-base font-semibold text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-600 transition-all"
+                @click="handleGoToHub"
+              >
+                {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
+                <UIcon name="lucide:arrow-right" class="w-5 h-5" />
+              </button>
+            </div>
+            <PromoVideo
+              src="/media/brag.mp4"
+              poster="/assets/brag-poster.jpg"
+              :width="608"
+              :height="1080"
+              :sound-on-label="t('app.promoVideoSoundOn')"
+              :sound-off-label="t('app.promoVideoSoundOff')"
+            />
           </div>
         </div>
       </div>
