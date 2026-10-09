@@ -210,7 +210,9 @@ function handleSubmit() {
         </div>
       </template>
 
-      <div class="max-h-[72vh] overflow-y-auto px-5 py-5">
+      <!-- Fixed height: the modal is vertically centred, so a content-driven height made it jump
+           whenever a hint line appeared or the fulfilment type added/removed a field. -->
+      <div class="h-[min(72vh,38rem)] overflow-y-auto px-5 py-5">
         <div class="grid gap-6 md:grid-cols-2">
           <!-- Left: how the order is fulfilled + who it is for -->
           <div class="space-y-5 min-w-0">
