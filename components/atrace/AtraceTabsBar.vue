@@ -25,7 +25,7 @@ const activeTabModel = computed({
 
 <template>
   <div class="px-4 flex-shrink-0">
-    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1 pb-6 -mb-4 px-1 -mx-1">
       <button
         class="pill-filter"
         :class="activeTabModel === 'attendance' ? 'pill-filter--active' : ''"

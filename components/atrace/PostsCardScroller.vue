@@ -74,7 +74,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="cardsScrollRef"
-    class="hidden md:block overflow-x-auto no-scrollbar whitespace-nowrap pt-1 pb-4 px-4 flex-shrink-0"
+    class="hidden md:block overflow-x-auto no-scrollbar whitespace-nowrap pt-1 pb-9 -mb-5 px-4 flex-shrink-0"
     data-tour="posts-list"
   >
     <div class="inline-flex space-x-4 items-stretch">
