@@ -27,7 +27,10 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
-import { buildMenuDocVariables, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import { buildCustomFieldsTable, buildMenuDocVariables, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
+import type { MenuOrderField } from '@/api/menu/orderfield/list';
+import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
@@ -389,6 +392,7 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     loadClientIntegration();
     loadDocumentTemplates();
     loadBrandSettings();
+    loadOrderFields();
     resetPaymentForm();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
@@ -408,6 +412,7 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     isQuickAddOpen.value = false;
     isMobileTimelineOpen.value = false;
     isEditingOrder.value = false;
+    isEditingFields.value = false;
     if (route.query.order) {
       const q = { ...route.query };
       delete q.order;
@@ -706,6 +711,55 @@ async function saveEditOrder() {
   }
 }
 
+// --- Custom order fields (tenant-defined extra data points, see settings'
+// "Order fields" tab). Values live on the order as one JSON object keyed by
+// field id; saving goes through its own targeted mutation so editing them
+// never touches the contact/address/comment edit above. ---
+const orderFields = ref<MenuOrderField[]>([]);
+
+async function loadOrderFields() {
+  try {
+    const menuToken = await getToken();
+    const { menuOrderFieldsList } = await import('@/api/menu/orderfield/list');
+    orderFields.value = (await menuOrderFieldsList(menuToken, nsSlug.value)).fields;
+  } catch (e) {
+    logError('[OrderDetailModal] loadOrderFields failed', e);
+  }
+}
+
+const customValues = computed<CustomFieldValues>(() => parseCustomFields(props.order?.customFields));
+const visibleOrderFields = computed(() => fieldsForOrder(orderFields.value, customValues.value));
+const yesNoLabels = computed(() => ({ yes: t('menu.yes') || 'Yes', no: t('menu.no') || 'No' }));
+
+const isEditingFields = ref(false);
+const savingFields = ref(false);
+const fieldsForm = reactive<CustomFieldValues>({});
+
+function startEditFields() {
+  for (const k of Object.keys(fieldsForm)) delete fieldsForm[k];
+  Object.assign(fieldsForm, customValues.value);
+  isEditingFields.value = true;
+}
+const missingFields = computed(() => missingRequiredFields(visibleOrderFields.value, fieldsForm));
+
+async function saveFields() {
+  if (!props.order || savingFields.value || missingFields.value.length) return;
+  savingFields.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuUpdateOrderCustomFields } = await import('@/api/menu/order/updateCustomFields');
+    const res = await menuUpdateOrderCustomFields(menuToken, nsSlug.value, props.order.id, serializeCustomFields(fieldsForm));
+    emit('statusChanged', { ...props.order, customFields: res.customFields });
+    isEditingFields.value = false;
+    useToast().add({ title: t('menu.orderUpdated') || 'Order updated', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] saveFields failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update order', color: 'red' });
+  } finally {
+    savingFields.value = false;
+  }
+}
+
 // --- Share link ---
 const shareUrl = computed(() => {
   if (!process.client || !props.order) return '';
@@ -878,6 +932,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
     },
     brand: brandSettings.value,
     branch,
+    customFieldsBlock: buildCustomFieldsTable(orderFields.value, props.order.customFields, noneLabel, yesNoLabels.value),
   });
   // QR generation is async and only worth doing if the template actually
   // references the variable -- checking every locale's token spelling
@@ -1095,6 +1150,42 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                   {{ t('app.cancel') || 'Cancel' }}
                 </UButton>
                 <UButton size="sm" color="primary" :loading="savingEdit" :disabled="!isEditFormValid || savingEdit" @click="saveEditOrder">
+                  {{ t('app.save') || 'Save' }}
+                </UButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Custom order fields -->
+          <div v-if="visibleOrderFields.length" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <Icon name="lucide:list-plus" class="w-3.5 h-3.5" />
+                {{ t('menu.customFields') || 'Details' }}
+              </div>
+              <button v-if="!isEditingFields" type="button" class="text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 inline-flex items-center gap-1" @click="startEditFields">
+                <Icon name="lucide:pencil" class="w-3 h-3" />
+                {{ t('common.edit') || 'Edit' }}
+              </button>
+            </div>
+
+            <dl v-if="!isEditingFields" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
+              <div v-for="f in visibleOrderFields" :key="f.id" class="min-w-0">
+                <dt class="text-xs text-gray-500 dark:text-gray-400">{{ f.label }}</dt>
+                <dd class="text-gray-900 dark:text-gray-100 break-words">
+                  {{ formatCustomFieldValue(f, customValues[f.id], yesNoLabels) || '—' }}
+                </dd>
+              </div>
+            </dl>
+            <div v-else class="space-y-2.5">
+              <UFormGroup v-for="f in visibleOrderFields" :key="f.id" :label="f.label" :required="f.isRequired && f.isActive">
+                <OrderFieldInput :field="f" :model-value="fieldsForm[f.id] ?? ''" @update:model-value="(v: string) => (fieldsForm[f.id] = v)" />
+              </UFormGroup>
+              <div class="flex justify-end gap-2 pt-1">
+                <UButton size="sm" color="gray" variant="ghost" :disabled="savingFields" @click="isEditingFields = false">
+                  {{ t('app.cancel') || 'Cancel' }}
+                </UButton>
+                <UButton size="sm" color="primary" :loading="savingFields" :disabled="savingFields || missingFields.length > 0" @click="saveFields">
                   {{ t('app.save') || 'Save' }}
                 </UButton>
               </div>
