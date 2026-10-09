@@ -74,7 +74,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="cardsScrollRef"
-    class="hidden md:block overflow-x-auto whitespace-nowrap py-2 px-4 flex-shrink-0"
+    class="hidden md:block overflow-x-auto no-scrollbar whitespace-nowrap pt-2 pb-5 px-4 flex-shrink-0"
     data-tour="posts-list"
   >
     <div class="inline-flex space-x-4 items-stretch">
@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
         <div
           v-for="i in 5"
           :key="`skeleton-${i}`"
-          class="p-3 rounded-xl w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[76px] self-stretch flex flex-col border border-gray-200 dark:border-gray-800 bg-white/60 dark:bg-gray-900/60"
+          class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[84px] self-stretch !cursor-default"
         >
           <div class="flex items-center gap-2 mb-2">
             <USkeleton class="h-5 w-3/4" />
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
         <button
           v-if="canCreate"
           data-tour="create-post-btn"
-          class="bg-gradient-to-r from-emerald-400 to-emerald-600 dark:from-emerald-900 dark:to-emerald-700 text-white shadow-lg p-3 rounded-xl w-60 min-h-[76px] flex items-center justify-center cursor-pointer hover:shadow-xl hover:from-emerald-500 hover:to-emerald-700 dark:hover:from-emerald-800 dark:hover:to-emerald-600 transition-all duration-200 flex-shrink-0"
+          class="at-post-add w-60 min-h-[84px]"
           @click="emit('create')"
         >
           {{ t('app.atraceAddLocation') }}

@@ -414,13 +414,13 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-emerald-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-    <div class="w-full max-w-md bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-xl p-6 flex flex-col items-center">
-      <h1 class="text-xl font-semibold mb-2 text-emerald-900 dark:text-white flex flex-col items-center justify-center w-full">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-[#f6f6f7] dark:bg-[#141414]">
+    <div class="at-panel w-full max-w-md !p-7 flex flex-col items-center">
+      <h1 class="at-title !text-xl mb-2 flex flex-col items-center justify-center w-full">
         <span class="flex items-center justify-center w-full gap-2">
           <UIcon
             name="i-lucide-qr-code"
-            class="w-7 h-7 text-emerald-500 dark:text-emerald-300"
+            class="w-7 h-7 text-blue-600 dark:text-blue-300"
           />
           <span>{{ t('app.atraceTitle') }}</span>
         </span>
@@ -441,7 +441,7 @@ onBeforeUnmount(() => {
         <UButton
           color="primary"
           icon="i-lucide-key"
-          class="w-full"
+          class="w-full rounded-full"
           @click="askPin"
         >
           {{ t('app.enterPin') || 'Enter PIN' }}
@@ -478,7 +478,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <div
-              class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 flex items-center justify-center"
+              class="at-row !bg-white dark:!bg-[#262626] !rounded-[1.5rem] !p-4 flex items-center justify-center shadow-lg"
               style="min-width:180px; min-height:180px;"
             >
               <img

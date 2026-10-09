@@ -142,7 +142,7 @@ onMounted(() => {
   <div class="mb-6">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
       <div>
-        <h2 class="text-base font-medium">
+        <h2 class="at-h2">
           {{ t('app.route.list') || 'Маршруты' }}
         </h2>
         <p class="text-xs text-gray-500">

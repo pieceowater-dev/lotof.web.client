@@ -25,12 +25,10 @@ const activeTabModel = computed({
 
 <template>
   <div class="px-4 flex-shrink-0">
-    <div class="flex items-center gap-2 overflow-x-auto pb-2">
+    <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
       <button
-        class="px-3 py-1.5 rounded-full text-sm font-medium border transition"
-        :class="activeTabModel === 'attendance'
-          ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
-          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+        class="pill-filter"
+        :class="activeTabModel === 'attendance' ? 'pill-filter--active' : ''"
         @click="activeTabModel = 'attendance'"
       >
         {{ t('app.attendance') || 'Посещаемость' }}
@@ -38,25 +36,21 @@ const activeTabModel = computed({
       <button
         v-for="r in routes"
         :key="r.id"
-        class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-        :class="activeTabModel === `route:${r.id}`
-          ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
-          : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+        class="pill-filter whitespace-nowrap"
+        :class="activeTabModel === `route:${r.id}` ? 'pill-filter--active' : ''"
         @click="activeTabModel = `route:${r.id}`"
       >
         {{ r.title || (t('app.route.label') || 'Маршрут') }}
       </button>
-      <UButton
+      <button
         v-if="canCreateRoute"
-        icon="lucide:plus"
-        size="xs"
-        color="emerald"
-        variant="soft"
-        class="flex-shrink-0"
+        type="button"
+        class="at-btn at-btn--blue flex-shrink-0"
         @click="emit('add-route')"
       >
+        <UIcon name="lucide:plus" class="h-4 w-4" />
         {{ t('app.route.add') || 'Добавить маршрут' }}
-      </UButton>
+      </button>
       <span
         v-if="routesLoading"
         class="text-xs text-gray-500"

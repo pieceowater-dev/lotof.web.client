@@ -7,6 +7,7 @@ const props = withDefaults(defineProps<{
   loading?: boolean
   emptyIcon?: string
   hover?: boolean
+  soft?: boolean
   // Total count for pagination; if not provided, falls back to rows.length
   total?: number | null
   pageCountOptions?: number[]
@@ -52,7 +53,10 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col h-full">
+  <div
+    class="overflow-hidden flex flex-col h-full"
+    :class="soft ? 'at-tray' : 'bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800'"
+  >
     <div class="flex-1 min-h-0 overflow-auto">
       <div class="overflow-x-auto">
         <UTable
@@ -118,7 +122,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 
     <!-- Optional pagination footer -->
     <template v-if="hasPaging">
-      <div class="flex flex-wrap justify-between items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
+      <div class="flex flex-wrap justify-between items-center gap-2 px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex-shrink-0" :class="soft && 'at-tray-foot'">
         <div>
           <span class="text-xs leading-5 text-gray-600 dark:text-gray-400">
             {{ t('common.showing') }}

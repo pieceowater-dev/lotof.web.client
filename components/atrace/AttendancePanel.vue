@@ -51,7 +51,7 @@ const view = ref<'table' | 'analytics'>('table');
 <template>
   <div class="hidden md:flex justify-between items-center mb-2 mt-3 px-4 flex-shrink-0">
     <div class="text-left">
-      <h2 class="text-sm font-medium text-gray-600 dark:text-gray-300">
+      <h2 class="at-h2">
         {{ t('app.attendance') }} —
         {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
       </h2>
@@ -68,18 +68,18 @@ const view = ref<'table' | 'analytics'>('table');
   >
     <div
       v-if="canManageAttendance"
-      class="flex-shrink-0 mb-3 inline-flex self-start rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5 text-sm"
+      class="pl-toggle flex-shrink-0 mb-3 self-start"
     >
       <button
-        class="px-3 py-1.5 rounded-md transition-colors"
-        :class="view === 'table' ? 'bg-white dark:bg-gray-900 shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400'"
+        class="pl-toggle__btn !px-5 !py-1.5"
+        :class="view === 'table' ? 'pl-toggle__btn--on' : ''"
         @click="view = 'table'"
       >
         {{ t('app.analyticsViewTable') || 'Таблица' }}
       </button>
       <button
-        class="px-3 py-1.5 rounded-md transition-colors"
-        :class="view === 'analytics' ? 'bg-white dark:bg-gray-900 shadow-sm font-medium' : 'text-gray-500 dark:text-gray-400'"
+        class="pl-toggle__btn !px-5 !py-1.5"
+        :class="view === 'analytics' ? 'pl-toggle__btn--on' : ''"
         @click="view = 'analytics'"
       >
         {{ t('app.analyticsViewAnalytics') || 'Аналитика' }}
@@ -103,11 +103,11 @@ const view = ref<'table' | 'analytics'>('table');
     v-else
     class="flex-1 h-full px-4 pb-safe-or-4 flex flex-col items-center justify-center"
   >
-    <div class="max-w-sm w-full bg-white dark:bg-gray-900 rounded-2xl shadow-lg p-6 flex flex-col items-center border border-gray-200 dark:border-gray-800">
+    <div class="at-empty at-panel">
       <div class="mb-3 flex flex-col items-center">
         <UIcon
           name="i-heroicons-map-pin"
-          class="w-12 h-12 text-emerald-400 dark:text-emerald-300 mb-2"
+          class="w-12 h-12 text-blue-500 dark:text-blue-300 mb-2"
         />
         <h2 class="text-xl font-bold text-center mb-1 text-gray-900 dark:text-white">
           {{ t('app.noPostsTitle') || 'No locations yet' }}
@@ -121,7 +121,7 @@ const view = ref<'table' | 'analytics'>('table');
         data-tour="create-post-btn-empty"
         color="primary"
         size="md"
-        class="w-full"
+        class="w-full rounded-full"
         @click="emit('create')"
       >
         {{ t('app.atraceAddLocation') || 'Add Location' }}

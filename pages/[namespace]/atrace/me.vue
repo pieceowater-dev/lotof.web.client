@@ -278,21 +278,19 @@ onMounted(() => {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-auto">
     <div class="flex justify-between items-center mb-4 flex-shrink-0">
       <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="at-title">
           {{ t('app.myStats') || 'Моя статистика' }}
         </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.myStatsSubtitle') || 'График, посещаемость и зарплата' }}</span>
+        <p class="at-sub">{{ t('app.myStatsSubtitle') || 'График, посещаемость и зарплата' }}</p>
       </div>
-      <UButton
-        icon="lucide:arrow-left"
-        size="xs"
-        color="primary"
-        variant="soft"
-        class="gap-2"
+      <button
+        type="button"
+        class="at-btn at-btn--blue"
         @click="goBack"
       >
+        <UIcon name="lucide:arrow-left" class="h-4 w-4" />
         <span class="hidden sm:inline">{{ t('app.back') }}</span>
-      </UButton>
+      </button>
     </div>
 
     <div
@@ -313,8 +311,8 @@ onMounted(() => {
 
     <template v-else>
       <!-- Schedule -->
-      <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
-        <h2 class="text-base font-medium mb-2">
+      <div class="at-panel mb-5">
+        <h2 class="at-h2 mb-2">
           {{ t('app.mySchedule') || 'Мой график' }}
         </h2>
         <div v-if="pattern">
@@ -342,13 +340,13 @@ onMounted(() => {
       <!-- Current month -->
       <div
         v-if="currentSummary"
-        class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700"
+        class="at-panel mb-5"
       >
-        <h2 class="text-base font-medium mb-3">
+        <h2 class="at-h2 mb-3">
           {{ t('app.thisMonth') || 'Текущий месяц' }}
         </h2>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div>
+          <div class="at-stat">
             <div class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
               {{ currentSummary.attendedDays }}/{{ currentSummary.requiredDays }}
             </div>
@@ -356,7 +354,7 @@ onMounted(() => {
               {{ t('app.attendedDays') || 'Отработано дней' }}
             </div>
           </div>
-          <div>
+          <div class="at-stat">
             <div class="text-2xl font-semibold text-red-600 dark:text-red-400">
               {{ currentSummary.missedDays }}
             </div>
@@ -364,7 +362,7 @@ onMounted(() => {
               {{ t('app.missedDays') || 'Пропущено' }}
             </div>
           </div>
-          <div>
+          <div class="at-stat">
             <div class="text-2xl font-semibold text-amber-600 dark:text-amber-400">
               {{ currentSummary.lateDays }}
               <span
@@ -376,7 +374,7 @@ onMounted(() => {
               {{ t('app.lateDays') || 'Опоздания' }}
             </div>
           </div>
-          <div>
+          <div class="at-stat">
             <div class="text-2xl font-semibold">
               {{ currentSummary.totalWorkedHours.toFixed(1) }}
             </div>
@@ -389,7 +387,7 @@ onMounted(() => {
 
       <!-- Check-in history -->
       <div class="mb-6">
-        <h2 class="text-base font-medium mb-3">
+        <h2 class="at-h2 mb-3">
           {{ t('app.myCheckInHistory') || 'История отметок' }}
         </h2>
         <div
@@ -409,7 +407,7 @@ onMounted(() => {
           <div
             v-for="{ date, records } in myRecordsByDay"
             :key="date"
-            class="rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2"
+            class="at-row"
           >
             <div class="text-sm font-medium mb-1.5 capitalize">
               {{ formatRecordDate(date) }}
@@ -418,7 +416,7 @@ onMounted(() => {
               <div
                 v-for="r in records"
                 :key="r.id"
-                class="inline-flex items-center gap-1.5 rounded-md bg-gray-50 dark:bg-gray-800/60 px-2 py-1 text-xs"
+                class="at-chip"
               >
                 <span class="font-medium">{{ formatRecordTime(r) }}</span>
                 <span class="text-gray-500">{{ recordDirectionLabel(r, records) }}</span>
@@ -461,12 +459,12 @@ onMounted(() => {
       <!-- Projected salary -->
       <div
         v-if="projectedSalary"
-        class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700"
+        class="at-panel mb-5"
       >
-        <h2 class="text-base font-medium mb-3">
+        <h2 class="at-h2 mb-3">
           {{ t('app.projectedSalary') || 'Ожидаемая зарплата (текущий месяц)' }}
         </h2>
-        <div class="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+        <div class="text-3xl font-extrabold tracking-tight grad-text mb-2 w-fit">
           {{ formatAmount(projectedSalary.totalAmount, projectedSalary.currency) }}
         </div>
         <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
@@ -478,7 +476,7 @@ onMounted(() => {
 
       <!-- Attendance history -->
       <div class="mb-6">
-        <h2 class="text-base font-medium mb-3">
+        <h2 class="at-h2 mb-3">
           {{ t('app.attendanceHistory') || 'История посещаемости' }}
         </h2>
         <div
@@ -492,6 +490,7 @@ onMounted(() => {
           class="h-[300px]"
         >
           <AppTable
+            soft
             :rows="summaryHistoryRows"
             :columns="summaryColumns"
             :pagination="false"
@@ -506,11 +505,12 @@ onMounted(() => {
 
       <!-- Salary history -->
       <div v-if="!salaryUnavailable && salaryHistoryRows.length > 0">
-        <h2 class="text-base font-medium mb-3">
+        <h2 class="at-h2 mb-3">
           {{ t('app.salaryHistory') || 'История зарплаты' }}
         </h2>
         <div class="h-[300px]">
           <AppTable
+            soft
             :rows="salaryHistoryRows"
             :columns="salaryColumns"
             :pagination="false"

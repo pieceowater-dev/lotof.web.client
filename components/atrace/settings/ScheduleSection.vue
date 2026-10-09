@@ -306,7 +306,7 @@ onMounted(async () => {
     <!-- Patterns -->
     <div>
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-base font-medium">
+        <h2 class="at-h2">
           {{ t('app.shiftPatterns') || 'Графики работы' }}
         </h2>
         <UButton
@@ -339,6 +339,7 @@ onMounted(async () => {
         class="h-[360px]"
       >
         <AppTable
+          soft
           v-model:page="patternsPage"
           v-model:page-count="patternsPageCount"
           :rows="paginatedPatternRows"
@@ -399,7 +400,7 @@ onMounted(async () => {
     <!-- Assignments -->
     <div>
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-base font-medium">
+        <h2 class="at-h2">
           {{ t('app.scheduleAssignments') || 'Назначения графиков' }}
         </h2>
         <UButton
@@ -425,6 +426,7 @@ onMounted(async () => {
         class="h-[360px]"
       >
         <AppTable
+          soft
           v-model:page="assignmentsPage"
           v-model:page-count="assignmentsPageCount"
           :rows="paginatedAssignmentRows"

@@ -1,17 +1,35 @@
 <template>
   <UModal
     :model-value="modelValue"
-    :ui="{ width: 'sm:max-w-md' }"
+    :ui="{
+      width: 'sm:max-w-md',
+      overlay: { background: 'bg-gray-900/30 dark:bg-gray-950/60 backdrop-blur-sm' },
+      rounded: 'rounded-[2rem]',
+      shadow: 'shadow-2xl',
+    }"
     @update:model-value="val => emit('update:modelValue', val)"
   >
-    <UCard>
+    <UCard
+      :ui="{
+        ring: 'ring-1 ring-black/5 dark:ring-white/10',
+        rounded: 'rounded-[2rem]',
+        background: 'bg-white dark:bg-[#1a1a1a]',
+        divide: '',
+        header: { padding: 'px-6 pt-6 pb-2 sm:px-6' },
+        body: { padding: 'px-6 py-3 sm:p-6 sm:pt-3 sm:pb-3' },
+        footer: { padding: 'px-6 pb-6 pt-3 sm:px-6' },
+      }"
+    >
       <template #header>
-        <h3 class="text-lg font-semibold">
-          {{ title }}
-        </h3>
+        <div class="flex items-center gap-3">
+          <span class="icon-tile !h-10 !w-10 !rounded-xl"><UIcon name="lucide:key-round" class="h-5 w-5" /></span>
+          <h3 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">
+            {{ title }}
+          </h3>
+        </div>
       </template>
-      <div class="space-y-2">
-        <p class="text-gray-600 text-sm">
+      <div class="space-y-3">
+        <p class="text-sm leading-6 text-gray-600 dark:text-gray-400">
           {{ description }}
         </p>
         <UInput
@@ -19,31 +37,34 @@
           maxlength="6"
           placeholder="******"
           type="password"
+          size="lg"
+          :ui="{ rounded: 'rounded-full', base: 'text-center tracking-[0.5em]' }"
           class="w-full"
           @keyup.enter="submitPin"
         />
         <div
           v-if="error"
-          class="text-red-500 text-xs"
+          class="text-xs text-red-600 dark:text-red-400"
         >
           {{ error }}
         </div>
       </div>
       <template #footer>
         <div class="flex justify-end gap-2">
-          <UButton
-            color="primary"
-            variant="soft"
+          <button
+            type="button"
+            class="at-btn"
             @click="close"
           >
             {{ t('common.cancel') }}
-          </UButton>
-          <UButton
-            color="primary"
+          </button>
+          <button
+            type="button"
+            class="at-btn at-btn--primary"
             @click="submitPin"
           >
             {{ t('common.ok') }}
-          </UButton>
+          </button>
         </div>
       </template>
     </UCard>

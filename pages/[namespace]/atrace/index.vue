@@ -381,40 +381,34 @@ onBeforeUnmount(() => {
       :banners="leaveApprovalBanners"
       @dismiss="dismissLeaveApprovalBanner"
     />
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-2 mt-2 px-4 flex-shrink-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-3 mt-3 px-4 flex-shrink-0">
       <div
         class="text-left min-w-0"
         data-tour="atrace-title"
       >
-        <h1 class="text-lg sm:text-xl font-semibold">
+        <h1 class="at-title">
           {{ t('app.atraceTitle') }}
         </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSubtitle') }}</span>
+        <p class="at-sub">{{ t('app.atraceSubtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 flex-shrink-0">
-        <UButton
-          icon="lucide:user-round"
-          size="xs"
-          color="gray"
-          variant="soft"
-          class="flex-1 sm:flex-none justify-center"
+        <NuxtLink
           :to="`/${nsSlug}/atrace/me`"
+          class="at-btn flex-1 sm:flex-none"
         >
+          <UIcon name="lucide:user-round" class="h-4 w-4" />
           {{ t('app.myStats') || 'Моя статистика' }}
-        </UButton>
+        </NuxtLink>
         <div
           v-if="canSeeSettings"
           data-tour="settings-btn"
           class="flex-1 sm:flex-none"
         >
-          <UButton
-            icon="lucide:settings"
-            size="xs"
-            color="primary"
-            variant="soft"
-            class="relative w-full justify-center"
+          <NuxtLink
             :to="`/${nsSlug}/atrace/settings`"
+            class="at-btn at-btn--blue w-full"
           >
+            <UIcon name="lucide:settings" class="h-4 w-4" />
             {{ t('app.atraceManagement') || 'Управление' }}
             <span
               v-if="pendingApprovalCount > 0"
@@ -423,7 +417,7 @@ onBeforeUnmount(() => {
               <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75" />
               <span class="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
             </span>
-          </UButton>
+          </NuxtLink>
         </div>
       </div>
     </div>

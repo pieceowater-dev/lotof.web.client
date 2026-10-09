@@ -737,36 +737,38 @@ function formatNumber(val: number, fractionDigits = 0) {
     <div class="mb-3 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
       <!-- Period Filter Buttons -->
       <div class="flex flex-wrap gap-1.5">
-        <UButton 
-          :color="selectedPeriod === 'month' ? 'primary' : 'gray'" 
-          size="sm"
+        <button
+          type="button"
+          class="pill-filter"
+          :class="selectedPeriod === 'month' ? 'pill-filter--active' : ''"
           @click="selectedPeriod = 'month'"
         >
           {{ t('app.thisMonth') }}
-        </UButton>
-        <UButton 
-          :color="selectedPeriod === 'week' ? 'primary' : 'gray'" 
-          size="sm"
-          class="hidden md:inline-flex"
+        </button>
+        <button
+          type="button"
+          class="pill-filter !hidden md:!inline-flex"
+          :class="selectedPeriod === 'week' ? 'pill-filter--active' : ''"
           @click="selectedPeriod = 'week'"
         >
           {{ t('app.thisWeek') }}
-        </UButton>
-        <UButton 
-          :color="selectedPeriod === '3months' ? 'primary' : 'gray'" 
-          size="sm"
-          class="hidden md:inline-flex"
+        </button>
+        <button
+          type="button"
+          class="pill-filter !hidden md:!inline-flex"
+          :class="selectedPeriod === '3months' ? 'pill-filter--active' : ''"
           @click="selectedPeriod = '3months'"
         >
           {{ t('app.last3Months') }}
-        </UButton>
-        <UButton 
-          :color="selectedPeriod === 'custom' ? 'primary' : 'gray'" 
-          size="sm"
+        </button>
+        <button
+          type="button"
+          class="pill-filter"
+          :class="selectedPeriod === 'custom' ? 'pill-filter--active' : ''"
           @click="openCustomRange()"
         >
           {{ t('app.customPeriod') }}
-        </UButton>
+        </button>
       </div>
 
       <!-- Export and Settings Buttons -->
@@ -895,7 +897,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Stats Table -->
-    <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
+    <div class="at-tray flex-1 min-h-0 overflow-auto mb-4">
       <div
         v-if="!statsReady"
         class="flex flex-col items-center justify-center py-6"
@@ -951,7 +953,7 @@ function formatNumber(val: number, fractionDigits = 0) {
         v-else
         class="w-full min-w-[680px] text-sm"
       >
-        <thead class="bg-gray-100 dark:bg-gray-800 sticky top-0 z-10 text-xs">
+        <thead class="sticky top-0 z-10 text-xs">
           <tr>
             <th class="px-3 py-2 text-left font-medium w-7" />
             <th class="px-3 py-2 text-left font-medium">
@@ -1030,14 +1032,14 @@ function formatNumber(val: number, fractionDigits = 0) {
                 {{ user.workDays }}
               </td>
               <td class="px-3 py-2 text-center">
-                <span class="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded">
+                <span class="px-2 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded-full">
                   {{ user.attendedDays }}
                 </span>
               </td>
               <td class="px-3 py-2 text-center">
                 <span 
                   v-if="user.violationDays > 0"
-                  class="px-1.5 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded"
+                  class="px-2 py-0.5 text-xs bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 rounded-full"
                 >
                   {{ user.violationDays }}
                 </span>
@@ -1049,7 +1051,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               <td class="px-3 py-2 text-center">
                 <span
                   v-if="user.legitimateAbsences > 0"
-                  class="px-1.5 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded"
+                  class="px-2 py-0.5 text-xs bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-100 rounded-full"
                 >
                   {{ user.legitimateAbsences }}
                 </span>
@@ -1061,7 +1063,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               <td class="px-3 py-2 text-center">
                 <span
                   v-if="user.lateDays > 0"
-                  class="px-1.5 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded"
+                  class="px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded-full"
                 >
                   {{ user.lateDays }}
                 </span>
@@ -1073,7 +1075,7 @@ function formatNumber(val: number, fractionDigits = 0) {
               <td class="px-3 py-2 text-center">
                 <span
                   v-if="user.earlyLeaveDays > 0"
-                  class="px-1.5 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded"
+                  class="px-2 py-0.5 text-xs bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-100 rounded-full"
                 >
                   {{ user.earlyLeaveDays }}
                 </span>
@@ -1083,14 +1085,14 @@ function formatNumber(val: number, fractionDigits = 0) {
                 >0</span>
               </td>
               <td class="px-3 py-2 text-center">
-                <span class="px-1.5 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded">
+                <span class="px-2 py-0.5 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100 rounded-full">
                   {{ user.geoConfirmedDays }}
                 </span>
               </td>
               <td class="px-3 py-2 text-center">
                 <span
                   v-if="user.suspiciousDays > 0"
-                  class="px-1.5 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded"
+                  class="px-2 py-0.5 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-100 rounded-full"
                 >
                   {{ user.suspiciousDays }}
                 </span>

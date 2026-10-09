@@ -312,6 +312,21 @@ Rules:
 
 ---
 
+## 10a. lota A-Trace (`assets/css/atrace.css`, `.at-*`)
+
+First product workspace restyled in the new system — use it as the template for the other apps (Issues, Menu, Contacts, Goods, Plans).
+Rules: **UX and logic untouched**, only chrome changes.
+- Page header: `.at-title` (1.5rem/800) + `.at-sub`; actions as pills: `.at-btn` (neutral), `--blue` (soft blue), `--amber` (upgrade), `--primary` (brand gradient, one per view). Keep `data-tour` attributes.
+- Tabs/filters: `.pill-filter` chips (active = brand gradient); segmented section tabs `.at-seg` / `.at-seg__btn(--on)` (scrolls horizontally, no scrollbar); view toggles `.pl-toggle`.
+- Entity cards (locations): `.at-post` (+ `--on` = brand gradient with white text); "add" tile `.at-post-add` (soft blue, dashed look avoided). Leave bottom padding on horizontal scrollers so shadows are not clipped.
+- Panels / stats / rows / chips: `.at-panel`, `.at-h2`, `.at-stat`, `.at-row`, `.at-chip`; money/score highlights use `.grad-text`.
+- Tables: `AppTable` has a `soft` prop → `.at-tray` (rounded tray, micro-caps header, hairline rows, soft footer). Pass `soft` for every product table; legacy callers keep the old look until restyled.
+- Banners: `.at-banner` (soft blue). Empty states: `.at-empty.at-panel`.
+- Employee check-in flow (`atrace/qr`, `atrace/recorded`, public `to/:ns/atrace/post/:id`): single rounded `2rem` card on a neutral page, pill buttons, no gradient page backgrounds.
+- `PinPrompt` is the reference for small input modals: icon tile + title, pill input, ghost + gradient pill actions.
+- Semantic status colours inside data (emerald ok / red problem / amber late / blue geo) stay, but badges are pills.
+- Still to restyle in A-Trace: the long tail of modals (`CreatePostModal`, `EditPostModal`, `RouteModal`, `LeaveRequestModal`, `ShiftCoverageRequestModal`, `FilterModal`…), analytics charts, and the settings sections' inner forms.
+
 ## 10b. Page shells, layouts and landing pages
 
 - Layouts (`layouts/`): `default`, `full`, `quiet`, `workspace`. All render the floating `AppHeader`, then

@@ -47,7 +47,7 @@ onMounted(async () => {
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
     <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-      <h2 class="text-base font-medium">
+      <h2 class="at-h2">
         {{ t('app.members') || 'Members' }}
       </h2>
       <UInput
@@ -92,6 +92,7 @@ onMounted(async () => {
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table"
     >
       <AppTable
+       soft
         v-model:page="membersPage"
         v-model:page-count="membersPageCount"
         :rows="paginatedMembers"

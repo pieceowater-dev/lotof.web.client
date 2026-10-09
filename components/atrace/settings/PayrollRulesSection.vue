@@ -217,7 +217,7 @@ onMounted(load);
 
     <div>
       <div class="flex items-center justify-between mb-2">
-        <h2 class="text-base font-medium">
+        <h2 class="at-h2">
           {{ t('app.overtimeRates') || 'Ставки переработки' }}
         </h2>
         <UButton
@@ -236,6 +236,7 @@ onMounted(load);
       <div v-else-if="overtimeRates.length === 0" class="text-gray-500 text-sm py-3">{{ t('app.noRates') || 'Ставок пока нет' }}</div>
       <div v-else class="h-[360px]">
         <AppTable
+          soft
           :rows="overtimeRates"
           :columns="overtimeColumns"
           :loading="loading"
@@ -257,7 +258,7 @@ onMounted(load);
 
     <div>
       <div class="flex items-center justify-between mb-2">
-        <h2 class="text-base font-medium">
+        <h2 class="at-h2">
           {{ t('app.penaltyRules') || 'Штрафы' }}
         </h2>
         <UButton
@@ -276,6 +277,7 @@ onMounted(load);
       <div v-else-if="penaltyRules.length === 0" class="text-gray-500 text-sm py-3">{{ t('app.noRules') || 'Штрафов пока нет' }}</div>
       <div v-else class="h-[360px]">
         <AppTable
+          soft
           :rows="penaltyRules"
           :columns="penaltyColumns"
           :loading="loading"

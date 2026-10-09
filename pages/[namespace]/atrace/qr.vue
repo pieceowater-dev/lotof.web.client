@@ -270,14 +270,14 @@ onMounted(() => {
 
 <template>
   <!-- Friendly checking screen: redirects to recorded page after mutation -->
-  <div class="min-h-[80vh] bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 flex items-center justify-center px-4">
+  <div class="min-h-[80vh] flex items-center justify-center px-4">
     <UCard
-      class="max-w-xl w-full shadow-lg"
-      :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }"
+      class="max-w-xl w-full"
+      :ui="{ ring: 'ring-1 ring-black/5 dark:ring-white/10', shadow: 'shadow-2xl shadow-slate-900/10', rounded: 'rounded-[2rem]', background: 'bg-white dark:bg-[#1f1f1f]', divide: 'divide-y divide-slate-900/5 dark:divide-white/10' }"
     >
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">
+          <h3 class="at-h2">
             {{ showConfirmButton && !confirming ? (t('app.atraceConfirmHeader') || 'Отметка о присутствии') : t('app.atraceCheckingHeader') }}
           </h3>
         </div>
@@ -311,6 +311,7 @@ onMounted(() => {
           <UButton
             size="lg"
             color="primary"
+            class="rounded-full px-8"
             @click="onConfirmClick"
           >
             {{ t('app.atraceConfirmButton') || 'Отметиться' }}

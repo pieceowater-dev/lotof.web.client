@@ -204,7 +204,8 @@ export default defineNuxtConfig({
     '@/assets/css/fonts.css',
     '@/assets/css/global.css',
     '@/assets/css/surface.css',
-    '@/assets/css/storefront.css'
+    '@/assets/css/storefront.css',
+    '@/assets/css/atrace.css'
   ],
   colorMode: {
     preference: "light",

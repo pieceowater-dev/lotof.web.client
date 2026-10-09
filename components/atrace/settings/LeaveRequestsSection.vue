@@ -121,7 +121,7 @@ onMounted(async () => {
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
     <div class="flex items-center justify-between mb-1">
-      <h2 class="text-base font-medium">
+      <h2 class="at-h2">
         {{ t('app.leaveRequests') || 'Отгулы и отпуска' }}
       </h2>
       <UButton
@@ -161,6 +161,7 @@ onMounted(async () => {
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4"
     >
       <AppTable
+        soft
         :rows="rows"
         :columns="columns"
         :loading="loading"

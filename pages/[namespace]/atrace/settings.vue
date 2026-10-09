@@ -128,42 +128,36 @@ onUnmounted(() => {
   <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="at-title">
           {{ t('app.atraceManagement') || 'Управление' }}
         </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</span>
+        <p class="at-sub">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</p>
       </div>
       <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
-        <UButton
-          icon="lucide:star"
-          size="xs"
-          color="amber"
-          variant="soft"
+        <NuxtLink
           :to="`/${nsSlug}/atrace/plans?manage=1`"
-          class="min-w-fit whitespace-nowrap"
+          class="at-btn at-btn--amber"
         >
+          <UIcon name="lucide:star" class="h-4 w-4" />
           {{ t('app.upgradePlan') || 'Upgrade Plan' }}
-        </UButton>
-        <UButton
+        </NuxtLink>
+        <button
           v-if="accessChecked && !accessDenied"
-          icon="lucide:user-plus"
-          size="xs"
-          color="primary"
-          class="min-w-fit whitespace-nowrap"
+          type="button"
+          class="at-btn at-btn--primary"
           @click="isInviteOpen = true"
         >
+          <UIcon name="lucide:user-plus" class="h-4 w-4" />
           {{ t('app.sendInvite') || 'Send Invitation' }}
-        </UButton>
-        <UButton
-          icon="lucide:arrow-left"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
+        </button>
+        <button
+          type="button"
+          class="at-btn at-btn--blue"
           @click="goBack"
         >
+          <UIcon name="lucide:arrow-left" class="h-4 w-4" />
           <span class="hidden sm:inline">{{ t('app.back') }}</span>
-        </UButton>
+        </button>
       </div>
     </div>
 
@@ -181,7 +175,7 @@ onUnmounted(() => {
       v-else-if="accessDenied"
       class="flex-1 flex items-center justify-center"
     >
-      <div class="w-full max-w-xl rounded-2xl border border-amber-200 bg-amber-50/80 px-6 py-8 text-center shadow-sm dark:border-amber-900/60 dark:bg-amber-950/30">
+      <div class="at-panel w-full max-w-xl !p-8 text-center">
         <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-200">
           <UIcon
             name="i-heroicons-lock-closed"
@@ -220,16 +214,14 @@ onUnmounted(() => {
         naturally overflows and scrolls horizontally with every label fully
         readable once scrolled into view.
       -->
-      <div class="mb-3 flex-shrink-0 overflow-x-auto">
-        <div class="inline-flex min-w-full items-center gap-1 rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+      <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+        <div class="at-seg">
           <button
             v-for="(tab, index) in tabs"
             :key="index"
             type="button"
-            class="relative flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-3 h-8 text-sm font-medium transition-colors duration-200 ease-out"
-            :class="selectedTab === index
-              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
+            class="at-seg__btn"
+            :class="selectedTab === index ? 'at-seg__btn--on' : ''"
             @click="selectTab(index)"
           >
             <UIcon

@@ -1,0 +1,96 @@
+/* lota A-Trace (attendance) — pages/[namespace]/atrace/*, components/atrace/*.
+   Same vocabulary as surface.css (bezel / pill / brand-gradient); only A-Trace-specific
+   compositions live here. See DESIGN.md. */
+
+/* page header */
+.at-title { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: #0f172a; }
+.dark .at-title { color: #fff; }
+.at-sub { margin-top: 0.15rem; font-size: 0.875rem; color: #64748b; }
+.dark .at-sub { color: #a3a3a3; }
+
+/* header action pills */
+.at-btn {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; white-space: nowrap;
+  border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 600; color: #475569; background: rgba(15, 23, 42, 0.05);
+  transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s;
+}
+.at-btn:hover { background: rgba(15, 23, 42, 0.1); }
+.at-btn:active { transform: scale(0.97); }
+.dark .at-btn { color: #d4d4d4; background: rgba(255, 255, 255, 0.08); }
+.dark .at-btn:hover { background: rgba(255, 255, 255, 0.14); }
+.at-btn--blue { color: #1d4ed8; background: rgba(37, 99, 235, 0.12); }
+.at-btn--blue:hover { background: rgba(37, 99, 235, 0.2); }
+.dark .at-btn--blue { color: #bfdbfe; background: rgba(96, 165, 250, 0.18); }
+.dark .at-btn--blue:hover { background: rgba(96, 165, 250, 0.26); }
+.at-btn--amber { color: #b45309; background: rgba(245, 158, 11, 0.14); }
+.at-btn--amber:hover { background: rgba(245, 158, 11, 0.22); }
+.dark .at-btn--amber { color: #fcd34d; background: rgba(245, 158, 11, 0.16); }
+.at-btn--primary { color: #fff; background-image: linear-gradient(90deg, #2563eb, #10b981); box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7); }
+.at-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
+.at-btn--primary:active { transform: scale(0.97); }
+
+/* location cards (Card.vue) */
+.at-post {
+  position: relative; display: flex; flex-direction: column; border-radius: 1.5rem; padding: 0.9rem 1rem; cursor: pointer;
+  background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 32px -24px rgba(15, 23, 42, 0.22);
+  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.at-post:hover { transform: translateY(-2px); box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.3), 0 20px 36px -24px rgba(37, 99, 235, 0.4); }
+.at-post:active { transform: scale(0.99); }
+.dark .at-post { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
+.dark .at-post:hover { box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.35); }
+.at-post--on, .at-post--on:hover, .dark .at-post--on, .dark .at-post--on:hover {
+  color: #fff; background-image: linear-gradient(135deg, #2563eb, #10b981);
+  box-shadow: 0 18px 32px -18px rgba(37, 99, 235, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+.at-post-add {
+  display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 1.5rem; padding: 0.9rem 1rem;
+  font-size: 0.9375rem; font-weight: 700; color: #1d4ed8; background: rgba(37, 99, 235, 0.08); box-shadow: inset 0 0 0 1.5px rgba(37, 99, 235, 0.25);
+  transition: background 0.3s, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.at-post-add:hover { background: rgba(37, 99, 235, 0.14); transform: translateY(-2px); }
+.at-post-add:active { transform: scale(0.98); }
+.dark .at-post-add { color: #bfdbfe; background: rgba(96, 165, 250, 0.12); box-shadow: inset 0 0 0 1.5px rgba(96, 165, 250, 0.3); }
+
+/* generic panel / stat tile / list row */
+.at-panel {
+  border-radius: 1.6rem; background: #fff; padding: 1.25rem;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04), 0 18px 36px -28px rgba(15, 23, 42, 0.2);
+}
+.dark .at-panel { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
+.at-h2 { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; color: #0f172a; }
+.dark .at-h2 { color: #fff; }
+.at-stat { border-radius: 1.2rem; padding: 0.9rem 0.5rem; text-align: center; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.05); }
+.dark .at-stat { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07); }
+.at-row { border-radius: 1.2rem; padding: 0.7rem 0.9rem; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); }
+.dark .at-row { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.at-chip { display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 9999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08); }
+.dark .at-chip { background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+
+/* segmented tabs (settings) — horizontally scrollable pill group */
+.at-seg { display: inline-flex; min-width: 100%; align-items: center; gap: 0.2rem; border-radius: 9999px; padding: 0.3rem; background: rgba(15, 23, 42, 0.05); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); }
+.dark .at-seg { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.at-seg__btn { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.4rem; white-space: nowrap; border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #64748b; transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s, box-shadow 0.4s; }
+.at-seg__btn:hover { color: #0f172a; }
+.at-seg__btn--on, .at-seg__btn--on:hover { color: #0f172a; background: #fff; box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35); }
+.dark .at-seg__btn { color: #a3a3a3; }
+.dark .at-seg__btn:hover { color: #fff; }
+.dark .at-seg__btn--on, .dark .at-seg__btn--on:hover { color: #fff; background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+
+/* plan limits banner */
+.at-banner { display: flex; flex-direction: column; gap: 0.5rem; border-radius: 1.4rem; padding: 0.8rem 1.1rem; background: rgba(37, 99, 235, 0.06); box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.14); }
+.dark .at-banner { background: rgba(96, 165, 250, 0.08); box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.2); }
+@media (min-width: 640px) { .at-banner { flex-direction: row; align-items: center; justify-content: space-between; } }
+
+/* AppTable "soft" tray */
+.at-tray { border-radius: 1.6rem; background: #fff; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 36px -28px rgba(15, 23, 42, 0.2); }
+.dark .at-tray { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
+.at-tray thead th { background: rgba(15, 23, 42, 0.03) !important; font-size: 0.6875rem !important; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase !important; color: #64748b; }
+.dark .at-tray thead th { background: rgba(255, 255, 255, 0.04) !important; color: #a3a3a3; }
+.at-tray tbody, .at-tray tbody tr { border-color: rgba(15, 23, 42, 0.06) !important; }
+.dark .at-tray tbody, .dark .at-tray tbody tr { border-color: rgba(255, 255, 255, 0.08) !important; }
+.at-tray-foot { background: rgba(15, 23, 42, 0.03) !important; border-color: rgba(15, 23, 42, 0.06) !important; }
+.dark .at-tray-foot { background: rgba(255, 255, 255, 0.04) !important; border-color: rgba(255, 255, 255, 0.08) !important; }
+
+/* empty state */
+.at-empty { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 2rem; padding: 2rem 1.5rem; max-width: 24rem; width: 100%; }
