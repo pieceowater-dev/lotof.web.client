@@ -1331,7 +1331,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </div>
             </div>
 
-            <div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto">
               <div v-if="!items.length" class="text-sm text-gray-400 text-center py-6">{{ t('menu.noMenuItems') || 'No products' }}</div>
               <table v-else class="w-full text-sm">
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">

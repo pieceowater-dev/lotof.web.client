@@ -77,3 +77,10 @@
 .ct-scope button[class~="bg-gray-50"]:hover, .at-modal button[class~="bg-gray-50"]:hover { background: rgba(15, 23, 42, 0.1) !important; }
 .dark .ct-scope button[class~="bg-gray-50"], .dark .ct-scope a[class~="bg-gray-50"], .dark .at-modal button[class~="bg-gray-50"] { color: #e5e5e5 !important; background: rgba(255, 255, 255, 0.09) !important; }
 .dark .ct-scope button[class~="bg-gray-50"]:hover, .dark .at-modal button[class~="bg-gray-50"]:hover { background: rgba(255, 255, 255, 0.15) !important; }
+
+/* slideover / modal anchors-as-buttons (call, WhatsApp, links) */
+.at-modal a[class~="bg-primary-50"], .at-modal a[class~="bg-emerald-50"] { border-radius: 9999px; font-weight: 600; color: #1d4ed8 !important; background: rgba(37, 99, 235, 0.12) !important; }
+.dark .at-modal a[class~="bg-primary-50"], .dark .at-modal a[class~="bg-emerald-50"] { color: #bfdbfe !important; background: rgba(96, 165, 250, 0.16) !important; }
+.at-modal a[class~="bg-primary-50"]:hover, .at-modal a[class~="bg-emerald-50"]:hover { background: rgba(37, 99, 235, 0.2) !important; }
+.at-modal [class*="rounded-xl"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea) { border-radius: 1.4rem; border-color: transparent; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08); }
+.dark .at-modal [class*="rounded-xl"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea) { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
