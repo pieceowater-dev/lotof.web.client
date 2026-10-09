@@ -12,7 +12,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
 import AppCard from '@/components/ui/AppCard.vue';
-import PromoVideo from '@/components/ui/PromoVideo.vue';
+import PromoVideoDeck from '@/components/ui/PromoVideoDeck.vue';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
 import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
@@ -49,6 +49,20 @@ function handleGoToCatalog() {
   setPreferredSpace('catalog');
   router.push('/catalog');
 }
+
+// Promo video deck. Order = default deck order: general, A-Trace, then the rest.
+const promoSlides = [
+  { id: 'lota', icon: 'lucide:layout-grid', src: '/media/brag.mp4', poster: '/assets/brag-poster.jpg', titleKey: 'app.promoVideoTitle', descKey: 'app.promoVideoDesc' },
+  { id: 'atrace', icon: 'lucide:qr-code', src: '/media/atrace.mp4', poster: '/assets/atrace-poster.jpg', titleKey: 'app.promoSlideAtraceTitle', descKey: 'app.promoSlideAtraceDesc' },
+  { id: 'coffee', icon: 'lucide:coffee', src: '/media/coffee.mp4', poster: '/assets/coffee-poster.jpg', titleKey: 'app.promoSlideCoffeeTitle', descKey: 'app.promoSlideCoffeeDesc' },
+  { id: 'contacts', icon: 'lucide:contact', src: '/media/contacts.mp4', poster: '/assets/contacts-poster.jpg', titleKey: 'app.promoSlideContactsTitle', descKey: 'app.promoSlideContactsDesc' },
+  { id: 'orders', icon: 'lucide:receipt-text', src: '/media/orders.mp4', poster: '/assets/orders-poster.jpg', titleKey: 'app.promoSlideOrdersTitle', descKey: 'app.promoSlideOrdersDesc' },
+  { id: 'orders-issues', icon: 'lucide:truck', src: '/media/orders-issues.mp4', poster: '/assets/orders-issues-poster.jpg', titleKey: 'app.promoSlideOrdersIssuesTitle', descKey: 'app.promoSlideOrdersIssuesDesc' },
+  { id: 'goods', icon: 'lucide:package', src: '/media/goods.mp4', poster: '/assets/goods-poster.jpg', titleKey: 'app.promoSlideGoodsTitle', descKey: 'app.promoSlideGoodsDesc' },
+  { id: 'plans', icon: 'lucide:calendar-check', src: '/media/plans.mp4', poster: '/assets/plans-poster.jpg', titleKey: 'app.promoSlidePlansTitle', descKey: 'app.promoSlidePlansDesc' },
+  { id: 'referral', icon: 'lucide:gift', src: '/media/referral.mp4', poster: '/assets/referral-poster.jpg', titleKey: 'app.promoSlideReferralTitle', descKey: 'app.promoSlideReferralDesc' },
+] as const;
+const activePromo = ref(0);
 
 const catalogFeatures = [
   { key: 'businesses', icon: 'lucide:store', titleKey: 'app.catalogFeatureBusinessesTitle', descKey: 'app.catalogFeatureBusinessesDesc' },
@@ -882,24 +896,51 @@ watch([articlesSearch, selectedArticleTag], () => {
            so there's no hard seam between them) -- copy + CTA left, video
            right. PromoVideo only fetches the file once it's near the
            viewport and starts playing (muted) at >60% visible. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pb-10 md:pb-14">
-        <div class="rounded-3xl bg-gray-50 dark:bg-gray-900 px-6 py-8 sm:px-10 md:px-14 md:py-10">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
-            <div>
-              <h2 class="text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
-              <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300 max-w-lg">{{ t('app.promoVideoDesc') }}</p>
+      <div v-if="initialized" class="max-w-7xl mx-auto px-4 pb-10 md:pb-14">
+        <div class="py-6 sm:px-6 md:px-10 md:py-8">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-start">
+            <div class="pt-2 lg:pt-8">
+              <!-- Every slide's copy sits in the same grid cell, so the block is
+                   always as tall as the tallest one and nothing below it
+                   jumps when the slide changes; only the active one shows. -->
+              <div class="grid">
+                <div
+                  v-for="(slide, i) in promoSlides"
+                  :key="slide.id"
+                  class="col-start-1 row-start-1 transition-opacity duration-200"
+                  :class="i === activePromo ? 'opacity-100' : 'pointer-events-none opacity-0'"
+                  :aria-hidden="i !== activePromo"
+                >
+                  <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 flex items-center justify-center text-emerald-700 dark:text-emerald-300 mb-5">
+                    <UIcon :name="slide.icon" class="w-7 h-7" />
+                  </div>
+                  <h2 class="text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-gray-100">{{ t(slide.titleKey) }}</h2>
+                  <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300 max-w-lg">{{ t(slide.descKey) }}</p>
+                </div>
+              </div>
               <button
                 type="button"
-                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
+                class="mt-4 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
                 @click="handleGoToHub"
               >
                 {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
                 <UIcon name="lucide:arrow-right" class="w-4 h-4" />
               </button>
+              <div class="mt-6 flex items-center gap-1.5">
+                <button
+                  v-for="(slide, i) in promoSlides"
+                  :key="slide.id"
+                  type="button"
+                  class="h-1.5 rounded-full transition-all"
+                  :class="i === activePromo ? 'w-6 bg-emerald-500' : 'w-1.5 bg-gray-300 dark:bg-gray-700'"
+                  :aria-label="t(slide.titleKey)"
+                  @click="activePromo = i"
+                />
+              </div>
             </div>
-            <PromoVideo
-              src="/media/brag.mp4"
-              poster="/assets/brag-poster.jpg"
+            <PromoVideoDeck
+              v-model:active="activePromo"
+              :slides="promoSlides as any"
               :width="608"
               :height="1080"
               :sound-on-label="t('app.promoVideoSoundOn')"
@@ -914,7 +955,7 @@ watch([articlesSearch, selectedArticleTag], () => {
            not a separate centered block. A bottom border + matching
            vertical padding is the section divider -- no divider of its own
            otherwise, this ran straight into "Business services" below it. -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 py-10 md:py-14 border-b border-gray-100 dark:border-gray-800">
+      <div v-if="initialized" class="max-w-7xl mx-auto px-4 py-10 md:py-14 border-b border-gray-100 dark:border-gray-800">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
             <div
@@ -951,7 +992,7 @@ watch([articlesSearch, selectedArticleTag], () => {
       </div>
 
       <!-- Business services -->
-      <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pt-10 md:pt-14 pb-10 md:pb-14 space-y-6 md:space-y-10 border-b border-gray-100 dark:border-gray-800">
+      <div v-if="initialized" class="max-w-7xl mx-auto px-4 pt-10 md:pt-14 pb-10 md:pb-14 space-y-6 md:space-y-10 border-b border-gray-100 dark:border-gray-800">
         <div>
           <h3 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.businessServicesHeading') || 'Сервисы lota для бизнеса' }}</h3>
           <p class="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">{{ t('app.businessServicesHint') || 'Приложения для управления бизнесом на платформе lota' }}</p>
