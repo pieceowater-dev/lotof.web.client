@@ -71,33 +71,6 @@ const catalogFeatures = [
   { key: 'more', icon: 'lucide:sparkles', titleKey: 'app.catalogFeatureMoreTitle', descKey: 'app.catalogFeatureMoreDesc' },
 ] as const;
 
-// Scroll reveal: elements fade up once as they enter the viewport
-// (IntersectionObserver, transform/opacity only; see .reveal in <style>).
-const vReveal = {
-  mounted(el: HTMLElement, binding: { value?: number }) {
-    el.classList.add('reveal');
-    if (binding.value) el.style.transitionDelay = `${binding.value}ms`;
-    if (typeof IntersectionObserver === 'undefined') {
-      el.classList.add('reveal-in');
-      return;
-    }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add('reveal-in');
-          io.disconnect();
-        }
-      },
-      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
-    );
-    io.observe(el);
-    (el as HTMLElement & { __revealIO?: IntersectionObserver }).__revealIO = io;
-  },
-  unmounted(el: HTMLElement & { __revealIO?: IntersectionObserver }) {
-    el.__revealIO?.disconnect();
-  },
-};
-
 // Marketing tiles for the logged-out "for business" bento (logged-in staff
 // see their real app dashboard instead). span = columns of the 6-col grid.
 const bizTiles = [
@@ -1238,163 +1211,6 @@ watch([articlesSearch, selectedArticleTag], () => {
   opacity: 0;
 }
 
-/* ---- Home redesign ---- */
-.hero-mesh {
-  background:
-    radial-gradient(55% 45% at 12% 0%, rgba(37, 99, 235, 0.14), transparent 70%),
-    radial-gradient(45% 40% at 92% 6%, rgba(16, 185, 129, 0.16), transparent 70%),
-    radial-gradient(40% 35% at 50% 100%, rgba(99, 102, 241, 0.08), transparent 70%);
-  -webkit-mask-image: linear-gradient(#000 65%, transparent);
-  mask-image: linear-gradient(#000 65%, transparent);
-}
-:global(.dark) .hero-mesh {
-  background:
-    radial-gradient(55% 45% at 12% 0%, rgba(37, 99, 235, 0.22), transparent 70%),
-    radial-gradient(45% 40% at 92% 6%, rgba(16, 185, 129, 0.18), transparent 70%);
-}
-
-.grad-text {
-  background-image: linear-gradient(90deg, #2563eb, #10b981);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: #475569;
-  background: rgba(15, 23, 42, 0.04);
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07);
-}
-:global(.dark) .eyebrow {
-  color: #cbd5e1;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-}
-
-.icon-tile {
-  display: flex;
-  height: 3.25rem;
-  width: 3.25rem;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 1rem;
-  color: #fff;
-  background-image: linear-gradient(135deg, #2563eb, #10b981);
-  box-shadow: 0 8px 20px -8px rgba(37, 99, 235, 0.55);
-}
-
-/* Double bezel: a hairline outer tray holding a lighter inner core. */
-.bezel {
-  border-radius: 2rem;
-  padding: 0.4rem;
-  background: rgba(15, 23, 42, 0.04);
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
-  transition: transform 0.7s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.bezel-core {
-  border-radius: calc(2rem - 0.4rem);
-  background: #fff;
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.9),
-    0 1px 2px rgba(15, 23, 42, 0.04),
-    0 18px 40px -20px rgba(15, 23, 42, 0.18);
-}
-.bezel-hover:hover {
-  transform: translateY(-4px);
-}
-:global(.dark) .bezel {
-  background: rgba(255, 255, 255, 0.05);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-:global(.dark) .bezel-core {
-  background: #111827;
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.06);
-}
-
-/* Pill CTA with the arrow in its own nested circle. */
-.cta-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  border-radius: 9999px;
-  padding: 0.45rem 0.45rem 0.45rem 1.5rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.cta-pill:active {
-  transform: scale(0.98);
-}
-.cta-pill--primary {
-  color: #fff;
-  background-image: linear-gradient(90deg, #2563eb, #10b981);
-  box-shadow: 0 12px 28px -12px rgba(37, 99, 235, 0.65);
-}
-.cta-pill--ghost {
-  color: #0f172a;
-  background: #fff;
-  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
-}
-:global(.dark) .cta-pill--ghost {
-  color: #fff;
-  background: rgba(255, 255, 255, 0.06);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
-}
-.cta-arrow {
-  display: flex;
-  height: 2.25rem;
-  width: 2.25rem;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.22);
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.cta-pill--ghost .cta-arrow,
-.cta-arrow--ghost {
-  background: rgba(15, 23, 42, 0.06);
-  color: inherit;
-}
-:global(.dark) .cta-pill--ghost .cta-arrow,
-:global(.dark) .cta-arrow--ghost {
-  background: rgba(255, 255, 255, 0.1);
-}
-.cta-pill:hover .cta-arrow,
-.group:hover .cta-arrow {
-  transform: translate(2px, -1px) scale(1.06);
-}
-
-/* Scroll reveal (transform/opacity only). */
-.reveal {
-  opacity: 0;
-  transform: translate3d(0, 28px, 0);
-  transition:
-    opacity 0.9s cubic-bezier(0.32, 0.72, 0, 1),
-    transform 0.9s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.reveal-in {
-  opacity: 1;
-  transform: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 /* Split hero */
 .split-panel {
   transition: flex-grow 0.8s cubic-bezier(0.32, 0.72, 0, 1);
@@ -1410,8 +1226,8 @@ watch([articlesSearch, selectedArticleTag], () => {
 .panel-biz {
   background-image: linear-gradient(155deg, #ecfdf5 0%, #cffafe 100%);
 }
-:global(.dark) .panel-client { background-image: linear-gradient(155deg, #1e293b 0%, #1e1b4b 100%); }
-:global(.dark) .panel-biz { background-image: linear-gradient(155deg, #0f2a26 0%, #0c3040 100%); }
+.dark .panel-client { background-image: linear-gradient(155deg, #23252c 0%, #1c1c22 100%); }
+.dark .panel-biz { background-image: linear-gradient(155deg, #1c2523 0%, #171d1f 100%); }
 
 .seam-slot {
   position: relative;
@@ -1437,7 +1253,7 @@ watch([articlesSearch, selectedArticleTag], () => {
   background: #fff;
   box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.55), 0 10px 24px -8px rgba(15, 23, 42, 0.25);
 }
-:global(.dark) .seam-badge { background: #111827; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06), 0 10px 24px -8px rgba(0, 0, 0, 0.5); }
+.dark .seam-badge { background: #1a1a1a; box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.06), 0 10px 24px -8px rgba(0, 0, 0, 0.5); }
 
 .chip {
   position: absolute;
@@ -1456,7 +1272,7 @@ watch([articlesSearch, selectedArticleTag], () => {
 @media (min-width: 768px) {
   .chip { display: inline-flex; }
 }
-:global(.dark) .chip { color: #fff; background: rgba(31, 41, 55, 0.92); }
+.dark .chip { color: #fff; background: rgba(38, 38, 38, 0.92); }
 .float-a { animation: chip-float 6s ease-in-out infinite; }
 .float-b { animation: chip-float 7.5s ease-in-out -2s infinite; }
 .float-c { animation: chip-float 6.8s ease-in-out -4s infinite; }

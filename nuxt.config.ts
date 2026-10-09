@@ -202,7 +202,8 @@ export default defineNuxtConfig({
   modules: ["@nuxt/ui", "@nuxtjs/color-mode"],
   css: [
     '@/assets/css/fonts.css',
-    '@/assets/css/global.css'
+    '@/assets/css/global.css',
+    '@/assets/css/surface.css'
   ],
   colorMode: {
     preference: "light",
