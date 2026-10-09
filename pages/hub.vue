@@ -705,6 +705,10 @@ const allWhatsNewPosts = computed(() => allProcessedPosts.value.filter((post) =>
 const WHATS_NEW_SIDEBAR_LIMIT = 5;
 const whatsNewSidebarPosts = computed(() => allWhatsNewPosts.value.slice(0, WHATS_NEW_SIDEBAR_LIMIT));
 
+function handleNavigateToNews() {
+  router.push('/news');
+}
+
 function handleOpenPost(post: HomeFeedPost) {
   if (!post.href) return;
   if (process.client) {
