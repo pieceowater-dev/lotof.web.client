@@ -7,8 +7,6 @@ import { smartOrderNumber } from '@/utils/orderNumber';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { MENU_DOC_VARIABLES } from '@/utils/menuDocVariables';
 import { parseSocialLinks, socialLabel } from '@/utils/social';
-import type { MenuOrderField } from '@/api/menu/orderfield/list';
-import { fieldsForOrder, formatCustomFieldValue, parseCustomFields } from '@/utils/orderCustomFields';
 
 // Order customerName/phone/deliveryAddress and item names are free text a
 // customer or staff member typed in, not app-controlled strings -- same
@@ -58,30 +56,6 @@ function buildItemsTable(items: MenuOrderItem[], emptyLabel: string, headers: { 
   </table>`;
 }
 
-// CUSTOM_FIELDS: the order's custom field values as a two-column table
-// (field name | value), skipping fields with no value. Names and values are
-// tenant/staff-typed free text, so both go through escapeHtml.
-export function buildCustomFieldsTable(
-  fields: MenuOrderField[],
-  customFieldsJson: string | null | undefined,
-  emptyLabel: string,
-  labels: { yes: string; no: string }
-): string {
-  const values = parseCustomFields(customFieldsJson);
-  const rows = fieldsForOrder(fields, values)
-    .map((f) => ({ label: f.label, text: formatCustomFieldValue(f, values[f.id], labels) }))
-    .filter((r) => r.text !== '')
-    .map(
-      (r) => `<tr>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;width:40%">${escapeHtml(r.label)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd">${escapeHtml(r.text)}</td>
-      </tr>`
-    )
-    .join('');
-  if (!rows) return `<p>${escapeHtml(emptyLabel)}</p>`;
-  return `<table style="width:100%;border-collapse:collapse;font-size:inherit"><tbody>${rows}</tbody></table>`;
-}
-
 export type BuildMenuDocVariablesInput = {
   order: MenuOrder;
   items: MenuOrderItem[];
@@ -92,8 +66,6 @@ export type BuildMenuDocVariablesInput = {
   itemsTableHeaders: { name: string; qty: string; price: string; sum: string };
   brand: MenuBrandSettings | null;
   branch: MenuBranch | null | undefined;
-  // Pre-rendered CUSTOM_FIELDS table; see buildCustomFieldsTable.
-  customFieldsBlock?: string;
 };
 
 // Builds the {{VARIABLE}} -> value map for one order, entirely from data the
@@ -102,7 +74,7 @@ export type BuildMenuDocVariablesInput = {
 // at print time. SOCIAL_LINKS_QR is a separate async step (see
 // buildSocialLinksQrBlock) since QR generation can't happen synchronously.
 export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record<string, string> {
-  const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock } = input;
+  const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch } = input;
   const amountDue = order.totalAmount - order.discountAmount - order.paidAmount;
   const employeeNames = members.map((m) => memberDisplayName(m.userId)).filter(Boolean);
 
@@ -114,7 +86,6 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     PAID_AMOUNT: formatMoney(order.paidAmount),
     AMOUNT_DUE: formatMoney(amountDue),
     ORDER_ITEMS: buildItemsTable(items, noneLabel, itemsTableHeaders),
-    CUSTOM_FIELDS: customFieldsBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     CLIENT_NAME: escapeHtml(order.customerName || guestLabel),
     CLIENT_PHONE: escapeHtml(order.phone ? formatDisplayPhoneUniversal(order.phone) : ''),
     CLIENT_ADDRESS: escapeHtml(order.deliveryAddress || ''),

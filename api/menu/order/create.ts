@@ -13,13 +13,12 @@ export type CreateOrderInput = {
   branchId?: string;
   phone: string;
   customerName?: string;
-  type: 'delivery' | 'pickup' | 'table';
+  type: 'delivery' | 'pickup';
   deliveryAddress?: string;
   comment?: string;
   sourceTag?: string;
   totalAmount: number;
   items: CreateOrderItemInput[];
-  customFields?: string;
 };
 
 const CreateOrderDocument = /* GraphQL */ `
@@ -46,7 +45,6 @@ export async function menuCreateOrder(menuToken: string, namespaceSlug: string, 
           sourceTag: input.sourceTag,
           totalAmount: input.totalAmount,
           items: input.items,
-          customFields: input.customFields,
         },
       },
       { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }

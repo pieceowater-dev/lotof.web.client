@@ -23,8 +23,6 @@ export type MenuOrder = {
   discountValue: number;
   discountItemId?: string | null;
   paidAmount: number;
-  // JSON object {"<order field id>": "<value>"}; "{}" when none.
-  customFields?: string;
 };
 
 export type OrdersFilter = {
@@ -56,7 +54,7 @@ const OrdersDocument = /* GraphQL */ `
   query Orders($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount
       }
       info { count }
     }
@@ -161,7 +159,7 @@ const OrdersBundleDocument = /* GraphQL */ `
   query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount
       }
       info { count }
     }
