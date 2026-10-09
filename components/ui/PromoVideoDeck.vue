@@ -65,6 +65,8 @@ const muted = ref(true);
 const nearView = ref(false);
 const inView = ref(false);
 const loadedIds = ref<Set<string>>(new Set());
+const warmed = new Set<string>();
+const readyIds = ref<Set<string>>(new Set()); // videos whose first frame has loaded
 const deckRef = ref<HTMLElement | null>(null);
 const cardRef = ref<HTMLElement | null>(null);
 const videoRefs = new Map<string, HTMLVideoElement>();
@@ -89,11 +91,30 @@ function syncPlayback() {
   });
 }
 
-// A card's video is attached only once it has been the visible front card.
-watch([front, nearView], () => {
-  if (nearView.value) loadedIds.value.add(props.slides[front.value].id);
-  nextTick(syncPlayback);
-}, { immediate: true });
+// Loading strategy: nothing is fetched until the deck is near the viewport.
+// Then the front card's video loads first; once its first frame is ready the
+// next two cards' videos are attached too and buffer in the background (they
+// stay in the HTTP cache), so flipping to them is instant. Anything already
+// attached stays attached. Until a card's first frame is ready it shows its
+// poster under a soft blurred shimmer.
+function updateLoads() {
+  if (!nearView.value) return;
+  const ids = order.value.map((i) => props.slides[i].id);
+  loadedIds.value.add(ids[0]);
+  if (!readyIds.value.has(ids[0])) return;
+  ids.slice(1, 3).forEach((id) => {
+    loadedIds.value.add(id);
+    // Also warm the HTTP cache with the whole (~0.6 MB) file, so it's there
+    // even where browsers refuse to preload <video> (iOS, data saver).
+    const slide = props.slides.find((sl) => sl.id === id);
+    if (slide && !warmed.has(id)) {
+      warmed.add(id);
+      fetch(slide.src, { cache: 'force-cache' }).catch(() => { warmed.delete(id); });
+    }
+  });
+}
+watch([order, nearView, () => readyIds.value.size], updateLoads, { immediate: true });
+watch(front, () => nextTick(syncPlayback));
 watch(inView, () => nextTick(syncPlayback));
 
 watch(active, (v) => {
@@ -256,10 +277,17 @@ onBeforeUnmount(() => {
           :poster="slide.poster"
           :width="props.width"
           :height="props.height"
-          preload="none"
+          :preload="!loadedIds.has(slide.id) ? 'none' : i === front ? 'auto' : 'metadata'"
           muted
           playsinline
+          @loadeddata="readyIds.add(slide.id)"
           @ended="onEnded(i)"
+        />
+        <!-- Not ready yet: blur the poster and pulse, so it reads as loading. -->
+        <div
+          v-if="loadedIds.has(slide.id) && !readyIds.has(slide.id)"
+          class="pointer-events-none absolute inset-0 animate-pulse bg-white/40 backdrop-blur-sm"
+          aria-hidden="true"
         />
         <button
           v-if="i === front && loadedIds.has(slide.id)"
