@@ -218,23 +218,22 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="min-h-screen">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div class="flex items-center justify-between">
-          <div>
-            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
-              {{ t('app.bundles') || 'Готовые сборки' }}
-            </h1>
-            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {{ t('app.bundlesPageSubtitle') || 'Готовые наборы приложений в одном тарифе' }}
-            </p>
-          </div>
-          <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" class="min-w-fit gap-2" @click="router.push('/hub')">
-            <span class="hidden sm:inline">{{ t('app.back') || 'Назад' }}</span>
-          </UButton>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+      <div class="flex items-center justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white sm:text-3xl">
+            {{ t('app.bundles') || 'Готовые сборки' }}
+          </h1>
+          <p class="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
+            {{ t('app.bundlesPageSubtitle') || 'Готовые наборы приложений в одном тарифе' }}
+          </p>
         </div>
+        <button type="button" class="pill-filter flex-shrink-0" @click="router.push('/hub')">
+          <UIcon name="lucide:arrow-left" class="h-4 w-4" />
+          <span class="hidden sm:inline">{{ t('app.back') || 'Назад' }}</span>
+        </button>
       </div>
     </div>
 
@@ -242,29 +241,21 @@ onMounted(async () => {
       <ContactSupportBanner class="mb-8" />
 
       <div v-if="visibleBundles.length" class="flex justify-center mb-8">
-        <div class="relative inline-flex rounded-xl border-2 border-gray-200 dark:border-gray-700 p-1.5 bg-gray-50 dark:bg-gray-800/50 shadow-sm">
+        <div class="pl-toggle">
           <button
-            :class="[
-              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-              selectedInterval === 'monthly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            ]"
+            class="pl-toggle__btn"
+            :class="selectedInterval === 'monthly' ? 'pl-toggle__btn--on' : ''"
             @click="selectedInterval = 'monthly'"
           >
             {{ t('app.monthly') || 'Помесячно' }}
           </button>
           <button
-            :class="[
-              'relative z-10 px-8 py-3 rounded-lg text-sm font-semibold transition-all duration-200',
-              selectedInterval === 'yearly'
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-md'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
-            ]"
+            class="pl-toggle__btn"
+            :class="selectedInterval === 'yearly' ? 'pl-toggle__btn--on' : ''"
             @click="selectedInterval = 'yearly'"
           >
             <span>{{ t('app.yearly') || 'Годовая' }}</span>
-            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200">
+            <span class="pl-save">
               <UIcon name="i-heroicons-sparkles" class="w-3 h-3 mr-0.5" />
               {{ t('app.bestPrice') || 'Выгодно' }}
             </span>
@@ -274,7 +265,7 @@ onMounted(async () => {
 
       <!-- Namespace selector: a horizontal strip of cards (scrolls on mobile) -->
       <div v-if="showNsSwitcher" class="mb-8">
-        <p class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+        <p class="sf-label mb-2 px-1">
           {{ t('app.currentNamespace') || 'Выбранное пространство' }}
         </p>
         <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -282,10 +273,8 @@ onMounted(async () => {
             v-for="slug in allNamespaces"
             :key="slug"
             type="button"
-            class="snap-start flex-shrink-0 w-40 sm:w-44 rounded-2xl border p-3 text-left transition-all"
-            :class="ns === slug
-              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 dark:border-primary-500 shadow-sm'
-              : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800 dark:hover:border-gray-600'"
+            class="pl-ns snap-start flex-shrink-0 w-40 sm:w-44 p-3.5 text-left"
+            :class="ns === slug ? 'pl-ns--on' : ''"
             @click="switchNs(slug)"
           >
             <div class="flex items-start justify-between gap-2">
@@ -300,7 +289,7 @@ onMounted(async () => {
               <UIcon
                 v-if="ns === slug"
                 name="lucide:check-circle-2"
-                class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-600 dark:text-primary-400"
+                class="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-600 dark:text-blue-300"
               />
             </div>
           </button>
@@ -330,29 +319,27 @@ onMounted(async () => {
           <div
             v-for="b in displayedBundles"
             :key="b.id"
-            class="relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+            class="pl-card group"
           >
             <!-- Trial ribbon -->
-            <div v-if="b.trialDays > 0" class="absolute top-0 right-0">
-              <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
-                <div class="flex items-center gap-1.5">
-                  <UIcon name="i-heroicons-gift" class="w-4 h-4" />
-                  <span class="text-xs font-bold">{{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}</span>
-                </div>
-              </div>
-            </div>
+            <div v-if="b.trialDays > 0" class="absolute right-5 top-5">
+            <span class="pl-ribbon">
+              <UIcon name="i-heroicons-gift" class="w-4 h-4" />
+              {{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}
+            </span>
+          </div>
 
-            <div class="flex flex-1 flex-col p-6 pt-12">
-              <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-1">
+            <div class="flex flex-1 flex-col p-7" :class="b.trialDays > 0 ? 'pt-14' : 'pt-8'">
+              <p class="eyebrow mb-3 self-start !text-[10px]">
                 {{ t('app.bundle') || 'Готовая сборка' }}
               </p>
-              <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
+              <h3 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">{{ b.description }}</p>
 
               <!-- Price -->
               <div class="mb-6">
                 <div class="flex items-baseline gap-2">
-                  <span class="text-4xl font-bold text-gray-900 dark:text-white">
+                  <span class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                     {{ formatPrice(b.trialDays > 0 ? 0 : b.amountCents, b.currency) }}
                   </span>
                   <s
@@ -371,7 +358,7 @@ onMounted(async () => {
               </div>
 
               <!-- Included apps -->
-              <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+              <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-white/10 pt-5">
                 <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                   {{ t('app.bundleContains') || 'Входит' }}
                 </p>
@@ -380,8 +367,8 @@ onMounted(async () => {
                   :key="it.applicationCode + it.planCode"
                   class="flex items-start gap-3"
                 >
-                  <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                    <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+                  <div class="pl-check">
+                    <UIcon name="i-heroicons-check" class="w-3 h-3" />
                   </div>
                   <span class="text-sm text-gray-700 dark:text-gray-300">
                     <span class="font-semibold">{{ appLabel(it.applicationCode) }}</span>
@@ -391,26 +378,24 @@ onMounted(async () => {
               </div>
 
               <!-- CTA -->
-              <UButton
+              <button
                 v-if="!isActive(b)"
-                block
-                size="lg"
-                color="primary"
+                type="button"
+                class="cta-pill cta-pill--primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="activatingCode !== null"
-                class="font-semibold"
                 @click="subscribe(b)"
               >
                 <template v-if="activatingCode === b.code">
-                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+                  <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
                   {{ t('app.connecting') || 'Подключаем...' }}
                 </template>
                 <template v-else>
                   {{ t('app.connectBundle') || 'Подключить сборку' }}
                 </template>
-              </UButton>
+              </button>
               <div
                 v-else
-                class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
+                class="pl-active"
               >
                 <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
                 {{ t('app.activePlan') || 'Подключено!' }}

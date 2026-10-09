@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
 definePageMeta({ layout: 'full' });
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -377,14 +378,14 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
+  <div class="min-h-screen flex flex-col">
     <div class="flex-1">
       <div ref="feedSectionRef" class="mx-auto w-full max-w-[1180px] px-3 md:px-6 py-5 md:py-8 text-gray-700 dark:text-gray-300">
       <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8 items-start">
         <section v-if="localizedVisibleArticleFeedPosts.length > 0">
-          <div class="mb-5 flex items-center gap-2">
-            <UIcon name="lucide:newspaper" class="h-5 w-5 text-blue-600 dark:text-blue-300" />
-            <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.feed') || 'Feed' }}</h1>
+          <div class="mb-6 flex items-center gap-3">
+            <span class="icon-tile !h-11 !w-11 !rounded-2xl"><UIcon name="lucide:newspaper" class="h-5 w-5" /></span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.feed') || 'Feed' }}</h1>
           </div>
 
           <HomePostsFeed :posts="localizedVisibleArticleFeedPosts" @open="handleOpenPost" />

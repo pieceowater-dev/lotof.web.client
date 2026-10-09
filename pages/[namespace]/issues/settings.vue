@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import UserAvatar from '@/components/ui/UserAvatar.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';

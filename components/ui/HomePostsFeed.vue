@@ -46,83 +46,84 @@ function onImageError(postId: string) {
 </script>
 
 <template>
-  <section class="space-y-4 md:space-y-5" aria-label="Posts feed">
+  <section class="space-y-5 md:space-y-6" aria-label="Posts feed">
     <article
       v-for="(post, postIndex) in props.posts"
       :key="post.id"
-      class="overflow-hidden rounded-3xl border border-blue-100/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 cursor-pointer"
+      class="bezel bezel-hover group cursor-pointer"
       role="button"
       tabindex="0"
       @click="emit('open', post)"
       @keydown.enter="emit('open', post)"
     >
-      <img
-        v-if="post.image && !brokenImages[post.id]"
-        :src="post.image"
-        :alt="post.imageAlt"
-        class="h-52 w-full object-cover sm:h-60"
-        :loading="postIndex === 0 ? 'eager' : 'lazy'"
-        :fetchpriority="postIndex === 0 ? 'high' : 'low'"
-        decoding="async"
-        width="1200"
-        height="630"
-        @error="onImageError(post.id)"
-      />
-      <div
-        v-else
-        class="h-52 w-full sm:h-60 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500 dark:from-gray-700 dark:to-gray-800 dark:text-gray-300"
-      >
-        <UIcon name="lucide:image-off" class="h-12 w-12" />
-      </div>
-
-      <div class="p-4 md:p-5">
-        <div class="mb-3 flex items-center justify-between gap-3 text-xs text-gray-500 dark:text-gray-400">
-          <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 font-medium text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+      <div class="bezel-core overflow-hidden">
+        <div class="relative overflow-hidden">
+          <img
+            v-if="post.image && !brokenImages[post.id]"
+            :src="post.image"
+            :alt="post.imageAlt"
+            class="h-52 w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.03] sm:h-64"
+            :loading="postIndex === 0 ? 'eager' : 'lazy'"
+            :fetchpriority="postIndex === 0 ? 'high' : 'low'"
+            decoding="async"
+            width="1200"
+            height="630"
+            @error="onImageError(post.id)"
+          />
+          <div
+            v-else
+            class="flex h-40 w-full items-center justify-center bg-gray-100 text-gray-300 dark:bg-white/10 dark:text-gray-600 sm:h-48"
+          >
+            <UIcon name="lucide:newspaper" class="h-12 w-12" />
+          </div>
+          <span class="absolute left-4 top-4 inline-flex items-center rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-gray-800 shadow-sm dark:bg-black/60 dark:text-gray-100">
             {{ post.category }}
           </span>
-          <span>{{ post.readTime }}</span>
         </div>
 
-        <h3 class="text-lg font-semibold leading-snug text-gray-900 dark:text-gray-100">
-          {{ post.title }}
-        </h3>
-
-        <p class="mt-2 text-sm font-medium leading-6 text-gray-700 dark:text-gray-200">
-          {{ post.excerpt }}
-        </p>
-        <p v-if="post.preview" class="mt-1.5 text-sm leading-6 text-gray-500 dark:text-gray-400 line-clamp-2">
-          {{ post.preview }}
-        </p>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-          <span
-            v-for="tag in post.tags"
-            :key="tag"
-            class="rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-600 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200"
-          >
-            #{{ tag }}
-          </span>
-        </div>
-
-        <div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-gray-700">
-          <div class="flex items-center gap-2">
-            <div class="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 text-xs font-semibold text-white">
-              {{ initials(post.author) }}
-            </div>
-            <div>
-              <p class="text-sm font-medium text-gray-800 dark:text-gray-100">
-                {{ post.author }}
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ post.publishedAt }}
-              </p>
-            </div>
+        <div class="p-5 md:p-6">
+          <div class="mb-2 flex items-center gap-2 text-xs font-medium text-gray-400 dark:text-gray-500">
+            <span>{{ post.publishedAt }}</span>
+            <span aria-hidden="true">·</span>
+            <span>{{ post.readTime }}</span>
           </div>
 
-          <span class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-300">
-            <UIcon name="lucide:arrow-up-right" class="h-4 w-4" />
-            {{ t('app.read') || 'Читать' }}
-          </span>
+          <h3 class="text-xl font-extrabold leading-snug tracking-tight text-gray-900 dark:text-white md:text-2xl">
+            {{ post.title }}
+          </h3>
+
+          <p class="mt-2.5 text-sm leading-6 text-gray-700 dark:text-gray-200 md:text-base">
+            {{ post.excerpt }}
+          </p>
+          <p v-if="post.preview" class="mt-1.5 line-clamp-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+            {{ post.preview }}
+          </p>
+
+          <div v-if="post.tags.length" class="mt-4 flex flex-wrap gap-1.5">
+            <span
+              v-for="tag in post.tags"
+              :key="tag"
+              class="rounded-full bg-gray-900/5 px-2.5 py-1 text-xs font-medium text-gray-600 dark:bg-white/10 dark:text-gray-300"
+            >
+              #{{ tag }}
+            </span>
+          </div>
+
+          <div class="mt-5 flex items-center justify-between border-t border-gray-100 pt-4 dark:border-white/10">
+            <div class="flex items-center gap-2.5">
+              <div class="hdr-avatar !h-9 !w-9">
+                {{ initials(post.author) }}
+              </div>
+              <p class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ post.author }}</p>
+            </div>
+
+            <span class="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 dark:text-blue-300">
+              {{ t('app.read') || 'Читать' }}
+              <span class="cta-arrow !h-8 !w-8 !bg-blue-500/10">
+                <UIcon name="lucide:arrow-up-right" class="h-4 w-4" />
+              </span>
+            </span>
+          </div>
         </div>
       </div>
     </article>

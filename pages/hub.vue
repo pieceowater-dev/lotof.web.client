@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
 definePageMeta({ layout: 'full' });
 
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';

@@ -67,7 +67,7 @@ watch(
 <template>
   <div class="contents">
     <aside class="hidden lg:block lg:sticky lg:top-3 self-start flex flex-col min-h-0">
-      <div class="mb-7 rounded-3xl border border-blue-100/80 bg-white/90 p-4 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-800/90 overflow-hidden">
+      <div class="catalog-panel mb-5 overflow-hidden p-4">
         <div class="relative">
           <UIcon
             name="lucide:search"
@@ -78,20 +78,20 @@ watch(
             type="text"
             :placeholder="t('app.searchArticles') || 'Search articles'"
             :aria-label="t('app.searchArticles') || 'Search articles'"
-            class="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-900 dark:text-gray-100"
+            class="fd-search"
             @input="handleSearchInput"
           />
         </div>
 
         <div v-if="props.popularTags.length" class="mt-4">
-          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('app.popularTags') || 'Popular tags' }}</p>
+          <p class="sf-label mb-2">{{ t('app.popularTags') || 'Popular tags' }}</p>
           <div class="flex flex-wrap gap-2">
             <button
               type="button"
-              class="rounded-lg border px-2 py-1 text-xs transition"
+              class="pill-filter !px-3 !py-1 !text-xs"
               :class="props.selectedTag === ''
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
+                ? 'pill-filter--active'
+                : ''"
               @click="selectTag('')"
             >
               {{ t('app.all') || 'All' }}
@@ -100,10 +100,10 @@ watch(
               v-for="tag in props.popularTags"
               :key="tag"
               type="button"
-              class="rounded-lg border px-2 py-1 text-xs transition"
+              class="pill-filter !px-3 !py-1 !text-xs"
               :class="props.selectedTag === tag
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
+                ? 'pill-filter--active'
+                : ''"
               @click="selectTag(tag)"
             >
               #{{ tag }}
@@ -131,7 +131,7 @@ watch(
           </div>
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-lg border border-blue-100 bg-blue-50/60 px-2.5 py-1.5 text-xs font-medium text-blue-600 transition hover:bg-blue-100/70 dark:border-gray-700 dark:bg-gray-700/60 dark:text-blue-300"
+            class="pill-filter !px-3 !py-1.5 !text-xs"
             :aria-label="t('app.scrollToTop') || 'Scroll to top'"
             @click="handleScrollTopTap"
             @touchstart.prevent.stop="handleScrollTopTap"
@@ -143,12 +143,12 @@ watch(
         </div>
       </div>
 
-      <div v-if="props.whatsNewPosts.length > 0" class="flex h-[clamp(16rem,38vh,26rem)] min-h-0 flex-col rounded-3xl border border-blue-100/80 bg-gradient-to-br from-white/90 to-blue-50/40 p-5 shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gradient-to-br dark:from-gray-800/90 dark:to-gray-800/70 overflow-hidden">
+      <div v-if="props.whatsNewPosts.length > 0" class="catalog-panel flex h-[clamp(16rem,38vh,26rem)] min-h-0 flex-col overflow-hidden p-5">
         <div class="mb-5 flex items-center gap-2">
-          <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-            <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+          <div class="icon-tile !h-9 !w-9 !rounded-xl">
+            <UIcon name="lucide:sparkles" class="h-4 w-4" />
           </div>
-          <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">{{ t('app.whatsNew') || "What's New" }}</h3>
+          <h3 class="text-base font-extrabold tracking-tight text-gray-900 dark:text-gray-100">{{ t('app.whatsNew') || "What's New" }}</h3>
         </div>
 
         <div v-if="props.whatsNewPosts.length" class="whats-new-scroll min-h-0 flex-1 overflow-y-auto space-y-2.5 pr-2">
@@ -156,20 +156,21 @@ watch(
             v-for="post in props.whatsNewPosts"
             :key="post.id"
             type="button"
-            class="group w-full text-left rounded-xl border border-gray-150 bg-white p-3 transition-all duration-200 hover:border-emerald-300 hover:shadow-md hover:bg-white dark:border-gray-600 dark:bg-gray-700/40 dark:hover:border-emerald-600 dark:hover:bg-gray-700/60"
+            class="gw-row group !items-start"
             @click="emit('open', post)"
           >
             <div class="flex items-start gap-3">
-              <img
+              <img v-if="post.image"
                 :src="post.image"
                 :alt="post.imageAlt"
-                class="h-14 w-14 rounded-lg object-cover ring-1 ring-gray-200 dark:ring-gray-600"
+                class="h-14 w-14 flex-shrink-0 rounded-2xl object-cover ring-1 ring-black/5 dark:ring-white/10"
                 loading="lazy"
               />
+              <span v-else class="gw-row-icon h-14 w-14 !rounded-2xl"><UIcon name="lucide:newspaper" class="h-5 w-5" /></span>
 
               <div class="min-w-0 flex-1">
-                <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">{{ post.publishedAt }}</p>
-                <p class="mt-1 text-sm font-semibold leading-5 text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">{{ post.title }}</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">{{ post.publishedAt }}</p>
+                <p class="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-gray-900 transition-colors group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-300">{{ post.title }}</p>
                 <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">{{ post.readTime }}</p>
               </div>
             </div>
@@ -207,10 +208,10 @@ watch(
     >
       <!-- blur strip below the floating widget -->
       <div class="fixed bottom-0 left-0 right-0 h-[max(env(safe-area-inset-bottom),0.75rem)] backdrop-blur-sm pointer-events-none" />
-      <div class="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800">
+      <div class="hdr-shell mx-auto w-full max-w-md !rounded-3xl bg-white/95 dark:bg-[#1a1a1a]/95">
         <div class="flex h-[42px] items-center gap-2 px-4">
-          <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-            <UIcon name="lucide:sparkles" class="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+          <div class="icon-tile !h-7 !w-7 !rounded-lg">
+            <UIcon name="lucide:sparkles" class="h-4 w-4" />
           </div>
           <button
             type="button"
@@ -230,7 +231,7 @@ watch(
 
           <button
             type="button"
-            class="ml-auto relative z-10 inline-flex h-8 w-8 items-center justify-center rounded-full border border-blue-100/70 bg-blue-50/30 text-blue-500 transition hover:bg-blue-50/55 dark:border-gray-600 dark:bg-gray-700/40 dark:text-blue-200"
+            class="gw-icon-btn ml-auto relative z-10 !h-8 !w-8"
             :aria-label="t('app.scrollToTop') || 'Scroll to top'"
             @click="handleScrollTopTap"
             @touchstart.prevent.stop="handleScrollTopTap"
@@ -242,7 +243,7 @@ watch(
 
         <Transition name="mobile-sheet">
           <div v-if="mobileMenuOpen" class="space-y-4 border-t border-gray-200 px-4 py-4 dark:border-gray-700 max-h-[70vh] overflow-y-auto">
-            <div class="rounded-2xl border border-gray-200 bg-gray-50 p-2.5 dark:border-gray-700 dark:bg-gray-700/40">
+            <div class="rounded-2xl bg-gray-900/[0.04] p-2.5 dark:bg-white/[0.06]">
               <div class="relative">
                 <UIcon
                   name="lucide:search"
@@ -253,23 +254,23 @@ watch(
                   type="text"
                   :placeholder="t('app.searchArticles') || 'Search articles'"
                   :aria-label="t('app.searchArticles') || 'Search articles'"
-                  class="w-full rounded-xl border border-gray-300 bg-white py-2 pl-9 pr-3 text-sm text-gray-800 outline-none transition focus:border-emerald-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+                  class="fd-search"
                   @input="handleSearchInput"
                 />
               </div>
             </div>
 
             <div v-if="props.popularTags.length" class="pt-1">
-              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p class="sf-label mb-2">
                 {{ t('app.popularTags') || 'Popular tags' }}
               </p>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   type="button"
-                  class="rounded-lg border px-2 py-1 text-xs transition"
+                  class="pill-filter !px-3 !py-1 !text-xs"
                   :class="props.selectedTag === ''
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
+                    ? 'pill-filter--active'
+                    : ''"
                   @click="selectTag('')"
                 >
                   {{ t('app.all') || 'All' }}
@@ -278,10 +279,10 @@ watch(
                   v-for="tag in props.popularTags"
                   :key="tag"
                   type="button"
-                  class="rounded-lg border px-2 py-1 text-xs transition"
+                  class="pill-filter !px-3 !py-1 !text-xs"
                   :class="props.selectedTag === tag
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-emerald-200 dark:border-gray-600 dark:bg-gray-700/60 dark:text-gray-200'"
+                    ? 'pill-filter--active'
+                    : ''"
                   @click="selectTag(tag)"
                 >
                   #{{ tag }}
@@ -290,7 +291,7 @@ watch(
             </div>
 
             <div v-if="props.whatsNewPosts.length > 0" class="flex flex-col min-h-0 max-h-72 pt-1">
-              <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <p class="sf-label mb-2">
                 {{ t('app.whatsNew') || "What's New" }}
               </p>
 
@@ -299,22 +300,23 @@ watch(
                   v-for="post in props.whatsNewPosts"
                   :key="`mobile-${post.id}`"
                   type="button"
-                  class="group w-full text-left rounded-lg border border-gray-200 bg-white p-2.5 transition-all hover:border-emerald-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-700/40 dark:hover:border-emerald-600"
+                  class="gw-row group !items-start !p-2.5"
                   @click="emit('open', post)"
                 >
                   <div class="flex items-start gap-2.5">
-                    <img
+                    <img v-if="post.image"
                       :src="post.image"
                       :alt="post.imageAlt"
-                      class="h-12 w-12 flex-shrink-0 rounded-lg object-cover"
+                      class="h-12 w-12 flex-shrink-0 rounded-xl object-cover"
                       loading="lazy"
                     />
+              <span v-else class="gw-row-icon h-12 w-12 !rounded-2xl"><UIcon name="lucide:newspaper" class="h-5 w-5" /></span>
 
                     <div class="min-w-0 flex-1">
-                      <p class="text-xs font-medium text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
+                      <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                         {{ post.publishedAt }}
                       </p>
-                      <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100 line-clamp-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
+                      <p class="mt-0.5 line-clamp-2 text-sm font-semibold text-gray-900 group-hover:text-blue-600 dark:text-gray-100 dark:group-hover:text-blue-300">
                         {{ post.title }}
                       </p>
                       <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ post.readTime }}</p>

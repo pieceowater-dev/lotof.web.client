@@ -124,9 +124,9 @@ onMounted(load);
 
 <template>
   <section v-if="!loading && visibleBundles.length" class="mb-10">
-    <div class="mb-5 flex items-center gap-2">
-      <UIcon name="lucide:layers" class="h-5 w-5 text-primary-600 dark:text-primary-300" />
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+    <div class="mb-5 flex items-center gap-3">
+      <span class="icon-tile !h-10 !w-10 !rounded-xl"><UIcon name="lucide:layers" class="h-5 w-5" /></span>
+      <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
         {{ t('app.bundlesForThisApp') || 'Готовые сборки с этим приложением' }}
       </h2>
     </div>
@@ -135,27 +135,25 @@ onMounted(load);
       <div
         v-for="b in visibleBundles"
         :key="b.id"
-        class="relative flex flex-col bg-white dark:bg-gray-800 rounded-2xl border border-primary-200 dark:border-primary-800 hover:border-primary-400 dark:hover:border-primary-500 hover:shadow-xl transition-all duration-300 overflow-hidden group"
+        class="pl-card group"
       >
-        <div v-if="b.trialDays > 0" class="absolute top-0 right-0">
-          <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white px-4 py-2 rounded-bl-2xl shadow-lg">
-            <div class="flex items-center gap-1.5">
+        <div v-if="b.trialDays > 0" class="absolute right-5 top-5">
+            <span class="pl-ribbon">
               <UIcon name="i-heroicons-gift" class="w-4 h-4" />
-              <span class="text-xs font-bold">{{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}</span>
-            </div>
+              {{ b.trialDays }} {{ t('app.daysTrial') || 'дней бесплатно!' }}
+            </span>
           </div>
-        </div>
 
-        <div class="flex flex-1 flex-col p-6 pt-12">
-          <p class="text-[11px] font-bold uppercase tracking-wide text-primary-600 dark:text-primary-400 mb-1">
+        <div class="flex flex-1 flex-col p-7" :class="b.trialDays > 0 ? 'pt-14' : 'pt-8'">
+          <p class="eyebrow mb-3 self-start !text-[10px]">
             {{ t('app.bundle') || 'Готовая сборка' }}
           </p>
-          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
+          <h3 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-2">{{ b.name }}</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-6 min-h-[36px]">{{ b.description }}</p>
 
           <div class="mb-6">
             <div class="flex items-baseline gap-2">
-              <span class="text-4xl font-bold text-gray-900 dark:text-white">
+              <span class="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                 {{ formatPrice(b.trialDays > 0 ? 0 : b.amountCents, b.currency) }}
               </span>
               <s
@@ -173,7 +171,7 @@ onMounted(load);
             </div>
           </div>
 
-          <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-gray-700 pt-5">
+          <div class="flex-1 space-y-3 mb-6 border-t border-gray-100 dark:border-white/10 pt-5">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
               {{ t('app.bundleContains') || 'Входит' }}
             </p>
@@ -182,8 +180,8 @@ onMounted(load);
               :key="it.applicationCode + it.planCode"
               class="flex items-start gap-3"
             >
-              <div class="flex-shrink-0 w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mt-0.5">
-                <UIcon name="i-heroicons-check" class="w-3 h-3 text-primary-600 dark:text-primary-400" />
+              <div class="pl-check">
+                <UIcon name="i-heroicons-check" class="w-3 h-3" />
               </div>
               <span class="text-sm text-gray-700 dark:text-gray-300">
                 <span class="font-semibold">{{ appLabel(it.applicationCode) }}</span>
@@ -192,26 +190,24 @@ onMounted(load);
             </div>
           </div>
 
-          <UButton
+          <button
             v-if="!isActive(b)"
-            block
-            size="lg"
-            color="primary"
+            type="button"
+            class="cta-pill cta-pill--primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="activatingCode !== null"
-            class="font-semibold"
             @click="subscribe(b)"
           >
             <template v-if="activatingCode === b.code">
-              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 mr-2 animate-spin" />
+              <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
               {{ t('app.connecting') || 'Подключаем...' }}
             </template>
             <template v-else>
               {{ t('app.connectBundle') || 'Подключить сборку' }}
             </template>
-          </UButton>
+          </button>
           <div
             v-else
-            class="flex w-full items-center justify-center gap-2 rounded-md bg-gradient-to-r from-emerald-500 to-emerald-600 px-3.5 py-2.5 text-sm font-semibold text-white shadow-sm"
+            class="pl-active"
           >
             <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
             {{ t('app.activePlan') || 'Подключено!' }}

@@ -1069,36 +1069,26 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="relative min-h-screen overflow-x-clip bg-gradient-to-b from-white via-emerald-50/45 to-cyan-50/45 px-4 py-7 pb-24 md:px-6 md:py-10 dark:from-slate-900 dark:via-emerald-950/18 dark:to-blue-950/26 lg:pb-10">
-    <div
-      aria-hidden="true"
-      class="pointer-events-none absolute inset-0 -z-0"
-      style="
-        background:
-          radial-gradient(920px 430px at 10% -10%, rgba(16, 185, 129, 0.11), transparent 66%),
-          radial-gradient(780px 360px at 92% 8%, rgba(6, 182, 212, 0.09), transparent 69%),
-          radial-gradient(700px 340px at 55% 100%, rgba(59, 130, 246, 0.075), transparent 71%);
-      "
-    />
+  <main class="relative min-h-screen overflow-x-clip px-4 py-7 pb-24 md:px-6 md:py-10 lg:pb-10">
 
     <section class="relative z-10 mx-auto w-full max-w-[1280px] lg:grid lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-6">
       <article>
-        <div class="rounded-[28px] border border-slate-200/80 bg-white/95 p-5 shadow-[0_16px_50px_-28px_rgba(15,23,42,0.35)] backdrop-blur sm:p-7 md:p-10 dark:border-gray-700 dark:bg-gray-900/95 dark:shadow-[0_20px_60px_-30px_rgba(0,0,0,0.7)]">
-          <div class="mx-auto w-full max-w-[720px]">
+        <div class="bezel">
+          <div class="bezel-core p-5 sm:p-8 md:p-12"><div class="mx-auto w-full max-w-[720px]">
             <NuxtLink
               :to="backHref"
-              class="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-blue-300 hover:text-blue-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:border-blue-500 dark:hover:text-blue-300"
+              class="pill-filter mb-8"
             >
               <UIcon name="lucide:arrow-left" class="h-4 w-4" />
               {{ t('app.back') || 'Назад' }}
             </NuxtLink>
 
-            <header class="mb-8 border-b border-slate-100 pb-6 dark:border-gray-800">
-              <p class="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
+            <header class="mb-8 border-b border-slate-100 pb-7 dark:border-white/10">
+              <p class="eyebrow mb-4">
                 {{ isNews ? (t('app.news') || 'Новости') : isWhatsNew ? (t('app.whatsNew') || "What's New") : (t('app.articles') || 'Articles') }}
               </p>
 
-              <h1 class="text-balance text-3xl font-semibold leading-tight text-slate-900 md:text-4xl dark:text-gray-100">
+              <h1 class="text-balance text-3xl font-extrabold leading-[1.1] tracking-tight text-slate-900 md:text-5xl dark:text-white">
                 {{ articleTitle }}
               </h1>
 
@@ -1116,7 +1106,7 @@ onBeforeUnmount(() => {
                 <span
                   v-for="tag in articleTags"
                   :key="tag"
-                  class="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  class="rounded-full bg-slate-900/5 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-gray-300"
                 >
                   #{{ tag }}
                 </span>
@@ -1129,7 +1119,7 @@ onBeforeUnmount(() => {
               :alt="articleOgImageAlt"
               width="1200"
               height="630"
-              class="mb-8 w-full rounded-3xl border border-slate-200 object-cover shadow-sm dark:border-gray-700"
+              class="mb-8 w-full rounded-[2rem] object-cover shadow-sm ring-1 ring-black/5 dark:ring-white/10"
               loading="eager"
               fetchpriority="high"
               decoding="async"
@@ -1139,10 +1129,10 @@ onBeforeUnmount(() => {
 
             <aside
               aria-labelledby="article-trust-heading"
-              class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50/70 to-cyan-50/40 shadow-sm dark:border-gray-700 dark:from-gray-900 dark:via-gray-900 dark:to-cyan-950/20"
+              class="catalog-panel mt-5 overflow-hidden !rounded-3xl"
             >
-              <div class="flex items-center gap-2 border-b border-slate-100/90 px-5 py-3 dark:border-gray-700/80">
-                <span class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+              <div class="flex items-center gap-2 border-b border-slate-100/90 px-5 py-3 dark:border-white/10">
+                <span class="icon-tile !h-7 !w-7 !rounded-full">
                   <UIcon name="lucide:shield-check" class="h-4 w-4" />
                 </span>
                 <h2 id="article-trust-heading" class="text-sm font-semibold tracking-[0.04em] text-slate-800 dark:text-gray-100">
@@ -1155,7 +1145,7 @@ onBeforeUnmount(() => {
               </p>
 
               <dl class="grid gap-3 px-5 py-4 text-sm text-slate-700 dark:text-gray-300 sm:grid-cols-2">
-                <div class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                <div class="rounded-2xl bg-slate-900/[0.04] px-3.5 py-2.5 dark:bg-white/[0.06]">
                   <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Автор материала</dt>
                   <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
                     <a
@@ -1172,14 +1162,14 @@ onBeforeUnmount(() => {
                   </dd>
                 </div>
 
-                <div class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                <div class="rounded-2xl bg-slate-900/[0.04] px-3.5 py-2.5 dark:bg-white/[0.06]">
                   <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Дата публикации</dt>
                   <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
                     <time :datetime="articlePublishedIso || undefined">{{ articleDate }}</time>
                   </dd>
                 </div>
 
-                <div v-if="articleReviewer" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                <div v-if="articleReviewer" class="rounded-2xl bg-slate-900/[0.04] px-3.5 py-2.5 dark:bg-white/[0.06]">
                   <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Проверено</dt>
                   <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
                     <a
@@ -1198,14 +1188,14 @@ onBeforeUnmount(() => {
                   </dd>
                 </div>
 
-                <div v-if="articleUpdatedLabel" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                <div v-if="articleUpdatedLabel" class="rounded-2xl bg-slate-900/[0.04] px-3.5 py-2.5 dark:bg-white/[0.06]">
                   <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Дата изменения</dt>
                   <dd class="mt-1 font-medium text-slate-900 dark:text-gray-100">
                     <time :datetime="articleUpdatedIso || undefined">{{ articleUpdatedLabel }}</time>
                   </dd>
                 </div>
 
-                <div v-if="articleSourceUrl" class="rounded-xl bg-slate-50 px-3 py-2 dark:bg-gray-900/50">
+                <div v-if="articleSourceUrl" class="rounded-2xl bg-slate-900/[0.04] px-3.5 py-2.5 dark:bg-white/[0.06]">
                   <dt class="text-xs font-medium uppercase tracking-[0.08em] text-slate-500 dark:text-gray-400">Источник</dt>
                   <dd class="mt-1">
                     <a
@@ -1222,9 +1212,9 @@ onBeforeUnmount(() => {
               </dl>
             </aside>
 
-            <section v-if="suggestedArticles.length" class="mt-12 border-t border-slate-200 pt-8 dark:border-gray-800">
+            <section v-if="suggestedArticles.length" class="mt-12 border-t border-slate-200 pt-8 dark:border-white/10">
               <div class="mb-5 flex items-center justify-between gap-3">
-                <h2 class="text-xl font-semibold text-slate-900 dark:text-gray-100">
+                <h2 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                   {{ t('app.continueReading') || 'Continue reading' }}
                 </h2>
                 <NuxtLink
@@ -1240,14 +1230,14 @@ onBeforeUnmount(() => {
                   v-for="nextArticle in suggestedArticles"
                   :key="nextArticle.slug"
                   :href="`/${nextArticle.category}/${nextArticle.slug}`"
-                  class="group overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800/80 dark:hover:border-blue-500"
+                  class="sf-card sf-card--hover group overflow-hidden"
                 >
                   <img
                     :src="nextArticle.image"
                     :alt="nextArticle.title"
                     width="480"
                     height="224"
-                    class="h-28 w-full object-cover"
+                    class="h-32 w-full object-cover"
                     loading="lazy"
                   />
                   <div class="p-3">
@@ -1262,6 +1252,7 @@ onBeforeUnmount(() => {
                 </a>
               </div>
             </section>
+          </div>
           </div>
         </div>
       </article>
@@ -1308,12 +1299,26 @@ onBeforeUnmount(() => {
   word-break: break-word;
 }
 
+.article-content { font-size: 1.0625rem; line-height: 1.8; }
+.article-content { --article-heading: rgb(15 23 42); }
+.article-content :deep(h2), .article-content :deep(h3), .article-content :deep(h4) { font-weight: 800; letter-spacing: -0.015em; line-height: 1.25; color: var(--article-heading); margin: 2.2rem 0 0.8rem; }
+.article-content :deep(h2) { font-size: 1.6rem; }
+.article-content :deep(h3) { font-size: 1.3rem; }
+.article-content :deep(p) { margin: 1rem 0; }
+.article-content :deep(ul), .article-content :deep(ol) { margin: 1rem 0; padding-left: 1.5rem; }
+.article-content :deep(ul) { list-style: disc; }
+.article-content :deep(ol) { list-style: decimal; }
+.article-content :deep(li) { margin: 0.35rem 0; }
+.article-content :deep(blockquote) { margin: 1.5rem 0; border-radius: 1rem; padding: 0.9rem 1.2rem; background: rgba(37, 99, 235, 0.06); box-shadow: inset 3px 0 0 #2563eb; }
+.article-content :deep(img) { border-radius: 1.5rem; }
 .article-content :deep(a) { transition: color 0.15s ease; }
 .article-content :deep(img), .article-content :deep(video), .article-content :deep(iframe), .article-content :deep(table), .article-content :deep(pre) { max-width: 100%; }
 .article-content :deep(pre), .article-content :deep(code) { white-space: pre-wrap; word-break: break-word; }
 .article-content :deep(a:hover) { color: rgb(29 78 216); }
 .article-content :deep(strong) { color: inherit; font-weight: 700; background-image: none !important; -webkit-background-clip: border-box !important; background-clip: border-box !important; -webkit-text-fill-color: currentColor; }
 
-:global(.dark) .article-content { color: rgb(209 213 219); }
+:global(.dark) .article-content { color: rgb(209 213 219); --article-heading: #fff; }
+:global(.dark) .article-content :deep(h2), :global(.dark) .article-content :deep(h3), :global(.dark) .article-content :deep(h4) { color: #fff; }
+:global(.dark) .article-content :deep(blockquote) { background: rgba(255, 255, 255, 0.05); box-shadow: inset 3px 0 0 #60a5fa; }
 :global(.dark) .article-content :deep(strong) { color: inherit; }
 </style>

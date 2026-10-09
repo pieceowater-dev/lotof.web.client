@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useContactsToken } from '@/composables/useContactsToken';

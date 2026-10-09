@@ -28,7 +28,7 @@ function isEmpty(v: CellValue): boolean {
 <template>
   <section class="mt-12">
     <div class="mb-4">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+      <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">
         {{ title || t('app.compareTitle') || 'Сравните, что вы получите' }}
       </h2>
       <p v-if="subtitle" class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -36,19 +36,19 @@ function isEmpty(v: CellValue): boolean {
       </p>
     </div>
 
-    <div class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-      <div class="max-h-[75vh] overflow-auto rounded-2xl">
+    <div class="pl-table">
+      <div class="max-h-[75vh] overflow-auto rounded-[2rem]">
         <table class="w-full min-w-[640px] border-collapse text-sm">
           <thead>
             <tr>
-              <th class="sticky left-0 top-0 z-30 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 w-[38%]">
+              <th class="sticky left-0 top-0 z-30 border-b border-gray-200 dark:border-white/10 bg-white dark:bg-[#1f1f1f] px-4 py-3 text-left font-semibold text-gray-500 dark:text-gray-400 w-[38%]">
                 {{ t('app.compareFeatureCol') || 'Возможность' }}
               </th>
               <th
                 v-for="col in columns"
                 :key="col.key"
-                class="sticky top-0 z-20 border-b border-gray-200 dark:border-gray-700 px-4 py-3 text-center align-bottom"
-                :class="col.highlight ? 'bg-primary-50 dark:bg-primary-900' : 'bg-white dark:bg-gray-800'"
+                class="sticky top-0 z-20 border-b border-gray-200 dark:border-white/10 px-4 py-3 text-center align-bottom"
+                :class="col.highlight ? 'bg-blue-50 dark:bg-[#2a2a2a]' : 'bg-white dark:bg-[#1f1f1f]'"
               >
                 <div class="font-bold text-gray-900 dark:text-white">{{ col.title }}</div>
                 <div v-if="col.subtitle" class="mt-0.5 text-xs font-normal text-gray-500 dark:text-gray-400">
@@ -59,7 +59,7 @@ function isEmpty(v: CellValue): boolean {
           </thead>
           <tbody>
             <template v-for="(group, gi) in groups" :key="gi">
-              <tr v-if="group.label" class="bg-gray-50 dark:bg-gray-900/40">
+              <tr v-if="group.label" class="bg-gray-50 dark:bg-white/[0.04]">
                 <td
                   :colspan="columns.length + 1"
                   class="px-4 py-2 text-[11px] font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400"
@@ -72,20 +72,20 @@ function isEmpty(v: CellValue): boolean {
                 :key="gi + '-' + ri"
                 class="border-b border-gray-100 dark:border-gray-800 last:border-0"
               >
-                <td class="sticky left-0 z-10 bg-white dark:bg-gray-800 px-4 py-3 text-gray-700 dark:text-gray-300">
+                <td class="sticky left-0 z-10 bg-white dark:bg-[#1f1f1f] px-4 py-3 text-gray-700 dark:text-gray-300">
                   {{ row.label }}
                 </td>
                 <td
                   v-for="col in columns"
                   :key="col.key"
                   class="px-4 py-3 text-center"
-                  :class="col.highlight ? 'bg-primary-50/50 dark:bg-primary-900/10' : ''"
+                  :class="col.highlight ? 'bg-blue-50/60 dark:bg-white/[0.04]' : ''"
                 >
                   <template v-if="isBool(row.values[col.key])">
                     <UIcon
                       v-if="row.values[col.key]"
                       name="i-heroicons-check-circle"
-                      class="inline h-5 w-5 text-emerald-500"
+                      class="inline h-5 w-5 text-blue-500"
                     />
                     <span v-else class="text-gray-300 dark:text-gray-600">—</span>
                   </template>

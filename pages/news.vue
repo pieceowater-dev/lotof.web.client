@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
 definePageMeta({ layout: 'full' });
 
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -362,17 +363,17 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="min-h-screen bg-white dark:bg-gray-900 flex flex-col">
+  <div class="min-h-screen flex flex-col">
     <div class="flex-1">
       <div ref="newsSectionRef" class="mx-auto w-full max-w-[1180px] px-3 md:px-6 py-5 md:py-8 text-gray-700 dark:text-gray-300">
         <div class="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 md:gap-8 items-start">
           <section>
-            <div class="mb-5 flex items-center gap-2">
-              <UIcon name="lucide:radio" class="h-5 w-5 text-blue-600 dark:text-blue-300" />
-              <h1 class="text-xl font-semibold text-gray-900 dark:text-gray-100">{{ t('app.news') || 'Новости' }}</h1>
-            </div>
+            <div class="mb-6 flex items-center gap-3">
+            <span class="icon-tile !h-11 !w-11 !rounded-2xl"><UIcon name="lucide:radio" class="h-5 w-5" /></span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.news') || 'Новости' }}</h1>
+          </div>
 
-            <div v-if="visibleNewsPosts.length === 0" class="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center dark:border-gray-700 dark:bg-gray-800">
+            <div v-if="visibleNewsPosts.length === 0" class="catalog-panel p-10 text-center">
               <div class="flex flex-col items-center gap-3">
                 <UIcon name="lucide:radio" class="h-10 w-10 text-blue-200 dark:text-gray-600" />
                 <p class="text-gray-600 dark:text-gray-400">{{ t('app.noNewsYet') || 'Новостей пока нет' }}</p>
