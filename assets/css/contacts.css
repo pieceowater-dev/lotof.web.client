@@ -63,3 +63,11 @@
 .dark .ct-scope a[class~="bg-primary-50"], .dark .ct-scope a[class~="bg-emerald-50"] { color: #bfdbfe !important; background: rgba(96, 165, 250, 0.16) !important; }
 .ct-scope a[class~="bg-amber-50"] { color: #b45309 !important; background: rgba(245, 158, 11, 0.14) !important; }
 .ct-scope h1 { font-weight: 800; }
+.ct-scope label[class*="rounded-full"] { border-radius: 9999px !important; }
+/* coloured-border boxes (selected / error states) keep their border but share the radius of the neutral ones */
+.ct-scope [class*="rounded-lg"][class*="border-emerald-"]:not(button):not(input):not(select):not(textarea):not(label),
+.ct-scope [class*="rounded-lg"][class*="border-primary-"]:not(button):not(input):not(select):not(textarea):not(label),
+.ct-scope [class*="rounded-lg"][class*="border-blue-"]:not(button):not(input):not(select):not(textarea):not(label),
+.ct-scope [class*="rounded-lg"][class*="border-red-"]:not(button):not(input):not(select):not(textarea):not(label),
+.at-modal [class*="rounded-lg"][class*="border-emerald-"]:not(button):not(input):not(select):not(textarea):not(label),
+.at-modal [class*="rounded-lg"][class*="border-red-"]:not(button):not(input):not(select):not(textarea):not(label) { border-radius: 1.4rem; }

@@ -903,7 +903,7 @@ useHead(() => ({
               <label
                 v-for="option in clientTypeOptions"
                 :key="option.value"
-                class="relative flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 text-sm transition focus-within:ring-2 focus-within:ring-emerald-500"
+                class="relative flex cursor-pointer items-center gap-3 rounded-full border px-4 py-3 text-sm transition focus-within:ring-2 focus-within:ring-emerald-500"
                 :class="clientType === option.value
                   ? 'border-emerald-500 bg-emerald-50/70 text-gray-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-white'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-700'"
