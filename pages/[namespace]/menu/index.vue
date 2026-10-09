@@ -12,6 +12,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
+import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
@@ -778,6 +779,8 @@ onBeforeUnmount(() => {
 });
 
 const isCreateOrderOpen = ref(false);
+// Set when the create form is opened from a completed order's "warranty case" action.
+const createOrderPrefill = ref<CreateOrderPrefill | null>(null);
 const creatingOrder = ref(false);
 const updatingStatusId = ref<string | null>(null);
 
@@ -857,6 +860,12 @@ function handleDetailStatusChanged(updated: MenuOrder) {
   selectedOrder.value = updated;
   clearNewOrder(updated.id);
   loadStatusCounts();
+}
+
+function handleCreateWarranty(prefill: CreateOrderPrefill) {
+  createOrderPrefill.value = prefill;
+  isDetailOpen.value = false;
+  isCreateOrderOpen.value = true;
 }
 
 async function handleCreateOrder(payload: any) {
@@ -1064,7 +1073,7 @@ async function handleCreateOrder(payload: any) {
         class="w-full sm:w-auto justify-center flex-shrink-0"
         :ui="{ rounded: 'rounded-xl' }"
         data-tour="menu-create-btn"
-        @click="isCreateOrderOpen = true"
+        @click="createOrderPrefill = null; isCreateOrderOpen = true"
       >
         {{ t('menu.createOrder') || 'Create order' }}
       </UButton>
@@ -1223,6 +1232,7 @@ async function handleCreateOrder(payload: any) {
       :ns-slug="nsSlug"
       :branches="branches"
       :saving="creatingOrder"
+      :prefill="createOrderPrefill"
       @submit="handleCreateOrder"
     />
 
@@ -1234,6 +1244,7 @@ async function handleCreateOrder(payload: any) {
       :brand-name="brandName"
       @status-changed="handleDetailStatusChanged"
       @open-order="handleOpenOrderById"
+      @create-warranty="handleCreateWarranty"
     />
 
     <!-- Full filter panel: source tag + date ranges, for building a report

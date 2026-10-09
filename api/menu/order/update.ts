@@ -15,7 +15,7 @@ export type UpdateOrderInput = {
 const UpdateOrderDocument = /* GraphQL */ `
   mutation UpdateOrder($input: UpdateOrderInput!) {
     updateOrder(input: $input) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId
     }
   }
 `;
@@ -35,7 +35,7 @@ export async function menuUpdateOrder(menuToken: string, namespaceSlug: string, 
 const LinkOrderClientDocument = /* GraphQL */ `
   mutation LinkOrderClient($orderId: ID!, $clientId: String!) {
     linkOrderClient(orderId: $orderId, clientId: $clientId) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId
     }
   }
 `;

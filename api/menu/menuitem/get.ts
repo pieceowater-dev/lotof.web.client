@@ -6,7 +6,7 @@ import type { MenuItem } from '@/api/menu/menuitem/list';
 const MenuItemDocument = /* GraphQL */ `
   query MenuItem($id: ID!) {
     menuItem(id: $id) {
-      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription badgeIds excludedBranchIds
+      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays badgeIds excludedBranchIds
     }
   }
 `;

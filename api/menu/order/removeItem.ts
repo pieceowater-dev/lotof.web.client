@@ -6,7 +6,7 @@ import type { MenuOrder } from '@/api/menu/order/list';
 const RemoveOrderItemDocument = /* GraphQL */ `
   mutation RemoveOrderItem($id: ID!) {
     removeOrderItem(id: $id) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId
     }
   }
 `;

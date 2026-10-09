@@ -6,7 +6,7 @@ import type { MenuOrder } from '@/api/menu/order/list';
 const UpdateOrderItemQuantityDocument = /* GraphQL */ `
   mutation UpdateOrderItemQuantity($id: ID!, $quantity: Int!) {
     updateOrderItemQuantity(id: $id, quantity: $quantity) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId
     }
   }
 `;

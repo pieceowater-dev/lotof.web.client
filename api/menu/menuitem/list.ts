@@ -14,6 +14,7 @@ export type MenuItem = {
   imageAlt?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
+  warrantyDays?: number;
   badgeIds: string[];
   excludedBranchIds: string[];
   modifierGroupIds: string[];
@@ -22,7 +23,7 @@ export type MenuItem = {
 const MenuItemsDocument = /* GraphQL */ `
   query MenuItems($categoryId: String, $filter: DefaultFilterInput) {
     menuItems(categoryId: $categoryId, filter: $filter) {
-      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription badgeIds excludedBranchIds modifierGroupIds }
+      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays badgeIds excludedBranchIds modifierGroupIds }
       info { count }
     }
   }
