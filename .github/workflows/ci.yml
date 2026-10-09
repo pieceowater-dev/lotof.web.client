@@ -50,9 +50,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.0.0
         with:
-          # BuildKit image from the AWS public ECR mirror: Docker Hub rate-limits
-          # (429) the shared GitHub-hosted runner IPs.
-          driver-opts: image=public.ecr.aws/vend/moby/buildkit:buildx-stable-1
+          # Use the runner's own Docker/BuildKit instead of pulling a buildkit
+          # image: registries rate-limit (429) the shared hosted-runner IPs.
+          driver: docker
       - name: Log into registry ${{ env.REGISTRY }}
         uses: docker/login-action@v3.0.0
         with:
@@ -89,8 +89,7 @@ jobs:
             NUXT_PUBLIC_SITE_URL=https://lota.tools
           secret-files: |
             gh_token=.gh_token
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # No gha layer cache: the docker driver cannot export it.
 
   deploy:
     runs-on: ubuntu-latest
