@@ -17,6 +17,7 @@ export type MenuDocVariableKey =
   | 'AMOUNT_DUE'
   | 'ORDER_ITEMS'
   | 'CUSTOM_FIELDS'
+  | 'ORDER_WARRANTY'
   | 'CLIENT_NAME'
   | 'CLIENT_PHONE'
   | 'CLIENT_ADDRESS'
@@ -71,6 +72,10 @@ export const MENU_DOC_VARIABLES: MenuDocVariableInfo[] = [
   {
     key: 'CUSTOM_FIELDS', labelKey: 'menu.docVarCustomFields', fallback: 'Order fields', group: 'order',
     localTokens: { en: 'CUSTOM_FIELDS', ru: 'ЗАКАЗ_ПОЛЯ', kk: 'ТАПСЫРЫС_ӨРІСТЕРІ' },
+  },
+  {
+    key: 'ORDER_WARRANTY', labelKey: 'menu.docVarOrderWarranty', fallback: 'Warranty', group: 'order',
+    localTokens: { en: 'ORDER_WARRANTY', ru: 'ЗАКАЗ_ГАРАНТИЯ', kk: 'ТАПСЫРЫС_КЕПІЛДІК' },
   },
   {
     key: 'CLIENT_NAME', labelKey: 'menu.docVarClientName', fallback: 'Client name', group: 'client',

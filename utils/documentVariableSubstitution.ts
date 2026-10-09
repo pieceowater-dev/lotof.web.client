@@ -8,6 +8,7 @@ import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { MENU_DOC_VARIABLES } from '@/utils/menuDocVariables';
 import { parseSocialLinks, socialLabel } from '@/utils/social';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
+import { warrantyInfo } from '@/utils/warranty';
 import { fieldsForOrder, formatCustomFieldValue, parseCustomFields } from '@/utils/orderCustomFields';
 
 // Order customerName/phone/deliveryAddress and item names are free text a
@@ -82,6 +83,35 @@ export function buildCustomFieldsTable(
   return `<table style="width:100%;border-collapse:collapse;font-size:inherit"><tbody>${rows}</tbody></table>`;
 }
 
+// ORDER_WARRANTY: a table of the order's lines that carry a warranty with the
+// date each one ends (or its length, until the order is completed).
+export function buildWarrantyTable(
+  items: MenuOrderItem[],
+  order: Pick<MenuOrder, 'status' | 'closedAt'>,
+  emptyLabel: string,
+  headers: { item: string; until: string; days: string }
+): string {
+  const rows = items
+    .filter((i) => (i.warrantyDays ?? 0) > 0)
+    .map((i) => {
+      const info = warrantyInfo(i.warrantyDays ?? 0, order);
+      const until = info.endsAt ? info.endsAt.toLocaleDateString('ru-RU') : `${i.warrantyDays} ${headers.days}`;
+      return `<tr>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd">${escapeHtml(i.name)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;text-align:right">${escapeHtml(until)}</td>
+      </tr>`;
+    })
+    .join('');
+  if (!rows) return `<p>${escapeHtml(emptyLabel)}</p>`;
+  return `<table style="width:100%;border-collapse:collapse;font-size:inherit">
+    <thead><tr>
+      <th style="padding:4px 8px;border-bottom:2px solid #000;text-align:left">${escapeHtml(headers.item)}</th>
+      <th style="padding:4px 8px;border-bottom:2px solid #000;text-align:right">${escapeHtml(headers.until)}</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
 export type BuildMenuDocVariablesInput = {
   order: MenuOrder;
   items: MenuOrderItem[];
@@ -94,6 +124,8 @@ export type BuildMenuDocVariablesInput = {
   branch: MenuBranch | null | undefined;
   // Pre-rendered CUSTOM_FIELDS table; see buildCustomFieldsTable.
   customFieldsBlock?: string;
+  // Pre-rendered ORDER_WARRANTY table; see buildWarrantyTable.
+  warrantyBlock?: string;
 };
 
 // Builds the {{VARIABLE}} -> value map for one order, entirely from data the
@@ -102,7 +134,7 @@ export type BuildMenuDocVariablesInput = {
 // at print time. SOCIAL_LINKS_QR is a separate async step (see
 // buildSocialLinksQrBlock) since QR generation can't happen synchronously.
 export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record<string, string> {
-  const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock } = input;
+  const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock, warrantyBlock } = input;
   const amountDue = order.totalAmount - order.discountAmount - order.paidAmount;
   const employeeNames = members.map((m) => memberDisplayName(m.userId)).filter(Boolean);
 
@@ -115,6 +147,7 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     AMOUNT_DUE: formatMoney(amountDue),
     ORDER_ITEMS: buildItemsTable(items, noneLabel, itemsTableHeaders),
     CUSTOM_FIELDS: customFieldsBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
+    ORDER_WARRANTY: warrantyBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     CLIENT_NAME: escapeHtml(order.customerName || guestLabel),
     CLIENT_PHONE: escapeHtml(order.phone ? formatDisplayPhoneUniversal(order.phone) : ''),
     CLIENT_ADDRESS: escapeHtml(order.deliveryAddress || ''),

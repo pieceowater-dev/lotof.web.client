@@ -27,11 +27,13 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
-import { buildCustomFieldsTable, buildMenuDocVariables, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
+import { warrantyInfo } from '@/utils/warranty';
+import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
 
@@ -54,6 +56,7 @@ const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void;
   (e: 'statusChanged', order: MenuOrder): void;
   (e: 'openOrder', orderId: string): void;
+  (e: 'createWarranty', prefill: CreateOrderPrefill): void;
 }>();
 
 const isOpen = computed({
@@ -393,6 +396,7 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     loadDocumentTemplates();
     loadBrandSettings();
     loadOrderFields();
+    loadWarrantyOrigin();
     resetPaymentForm();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
@@ -521,6 +525,7 @@ async function addExistingProduct(item: MenuItem, quantity = 1) {
       name: item.name,
       priceAtPurchase: item.price,
       quantity,
+      warrantyDays: item.warrantyDays || undefined,
     });
     emit('statusChanged', updated);
     await loadDetails();
@@ -760,6 +765,52 @@ async function saveFields() {
   }
 }
 
+// --- Warranty. Each line carries the warranty period snapshotted from the
+// catalog; it runs from when the order is completed (see utils/warranty.ts). ---
+const warrantyLines = computed(() =>
+  props.order
+    ? items.value
+        .filter((i) => (i.warrantyDays ?? 0) > 0)
+        .map((i) => ({ item: i, info: warrantyInfo(i.warrantyDays ?? 0, props.order!) }))
+    : []
+);
+
+// The earlier order this one is a warranty case for -- loaded to show its
+// human-facing number and to let staff jump to it.
+const warrantyOrigin = ref<MenuOrder | null>(null);
+async function loadWarrantyOrigin() {
+  warrantyOrigin.value = null;
+  const originId = props.order?.warrantyOfOrderId;
+  if (!originId) return;
+  try {
+    const menuToken = await getToken();
+    const { menuGetOrder } = await import('@/api/menu/order/get');
+    warrantyOrigin.value = await menuGetOrder(menuToken, nsSlug.value, originId);
+  } catch (e) {
+    logError('[OrderDetailModal] loadWarrantyOrigin failed', e);
+  }
+}
+
+function formatWarrantyDate(d: Date | null): string {
+  return d ? d.toLocaleDateString() : '';
+}
+
+function startWarrantyCase() {
+  if (!props.order) return;
+  const tableTag = parseTableTag(props.order.sourceTag);
+  emit('createWarranty', {
+    warrantyOfOrderId: props.order.id,
+    warrantyOrderLabel: smartOrderNumber(props.order),
+    type: props.order.type === 'pickup' || props.order.type === 'table' ? props.order.type : 'delivery',
+    phone: props.order.phone,
+    customerName: props.order.customerName,
+    deliveryAddress: props.order.deliveryAddress,
+    branchId: props.order.branchId,
+    tableNumber: tableTag ?? undefined,
+    customFields: props.order.customFields,
+  });
+}
+
 // --- Share link ---
 const shareUrl = computed(() => {
   if (!process.client || !props.order) return '';
@@ -933,6 +984,11 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
     brand: brandSettings.value,
     branch,
     customFieldsBlock: buildCustomFieldsTable(orderFields.value, props.order.customFields, noneLabel, yesNoLabels.value),
+    warrantyBlock: buildWarrantyTable(items.value, props.order, noneLabel, {
+      item: t('menu.name') || 'Name',
+      until: t('menu.warrantyUntil') || 'Warranty until',
+      days: t('menu.warrantyDaysShort') || 'days',
+    }),
   });
   // QR generation is async and only worth doing if the template actually
   // references the variable -- checking every locale's token spelling
@@ -1156,6 +1212,22 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             </div>
           </div>
 
+          <!-- Warranty case banner -->
+          <div
+            v-if="order.warrantyOfOrderId"
+            class="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+          >
+            <span class="inline-flex items-center gap-2 min-w-0">
+              <Icon name="lucide:shield-check" class="h-4 w-4 flex-shrink-0" />
+              <span class="truncate">
+                {{ t('menu.warrantyCaseFor', { order: warrantyOrigin ? smartOrderNumber(warrantyOrigin) : '…' }) || 'Warranty case' }}
+              </span>
+            </span>
+            <button type="button" class="flex-shrink-0 text-xs font-medium underline underline-offset-2" @click="emit('openOrder', order.warrantyOfOrderId!)">
+              {{ t('menu.openOriginalOrder') || 'Open original order' }}
+            </button>
+          </div>
+
           <!-- Custom order fields -->
           <div v-if="visibleOrderFields.length" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -1325,6 +1397,39 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                 </tfoot>
               </table>
             </div>
+          </div>
+
+          <!-- Warranty -->
+          <div v-if="warrantyLines.length || order.status === 'COMPLETED'" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <Icon name="lucide:shield-check" class="w-3.5 h-3.5" />
+                {{ t('menu.warranty') || 'Warranty' }}
+              </div>
+              <UButton v-if="order.status === 'COMPLETED'" size="2xs" color="primary" variant="soft" icon="lucide:rotate-ccw" @click="startWarrantyCase">
+                {{ t('menu.warrantyCaseAction') || 'Warranty case' }}
+              </UButton>
+            </div>
+            <p v-if="!warrantyLines.length" class="text-sm text-gray-500 dark:text-gray-400">
+              {{ t('menu.warrantyNone') || 'No item in this order has a warranty.' }}
+            </p>
+            <ul v-else class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+              <li v-for="w in warrantyLines" :key="w.item.id" class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <span class="min-w-0 truncate">{{ w.item.name }}</span>
+                <span class="flex-shrink-0 text-right">
+                  <template v-if="w.info.state === 'pending'">
+                    <span class="text-gray-500 dark:text-gray-400">{{ w.item.warrantyDays }} {{ t('menu.warrantyDaysShort') || 'days' }} · {{ t('menu.warrantyStartsOnCompletion') || 'starts when completed' }}</span>
+                  </template>
+                  <template v-else-if="w.info.state === 'active'">
+                    <UBadge color="emerald" variant="subtle">{{ t('menu.warrantyUntil') || 'Until' }} {{ formatWarrantyDate(w.info.endsAt) }}</UBadge>
+                    <span class="ml-2 text-xs text-gray-400">{{ w.info.daysLeft }} {{ t('menu.warrantyDaysLeft') || 'days left' }}</span>
+                  </template>
+                  <template v-else>
+                    <UBadge color="gray" variant="subtle">{{ t('menu.warrantyExpired') || 'Expired' }} {{ formatWarrantyDate(w.info.endsAt) }}</UBadge>
+                  </template>
+                </span>
+              </li>
+            </ul>
           </div>
 
           <!-- Discount configurator: split out of the items table footer since
