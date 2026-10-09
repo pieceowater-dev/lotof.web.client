@@ -810,7 +810,7 @@ const goHome = () => {
     side="bottom"
     :ui="{
       base: 'relative flex flex-none flex-col w-[94%] max-w-md mx-auto focus:outline-none',
-      height: 'min-h-[60vh] max-h-[90vh]',
+      height: 'h-auto max-h-[90vh]',
       rounded: 'rounded-t-[2rem]',
       background: 'bg-white dark:bg-[#1a1a1a]',
       ring: 'ring-1 ring-black/5 dark:ring-white/10',
