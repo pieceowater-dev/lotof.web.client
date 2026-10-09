@@ -59,7 +59,6 @@ function dismiss() {
       class="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-safe-or-4"
     >
       <div class="ck pointer-events-auto">
-        <span class="ck-ico"><UIcon name="lucide:cookie" class="h-[18px] w-[18px]" /></span>
         <p class="min-w-0 flex-1">
           {{ t('legal.cookieNotice') || 'Только необходимые cookie и обезличенная аналитика.' }}
           <NuxtLink

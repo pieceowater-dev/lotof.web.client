@@ -125,7 +125,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="at-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-y-auto md:overflow-visible">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
         <h1 class="at-title">
@@ -239,7 +239,7 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
-      <div class="flex-1 min-h-0 flex flex-col">
+      <div class="md:flex-1 md:min-h-0 flex flex-col">
         <MembersSection v-if="selectedTab === 0" />
         <RoutesSection v-else-if="selectedTab === 1" />
         <AttendanceThresholdsSection v-else-if="selectedTab === 2" />

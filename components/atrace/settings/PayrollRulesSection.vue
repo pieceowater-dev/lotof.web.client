@@ -204,6 +204,8 @@ function penaltyTypeLabel(type: string): string {
 }
 
 onMounted(load);
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
@@ -216,10 +218,7 @@ onMounted(load);
     </div>
 
     <div>
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="at-h2">
-          {{ t('app.overtimeRates') || 'Ставки переработки' }}
-        </h2>
+      <SectionHead :title="t('app.overtimeRates') || 'Ставки переработки'" :hint="t('app.overtimeRatesHint') || 'Применяется к часам, отработанным сверх нормы (вне графика)'">
         <UButton
           size="xs"
           color="primary"
@@ -228,13 +227,10 @@ onMounted(load);
         >
           {{ t('app.createRate') || 'Создать ставку' }}
         </UButton>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-        {{ t('app.overtimeRatesHint') || 'Применяется к часам, отработанным сверх нормы (вне графика)' }}
-      </p>
+      </SectionHead>
       <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
-      <div v-else-if="overtimeRates.length === 0" class="text-gray-500 text-sm py-3">{{ t('app.noRates') || 'Ставок пока нет' }}</div>
-      <div v-else class="h-[360px]">
+      <SectionEmpty v-else-if="overtimeRates.length === 0" icon="lucide:timer" :text="t('app.noRates') || 'Ставок пока нет'" />
+      <div v-else>
         <AppTable
           soft
           :rows="overtimeRates"
@@ -257,10 +253,7 @@ onMounted(load);
     </div>
 
     <div>
-      <div class="flex items-center justify-between mb-2">
-        <h2 class="at-h2">
-          {{ t('app.penaltyRules') || 'Штрафы' }}
-        </h2>
+      <SectionHead :title="t('app.penaltyRules') || 'Штрафы'" :hint="t('app.penaltyRulesHint') || 'За прогул — списание за каждый непосещённый рабочий день; за опоздания — фиксированное списание при достижении N опозданий за период'">
         <UButton
           size="xs"
           color="primary"
@@ -269,13 +262,10 @@ onMounted(load);
         >
           {{ t('app.createRule') || 'Создать штраф' }}
         </UButton>
-      </div>
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-        {{ t('app.penaltyRulesHint') || 'За прогул — списание за каждый непосещённый рабочий день; за опоздания — фиксированное списание при достижении N опозданий за период' }}
-      </p>
+      </SectionHead>
       <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
-      <div v-else-if="penaltyRules.length === 0" class="text-gray-500 text-sm py-3">{{ t('app.noRules') || 'Штрафов пока нет' }}</div>
-      <div v-else class="h-[360px]">
+      <SectionEmpty v-else-if="penaltyRules.length === 0" icon="lucide:gavel" :text="t('app.noRules') || 'Штрафов пока нет'" />
+      <div v-else>
         <AppTable
           soft
           :rows="penaltyRules"

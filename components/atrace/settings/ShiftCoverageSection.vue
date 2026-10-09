@@ -111,14 +111,16 @@ onMounted(async () => {
   await loadMembers();
   await load();
 });
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <div class="flex items-center justify-between mb-1">
-      <h2 class="at-h2">
-        {{ t('app.shiftCoverage') || 'Подмены смен' }}
-      </h2>
+    <SectionHead
+      :title="t('app.shiftCoverage') || 'Подмены смен'"
+      :hint="t('app.shiftCoverageHint') || 'Коллега может подменить сотрудника на смене; вступает в силу только после согласования руководителем'"
+    >
       <UButton
         size="xs"
         color="primary"
@@ -127,14 +129,11 @@ onMounted(async () => {
       >
         {{ t('app.requestCoverage') || 'Запросить подмену' }}
       </UButton>
-    </div>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-      {{ t('app.shiftCoverageHint') || 'Коллега может подменить сотрудника на смене; вступает в силу только после согласования руководителем' }}
-    </p>
+    </SectionHead>
 
     <div
       v-if="error"
-      class="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200"
+      class="at-notice at-notice--err"
     >
       {{ error }}
     </div>
@@ -145,12 +144,11 @@ onMounted(async () => {
     >
       {{ t('app.loading') }}
     </div>
-    <div
+    <SectionEmpty
       v-else-if="rows.length === 0"
-      class="text-gray-500 text-center py-8"
-    >
-      {{ t('app.noCoverageRequests') || 'Запросов на подмену пока нет' }}
-    </div>
+      icon="lucide:repeat"
+      :text="t('app.noCoverageRequests') || 'Запросов на подмену пока нет'"
+    />
     <div
       v-else
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4"

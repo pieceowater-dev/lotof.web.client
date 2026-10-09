@@ -41,7 +41,7 @@ const editRoleDescription = computed(() => {
     <UCard :ui="{ ...atCardUi }">
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+          <h3 class="text-lg font-extrabold tracking-tight leading-6 text-gray-900 dark:text-white">
             {{ t('app.editMember') || 'Edit Member' }}
           </h3>
           <UButton

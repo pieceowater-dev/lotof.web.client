@@ -136,29 +136,25 @@ async function handleDeleteRoute(routeItem: Route) {
 onMounted(() => {
   loadRoutes();
 });
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
   <div class="mb-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3">
-      <div>
-        <h2 class="at-h2">
-          {{ t('app.route.list') || 'Маршруты' }}
-        </h2>
-        <p class="text-xs text-gray-500">
-          {{ t('app.route.listHint') || 'Соберите посты в маршрут и отслеживайте прохождение' }}
-        </p>
-      </div>
+    <SectionHead
+      :title="t('app.route.list') || 'Маршруты'"
+      :hint="t('app.route.listHint') || 'Соберите посты в маршрут и отслеживайте прохождение'"
+    >
       <UButton
         icon="lucide:plus"
         size="xs"
         color="primary"
-        class="self-start w-auto"
         @click="openCreateRoute"
       >
         {{ t('app.route.create') || 'Создать маршрут' }}
       </UButton>
-    </div>
+    </SectionHead>
 
     <div
       v-if="routesLoading"
@@ -168,22 +164,21 @@ onMounted(() => {
     </div>
     <div
       v-else-if="routesError"
-      class="text-red-500 text-sm"
+      class="at-notice at-notice--err"
     >
       {{ routesError }}
     </div>
-    <div
+    <SectionEmpty
       v-else-if="atraceRoutes.length === 0"
-      class="text-gray-500 text-sm"
-    >
-      {{ t('app.route.empty') || 'Маршрутов пока нет' }}
-    </div>
+      icon="lucide:route"
+      :text="t('app.route.empty') || 'Маршрутов пока нет'"
+    />
     <div
       v-else
-      class="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-900/60"
+      class="at-tray overflow-x-auto"
     >
       <table class="min-w-full text-sm">
-        <thead class="bg-gray-50 dark:bg-gray-800">
+        <thead>
           <tr class="text-left">
             <th class="px-4 py-3 font-semibold text-gray-700 dark:text-gray-200">
               {{ t('app.route.label') || 'Маршрут' }}

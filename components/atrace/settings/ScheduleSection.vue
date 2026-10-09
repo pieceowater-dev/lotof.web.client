@@ -292,6 +292,8 @@ onMounted(async () => {
   await loadMembers();
   await load();
 });
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
@@ -305,10 +307,7 @@ onMounted(async () => {
 
     <!-- Patterns -->
     <div>
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="at-h2">
-          {{ t('app.shiftPatterns') || 'Графики работы' }}
-        </h2>
+      <SectionHead :title="t('app.shiftPatterns') || 'Графики работы'">
         <UButton
           size="xs"
           color="primary"
@@ -317,7 +316,7 @@ onMounted(async () => {
         >
           {{ t('app.createSchedule') || 'Создать график' }}
         </UButton>
-      </div>
+      </SectionHead>
 
       <div
         v-if="loading && patterns.length === 0"
@@ -325,18 +324,18 @@ onMounted(async () => {
       >
         {{ t('app.loading') }}
       </div>
-      <div
+      <SectionEmpty
         v-else-if="patterns.length === 0"
-        class="text-gray-500 text-center py-8 border border-dashed rounded-lg dark:border-gray-700 space-y-3"
+        icon="lucide:calendar-days"
+        :text="t('app.noSchedules') || 'Графики ещё не созданы'"
       >
-        <p>{{ t('app.noSchedules') || 'Графики ещё не созданы' }}</p>
         <div v-if="namespaceId" class="flex justify-center">
           <QuickSetupButton :namespace-id="namespaceId" :on-apply="applyShiftPatternPreset" />
         </div>
-      </div>
+      </SectionEmpty>
       <div
         v-else
-        class="h-[360px]"
+        
       >
         <AppTable
           soft
@@ -399,10 +398,7 @@ onMounted(async () => {
 
     <!-- Assignments -->
     <div>
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="at-h2">
-          {{ t('app.scheduleAssignments') || 'Назначения графиков' }}
-        </h2>
+      <SectionHead :title="t('app.scheduleAssignments') || 'Назначения графиков'">
         <UButton
           size="xs"
           color="primary"
@@ -413,17 +409,16 @@ onMounted(async () => {
         >
           {{ t('app.assignSchedule') || 'Назначить график' }}
         </UButton>
-      </div>
+      </SectionHead>
 
-      <div
+      <SectionEmpty
         v-if="!loading && assignmentRows.length === 0"
-        class="text-gray-500 text-center py-8 border border-dashed rounded-lg dark:border-gray-700"
-      >
-        {{ t('app.noAssignments') || 'Назначений пока нет' }}
-      </div>
+        icon="lucide:user-check"
+        :text="t('app.noAssignments') || 'Назначений пока нет'"
+      />
       <div
         v-else
-        class="h-[360px]"
+        
       >
         <AppTable
           soft
@@ -538,7 +533,7 @@ onMounted(async () => {
                 v-model="patternForm.rotationAnchorDate"
                 type="date"
                 :aria-label="t('app.rotationAnchorDate') || 'Дата отсчёта'"
-                class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
+                class="w-full px-2 py-1.5 border rounded-full dark:bg-gray-800 dark:border-gray-700 text-sm"
               >
             </UFormGroup>
           </div>
@@ -656,7 +651,7 @@ onMounted(async () => {
               v-model="formEffectiveFrom"
               type="date"
               :aria-label="t('app.effectiveFrom') || 'Действует с'"
-              class="w-full px-2 py-1.5 border rounded dark:bg-gray-800 dark:border-gray-700 text-sm"
+              class="w-full px-2 py-1.5 border rounded-full dark:bg-gray-800 dark:border-gray-700 text-sm"
             >
           </UFormGroup>
           <UFormGroup :label="t('common.comment') || 'Комментарий'">

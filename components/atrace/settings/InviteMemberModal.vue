@@ -54,7 +54,7 @@ onMounted(() => {
       <template #header>
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">
+            <h3 class="text-lg font-extrabold tracking-tight leading-6 text-gray-900 dark:text-white">
               {{ t('app.sendInvite') || 'Send Invitation' }}
             </h3>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">

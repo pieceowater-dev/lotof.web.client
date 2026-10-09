@@ -10,11 +10,16 @@ const lateArrivalTime = ref('09:15');
 const earlyLeaveTime = ref('18:15');
 const allowLatenessMakeup = ref(false);
 const roundingMinutes = ref(0);
+// USelectMenu treats a numeric 0 as "nothing selected" and shows an empty field; bind a string instead.
+const roundingModel = computed({
+  get: () => String(roundingMinutes.value),
+  set: (v: string) => { roundingMinutes.value = Number(v) || 0; },
+});
 const roundingOptions = [
-  { value: 0, label: t('app.roundingOff') || 'Без округления' },
-  { value: 5, label: '5 ' + (t('app.minShort') || 'мин') },
-  { value: 10, label: '10 ' + (t('app.minShort') || 'мин') },
-  { value: 15, label: '15 ' + (t('app.minShort') || 'мин') },
+  { value: '0', label: t('app.roundingOff') || 'Без округления' },
+  { value: '5', label: '5 ' + (t('app.minShort') || 'мин') },
+  { value: '10', label: '10 ' + (t('app.minShort') || 'мин') },
+  { value: '15', label: '15 ' + (t('app.minShort') || 'мин') },
 ];
 const loading = ref(false);
 const saving = ref(false);
@@ -63,90 +68,92 @@ async function save() {
 }
 
 onMounted(load);
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
-  <div class="flex-1 min-h-0 flex flex-col max-w-xl">
-    <h2 class="text-base font-medium mb-1">
-      {{ t('app.timeThresholds') || 'Пороги времени' }}
-    </h2>
-    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-      {{ t('app.timeThresholdsHint') || 'Используется для подсветки опозданий/ранних уходов и подсчёта соответствующей статистики' }}
-    </p>
+  <div class="flex-1 min-h-0 flex flex-col max-w-2xl">
+    <SectionHead
+      :title="t('app.timeThresholds') || 'Пороги времени'"
+      :hint="t('app.timeThresholdsHint') || 'Используется для подсветки опозданий/ранних уходов и подсчёта соответствующей статистики'"
+    />
 
     <div
       v-if="error"
-      class="mb-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-sm text-red-700 dark:text-red-200"
+      class="at-notice at-notice--err"
     >
       {{ error }}
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm mb-3">
-      <UFormGroup :label="t('app.lateArrivalAfter')">
-        <UInput
-          v-model="lateArrivalTime"
-          type="time"
-          size="sm"
-          icon="i-heroicons-clock"
-          :disabled="loading || readOnly"
-          :ui="{ base: 'font-mono' }"
-        />
-      </UFormGroup>
-      <UFormGroup :label="t('app.earlyLeaveBefore')">
-        <UInput
-          v-model="earlyLeaveTime"
-          type="time"
-          size="sm"
-          icon="i-heroicons-clock"
-          :disabled="loading || readOnly"
-          :ui="{ base: 'font-mono' }"
-        />
-      </UFormGroup>
-    </div>
-
-    <UFormGroup
-      :label="t('app.roundWorkedHours') || 'Округление отработанных часов'"
-      :help="t('app.roundWorkedHoursHint') || 'Итог за день округляется до ближайшего значения. Без округления — точный учёт до минуты.'"
-      class="mb-4"
-    >
-      <USelectMenu
-        v-model="roundingMinutes"
-        :options="roundingOptions"
-        value-attribute="value"
-        option-attribute="label"
-        size="sm"
-        class="max-w-[220px]"
-        :disabled="loading || readOnly"
-        :popper="{ strategy: 'fixed' }"
-      />
-    </UFormGroup>
-
-    <div class="flex items-start gap-3 mb-4 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
-      <UToggle
-        v-model="allowLatenessMakeup"
-        :disabled="loading || readOnly"
-      />
-      <div>
-        <p class="text-sm font-medium">
-          {{ t('app.allowLatenessMakeup') || 'Режим досидки' }}
-        </p>
-        <p class="text-xs text-gray-500 dark:text-gray-400">
-          {{ t('app.allowLatenessMakeupHint') || 'Если сотрудник опоздал, но задержался на работе на столько же минут после конца смены — опоздание не засчитывается.' }}
-        </p>
+    <div class="at-form">
+      <div class="grid grid-cols-1 gap-4 text-sm sm:grid-cols-2">
+        <UFormGroup :label="t('app.lateArrivalAfter')">
+          <UInput
+            v-model="lateArrivalTime"
+            type="time"
+            size="md"
+            icon="i-heroicons-clock"
+            :disabled="loading || readOnly"
+            :ui="{ base: 'font-mono' }"
+          />
+        </UFormGroup>
+        <UFormGroup :label="t('app.earlyLeaveBefore')">
+          <UInput
+            v-model="earlyLeaveTime"
+            type="time"
+            size="md"
+            icon="i-heroicons-clock"
+            :disabled="loading || readOnly"
+            :ui="{ base: 'font-mono' }"
+          />
+        </UFormGroup>
       </div>
-    </div>
 
-    <div>
-      <UButton
-        size="sm"
-        color="primary"
-        icon="i-heroicons-check"
-        :loading="saving"
-        :disabled="readOnly"
-        @click="save"
+      <UFormGroup
+        :label="t('app.roundWorkedHours') || 'Округление отработанных часов'"
+        :help="t('app.roundWorkedHoursHint') || 'Итог за день округляется до ближайшего значения. Без округления — точный учёт до минуты.'"
       >
-        {{ t('common.apply') || 'Применить' }}
-      </UButton>
+        <USelectMenu
+          v-model="roundingModel"
+          :options="roundingOptions"
+          value-attribute="value"
+          option-attribute="label"
+          size="md"
+          class="max-w-[260px]"
+          :disabled="loading || readOnly"
+          :popper="{ strategy: 'fixed' }"
+        />
+      </UFormGroup>
+
+      <div class="at-switch">
+        <UToggle
+          v-model="allowLatenessMakeup"
+          class="mt-0.5"
+          :disabled="loading || readOnly"
+        />
+        <div>
+          <p class="text-sm font-semibold">
+            {{ t('app.allowLatenessMakeup') || 'Режим досидки' }}
+          </p>
+          <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
+            {{ t('app.allowLatenessMakeupHint') || 'Если сотрудник опоздал, но задержался на работе на столько же минут после конца смены — опоздание не засчитывается.' }}
+          </p>
+        </div>
+      </div>
+
+      <div class="flex justify-end">
+        <UButton
+          size="md"
+          color="primary"
+          icon="i-heroicons-check"
+          :loading="saving"
+          :disabled="readOnly"
+          @click="save"
+        >
+          {{ t('common.apply') || 'Применить' }}
+        </UButton>
+      </div>
     </div>
   </div>
 </template>

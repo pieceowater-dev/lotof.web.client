@@ -42,14 +42,16 @@ onMounted(async () => {
   await loadRoles();
   await loadMembers();
 });
+import SectionHead from '@/components/atrace/SectionHead.vue';
+import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
 </script>
 
 <template>
   <div class="flex-1 min-h-0 flex flex-col">
-    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-      <h2 class="at-h2">
-        {{ t('app.members') || 'Members' }}
-      </h2>
+    <SectionHead
+      :title="t('app.members') || 'Members'"
+      :hint="members.length ? `${members.length} ${t('atrace.members.total') || 'всего'}` : undefined"
+    >
       <UInput
         v-if="!loading && !error && members.length > 0"
         v-model="membersSearch"
@@ -58,7 +60,7 @@ onMounted(async () => {
         :placeholder="t('atrace.members.searchPlaceholder') || 'Поиск по имени или email'"
         class="w-full sm:w-64"
       />
-    </div>
+    </SectionHead>
 
     <div
       v-if="loading"
@@ -75,7 +77,7 @@ onMounted(async () => {
 
     <div
       v-else-if="members.length === 0"
-      class="text-gray-500 text-center py-8"
+      class="at-empty-box"
     >
       {{ t('app.noMembers') || 'No members found' }}
     </div>

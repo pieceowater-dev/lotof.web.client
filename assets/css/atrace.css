@@ -117,3 +117,29 @@
 .at-modal button[class*="bg-primary-500"]:active, .at-modal button[class*="bg-primary-400"]:active { transform: scale(0.97); }
 .at-modal button[class*="bg-primary-500"]:disabled, .at-modal button[class*="bg-primary-400"]:disabled { opacity: 0.5; box-shadow: none; }
 .at-modal button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
+
+/* page-level solid primary buttons inside A-Trace pages (e.g. "Create route") share the gradient pill */
+.at-scope button[class*="bg-primary-500"], .at-scope button[class*="bg-primary-400"] {
+  color: #fff !important; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent !important;
+  box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7);
+}
+.at-scope button[class*="bg-primary-500"]:active, .at-scope button[class*="bg-primary-400"]:active { transform: scale(0.97); }
+.at-scope button[class*="bg-primary-500"]:disabled, .at-scope button[class*="bg-primary-400"]:disabled { opacity: 0.5; box-shadow: none; }
+.at-scope button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
+
+/* settings content: section head, hint, notices, empty box, form groups */
+.at-sechead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.at-hint { margin-top: 0.15rem; font-size: 0.8125rem; line-height: 1.4; color: #64748b; max-width: 40rem; }
+.dark .at-hint { color: #a3a3a3; }
+.at-notice { margin-bottom: 0.75rem; border-radius: 1.2rem; padding: 0.65rem 1rem; font-size: 0.875rem; }
+.at-notice--err { color: #b91c1c; background: rgba(239, 68, 68, 0.08); box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2); }
+.dark .at-notice--err { color: #fca5a5; background: rgba(239, 68, 68, 0.1); box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.25); }
+.at-empty-box { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; border-radius: 1.6rem; padding: 2.25rem 1.5rem; text-align: center; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); }
+.dark .at-empty-box { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.at-empty-ico { display: flex; height: 2.75rem; width: 2.75rem; align-items: center; justify-content: center; border-radius: 1rem; color: #2563eb; background: rgba(37, 99, 235, 0.1); }
+.dark .at-empty-ico { color: #93c5fd; background: rgba(255, 255, 255, 0.08); }
+/* settings form card (thresholds etc.) */
+.at-form { display: flex; flex-direction: column; gap: 1rem; border-radius: 1.6rem; padding: 1.25rem; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 36px -28px rgba(15, 23, 42, 0.2); }
+.dark .at-form { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
+.at-switch { display: flex; align-items: flex-start; gap: 0.85rem; border-radius: 1.2rem; padding: 0.85rem 1rem; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); }
+.dark .at-switch { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }

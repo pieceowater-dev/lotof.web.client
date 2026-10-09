@@ -371,7 +371,7 @@ Rules: **UX and logic untouched**, only chrome changes.
   Prefer the shared `ConfirmDialog` + `useConfirm` for confirmations (colours: `red` destructive, `primary` neutral,
   `amber` warning — tinted icon tile + title + text + two pills).
 - **Sheets**: side (`USlideover`, desktop) and bottom (mobile) — see §5. Same tray/row/tile vocabulary inside.
-- **Cookie notice** (`CookieNotice`, `.ck-*`): floating glass pill at the bottom (`1.75rem`, blur, hairline ring), icon tile + one line + underlined link + gradient pill "Хорошо". The reference for any bottom-docked notice.
+- **Cookie notice** (`CookieNotice`, `.ck-*`): small quiet glass pill at the bottom (`1.25rem`, 11px text, hairline ring), one line + underlined link + neutral soft pill "Хорошо". **No accent colours, no icon tile** — a notice must not compete with the page (owner feedback: "too accent").
 - **Toasts** (`useToast`): styled globally via `app.config.ts` (rounded-3xl, white/90 + hairline, small title/description,
   primary-colour action). Use short, neutral sentences; success = green icon, error = red icon. Never custom-built toasts.
 - **Banners / inline notices**: soft tinted pill-rounded blocks (`rounded-2xl`), tint = blue (info), green (success),
