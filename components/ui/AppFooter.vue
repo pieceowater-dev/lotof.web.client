@@ -56,20 +56,17 @@ const socials = [
 
 <template>
   <!-- Minimal: one quiet line for in-app / console screens. -->
-  <footer
-    v-if="variant === 'minimal'"
-    class="mt-6 w-full border-t border-gray-100 px-4 py-3 dark:border-gray-800"
-  >
+  <footer v-if="variant === 'minimal'" class="ft-min">
     <div class="mx-auto flex max-w-7xl flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
       <span class="text-xs text-gray-400 dark:text-gray-500">© {{ year }} lota — @pieceowater</span>
-      <div class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-gray-400 dark:text-gray-500">
+      <div class="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
         <NuxtLink
           v-for="l in legalShort"
           :key="l.to"
           :to="l.to"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-gray-600 dark:hover:text-gray-300"
+          class="ft-chip"
         >
           {{ l.label }}
         </NuxtLink>
@@ -77,101 +74,69 @@ const socials = [
     </div>
   </footer>
 
-  <!-- Full: marketing / content footer. -->
-  <footer v-else class="mt-12 w-full border-t border-gray-100 bg-gray-50/60 dark:border-gray-800 dark:bg-gray-900/40">
-    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <div class="grid grid-cols-2 gap-8 sm:grid-cols-3 lg:grid-cols-4">
+  <!-- Full: marketing / content footer — a rounded sheet that sits flush with the bottom edge. -->
+  <footer v-else class="ft">
+    <div class="mx-auto max-w-7xl px-5 pb-6 pt-9 sm:px-8 sm:pt-12">
+      <div class="grid grid-cols-2 gap-x-6 gap-y-9 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
         <!-- Brand + socials -->
-        <div class="col-span-2 sm:col-span-1">
-          <NuxtLink to="/" target="_blank" rel="noopener noreferrer" class="flex items-center gap-2">
-            <img src="/assets/logo.png" alt="lota" width="20" height="20" class="h-5 w-5">
-            <span class="text-base font-semibold text-gray-900 dark:text-white">lota</span>
+        <div class="col-span-2 lg:col-span-1">
+          <NuxtLink to="/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2.5">
+            <img src="/assets/logo.png" alt="lota" width="24" height="24" class="h-6 w-6">
+            <span class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">lota</span>
           </NuxtLink>
-          <p class="mt-2 max-w-xs text-xs leading-relaxed text-gray-500 dark:text-gray-400">
+          <p class="mt-3 max-w-xs text-sm leading-6 text-gray-500 dark:text-gray-400">
             {{ t('footer.tagline') || 'Инструменты для управления бизнесом: заказы, посещаемость, задачи, клиенты, склад и запись.' }}
           </p>
-          <div class="mt-3 flex items-center gap-1">
-            <UButton
+          <div class="mt-4 flex items-center gap-2">
+            <a
               v-for="s in socials"
               :key="s.label"
-              :to="s.href"
+              :href="s.href"
               target="_blank"
               rel="noopener noreferrer"
-              variant="ghost"
-              color="gray"
-              size="xs"
-              square
+              class="hdr-icon-btn"
               :aria-label="s.label"
             >
-              <UIcon :name="s.icon" class="h-3.5 w-3.5" />
-            </UButton>
+              <UIcon :name="s.icon" class="h-4 w-4" />
+            </a>
           </div>
         </div>
 
         <!-- Products -->
         <div>
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            {{ t('footer.products') || 'Продукты' }}
-          </h3>
-          <ul class="mt-3 space-y-2">
+          <h3 class="sf-label mb-2.5">{{ t('footer.products') || 'Продукты' }}</h3>
+          <ul class="-ml-2.5 space-y-0.5">
             <li v-for="p in products" :key="p.to">
-              <NuxtLink
-                :to="p.to"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {{ p.label }}
-              </NuxtLink>
+              <NuxtLink :to="p.to" target="_blank" rel="noopener noreferrer" class="ft-link">{{ p.label }}</NuxtLink>
             </li>
           </ul>
         </div>
 
         <!-- Resources -->
         <div>
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            {{ t('footer.resources') || 'Ресурсы' }}
-          </h3>
-          <ul class="mt-3 space-y-2">
+          <h3 class="sf-label mb-2.5">{{ t('footer.resources') || 'Ресурсы' }}</h3>
+          <ul class="-ml-2.5 space-y-0.5">
             <li v-for="r in resources" :key="r.to">
-              <NuxtLink
-                :to="r.to"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {{ r.label }}
-              </NuxtLink>
+              <NuxtLink :to="r.to" target="_blank" rel="noopener noreferrer" class="ft-link">{{ r.label }}</NuxtLink>
             </li>
           </ul>
         </div>
 
         <!-- Legal -->
-        <div class="col-span-2 sm:col-span-1">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
-            {{ t('legal.docsTitle') || 'Правовые документы' }}
-          </h3>
-          <ul class="mt-3 space-y-2">
+        <div class="col-span-2 lg:col-span-1">
+          <h3 class="sf-label mb-2.5">{{ t('legal.docsTitle') || 'Правовые документы' }}</h3>
+          <ul class="-ml-2.5 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2 lg:grid-cols-1">
             <li v-for="l in legal" :key="l.to">
-              <NuxtLink
-                :to="l.to"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
-              >
-                {{ l.label }}
-              </NuxtLink>
+              <NuxtLink :to="l.to" target="_blank" rel="noopener noreferrer" class="ft-link">{{ l.label }}</NuxtLink>
             </li>
           </ul>
         </div>
       </div>
 
-      <div class="mt-10 flex flex-col items-center gap-2 border-t border-gray-100 pt-6 dark:border-gray-800 sm:flex-row sm:justify-between">
+      <div class="ft-bar">
         <span class="text-xs text-gray-400 dark:text-gray-500">© {{ year }} lota — @pieceowater</span>
-        <a
-          href="mailto:pieceowater@gmail.com"
-          class="text-xs text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-        >
+        <a href="mailto:pieceowater@gmail.com" class="sec-link !py-1.5 !pl-3 !pr-3 !text-xs">
+          <UIcon name="lucide:mail" class="h-3.5 w-3.5" />
           pieceowater@gmail.com
         </a>
       </div>

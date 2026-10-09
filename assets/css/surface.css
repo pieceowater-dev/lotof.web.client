@@ -464,3 +464,32 @@
 .dark .sec-link:hover { background: rgba(96, 165, 250, 0.22); }
 /* plan/bundle connect button: same box as .pl-active ("Подключено!") */
 .cta-pill.pl-btn { gap: 0.5rem; padding: 0.7rem 1rem; font-size: 0.875rem; font-weight: 700; line-height: 1.25rem; }
+
+/* ---- Footer (components/ui/AppFooter.vue) ---- */
+/* Full: rounded sheet; the negative bottom margin cancels the layout's bottom padding so it sits flush. */
+.ft {
+  margin-top: 3rem; width: 100%; border-radius: 2.25rem 2.25rem 0 0; background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07), 0 -18px 40px -30px rgba(15, 23, 42, 0.2);
+  margin-bottom: calc(-1 * max(env(safe-area-inset-bottom), 1rem));
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.dark .ft { background: #1a1a1a; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.ft-link {
+  display: inline-flex; border-radius: 9999px; padding: 0.3rem 0.65rem; font-size: 0.875rem; color: #475569;
+  transition: background 0.3s, color 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.ft-link:hover { color: #0f172a; background: rgba(15, 23, 42, 0.05); transform: translateX(2px); }
+.dark .ft-link { color: #d4d4d4; }
+.dark .ft-link:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.ft-bar {
+  margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding-top: 1.25rem;
+  box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.07);
+}
+.dark .ft-bar { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+@media (min-width: 640px) { .ft-bar { flex-direction: row; justify-content: space-between; } }
+/* Minimal strip */
+.ft-min { margin-top: 1.5rem; width: 100%; padding: 0.75rem 1rem; box-shadow: inset 0 1px 0 rgba(15, 23, 42, 0.07); }
+.dark .ft-min { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.ft-chip { border-radius: 9999px; padding: 0.2rem 0.6rem; font-size: 0.75rem; color: #94a3b8; transition: background 0.3s, color 0.3s; }
+.ft-chip:hover { color: #0f172a; background: rgba(15, 23, 42, 0.05); }
+.dark .ft-chip:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }

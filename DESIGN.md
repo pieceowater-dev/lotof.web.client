@@ -233,6 +233,15 @@ Icon tile (gradient, `2.25rem`) + `.sec-title` left; optional `.sec-link` pill r
 
 ---
 
+### Footer (`components/ui/AppFooter.vue`, `.ft-*`)
+- `full` = rounded sheet (`2.25rem` top corners, `#fff` / `#1a1a1a`, hairline ring) that sits **flush with the bottom edge**: it
+  cancels the layout's `pb-safe-or-4` with a negative bottom margin and re-adds the safe-area as its own padding. Don't add
+  extra bottom padding after it.
+- Brand block (logo, tagline, round social buttons `.hdr-icon-btn`), three link columns with micro-caps titles (`.sf-label`)
+  and pill-hover links (`.ft-link`), bottom bar with copyright + soft-blue email pill (`.sec-link`). Mobile: brand and legal
+  span two columns, products/resources side by side, rows kept tight.
+- `minimal` = one hairline strip with `.ft-chip` links. All links keep `target="_blank"` on purpose.
+
 ## 7. Motion
 
 - **Easing:** `cubic-bezier(0.32, 0.72, 0, 1)` everywhere (spring-like). Never `linear`/`ease-in-out`
@@ -455,7 +464,7 @@ Rules:
 ### Not yet redesigned (candidates, in the same style)
 
 Product landing pages (`components/marketing/ProductLanding.vue`: /issues /menu /contacts /atrace
-/goods /plans, plus /chekalka), `AppFooter`, shared modals (`TourGuide`, `ConfirmDialog`,
+/goods /plans, plus /chekalka), shared modals (`TourGuide`, `ConfirmDialog`,
 `ContactUsModal`, `PhoneRequiredModal`, `PinPrompt`, `CookieNotice`), shared `AppTable`/`Card`/`Accordion`,
 onboarding (`QuickSetupButton`, `OnboardingWizard`), `/console/*` (low priority). The `lota.tools/ns/{app}`
 product workspaces are intentionally out of scope for this redesign.
