@@ -16,7 +16,7 @@ let checkSeq = 0;
  * and may see the internal Console entry point. Safe to call repeatedly --
  * a sequence guard drops stale responses if calls overlap.
  */
-async function refreshConsoleAccess(): Promise<void> {
+async function refreshConsoleAccess(attempt = 0): Promise<void> {
   if (process.server) return;
 
   const { user, token, isLoggedIn, fetchUser } = useAuth();
@@ -58,6 +58,13 @@ async function refreshConsoleAccess(): Promise<void> {
     // real backend/network failure is visible instead of just hiding it.
     if (seq !== checkSeq) return;
     logError('[useConsoleAccess] refreshConsoleAccess failed', e);
+    // A single failed check (token mid-refresh, gateway blip, a stale id during
+    // the login handoff) must not hide the entry until a manual visit to
+    // /console: retry once (a genuine non-admin costs one extra cheap call).
+    if (attempt < 1) {
+      setTimeout(() => { void refreshConsoleAccess(attempt + 1); }, 2000);
+      return;
+    }
     canSeeConsole.value = false;
     isFullConsoleAdmin.value = false;
   }

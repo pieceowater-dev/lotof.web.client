@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
         <div
           v-for="i in 5"
           :key="`skeleton-${i}`"
-          class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[72px] self-stretch !cursor-default"
+          class="at-post w-80 max-w-[90vw] flex-shrink-0 min-h-[104px] self-stretch !cursor-default"
         >
           <div class="flex items-center gap-2 mb-2">
             <USkeleton class="h-5 w-3/4" />
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
         <button
           v-if="canCreate"
           data-tour="create-post-btn"
-          class="at-post-add w-60 min-h-[72px]"
+          class="at-post-add w-80 min-h-[104px]"
           @click="emit('create')"
         >
           {{ t('app.atraceAddLocation') }}
