@@ -31,7 +31,7 @@ const isOpen = computed({
 type CartLine = { menuItemId: string; name: string; price: number; quantity: number };
 
 const form = reactive({
-  type: 'delivery' as 'pickup' | 'delivery' | 'table',
+  type: 'table' as 'pickup' | 'delivery' | 'table',
   branchId: '',
   phone: '',
   customerName: '',
@@ -152,7 +152,7 @@ async function submitQuickAdd() {
 watch(() => props.modelValue, (open) => {
   if (!open) return;
   loadItems();
-  form.type = 'delivery';
+  form.type = 'table';
   form.branchId = '';
   form.phone = '';
   form.customerName = '';
