@@ -1,164 +1,139 @@
 <template>
-  <USlideover v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-md' }">
-    <div class="flex h-full flex-col bg-white dark:bg-gray-900">
-      <div class="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-800">
-        <div class="flex items-center gap-2">
+  <USlideover
+    v-model="isOpen"
+    :ui="{ width: 'w-screen max-w-full sm:max-w-md', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10', rounded: 'sm:rounded-l-[2rem]', shadow: 'shadow-2xl' }"
+  >
+    <div class="gw flex h-full flex-col">
+      <!-- header -->
+      <div class="flex items-center justify-between px-5 pb-3 pt-5">
+        <div class="flex items-center gap-2.5">
           <picture>
             <source srcset="/assets/logo.webp" type="image/webp">
-            <img
-              src="/assets/logo.png"
-              alt="lota"
-              width="20"
-              height="20"
-              class="h-5 w-5"
-            >
+            <img src="/assets/logo.png" alt="lota" width="22" height="22" class="h-[22px] w-[22px]">
           </picture>
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white">lota {{ t('guide.title') }}</h2>
+          <h2 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">lota <span class="grad-text">{{ t('guide.title') }}</span></h2>
         </div>
-        <UButton variant="ghost" size="sm" icon="lucide:x" :aria-label="t('app.cancel')" @click="isOpen = false" />
+        <button type="button" class="gw-icon-btn" :aria-label="t('app.cancel')" @click="isOpen = false">
+          <UIcon name="lucide:x" class="h-4 w-4" />
+        </button>
       </div>
 
-      <div class="flex-1 overflow-y-auto px-5 py-4 space-y-6">
-        <button
-          v-if="currentTour"
-          type="button"
-          class="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0"
-          @click="startCurrentTour"
-        >
-          <span class="absolute -right-4 -top-4 h-20 w-20 rounded-full bg-white/10" />
-          <span class="absolute -bottom-6 right-10 h-16 w-16 rounded-full bg-white/10" />
-          <span class="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-white/20 text-white">
+      <div class="flex-1 space-y-6 overflow-y-auto px-5 pb-5 pt-2">
+        <!-- tour -->
+        <button v-if="currentTour" type="button" class="gw-tour group" @click="startCurrentTour">
+          <span class="gw-tour__glow" />
+          <span class="relative flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/20 text-white">
             <UIcon name="lucide:play-circle" class="h-6 w-6" />
           </span>
-          <span class="relative min-w-0 flex-1">
-            <span class="block text-sm font-semibold text-white">{{ t('guide.startTour') }}</span>
+          <span class="relative min-w-0 flex-1 text-left">
+            <span class="block text-sm font-bold text-white">{{ t('guide.startTour') }}</span>
             <span class="block truncate text-xs text-white/80">{{ currentAppName }}</span>
           </span>
-          <UIcon name="lucide:chevron-right" class="relative h-4 w-4 flex-shrink-0 text-white/70 transition-transform group-hover:translate-x-0.5" />
+          <span class="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-white/20 text-white transition-transform duration-500 group-hover:translate-x-0.5">
+            <UIcon name="lucide:arrow-right" class="h-4 w-4" />
+          </span>
         </button>
 
+        <!-- faq -->
         <div v-if="faqItems.length">
-          <h3 class="mb-2 text-sm font-semibold text-gray-500 dark:text-gray-400">{{ t('guide.faqTitle') }}</h3>
-          <UAccordion :items="faqAccordionItems" multiple>
-            <template #item="{ item }">
-              <div class="prose prose-sm dark:prose-invert max-w-none px-1 pb-3" v-html="item.contentHtml" />
-            </template>
-          </UAccordion>
+          <h3 class="sf-label mb-2.5 px-1">{{ t('guide.faqTitle') }}</h3>
+          <div class="gw-card gw-faq px-3">
+            <UAccordion :items="faqAccordionItems" multiple>
+              <template #item="{ item }">
+                <div class="gw-prose px-1 pb-3" v-html="item.contentHtml" />
+              </template>
+            </UAccordion>
+          </div>
         </div>
 
+        <!-- browse -->
         <div>
-          <div class="mb-2 flex items-center gap-2">
-            <UButton
-              v-if="navStack.length > 1"
-              variant="ghost"
-              size="xs"
-              icon="lucide:arrow-left"
-              @click="goBack"
-            />
-            <h3 class="text-sm font-semibold text-gray-500 dark:text-gray-400">{{ navTitle }}</h3>
+          <div class="mb-2.5 flex items-center gap-2 px-1">
+            <button v-if="navStack.length > 1" type="button" class="gw-icon-btn !h-7 !w-7" :aria-label="t('common.back') || 'Back'" @click="goBack">
+              <UIcon name="lucide:arrow-left" class="h-3.5 w-3.5" />
+            </button>
+            <h3 class="sf-label truncate">{{ navTitle }}</h3>
           </div>
 
           <!-- Level: apps -->
-          <div v-if="level.type === 'apps'" class="space-y-1">
+          <div v-if="level.type === 'apps'" class="gw-card p-1.5">
             <button
               v-for="app in browsableApps"
               :key="app.id"
               type="button"
-              class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm"
-              :class="app.isCurrent
-                ? 'bg-primary-50 dark:bg-primary-900/20'
-                : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+              class="gw-row"
+              :class="app.isCurrent ? 'gw-row--current' : ''"
               @click="openCategories(app)"
             >
-              <span
-                class="flex items-center gap-2 font-medium"
-                :class="app.isCurrent ? 'text-primary' : 'text-gray-800 dark:text-gray-100'"
-              >
-                <UIcon :name="app.icon" class="h-4 w-4 text-primary" />
-                {{ app.label }}
-                <span
-                  v-if="app.isCurrent"
-                  class="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary dark:bg-primary-900/40"
-                >
-                  {{ t('guide.currentApp') }}
-                </span>
-              </span>
-              <UIcon name="lucide:chevron-right" class="h-4 w-4 text-gray-400" />
+              <GuideAppIcon :icon="app.icon" :gradient="app.gradient" size="sm" />
+              <span class="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ app.label }}</span>
+              <span v-if="app.isCurrent" class="gw-here">{{ t('guide.currentApp') }}</span>
+              <UIcon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
             </button>
           </div>
 
           <!-- Level: categories -->
           <div v-else-if="level.type === 'categories'">
-            <div v-if="categoriesLoading" class="py-4 text-sm text-gray-400">{{ t('app.loading') }}</div>
-            <div v-else class="space-y-1">
-              <button
-                type="button"
-                class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                @click="openArticles(level, null)"
-              >
-                <span class="font-medium text-gray-800 dark:text-gray-100">{{ t('guide.allArticles') }}</span>
-                <UIcon name="lucide:chevron-right" class="h-4 w-4 text-gray-400" />
+            <div v-if="categoriesLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-else class="gw-card p-1.5">
+              <button type="button" class="gw-row" @click="openArticles(level, null)">
+                <span class="gw-row-icon"><UIcon name="lucide:layout-list" class="h-4 w-4" /></span>
+                <span class="min-w-0 flex-1 truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('guide.allArticles') }}</span>
+                <UIcon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
               </button>
               <button
                 v-for="row in categoryRows"
                 :key="row.category.id"
                 type="button"
-                class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                :style="{ paddingLeft: `${0.75 + row.depth * 1}rem` }"
+                class="gw-row"
+                :style="{ paddingLeft: `${0.7 + row.depth * 1}rem` }"
                 @click="openArticles(level, row.category)"
               >
-                <span class="text-gray-800 dark:text-gray-100">{{ localeName(row.category) }}</span>
-                <UIcon name="lucide:chevron-right" class="h-4 w-4 text-gray-400" />
+                <span class="gw-row-icon"><UIcon name="lucide:folder" class="h-4 w-4" /></span>
+                <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ localeName(row.category) }}</span>
+                <UIcon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
               </button>
-              <p v-if="!categoryRows.length" class="px-3 py-2 text-sm text-gray-400">{{ t('guide.noCategories') }}</p>
+              <p v-if="!categoryRows.length" class="px-3 py-3 text-sm text-gray-400">{{ t('guide.noCategories') }}</p>
             </div>
           </div>
 
           <!-- Level: articles -->
           <div v-else-if="level.type === 'articles'">
-            <div v-if="articlesLoading" class="py-4 text-sm text-gray-400">{{ t('app.loading') }}</div>
-            <div v-else class="space-y-1">
-              <button
-                v-for="article in currentArticles"
-                :key="article.id"
-                type="button"
-                class="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800"
-                @click="openArticle(level, article)"
-              >
-                <span class="text-gray-800 dark:text-gray-100">{{ localeTitle(article) }}</span>
-                <UIcon name="lucide:chevron-right" class="h-4 w-4 text-gray-400" />
+            <div v-if="articlesLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-else class="gw-card p-1.5">
+              <button v-for="article in currentArticles" :key="article.id" type="button" class="gw-row" @click="openArticle(level, article)">
+                <span class="gw-row-icon"><UIcon name="lucide:file-text" class="h-4 w-4" /></span>
+                <span class="min-w-0 flex-1 text-sm font-medium text-gray-800 dark:text-gray-100">{{ localeTitle(article) }}</span>
+                <UIcon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
               </button>
-              <p v-if="!currentArticles.length" class="px-3 py-2 text-sm text-gray-400">{{ t('guide.noArticles') }}</p>
+              <p v-if="!currentArticles.length" class="px-3 py-3 text-sm text-gray-400">{{ t('guide.noArticles') }}</p>
             </div>
           </div>
 
           <!-- Level: article -->
           <div v-else-if="level.type === 'article'">
-            <div v-if="articleLoading" class="py-4 text-sm text-gray-400">{{ t('app.loading') }}</div>
-            <template v-else-if="currentArticle">
-              <h4 class="mb-2 text-base font-semibold text-gray-900 dark:text-white">{{ localeTitle(currentArticle) }}</h4>
-              <div class="prose prose-sm dark:prose-invert max-w-none" v-html="localeContentHtml(currentArticle)" />
+            <div v-if="articleLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-else-if="currentArticle" class="gw-card p-5">
+              <h4 class="mb-3 text-xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white">{{ localeTitle(currentArticle) }}</h4>
+              <div class="gw-prose" v-html="localeContentHtml(currentArticle)" />
               <NuxtLink
                 :to="`/guide/${level.app.toLowerCase()}/${currentArticle.slug}`"
                 target="_blank"
-                class="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                class="gw-link mt-4"
               >
                 {{ t('guide.openFullPage') }}
                 <UIcon name="lucide:arrow-up-right" class="h-3.5 w-3.5" />
               </NuxtLink>
-            </template>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="border-t border-gray-100 px-5 py-4 dark:border-gray-800">
-        <NuxtLink
-          :to="`/guide/${currentGuideApp.toLowerCase()}`"
-          class="flex items-center justify-between rounded-lg bg-primary-50 px-3 py-2.5 text-sm font-medium text-primary hover:bg-primary-100 dark:bg-primary-900/20 dark:hover:bg-primary-900/30"
-          @click="isOpen = false"
-        >
-          {{ t('guide.openGuideFor') }} {{ currentAppName || appLabel(currentGuideApp) }}
-          <UIcon name="lucide:arrow-up-right" class="h-4 w-4" />
+      <!-- footer -->
+      <div class="px-5 pb-4 pt-3">
+        <NuxtLink :to="`/guide/${currentGuideApp.toLowerCase()}`" class="gw-open group" @click="isOpen = false">
+          <span class="min-w-0 truncate">{{ t('guide.openGuideFor') }} {{ currentAppName || appLabel(currentGuideApp) }}</span>
+          <span class="gw-open__arrow"><UIcon name="lucide:arrow-up-right" class="h-4 w-4" /></span>
         </NuxtLink>
       </div>
 
@@ -173,6 +148,8 @@ import { useI18n } from '@/composables/useI18n';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { GUIDE_APP_BY_ID, GUIDE_APP_IDS, useGuideContext } from '@/composables/useGuideContext';
 import { ALL_APPS } from '@/config/apps';
+import { useGuideApps } from '@/composables/useGuideApps';
+import GuideAppIcon from '@/components/guide/GuideAppIcon.vue';
 import { renderMarkdownSafe, stripLeadingHeading } from '@/utils/renderMarkdown';
 import { guideGetArticleBySlug, guideListArticles, guideListCategories } from '@/api/guide/public';
 import type { GuideApp, GuideArticle, GuideArticleListItem, GuideCategory } from '@/api/guide/public';
@@ -224,10 +201,13 @@ function appLabel(app: GuideApp): string {
   }
 }
 
+const { entryByParam } = useGuideApps();
+
 const browsableApps = computed(() => GUIDE_APP_IDS.map((id) => {
   const app = ALL_APPS.find((a) => a.address === id);
   return {
     id,
+    gradient: (entryByParam(id)?.gradient || ['#2563eb', '#10b981']) as [string, string],
     guideApp: GUIDE_APP_BY_ID[id],
     label: app ? t(app.titleKey) : id,
     icon: app?.icon || 'lucide:layout-grid',
