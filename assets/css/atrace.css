@@ -112,22 +112,22 @@
 .dark .at-btn--primary, .dark .at-btn--primary:hover { color: #fff; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent; }
 
 /* primary actions inside A-Trace modals = brand gradient pill (UButton solid primary) */
-.at-modal button[class*="bg-primary-500"], .at-modal button[class*="bg-primary-400"] {
+.at-modal button[class*="bg-primary-500"]:not([role="switch"]), .at-modal button[class*="bg-primary-400"]:not([role="switch"]) {
   color: #fff !important; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent !important;
   box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7);
 }
-.at-modal button[class*="bg-primary-500"]:hover, .at-modal button[class*="bg-primary-400"]:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
-.at-modal button[class*="bg-primary-500"]:active, .at-modal button[class*="bg-primary-400"]:active { transform: scale(0.97); }
-.at-modal button[class*="bg-primary-500"]:disabled, .at-modal button[class*="bg-primary-400"]:disabled { opacity: 0.5; box-shadow: none; }
+.at-modal button[class*="bg-primary-500"]:not([role="switch"]):hover, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
+.at-modal button[class*="bg-primary-500"]:not([role="switch"]):active, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):active { transform: scale(0.97); }
+.at-modal button[class*="bg-primary-500"]:not([role="switch"]):disabled, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):disabled { opacity: 0.5; box-shadow: none; }
 .at-modal button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
 
 /* page-level solid primary buttons inside A-Trace pages (e.g. "Create route") share the gradient pill */
-.at-scope button[class*="bg-primary-500"], .at-scope button[class*="bg-primary-400"] {
+.at-scope button[class*="bg-primary-500"]:not([role="switch"]), .at-scope button[class*="bg-primary-400"]:not([role="switch"]) {
   color: #fff !important; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent !important;
   box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7);
 }
-.at-scope button[class*="bg-primary-500"]:active, .at-scope button[class*="bg-primary-400"]:active { transform: scale(0.97); }
-.at-scope button[class*="bg-primary-500"]:disabled, .at-scope button[class*="bg-primary-400"]:disabled { opacity: 0.5; box-shadow: none; }
+.at-scope button[class*="bg-primary-500"]:not([role="switch"]):active, .at-scope button[class*="bg-primary-400"]:not([role="switch"]):active { transform: scale(0.97); }
+.at-scope button[class*="bg-primary-500"]:not([role="switch"]):disabled, .at-scope button[class*="bg-primary-400"]:not([role="switch"]):disabled { opacity: 0.5; box-shadow: none; }
 .at-scope button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
 
 /* settings content: section head, hint, notices, empty box, form groups */

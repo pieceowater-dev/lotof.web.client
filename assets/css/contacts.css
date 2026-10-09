@@ -40,7 +40,7 @@
 .dark .at-modal button[class~="bg-primary-50"], .dark .at-modal button[class~="bg-emerald-50"] { color: #bfdbfe !important; background: rgba(96, 165, 250, 0.16) !important; }
 .ct-scope button[class~="bg-amber-50"], .at-modal button[class~="bg-amber-50"] { color: #b45309 !important; background: rgba(245, 158, 11, 0.14) !important; padding-left: 0.9rem; padding-right: 0.9rem; }
 /* solid primary xs/sm buttons get a bit more breathing room */
-.ct-scope button[class*="bg-primary-500"], .at-modal button[class*="bg-primary-500"] { padding-left: 1rem; padding-right: 1rem; }
+.ct-scope button[class*="bg-primary-500"]:not([role="switch"]), .at-modal button[class*="bg-primary-500"]:not([role="switch"]) { padding-left: 1rem; padding-right: 1rem; }
 .ct-scope table th { border-right: 0 !important; border-left: 0 !important; }
 .ct-scope table thead th { background-image: none; }
 .at-modal input.form-input[class*="pe-"], .ct-scope input.form-input[class*="pe-"] { border-radius: 9999px; padding-left: 1rem; }
