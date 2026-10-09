@@ -353,7 +353,7 @@ const goHome = () => {
   <!-- blur strip covering the top gap above the floating header -->
   <div class="fixed top-0 left-0 right-0 h-3 z-50 backdrop-blur-sm pointer-events-none" />
   <header
-    class="fixed top-3 left-2 right-2 z-50 rounded-3xl border border-blue-100/80 bg-white/90 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/90"
+    class="hdr-shell fixed top-3 left-2 right-2 z-50"
   >
     <div
       ref="headerInnerRef"
@@ -409,7 +409,7 @@ const goHome = () => {
         <div class="flex items-center gap-2 flex-shrink-0">
           <button
             type="button"
-            class="hidden sm:inline-flex flex-shrink-0 items-center gap-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 px-3.5 py-1.5 text-sm font-medium text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+            class="hdr-cta hidden sm:inline-flex"
             @click="handleGoToHub"
           >
             <svg v-if="!isLoggedIn" class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -420,15 +420,15 @@ const goHome = () => {
             </svg>
             <span class="truncate">{{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : (t('app.hubRibbonCta') || 'Войти через Google') }}</span>
           </button>
-          <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+          <div class="hdr-lang-group">
             <button
               v-for="lang in languageOptions"
               :key="lang.value"
               type="button"
-              class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+              class="hdr-lang"
               :class="locale === lang.value
-                ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-                : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+                ? 'hdr-lang--on'
+                : ''"
               :title="lang.label"
               @click="setLocale(lang.value)"
             >
@@ -448,30 +448,30 @@ const goHome = () => {
         <nav class="hidden md:flex min-w-0 items-center gap-1 mr-1">
           <NuxtLink
             to="/catalog"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            class="hdr-item"
             :class="route.path === '/catalog'
-              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              ? 'hdr-item--on'
+              : ''"
           >
             <UIcon name="lucide:layout-grid" class="h-4 w-4" />
             <span class="truncate">{{ t('home.title') || 'Каталог' }}</span>
           </NuxtLink>
           <NuxtLink
             to="/stores"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            class="hdr-item"
             :class="route.path === '/stores'
-              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              ? 'hdr-item--on'
+              : ''"
           >
             <UIcon name="lucide:utensils" class="h-4 w-4" />
             <span class="truncate">{{ t('home.storesTitle') || 'Заведения' }}</span>
           </NuxtLink>
           <NuxtLink
             to="/services"
-            class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm font-medium transition-colors"
+            class="hdr-item"
             :class="route.path === '/services'
-              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              ? 'hdr-item--on'
+              : ''"
           >
             <UIcon name="lucide:scissors" class="h-4 w-4" />
             <span class="truncate">{{ t('home.servicesTitle') || 'Услуги' }}</span>
@@ -480,10 +480,10 @@ const goHome = () => {
         <template v-if="patronLoggedIn">
           <button
             type="button"
-            class="flex-shrink-0 flex items-center gap-2 rounded-full pl-1 pr-3 py-1 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            class="hdr-chip !pl-1 !pr-3 !py-1"
             @click="catalogSheetOpen = true"
           >
-            <span class="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-semibold text-amber-700 dark:text-amber-300">
+            <span class="hdr-avatar">
               {{ (patronDisplayName || '?').charAt(0).toUpperCase() }}
             </span>
             <span class="hidden sm:inline min-w-0 max-w-[9rem] truncate text-sm font-medium text-gray-700 dark:text-gray-200">{{ patronDisplayName }}</span>
@@ -492,7 +492,7 @@ const goHome = () => {
         <button
           v-else
           type="button"
-          class="flex-shrink-0 inline-flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 px-4 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-gray-600 transition-all"
+          class="hdr-chip"
           @click="patronLogin()"
         >
           <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -503,15 +503,15 @@ const goHome = () => {
           </svg>
           <span class="truncate">{{ t('home.loginCta') || 'Войти' }}</span>
         </button>
-        <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+        <div class="hdr-lang-group">
           <button
             v-for="lang in languageOptions"
             :key="lang.value"
             type="button"
-            class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+            class="hdr-lang"
             :class="locale === lang.value
-              ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+              ? 'hdr-lang--on'
+              : ''"
             :title="lang.label"
             @click="setLocale(lang.value)"
           >
@@ -530,34 +530,34 @@ const goHome = () => {
         <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
           <NuxtLink
             to="/feed"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            class="hdr-item"
             :class="route.path === '/feed'
-              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              ? 'hdr-item--on'
+              : ''"
           >
             <UIcon name="lucide:newspaper" class="h-4 w-4" />
             <span class="truncate">{{ t('app.feed') || 'Лента' }}</span>
           </NuxtLink>
           <NuxtLink
             to="/news"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+            class="hdr-item"
             :class="route.path === '/news'
-              ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-              : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+              ? 'hdr-item--on'
+              : ''"
           >
             <UIcon name="lucide:radio" class="h-4 w-4" />
             <span class="truncate">{{ t('app.news') || 'Новости' }}</span>
           </NuxtLink>
         </nav>
-        <div class="flex items-center gap-0.5 rounded-lg border border-gray-200 dark:border-gray-700 p-0.5 flex-shrink-0">
+        <div class="hdr-lang-group">
           <button
             v-for="lang in languageOptions"
             :key="lang.value"
             type="button"
-            class="px-2 py-1 rounded-md text-xs font-medium transition-colors"
+            class="hdr-lang"
             :class="locale === lang.value
-              ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
-              : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'"
+              ? 'hdr-lang--on'
+              : ''"
             :title="lang.label"
             @click="setLocale(lang.value)"
           >
@@ -575,10 +575,10 @@ const goHome = () => {
             <button
               v-if="showHomeItem"
               type="button"
-              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+              class="hdr-item"
               :class="isHomeActive
-                ? 'border-transparent bg-primary-50 text-primary dark:bg-primary-900/30 dark:text-primary-300'
-                : 'border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60'"
+                ? 'hdr-item--on'
+                : ''"
               @click="handleHomeClick"
             >
               <UIcon
@@ -591,7 +591,7 @@ const goHome = () => {
             <button
               v-if="canSeeConsole"
               type="button"
-              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors border-transparent bg-transparent text-gray-700 hover:bg-gray-100 hover:text-primary dark:text-gray-200 dark:hover:bg-gray-700/60"
+              class="hdr-item"
               @click="handleConsoleClick"
             >
               <UIcon
@@ -605,12 +605,12 @@ const goHome = () => {
               v-for="app in navApps"
               :key="app.bundle"
               type="button"
-              class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors"
+              class="hdr-item"
               :class="[
                 isAppActive(app)
-                  ? 'border-primary/30 bg-primary/10 text-primary dark:border-primary/40 dark:bg-primary/15 dark:text-primary-300'
-                  : 'border-transparent bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700/60',
-                !isAppActive(app) && (app.canAdd ? 'text-gray-700 hover:text-primary dark:text-gray-200' : 'text-gray-400 dark:text-gray-500'),
+                  ? 'hdr-item--on'
+                  : '',
+                !isAppActive(app) && !app.canAdd ? 'hdr-item--off' : '',
               ]"
               :aria-disabled="!app.canAdd"
               @click="handleMenuSelect(app)"
@@ -673,7 +673,7 @@ const goHome = () => {
           <button
             v-if="showHomeItem"
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+            class="hdr-item"
           >
             <UIcon
               name="i-lucide-home"
@@ -685,7 +685,7 @@ const goHome = () => {
           <button
             v-if="canSeeConsole"
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+            class="hdr-item"
           >
             <UIcon
               name="lucide:terminal-square"
@@ -698,7 +698,7 @@ const goHome = () => {
             v-for="app in navApps"
             :key="`measure-${app.bundle}`"
             type="button"
-            class="inline-flex shrink-0 items-center gap-2 rounded-md border px-3 py-1.5 text-sm font-medium"
+            class="hdr-item"
           >
             <UIcon
               :name="app.icon"
