@@ -3060,7 +3060,16 @@
     "landingDesc": "What lota is and where to start.",
     "globalDesc": "Account, plans, billing, and frequently asked questions.",
     "notFound": "Article not found",
-    "uncategorized": "Uncategorized"
+    "uncategorized": "Uncategorized",
+    "searchPlaceholder": "Search articles and questions…",
+    "searchEmpty": "Nothing found",
+    "searchClear": "Clear",
+    "allProducts": "All products",
+    "inThisSection": "In this section",
+    "prev": "Previous",
+    "next": "Next",
+    "minRead": "min read",
+    "updated": "Updated"
   },
   "onboarding": {
     "needHelp": "Need help setting up?",

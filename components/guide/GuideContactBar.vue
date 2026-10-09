@@ -3,7 +3,7 @@
     v-if="phone || whatsapp"
     :class="variant === 'bar'
       ? 'border-t border-gray-100 bg-gray-50 px-5 py-3 dark:border-gray-800 dark:bg-gray-900/50'
-      : 'rounded-2xl border border-gray-200 bg-gray-50 px-5 py-4 dark:border-gray-800 dark:bg-gray-900/50'"
+      : 'rounded-3xl px-5 py-4 sm:px-6 sm:py-5 bg-gray-900/[0.03] shadow-[inset_0_0_0_1px_rgba(15,23,42,0.07)] dark:bg-white/[0.04] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]'"
   >
     <p class="mb-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
       {{ t('guide.stillHaveQuestions') }}

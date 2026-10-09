@@ -2325,7 +2325,16 @@
     "landingDesc": "lota қызметі туралы және жұмысты неден бастау керек.",
     "globalDesc": "Аккаунт, тарифтер, төлем және жиі қойылатын сұрақтар.",
     "notFound": "Мақала табылмады",
-    "uncategorized": "Санатсыз"
+    "uncategorized": "Санатсыз",
+    "searchPlaceholder": "Мақала немесе сұрақ іздеу…",
+    "searchEmpty": "Ештеңе табылмады",
+    "searchClear": "Тазалау",
+    "allProducts": "Барлық өнімдер",
+    "inThisSection": "Осы бөлімде",
+    "prev": "Алдыңғы",
+    "next": "Келесі",
+    "minRead": "мин оқу",
+    "updated": "Жаңартылды"
   },
   "onboarding": {
     "needHelp": "Баптауда көмек керек пе?",

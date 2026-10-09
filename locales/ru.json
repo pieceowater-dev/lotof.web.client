@@ -3314,7 +3314,16 @@
     "landingDesc": "О сервисе lota и с чего начать работу.",
     "globalDesc": "Аккаунт, тарифы, оплата и частые вопросы.",
     "notFound": "Статья не найдена",
-    "uncategorized": "Без категории"
+    "uncategorized": "Без категории",
+    "searchPlaceholder": "Найти статью или вопрос…",
+    "searchEmpty": "Ничего не найдено",
+    "searchClear": "Очистить",
+    "allProducts": "Все продукты",
+    "inThisSection": "В этом разделе",
+    "prev": "Назад",
+    "next": "Дальше",
+    "minRead": "мин чтения",
+    "updated": "Обновлено"
   },
   "onboarding": {
     "needHelp": "Нужна помощь в настройке?",
