@@ -18,6 +18,10 @@ export type MenuDocVariableKey =
   | 'ORDER_ITEMS'
   | 'CUSTOM_FIELDS'
   | 'ORDER_WARRANTY'
+  | 'ORDER_WORKS'
+  | 'ORDER_MATERIALS'
+  | 'ORDER_WORKS_TOTAL'
+  | 'ORDER_MATERIALS_TOTAL'
   | 'CLIENT_NAME'
   | 'CLIENT_PHONE'
   | 'CLIENT_ADDRESS'
@@ -76,6 +80,22 @@ export const MENU_DOC_VARIABLES: MenuDocVariableInfo[] = [
   {
     key: 'ORDER_WARRANTY', labelKey: 'menu.docVarOrderWarranty', fallback: 'Warranty', group: 'order',
     localTokens: { en: 'ORDER_WARRANTY', ru: 'ЗАКАЗ_ГАРАНТИЯ', kk: 'ТАПСЫРЫС_КЕПІЛДІК' },
+  },
+  {
+    key: 'ORDER_WORKS', labelKey: 'menu.docVarOrderWorks', fallback: 'Works list', group: 'order',
+    localTokens: { en: 'ORDER_WORKS', ru: 'ЗАКАЗ_РАБОТЫ', kk: 'ТАПСЫРЫС_ЖҰМЫСТАР' },
+  },
+  {
+    key: 'ORDER_MATERIALS', labelKey: 'menu.docVarOrderMaterials', fallback: 'Materials list', group: 'order',
+    localTokens: { en: 'ORDER_MATERIALS', ru: 'ЗАКАЗ_ЗАПЧАСТИ', kk: 'ТАПСЫРЫС_МАТЕРИАЛДАР' },
+  },
+  {
+    key: 'ORDER_WORKS_TOTAL', labelKey: 'menu.docVarOrderWorksTotal', fallback: 'Works total', group: 'order',
+    localTokens: { en: 'ORDER_WORKS_TOTAL', ru: 'ЗАКАЗ_РАБОТЫ_СУММА', kk: 'ТАПСЫРЫС_ЖҰМЫСТАР_СОМАСЫ' },
+  },
+  {
+    key: 'ORDER_MATERIALS_TOTAL', labelKey: 'menu.docVarOrderMaterialsTotal', fallback: 'Materials total', group: 'order',
+    localTokens: { en: 'ORDER_MATERIALS_TOTAL', ru: 'ЗАКАЗ_ЗАПЧАСТИ_СУММА', kk: 'ТАПСЫРЫС_МАТЕРИАЛДАР_СОМАСЫ' },
   },
   {
     key: 'CLIENT_NAME', labelKey: 'menu.docVarClientName', fallback: 'Client name', group: 'client',

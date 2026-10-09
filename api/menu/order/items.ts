@@ -18,6 +18,9 @@ export type MenuOrderItem = {
   priceAtPurchase: number;
   quantity: number;
   warrantyDays?: number;
+  itemKind?: string;
+  costPriceAtPurchase?: number;
+  workPayPercent?: number;
   modifiers: MenuOrderItemModifier[];
 };
 
@@ -25,7 +28,7 @@ const OrderItemsDocument = /* GraphQL */ `
   query OrderItems($orderId: String!) {
     orderItems(orderId: $orderId) {
       rows {
-        id orderId menuItemId name priceAtPurchase quantity warrantyDays
+        id orderId menuItemId name priceAtPurchase quantity warrantyDays itemKind costPriceAtPurchase workPayPercent
         modifiers { id orderItemId modifierOptionId name priceAtPurchase }
       }
     }

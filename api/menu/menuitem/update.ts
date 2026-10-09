@@ -17,12 +17,16 @@ export type UpdateMenuItemInput = {
   seoDescription?: string;
   // Omit to keep the stored warranty.
   warrantyDays?: number;
+  // Omit itemKind/costPrice/workPayPercent to keep the stored values.
+  itemKind?: string;
+  costPrice?: number;
+  workPayPercent?: number;
 };
 
 const UpdateMenuItemDocument = /* GraphQL */ `
   mutation UpdateMenuItem($input: UpdateMenuItemInput!) {
     updateMenuItem(input: $input) {
-      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays
+      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays itemKind costPrice workPayPercent
     }
   }
 `;

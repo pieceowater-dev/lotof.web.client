@@ -9,6 +9,7 @@ import { MENU_DOC_VARIABLES } from '@/utils/menuDocVariables';
 import { parseSocialLinks, socialLabel } from '@/utils/social';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { warrantyInfo } from '@/utils/warranty';
+import { splitLabour } from '@/utils/labour';
 import { fieldsForOrder, formatCustomFieldValue, parseCustomFields } from '@/utils/orderCustomFields';
 
 // Order customerName/phone/deliveryAddress and item names are free text a
@@ -136,6 +137,7 @@ export type BuildMenuDocVariablesInput = {
 export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record<string, string> {
   const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock, warrantyBlock } = input;
   const amountDue = order.totalAmount - order.discountAmount - order.paidAmount;
+  const labour = splitLabour(items);
   const employeeNames = members.map((m) => memberDisplayName(m.userId)).filter(Boolean);
 
   return {
@@ -146,6 +148,10 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     PAID_AMOUNT: formatMoney(order.paidAmount),
     AMOUNT_DUE: formatMoney(amountDue),
     ORDER_ITEMS: buildItemsTable(items, noneLabel, itemsTableHeaders),
+    ORDER_WORKS: buildItemsTable(labour.works, noneLabel, itemsTableHeaders),
+    ORDER_MATERIALS: buildItemsTable(labour.materials, noneLabel, itemsTableHeaders),
+    ORDER_WORKS_TOTAL: formatMoney(labour.worksTotal),
+    ORDER_MATERIALS_TOTAL: formatMoney(labour.materialsTotal),
     CUSTOM_FIELDS: customFieldsBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     ORDER_WARRANTY: warrantyBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     CLIENT_NAME: escapeHtml(order.customerName || guestLabel),

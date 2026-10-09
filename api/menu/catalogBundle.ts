@@ -13,7 +13,7 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 const CatalogBundleDocument = /* GraphQL */ `
   query CatalogBundle {
     menuItems(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
-      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays badgeIds excludedBranchIds modifierGroupIds }
+      rows { id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays itemKind costPrice workPayPercent badgeIds excludedBranchIds modifierGroupIds }
     }
     categories(filter: { pagination: { page: 1, length: ONE_HUNDRED } }) {
       rows { id parentId name sortOrder isActive availableFrom availableTo availableDays }

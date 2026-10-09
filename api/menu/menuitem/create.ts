@@ -14,12 +14,15 @@ export type CreateMenuItemInput = {
   seoTitle?: string;
   seoDescription?: string;
   warrantyDays?: number;
+  itemKind?: string;
+  costPrice?: number;
+  workPayPercent?: number;
 };
 
 const CreateMenuItemDocument = /* GraphQL */ `
   mutation CreateMenuItem($input: CreateMenuItemInput!) {
     createMenuItem(input: $input) {
-      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays
+      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays itemKind costPrice workPayPercent
     }
   }
 `;

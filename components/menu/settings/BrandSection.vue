@@ -41,7 +41,7 @@ const form = reactive({
   seoDescription: '',
   autoAcceptOrders: false,
   showcaseViewOnly: false,
-  listedInCatalog: true,
+  listedInCatalog: false,
 });
 const socialLinksList = ref<SocialLink[]>([]);
 
@@ -59,7 +59,7 @@ function applySettings(s: MenuBrandSettings | null) {
   form.seoDescription = s.seoDescription || '';
   form.autoAcceptOrders = s.autoAcceptOrders || false;
   form.showcaseViewOnly = s.showcaseViewOnly || false;
-  form.listedInCatalog = s.listedInCatalog ?? true;
+  form.listedInCatalog = s.listedInCatalog ?? false;
 }
 
 function addSocialLink() {

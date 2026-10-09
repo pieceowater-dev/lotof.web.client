@@ -8,6 +8,9 @@ export type CreateOrderItemInput = {
   priceAtPurchase: number;
   quantity: number;
   warrantyDays?: number;
+  itemKind?: string;
+  costPriceAtPurchase?: number;
+  workPayPercent?: number;
 };
 
 export type CreateOrderInput = {
