@@ -2,7 +2,10 @@
 import { useI18n } from '@/composables/useI18n';
 import { usePatronAuth } from '@/composables/usePatronAuth';
 import { getErrorMessage } from '@/utils/types/errors';
-import { plansPublicApi, type PlansBooking, type PlansAvailableSlot } from '@/api/plans/ops';
+import { plansPublicApi, type PlansBooking, type PlansAvailableSlot, type PlansSettings } from '@/api/plans/ops';
+import { getContrastTextColor } from '@/utils/color';
+import StorefrontHero from '@/components/storefront/StorefrontHero.vue';
+import StorefrontTopBar from '@/components/storefront/StorefrontTopBar.vue';
 
 definePageMeta({ layout: false });
 
@@ -22,6 +25,15 @@ const serviceName = ref('');
 const busy = ref(false);
 const err = ref('');
 const forbidden = ref(false);
+
+// Tenant brand: colours + name come from the same public settings the booking page uses.
+const brandSettings = ref<PlansSettings | null>(null);
+const accent = computed(() => brandSettings.value?.primaryColor || '#7c3aed');
+const onAccent = computed(() => getContrastTextColor(accent.value));
+const brandVars = computed(() => ({ '--brand': accent.value, '--brand-ink': onAccent.value }));
+onMounted(async () => {
+  try { brandSettings.value = await plansPublicApi.settings(nsSlug.value); } catch { /* neutral default */ }
+});
 
 const rescheduleOpen = ref(false);
 const rDate = ref('');
@@ -111,28 +123,38 @@ const statusMeta = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-    <div class="max-w-sm mx-auto px-4 py-10">
+  <div class="sf" :style="brandVars">
+    <StorefrontTopBar :powered-label="t('plans.poweredBy') || 'Работает на lota'" />
+    <StorefrontHero
+      compact
+      :name="brandSettings?.name || t('plans.yourBooking') || 'Ваша запись'"
+      :logo-url="brandSettings?.logoUrl"
+      fallback-icon="lucide:calendar-check"
+      :back-label="t('plans.newBookingLink') || 'Записаться ещё раз'"
+      @back="navigateTo(`/to/${nsSlug}/plans`)"
+    />
+
+    <div class="mx-auto max-w-md px-4 py-8">
       <!-- checking session -->
-      <div v-if="authChecking" class="py-24 flex justify-center">
-        <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" />
+      <div v-if="authChecking" class="flex justify-center py-24">
+        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: accent }" />
       </div>
 
       <!-- must be a signed-in patron -->
-      <div v-else-if="!patron.isLoggedIn.value" class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 text-center flex flex-col items-center gap-3">
-        <UIcon name="lucide:lock" class="w-8 h-8 text-gray-300" />
+      <div v-else-if="!patron.isLoggedIn.value" class="sf-card flex flex-col items-center gap-3 p-7 text-center">
+        <span class="flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-gray-400 dark:bg-white/10"><UIcon name="lucide:lock" class="h-6 w-6" /></span>
         <p class="text-sm text-gray-500">{{ t('plans.trackSignInHint') || 'Войдите как клиент lota, чтобы открыть запись.' }}</p>
-        <UButton block color="white" variant="solid" class="ring-1 ring-gray-300 dark:ring-gray-600" @click="patron.login()">
-          <UIcon name="simple-icons:google" class="w-4 h-4" />
+        <button type="button" class="sf-btn sf-btn--block" @click="patron.login()">
+          <UIcon name="simple-icons:google" class="h-4 w-4" />
           {{ t('app.login') || 'Войти' }}
-        </UButton>
+        </button>
       </div>
 
-      <div v-else-if="loading" class="py-24 flex justify-center">
-        <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" />
+      <div v-else-if="loading" class="flex justify-center py-24">
+        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: accent }" />
       </div>
 
-      <div v-else-if="forbidden" class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 text-center text-sm text-gray-500">
+      <div v-else-if="forbidden" class="sf-card p-7 text-center text-sm text-gray-500">
         {{ t('plans.notYourBooking') || 'Эта запись принадлежит другому клиенту.' }}
       </div>
 
@@ -141,50 +163,60 @@ const statusMeta = computed(() => {
       </div>
 
       <template v-else>
-        <div class="rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-5 flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-2">
-            <h1 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('plans.yourBooking') || 'Ваша запись' }}</h1>
+        <div class="sf-card overflow-hidden">
+          <div class="flex items-center justify-between gap-2 p-5 sf-tint !rounded-none">
+            <h1 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('plans.yourBooking') || 'Ваша запись' }}</h1>
             <UBadge :color="(statusMeta.color as any)" variant="subtle" size="xs">{{ statusMeta.label }}</UBadge>
           </div>
 
-          <div class="text-sm text-gray-900 dark:text-gray-100 font-medium capitalize">{{ fmt(booking.startAt) }}</div>
-          <div class="text-xs text-gray-500 space-y-1">
-            <div v-if="serviceName">{{ serviceName }}</div>
-            <div>{{ booking.clientName }} · {{ booking.clientPhone }}</div>
-            <div v-if="booking.totalPrice">{{ booking.totalPrice }}</div>
-          </div>
+          <div class="flex flex-col gap-3 p-5">
+            <div class="text-xl font-extrabold capitalize tracking-tight" :style="{ color: accent }">{{ fmt(booking.startAt) }}</div>
+            <div class="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
+              <div v-if="serviceName" class="flex items-center gap-2"><UIcon name="lucide:sparkles" class="h-4 w-4 text-gray-400" />{{ serviceName }}</div>
+              <div class="flex items-center gap-2"><UIcon name="lucide:user" class="h-4 w-4 text-gray-400" />{{ booking.clientName }} · {{ booking.clientPhone }}</div>
+              <div v-if="booking.totalPrice" class="flex items-center gap-2"><UIcon name="lucide:wallet" class="h-4 w-4 text-gray-400" />{{ booking.totalPrice }}</div>
+            </div>
 
-          <div v-if="canManage" class="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-800">
-            <UButton v-if="serviceId" size="sm" variant="soft" icon="lucide:calendar-clock" :loading="busy" @click="openReschedule">{{ t('plans.reschedule') || 'Перенести' }}</UButton>
-            <UButton size="sm" color="red" variant="soft" icon="lucide:x" :loading="busy" @click="cancel">{{ t('plans.cancelBooking') || 'Отменить' }}</UButton>
+            <div v-if="canManage" class="flex flex-wrap gap-2 border-t border-gray-100 pt-4 dark:border-white/10">
+              <button v-if="serviceId" type="button" class="sf-btn sf-btn--soft !py-2 !text-sm" :disabled="busy" @click="openReschedule">
+                <UIcon name="lucide:calendar-clock" class="h-4 w-4" />{{ t('plans.reschedule') || 'Перенести' }}
+              </button>
+              <button type="button" class="sf-btn !py-2 !text-sm !shadow-none" style="--brand: #e11d48; --brand-ink: #fff; background: rgba(225, 29, 72, 0.1); color: #e11d48" :disabled="busy" @click="cancel">
+                <UIcon name="lucide:x" class="h-4 w-4" />{{ t('plans.cancelBooking') || 'Отменить' }}
+              </button>
+            </div>
+            <p v-else-if="booking.status === 'CANCELLED'" class="text-xs text-gray-500">{{ t('plans.bookingCancelled') || 'Запись отменена.' }}</p>
           </div>
-          <p v-else-if="booking.status === 'CANCELLED'" class="text-xs text-gray-500">{{ t('plans.bookingCancelled') || 'Запись отменена.' }}</p>
         </div>
-        <NuxtLink :to="`/to/${nsSlug}/plans`" class="block text-center text-xs text-primary-600 hover:underline mt-3">{{ t('plans.newBookingLink') || 'Записаться ещё раз' }}</NuxtLink>
       </template>
     </div>
 
-    <UModal v-model="rescheduleOpen" :ui="{ width: 'sm:max-w-md' }">
-      <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
-        <template #header><h3 class="text-base font-semibold">{{ t('plans.reschedule') || 'Перенести запись' }}</h3></template>
+    <UModal v-model="rescheduleOpen" :ui="{ width: 'sm:max-w-md', rounded: 'rounded-[2rem]', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10', shadow: 'shadow-2xl' }">
+      <div class="sf-fields p-6" :style="brandVars">
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h3 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('plans.reschedule') || 'Перенести запись' }}</h3>
+          <button type="button" class="sf-sheet-close" aria-label="Закрыть" @click="rescheduleOpen = false"><UIcon name="lucide:x" class="h-4 w-4" /></button>
+        </div>
         <div class="space-y-3">
           <UInput v-model="rDate" type="date" size="lg" :min="new Date().toISOString().slice(0,10)" />
           <div v-if="rLoading" class="py-4 text-center text-sm text-gray-500">{{ t('common.loading') || 'Загрузка…' }}</div>
           <div v-else-if="!rSlots.length" class="py-4 text-center text-sm text-gray-500">{{ t('plans.noSlotsDay') || 'На этот день свободных окон нет' }}</div>
-          <div v-else class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 max-h-56 overflow-y-auto">
-            <button v-for="sl in rSlots" :key="sl.startAt" type="button"
-              class="px-2 py-2.5 rounded-lg border text-sm font-medium transition"
-              :class="rSlot?.startAt === sl.startAt ? 'border-primary-500 bg-primary-50 dark:bg-primary-950/30 text-primary-700' : 'border-gray-200 dark:border-gray-800'"
-              @click="rSlot = sl">{{ fmtTime(sl.startAt) }}</button>
+          <div v-else class="grid max-h-56 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
+            <button
+              v-for="sl in rSlots"
+              :key="sl.startAt"
+              type="button"
+              class="sf-option px-2 py-2.5 text-sm font-semibold text-gray-900 dark:text-white"
+              :class="rSlot?.startAt === sl.startAt ? 'sf-option--on' : ''"
+              @click="rSlot = sl"
+            >{{ fmtTime(sl.startAt) }}</button>
           </div>
         </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton variant="ghost" color="gray" @click="rescheduleOpen = false">{{ t('common.cancel') || 'Отмена' }}</UButton>
-            <UButton :loading="busy" :disabled="!rSlot" @click="doReschedule">{{ t('plans.moveHere') || 'Перенести' }}</UButton>
-          </div>
-        </template>
-      </UCard>
+        <div class="mt-5 flex items-center justify-end gap-2">
+          <button type="button" class="rounded-full px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" @click="rescheduleOpen = false">{{ t('common.cancel') || 'Отмена' }}</button>
+          <button type="button" class="sf-btn" :disabled="busy || !rSlot" @click="doReschedule">{{ t('plans.moveHere') || 'Перенести' }}</button>
+        </div>
+      </div>
     </UModal>
   </div>
 </template>

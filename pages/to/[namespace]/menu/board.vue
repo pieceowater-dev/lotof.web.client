@@ -154,10 +154,10 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="h-screen w-screen overflow-hidden bg-gray-950 text-white flex flex-col">
-    <header class="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 border-b border-gray-800">
+  <div class="h-screen w-screen overflow-hidden bg-[#141414] text-white flex flex-col">
+    <header class="flex-shrink-0 flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-3 sm:px-5 py-2 sm:py-3 border-b border-white/10">
       <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.name" class="w-6 h-6 sm:w-8 sm:h-8 rounded-lg object-contain bg-white flex-shrink-0">
+        <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.name" class="w-6 h-6 sm:w-8 sm:h-8 rounded-xl object-contain bg-white flex-shrink-0">
         <Icon v-else name="lucide:store" class="w-5 h-5 sm:w-6 sm:h-6 text-gray-500 flex-shrink-0" />
         <h1 class="text-sm sm:text-lg font-bold truncate">{{ brand?.name ? maskProfanity(brand.name) : nsSlug }}</h1>
         <span v-if="activeBranch" class="hidden sm:inline text-sm text-gray-400 truncate">— {{ maskProfanity(activeBranch.name) }}</span>
@@ -182,7 +182,7 @@ useHead(() => ({
         </a>
         <button
           type="button"
-          class="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center transition-colors flex-shrink-0"
+          class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors flex-shrink-0"
           :aria-label="t('menu.toggleFullscreen') || 'Toggle fullscreen'"
           @click="toggleFullscreen"
         >
@@ -202,10 +202,10 @@ useHead(() => ({
          sm:min-h-0 sm:overflow-y-auto split below. -->
     <div
       v-else
-      class="flex-1 min-h-0 grid grid-cols-1 gap-px bg-gray-800 overflow-y-auto sm:overflow-hidden sm:grid-cols-2"
+      class="flex-1 min-h-0 grid grid-cols-1 gap-px bg-white/10 overflow-y-auto sm:overflow-hidden sm:grid-cols-2"
       :class="BOARD_COLUMNS.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'"
     >
-      <div v-for="col in BOARD_COLUMNS" :key="col.status" class="flex flex-col bg-gray-950 sm:min-h-0">
+      <div v-for="col in BOARD_COLUMNS" :key="col.status" class="flex flex-col bg-[#141414] sm:min-h-0">
         <div
           class="flex-shrink-0 sticky top-0 z-10 sm:static flex items-center justify-between px-4 py-2 sm:py-2.5"
           :style="{ backgroundColor: statusBadgeStyle(col.status).bg }"
@@ -221,8 +221,8 @@ useHead(() => ({
           <div
             v-for="order in ordersByColumn[col.status]"
             :key="order.id"
-            class="rounded-xl bg-gray-900 border p-3 space-y-1.5"
-            :class="isStale(order.createdAt) ? 'border-red-600' : 'border-gray-800'"
+            class="rounded-[1.4rem] bg-[#1f1f1f] border p-4 space-y-1.5"
+            :class="isStale(order.createdAt) ? 'border-red-600' : 'border-white/10'"
           >
             <div class="flex items-center justify-between">
               <span class="text-2xl sm:text-3xl font-black tabular-nums">#{{ order.number }}</span>
@@ -236,7 +236,7 @@ useHead(() => ({
               <span v-if="order.tableTag">{{ t('menu.tableNumber', { number: order.tableTag }) || `Table ${order.tableTag}` }}</span>
               <span v-else>{{ t(orderTypeLabelInfo(order.type).key) || orderTypeLabelInfo(order.type).fallback }}</span>
             </div>
-            <ul class="text-sm text-gray-300 space-y-0.5 pt-1 border-t border-gray-800">
+            <ul class="text-sm text-gray-300 space-y-0.5 pt-1 border-t border-white/10">
               <li v-for="(item, idx) in order.items" :key="idx" class="flex justify-between gap-2">
                 <span class="truncate">{{ maskProfanity(item.name) }}</span>
                 <span class="font-semibold tabular-nums flex-shrink-0">×{{ item.quantity }}</span>

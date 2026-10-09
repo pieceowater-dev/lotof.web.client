@@ -124,14 +124,14 @@ watch(
 
 <template>
   <div v-if="businessId" class="space-y-4">
-    <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('menu.reviewsHeading') || 'Отзывы' }}</h2>
+    <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('menu.reviewsHeading') || 'Отзывы' }}</h2>
 
     <div v-if="loading" class="text-xs text-gray-400">{{ t('menu.loading') || 'Загрузка…' }}</div>
     <div v-else-if="reviews.length" class="space-y-2.5">
       <div
         v-for="r in reviews"
         :key="r.id"
-        class="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-3"
+        class="sf-card !shadow-none p-4"
       >
         <div class="flex items-center justify-between gap-2">
           <span class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ maskProfanity(r.authorName) }}</span>
@@ -149,11 +149,11 @@ watch(
       </div>
     </div>
 
-    <div v-if="submitted" class="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm px-3 py-2.5">
+    <div v-if="submitted" class="rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-sm px-4 py-3">
       {{ t('menu.reviewSubmitted') || 'Спасибо за отзыв!' }}
     </div>
 
-    <div v-else class="rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+    <div v-else class="sf-card p-5 space-y-3">
       <p class="text-sm font-medium text-gray-900 dark:text-white">{{ t('menu.leaveReview') || 'Оставить отзыв' }}</p>
       <div class="flex items-center gap-1">
         <button
@@ -179,12 +179,12 @@ watch(
         rows="3"
         :placeholder="t('menu.reviewPlaceholder') || 'Расскажите, как вам заведение'"
         :aria-label="t('menu.reviewPlaceholder') || 'Расскажите, как вам заведение'"
-        class="w-full rounded-lg border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none"
+        class="sf-textarea text-gray-900 dark:text-white"
       />
       <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
       <button
         type="button"
-        class="w-full rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-sm font-medium py-2.5 disabled:opacity-40"
+        class="sf-btn sf-btn--block !text-sm"
         :disabled="!canSubmit"
         @click="submit"
       >

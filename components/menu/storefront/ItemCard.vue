@@ -43,18 +43,18 @@ function handleAddClick() {
 </script>
 
 <template>
-  <div class="w-full h-full flex flex-col rounded-2xl bg-white dark:bg-gray-900 shadow-sm ring-1 ring-gray-100 dark:ring-gray-800 overflow-hidden transition-shadow hover:shadow-md">
+  <div class="sf-card sf-card--hover w-full h-full flex flex-col overflow-hidden">
     <button
       type="button"
       class="w-full text-left block group"
       @click="emit('open')"
     >
-      <div class="relative w-full bg-gray-100 dark:bg-gray-800" style="aspect-ratio: 1 / 1">
+      <div class="relative w-full bg-gray-100 dark:bg-white/10" style="aspect-ratio: 1 / 1">
         <img
           v-if="item.imageUrl"
           :src="item.imageUrl"
           :alt="maskProfanity(item.imageAlt || item.name)"
-          class="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+          class="w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105"
         >
         <!-- Placeholder fills the same aspect-square box a real photo would
              (not a small icon adrift in empty space) so every no-photo card
@@ -84,7 +84,7 @@ function handleAddClick() {
         <button
           v-if="!quantity || hasModifiers"
           type="button"
-          class="relative w-9 h-9 rounded-full shadow-md flex items-center justify-center text-white active:scale-90 transition-transform"
+          class="relative w-10 h-10 rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform"
           :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
           @click="handleAddClick"
         >
@@ -127,8 +127,8 @@ function handleAddClick() {
       <!-- min-h reserves 2 lines even when the name only needs 1, so a short
            name doesn't leave this card shorter than its row-mates --
            line-clamp-2 alone only caps the max, it doesn't set a min. -->
-      <div class="text-sm font-medium text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">{{ maskProfanity(item.name) }}</div>
-      <div class="text-sm font-semibold mt-1 tabular-nums" :style="{ color: secondaryColor }">{{ formatMoney(item.price, currency) }}</div>
+      <div class="text-sm font-semibold text-gray-900 dark:text-white leading-snug line-clamp-2 min-h-[2.5rem]">{{ maskProfanity(item.name) }}</div>
+      <div class="text-base font-extrabold mt-1 tabular-nums tracking-tight" :style="{ color: secondaryColor }">{{ formatMoney(item.price, currency) }}</div>
     </button>
   </div>
 </template>

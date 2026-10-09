@@ -16,6 +16,9 @@ import { parseSocialLinks, socialIcon, socialLabel } from '@/utils/social';
 import { telHref } from '@/utils/phoneLinks';
 import { getCatalogBusinesses } from '@/api/hub/catalog';
 import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
+import StorefrontTopBar from '@/components/storefront/StorefrontTopBar.vue';
+import StorefrontHero from '@/components/storefront/StorefrontHero.vue';
 import { maskProfanity } from '@/utils/profanityFilter';
 
 definePageMeta({ layout: false });
@@ -44,6 +47,7 @@ const brandSocialLinks = computed(() => parseSocialLinks(brand.value?.socialLink
 
 const primaryColor = computed(() => brand.value?.primaryColor || '#3b82f6');
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
+const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value }));
 // primaryColor is the hero/background color — amount text uses secondaryColor
 // instead, same convention as the storefront's cart/checkout totals.
 const secondaryColor = computed(() => brand.value?.secondaryColor || primaryColor.value);
@@ -198,43 +202,25 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-950">
-    <!-- Header: mirrors the main storefront's hero (colored band, big logo
-         card, brand name) so the two pages read as the same product — plus
-         a small back link since this sub-page needs a way out, unlike the
-         storefront itself. Stays neutral (no color) until the brand actually
-         loads, rather than flashing primaryColor's blue fallback for
-         everyone while the fetch is still in flight. -->
-    <div class="relative" :class="!brand && 'bg-gray-100 dark:bg-gray-900'" :style="brand ? { backgroundColor: primaryColor } : {}">
-      <div class="max-w-lg mx-auto px-4 pt-4 pb-6">
-        <button
-          type="button"
-          class="inline-flex items-center gap-1 text-xs font-medium mb-3 transition-opacity"
-          :class="brand ? 'opacity-80 hover:opacity-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-          :style="brand ? { color: onPrimaryText } : {}"
-          @click="backToMenu"
-        >
-          <Icon name="lucide:arrow-left" class="w-3.5 h-3.5" />
-          {{ t('menu.backToMenu') || 'Back to menu' }}
-        </button>
-        <div class="flex items-center gap-4">
-          <div class="w-16 h-16 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
-            <img v-if="brand?.logoUrl" :src="brand.logoUrl" :alt="brand.logoAlt || brand.name" class="w-full h-full object-contain p-1.5">
-            <Icon v-else name="lucide:store" class="w-6 h-6 text-gray-300" />
-          </div>
-          <h1
-            class="min-w-0 flex-1 text-xl font-bold truncate"
-            :class="!brand && 'text-gray-900 dark:text-white'"
-            :style="brand ? { color: onPrimaryText } : {}"
-          >{{ brand?.name ? maskProfanity(brand.name) : nsSlug }}</h1>
-        </div>
-      </div>
-    </div>
+  <div class="sf" :style="brandVars">
+    <StorefrontTopBar :powered-label="t('menu.poweredBy') || 'Powered by'" />
 
-    <div class="max-w-lg mx-auto px-4 py-6">
+    <!-- Header: mirrors the main storefront's hero so the two pages read as
+         one product, plus a back link since this sub-page needs a way out. -->
+    <StorefrontHero
+      compact
+      :name="brand?.name ? maskProfanity(brand.name) : nsSlug"
+      :logo-url="brand?.logoUrl"
+      :logo-alt="brand?.logoAlt || brand?.name"
+      fallback-icon="lucide:store"
+      :back-label="t('menu.backToMenu') || 'Back to menu'"
+      @back="backToMenu"
+    />
+
+    <div class="mx-auto max-w-lg px-4 py-8">
       <!-- Loading -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
-        <Icon name="lucide:loader-2" class="w-6 h-6 animate-spin mb-2" />
+        <Icon name="lucide:loader-2" class="mb-2 h-6 w-6 animate-spin" />
         {{ t('app.loading') || 'Loading...' }}
       </div>
 
@@ -259,72 +245,72 @@ useHead(() => ({
 
       <!-- Order status -->
       <template v-else-if="order">
-        <div class="rounded-2xl overflow-hidden shadow-sm">
-          <div class="p-5" :style="{ backgroundColor: primaryColor, color: onPrimaryText }">
-            <div class="text-xs font-medium uppercase tracking-wide opacity-80">{{ t('menu.yourOrder') || 'Your order' }}</div>
-            <div class="text-2xl font-bold font-mono tabular-nums mt-0.5">{{ smartOrderNumber(order) }}</div>
-            <div class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">
-              <Icon :name="statusBadgeStyle(order.status).icon" class="w-4 h-4" />
+        <div class="sf-card overflow-hidden">
+          <div class="relative overflow-hidden p-6" :style="{ background: 'linear-gradient(160deg, color-mix(in srgb, var(--brand) 88%, white), var(--brand))', color: onPrimaryText }">
+            <div class="sf-label" :style="{ color: onPrimaryText, opacity: 0.8 }">{{ t('menu.yourOrder') || 'Your order' }}</div>
+            <div class="mt-1 font-mono text-3xl font-extrabold tabular-nums tracking-tight">{{ smartOrderNumber(order) }}</div>
+            <div class="sf-pill mt-4 !text-sm">
+              <Icon :name="statusBadgeStyle(order.status).icon" class="h-4 w-4" />
               {{ statusLabel(order.status) }}
             </div>
           </div>
 
-          <div class="bg-white dark:bg-gray-900 p-5 space-y-5">
+          <div class="space-y-5 p-6">
             <!-- Step tracker -->
             <div v-if="order.status !== 'CANCELLED'" class="flex items-center">
               <template v-for="(step, i) in trackedStatuses" :key="step">
-                <div class="flex flex-col items-center flex-1">
+                <div class="flex flex-1 flex-col items-center">
                   <span
-                    class="flex h-8 w-8 items-center justify-center rounded-full text-white flex-shrink-0 transition-colors"
+                    class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-white transition-colors"
                     :style="{ backgroundColor: i <= currentStepIndex ? statusBadgeStyle(step).bg : undefined }"
-                    :class="i > currentStepIndex && 'bg-gray-200 dark:bg-gray-800 text-gray-400 dark:text-gray-600'"
+                    :class="i > currentStepIndex && 'bg-gray-200 text-gray-400 dark:bg-white/10 dark:text-gray-500'"
                   >
-                    <Icon :name="statusBadgeStyle(step).icon" class="w-3.5 h-3.5" />
+                    <Icon :name="statusBadgeStyle(step).icon" class="h-4 w-4" />
                   </span>
-                  <span class="mt-1.5 text-[10px] text-center leading-tight" :class="i <= currentStepIndex ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400 dark:text-gray-600'">
+                  <span class="mt-1.5 text-center text-[10px] leading-tight" :class="i <= currentStepIndex ? 'font-semibold text-gray-800 dark:text-gray-200' : 'text-gray-400 dark:text-gray-600'">
                     {{ statusLabel(step) }}
                   </span>
                 </div>
                 <div
                   v-if="i < trackedStatuses.length - 1"
-                  class="h-0.5 flex-1 -mt-5 transition-colors"
-                  :class="i < currentStepIndex ? '' : 'bg-gray-200 dark:bg-gray-800'"
+                  class="-mt-5 h-0.5 flex-1 transition-colors"
+                  :class="i < currentStepIndex ? '' : 'bg-gray-200 dark:bg-white/10'"
                   :style="i < currentStepIndex ? { backgroundColor: statusBadgeStyle(step).bg } : undefined"
                 />
               </template>
             </div>
-            <div v-else class="rounded-xl bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm px-3 py-2.5 flex items-center gap-2">
-              <Icon name="lucide:x-circle" class="w-4 h-4 flex-shrink-0" />
+            <div v-else class="flex items-center gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300">
+              <Icon name="lucide:x-circle" class="h-4 w-4 flex-shrink-0" />
               {{ t('menu.orderStatusCancelledHint') || 'This order was cancelled.' }}
             </div>
 
             <!-- Details -->
-            <div class="space-y-2.5 pt-1 border-t border-gray-100 dark:border-gray-800">
-              <div class="flex items-center justify-between text-sm pt-3">
-                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Icon :name="orderTypeIcon(order.type)" class="w-4 h-4" />
+            <div class="space-y-2.5 border-t border-gray-100 pt-1 dark:border-white/10">
+              <div class="flex items-center justify-between pt-3 text-sm">
+                <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <Icon :name="orderTypeIcon(order.type)" class="h-4 w-4" />
                   {{ t(orderTypeLabelInfo(order.type).key) || orderTypeLabelInfo(order.type).fallback }}
                 </span>
-                <span v-if="tableTag" class="text-gray-700 dark:text-gray-300 text-right max-w-[60%] truncate">{{ t('menu.tableNumber', { number: tableTag }) || `Table ${tableTag}` }}</span>
-                <span v-else-if="order.deliveryAddress" class="text-gray-700 dark:text-gray-300 text-right max-w-[60%] truncate">{{ order.deliveryAddress }}</span>
+                <span v-if="tableTag" class="max-w-[60%] truncate text-right text-gray-700 dark:text-gray-300">{{ t('menu.tableNumber', { number: tableTag }) || `Table ${tableTag}` }}</span>
+                <span v-else-if="order.deliveryAddress" class="max-w-[60%] truncate text-right text-gray-700 dark:text-gray-300">{{ order.deliveryAddress }}</span>
               </div>
               <div class="flex items-center justify-between text-sm">
-                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Icon name="lucide:clock" class="w-4 h-4" />
+                <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <Icon name="lucide:clock" class="h-4 w-4" />
                   {{ t('menu.createdAt') || 'Created' }}
                 </span>
                 <span class="text-gray-700 dark:text-gray-300">{{ formatDateTime(order.createdAt) }}</span>
               </div>
               <div v-if="order.closedAt" class="flex items-center justify-between text-sm">
-                <span class="text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                  <Icon name="lucide:check-check" class="w-4 h-4" />
+                <span class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <Icon name="lucide:check-check" class="h-4 w-4" />
                   {{ t('menu.closedAt') || 'Closed' }}
                 </span>
                 <span class="text-gray-700 dark:text-gray-300">{{ formatDateTime(order.closedAt) }}</span>
               </div>
-              <div class="flex items-center justify-between text-base font-semibold pt-2 border-t border-gray-100 dark:border-gray-800">
-                <span class="text-gray-900 dark:text-white">{{ t('menu.total') || 'Total' }}</span>
-                <span :style="{ color: secondaryColor }">{{ formatMoney(order.totalAmount, brand?.currencyCode) }}</span>
+              <div class="flex items-center justify-between border-t border-gray-100 pt-3 dark:border-white/10">
+                <span class="text-base font-bold text-gray-900 dark:text-white">{{ t('menu.total') || 'Total' }}</span>
+                <span class="text-xl font-extrabold tracking-tight" :style="{ color: secondaryColor }">{{ formatMoney(order.totalAmount, brand?.currencyCode) }}</span>
               </div>
             </div>
           </div>
@@ -338,16 +324,11 @@ useHead(() => ({
       <!-- Contact us: shown regardless of whether the order was found —
            most useful exactly when the lookup fails and someone needs a
            human instead. -->
-      <div v-if="brandPhone || brandSocialLinks.length" class="mt-6 pt-5 border-t border-gray-200 dark:border-gray-800 text-center">
-        <p class="text-xs text-gray-400 dark:text-gray-500 mb-2.5">{{ t('menu.getInTouch') || 'Need help? Get in touch' }}</p>
+      <div v-if="brandPhone || brandSocialLinks.length" class="mt-8 text-center">
+        <p class="mb-3 text-xs text-gray-400 dark:text-gray-500">{{ t('menu.getInTouch') || 'Need help? Get in touch' }}</p>
         <div class="flex items-center justify-center gap-2">
-          <a
-            v-if="brandPhone"
-            :href="telHref(brandPhone)"
-            class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors"
-            :aria-label="t('menu.call') || 'Call'"
-          >
-            <Icon name="lucide:phone" class="w-4 h-4" />
+          <a v-if="brandPhone" :href="telHref(brandPhone)" class="sf-social !h-10 !w-10" :aria-label="t('menu.call') || 'Call'">
+            <Icon name="lucide:phone" class="h-4 w-4" />
           </a>
           <a
             v-for="link in brandSocialLinks"
@@ -355,10 +336,10 @@ useHead(() => ({
             :href="link.link"
             target="_blank"
             rel="noopener"
-            class="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 flex items-center justify-center text-gray-600 dark:text-gray-300 transition-colors"
+            class="sf-social !h-10 !w-10"
             :aria-label="link.description || socialLabel(link.name)"
           >
-            <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
+            <Icon :name="socialIcon(link.name)" class="h-4 w-4" />
           </a>
         </div>
       </div>

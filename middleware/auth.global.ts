@@ -77,6 +77,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (/^\/to\/[^/]+\/menu(\/|$)/.test(to.path)) return;
   // Allow public, unauthenticated access to the public memberships storefront
   if (/^\/to\/[^/]+\/memberships(\/|$)/.test(to.path)) return;
+  // Allow public, unauthenticated access to the public lota Plans booking
+  // storefront and its booking-management pages (they carry their own patron
+  // sign-in prompt) -- without this an anonymous visitor was bounced to login.
+  if (/^\/to\/[^/]+\/plans(\/|$)/.test(to.path)) return;
   // Allow public, unauthenticated access to the public task tracking page
   if (/^\/to\/[^/]+\/track(\/|$)/.test(to.path)) return;
   if (process.server) return;

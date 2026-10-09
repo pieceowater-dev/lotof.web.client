@@ -16,6 +16,9 @@ import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHour
 import { isCategoryAvailableNow } from '@/utils/categoryAvailability';
 import { buildTableTag, formatTableNumber } from '@/utils/tableTag';
 import ItemCard from '@/components/menu/storefront/ItemCard.vue';
+import StorefrontTopBar from '@/components/storefront/StorefrontTopBar.vue';
+import StorefrontHero from '@/components/storefront/StorefrontHero.vue';
+import StorefrontFooter from '@/components/storefront/StorefrontFooter.vue';
 import ReviewForm from '@/components/menu/storefront/ReviewForm.vue';
 import { getCatalogBusinesses } from '@/api/hub/catalog';
 import { maskProfanity } from '@/utils/profanityFilter';
@@ -216,6 +219,9 @@ const secondaryColor = computed(() => data.value?.storefront.brandSettings?.seco
 // pastel pink...) — white text would be unreadable on top of that, so pick
 // whichever of black/white text actually has usable contrast against it.
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
+// Drives the whole storefront design system (assets/css/storefront.css).
+// Sheets teleport out of the page root, so they re-apply it on their own wrapper.
+const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value, '--brand-color': primaryColor.value }));
 
 // Back-to-Catalog: only shown when the Patron actually arrived from /catalog
 // or /stores. document.referrer isn't reliable here (a NuxtLink click is a
@@ -925,8 +931,8 @@ useHead(() => {
 <template>
   <div
     ref="scrollContainerRef"
-    class="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-950"
-    :style="{ '--brand-color': primaryColor }"
+    class="sf h-screen overflow-y-auto"
+    :style="brandVars"
   >
     <!--
       The global stylesheet sets `html, body { overflow: hidden }` and
@@ -948,121 +954,43 @@ useHead(() => {
     </div>
 
     <template v-else-if="data">
-      <!-- Platform attribution: slim, neutral bar above the brand hero —
-           kept visually quiet (small type, muted color) so the tenant's
-           own brand below remains the dominant element on the page. -->
-      <div class="bg-gray-50 dark:bg-gray-950">
-        <div class="max-w-3xl mx-auto px-4 py-1.5 flex items-center justify-between gap-2">
-          <div class="flex items-center gap-0.5 flex-shrink-0">
-            <button
-              v-for="loc in availableLocales"
-              :key="loc"
-              type="button"
-              class="px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors"
-              :class="locale === loc ? 'text-gray-700 dark:text-gray-200 bg-gray-200 dark:bg-gray-800' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
-              @click="setLocale(loc)"
-            >
-              {{ LOCALE_LABELS[loc] || loc.toUpperCase() }}
-            </button>
-          </div>
-          <a
-            :href="siteUrl"
-            target="_blank"
-            rel="noopener"
-            class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
-          >
-            <picture>
-              <source srcset="/assets/logo.webp" type="image/webp">
-              <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
-            </picture>
-            {{ t('menu.poweredBy') || 'Powered by' }} <span class="font-semibold">lota</span>
-          </a>
-        </div>
-      </div>
+      <StorefrontTopBar :powered-label="t('menu.poweredBy') || 'Powered by'" />
 
       <!-- Header: brand takes top billing — colored hero band in the
            tenant's own primary color, big elevated logo card. -->
-      <div class="relative" :style="{ backgroundColor: primaryColor }">
-        <div class="max-w-3xl mx-auto px-4 pt-7 pb-6">
-        <button
-          v-if="backHref"
-          type="button"
-          class="mb-3 inline-flex items-center gap-1.5 text-xs font-medium opacity-90 hover:opacity-100 transition-opacity"
-          :style="{ color: onPrimaryText }"
-          @click="navigateTo(backHref)"
-        >
-          <Icon name="lucide:arrow-left" class="w-3.5 h-3.5" />
-          {{ t('menu.backToCatalog') || 'Каталог' }}
-        </button>
-        <div class="flex items-start gap-4">
-          <div class="w-20 h-20 rounded-2xl bg-white shadow-lg ring-4 ring-white/30 flex-shrink-0 overflow-hidden flex items-center justify-center">
-            <img
-              v-if="data.storefront.brandSettings?.logoUrl"
-              :src="data.storefront.brandSettings.logoUrl"
-              :alt="data.storefront.brandSettings.logoAlt || data.storefront.brandSettings.name"
-              class="w-full h-full object-contain p-1.5"
-            >
-            <Icon v-else name="lucide:store" class="w-8 h-8 text-gray-300" />
-          </div>
-          <div class="min-w-0 flex-1 pt-1">
-            <h1 class="text-2xl font-bold truncate" :style="{ color: onPrimaryText }">
-              {{ data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug }}
-            </h1>
-            <p
-              v-if="data.storefront.brandSettings?.welcomeMessage"
-              class="text-sm mt-0.5 cursor-pointer"
-              :class="isDescriptionExpanded ? '' : 'line-clamp-2'"
-              :style="{ color: onPrimaryText, opacity: 0.85 }"
-              role="button"
-              tabindex="0"
-              @click="isDescriptionExpanded = !isDescriptionExpanded"
-              @keydown.enter="isDescriptionExpanded = !isDescriptionExpanded"
-            >
-              {{ maskProfanity(data.storefront.brandSettings.welcomeMessage) }}
-            </p>
-          </div>
-        </div>
+      <StorefrontHero
+        :name="data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug"
+        :description="data.storefront.brandSettings?.welcomeMessage ? maskProfanity(data.storefront.brandSettings.welcomeMessage) : null"
+        :logo-url="data.storefront.brandSettings?.logoUrl"
+        :logo-alt="data.storefront.brandSettings?.logoAlt || data.storefront.brandSettings?.name"
+        fallback-icon="lucide:store"
+        :back-label="backHref ? (t('menu.backToCatalog') || 'Каталог') : null"
+        @back="backHref && navigateTo(backHref)"
+      >
         <!-- Address + brand contacts share a row below the name, instead of
-             competing with it for width — social icons used to sit next to
-             the (already truncating) shop name and squeeze it further on
-             narrow screens. -->
-        <div v-if="activeBranch || visibleBranches[0] || brandPhone || brandSocialLinks.length" class="mt-3 flex items-center justify-between gap-2 flex-wrap">
+             competing with it for width. -->
+        <template #chips>
           <a
             v-if="activeBranch || visibleBranches[0]"
             :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
             target="_blank"
             rel="noopener"
-            class="inline-flex items-center gap-1.5 max-w-full rounded-full bg-white/15 hover:bg-white/25 px-3 py-1.5 text-xs font-medium transition-colors min-w-0"
-            :style="{ color: onPrimaryText }"
+            class="sf-pill"
           >
             <Icon name="lucide:map-pin" class="w-3.5 h-3.5 flex-shrink-0" />
             <span class="truncate">{{ (activeBranch || visibleBranches[0]).address }}</span>
             <Icon name="lucide:external-link" class="w-3 h-3 flex-shrink-0 opacity-70" />
           </a>
-          <span
-            v-if="isTableOrder"
-            class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium flex-shrink-0"
-            :style="{ color: onPrimaryText }"
-          >
+          <span v-if="isTableOrder" class="sf-pill flex-shrink-0">
             <Icon name="lucide:utensils" class="w-3.5 h-3.5 flex-shrink-0" />
             {{ t('menu.tableNumber', { number: formatTableNumber(tableParam) }) || `Table ${formatTableNumber(tableParam)}` }}
           </span>
-          <span
-            v-if="activeBranch && activeBranchHours"
-            class="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1.5 text-xs font-medium flex-shrink-0"
-            :style="{ color: onPrimaryText }"
-          >
+          <span v-if="activeBranch && activeBranchHours" class="sf-pill flex-shrink-0">
             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" :class="isBranchOpenNow ? 'bg-emerald-400' : 'bg-red-400'" />
             {{ isBranchOpenNow ? (t('menu.openNow') || 'Open now') : (t('menu.closedNow') || 'Closed now') }}
           </span>
           <div v-if="brandPhone || brandSocialLinks.length" class="flex items-center gap-2 flex-shrink-0 ml-auto">
-            <a
-              v-if="brandPhone"
-              :href="telHref(brandPhone)"
-              class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
-              :style="{ color: onPrimaryText }"
-              :aria-label="t('menu.call') || 'Call'"
-            >
+            <a v-if="brandPhone" :href="telHref(brandPhone)" class="sf-iconbtn" :aria-label="t('menu.call') || 'Call'">
               <Icon name="lucide:phone" class="w-3.5 h-3.5" />
             </a>
             <a
@@ -1071,22 +999,20 @@ useHead(() => {
               :href="link.link"
               target="_blank"
               rel="noopener"
-              class="w-8 h-8 rounded-full bg-white/15 hover:bg-white/25 flex items-center justify-center transition-colors"
-              :style="{ color: onPrimaryText }"
+              class="sf-iconbtn"
               :aria-label="link.description || socialLabel(link.name)"
             >
               <Icon :name="socialIcon(link.name)" class="w-3.5 h-3.5" />
             </a>
           </div>
-        </div>
-        </div>
-      </div>
+        </template>
+      </StorefrontHero>
 
       <!-- Closed-now notice: orders are still accepted (see the ASAP/Schedule
            toggle at checkout), just heads-up that nobody's there to start on
            it until the branch reopens. -->
-      <div v-if="activeBranch && activeBranchHours && !isBranchOpenNow" class="max-w-3xl mx-auto px-4 pt-4">
-        <div class="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 px-4 py-3 flex items-start gap-2.5">
+      <div v-if="activeBranch && activeBranchHours && !isBranchOpenNow" class="max-w-3xl mx-auto px-4 pt-5">
+        <div class="rounded-2xl bg-amber-50 dark:bg-amber-500/10 px-4 py-3 flex items-start gap-2.5 shadow-[inset_0_0_0_1px_rgba(245,158,11,0.25)]">
           <Icon name="lucide:moon" class="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
           <div class="text-sm text-amber-800 dark:text-amber-300">
             <span class="font-medium">{{ t('menu.closedNowNotice') || "We're closed right now." }}</span>
@@ -1097,12 +1023,12 @@ useHead(() => {
       </div>
 
       <!-- Promo banners -->
-      <div v-if="data.storefront.promoBanners.length" class="max-w-3xl mx-auto px-4 pt-4 flex gap-3 overflow-x-auto">
+      <div v-if="data.storefront.promoBanners.length" class="max-w-3xl mx-auto px-4 pt-5 flex gap-3 overflow-x-auto sf-no-scrollbar">
         <button
           v-for="b in data.storefront.promoBanners"
           :key="b.id"
           type="button"
-          class="flex-shrink-0 w-64 h-28 rounded-xl overflow-hidden relative block text-left shadow-md"
+          class="flex-shrink-0 w-64 h-28 rounded-[1.6rem] overflow-hidden relative block text-left shadow-md transition-transform duration-500 hover:-translate-y-0.5 active:scale-[0.98]"
           @click="openBanner(b)"
         >
           <img :src="b.imageUrl" :alt="maskProfanity(b.imageAlt || b.title)" class="w-full h-full object-cover">
@@ -1114,14 +1040,14 @@ useHead(() => {
 
       <!-- Branch picker -->
       <div v-if="needsBranchPicker" class="max-w-3xl mx-auto px-4 py-6">
-        <h2 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+        <h2 class="text-xl font-extrabold tracking-tight mb-4 text-gray-900 dark:text-white">
           {{ t('menu.chooseBranch') || 'Choose a branch' }}
         </h2>
         <div class="grid gap-2">
           <button
             v-for="b in visibleBranches"
             :key="b.id"
-            class="text-left rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 shadow-sm hover:shadow-md hover:border-primary-400 transition-all"
+            class="sf-option text-left p-4"
             @click="selectedBranchId = b.id"
           >
             <div class="font-medium text-gray-900 dark:text-white">{{ b.name }}</div>
@@ -1132,11 +1058,11 @@ useHead(() => {
 
       <!-- Catalog: search + sticky anchor nav + continuous scroll sections -->
       <template v-else>
-        <div class="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-950/95 backdrop-blur border-b border-gray-200 dark:border-gray-800 shadow-sm">
+        <div class="sticky top-0 z-20 bg-[#f6f6f7]/90 dark:bg-[#141414]/90 backdrop-blur-xl">
           <div v-if="activeBranch && visibleBranches.length > 1" class="max-w-3xl mx-auto px-4 pt-2 flex justify-start">
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-full px-3 py-1"
+              class="sf-chip !px-3 !py-1 !text-xs"
               @click="selectedBranchId = ''"
             >
               <Icon name="lucide:map-pin" class="w-3 h-3" />
@@ -1145,26 +1071,25 @@ useHead(() => {
             </button>
           </div>
           <div class="max-w-3xl mx-auto px-4 pt-2.5 pb-2 flex items-center gap-2">
-            <div class="relative flex-1 min-w-0">
-              <Icon name="lucide:search" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <label class="sf-search flex-1 min-w-0">
+              <Icon name="lucide:search" class="w-4 h-4 text-gray-400 flex-shrink-0" />
               <input
                 v-model="searchQuery"
                 type="search"
                 :placeholder="t('menu.searchMenu') || 'Search menu'"
                 :aria-label="t('menu.searchMenu') || 'Search menu'"
-                class="w-full pl-9 pr-8 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
                 @focus="searchFocused = true"
                 @blur="searchFocused = false"
               >
               <button
                 v-if="searchQuery"
                 type="button"
-                class="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
                 @click="searchQuery = ''"
               >
                 <Icon name="lucide:x" class="w-4 h-4" />
               </button>
-            </div>
+            </label>
             <div
               class="flex items-center gap-2 overflow-hidden transition-[max-width,opacity] duration-300 ease-in-out"
               :class="searchFocused ? 'max-w-0 opacity-0' : 'max-w-[220px] opacity-100'"
@@ -1172,7 +1097,7 @@ useHead(() => {
               <button
                 v-if="!showcaseMode"
                 type="button"
-                class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                class="sf-chip !h-10 !px-3.5 !text-xs"
                 @click="openMyOrderSheet"
               >
                 <Icon name="lucide:receipt-text" class="w-4 h-4" />
@@ -1181,7 +1106,7 @@ useHead(() => {
               <button
                 v-if="!showcaseMode && !patronLoggedIn"
                 type="button"
-                class="flex-shrink-0 h-9 px-3 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm flex items-center gap-1.5 text-xs font-medium text-gray-700 dark:text-gray-200"
+                class="sf-chip !h-10 !px-3.5 !text-xs"
                 @click="patronLogin()"
               >
                 <Icon name="lucide:log-in" class="w-4 h-4" />
@@ -1190,14 +1115,13 @@ useHead(() => {
             </div>
           </div>
 
-          <div v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto">
+          <div v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto sf-no-scrollbar">
             <button
               v-for="c in visibleCategories"
               :key="c.id"
               :ref="(el) => setNavRef(c.id, el)"
-              class="flex-shrink-0 px-3 py-1.5 rounded-full text-sm font-medium transition-all shadow-sm"
-              :class="activeCategoryId !== c.id ? 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800' : 'shadow-md'"
-              :style="activeCategoryId === c.id ? { backgroundColor: primaryColor, color: onPrimaryText } : {}"
+              class="sf-chip"
+              :class="activeCategoryId === c.id ? 'sf-chip--on' : ''"
               @click="scrollToCategory(c.id)"
             >
               {{ maskProfanity(c.name) }}
@@ -1207,7 +1131,7 @@ useHead(() => {
 
         <!-- Search results -->
         <div v-if="isSearching" class="max-w-3xl mx-auto px-4 py-4 pb-2">
-          <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">
+          <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-4">
             {{ t('menu.searchResults') || 'Search results' }}
           </h2>
           <div v-if="searchResults.length" class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
@@ -1241,9 +1165,9 @@ useHead(() => {
             :key="c.id"
             :ref="(el) => setCategoryRef(c.id, el)"
             :data-category-id="c.id"
-            class="scroll-mt-28 border-t border-gray-200 dark:border-gray-800 pt-6 first:border-t-0 first:pt-0"
+            class="scroll-mt-28 pt-2"
           >
-            <h2 class="text-base font-semibold text-gray-900 dark:text-white mb-3">{{ maskProfanity(c.name) }}</h2>
+            <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white mb-4">{{ maskProfanity(c.name) }}</h2>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
               <ItemCard
                 v-for="item in visibleItemsByCategory[c.id] || []"
@@ -1271,7 +1195,7 @@ useHead(() => {
               :key="child.id"
               class="mt-6"
             >
-              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{{ maskProfanity(child.name) }}</h3>
+              <h3 class="sf-label mb-3">{{ maskProfanity(child.name) }}</h3>
               <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-6">
                 <ItemCard
                   v-for="item in visibleItemsByCategory[child.id] || []"
@@ -1299,13 +1223,12 @@ useHead(() => {
         <!-- Floating cart bar -->
         <div
           v-if="!showcaseMode && cartCount > 0"
-          class="fixed bottom-0 left-0 right-0 z-30 pt-8 pb-4 px-4 bg-gradient-to-t from-gray-50 dark:from-gray-950 via-gray-50/95 dark:via-gray-950/95 to-transparent pointer-events-none"
+          class="fixed bottom-0 left-0 right-0 z-30 pt-10 pb-4 px-4 bg-gradient-to-t from-[#f6f6f7] dark:from-[#141414] via-[#f6f6f7]/90 dark:via-[#141414]/90 to-transparent pointer-events-none"
         >
           <div class="max-w-3xl mx-auto pointer-events-auto">
             <button
               type="button"
-              class="w-full flex items-center justify-between gap-3 rounded-2xl shadow-lg px-4 py-3.5 transition-transform active:scale-[0.98]"
-              :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+              class="sf-btn w-full !justify-between !rounded-[1.5rem] !px-5 !py-4 !text-sm"
               @click="isCartOpen = true"
             >
               <span class="flex items-center gap-2 font-semibold text-sm">
@@ -1325,12 +1248,12 @@ useHead(() => {
       <div v-if="!showcaseMode" class="max-w-3xl mx-auto px-4 pt-8 flex flex-col sm:flex-row gap-3">
         <button
           type="button"
-          class="flex-1 flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          class="sf-card sf-card--hover flex-1 flex items-center gap-3 px-4 py-4 text-left"
           @click="openMyOrderSheet"
         >
           <span
-            class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-            :style="{ backgroundColor: `${primaryColor}`, color: secondaryColor }"
+            class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }"
           >
             <Icon name="lucide:receipt-text" class="w-5 h-5" />
           </span>
@@ -1343,12 +1266,12 @@ useHead(() => {
         <button
           v-if="!patronLoggedIn"
           type="button"
-          class="flex-1 flex items-center gap-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm px-4 py-4 text-left hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+          class="sf-card sf-card--hover flex-1 flex items-center gap-3 px-4 py-4 text-left"
           @click="patronLogin()"
         >
           <span
-            class="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-            :style="{ backgroundColor: `${primaryColor}`, color: secondaryColor }"
+            class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }"
           >
             <Icon name="lucide:log-in" class="w-5 h-5" />
           </span>
@@ -1369,74 +1292,14 @@ useHead(() => {
       </div>
 
       <!-- Footer: company/contact info instead of a bare spacer. -->
-      <footer class="mt-10 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <div class="max-w-3xl mx-auto px-4 py-6 space-y-3">
-          <div class="font-semibold text-gray-900 dark:text-white">{{ data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug }}</div>
-          <div v-if="activeBranch || visibleBranches[0]" class="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <Icon name="lucide:map-pin" class="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>{{ (activeBranch || visibleBranches[0]).address }}</span>
-          </div>
-          <div class="flex flex-wrap gap-2 pt-1">
-            <a
-              v-if="activeBranch || visibleBranches[0]"
-              :href="twoGisSearchHref((activeBranch || visibleBranches[0]).address)"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1.5 transition-colors"
-            >
-              <Icon name="lucide:map" class="w-3.5 h-3.5" />
-              {{ t('menu.openIn2gis') || 'Open in 2GIS' }}
-            </a>
-            <a
-              v-if="brandPhone"
-              :href="telHref(brandPhone)"
-              class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 px-3 py-1.5 transition-colors"
-            >
-              <Icon name="lucide:phone" class="w-3.5 h-3.5" />
-              {{ formatDisplayPhoneUniversal(brandPhone) }}
-            </a>
-          </div>
-          <div v-if="brandSocialLinks.length" class="flex items-center gap-2 pt-1">
-            <a
-              v-for="link in brandSocialLinks"
-              :key="link.link"
-              :href="link.link"
-              target="_blank"
-              rel="noopener"
-              class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
-              :aria-label="link.description || socialLabel(link.name)"
-            >
-              <Icon :name="socialIcon(link.name)" class="w-4 h-4" />
-            </a>
-          </div>
-          <div class="flex items-center justify-between pt-2">
-            <a
-              :href="siteUrl"
-              target="_blank"
-              rel="noopener"
-              class="inline-flex items-center gap-1 text-[11px] text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-            >
-              <picture>
-              <source srcset="/assets/logo.webp" type="image/webp">
-              <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
-            </picture>
-              {{ t('menu.poweredByFooter') || 'Powered by lota' }}
-            </a>
-            <div class="flex items-center gap-0.5">
-              <button
-                v-for="loc in availableLocales"
-                :key="loc"
-                type="button"
-                class="px-1.5 py-0.5 rounded text-[11px] font-medium transition-colors"
-                :class="locale === loc ? 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800' : 'text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300'"
-                @click="setLocale(loc)"
-              >
-                {{ LOCALE_LABELS[loc] || loc.toUpperCase() }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <StorefrontFooter
+        :name="data.storefront.brandSettings?.name ? maskProfanity(data.storefront.brandSettings.name) : nsSlug"
+        :address="(activeBranch || visibleBranches[0])?.address"
+        :phone="brandPhone"
+        :socials="brandSocialLinks"
+        :map-label="t('menu.openIn2gis') || 'Open in 2GIS'"
+        :powered-label="t('menu.poweredByFooter') || 'Powered by lota'"
+      />
       <!-- Clearance so the footer never sits under the fixed cart bar — only
            actually needed while that bar is showing, otherwise it was just
            dead empty space below the footer on every page load. -->
@@ -1447,24 +1310,24 @@ useHead(() => {
     <USlideover
       v-model="isItemSheetOpen"
       side="bottom"
-      :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }"
+      :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-[2rem] sm:rounded-[2rem] sm:mb-6', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10' }"
       @update:model-value="(v: boolean) => { if (!v) closeItemDetail(); }"
     >
-      <UCard v-if="selectedItem" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+      <UCard v-if="selectedItem" :ui="{ ring: '', shadow: '', background: 'bg-transparent dark:bg-transparent', divide: 'divide-y divide-gray-100 dark:divide-white/10', body: { base: 'flex-1 overflow-y-auto' } }" :style="brandVars" class="sf-fields flex flex-col h-full">
         <template #header>
           <div class="flex items-center gap-3">
             <div class="min-w-0 flex-1">
-              <p class="text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              <p class="sf-label">
                 {{ t('menu.itemDetails') || 'Menu item' }}
               </p>
-              <h2 class="text-base font-semibold text-gray-900 dark:text-white truncate">{{ maskProfanity(selectedItem.name) }}</h2>
+              <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white truncate">{{ maskProfanity(selectedItem.name) }}</h2>
             </div>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" class="flex-shrink-0" @click="closeItemDetail" />
+            <button type="button" class="sf-sheet-close flex-shrink-0" aria-label="Close" @click="closeItemDetail"><Icon name="lucide:x" class="w-4 h-4" /></button>
           </div>
         </template>
 
         <div class="space-y-4">
-          <div class="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center" style="aspect-ratio: 16 / 9">
+          <div class="w-full rounded-[1.5rem] overflow-hidden bg-gray-100 dark:bg-white/10 flex items-center justify-center" style="aspect-ratio: 16 / 9">
             <img
               v-if="selectedItem.imageUrl"
               :src="selectedItem.imageUrl"
@@ -1473,7 +1336,7 @@ useHead(() => {
             >
             <Icon v-else name="lucide:package" class="w-8 h-8 text-gray-300 dark:text-gray-700" />
           </div>
-          <div class="text-xl font-bold" :style="{ color: secondaryColor }">
+          <div class="text-2xl font-extrabold tracking-tight" :style="{ color: secondaryColor }">
             {{ formatMoney(selectedItem.price, data?.storefront.brandSettings?.currencyCode) }}
           </div>
           <div v-if="selectedItem.badgeIds.length" class="flex flex-wrap gap-1.5">
@@ -1511,10 +1374,8 @@ useHead(() => {
               <label
                 v-for="opt in modifierOptionsByGroup[group.id]"
                 :key="opt.id"
-                class="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-colors"
-                :class="(selectedModifiers[group.id] || []).includes(opt.id)
-                  ? 'border-primary-400 bg-primary-50 dark:bg-primary-950/30'
-                  : 'border-gray-200 dark:border-gray-800'"
+                class="sf-option flex items-center justify-between gap-2 px-3.5 py-2.5 cursor-pointer"
+                :class="(selectedModifiers[group.id] || []).includes(opt.id) ? 'sf-option--on' : ''"
                 tabindex="0"
                 @click="toggleModifierOption(group, opt.id)"
                 @keydown.enter="toggleModifierOption(group, opt.id)"
@@ -1524,7 +1385,7 @@ useHead(() => {
                     class="w-4 h-4 flex-shrink-0 flex items-center justify-center border-2"
                     :class="[
                       group.type === 'multi' ? 'rounded-[4px]' : 'rounded-full',
-                      (selectedModifiers[group.id] || []).includes(opt.id) ? 'border-primary-500' : 'border-gray-300 dark:border-gray-700',
+                      (selectedModifiers[group.id] || []).includes(opt.id) ? 'border-transparent' : 'border-gray-300 dark:border-gray-600',
                     ]"
                     :style="(selectedModifiers[group.id] || []).includes(opt.id) ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}"
                   >
@@ -1544,11 +1405,10 @@ useHead(() => {
               {{ t('menu.modifierSelectionRequired') || 'Please complete the required options above.' }}
             </p>
             <div class="flex items-center gap-3">
-              <div class="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-full p-1 flex-shrink-0">
+              <div class="sf-qty flex-shrink-0">
                 <button
                   type="button"
-                  class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform disabled:opacity-40"
-                  :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                  class="sf-step-btn"
                   :disabled="sheetQuantity <= 1"
                   @click="sheetQuantity = Math.max(1, sheetQuantity - 1)"
                 >
@@ -1557,23 +1417,20 @@ useHead(() => {
                 <span class="w-6 text-center text-sm font-bold tabular-nums">{{ sheetQuantity }}</span>
                 <button
                   type="button"
-                  class="w-9 h-9 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
-                  :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                  class="sf-step-btn"
                   @click="sheetQuantity++"
                 >
                   <Icon name="lucide:plus" class="w-4 h-4" />
                 </button>
               </div>
-              <UButton
-                block
+              <button
+                type="button"
                 :disabled="!isModifierSelectionValid"
-                :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-                :ui="{ rounded: 'rounded-full' }"
-                class="border-0 flex-1 h-9 flex items-center justify-center"
+                class="sf-btn flex-1 !py-2.5 !text-sm"
                 @click="addToCartQty(selectedItem, sheetQuantity, selectedModifierLines); closeItemDetail()"
               >
                 {{ t('menu.addToCart') || 'Add to cart' }} · {{ formatMoney((selectedItem.price + modifierUnitPriceTotal) * sheetQuantity, data?.storefront.brandSettings?.currencyCode) }}
-              </UButton>
+              </button>
             </div>
           </div>
         </template>
@@ -1582,13 +1439,13 @@ useHead(() => {
 
     <!-- Banner sheet: full-width from the bottom, explicit "go to link" action -->
     <!-- "My order" lookup sheet -->
-    <USlideover v-model="isMyOrderSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+    <USlideover v-model="isMyOrderSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-[2rem] sm:rounded-[2rem] sm:mb-6', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10' }">
+      <UCard :ui="{ ring: '', shadow: '', background: 'bg-transparent dark:bg-transparent', divide: 'divide-y divide-gray-100 dark:divide-white/10', body: { base: 'flex-1 overflow-y-auto' } }" :style="brandVars" class="sf-fields flex flex-col h-full">
         <template #header>
-          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="sf-handle" />
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ t('menu.myOrder') || 'My order' }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isMyOrderSheetOpen = false" />
+            <h3 class="text-xl font-extrabold tracking-tight">{{ t('menu.myOrder') || 'My order' }}</h3>
+            <button type="button" class="sf-sheet-close flex-shrink-0" aria-label="Close" @click="isMyOrderSheetOpen = false"><Icon name="lucide:x" class="w-4 h-4" /></button>
           </div>
         </template>
         <div class="space-y-4">
@@ -1635,7 +1492,7 @@ useHead(() => {
                   :href="orderStatusHref(smartOrderNumber(o), o.phone)"
                   target="_blank"
                   rel="noopener"
-                  class="flex items-center justify-between text-xs rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 px-3 py-2 hover:border-gray-300 dark:hover:border-gray-700 transition-colors"
+                  class="sf-option flex items-center justify-between text-xs px-3.5 py-2.5"
                 >
                   <span class="font-mono font-medium text-gray-900 dark:text-white">{{ smartOrderNumber(o) }}</span>
                   <span class="text-gray-400">{{ o.status }}</span>
@@ -1646,56 +1503,52 @@ useHead(() => {
           </template>
         </div>
         <template #footer>
-          <UButton
-            block
-            :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-            class="border-0"
-            :loading="myOrderLookupLoading"
-            @click="submitMyOrderLookup"
-          >
+          <button type="button" class="sf-btn sf-btn--block" :disabled="myOrderLookupLoading" @click="submitMyOrderLookup">
+            <Icon v-if="myOrderLookupLoading" name="lucide:loader-2" class="w-4 h-4 animate-spin" />
             {{ t('menu.myOrderSubmit') || 'Find my order' }}
-          </UButton>
+          </button>
         </template>
       </UCard>
     </USlideover>
 
-    <USlideover v-model="isBannerSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
-      <UCard v-if="selectedBanner" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+    <USlideover v-model="isBannerSheetOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-[2rem] sm:rounded-[2rem] sm:mb-6', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10' }">
+      <UCard v-if="selectedBanner" :ui="{ ring: '', shadow: '', background: 'bg-transparent dark:bg-transparent', divide: 'divide-y divide-gray-100 dark:divide-white/10', body: { base: 'flex-1 overflow-y-auto' } }" :style="brandVars" class="sf-fields flex flex-col h-full">
         <template #header>
-          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="sf-handle" />
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ maskProfanity(selectedBanner.title) }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isBannerSheetOpen = false" />
+            <h3 class="text-xl font-extrabold tracking-tight">{{ maskProfanity(selectedBanner.title) }}</h3>
+            <button type="button" class="sf-sheet-close flex-shrink-0" aria-label="Close" @click="isBannerSheetOpen = false"><Icon name="lucide:x" class="w-4 h-4" /></button>
           </div>
         </template>
         <div class="space-y-4">
-          <img :src="selectedBanner.imageUrl" :alt="maskProfanity(selectedBanner.imageAlt || selectedBanner.title)" class="w-full object-cover rounded-xl" style="aspect-ratio: 16 / 9">
+          <img :src="selectedBanner.imageUrl" :alt="maskProfanity(selectedBanner.imageAlt || selectedBanner.title)" class="w-full object-cover rounded-[1.5rem]" style="aspect-ratio: 16 / 9">
           <p v-if="selectedBanner.description" class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             {{ maskProfanity(selectedBanner.description) }}
           </p>
         </div>
         <template v-if="selectedBanner.targetUrl" #footer>
-          <UButton block :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" icon="lucide:arrow-right" @click="followBannerLink">
+          <button type="button" class="sf-btn sf-btn--block" @click="followBannerLink">
             {{ t('menu.viewMore') || 'View more' }}
-          </UButton>
+            <Icon name="lucide:arrow-right" class="w-4 h-4" />
+          </button>
         </template>
       </UCard>
     </USlideover>
 
     <!-- Cart sheet -->
-    <USlideover v-model="isCartOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+    <USlideover v-model="isCartOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[85vh]', rounded: 'rounded-t-[2rem] sm:rounded-[2rem] sm:mb-6', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10' }">
+      <UCard :ui="{ ring: '', shadow: '', background: 'bg-transparent dark:bg-transparent', divide: 'divide-y divide-gray-100 dark:divide-white/10', body: { base: 'flex-1 overflow-y-auto' } }" :style="brandVars" class="sf-fields flex flex-col h-full">
         <template #header>
-          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="sf-handle" />
           <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold">{{ t('menu.cart') || 'Cart' }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isCartOpen = false" />
+            <h3 class="text-xl font-extrabold tracking-tight">{{ t('menu.cart') || 'Cart' }}</h3>
+            <button type="button" class="sf-sheet-close flex-shrink-0" aria-label="Close" @click="isCartOpen = false"><Icon name="lucide:x" class="w-4 h-4" /></button>
           </div>
         </template>
         <div v-if="cart.length" class="space-y-4">
           <div v-for="line in cart" :key="`${line.menuItemId}::${modifiersKey(line.modifiers)}`" class="flex items-center gap-3">
-            <img v-if="line.imageUrl" :src="line.imageUrl" alt="" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
-            <div v-else class="w-14 h-14 rounded-xl bg-gray-100 dark:bg-gray-800 flex-shrink-0 flex items-center justify-center">
+            <img v-if="line.imageUrl" :src="line.imageUrl" alt="" class="w-14 h-14 rounded-2xl object-cover flex-shrink-0">
+            <div v-else class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/10 flex-shrink-0 flex items-center justify-center">
               <Icon name="lucide:package" class="w-5 h-5 text-gray-300 dark:text-gray-700" />
             </div>
             <div class="min-w-0 flex-1">
@@ -1705,11 +1558,10 @@ useHead(() => {
               </div>
               <div class="text-xs" :style="{ color: secondaryColor }">{{ formatMoney(lineUnitPrice(line), data?.storefront.brandSettings?.currencyCode) }}</div>
             </div>
-            <div class="flex items-center gap-1 bg-gray-50 dark:bg-gray-800 rounded-full p-1 flex-shrink-0">
+            <div class="sf-qty flex-shrink-0">
               <button
                 type="button"
-                class="w-7 h-7 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
-                :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                class="sf-step-btn !h-7 !w-7"
                 @click="changeQuantity(line, -1)"
               >
                 <Icon name="lucide:minus" class="w-3.5 h-3.5" />
@@ -1717,8 +1569,7 @@ useHead(() => {
               <span class="w-6 text-center text-sm font-semibold tabular-nums">{{ line.quantity }}</span>
               <button
                 type="button"
-                class="w-7 h-7 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform"
-                :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
+                class="sf-step-btn !h-7 !w-7"
                 @click="changeQuantity(line, 1)"
               >
                 <Icon name="lucide:plus" class="w-3.5 h-3.5" />
@@ -1730,30 +1581,31 @@ useHead(() => {
           <Icon name="lucide:shopping-bag" class="w-9 h-9 text-gray-300 dark:text-gray-700 mx-auto mb-3" />
           <p class="text-gray-700 dark:text-gray-300 text-sm font-medium">{{ t('menu.emptyCartTitle') || 'Your cart is empty' }}</p>
           <p class="text-gray-400 dark:text-gray-500 text-xs mt-1">{{ t('menu.emptyCartDesc') || 'Add something tasty from the menu.' }}</p>
-          <UButton size="sm" :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="mt-4 border-0" @click="isCartOpen = false">
+          <button type="button" class="sf-btn mt-4 !py-2 !text-sm" @click="isCartOpen = false">
             {{ t('menu.browseMenu') || 'Browse menu' }}
-          </UButton>
+          </button>
         </div>
         <template v-if="cart.length" #footer>
           <div class="flex items-center justify-between">
             <span class="font-semibold" :style="{ color: secondaryColor }">{{ formatMoney(cartTotal, data?.storefront.brandSettings?.currencyCode) }}</span>
-            <UButton :style="{ backgroundColor: primaryColor, color: onPrimaryText }" class="border-0" @click="openCheckout">
+            <button type="button" class="sf-btn" @click="openCheckout">
               {{ t('menu.checkout') || 'Checkout' }}
-            </UButton>
+              <Icon name="lucide:arrow-right" class="w-4 h-4" />
+            </button>
           </div>
         </template>
       </UCard>
     </USlideover>
 
     <!-- Checkout sheet -->
-    <USlideover v-model="isCheckoutOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-2xl sm:rounded-2xl sm:mb-6' }" @update:model-value="(v: boolean) => { if (!v) closeCheckout(); }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+    <USlideover v-model="isCheckoutOpen" side="bottom" :ui="{ wrapper: 'sm:justify-center', base: 'sm:max-w-lg sm:mx-auto', height: 'max-h-[92vh]', rounded: 'rounded-t-[2rem] sm:rounded-[2rem] sm:mb-6', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10' }" @update:model-value="(v: boolean) => { if (!v) closeCheckout(); }">
+      <UCard :ui="{ ring: '', shadow: '', background: 'bg-transparent dark:bg-transparent', divide: 'divide-y divide-gray-100 dark:divide-white/10', body: { base: 'flex-1 overflow-y-auto' } }" :style="brandVars" class="sf-fields flex flex-col h-full">
         <template #header>
-          <div class="mx-auto w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-700 mb-2" />
+          <div class="sf-handle" />
           <div class="flex items-center justify-between">
-            <h3 v-if="orderResult" class="text-lg font-semibold">{{ t('menu.orderNumber') || 'Order' }} {{ smartOrderNumber(orderResult) }}</h3>
-            <h3 v-else class="text-lg font-semibold">{{ t('menu.yourDetails') || 'Your details' }}</h3>
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="closeCheckout" />
+            <h3 v-if="orderResult" class="text-xl font-extrabold tracking-tight">{{ t('menu.orderNumber') || 'Order' }} {{ smartOrderNumber(orderResult) }}</h3>
+            <h3 v-else class="text-xl font-extrabold tracking-tight">{{ t('menu.yourDetails') || 'Your details' }}</h3>
+            <button type="button" class="sf-sheet-close flex-shrink-0" aria-label="Close" @click="closeCheckout"><Icon name="lucide:x" class="w-4 h-4" /></button>
           </div>
         </template>
 
@@ -1770,8 +1622,7 @@ useHead(() => {
             :href="orderStatusHref(smartOrderNumber(orderResult), checkoutForm.phone)"
             target="_blank"
             rel="noopener"
-            class="mt-6 flex items-center justify-center gap-2 rounded-2xl px-4 py-3.5 text-sm font-bold border-2 shadow-lg active:scale-[0.98] transition-transform"
-            :style="{ backgroundColor: primaryColor, color: secondaryColor, borderColor: secondaryColor }"
+            class="sf-btn sf-btn--block mt-6 !text-sm"
           >
             <Icon name="lucide:receipt-text" class="w-4 h-4" />
             {{ t('menu.viewOrder') || 'View order' }}
@@ -1783,7 +1634,7 @@ useHead(() => {
         </div>
 
         <div v-else class="space-y-4">
-          <div class="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
+          <div class="sf-card !shadow-none p-4 bg-gray-50 dark:bg-white/5">
             <div class="flex items-center justify-between mb-2">
               <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('menu.orderSummary') || 'Order summary' }}
@@ -1818,7 +1669,7 @@ useHead(() => {
                primaryColor and using onPrimaryText (black/white, whichever
                contrasts with it) guarantees readability for any brand
                color. -->
-          <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs" :style="{ backgroundColor: primaryColor, color: onPrimaryText }">
+          <div v-if="!patronLoggedIn" class="flex items-center gap-2 rounded-2xl px-3.5 py-3 text-xs" :style="{ backgroundColor: primaryColor, color: onPrimaryText }">
             <Icon name="lucide:sparkles" class="w-4 h-4 flex-shrink-0" :style="{ color: onPrimaryText }" />
             <span class="flex-1 opacity-90">{{ t('menu.patronCheckoutHint') || 'Skip retyping your phone' }}</span>
             <button type="button" class="font-semibold flex-shrink-0 underline" :style="{ color: onPrimaryText }" @click="patronLogin()">
@@ -1842,7 +1693,7 @@ useHead(() => {
             </p>
           </UFormGroup>
 
-          <div v-if="myPastOrders.length" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 space-y-2">
+          <div v-if="myPastOrders.length" class="sf-option p-3.5 space-y-2">
             <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
               {{ t('menu.previousOrders') || 'Previous orders' }}
             </span>
@@ -1872,29 +1723,19 @@ useHead(() => {
           <UFormGroup :label="t('menu.yourName') || 'Your name'">
             <UInput v-model="checkoutForm.customerName" autocomplete="name" size="lg" />
           </UFormGroup>
-          <div v-if="isTableOrder" class="rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2.5 flex items-center gap-2 text-sm">
+          <div v-if="isTableOrder" class="sf-tint rounded-2xl px-3.5 py-3 flex items-center gap-2 text-sm">
             <Icon name="lucide:utensils" class="w-4 h-4 flex-shrink-0" :style="{ color: secondaryColor }" />
             <span class="text-gray-700 dark:text-gray-300">
               {{ t('menu.orderingFromTable', { number: formatTableNumber(tableParam) }) || `Ordering from Table ${formatTableNumber(tableParam)}` }}
             </span>
           </div>
           <div v-else class="flex gap-2">
-            <UButton
-              size="sm"
-              :variant="checkoutForm.type === 'delivery' ? 'solid' : 'soft'"
-              color="gray"
-              @click="checkoutForm.type = 'delivery'"
-            >
+            <button type="button" class="sf-chip" :class="checkoutForm.type === 'delivery' ? 'sf-chip--on' : ''" @click="checkoutForm.type = 'delivery'">
               {{ t('menu.delivery') || 'Delivery' }}
-            </UButton>
-            <UButton
-              size="sm"
-              :variant="checkoutForm.type === 'pickup' ? 'solid' : 'soft'"
-              color="gray"
-              @click="checkoutForm.type = 'pickup'"
-            >
+            </button>
+            <button type="button" class="sf-chip" :class="checkoutForm.type === 'pickup' ? 'sf-chip--on' : ''" @click="checkoutForm.type = 'pickup'">
               {{ t('menu.pickup') || 'Pickup' }}
-            </UButton>
+            </button>
           </div>
           <template v-if="checkoutForm.type === 'delivery'">
             <UFormGroup :label="t('menu.address') || 'Delivery address'" required>
@@ -1913,12 +1754,12 @@ useHead(() => {
           </UFormGroup>
           <UFormGroup v-if="!isTableOrder" :label="t('menu.when') || 'When'">
             <div class="flex gap-2">
-              <UButton size="sm" :variant="!checkoutForm.scheduled ? 'solid' : 'soft'" color="gray" @click="checkoutForm.scheduled = false">
+              <button type="button" class="sf-chip" :class="!checkoutForm.scheduled ? 'sf-chip--on' : ''" @click="checkoutForm.scheduled = false">
                 {{ t('menu.asap') || 'As soon as possible' }}
-              </UButton>
-              <UButton size="sm" :variant="checkoutForm.scheduled ? 'solid' : 'soft'" color="gray" @click="checkoutForm.scheduled = true">
+              </button>
+              <button type="button" class="sf-chip" :class="checkoutForm.scheduled ? 'sf-chip--on' : ''" @click="checkoutForm.scheduled = true">
                 {{ t('menu.scheduleForLater') || 'Schedule for later' }}
-              </UButton>
+              </button>
             </div>
             <div v-if="checkoutForm.scheduled" class="mt-2 space-y-2">
               <UInput v-model="checkoutForm.scheduledDate" type="date" :min="todayDateInputValue" size="lg" />
@@ -1928,11 +1769,8 @@ useHead(() => {
                     v-for="slot in timeSlots"
                     :key="slot.value"
                     type="button"
-                    class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors"
-                    :class="checkoutForm.scheduledTime === slot.value
-                      ? 'text-white border-transparent'
-                      : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'"
-                    :style="checkoutForm.scheduledTime === slot.value ? { backgroundColor: primaryColor } : {}"
+                    class="sf-chip !px-3 !py-1.5 !text-xs"
+                    :class="checkoutForm.scheduledTime === slot.value ? 'sf-chip--on' : ''"
                     @click="checkoutForm.scheduledTime = slot.value"
                   >
                     {{ slot.label }}
@@ -1954,22 +1792,16 @@ useHead(() => {
 
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton v-if="!orderResult" color="gray" variant="ghost" @click="closeCheckout">
+            <button v-if="!orderResult" type="button" class="rounded-full px-4 py-2 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:hover:bg-white/10" @click="closeCheckout">
               {{ t('app.cancel') }}
-            </UButton>
-            <UButton
-              v-if="!orderResult"
-              :style="{ backgroundColor: primaryColor, color: onPrimaryText }"
-              class="border-0"
-              :loading="submitting"
-              :disabled="!isCheckoutValid || submitting"
-              @click="submitOrder"
-            >
+            </button>
+            <button v-if="!orderResult" type="button" class="sf-btn" :disabled="!isCheckoutValid || submitting" @click="submitOrder">
+              <Icon v-if="submitting" name="lucide:loader-2" class="w-4 h-4 animate-spin" />
               {{ t('menu.placeOrder') || 'Place order' }}
-            </UButton>
-            <UButton v-else color="gray" variant="ghost" @click="closeCheckout">
+            </button>
+            <button v-else type="button" class="sf-btn sf-btn--soft" @click="closeCheckout">
               {{ t('menu.orderConfirmClose') || 'Great!' }}
-            </UButton>
+            </button>
           </div>
         </template>
       </UCard>
@@ -1986,9 +1818,9 @@ useHead(() => {
     >
       <NuxtLink
         :to="`/${nsSlug}/menu/settings?tab=brand`"
-        class="flex items-center gap-3 rounded-2xl bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black/5 dark:ring-white/10 pl-3 pr-4 py-2.5 hover:shadow-xl transition-shadow"
+        class="sf-card sf-card--hover flex items-center gap-3 pl-3 pr-4 py-2.5"
       >
-        <span class="w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-950/60 flex items-center justify-center flex-shrink-0 text-primary-600 dark:text-primary-400">
+        <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }">
           <Icon name="lucide:pencil-line" class="w-4 h-4" />
         </span>
         <span class="text-left">
