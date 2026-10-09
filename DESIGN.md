@@ -427,6 +427,18 @@ Rules: **UX and logic untouched**, only chrome changes.
 - SSR: data that should be in the first paint goes through `useAsyncData`; anything touching `window`/timers goes in `onMounted`
   (watch for `setInterval` leaks on the server).
 
+## 10j. Console and Contacts (`console.css`, `contacts.css`)
+
+- **Console** (`/console/*`): `.cn-head` (hairline header), `.cn-card` (module cards), `.cn-ico`; tables use `.at-tray`,
+  panels `.at-panel`, modals `at-modal` + `atModalUi`/`atCardUi`.
+- **"My stats"** (`/atrace/me`): salary hero (`.me-hero`), SVG attendance ring, weekday chips, month cards, check-in timeline.
+- **Contacts** (`/ns/contacts/*`) is re-skinned with *no markup rewrite*: page roots carry `at-scope ct-scope`, every `UModal`
+  carries `class="at-modal" :ui="atModalUi"` (+ `UCard :ui="atCardUi"`), and `contacts.css` turns the generic Tailwind blocks
+  (bordered `rounded-lg`/`rounded-xl` boxes, soft/solid `UButton` as `<button>` **and** `<a>`, raw inputs) into the pill/hairline look.
+  Soft button selectors use `[class~="bg-primary-50"]` (token match) because `*=` also matches `bg-primary-500`.
+- Natural-height pages inside the `workspace` layout (`new`, `[id]`, list) must be `h-full overflow-y-auto`, otherwise their content
+  spills under the footer. A table that scrolls itself inside `.at-tray` needs the `keep-scroll` class.
+
 ## 10i. Process for redesigning a page (what we actually do)
 
 1. Read the page + its child components; list the logic that must not change (handlers, queries, SEO, routes).

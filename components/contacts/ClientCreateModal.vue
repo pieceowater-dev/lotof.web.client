@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
@@ -248,11 +249,13 @@ function handleKeyDown(event: KeyboardEvent) {
 
 <template>
   <UModal
+      class="at-modal"
+      :ui="atModalUi"
     v-model="isOpen"
     @close="handleClose"
     @keydown="handleKeyDown"
   >
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UCard :ui="atCardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">

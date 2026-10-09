@@ -564,13 +564,13 @@ async function handleRefreshFromRemote() {
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div class="at-scope ct-scope h-full overflow-y-auto flex flex-col">
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 mt-4 px-4 flex-shrink-0">
       <div
         class="text-left min-w-0"
         data-tour="contacts-title"
       >
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
           {{ t('app.contacts') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.contactsSubtitle') }}</span>
@@ -628,10 +628,8 @@ async function handleRefreshFromRemote() {
           <button
             v-for="type in ['ALL', 'INDIVIDUAL', 'LEGAL']"
             :key="type"
-            class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-            :class="clientTypeFilter === type
-              ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-900/60'
-              : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+            class="pill-filter"
+            :class="clientTypeFilter === type ? 'pill-filter--active' : ''"
             @click="clientTypeFilter = type as any"
           >
             {{
@@ -658,7 +656,7 @@ async function handleRefreshFromRemote() {
             icon="lucide:plus"
             size="sm"
             color="primary"
-            variant="soft"
+            variant="solid"
             data-tour="contacts-create-btn"
             :to="`/${nsSlug}/contacts/new`"
           >

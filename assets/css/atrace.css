@@ -152,7 +152,7 @@
 .at-scope .pill-filter { padding: 0.38rem 0.9rem; font-size: 0.8125rem; }
 .at-title { font-size: 1.35rem; }
 /* sticky header: UTable's own overflow-x wrapper would become the (non-scrolling) sticky container; let the tray scroll instead */
-.at-tray div.overflow-x-auto { overflow: visible !important; }
+.at-tray div.overflow-x-auto:not(.keep-scroll) { overflow: visible !important; }
 
 /* soft mesh page background for the standalone check-in pages (public post QR) */
 .at-bg {

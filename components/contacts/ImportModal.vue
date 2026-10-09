@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, watch } from 'vue';
 import type * as XLSXModule from 'xlsx';
 import { contactsImportClients, type ImportRow, type ImportBatchResult, type ImportProgress } from '@/api/contacts/importClients';
@@ -223,11 +224,13 @@ async function handleImport() {
 
 <template>
   <UModal
+      class="at-modal"
+      :ui="atModalUi"
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
     @close="close"
   >
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UCard :ui="atCardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">

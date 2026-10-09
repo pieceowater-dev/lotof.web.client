@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -257,10 +258,10 @@ function planSummary(p: MembershipPlan) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
           {{ t('membership.nav') || 'Абонементы' }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ nsTitle }}</span>
@@ -276,12 +277,12 @@ function planSummary(p: MembershipPlan) {
       </UButton>
     </div>
 
-    <div class="flex gap-1 mb-4 flex-shrink-0 border-b border-gray-200 dark:border-gray-800">
+    <div class="flex gap-2 mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
       <button
         v-for="tt in (['plans', 'requests', 'brand'] as const)"
         :key="tt"
-        class="px-4 py-2 text-sm font-medium border-b-2 -mb-px transition"
-        :class="tab === tt ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+        class="pill-filter"
+        :class="tab === tt ? 'pill-filter--active' : ''"
         @click="tab = tt"
       >
         {{ tt === 'plans' ? 'Планы' : tt === 'requests' ? `Заявки${requests.length ? ` (${requests.length})` : ''}` : (t('membership.storefront') || 'Публичная страница') }}
@@ -290,7 +291,7 @@ function planSummary(p: MembershipPlan) {
 
     <div
       v-if="error"
-      class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200"
+      class="at-notice at-notice--err"
     >
       {{ error }}
     </div>
@@ -482,8 +483,10 @@ function planSummary(p: MembershipPlan) {
     </div>
 
     <!-- Plan modal -->
-    <UModal v-model="planModalOpen">
-      <div class="p-5 space-y-3">
+    <UModal
+      class="at-modal"
+      :ui="atModalUi" v-model="planModalOpen">
+      <div class="p-7 sm:p-8 max-h-[88vh] overflow-y-auto space-y-3">
         <h2 class="text-lg font-semibold">
           {{ editingId ? 'Изменить абонемент' : 'Новый абонемент' }}
         </h2>
@@ -589,8 +592,10 @@ function planSummary(p: MembershipPlan) {
     </UModal>
 
     <!-- Approve modal -->
-    <UModal v-model="approveModalOpen">
-      <div class="p-5 space-y-3">
+    <UModal
+      class="at-modal"
+      :ui="atModalUi" v-model="approveModalOpen">
+      <div class="p-7 sm:p-8 max-h-[88vh] overflow-y-auto space-y-3">
         <h2 class="text-lg font-semibold">
           Подтвердить заявку
         </h2>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
@@ -233,10 +234,12 @@ watch(() => props.isOpen, (newVal) => {
 
 <template>
   <UModal
+      class="at-modal"
+      :ui="atModalUi"
     :model-value="isOpen"
     @update:model-value="$emit('close')"
   >
-    <div class="p-4 space-y-4">
+    <div class="p-7 sm:p-8 max-h-[88vh] overflow-y-auto space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold">
           {{ isSelectMode ? t('contacts.addTagToClient') : t('contacts.manageTags') }}

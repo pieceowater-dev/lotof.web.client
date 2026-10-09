@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
@@ -499,10 +500,12 @@ onMounted(async () => {
 
     <!-- Create Stamp Card Modal -->
     <UModal
+      class="at-modal"
+      :ui="atModalUi"
       v-model="showCreateModal"
       @close="closeCreateModal"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -724,10 +727,12 @@ onMounted(async () => {
 
     <!-- Edit Stamp Card Modal -->
     <UModal
+      class="at-modal"
+      :ui="atModalUi"
       v-model="showEditModal"
       @close="closeEditModal"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">

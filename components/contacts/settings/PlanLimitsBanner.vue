@@ -28,11 +28,11 @@ onMounted(async () => {
 <template>
   <div
     v-if="planLimits !== null && !planLimitsLoading"
-    class="rounded-lg border border-emerald-200 dark:border-gray-700 bg-emerald-50/50 dark:bg-gray-900/40 p-4"
+    class="at-banner"
   >
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
-        <h3 class="font-semibold text-gray-900 dark:text-gray-100">
+        <h3 class="at-h2">
           {{ t('app.subscriptionPlans') || 'Plan' }}: {{ planName || '—' }}
         </h3>
         <p class="text-sm text-gray-600 dark:text-gray-400">
@@ -40,15 +40,15 @@ onMounted(async () => {
         </p>
       </div>
       <div class="flex flex-wrap gap-2 text-sm">
-        <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
+        <span class="at-chip">
           {{ planLimitLabel('max_clients') }}:
           <strong>{{ planLimits.max_clients ?? '∞' }}</strong>
         </span>
-        <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
+        <span class="at-chip">
           {{ planLimitLabel('max_custom_fields') }}:
           <strong>{{ planLimits.max_custom_fields ?? '∞' }}</strong>
         </span>
-        <span class="px-2 py-1 rounded-full bg-white/80 dark:bg-gray-800 border border-emerald-100 dark:border-gray-700">
+        <span class="at-chip">
           {{ planLimitLabel('max_loyalty_programs') }}:
           <strong>{{ planLimits.max_loyalty_programs ?? '∞' }}</strong>
         </span>

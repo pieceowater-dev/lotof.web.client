@@ -453,7 +453,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 </script>
 
 <template>
-  <div class="relative overflow-hidden rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+  <div class="at-tray relative overflow-hidden">
     <!-- Finder-style search bar -->
     <div data-tour="contacts-table-search" class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
       <FinderStyleSearch
@@ -469,19 +469,19 @@ function addTagToFilter(tagId: string, tagName: string) {
     <!-- Table container with horizontal scroll -->
     <div 
       ref="tableBodyRef"
-      class="overflow-x-auto overflow-y-auto max-h-[calc(100vh-360px)] relative"
+      class="keep-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-360px)] relative"
     >
       <table class="w-full border-collapse min-w-[1200px]">
         <!-- Header -->
-        <thead class="sticky top-0 z-10 bg-gray-100 dark:bg-gray-800 shadow-md">
+        <thead class="sticky top-0 z-10">
           <tr>
             <th
               v-for="(col, index) in columns"
               :key="col.key"
               :style="{ width: `${col.width}px`, minWidth: `${col.minWidth}px` }"
               :class="[
-                'relative px-4 py-2 text-left text-xs font-semibold text-gray-800 dark:text-gray-100 uppercase tracking-wider border-r-[3px] border-gray-400 dark:border-gray-500 last:border-r-0 bg-gray-100 dark:bg-gray-800',
-                col.sortable && 'cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors'
+                'relative px-4 py-2.5 text-left',
+                col.sortable && 'cursor-pointer hover:!bg-gray-200/70 dark:hover:!bg-gray-700 transition-colors'
               ]"
               @click="col.sortable ? handleSort(col.key) : undefined"
             >
@@ -502,7 +502,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               <!-- Resize handle -->
               <div
                 v-if="index < columns.length - 1"
-                class="absolute top-0 -right-[1.5px] w-[3px] h-full cursor-col-resize bg-gray-400 dark:bg-gray-500 hover:bg-emerald-500 active:bg-emerald-600 transition-colors z-20"
+                class="absolute top-0 -right-[1.5px] w-[7px] h-full cursor-col-resize bg-transparent hover:bg-blue-400/60 active:bg-blue-500/70 transition-colors z-20"
                 :title="t('contacts.resizeColumns') || 'Drag to resize'"
                 @mousedown="startResize(index, $event)"
                 @click.stop
@@ -801,7 +801,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 <!-- Add tag button: no tags → text pill; has tags → icon on hover -->
                 <button
                   v-if="getClientTags(client).length === 0"
-                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors"
+                  class="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded-full border border-solid border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors"
                   title="Add tag"
                   @click.stop="openTagsModal(client.client.id)"
                 >
@@ -813,7 +813,7 @@ function addTagToFilter(tagId: string, tagName: string) {
                 </button>
                 <button
                   v-else
-                  class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors opacity-0 group-hover/tags:opacity-100"
+                  class="inline-flex items-center justify-center w-5 h-5 rounded-full border border-solid border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-emerald-400 hover:text-emerald-500 dark:hover:border-emerald-500 dark:hover:text-emerald-400 transition-colors opacity-0 group-hover/tags:opacity-100"
                   title="Add tag"
                   @click.stop="openTagsModal(client.client.id)"
                 >

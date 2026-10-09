@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useAuth } from '@/composables/useAuth';
 import { useNamespaceStaticRoles, roleTone, roleLabel, type StaticAccessRole } from '@/composables/useNamespaceStaticRoles';
 import { staticRoleOptions, rolesPageSizeOptions } from '@/utils/constants/contactsSettings';
@@ -245,10 +246,12 @@ onMounted(async () => {
     </div>
 
     <UModal
+      class="at-modal"
+      :ui="atModalUi"
       v-model="showRoleModal"
       @close="closeRoleModal"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <div class="flex items-center justify-between">
             <div>

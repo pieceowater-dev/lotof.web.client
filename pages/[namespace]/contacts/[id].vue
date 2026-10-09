@@ -177,7 +177,7 @@ function onCopyToClipboard(text: string) {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="at-scope ct-scope at-bg h-full overflow-y-auto">
     <!-- Page Header -->
     <ContactHeader
       :client="client"

@@ -1,0 +1,65 @@
+/* lota Contacts (/ns/contacts/*): reuses the A-Trace vocabulary (atrace.css) and re-skins the generic
+   Tailwind blocks the module is built from (bordered rounded-lg boxes, UCard, headings) so no markup changes.
+   `.ct-scope` is set on page roots; teleported modals get `.at-modal`. See DESIGN.md. */
+.ct-scope h1, .ct-scope h2, .ct-scope h3, .at-modal h2, .at-modal h3 { letter-spacing: -0.01em; }
+.ct-scope h2, .ct-scope h3 { font-weight: 800; }
+
+/* generic bordered boxes → soft rounded cards with a hairline ring (no solid border) */
+.ct-scope [class*="rounded-lg"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea):not(table):not(th):not(td),
+.ct-scope [class*="rounded-xl"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea):not(table):not(th):not(td),
+.at-modal [class*="rounded-lg"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea) {
+  border-radius: 1.4rem; border-color: transparent; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+.dark .ct-scope [class*="rounded-lg"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea):not(table):not(th):not(td),
+.dark .ct-scope [class*="rounded-xl"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea):not(table):not(th):not(td),
+.dark .at-modal [class*="rounded-lg"][class*="border-gray-"]:not(button):not(input):not(select):not(textarea) {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+}
+.ct-scope [class*="rounded-lg"][class*="border-gray-"][class*="bg-white"]:not(button),
+.ct-scope [class*="rounded-xl"][class*="border-gray-"][class*="bg-white"]:not(button) { background: #fff; }
+.dark .ct-scope [class*="rounded-lg"][class*="border-gray-"][class*="dark:bg-gray-"]:not(button),
+.dark .ct-scope [class*="rounded-xl"][class*="border-gray-"][class*="dark:bg-gray-"]:not(button) { background: #1f1f1f; }
+
+/* UCard on pages */
+.ct-scope [class*="rounded-lg"][class*="ring-1"]:not(button) { border-radius: 1.6rem; }
+
+/* tables: pill-shaped sticky header, calm rows */
+.ct-scope table th { font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #64748b; }
+.dark .ct-scope table th { color: #a3a3a3; }
+.ct-scope table td { font-size: 0.875rem; }
+
+/* page content gets a little more air on phones */
+@media (max-width: 640px) { .ct-scope h1 { font-size: 1.5rem; } }
+
+/* soft UButtons (primary / emerald / amber / gray) → the A-Trace tinted pill look */
+.ct-scope button[class~="bg-primary-50"], .ct-scope button[class~="bg-emerald-50"],
+.at-modal button[class~="bg-primary-50"], .at-modal button[class~="bg-emerald-50"] { color: #1d4ed8 !important; background: rgba(37, 99, 235, 0.12) !important; padding-left: 0.9rem; padding-right: 0.9rem; }
+.ct-scope button[class~="bg-primary-50"]:hover, .ct-scope button[class~="bg-emerald-50"]:hover,
+.at-modal button[class~="bg-primary-50"]:hover, .at-modal button[class~="bg-emerald-50"]:hover { background: rgba(37, 99, 235, 0.2) !important; }
+.dark .ct-scope button[class~="bg-primary-50"], .dark .ct-scope button[class~="bg-emerald-50"],
+.dark .at-modal button[class~="bg-primary-50"], .dark .at-modal button[class~="bg-emerald-50"] { color: #bfdbfe !important; background: rgba(96, 165, 250, 0.16) !important; }
+.ct-scope button[class~="bg-amber-50"], .at-modal button[class~="bg-amber-50"] { color: #b45309 !important; background: rgba(245, 158, 11, 0.14) !important; padding-left: 0.9rem; padding-right: 0.9rem; }
+/* solid primary xs/sm buttons get a bit more breathing room */
+.ct-scope button[class*="bg-primary-500"], .at-modal button[class*="bg-primary-500"] { padding-left: 1rem; padding-right: 1rem; }
+.ct-scope table th { border-right: 0 !important; border-left: 0 !important; }
+.ct-scope table thead th { background-image: none; }
+.at-modal input.form-input[class*="pe-"], .ct-scope input.form-input[class*="pe-"] { border-radius: 9999px; padding-left: 1rem; }
+/* raw <input>/<select>/<textarea> written with Tailwind (rounded-md border) → pill / soft-rounded like UInput */
+.at-modal input.rounded-md:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
+.at-modal select.rounded-md, .ct-scope input.rounded-md:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), .ct-scope select.rounded-md,
+.at-modal input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .ct-scope input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { border-radius: 9999px; padding-left: 1rem; }
+.at-modal textarea.rounded-md, .ct-scope textarea.rounded-md, .at-modal textarea.rounded-lg, .ct-scope textarea.rounded-lg { border-radius: 1.2rem; padding-left: 1rem; }
+
+/* UButton rendered as <a> (with `to`) gets the same treatment as <button> */
+.ct-scope a[class*="bg-primary-500"], .at-modal a[class*="bg-primary-500"] {
+  border-radius: 9999px; padding-left: 1rem; padding-right: 1rem; font-weight: 600; color: #fff !important;
+  background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent !important; box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7);
+  transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s;
+}
+.ct-scope a[class*="bg-primary-500"]:hover { transform: translateY(-1px); }
+.ct-scope a[class*="bg-primary-500"]:active { transform: scale(0.97); }
+.ct-scope a[class~="bg-primary-50"], .ct-scope a[class~="bg-emerald-50"], .ct-scope a[class~="bg-amber-50"] { border-radius: 9999px; padding-left: 0.9rem; padding-right: 0.9rem; font-weight: 600; }
+.ct-scope a[class~="bg-primary-50"], .ct-scope a[class~="bg-emerald-50"] { color: #1d4ed8 !important; background: rgba(37, 99, 235, 0.12) !important; }
+.dark .ct-scope a[class~="bg-primary-50"], .dark .ct-scope a[class~="bg-emerald-50"] { color: #bfdbfe !important; background: rgba(96, 165, 250, 0.16) !important; }
+.ct-scope a[class~="bg-amber-50"] { color: #b45309 !important; background: rgba(245, 158, 11, 0.14) !important; }
+.ct-scope h1 { font-weight: 800; }

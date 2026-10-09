@@ -69,11 +69,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
           {{ t('common.settings.title') }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -106,7 +106,7 @@ onMounted(async () => {
     <!-- Error State -->
     <div
       v-if="error && !loading"
-      class="mb-4 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-200"
+      class="at-notice at-notice--err"
     >
       {{ error }}
     </div>
@@ -137,7 +137,7 @@ onMounted(async () => {
           <!-- Right Column: Import and Bonus PIN Management -->
           <div class="flex flex-col gap-4">
             <!-- Import -->
-            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div class="at-panel">
               <div class="flex items-center justify-between">
                 <div>
                   <h3 class="font-semibold text-gray-900 dark:text-gray-100">
@@ -160,7 +160,7 @@ onMounted(async () => {
             </div>
 
             <!-- Bonus PIN Management -->
-            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            <div class="at-panel">
               <BonusPinManager
                 :token="contactsToken || ''"
                 :ns-slug="nsSlug"

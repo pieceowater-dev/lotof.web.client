@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { changeBonusPin, type ChangePinInput } from '@/api/contacts/loyalty';
@@ -217,10 +218,12 @@ defineExpose({
 
     <!-- Change/Set PIN Modal -->
     <UModal
+      class="at-modal"
+      :ui="atModalUi"
       v-model="isModalOpen"
       @close="closeModal"
     >
-      <UCard>
+      <UCard :ui="atCardUi">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue';
@@ -862,13 +863,13 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <div class="at-scope ct-scope at-bg h-full overflow-y-auto">
     <!-- Header -->
-    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <div class="cn-head bg-white/70 dark:bg-[#141414]/70 backdrop-blur-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">
+            <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-gray-900 dark:text-white">
               {{ t('contacts.createClient') }}
             </h1>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -891,7 +892,7 @@ useHead(() => ({
 
     <!-- Content -->
     <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div class="at-panel !p-0 overflow-hidden">
         <form ref="formRef" class="space-y-6 p-6">
           <!-- 0. Client Type Selection -->
           <div class="space-y-3">
@@ -1506,10 +1507,11 @@ useHead(() => ({
 
     <!-- Unsaved Changes Confirmation Dialog -->
     <UModal
+      class="at-modal"
       v-model="showConfirmDialog"
-      :ui="{ width: 'sm' }"
+      :ui="{ ...atModalUi, width: 'sm' }"
     >
-      <UCard :ui="{ ring: '' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <div class="flex items-center gap-3">
             <UIcon

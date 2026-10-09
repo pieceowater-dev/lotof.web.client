@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
@@ -179,11 +180,13 @@ watch(() => props.isOpen, (newVal) => {
 
 <template>
   <UModal
+      class="at-modal"
+      :ui="atModalUi"
     :model-value="isOpen"
     title="Manage Contact Information"
     @update:model-value="$emit('close')"
   >
-    <div class="p-4 space-y-4">
+    <div class="p-7 sm:p-8 max-h-[88vh] overflow-y-auto space-y-4">
       <!-- Add new identity -->
       <div class="flex gap-2">
         <USelect

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { maskProfanity } from '@/utils/profanityFilter';
@@ -265,7 +266,9 @@ async function deleteTier(tier: Tier) {
     </div>
 
     <!-- Modal -->
-    <UModal 
+    <UModal
+      class="at-modal"
+      :ui="atModalUi" 
       v-model="isModalOpen"
       :title="editingTier ? (t('app.editTier') || 'Edit Tier') : (t('app.createTier') || 'Create Tier')"
       size="lg"
