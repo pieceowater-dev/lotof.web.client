@@ -897,7 +897,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Stats Table -->
-    <div class="at-tray min-h-0 max-h-full overflow-auto mb-4">
+    <div class="at-tray min-h-0 overflow-auto">
       <div
         v-if="!statsReady"
         class="flex flex-col items-center justify-center py-6"

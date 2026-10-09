@@ -45,7 +45,7 @@ const activeTabModel = computed({
       <button
         v-if="canCreateRoute"
         type="button"
-        class="at-btn at-btn--blue flex-shrink-0"
+        class="pill-outline"
         @click="emit('add-route')"
       >
         <UIcon name="lucide:plus" class="h-4 w-4" />

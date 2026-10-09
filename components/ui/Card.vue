@@ -238,7 +238,8 @@ const dropdownItems = [
       <div class="flex-none flex gap-1 items-center">
         <UDropdown
           :items="dropdownItems"
-          :popper="{ placement: 'bottom-end', modifiers: [{ name: 'hide', enabled: false }] }"
+          @click.stop
+          :popper="{ placement: 'bottom-end', strategy: 'fixed', modifiers: [{ name: 'hide', enabled: false }] }"
           :ui="{ menu: { popper: { base: 'z-[9999]' } } }"
           :class="!post.id ? 'invisible pointer-events-none' : ''"
         >

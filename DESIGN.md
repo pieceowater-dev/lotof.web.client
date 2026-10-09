@@ -154,6 +154,13 @@ Inner radius = outer radius − padding (concentric curves). A row inside a `p-1
 Outer tray: hairline ring + tiny padding. Inner core: lighter surface, inner top highlight,
 big diffused shadow. Radius of core = outer − padding.
 
+### Outline pill (`.pill-outline`)
+Transparent pill with a `1.5px` brand-blue hairline ring and blue text; hover = faint blue tint + stronger ring. Use it for **secondary
+"add / create" actions that sit next to filter chips or tabs** (e.g. "+ Добавить маршрут" beside the route chips) and for any
+"second-tier" action that must not look like a filled button or a neutral chip. Hierarchy of pills: gradient `.cta-pill--primary` /
+`.at-btn--primary` (the one main action) → `.pill-outline` (secondary add/create) → soft-blue `.at-btn--blue` (navigation/neutral
+actions) → neutral `.at-btn` / `.pill-filter` (filters, tabs). Never replace an outline action with a filled soft-blue one.
+
 ### Soft list in a tray (menus, FAQ, settings rows)
 
 A `1.6rem` rounded soft-fill tray (`.gw-card` / `.mm-list`) with `0.4rem` padding; rows inside are
@@ -318,7 +325,7 @@ First product workspace restyled in the new system — use it as the template fo
 Rules: **UX and logic untouched**, only chrome changes.
 - Page header: `.at-title` (1.5rem/800) + `.at-sub`; actions as pills: `.at-btn` (neutral), `--blue` (soft blue), `--amber` (upgrade), `--primary` (brand gradient, one per view). Keep `data-tour` attributes.
 - Tabs/filters: `.pill-filter` chips (active = brand gradient); segmented section tabs `.at-seg` / `.at-seg__btn(--on)` (scrolls horizontally, no scrollbar); view toggles `.pl-toggle`.
-- Entity cards (locations): `.at-post` (+ `--on` = brand gradient with white text); "add" tile `.at-post-add` (soft blue, dashed look avoided). Leave bottom padding on horizontal scrollers so shadows are not clipped.
+- Entity cards (locations): `.at-post` (+ `--on` = brand gradient with white text); "add" tile `.at-post-add` (soft blue, dashed look avoided). Leave bottom padding on horizontal scrollers so shadows are not clipped. **Cards that contain buttons/dropdowns must not move on hover/press** (no `transform`): the shift between mousedown and mouseup retargets the click to the card ("first click selects, second clicks the button"), and a transformed ancestor also breaks `position: fixed` dropdown popovers (they get clipped). Use shadow/ring changes for hover instead.
 - Panels / stats / rows / chips: `.at-panel`, `.at-h2`, `.at-stat`, `.at-row`, `.at-chip`; money/score highlights use `.grad-text`.
 - Tables: `AppTable` has a `soft` prop → `.at-tray` (rounded tray, micro-caps header, hairline rows, soft footer). Pass `soft` for every product table; legacy callers keep the old look until restyled.
 - Banners: `.at-banner` (soft blue). Empty states: `.at-empty.at-panel`.
