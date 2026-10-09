@@ -11,6 +11,8 @@ import { getInitials } from '@/utils/avatar';
 import { memberDisplayName } from '@/utils/memberDisplayName';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { peopleTour } from '@/config/tours';
+import UserAvatar from '@/components/ui/UserAvatar.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
 
 const { homePath } = usePreferredSpace();
 const { token, user } = useAuth();
@@ -562,128 +564,57 @@ async function removeMember(member: { userId: string; username: string; email: s
 </script>
 
 <template>
-  <div class="p-4 md:p-6 lg:p-8 min-h-screen max-w-7xl mx-auto">
-    <NuxtLink
-      :to="homePath()"
-      class="mb-4 inline-flex items-center gap-1 text-xs font-medium text-gray-500 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-    >
-      <UIcon name="lucide:home" class="h-3.5 w-3.5" />
+  <div class="mx-auto min-h-screen max-w-6xl px-4 pb-16 pt-6 sm:px-6 sm:pt-10 lg:px-8">
+    <NuxtLink :to="homePath()" class="pp-back group">
+      <UIcon name="lucide:arrow-left" class="h-4 w-4 transition-transform duration-500 group-hover:-translate-x-0.5" />
       {{ t('app.home') }}
     </NuxtLink>
 
     <!-- Header -->
-    <div class="mb-6 flex items-start justify-between gap-3">
-      <div data-tour="people-title">
-        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 text-transparent bg-clip-text">
-          {{ t('app.myPeopleHeading') }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('app.myPeopleSubtitle') }}
-        </p>
+    <header class="mb-6 mt-5 flex items-start justify-between gap-4">
+      <div data-tour="people-title" class="min-w-0">
+        <h1 class="text-2xl font-bold tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.myPeopleHeading') }}</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('app.myPeopleSubtitle') }}</p>
       </div>
-      <UButton
-        variant="ghost"
-        color="gray"
-        size="sm"
-        icon="lucide:play-circle"
-        class="flex-shrink-0"
-        @click="() => { reset(peopleTour.id); startTour(peopleTour); }"
-      >
-        {{ t('app.tourStart') }}
-      </UButton>
-    </div>
-
-    <!-- Referral program -->
-    <UCard data-tour="people-referral" class="mb-6 shadow-sm border border-emerald-100/70 dark:border-emerald-900/30">
-      <div class="flex flex-col sm:flex-row sm:items-center gap-3">
-        <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
-          <UIcon name="lucide:gift" class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-        </span>
-        <div class="min-w-0 flex-1">
-          <h2 class="text-base font-semibold">{{ t('app.referralTitle') }}</h2>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('app.referralSubtitle') }}</p>
-        </div>
-        <div class="flex items-center gap-2">
-          <UInput :model-value="referralLink" readonly size="sm" class="w-full sm:w-64" />
-          <UButton color="emerald" variant="soft" size="sm" icon="lucide:copy" @click="copyReferralLink">
-            {{ t('app.referralCopyLink') }}
-          </UButton>
-        </div>
-      </div>
-
-      <div v-if="referralsLoading" class="mt-4 flex flex-col gap-2 py-1">
-        <div v-for="i in 2" :key="i" class="flex items-center gap-3 animate-pulse">
-          <div class="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700" />
-          <div class="flex-1 h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
-        </div>
-      </div>
-      <p v-else-if="!referralRows.length" class="mt-3 text-xs text-gray-500 dark:text-gray-400">{{ t('app.referralListEmpty') }}</p>
-      <div v-else class="mt-4 flex flex-col gap-1.5 max-h-[240px] overflow-y-auto -mx-1">
-        <div
-          v-for="row in referralRows"
-          :key="row.id"
-          class="flex items-center gap-3 px-1 py-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-        >
-          <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold uppercase bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-            {{ getInitials(row.title) }}
-          </span>
-          <span class="min-w-0 flex-1 text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ row.title }}</span>
-          <UBadge :color="referralBadgeColor(row.bonusState)" variant="subtle" size="xs">
-            {{ referralBadgeLabel(row.bonusState) }}
-          </UBadge>
-        </div>
-      </div>
-    </UCard>
+      <button type="button" class="pp-ghost flex-shrink-0" @click="() => { reset(peopleTour.id); startTour(peopleTour); }">
+        <UIcon name="lucide:play-circle" class="h-4 w-4" />
+        <span class="hidden sm:inline">{{ t('app.tourStart') }}</span>
+      </button>
+    </header>
 
     <!-- Unified add-person bar -->
-    <UCard data-tour="people-add-bar" class="mb-6 shadow-sm border border-blue-100/70 dark:border-blue-900/30">
-      <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
-        <UInput
-          v-model="search"
-          class="flex-1"
-          :placeholder="t('app.searchEmailPlaceholder')"
-          icon="lucide:search"
-          size="lg"
-          :loading="searching"
-        />
-        <Transition
-          enter-active-class="transition ease-out duration-150"
-          enter-from-class="opacity-0 translate-x-1"
-          enter-to-class="opacity-100 translate-x-0"
-        >
-          <UButton
-            v-if="buttonText"
-            size="lg"
-            :color="userFound ? 'primary' : 'gray'"
-            :variant="userFound ? 'solid' : 'soft'"
-            :icon="userFound ? 'lucide:user-plus' : 'lucide:mail-plus'"
-            class="flex-shrink-0"
-            @click="sendAction"
-          >
-            {{ buttonText }}
-          </UButton>
-        </Transition>
+    <div v-reveal data-tour="people-add-bar" class="bezel mb-5">
+      <div class="bezel-core p-4 sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label class="pp-field flex-1">
+            <UIcon :name="searching ? 'lucide:loader-circle' : 'lucide:search'" class="h-5 w-5 flex-shrink-0 text-gray-400" :class="searching ? 'animate-spin' : ''" />
+            <input v-model="search" type="email" class="pp-input" :placeholder="t('app.searchEmailPlaceholder')" autocomplete="off" />
+          </label>
+          <Transition name="pp-pop">
+            <button v-if="buttonText" type="button" class="cta-pill cta-pill--primary flex-shrink-0 justify-center text-sm" style="padding: 0.65rem 1.25rem" @click="sendAction">
+              <UIcon :name="userFound ? 'lucide:user-plus' : 'lucide:mail-plus'" class="h-4 w-4" />
+              {{ buttonText }}
+            </button>
+          </Transition>
+        </div>
+        <p v-if="!isValidEmail && search" class="mt-3 px-1 text-sm text-red-500">{{ t('app.invalidEmail') }}</p>
+        <p v-else-if="userFound !== null" class="mt-3 flex items-center gap-1.5 px-1 text-sm text-gray-500 dark:text-gray-400">
+          <UIcon :name="userFound ? 'lucide:check-circle' : 'lucide:mail-question'" class="h-4 w-4 flex-shrink-0" :class="userFound ? 'text-emerald-500' : 'text-amber-500'" />
+          {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
+        </p>
       </div>
-      <p v-if="!isValidEmail && search" class="mt-2 text-sm text-red-500">
-        {{ t('app.invalidEmail') }}
-      </p>
-      <p v-else-if="userFound !== null" class="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-        <UIcon :name="userFound ? 'lucide:check-circle' : 'lucide:mail-question'" class="w-4 h-4 flex-shrink-0" :class="userFound ? 'text-emerald-500' : 'text-amber-500'" />
-        {{ userFound ? t('app.userFound') : t('app.userNotFound') }}
-      </p>
-    </UCard>
+    </div>
 
-    <!-- Two-column: Team (primary) + Friends -->
-    <div class="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6 items-start">
-      <!-- Team card -->
-      <UCard data-tour="people-team" class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
-        <template #header>
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div class="flex items-center gap-2">
-              <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-900/30">
-                <UIcon name="lucide:building-2" class="w-4.5 h-4.5 text-blue-600 dark:text-blue-400" />
-              </span>
-              <h2 class="text-lg font-semibold">{{ t('app.team') }}</h2>
+    <!-- Team (primary) + Contacts -->
+    <div class="grid grid-cols-1 items-start gap-5 lg:grid-cols-[1.15fr_1fr]">
+      <!-- Team -->
+      <section v-reveal="60" data-tour="people-team" class="bezel">
+        <div class="bezel-core p-5 sm:p-6">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-center gap-3">
+              <span class="icon-tile !h-10 !w-10 !rounded-xl"><UIcon name="lucide:building-2" class="h-5 w-5" /></span>
+              <h2 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.team') }}</h2>
+              <span v-if="nsMembers.length" class="pp-count">{{ nsMembers.length }}</span>
             </div>
             <USelectMenu
               v-model="selectedNS"
@@ -694,196 +625,197 @@ async function removeMember(member: { userId: string; username: string; email: s
               class="w-full sm:w-auto sm:min-w-[220px]"
             />
           </div>
-        </template>
 
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center gap-2">
-            <USelectMenu
-              v-model="friendToAdd"
-              searchable
-              :options="friendOptions"
-              :searchable-placeholder="t('app.search')"
-              :search-value="friendSearch"
-              :loading="friendLoading"
-              :placeholder="t('app.selectFriend')"
-              size="md"
-              class="min-w-0 flex-1"
-              @update:search-value="(val: string) => friendSearch = val as any"
-              @scroll-bottom="() => loadMoreFriends(false)"
-            >
-              <template #leading>
-                <UIcon name="lucide:user-plus" class="w-5 h-5 text-blue-500" />
-              </template>
-            </USelectMenu>
-            <UButton
-              size="md"
-              color="blue"
-              :disabled="!friendToAddId"
-              class="flex-shrink-0"
-              @click="confirmAddMemberFromFriend"
-            >
-              {{ t('common.add') }}
-            </UButton>
-          </div>
-
-          <UInput
-            v-if="nsMembers.length > 6"
-            v-model="teamFilter"
-            size="sm"
-            icon="lucide:filter"
-            :placeholder="t('app.filterPlaceholder')"
-          />
-
-          <div v-if="membersLoading" class="flex flex-col gap-2 py-1">
-            <div v-for="i in 3" :key="i" class="flex items-center gap-3 animate-pulse">
-              <div class="h-9 w-9 rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div class="flex-1 flex flex-col gap-1.5">
-                <div class="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
-                <div class="h-2.5 w-1/2 rounded bg-gray-200 dark:bg-gray-800" />
-              </div>
-            </div>
-          </div>
-
-          <EmptyState v-else-if="!filteredMembers.length" icon="lucide:users" :title="t('app.noTeamYet')" :description="t('app.noTeamYetHint')" />
-
-          <div v-else class="flex flex-col max-h-[420px] overflow-y-auto -mx-1">
-            <div
-              v-for="m in filteredMembers"
-              :key="m.id"
-              class="group flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-            >
-              <UserAvatar :name="memberDisplayName(m)" :seed="m.email" />
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center gap-1.5">
-                  <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">{{ memberDisplayName(m) }}</span>
-                  <UBadge v-if="m.userId === user?.id" size="xs" color="blue" variant="subtle">{{ t('app.you') }}</UBadge>
-                </div>
-                <!-- When a nickname is set, the account's own name is still
-                     shown (small, muted) so a manager can tell who someone
-                     really is -- a nickname replaces what the team sees, not
-                     what the owner can verify. -->
-                <p
-                  v-if="m.nickname?.trim() && m.nickname.trim() !== m.username"
-                  class="text-xs text-gray-400 dark:text-gray-500 truncate"
-                >
-                  {{ m.username }}
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.email }}</p>
-              </div>
-              <UButton
-                v-if="canEditNicknames"
-                color="gray"
-                variant="ghost"
-                size="xs"
-                icon="lucide:pencil"
-                :title="t('app.setNickname') || 'Задать никнейм'"
-                class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                @click="openNicknameEdit(m)"
-              />
-              <UButton
-                v-if="m.userId !== user?.id"
-                color="gray"
-                variant="ghost"
-                size="xs"
-                icon="lucide:trash-2"
-                class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                @click="removeMember(m)"
-              />
-            </div>
-          </div>
-        </div>
-      </UCard>
-
-      <!-- Friends card -->
-      <UCard data-tour="people-friends" class="shadow-sm border border-blue-100/70 dark:border-blue-900/30">
-        <template #header>
-          <div class="flex items-center gap-2">
-            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
-              <UIcon name="lucide:heart-handshake" class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400" />
-            </span>
-            <h2 class="text-lg font-semibold">{{ t('app.contacts') }}</h2>
-          </div>
-        </template>
-
-        <div class="flex flex-col gap-3">
-          <UTabs v-model="selectedTab" :items="tabs" />
-
-          <UInput
-            v-if="friends.length > 6"
-            v-model="friendsFilter"
-            size="sm"
-            icon="lucide:filter"
-            :placeholder="t('app.filterPlaceholder')"
-          />
-
-          <div v-if="loading" class="flex flex-col gap-2 py-1">
-            <div v-for="i in 3" :key="i" class="flex items-center gap-3 animate-pulse">
-              <div class="h-9 w-9 rounded-full bg-gray-200 dark:bg-gray-700" />
-              <div class="flex-1 flex flex-col gap-1.5">
-                <div class="h-3 w-1/3 rounded bg-gray-200 dark:bg-gray-700" />
-                <div class="h-2.5 w-1/2 rounded bg-gray-200 dark:bg-gray-800" />
-              </div>
-            </div>
-          </div>
-
-          <EmptyState
-            v-else-if="!filteredFriends.length"
-            :icon="tabs[selectedTab]?.icon || 'lucide:users'"
-            :title="selectedTab === 0 ? t('app.noContactsYet') : selectedTab === 1 ? t('app.noRequestsYet') : t('app.noRejectedYet')"
-            :description="selectedTab === 0 ? t('app.noContactsYetHint') : undefined"
-          />
-
-          <div v-else class="flex flex-col max-h-[420px] overflow-y-auto -mx-1">
-            <div
-              v-for="row in filteredFriends"
-              :key="row.id"
-              class="group flex items-center gap-3 px-1 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-            >
-              <UserAvatar :name="row.friend.username" :seed="row.friend.email" />
-              <div class="min-w-0 flex-1">
-                <span class="font-medium text-sm text-gray-900 dark:text-gray-100 truncate block">{{ row.friend.username }}</span>
-                <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  <template v-if="row.status === 'PENDING' && row.initiatedByMe">{{ t('app.waitingForAccept') }}</template>
-                  <template v-else>{{ row.friend.email }}</template>
-                </p>
-              </div>
-
-              <!-- Incoming pending: accept / reject -->
-              <div v-if="row.status === 'PENDING' && !row.initiatedByMe" class="flex items-center gap-1 flex-shrink-0">
-                <UButton color="emerald" variant="soft" size="xs" icon="lucide:check" @click="acceptRequest(row)">
-                  {{ t('app.accept') }}
-                </UButton>
-                <UButton color="gray" variant="ghost" size="xs" icon="lucide:x" @click="rejectRequest(row)" />
-              </div>
-
-              <!-- Outgoing pending: cancel -->
-              <UButton
-                v-else-if="row.status === 'PENDING' && row.initiatedByMe"
-                color="gray"
-                variant="ghost"
-                size="xs"
-                icon="lucide:x-circle"
-                class="flex-shrink-0"
-                @click="cancelOwnRequest(row)"
+          <div class="mt-5 flex flex-col gap-4">
+            <div class="flex items-center gap-2">
+              <USelectMenu
+                v-model="friendToAdd"
+                searchable
+                :options="friendOptions"
+                :searchable-placeholder="t('app.search')"
+                :search-value="friendSearch"
+                :loading="friendLoading"
+                :placeholder="t('app.selectFriend')"
+                size="md"
+                class="min-w-0 flex-1"
+                @update:search-value="(val: string) => friendSearch = val as any"
+                @scroll-bottom="() => loadMoreFriends(false)"
               >
-                {{ t('app.cancelRequest') }}
-              </UButton>
-
-              <!-- Accepted / rejected: remove -->
-              <UButton
-                v-else
-                color="gray"
-                variant="ghost"
-                size="xs"
-                icon="lucide:trash-2"
-                class="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                @click="removeFriend(row)"
-              />
+                <template #leading>
+                  <UIcon name="lucide:user-plus" class="h-5 w-5 text-blue-500" />
+                </template>
+              </USelectMenu>
+              <button type="button" class="cta-pill cta-pill--primary flex-shrink-0 text-sm disabled:cursor-not-allowed disabled:opacity-40" style="padding: 0.6rem 1.2rem" :disabled="!friendToAddId" @click="confirmAddMemberFromFriend">
+                {{ t('common.add') }}
+              </button>
             </div>
+
+            <label v-if="nsMembers.length > 6" class="pp-field">
+              <UIcon name="lucide:filter" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <input v-model="teamFilter" type="text" class="pp-input !text-sm" :placeholder="t('app.filterPlaceholder')" />
+            </label>
+
+            <div v-if="membersLoading" class="flex flex-col gap-3 py-1">
+              <div v-for="i in 3" :key="i" class="flex animate-pulse items-center gap-3">
+                <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-white/10" />
+                <div class="flex flex-1 flex-col gap-1.5">
+                  <div class="h-3 w-1/3 rounded bg-gray-200 dark:bg-white/10" />
+                  <div class="h-2.5 w-1/2 rounded bg-gray-100 dark:bg-white/5" />
+                </div>
+              </div>
+            </div>
+
+            <EmptyState v-else-if="!filteredMembers.length" icon="lucide:users" :title="t('app.noTeamYet')" :description="t('app.noTeamYetHint')" />
+
+            <ul v-else class="-mx-2 flex max-h-[460px] flex-col gap-0.5 overflow-y-auto px-2">
+              <li v-for="m in filteredMembers" :key="m.id" class="pp-row group !rounded-[1.2rem]">
+                <UserAvatar :name="memberDisplayName(m)" :seed="m.email" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ memberDisplayName(m) }}</span>
+                    <UBadge v-if="m.userId === user?.id" size="xs" color="blue" variant="subtle">{{ t('app.you') }}</UBadge>
+                  </div>
+                  <!-- When a nickname is set, the account's own name is still
+                       shown (small, muted) so a manager can tell who someone
+                       really is -- a nickname replaces what the team sees, not
+                       what the owner can verify. -->
+                  <p v-if="m.nickname?.trim() && m.nickname.trim() !== m.username" class="truncate text-xs text-gray-400 dark:text-gray-500">{{ m.username }}</p>
+                  <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ m.email }}</p>
+                </div>
+                <button v-if="canEditNicknames" type="button" class="pp-icon-btn pp-reveal" :title="t('app.setNickname') || 'Задать никнейм'" @click="openNicknameEdit(m)">
+                  <UIcon name="lucide:pencil" class="h-4 w-4" />
+                </button>
+                <button v-if="m.userId !== user?.id" type="button" class="pp-icon-btn pp-icon-btn--danger pp-reveal" :title="t('app.remove')" @click="removeMember(m)">
+                  <UIcon name="lucide:trash-2" class="h-4 w-4" />
+                </button>
+              </li>
+            </ul>
           </div>
         </div>
-      </UCard>
+      </section>
+
+      <!-- Contacts -->
+      <section v-reveal="120" data-tour="people-friends" class="bezel">
+        <div class="bezel-core p-5 sm:p-6">
+          <div class="flex items-center gap-3">
+            <span class="icon-tile !h-10 !w-10 !rounded-xl" style="background-image: linear-gradient(135deg, #34d399, #0d9488); box-shadow: 0 8px 20px -8px rgba(13, 148, 136, 0.55)"><UIcon name="lucide:heart-handshake" class="h-5 w-5" /></span>
+            <h2 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.contacts') }}</h2>
+          </div>
+
+          <div class="mt-5 flex flex-col gap-4">
+            <div class="pp-seg" role="tablist">
+              <button
+                v-for="(tab, i) in tabs"
+                :key="i"
+                type="button"
+                role="tab"
+                :aria-selected="selectedTab === i"
+                class="pp-seg__btn"
+                :class="selectedTab === i ? 'pp-seg__btn--active' : ''"
+                @click="selectedTab = i"
+              >
+                <UIcon :name="tab.icon" class="hidden h-4 w-4 sm:block" />
+                <span class="truncate">{{ tab.label }}</span>
+              </button>
+            </div>
+
+            <label v-if="friends.length > 6" class="pp-field">
+              <UIcon name="lucide:filter" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <input v-model="friendsFilter" type="text" class="pp-input !text-sm" :placeholder="t('app.filterPlaceholder')" />
+            </label>
+
+            <div v-if="loading" class="flex flex-col gap-3 py-1">
+              <div v-for="i in 3" :key="i" class="flex animate-pulse items-center gap-3">
+                <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-white/10" />
+                <div class="flex flex-1 flex-col gap-1.5">
+                  <div class="h-3 w-1/3 rounded bg-gray-200 dark:bg-white/10" />
+                  <div class="h-2.5 w-1/2 rounded bg-gray-100 dark:bg-white/5" />
+                </div>
+              </div>
+            </div>
+
+            <EmptyState
+              v-else-if="!filteredFriends.length"
+              :icon="tabs[selectedTab]?.icon || 'lucide:users'"
+              :title="selectedTab === 0 ? t('app.noContactsYet') : selectedTab === 1 ? t('app.noRequestsYet') : t('app.noRejectedYet')"
+              :description="selectedTab === 0 ? t('app.noContactsYetHint') : undefined"
+            />
+
+            <ul v-else class="-mx-2 flex max-h-[460px] flex-col gap-0.5 overflow-y-auto px-2">
+              <li v-for="row in filteredFriends" :key="row.id" class="pp-row group !rounded-[1.2rem]">
+                <UserAvatar :name="row.friend.username" :seed="row.friend.email" />
+                <div class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ row.friend.username }}</span>
+                  <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                    <template v-if="row.status === 'PENDING' && row.initiatedByMe">{{ t('app.waitingForAccept') }}</template>
+                    <template v-else>{{ row.friend.email }}</template>
+                  </p>
+                </div>
+
+                <!-- Incoming pending: accept / reject -->
+                <div v-if="row.status === 'PENDING' && !row.initiatedByMe" class="flex flex-shrink-0 items-center gap-1.5">
+                  <button type="button" class="pp-accept" @click="acceptRequest(row)">
+                    <UIcon name="lucide:check" class="h-4 w-4" />{{ t('app.accept') }}
+                  </button>
+                  <button type="button" class="pp-icon-btn" :title="t('app.toRejected')" @click="rejectRequest(row)">
+                    <UIcon name="lucide:x" class="h-4 w-4" />
+                  </button>
+                </div>
+
+                <!-- Outgoing pending: cancel -->
+                <button v-else-if="row.status === 'PENDING' && row.initiatedByMe" type="button" class="pp-ghost !px-3 !py-1.5 text-xs" @click="cancelOwnRequest(row)">
+                  <UIcon name="lucide:x-circle" class="h-3.5 w-3.5" />{{ t('app.cancelRequest') }}
+                </button>
+
+                <!-- Accepted / rejected: remove -->
+                <button v-else type="button" class="pp-icon-btn pp-icon-btn--danger pp-reveal" :title="t('app.remove')" @click="removeFriend(row)">
+                  <UIcon name="lucide:trash-2" class="h-4 w-4" />
+                </button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
     </div>
+
+    <!-- Referral program -->
+    <section v-reveal data-tour="people-referral" class="bezel mt-5">
+      <div class="bezel-core p-5 sm:p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <span class="icon-tile !h-10 !w-10 !rounded-xl" style="background-image: linear-gradient(135deg, #fbbf24, #f97316); box-shadow: 0 8px 20px -8px rgba(249, 115, 22, 0.55)"><UIcon name="lucide:gift" class="h-5 w-5" /></span>
+            <div class="min-w-0">
+              <h2 class="text-lg font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.referralTitle') }}</h2>
+              <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">{{ t('app.referralSubtitle') }}</p>
+            </div>
+          </div>
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center lg:w-[28rem]">
+            <label class="pp-field min-w-0 flex-1">
+              <UIcon name="lucide:link" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <input :value="referralLink" readonly class="pp-input !text-sm" @focus="($event.target as HTMLInputElement).select()" />
+            </label>
+            <button type="button" class="cta-pill cta-pill--primary flex-shrink-0 justify-center text-sm" style="padding: 0.6rem 1.1rem" @click="copyReferralLink">
+              <UIcon name="lucide:copy" class="h-4 w-4" />{{ t('app.referralCopyLink') }}
+            </button>
+          </div>
+        </div>
+
+        <div v-if="referralsLoading" class="mt-5 flex flex-col gap-2">
+          <div v-for="i in 2" :key="i" class="flex animate-pulse items-center gap-3">
+            <div class="h-8 w-8 rounded-full bg-gray-200 dark:bg-white/10" />
+            <div class="h-3 w-1/3 flex-1 rounded bg-gray-200 dark:bg-white/10" />
+          </div>
+        </div>
+        <p v-else-if="!referralRows.length" class="mt-4 text-xs text-gray-500 dark:text-gray-400">{{ t('app.referralListEmpty') }}</p>
+        <ul v-else class="mt-5 grid max-h-[240px] grid-cols-1 gap-1 overflow-y-auto md:grid-cols-2">
+          <li v-for="row in referralRows" :key="row.id" class="pp-row !rounded-[1.2rem]">
+            <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-semibold uppercase text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{{ getInitials(row.title) }}</span>
+            <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ row.title }}</span>
+            <UBadge :color="referralBadgeColor(row.bonusState)" variant="subtle" size="xs">{{ referralBadgeLabel(row.bonusState) }}</UBadge>
+          </li>
+        </ul>
+      </div>
+    </section>
 
     <UModal v-model="nicknameModalOpen">
       <UCard>
@@ -891,9 +823,7 @@ async function removeMember(member: { userId: string; username: string; email: s
           <h3 class="text-base font-semibold">{{ t('app.setNickname') || 'Задать никнейм' }}</h3>
         </template>
         <div class="space-y-2">
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ nicknameEditing?.username }}
-          </p>
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ nicknameEditing?.username }}</p>
           <UInput
             v-model="nicknameInput"
             :placeholder="t('app.nicknamePlaceholder') || 'Например, Асель К.'"
@@ -906,15 +836,114 @@ async function removeMember(member: { userId: string; username: string; email: s
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" :disabled="nicknameSaving" @click="nicknameModalOpen = false">
-              {{ t('app.cancel') || 'Отмена' }}
-            </UButton>
-            <UButton color="primary" :loading="nicknameSaving" @click="submitNickname">
-              {{ t('app.save') || 'Сохранить' }}
-            </UButton>
+            <UButton color="gray" variant="ghost" :disabled="nicknameSaving" @click="nicknameModalOpen = false">{{ t('app.cancel') || 'Отмена' }}</UButton>
+            <UButton color="primary" :loading="nicknameSaving" @click="submitNickname">{{ t('app.save') || 'Сохранить' }}</UButton>
           </div>
         </template>
       </UCard>
     </UModal>
   </div>
 </template>
+
+<style scoped>
+.pp-back {
+  display: inline-flex; align-items: center; gap: 0.45rem;
+  border-radius: 9999px; padding: 0.45rem 1rem 0.45rem 0.8rem;
+  font-size: 0.875rem; font-weight: 600; color: #334155;
+  background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+}
+.pp-back:hover { background: rgba(15, 23, 42, 0.08); }
+.pp-back:active { transform: scale(0.96); }
+.dark .pp-back { color: #e5e5e5; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.dark .pp-back:hover { background: rgba(255, 255, 255, 0.12); }
+
+.pp-ghost {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  border-radius: 9999px; padding: 0.5rem 1rem;
+  font-size: 0.875rem; font-weight: 600; color: #334155;
+  background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+}
+.pp-ghost:hover { background: rgba(15, 23, 42, 0.08); }
+.pp-ghost:active { transform: scale(0.96); }
+.dark .pp-ghost { color: #e5e5e5; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.dark .pp-ghost:hover { background: rgba(255, 255, 255, 0.12); }
+
+.pp-field {
+  display: flex; align-items: center; gap: 0.7rem;
+  border-radius: 9999px; padding: 0.7rem 1.1rem;
+  background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+}
+.pp-field:focus-within { background: #fff; box-shadow: inset 0 0 0 1.5px #2563eb, 0 0 0 4px rgba(37, 99, 235, 0.12); }
+.dark .pp-field { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
+.dark .pp-field:focus-within { background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 1.5px #60a5fa, 0 0 0 4px rgba(96, 165, 250, 0.16); }
+.pp-input { min-width: 0; flex: 1; background: transparent; font-size: 1rem; color: #0f172a; }
+.pp-input, .pp-input:focus, .pp-input:focus-visible { outline: none !important; box-shadow: none !important; border: 0 !important; }
+.pp-input::placeholder { color: #94a3b8; }
+.dark .pp-input { color: #fff; }
+
+.pp-label { display: flex; align-items: center; gap: 0.5rem; margin: 0 0.25rem 0.6rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #64748b; }
+.dark .pp-label { color: #a3a3a3; }
+.pp-card { overflow: hidden; border-radius: 1.5rem; background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04); }
+.dark .pp-card { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.pp-line { display: flex; align-items: center; gap: 0.6rem; padding: 0.7rem 1rem; }
+.pp-line + .pp-line, .pp-line + ul, .pp-line + div { border-top: 1px solid rgba(15, 23, 42, 0.07); }
+.dark .pp-line + .pp-line, .dark .pp-line + ul, .dark .pp-line + div { border-top-color: rgba(255, 255, 255, 0.08); }
+.pp-line__label { flex-shrink: 0; font-size: 0.875rem; font-weight: 500; color: #475569; }
+.dark .pp-line__label { color: #d4d4d4; }
+@media (max-width: 639px) { .pp-line:has(.pp-line__label) { flex-direction: column; align-items: stretch; gap: 0.4rem; } }
+.pp-count { border-radius: 9999px; padding: 0.05rem 0.55rem; font-size: 0.7rem; font-weight: 600; letter-spacing: 0; color: #64748b; background: rgba(15, 23, 42, 0.05); }
+.dark .pp-count { color: #a3a3a3; background: rgba(255, 255, 255, 0.08); }
+
+.pp-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.65rem 1rem;
+  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pp-row:hover { background: rgba(15, 23, 42, 0.04); }
+.dark .pp-row:hover { background: rgba(255, 255, 255, 0.06); }
+
+.pp-icon-btn {
+  display: inline-flex; height: 2rem; width: 2rem; flex-shrink: 0; align-items: center; justify-content: center;
+  border-radius: 9999px; color: #64748b;
+  transition: background 0.3s, color 0.3s, opacity 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.pp-icon-btn:hover { background: rgba(15, 23, 42, 0.08); color: #0f172a; }
+.pp-icon-btn:active { transform: scale(0.92); }
+.pp-icon-btn--danger:hover { background: rgba(239, 68, 68, 0.12); color: #dc2626; }
+.dark .pp-icon-btn { color: #a3a3a3; }
+.dark .pp-icon-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+.dark .pp-icon-btn--danger:hover { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+/* hover-only on desktop, always visible on touch */
+@media (hover: hover) and (min-width: 640px) {
+  .pp-reveal { opacity: 0; }
+  .pp-row:hover .pp-reveal, .pp-reveal:focus-visible { opacity: 1; }
+}
+
+.pp-accept {
+  display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 9999px; padding: 0.4rem 0.8rem;
+  font-size: 0.75rem; font-weight: 600; color: #047857; background: rgba(16, 185, 129, 0.14);
+  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s;
+}
+.pp-accept:hover { background: rgba(16, 185, 129, 0.24); }
+.pp-accept:active { transform: scale(0.95); }
+.dark .pp-accept { color: #6ee7b7; background: rgba(16, 185, 129, 0.16); }
+
+.pp-seg { display: flex; gap: 0.25rem; border-radius: 9999px; padding: 0.25rem; background: rgba(15, 23, 42, 0.05); }
+.dark .pp-seg { background: rgba(255, 255, 255, 0.06); }
+.pp-seg__btn {
+  display: flex; min-width: 0; flex: 1; align-items: center; justify-content: center; gap: 0.4rem;
+  border-radius: 9999px; padding: 0.45rem 0.6rem; font-size: 0.8125rem; font-weight: 600; color: #64748b;
+  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s, box-shadow 0.4s;
+}
+.pp-seg__btn:hover { color: #0f172a; }
+.pp-seg__btn--active { color: #0f172a; background: #fff; box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35); }
+.dark .pp-seg__btn { color: #a3a3a3; }
+.dark .pp-seg__btn:hover { color: #fff; }
+.dark .pp-seg__btn--active { color: #fff; background: rgba(255, 255, 255, 0.12); box-shadow: none; }
+
+.pp-pop-enter-active, .pp-pop-leave-active { transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+.pp-pop-enter-from, .pp-pop-leave-to { opacity: 0; transform: translateX(6px) scale(0.96); }
+</style>

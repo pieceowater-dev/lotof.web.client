@@ -71,6 +71,9 @@ class OnboardingManager {
     try {
       const key = `${STORAGE_KEY_PREFIX}${tourId}`;
       localStorage.removeItem(key);
+      // Also drop the saved step: otherwise a manual restart resumes at the
+      // step the previous run ended on (always the last one).
+      localStorage.removeItem(`${key}_progress`);
     } catch (e) {
       console.error('Failed to reset onboarding state:', e);
     }
@@ -132,6 +135,7 @@ class OnboardingManager {
     if (nextIndex >= this.currentTour.value.steps.length) {
       // Tour completed
       this.markCompleted(this.currentTour.value.id);
+      this.resetProgress(this.currentTour.value.id);
       this.stopTour();
     } else {
       this.currentStepIndex.value = nextIndex;
