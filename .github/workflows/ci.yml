@@ -37,7 +37,7 @@ jobs:
 
   build-and-push:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     needs: quality-gate
     environment: ${{ github.ref_name }}
     permissions:
