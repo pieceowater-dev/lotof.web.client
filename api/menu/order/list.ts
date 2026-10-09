@@ -25,8 +25,6 @@ export type MenuOrder = {
   paidAmount: number;
   // JSON object {"<order field id>": "<value>"}; "{}" when none.
   customFields?: string;
-  // Set when this order is a warranty case for an earlier order.
-  warrantyOfOrderId?: string | null;
 };
 
 export type OrdersFilter = {
@@ -58,7 +56,7 @@ const OrdersDocument = /* GraphQL */ `
   query Orders($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields
       }
       info { count }
     }
@@ -163,7 +161,7 @@ const OrdersBundleDocument = /* GraphQL */ `
   query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields
       }
       info { count }
     }

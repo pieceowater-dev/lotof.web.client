@@ -38,7 +38,6 @@ const form = reactive({
   imageAlt: '',
   seoTitle: '',
   seoDescription: '',
-  warrantyDays: 0,
 });
 
 const selectedBadgeIds = ref<string[]>([]);
@@ -57,7 +56,6 @@ watch(() => [props.modelValue, props.item], () => {
   form.imageAlt = it?.imageAlt || '';
   form.seoTitle = it?.seoTitle || '';
   form.seoDescription = it?.seoDescription || '';
-  form.warrantyDays = it?.warrantyDays ?? 0;
   selectedBadgeIds.value = [...(it?.badgeIds || [])];
   selectedModifierGroupIds.value = [...(it?.modifierGroupIds || [])];
   const excluded = new Set(it?.excludedBranchIds || []);
@@ -100,7 +98,6 @@ function handleSubmit() {
     imageAlt: form.imageAlt.trim() || undefined,
     seoTitle: form.seoTitle.trim() || undefined,
     seoDescription: form.seoDescription.trim() || undefined,
-    warrantyDays: Math.max(0, Math.round(Number(form.warrantyDays) || 0)),
     badgeIds: selectedBadgeIds.value,
     modifierGroupIds: selectedModifierGroupIds.value,
     excludedBranchIds,
@@ -126,13 +123,6 @@ function handleSubmit() {
         </UFormGroup>
         <UFormGroup :label="t('menu.price') || 'Price'" required>
           <UInput v-model.number="form.price" type="number" step="0.01" size="lg" />
-        </UFormGroup>
-
-        <UFormGroup
-          :label="t('menu.warrantyDays') || 'Warranty, days'"
-          :help="t('menu.warrantyDaysHint') || 'Counted from when the order is completed. 0 means no warranty.'"
-        >
-          <UInput v-model.number="form.warrantyDays" type="number" min="0" max="3650" step="1" size="lg" />
         </UFormGroup>
         <UFormGroup :label="t('menu.image') || 'Image'">
           <ImageUpload v-model="form.imageUrl" :ns-slug="nsSlug" aspect="square" />

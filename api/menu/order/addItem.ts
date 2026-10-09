@@ -9,13 +9,12 @@ export type AddOrderItemInput = {
   name: string;
   priceAtPurchase: number;
   quantity: number;
-  warrantyDays?: number;
 };
 
 const AddOrderItemDocument = /* GraphQL */ `
   mutation AddOrderItem($input: AddOrderItemInput!) {
     addOrderItem(input: $input) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt
     }
   }
 `;

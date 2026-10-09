@@ -13,13 +13,12 @@ export type CreateMenuItemInput = {
   imageAlt?: string;
   seoTitle?: string;
   seoDescription?: string;
-  warrantyDays?: number;
 };
 
 const CreateMenuItemDocument = /* GraphQL */ `
   mutation CreateMenuItem($input: CreateMenuItemInput!) {
     createMenuItem(input: $input) {
-      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription warrantyDays
+      id categoryId name description price imageUrl isActive sortOrder imageAlt seoTitle seoDescription
     }
   }
 `;

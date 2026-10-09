@@ -7,7 +7,6 @@ export type CreateOrderItemInput = {
   name: string;
   priceAtPurchase: number;
   quantity: number;
-  warrantyDays?: number;
 };
 
 export type CreateOrderInput = {
@@ -21,7 +20,6 @@ export type CreateOrderInput = {
   totalAmount: number;
   items: CreateOrderItemInput[];
   customFields?: string;
-  warrantyOfOrderId?: string;
 };
 
 const CreateOrderDocument = /* GraphQL */ `
@@ -49,7 +47,6 @@ export async function menuCreateOrder(menuToken: string, namespaceSlug: string, 
           totalAmount: input.totalAmount,
           items: input.items,
           customFields: input.customFields,
-          warrantyOfOrderId: input.warrantyOfOrderId,
         },
       },
       { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }

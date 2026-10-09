@@ -8,10 +8,9 @@ import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import { buildTableTag } from '@/utils/tableTag';
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
-import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
-import { missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
+import { missingRequiredFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 
 const { t } = useI18n();
 
@@ -20,7 +19,6 @@ const props = defineProps<{
   nsSlug: string;
   branches: MenuBranch[];
   saving?: boolean;
-  prefill?: CreateOrderPrefill | null;
 }>();
 
 const emit = defineEmits<{
@@ -33,10 +31,7 @@ const isOpen = computed({
   set: (v) => emit('update:modelValue', v),
 });
 
-type CartLine = { menuItemId: string; name: string; price: number; quantity: number; warrantyDays: number };
-
-// In warranty mode the work is done free of charge by default.
-const freeOfCharge = ref(true);
+type CartLine = { menuItemId: string; name: string; price: number; quantity: number };
 
 const form = reactive({
   type: 'table' as 'pickup' | 'delivery' | 'table',
@@ -121,7 +116,7 @@ const filteredItems = computed(() => {
 function addToCart(item: MenuItem) {
   const existing = cart.value.find((l) => l.menuItemId === item.id);
   if (existing) existing.quantity += 1;
-  else cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: 1, warrantyDays: item.warrantyDays ?? 0 });
+  else cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: 1 });
 }
 
 function changeQuantity(line: CartLine, delta: number) {
@@ -129,10 +124,7 @@ function changeQuantity(line: CartLine, delta: number) {
   if (line.quantity <= 0) cart.value = cart.value.filter((l) => l.menuItemId !== line.menuItemId);
 }
 
-const isWarrantyCase = computed(() => !!props.prefill?.warrantyOfOrderId);
-// Price actually charged for a line: zero for a free warranty case.
-const linePrice = (l: CartLine) => (isWarrantyCase.value && freeOfCharge.value ? 0 : l.price);
-const cartTotal = computed(() => cart.value.reduce((sum, l) => sum + l.quantity * linePrice(l), 0));
+const cartTotal = computed(() => cart.value.reduce((sum, l) => sum + l.quantity * l.price, 0));
 const cartCount = computed(() => cart.value.reduce((sum, l) => sum + l.quantity, 0));
 
 // --- Quick "new item" creation, inline ---
@@ -183,15 +175,12 @@ watch(() => props.modelValue, (open) => {
   loadItems();
   loadOrderFields();
   for (const k of Object.keys(customValues)) delete customValues[k];
-  Object.assign(customValues, parseCustomFields(props.prefill?.customFields));
-  const pre = props.prefill;
-  form.type = pre?.type ?? 'table';
-  form.branchId = pre?.branchId ?? '';
-  form.phone = pre?.phone ?? '';
-  form.customerName = pre?.customerName ?? '';
-  form.deliveryAddress = pre?.deliveryAddress ?? '';
-  form.tableNumber = pre?.tableNumber ?? '';
-  freeOfCharge.value = true;
+  form.type = 'table';
+  form.branchId = '';
+  form.phone = '';
+  form.customerName = '';
+  form.deliveryAddress = '';
+  form.tableNumber = '';
   form.comment = '';
   cart.value = [];
   itemSearch.value = '';
@@ -222,13 +211,11 @@ function handleSubmit() {
     sourceTag: form.type === 'table' && form.tableNumber !== '' ? buildTableTag(form.tableNumber) : 'manual',
     totalAmount: cartTotal.value,
     customFields: serializeCustomFields(customValues),
-    warrantyOfOrderId: props.prefill?.warrantyOfOrderId || undefined,
     items: cart.value.map((l) => ({
       menuItemId: l.menuItemId,
       name: l.name,
-      priceAtPurchase: linePrice(l),
+      priceAtPurchase: l.price,
       quantity: l.quantity,
-      warrantyDays: l.warrantyDays || undefined,
     })),
   });
 }
@@ -254,20 +241,6 @@ function handleSubmit() {
         <div class="grid gap-6 md:grid-cols-2">
           <!-- Left: how the order is fulfilled + who it is for -->
           <div class="space-y-5 min-w-0">
-            <div
-              v-if="isWarrantyCase"
-              class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
-            >
-              <Icon name="lucide:shield-check" class="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <div class="min-w-0 space-y-1.5">
-                <div class="font-medium">{{ t('menu.warrantyCaseFor', { order: prefill?.warrantyOrderLabel ?? '' }) || ('Warranty case for order ' + prefill?.warrantyOrderLabel) }}</div>
-                <label class="flex items-center gap-2 text-xs">
-                  <UToggle v-model="freeOfCharge" size="xs" />
-                  {{ t('menu.warrantyFreeOfCharge') || 'Free of charge' }}
-                </label>
-              </div>
-            </div>
-
             <!-- Fulfilment type: stacked icon + short label so nothing wraps -->
             <div class="grid grid-cols-3 gap-2">
               <button
@@ -437,7 +410,7 @@ function handleSubmit() {
                   <span class="w-5 text-center text-sm tabular-nums">{{ line.quantity }}</span>
                   <UButton icon="lucide:plus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, 1)" />
                 </div>
-                <span class="text-sm w-16 text-right tabular-nums font-medium">{{ linePrice(line) * line.quantity }}</span>
+                <span class="text-sm w-16 text-right tabular-nums font-medium">{{ line.price * line.quantity }}</span>
               </div>
             </div>
           </div>
