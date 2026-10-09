@@ -27,120 +27,120 @@ const hasContent = computed(() => !!props.title || !!props.address);
 
 <template>
   <Teleport to="body">
-    <div class="fixed inset-0 bg-black/50 dark:bg-black/70 z-[9999] flex items-center justify-center p-4">
-      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-xl w-full p-8 relative">
-        <!-- Close button -->
-        <button
-          class="absolute top-4 right-4 p-1.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-          @click="$emit('close')"
-        >
-          <UIcon
-            name="i-lucide-x"
-            class="w-5 h-5 text-gray-500 dark:text-gray-400"
-          />
-        </button>
-
-        <div class="flex flex-col items-center">
-          <!-- Header -->
-          <div class="flex items-center gap-2 mb-6">
-            <UIcon
+    <div
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/30 p-4 backdrop-blur-sm dark:bg-gray-950/60"
+      @click.self="$emit('close')"
+    >
+      <div class="relative max-h-full w-full max-w-md overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl ring-1 ring-black/5 dark:bg-[#1a1a1a] dark:ring-white/10 sm:p-8">
+        <!-- Header -->
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="icon-tile !h-10 !w-10 !rounded-xl"><UIcon
               name="i-lucide-printer"
-              class="w-6 h-6 text-emerald-500 dark:text-emerald-400"
-            />
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white">
+              class="h-5 w-5"
+            /></span>
+            <h2 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">
               QR для печати
             </h2>
           </div>
+          <button
+            type="button"
+            class="hdr-icon-btn"
+            aria-label="Close"
+            @click="$emit('close')"
+          >
+            <UIcon
+              name="i-lucide-x"
+              class="h-4 w-4"
+            />
+          </button>
+        </div>
 
-          <!-- Content -->
-          <div class="w-full flex flex-col items-center">
-            <!-- Title and Address -->
+        <div class="flex w-full flex-col items-center">
+          <!-- Title and Address -->
+          <div
+            v-if="hasContent"
+            class="mb-4 w-full text-center"
+          >
             <div
-              v-if="hasContent"
-              class="text-center mb-6 w-full"
+              v-if="props.title"
+              class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white"
             >
-              <div
-                v-if="props.title"
-                class="text-lg font-semibold text-gray-900 dark:text-white mb-1"
-              >
-                {{ props.title }}
-              </div>
-              <div
-                v-if="props.address"
-                class="text-sm text-gray-600 dark:text-gray-300"
-              >
-                {{ props.address }}
-              </div>
+              {{ props.title }}
             </div>
-
-            <!-- QR Code -->
             <div
-              v-if="props.qrImage"
-              class="bg-gray-50 dark:bg-gray-800 rounded-xl p-6 mb-4 flex flex-col items-center justify-center w-full"
+              v-if="props.address"
+              class="mt-0.5 text-sm text-gray-500 dark:text-gray-400"
             >
-              <img
-                :src="props.qrImage"
-                alt="QR Code"
-                class="qr-image w-full max-w-md object-contain"
-                style="max-width: 320px; min-width: 220px; aspect-ratio: 1 / 1;"
-              >
-              <!-- Post ID всегда показываем -->
-              <div class="post-id mt-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
-                ID: {{ props.postId || 'N/A' }}
-              </div>
+              {{ props.address }}
             </div>
+          </div>
 
-            <!-- Loading state -->
-            <div
-              v-else-if="props.loading"
-              class="flex items-center justify-center py-12"
+          <!-- QR Code: always on white so it stays scannable in dark mode -->
+          <div
+            v-if="props.qrImage"
+            class="mb-4 flex w-full flex-col items-center justify-center rounded-[1.6rem] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08),0_18px_36px_-28px_rgba(15,23,42,0.25)]"
+          >
+            <img
+              :src="props.qrImage"
+              alt="QR Code"
+              class="qr-image w-full object-contain"
+              style="max-width: 280px; min-width: 200px; aspect-ratio: 1 / 1;"
             >
-              <div class="flex flex-col items-center gap-3">
-                <UIcon
-                  name="i-lucide-loader"
-                  class="w-8 h-8 text-emerald-500 dark:text-emerald-400 animate-spin"
-                />
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                  Генерирую QR...
-                </p>
-              </div>
+            <!-- Post ID всегда показываем -->
+            <div class="post-id mt-3 font-mono text-xs text-gray-500">
+              ID: {{ props.postId || 'N/A' }}
             </div>
+          </div>
 
-            <!-- Info text -->
-            <div class="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-lg p-3 mb-6 text-sm text-center w-full">
-              <div class="flex items-start gap-2">
-                <UIcon
-                  name="i-lucide-info"
-                  class="w-4 h-4 mt-0.5 flex-shrink-0"
-                />
-                <p>
-                  Проверь информацию перед печатью.
-                  <br>
-                  QR содержит статический код.
-                </p>
-              </div>
+          <!-- Loading state -->
+          <div
+            v-else-if="props.loading"
+            class="flex items-center justify-center py-12"
+          >
+            <div class="flex flex-col items-center gap-3">
+              <UIcon
+                name="i-lucide-loader"
+                class="h-8 w-8 animate-spin text-blue-500 dark:text-blue-300"
+              />
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                Генерирую QR...
+              </p>
             </div>
+          </div>
 
-            <!-- Actions -->
-            <div class="flex gap-3 w-full">
-              <UButton
-                color="primary"
-                variant="soft"
-                class="flex-1"
-                @click="$emit('close')"
-              >
-                Отмена
-              </UButton>
-              <UButton
-                color="primary"
-                icon="i-lucide-printer"
-                class="flex-1"
-                :disabled="!props.qrImage || props.loading"
-                @click="$emit('print')"
-              >
-                Печать
-              </UButton>
-            </div>
+          <!-- Info text -->
+          <div class="at-banner mb-5 w-full !flex-row !items-start gap-2 !py-3 text-sm text-blue-700 dark:text-blue-200">
+            <UIcon
+              name="i-lucide-info"
+              class="mt-0.5 h-4 w-4 flex-shrink-0"
+            />
+            <p>
+              Проверь информацию перед печатью. QR содержит статический код.
+            </p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex w-full gap-3">
+            <button
+              type="button"
+              class="at-btn flex-1 !py-2.5"
+              @click="$emit('close')"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              class="at-btn at-btn--primary flex-1 !py-2.5 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="!props.qrImage || props.loading"
+              @click="$emit('print')"
+            >
+              <UIcon
+                name="i-lucide-printer"
+                class="h-4 w-4"
+              />
+              Печать
+            </button>
           </div>
         </div>
       </div>
@@ -162,9 +162,6 @@ const hasContent = computed(() => !!props.title || !!props.address);
   animation: spin 1s linear infinite;
 }
 
-.dark .qr-image {
-  filter: invert(0.8) hue-rotate(180deg);
-}
 
 @media print {
   /* Скрыть оверлей и сделать модальное окно статичным */

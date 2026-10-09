@@ -520,6 +520,8 @@
     "atraceRoleManagerDesc": "Управляет посещаемостью, сменами и командой — почти как администратор.",
     "atraceRoleAdminDesc": "Полный доступ ко всем разделам и настройкам.",
     "atraceManagement": "Управление",
+    "memberNickname": "Имя в команде",
+    "memberNicknameHint": "Так коллеги видят человека в этом пространстве. Оставьте пустым — будет имя аккаунта.",
     "coverageApprovedTitle": "Подмена согласована",
     "coverageApprovedDesc": "Ваша подмена сотрудником {name} на {date} успешно согласована.",
     "leaveApprovedTitle": "Заявка согласована",

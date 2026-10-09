@@ -381,7 +381,7 @@ onBeforeUnmount(() => {
       :banners="leaveApprovalBanners"
       @dismiss="dismissLeaveApprovalBanner"
     />
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-3 mt-3 px-4 flex-shrink-0">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-2 mt-2 px-4 flex-shrink-0">
       <div
         class="text-left min-w-0"
         data-tour="atrace-title"

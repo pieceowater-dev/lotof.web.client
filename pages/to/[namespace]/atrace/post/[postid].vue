@@ -414,7 +414,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center px-4 bg-[#f6f6f7] dark:bg-[#141414]">
+  <div class="min-h-screen flex flex-col items-center justify-center px-4 at-bg">
     <div class="at-panel w-full max-w-md !p-7 flex flex-col items-center">
       <h1 class="at-title !text-xl mb-2 flex flex-col items-center justify-center w-full">
         <span class="flex items-center justify-center w-full gap-2">

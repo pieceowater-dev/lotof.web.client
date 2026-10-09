@@ -460,6 +460,8 @@
     "atraceRoleManager": "Менеджер",
     "atraceRoleAdmin": "Әкімші",
     "atraceManagement": "Басқару",
+    "memberNickname": "Командадағы аты",
+    "memberNicknameHint": "Әріптестер бұл адамды осы кеңістікте осылай көреді. Бос қалдырсаңыз — аккаунт аты болады.",
     "coverageApprovedTitle": "Ауыстыру келісілді",
     "coverageApprovedDesc": "{date} күні {name} қызметкерімен ауыстыруыңыз сәтті келісілді.",
     "leaveApprovedTitle": "Өтініш келісілді",

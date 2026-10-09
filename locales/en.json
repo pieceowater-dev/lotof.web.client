@@ -512,6 +512,8 @@
     "atraceRoleManagerDesc": "Manages attendance, shifts, and the team — almost like an admin.",
     "atraceRoleAdminDesc": "Full access to every section and setting.",
     "atraceManagement": "Management",
+    "memberNickname": "Team name",
+    "memberNicknameHint": "How colleagues see this person in this workspace. Leave empty to use the account name.",
     "coverageApprovedTitle": "Coverage approved",
     "coverageApprovedDesc": "Your shift coverage by {name} on {date} has been approved.",
     "leaveApprovedTitle": "Leave approved",

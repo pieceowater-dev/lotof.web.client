@@ -74,7 +74,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="cardsScrollRef"
-    class="hidden md:block overflow-x-auto no-scrollbar whitespace-nowrap pt-2 pb-5 px-4 flex-shrink-0"
+    class="hidden md:block overflow-x-auto no-scrollbar whitespace-nowrap pt-1 pb-4 px-4 flex-shrink-0"
     data-tour="posts-list"
   >
     <div class="inline-flex space-x-4 items-stretch">
@@ -82,7 +82,7 @@ onBeforeUnmount(() => {
         <div
           v-for="i in 5"
           :key="`skeleton-${i}`"
-          class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[84px] self-stretch !cursor-default"
+          class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[72px] self-stretch !cursor-default"
         >
           <div class="flex items-center gap-2 mb-2">
             <USkeleton class="h-5 w-3/4" />
@@ -121,7 +121,7 @@ onBeforeUnmount(() => {
         <button
           v-if="canCreate"
           data-tour="create-post-btn"
-          class="at-post-add w-60 min-h-[84px]"
+          class="at-post-add w-60 min-h-[72px]"
           @click="emit('create')"
         >
           {{ t('app.atraceAddLocation') }}

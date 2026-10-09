@@ -58,7 +58,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
     :class="soft ? 'at-tray max-h-full' : 'h-full bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800'"
   >
     <div class="flex-1 min-h-0 overflow-auto">
-      <div class="overflow-x-auto">
+      <div>
         <UTable
           v-model:sort="sort"
           v-model="selected"
@@ -70,6 +70,8 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           :empty-state="{ icon: emptyIcon || 'lucide:bird', label: t('app.emptyTable') }"
           :progress="{ color: 'primary', animation: 'carousel' }"
           :ui="{
+            // no inner scroll wrapper: the parent .overflow-auto must be the only scroller so the sticky header sticks
+            wrapper: 'relative',
             th: { base: 'normal-case sticky top-0 z-10 bg-gray-50 dark:bg-gray-800/50 whitespace-nowrap', padding: 'px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm' },
             td: { base: 'truncate', padding: 'px-2 md:px-4 py-1 md:py-2 text-xs md:text-sm' },
             divide: 'divide-y divide-gray-200 dark:divide-gray-800',

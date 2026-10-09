@@ -136,15 +136,12 @@ export function useAtraceLocationMap(form: Ref<LocationForm>) {
 
       map = L.map(mapContainer.value).setView(center, zoom);
 
-      if (isDark) {
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-          attribution: '© OpenStreetMap contributors © CARTO'
-        }).addTo(map);
-      } else {
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-      }
+      // CARTO's dark basemap now needs an API key (tiles render "API KEY REQUIRED"); raw OSM tiles
+      // need none, and the global "map-tiles-dark" class inverts them for dark mode.
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        className: isDark ? 'map-tiles-dark' : undefined,
+      }).addTo(map);
 
       marker = L.marker(center, { draggable: true }).addTo(map);
 

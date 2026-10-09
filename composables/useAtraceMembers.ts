@@ -76,8 +76,9 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
   // Edit member modal
   const isEditMemberOpen = ref(false);
   const editingMember = ref<AtraceMember | null>(null);
-  const editForm = reactive<{ roleId: string; requiredWorkingDays: number; requiredWorkingHours: number }>({
+  const editForm = reactive<{ roleId: string; nickname: string; requiredWorkingDays: number; requiredWorkingHours: number }>({
     roleId: '',
+    nickname: '',
     requiredWorkingDays: DEFAULT_REQUIRED_WORKING_DAYS,
     requiredWorkingHours: DEFAULT_REQUIRED_WORKING_HOURS
   });
@@ -251,6 +252,7 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
   function openEditMember(member: AtraceMember) {
     editingMember.value = member;
     editForm.roleId = member.roleId || '';
+    editForm.nickname = member.nickname?.trim() || '';
     editForm.requiredWorkingDays = member.requiredWorkingDays ?? DEFAULT_REQUIRED_WORKING_DAYS;
     editForm.requiredWorkingHours = member.requiredWorkingHours ?? DEFAULT_REQUIRED_WORKING_HOURS;
     isEditMemberOpen.value = true;
@@ -398,6 +400,16 @@ export function useAtraceMembers(nsSlug: ComputedRef<string>) {
           requiredDays,
           requiredHours
         );
+      }
+
+      // Per-namespace display name (same hub mutation the /people page uses). Empty clears the override
+      // back to the account's own username.
+      const newNickname = (editForm.nickname || '').trim();
+      if (newNickname !== (editingMember.value.nickname?.trim() || '')) {
+        const { hubNamespaceBySlug } = await import('@/api/hub/namespaces/get');
+        const { hubSetMemberNickname } = await import('@/api/hub/members/list');
+        const ns = await hubNamespaceBySlug(hubToken!, nsSlug.value);
+        if (ns?.id) await hubSetMemberNickname(hubToken!, ns.id, primaryMemberId, newNickname);
       }
 
       // Close modal and reload members to get fresh data from backend

@@ -49,9 +49,9 @@ const view = ref<'table' | 'analytics'>('table');
 </script>
 
 <template>
-  <div class="hidden md:flex justify-between items-center mb-2 mt-3 px-4 flex-shrink-0">
-    <div class="text-left">
-      <h2 class="at-h2">
+  <div class="hidden md:flex justify-between items-center mb-2 mt-1 px-4 flex-shrink-0 gap-3">
+    <div class="text-left min-w-0">
+      <h2 class="at-h2 truncate">
         {{ t('app.attendance') }} —
         {{ selectedPostId === '' ? (t('app.allLocations') || 'All locations') : selectedPostTitle }}
       </h2>
@@ -59,6 +59,25 @@ const view = ref<'table' | 'analytics'>('table');
         v-if="selectedPostId !== ''"
         class="text-xs text-gray-400"
       >{{ selectedPostLocationLine }}</span>
+    </div>
+    <div
+      v-if="selectedPostId !== null && canManageAttendance"
+      class="pl-toggle flex-shrink-0"
+    >
+      <button
+        class="pl-toggle__btn !px-5 !py-1.5"
+        :class="view === 'table' ? 'pl-toggle__btn--on' : ''"
+        @click="view = 'table'"
+      >
+        {{ t('app.analyticsViewTable') || 'Таблица' }}
+      </button>
+      <button
+        class="pl-toggle__btn !px-5 !py-1.5"
+        :class="view === 'analytics' ? 'pl-toggle__btn--on' : ''"
+        @click="view = 'analytics'"
+      >
+        {{ t('app.analyticsViewAnalytics') || 'Аналитика' }}
+      </button>
     </div>
   </div>
 
@@ -68,7 +87,7 @@ const view = ref<'table' | 'analytics'>('table');
   >
     <div
       v-if="canManageAttendance"
-      class="pl-toggle flex-shrink-0 mb-3 self-start"
+      class="pl-toggle flex-shrink-0 mb-2 self-start md:!hidden"
     >
       <button
         class="pl-toggle__btn !px-5 !py-1.5"

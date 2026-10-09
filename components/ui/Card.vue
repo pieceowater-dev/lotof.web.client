@@ -222,7 +222,7 @@ const dropdownItems = [
 <template>
   <div
     :class="selected ? 'at-post--on' : ''"
-    class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[84px] self-stretch"
+    class="at-post w-60 max-w-[90vw] sm:max-w-xs flex-shrink-0 min-h-[72px] self-stretch"
     role="button"
     tabindex="0"
     @click="emit('select', post)"
@@ -273,7 +273,7 @@ const dropdownItems = [
       </div>
     </div>
     <!-- Reserve space for one location line to keep cards equal height -->
-    <div class="h-5">
+    <div class="h-4">
       <p
         v-if="locationText"
         class="text-sm truncate"
@@ -286,7 +286,7 @@ const dropdownItems = [
     <!-- Flexible spacer to push bottom section down when there is little content -->
     <div class="flex-1" />
     <!-- Reserve space for one description line to keep cards equal height -->
-    <div class="mt-0.5 h-5">
+    <div class="mt-0.5 h-4">
       <p
         v-if="hasDescription"
         class="text-xs truncate"

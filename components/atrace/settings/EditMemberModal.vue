@@ -18,7 +18,7 @@ const emit = defineEmits<{
   (e: 'save'): void;
 }>();
 
-const editForm = defineModel<{ roleId: string; requiredWorkingDays: number; requiredWorkingHours: number }>('form', { required: true });
+const editForm = defineModel<{ roleId: string; nickname: string; requiredWorkingDays: number; requiredWorkingHours: number }>('form', { required: true });
 
 const { t } = useI18n();
 
@@ -58,25 +58,23 @@ const editRoleDescription = computed(() => {
         v-if="member"
         class="space-y-6"
       >
-        <!-- Member Info -->
-        <div class="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <div class="grid grid-cols-1 gap-3">
-            <div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {{ t('common.username') }}
-              </span>
-              <p class="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-                {{ memberDisplayName(member) }}
-              </p>
-            </div>
-            <div>
-              <span class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                {{ t('common.email') }}
-              </span>
-              <p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-                {{ member.email }}
-              </p>
-            </div>
+        <!-- Member identity: editable team name (per-namespace nickname) + read-only account info -->
+        <div class="at-row !p-4 space-y-3">
+          <UFormGroup
+            :label="t('app.memberNickname') || 'Имя в команде'"
+            :help="t('app.memberNicknameHint') || 'Так коллеги видят человека в этом пространстве. Оставьте пустым — будет имя аккаунта.'"
+          >
+            <UInput
+              v-model="editForm.nickname"
+              size="lg"
+              maxlength="64"
+              icon="i-heroicons-user"
+              :placeholder="member.username"
+            />
+          </UFormGroup>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+            <span>{{ t('common.username') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ member.username }}</span></span>
+            <span>{{ t('common.email') }}: <span class="font-medium text-gray-700 dark:text-gray-300">{{ member.email }}</span></span>
           </div>
         </div>
 

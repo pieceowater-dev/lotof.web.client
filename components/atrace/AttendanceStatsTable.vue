@@ -734,7 +734,7 @@ function formatNumber(val: number, fractionDigits = 0) {
 <template>
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period Filter, Legend & Settings -->
-    <div class="mb-3 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
+    <div class="mb-2 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
       <!-- Period Filter Buttons -->
       <div class="flex flex-wrap gap-1.5">
         <button

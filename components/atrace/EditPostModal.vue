@@ -457,13 +457,3 @@ watch(() => props.modelValue, (isOpen) => {
     </UCard>
   </UModal>
 </template>
-
-<style>
-/* Not scoped: Leaflet injects these <img> tiles itself, outside Vue's
-   template, so a scoped selector's data-attribute would never match them.
-   Approximates a dark map from the same light OSM tiles used in light mode
-   (see initMap's comment on why this replaced the CARTO dark_all layer). */
-.map-tiles-dark {
-  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
-}
-</style>
