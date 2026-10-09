@@ -37,7 +37,7 @@ const plans = computed<MembershipPlan[]>(() => data.value?.plans ?? []);
 const primary = computed(() => brand.value?.primaryColor || '#4f46e5');
 // CTA buttons on top of the brand colour always use white text, by request.
 const onPrimary = '#ffffff';
-const brandVars = computed(() => ({ '--brand': primary.value, '--brand-ink': onPrimary }));
+const brandVars = computed(() => ({ '--brand': primary.value, '--brand-ink': onPrimary, '--brand-fg': readableOnLight(primary.value) }));
 
 const social = computed<Array<{ label: string; url: string }>>(() => {
   const raw = brand.value?.socialLinks?.trim();
@@ -149,7 +149,7 @@ const statusLabel: Record<string, string> = {
     <StorefrontTopBar :powered-label="t('menu.poweredBy') || 'Powered by'" />
 
     <div v-if="loading" class="flex min-h-[70vh] items-center justify-center">
-      <UIcon name="lucide:loader-2" class="h-8 w-8 animate-spin" :style="{ color: primary }" />
+      <UIcon name="lucide:loader-2" class="h-8 w-8 animate-spin" :style="{ color: 'var(--brand-fg)' }" />
     </div>
     <div v-else-if="error" class="flex min-h-[70vh] items-center justify-center p-6 text-center">
       <div>
@@ -197,7 +197,7 @@ const statusLabel: Record<string, string> = {
             <div v-for="m in myMemberships" :key="m.id" class="border-b border-gray-100 py-3 last:border-0 dark:border-white/10">
               <div class="flex items-center justify-between gap-2">
                 <span class="font-semibold text-gray-900 dark:text-white">{{ m.planNameSnapshot }}</span>
-                <span class="sf-tint rounded-full px-2.5 py-0.5 text-xs font-semibold" :style="{ color: primary }">{{ statusLabel[m.status] || m.status }}</span>
+                <span class="sf-tint rounded-full px-2.5 py-0.5 text-xs font-semibold" :style="{ color: 'var(--brand-fg)' }">{{ statusLabel[m.status] || m.status }}</span>
               </div>
               <p class="mt-1 text-xs text-gray-500">
                 <template v-if="m.visitsTotal > 0">осталось {{ Math.max(0, m.visitsTotal - m.visitsUsed) }} из {{ m.visitsTotal }}</template>
@@ -230,7 +230,7 @@ const statusLabel: Record<string, string> = {
 
         <div v-if="mapSrc" class="sf-card overflow-hidden">
           <iframe :src="mapSrc" class="h-56 w-full" loading="lazy" title="Карта расположения" />
-          <a v-if="brand.address" :href="twoGisSearchHref(brand.address)" target="_blank" class="block py-3 text-center text-sm font-semibold" :style="{ color: primary }">Открыть на карте</a>
+          <a v-if="brand.address" :href="twoGisSearchHref(brand.address)" target="_blank" class="block py-3 text-center text-sm font-semibold" :style="{ color: 'var(--brand-fg)' }">Открыть на карте</a>
         </div>
 
         <p class="pt-2 text-center text-xs text-gray-400">
@@ -244,7 +244,7 @@ const statusLabel: Record<string, string> = {
       <div class="sf-fields p-6" :style="brandVars">
         <template v-if="submittedOk">
           <div class="py-4 text-center">
-            <span class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full" :style="{ background: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primary }">
+            <span class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full" :style="{ background: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: 'var(--brand-fg)' }">
               <UIcon name="lucide:check" class="h-8 w-8" />
             </span>
             <h2 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Заявка отправлена</h2>
@@ -260,7 +260,7 @@ const statusLabel: Record<string, string> = {
             </div>
             <button type="button" class="sf-sheet-close" aria-label="Закрыть" @click="sheetOpen = false"><UIcon name="lucide:x" class="h-4 w-4" /></button>
           </div>
-          <p class="sf-tint mt-3 inline-block rounded-full px-3 py-1 text-sm font-bold" :style="{ color: primary }">
+          <p class="sf-tint mt-3 inline-block rounded-full px-3 py-1 text-sm font-bold" :style="{ color: 'var(--brand-fg)' }">
             {{ chosenPlan ? money(chosenPlan.price, chosenPlan.currency) : '' }}
           </p>
           <div class="mt-4 space-y-3">

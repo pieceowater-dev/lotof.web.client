@@ -63,11 +63,11 @@ function handleAddClick() {
         <div v-else class="w-full h-full flex items-center justify-center text-gray-300 dark:text-gray-700">
           <Icon name="lucide:image" class="w-1/3 h-1/3" />
         </div>
-        <div v-if="itemBadges.length" class="absolute top-1.5 left-1.5 flex flex-wrap gap-1 max-w-[calc(100%-12px)]">
+        <div v-if="itemBadges.length" class="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[calc(100%-24px)]">
           <span
             v-for="b in itemBadges"
             :key="b.id"
-            class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold shadow-sm"
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold shadow-sm"
             :style="{ backgroundColor: b.bgColor, color: b.textColor }"
           >
             <span v-if="b.icon">{{ b.icon }}</span>{{ b.text }}

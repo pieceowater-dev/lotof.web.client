@@ -47,7 +47,7 @@ const brandSocialLinks = computed(() => parseSocialLinks(brand.value?.socialLink
 
 const primaryColor = computed(() => brand.value?.primaryColor || '#3b82f6');
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
-const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value }));
+const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value, '--brand-fg': secondaryColor.value }));
 // primaryColor is the hero/background color — amount text uses secondaryColor
 // instead, same convention as the storefront's cart/checkout totals.
 const secondaryColor = computed(() => brand.value?.secondaryColor || primaryColor.value);

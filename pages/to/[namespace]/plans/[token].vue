@@ -3,7 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { usePatronAuth } from '@/composables/usePatronAuth';
 import { getErrorMessage } from '@/utils/types/errors';
 import { plansPublicApi, type PlansBooking, type PlansAvailableSlot, type PlansSettings } from '@/api/plans/ops';
-import { getContrastTextColor } from '@/utils/color';
+import { getContrastTextColor, readableOnLight } from '@/utils/color';
 import StorefrontHero from '@/components/storefront/StorefrontHero.vue';
 import StorefrontTopBar from '@/components/storefront/StorefrontTopBar.vue';
 
@@ -30,7 +30,7 @@ const forbidden = ref(false);
 const brandSettings = ref<PlansSettings | null>(null);
 const accent = computed(() => brandSettings.value?.primaryColor || '#7c3aed');
 const onAccent = computed(() => getContrastTextColor(accent.value));
-const brandVars = computed(() => ({ '--brand': accent.value, '--brand-ink': onAccent.value }));
+const brandVars = computed(() => ({ '--brand': accent.value, '--brand-ink': onAccent.value, '--brand-fg': readableOnLight(accent.value) }));
 onMounted(async () => {
   try { brandSettings.value = await plansPublicApi.settings(nsSlug.value); } catch { /* neutral default */ }
 });
@@ -137,7 +137,7 @@ const statusMeta = computed(() => {
     <div class="mx-auto max-w-md px-4 py-8">
       <!-- checking session -->
       <div v-if="authChecking" class="flex justify-center py-24">
-        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: accent }" />
+        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: 'var(--brand-fg)' }" />
       </div>
 
       <!-- must be a signed-in patron -->
@@ -151,7 +151,7 @@ const statusMeta = computed(() => {
       </div>
 
       <div v-else-if="loading" class="flex justify-center py-24">
-        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: accent }" />
+        <UIcon name="i-heroicons-arrow-path" class="h-7 w-7 animate-spin" :style="{ color: 'var(--brand-fg)' }" />
       </div>
 
       <div v-else-if="forbidden" class="sf-card p-7 text-center text-sm text-gray-500">
@@ -170,7 +170,7 @@ const statusMeta = computed(() => {
           </div>
 
           <div class="flex flex-col gap-3 p-5">
-            <div class="text-xl font-extrabold capitalize tracking-tight" :style="{ color: accent }">{{ fmt(booking.startAt) }}</div>
+            <div class="text-xl font-extrabold capitalize tracking-tight" :style="{ color: 'var(--brand-fg)' }">{{ fmt(booking.startAt) }}</div>
             <div class="space-y-1.5 text-sm text-gray-600 dark:text-gray-300">
               <div v-if="serviceName" class="flex items-center gap-2"><UIcon name="lucide:sparkles" class="h-4 w-4 text-gray-400" />{{ serviceName }}</div>
               <div class="flex items-center gap-2"><UIcon name="lucide:user" class="h-4 w-4 text-gray-400" />{{ booking.clientName }} · {{ booking.clientPhone }}</div>

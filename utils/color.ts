@@ -71,3 +71,17 @@ export const BADGE_TEXT_COLORS: string[] = [
   '#7c2d12', // deep orange-brown
   '#831843', // deep rose
 ]
+
+// Brand colour made legible as text/icon on a white (or near-white) surface:
+// darkens a pale tenant colour until it reaches WCAG large-text contrast (3:1).
+export function readableOnLight(hex: string, minContrast = 3): string {
+  const rgb = hexToRgb(hex)
+  if (!rgb) return hex
+  let { r, g, b } = rgb
+  for (let i = 0; i < 20; i++) {
+    if (contrastRatio(relativeLuminance(r, g, b), 1) >= minContrast) break
+    r = Math.round(r * 0.9); g = Math.round(g * 0.9); b = Math.round(b * 0.9)
+  }
+  const h = (n: number) => n.toString(16).padStart(2, '0')
+  return `#${h(r)}${h(g)}${h(b)}`
+}

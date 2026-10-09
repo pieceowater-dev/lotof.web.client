@@ -87,8 +87,8 @@ button.sf-pill:active, a.sf-pill:active { transform: scale(0.96); }
 .sf-option:hover { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--brand) 55%, transparent); }
 .sf-option:active { transform: scale(0.99); }
 .sf-option--on, .dark .sf-option--on {
-  background: color-mix(in srgb, var(--brand) 10%, transparent);
-  box-shadow: inset 0 0 0 2px var(--brand);
+  background: color-mix(in srgb, var(--brand-fg, var(--brand)) 10%, transparent);
+  box-shadow: inset 0 0 0 2px var(--brand-fg, var(--brand));
 }
 
 /* ── controls ────────────────────────────────────────────── */
@@ -125,7 +125,7 @@ button.sf-pill:active, a.sf-pill:active { transform: scale(0.96); }
 .sf-btn:active { transform: scale(0.98); }
 .sf-btn:disabled { opacity: 0.4; transform: none; box-shadow: none; cursor: not-allowed; }
 .sf-btn--block { display: flex; width: 100%; }
-.sf-btn--soft, .dark .sf-btn--soft { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); box-shadow: none; }
+.sf-btn--soft, .dark .sf-btn--soft { color: var(--brand-fg, var(--brand)); background: color-mix(in srgb, var(--brand) 12%, transparent); box-shadow: none; }
 .sf-btn--soft:hover { background: color-mix(in srgb, var(--brand) 20%, transparent); box-shadow: none; }
 .dark .sf-btn--soft { color: color-mix(in srgb, var(--brand) 55%, white); }
 
@@ -165,7 +165,7 @@ button.sf-pill:active, a.sf-pill:active { transform: scale(0.96); }
   display: inline-flex; height: 2.1rem; width: 2.1rem; align-items: center; justify-content: center; border-radius: 9999px;
   color: #64748b; background: rgba(15, 23, 42, 0.05); transition: background 0.3s, color 0.3s;
 }
-.sf-social:hover { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
+.sf-social:hover { color: var(--brand-fg, var(--brand)); background: color-mix(in srgb, var(--brand) 12%, transparent); }
 .dark .sf-social { color: #a3a3a3; background: rgba(255, 255, 255, 0.08); }
 
 .sf-no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }

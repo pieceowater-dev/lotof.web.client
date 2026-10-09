@@ -221,7 +221,7 @@ const secondaryColor = computed(() => data.value?.storefront.brandSettings?.seco
 const onPrimaryText = computed(() => getContrastTextColor(primaryColor.value));
 // Drives the whole storefront design system (assets/css/storefront.css).
 // Sheets teleport out of the page root, so they re-apply it on their own wrapper.
-const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value, '--brand-color': primaryColor.value }));
+const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink': onPrimaryText.value, '--brand-color': primaryColor.value, '--brand-fg': secondaryColor.value }));
 
 // Back-to-Catalog: only shown when the Patron actually arrived from /catalog
 // or /stores. document.referrer isn't reliable here (a NuxtLink click is a
@@ -1253,7 +1253,7 @@ useHead(() => {
         >
           <span
             class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }"
+            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand-fg) 14%, transparent)', color: 'var(--brand-fg)' }"
           >
             <Icon name="lucide:receipt-text" class="w-5 h-5" />
           </span>
@@ -1271,7 +1271,7 @@ useHead(() => {
         >
           <span
             class="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }"
+            :style="{ backgroundColor: 'color-mix(in srgb, var(--brand-fg) 14%, transparent)', color: 'var(--brand-fg)' }"
           >
             <Icon name="lucide:log-in" class="w-5 h-5" />
           </span>
@@ -1387,9 +1387,9 @@ useHead(() => {
                       group.type === 'multi' ? 'rounded-[4px]' : 'rounded-full',
                       (selectedModifiers[group.id] || []).includes(opt.id) ? 'border-transparent' : 'border-gray-300 dark:border-gray-600',
                     ]"
-                    :style="(selectedModifiers[group.id] || []).includes(opt.id) ? { backgroundColor: primaryColor, borderColor: primaryColor } : {}"
+                    :style="(selectedModifiers[group.id] || []).includes(opt.id) ? { backgroundColor: secondaryColor, borderColor: secondaryColor } : {}"
                   >
-                    <Icon v-if="(selectedModifiers[group.id] || []).includes(opt.id)" name="lucide:check" class="w-2.5 h-2.5 text-white" />
+                    <Icon v-if="(selectedModifiers[group.id] || []).includes(opt.id)" name="lucide:check" class="w-2.5 h-2.5" :style="{ color: getContrastTextColor(secondaryColor) }" />
                   </span>
                   {{ maskProfanity(opt.name) }}
                 </span>
@@ -1639,7 +1639,7 @@ useHead(() => {
               <span class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('menu.orderSummary') || 'Order summary' }}
               </span>
-              <button type="button" class="text-xs font-medium" :style="{ color: primaryColor }" @click="isCheckoutOpen = false; isCartOpen = true">
+              <button type="button" class="text-xs font-medium" :style="{ color: 'var(--brand-fg)' }" @click="isCheckoutOpen = false; isCartOpen = true">
                 {{ t('menu.editCart') || 'Edit' }}
               </button>
             </div>
@@ -1820,7 +1820,7 @@ useHead(() => {
         :to="`/${nsSlug}/menu/settings?tab=brand`"
         class="sf-card sf-card--hover flex items-center gap-3 pl-3 pr-4 py-2.5"
       >
-        <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: primaryColor }">
+        <span class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" :style="{ backgroundColor: 'color-mix(in srgb, var(--brand-fg) 14%, transparent)', color: 'var(--brand-fg)' }">
           <Icon name="lucide:pencil-line" class="w-4 h-4" />
         </span>
         <span class="text-left">

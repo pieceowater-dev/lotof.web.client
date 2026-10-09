@@ -8,7 +8,7 @@ import { telHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
 import { formatDisplayPhoneUniversal, normalizePhoneForStorage } from '@/utils/phone';
 import { resolveSiteUrl } from '@/utils/siteUrl';
-import { getContrastTextColor } from '@/utils/color';
+import { getContrastTextColor, readableOnLight } from '@/utils/color';
 import PhoneInput from '@/components/ui/PhoneInput.vue';
 import StorefrontTopBar from '@/components/storefront/StorefrontTopBar.vue';
 import StorefrontHero from '@/components/storefront/StorefrontHero.vue';
@@ -48,7 +48,7 @@ const services = computed<PlansService[]>(() => (data.value?.services || []).fil
 const brandName = computed(() => settings.value?.name || locations.value[0]?.name || 'lota Plans');
 const accent = computed(() => settings.value?.primaryColor || '#7c3aed');
 const onAccent = computed(() => getContrastTextColor(accent.value));
-const brandVars = computed(() => ({ '--brand': accent.value, '--brand-ink': onAccent.value }));
+const brandVars = computed(() => ({ '--brand': accent.value, '--brand-ink': onAccent.value, '--brand-fg': readableOnLight(accent.value) }));
 const currency = computed(() => settings.value?.currency || '');
 const socialLinks = computed(() => parseSocialLinks(settings.value?.socialLinks));
 
@@ -244,7 +244,7 @@ function fmtDateTime(iso: string) {
       <StorefrontTopBar :powered-label="t('plans.poweredBy') || 'Работает на'" />
 
       <div v-if="pending" class="flex flex-1 items-center justify-center py-24">
-        <UIcon name="i-heroicons-arrow-path" class="h-8 w-8 animate-spin" :style="{ color: accent }" />
+        <UIcon name="i-heroicons-arrow-path" class="h-8 w-8 animate-spin" :style="{ color: 'var(--brand-fg)' }" />
       </div>
       <div v-else-if="fetchError || !location" class="flex flex-1 items-center justify-center px-4 py-24 text-center text-gray-500">
         {{ t('plans.publicUnavailable') || 'Страница записи недоступна' }}
@@ -426,7 +426,7 @@ function fmtDateTime(iso: string) {
 
               <!-- STEP 4: done -->
               <div v-else class="flex flex-col items-center gap-3 py-8 text-center">
-                <span class="flex h-16 w-16 items-center justify-center rounded-full" :style="{ background: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: accent }">
+                <span class="flex h-16 w-16 items-center justify-center rounded-full" :style="{ background: 'color-mix(in srgb, var(--brand) 14%, transparent)', color: 'var(--brand-fg)' }">
                   <UIcon name="lucide:check" class="h-8 w-8" />
                 </span>
                 <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('plans.booked') || 'Вы записаны!' }}</h2>
@@ -462,7 +462,7 @@ function fmtDateTime(iso: string) {
 
         <!-- signed in as a patron: real history -->
         <div v-if="patron.isLoggedIn.value" class="space-y-2">
-          <div v-if="myBookingsLoading" class="flex justify-center py-6"><UIcon name="i-heroicons-arrow-path" class="h-6 w-6 animate-spin" :style="{ color: accent }" /></div>
+          <div v-if="myBookingsLoading" class="flex justify-center py-6"><UIcon name="i-heroicons-arrow-path" class="h-6 w-6 animate-spin" :style="{ color: 'var(--brand-fg)' }" /></div>
           <template v-else>
             <div v-if="!myBookings || !myBookings.length" class="py-4 text-center text-sm text-gray-500">
               {{ t('plans.noBookingsFound') || 'Записей не найдено' }}
