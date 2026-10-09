@@ -150,7 +150,7 @@ onMounted(() => {
     </div>
 
     <div class="flex-1 min-h-0">
-      <AppTable
+      <AppTable soft
         :rows="branches"
         :columns="columns"
         :loading="loading"

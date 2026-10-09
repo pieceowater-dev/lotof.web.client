@@ -249,7 +249,7 @@ onMounted(async () => {
     </div>
 
     <div class="flex-1 min-h-0">
-      <AppTable
+      <AppTable soft
         :rows="rows"
         :columns="columns"
         :loading="loading"

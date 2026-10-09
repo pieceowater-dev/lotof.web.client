@@ -60,10 +60,10 @@ watch(activeTab, (tab) => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
           {{ t('menu.settings') || 'Settings' }}
         </h1>
       </div>
@@ -92,19 +92,20 @@ watch(activeTab, (tab) => {
       </div>
     </div>
 
-    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 mb-4 flex-shrink-0 bg-white dark:bg-gray-900">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px"
-        :class="activeTab === tab.key
-          ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-        @click="activeTab = tab.key"
-      >
-        <UIcon :name="tab.icon" class="w-4 h-4" />
-        {{ tab.label }}
-      </button>
+    <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+      <div class="at-seg">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          type="button"
+          class="at-seg__btn"
+          :class="activeTab === tab.key ? 'at-seg__btn--on' : ''"
+          @click="activeTab = tab.key"
+        >
+          <UIcon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
+          <span>{{ tab.label }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto">

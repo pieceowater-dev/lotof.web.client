@@ -71,3 +71,9 @@
 .ct-scope [class*="rounded-lg"][class*="border-red-"]:not(button):not(input):not(select):not(textarea):not(label),
 .at-modal [class*="rounded-lg"][class*="border-emerald-"]:not(button):not(input):not(select):not(textarea):not(label),
 .at-modal [class*="rounded-lg"][class*="border-red-"]:not(button):not(input):not(select):not(textarea):not(label) { border-radius: 1.4rem; }
+
+/* soft gray UButtons → neutral tinted pill (never near-black in dark mode) */
+.ct-scope button[class~="bg-gray-50"], .ct-scope a[class~="bg-gray-50"], .at-modal button[class~="bg-gray-50"] { color: #334155 !important; background: rgba(15, 23, 42, 0.06) !important; padding-left: 0.9rem; padding-right: 0.9rem; border-radius: 9999px; }
+.ct-scope button[class~="bg-gray-50"]:hover, .at-modal button[class~="bg-gray-50"]:hover { background: rgba(15, 23, 42, 0.1) !important; }
+.dark .ct-scope button[class~="bg-gray-50"], .dark .ct-scope a[class~="bg-gray-50"], .dark .at-modal button[class~="bg-gray-50"] { color: #e5e5e5 !important; background: rgba(255, 255, 255, 0.09) !important; }
+.dark .ct-scope button[class~="bg-gray-50"]:hover, .dark .at-modal button[class~="bg-gray-50"]:hover { background: rgba(255, 255, 255, 0.15) !important; }

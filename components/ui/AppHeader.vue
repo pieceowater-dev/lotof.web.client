@@ -527,7 +527,7 @@ const goHome = () => {
         v-else-if="isPublicationPage"
         class="flex min-w-0 flex-1 items-center justify-end gap-2 pl-4"
       >
-        <nav class="flex min-w-0 flex-1 items-center justify-end gap-2 overflow-x-auto">
+        <nav class="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-2 overflow-x-auto no-scrollbar">
           <NuxtLink
             to="/feed"
             class="hdr-item"
@@ -536,7 +536,7 @@ const goHome = () => {
               : ''"
           >
             <UIcon name="lucide:newspaper" class="h-4 w-4" />
-            <span class="truncate">{{ t('app.feed') || 'Лента' }}</span>
+            <span class="truncate" :class="route.path === '/feed' ? '' : 'hidden sm:inline'">{{ t('app.feed') || 'Лента' }}</span>
           </NuxtLink>
           <NuxtLink
             to="/news"
@@ -546,7 +546,7 @@ const goHome = () => {
               : ''"
           >
             <UIcon name="lucide:radio" class="h-4 w-4" />
-            <span class="truncate">{{ t('app.news') || 'Новости' }}</span>
+            <span class="truncate" :class="route.path === '/news' ? '' : 'hidden sm:inline'">{{ t('app.news') || 'Новости' }}</span>
           </NuxtLink>
         </nav>
         <div class="hdr-lang-group">

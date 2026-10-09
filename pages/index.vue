@@ -1000,8 +1000,8 @@ watch([articlesSearch, selectedArticleTag], () => {
 
         <div v-if="isLoggedIn && (activeApps.length || possibleApps.length)" class="space-y-6 md:space-y-10">
         <div v-if="activeApps.length">
-          <h3 class="text-lg font-medium mb-4">{{ t('app.installedHead') }}</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
+          <h3 class="mb-4 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('app.installedHead') }}</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
             <div v-for="app in activeApps" :key="app.bundle" class="h-full">
               <AppCard v-bind="toCard(app)" />
             </div>
@@ -1009,8 +1009,8 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
 
         <div v-if="possibleApps.length">
-          <h3 class="text-lg font-medium mb-4">{{ t('app.availableHead') }}</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-10 items-stretch">
+          <h3 class="mb-4 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('app.availableHead') }}</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
             <div v-for="app in possibleApps" :key="app.bundle" class="h-full">
               <AppCard v-bind="toCard(app)" />
             </div>

@@ -889,10 +889,10 @@ async function handleCreateOrder(payload: any) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left" data-tour="menu-title">
-        <h1 class="text-xl sm:text-2xl font-semibold">
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
           {{ t('menu.title') || 'Orders' }}
         </h1>
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('menu.subtitle') || 'Every order from your storefronts, in one place' }}</span>
@@ -1088,6 +1088,7 @@ async function handleCreateOrder(payload: any) {
 
     <div class="flex-1 min-h-0">
       <AppTable
+        soft
         v-model:selected="selectedOrders"
         data-tour="menu-orders-table"
         v-model:page="page"
@@ -1250,7 +1251,7 @@ async function handleCreateOrder(payload: any) {
     <!-- Full filter panel: source tag + date ranges, for building a report
          over a period rather than everyday triage — kept out of the
          always-visible bar above. -->
-    <USlideover v-model="isFilterPanelOpen">
+    <USlideover class="at-modal" v-model="isFilterPanelOpen">
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto bg-gray-50/60 dark:bg-gray-950/40' } }" class="flex flex-col h-full">
         <template #header>
           <div class="flex items-center gap-3">

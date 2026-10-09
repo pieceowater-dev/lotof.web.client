@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
@@ -1024,7 +1025,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 </script>
 
 <template>
-  <USlideover v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-3xl lg:max-w-5xl' }">
+  <USlideover class="at-modal" v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-3xl lg:max-w-5xl' }">
     <UCard v-if="order" class="flex flex-col h-full" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-hidden p-0' }, rounded: 'rounded-none' }">
       <template #header>
         <div class="flex items-center justify-between gap-3">
@@ -1570,7 +1571,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   <!-- Mobile-only: status history opens as its own overlay instead of
        stacking inline (which used to push the rest of the order below the
        fold on small screens). -->
-  <USlideover v-model="isMobileTimelineOpen" side="right">
+  <USlideover class="at-modal" v-model="isMobileTimelineOpen" side="right">
     <UCard v-if="order" class="flex flex-col h-full" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' }, rounded: 'rounded-none' }">
       <template #header>
         <div class="flex items-center justify-between">
@@ -1584,8 +1585,8 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 
   <!-- Product detail dialog: live catalog data (image/description/badges),
        not just the order's purchase-time name+price snapshot. -->
-  <UModal v-model="isProductDetailOpen">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal class="at-modal" :ui="atModalUi" v-model="isProductDetailOpen">
+    <UCard :ui="atCardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">{{ selectedProductDetail?.name || (t('menu.product') || 'Product') }}</h3>

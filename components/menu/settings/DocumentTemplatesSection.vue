@@ -186,7 +186,7 @@ onMounted(() => {
     </div>
 
     <div class="flex-1 min-h-0">
-      <AppTable :rows="templates" :columns="columns" :loading="loading" empty-icon="lucide:file-text">
+      <AppTable soft :rows="templates" :columns="columns" :loading="loading" empty-icon="lucide:file-text">
         <template #name-data="{ row }">
           <button type="button" class="font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 text-left" @click="openEdit(row)">
             {{ row.name }}

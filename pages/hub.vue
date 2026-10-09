@@ -1338,7 +1338,7 @@ button.pref-card:hover { transform: translateY(-2px); }
 .dark .lang-btn { color: #e2e8f0; background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
 .dark .lang-btn--active { color: #93c5fd; background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 0 0 2px #3b82f6; }
 
-.hub-pill { padding: 0.35rem 1rem; font-size: 0.875rem; gap: 0.5rem; }
+.hub-pill { height: 2.75rem; padding: 0 1.25rem; font-size: 0.875rem; gap: 0.5rem; }
 .icon-btn--sm { height: 2.25rem; min-width: 2.25rem; }
 a.icon-btn--sm { display: inline-flex; }
 .icon-tile--sm { height: 2.5rem; width: 2.5rem; border-radius: 0.8rem; }

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -159,7 +160,7 @@ onMounted(load);
     </div>
 
     <div class="flex-1 min-h-0">
-      <AppTable :rows="fields" :columns="columns" :loading="loading" empty-icon="lucide:list-plus">
+      <AppTable soft :rows="fields" :columns="columns" :loading="loading" empty-icon="lucide:list-plus">
         <template #label-data="{ row }">
           <button type="button" class="font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 text-left" @click="openEdit(row)">
             {{ row.label }}
@@ -186,8 +187,8 @@ onMounted(load);
       </AppTable>
     </div>
 
-    <UModal v-model="isModalOpen" :ui="{ width: 'sm:max-w-md' }">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UModal class="at-modal" v-model="isModalOpen" :ui="{ ...atModalUi, width: 'sm:max-w-md' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-lg font-semibold">
             {{ editing ? (t('menu.orderFieldEdit') || 'Edit field') : (t('menu.orderFieldNew') || 'New field') }}

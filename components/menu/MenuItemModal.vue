@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { markupPercent } from '@/utils/labour';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
@@ -125,8 +126,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal class="at-modal" :ui="atModalUi" v-model="isOpen" @close="handleClose">
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-lg font-semibold">
           {{ item ? (t('menu.editMenuItem') || 'Edit item') : (t('menu.createMenuItem') || 'Add item') }}
