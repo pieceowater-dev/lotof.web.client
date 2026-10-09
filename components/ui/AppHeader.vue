@@ -809,57 +809,64 @@ const goHome = () => {
     v-model="catalogSheetOpen"
     side="bottom"
     :ui="{
-      base: 'relative flex flex-none flex-col w-[92%] max-w-md mx-auto focus:outline-none',
-      height: 'min-h-[70vh] max-h-[90vh]',
-      rounded: 'rounded-t-2xl',
+      base: 'relative flex flex-none flex-col w-[94%] max-w-md mx-auto focus:outline-none',
+      height: 'min-h-[60vh] max-h-[90vh]',
+      rounded: 'rounded-t-[2rem]',
+      background: 'bg-white dark:bg-[#1a1a1a]',
+      ring: 'ring-1 ring-black/5 dark:ring-white/10',
+      shadow: 'shadow-2xl',
     }"
   >
-    <div class="p-6 flex flex-col gap-6 h-full overflow-y-auto">
+    <div class="profile-sheet flex h-full flex-col gap-5 overflow-y-auto px-5 pb-6 pt-3">
+      <!-- grab handle -->
+      <span class="mx-auto h-1 w-10 flex-shrink-0 rounded-full bg-gray-300 dark:bg-white/20" aria-hidden="true" />
+
       <div class="flex items-center justify-between gap-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <span class="flex-shrink-0 w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-lg font-semibold text-amber-700 dark:text-amber-300">
+        <div class="flex min-w-0 items-center gap-3.5">
+          <span class="profile-avatar">
             {{ (patronDisplayName || '?').charAt(0).toUpperCase() }}
           </span>
           <div class="min-w-0">
-            <p class="text-base font-semibold text-gray-900 dark:text-gray-100 truncate">{{ patronDisplayName }}</p>
-            <p v-if="patronMe?.email" class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ patronMe.email }}</p>
+            <p class="truncate text-lg font-bold tracking-tight text-gray-900 dark:text-white">{{ patronDisplayName }}</p>
+            <p v-if="patronMe?.email" class="truncate text-xs text-gray-500 dark:text-gray-400">{{ patronMe.email }}</p>
           </div>
         </div>
-        <UButton icon="lucide:x" color="gray" variant="ghost" size="sm" class="flex-shrink-0" @click="catalogSheetOpen = false" />
-      </div>
-
-      <div class="grid grid-cols-2 gap-3">
-        <div class="rounded-2xl border border-dashed border-gray-200 dark:border-gray-700 p-4 text-center">
-          <UIcon name="lucide:receipt" class="w-5 h-5 mx-auto text-gray-400" />
-          <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">{{ t('home.ordersTitle') || 'Заказы' }}</p>
-        </div>
-        <button
-          type="button"
-          class="rounded-2xl border p-4 text-center transition-colors"
-          :class="favoritesExpanded ? 'border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/10' : 'border-dashed border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'"
-          @click="toggleFavoritesSection"
-        >
-          <UIcon name="lucide:heart" class="w-5 h-5 mx-auto" :class="favoritesExpanded ? 'text-rose-500 fill-rose-500' : 'text-gray-400'" />
-          <p class="mt-2 text-xs" :class="favoritesExpanded ? 'text-rose-700 dark:text-rose-400 font-medium' : 'text-gray-500 dark:text-gray-400'">{{ t('home.favoritesTitle') || 'Избранное' }}</p>
+        <button type="button" class="profile-icon-btn" :aria-label="t('app.cancel') || 'Close'" @click="catalogSheetOpen = false">
+          <UIcon name="lucide:x" class="h-4 w-4" />
         </button>
       </div>
 
-      <div v-if="favoritesExpanded" class="rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-        <p v-if="favoritesLoading" class="text-xs text-gray-400 p-4">{{ t('app.loading') || 'Загрузка…' }}</p>
-        <p v-else-if="!favoritesList.length" class="text-xs text-gray-400 p-4">{{ t('home.noFavoritesYet') || 'Пока нет избранных заведений' }}</p>
-        <ul v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="profile-tile">
+          <span class="profile-tile__icon"><UIcon name="lucide:receipt" class="h-5 w-5" /></span>
+          <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('home.ordersTitle') || 'Заказы' }}</span>
+        </div>
+        <button
+          type="button"
+          class="profile-tile profile-tile--btn"
+          :class="favoritesExpanded ? 'profile-tile--rose' : ''"
+          :aria-expanded="favoritesExpanded"
+          @click="toggleFavoritesSection"
+        >
+          <span class="profile-tile__icon" :class="favoritesExpanded ? '!bg-rose-100 !text-rose-500 dark:!bg-rose-500/20' : ''">
+            <UIcon name="lucide:heart" class="h-5 w-5" :class="favoritesExpanded ? 'fill-rose-500' : ''" />
+          </span>
+          <span class="text-sm font-semibold" :class="favoritesExpanded ? 'text-rose-600 dark:text-rose-400' : 'text-gray-900 dark:text-gray-100'">{{ t('home.favoritesTitle') || 'Избранное' }}</span>
+        </button>
+      </div>
+
+      <div v-if="favoritesExpanded" class="catalog-panel overflow-hidden !rounded-3xl p-1.5">
+        <p v-if="favoritesLoading" class="p-4 text-xs text-gray-400">{{ t('app.loading') || 'Загрузка…' }}</p>
+        <p v-else-if="!favoritesList.length" class="p-4 text-xs text-gray-400">{{ t('home.noFavoritesYet') || 'Пока нет избранных заведений' }}</p>
+        <ul v-else class="max-h-56 space-y-0.5 overflow-y-auto">
           <li v-for="biz in favoritesList" :key="biz.key">
-            <NuxtLink
-              :to="biz.to"
-              class="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
-              @click="catalogSheetOpen = false"
-            >
-              <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br flex items-center justify-center" :class="biz.gradient">
-                <img v-if="biz.logoUrl" :src="biz.logoUrl" :alt="biz.name" class="w-full h-full object-contain rounded-full p-0.5">
-                <UIcon v-else :name="biz.icon" class="w-4 h-4" :class="biz.iconColor" />
+            <NuxtLink :to="biz.to" class="profile-row" @click="catalogSheetOpen = false">
+              <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br" :class="biz.gradient">
+                <img v-if="biz.logoUrl" :src="biz.logoUrl" :alt="biz.name" class="h-full w-full object-cover">
+                <UIcon v-else :name="biz.icon" class="h-4 w-4" :class="biz.iconColor" />
               </span>
-              <span class="min-w-0 flex-1 text-sm text-gray-700 dark:text-gray-200 truncate">{{ biz.name }}</span>
-              <UIcon name="lucide:chevron-right" class="w-4 h-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
+              <span class="min-w-0 flex-1 truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ biz.name }}</span>
+              <UIcon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-300 dark:text-gray-600" />
             </NuxtLink>
           </li>
         </ul>
@@ -867,26 +874,73 @@ const goHome = () => {
 
       <!-- Cross-sell into the business side -- clearly a jump away from the
            catalog, not one of its own features. -->
-      <button
-        type="button"
-        class="text-left rounded-2xl p-4 flex items-center justify-between bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow group"
-        @click="handleGoToHub"
-      >
-        <div class="flex items-center gap-3 min-w-0">
-          <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-700 dark:text-gray-200">
-            <UIcon name="lucide:briefcase" class="w-5 h-5" />
-          </span>
+      <button type="button" class="catalog-panel group flex items-center justify-between gap-3 p-4 text-left transition-transform duration-500 hover:-translate-y-0.5" @click="handleGoToHub">
+        <span class="flex min-w-0 items-center gap-3">
+          <span class="icon-tile !h-11 !w-11 !rounded-2xl"><UIcon name="lucide:briefcase" class="h-5 w-5" /></span>
           <span class="min-w-0">
-            <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{{ t('home.workWithLotaTitle') || 'Работать с lota' }}</span>
-            <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('home.workWithLotaHint') || 'Работаете на lota? Перейти в рабочее пространство' }}</span>
+            <span class="block truncate text-sm font-bold text-gray-900 dark:text-white">{{ t('home.workWithLotaTitle') || 'Работать с lota' }}</span>
+            <span class="block text-xs leading-5 text-gray-500 dark:text-gray-400">{{ t('home.workWithLotaHint') || 'Работаете на lota? Перейти в рабочее пространство' }}</span>
           </span>
-        </div>
-        <UIcon name="lucide:arrow-right" class="w-4 h-4 flex-shrink-0 text-gray-400 transition-transform group-hover:translate-x-0.5" />
+        </span>
+        <UIcon name="lucide:arrow-right" class="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform duration-500 group-hover:translate-x-0.5" />
       </button>
 
-      <UButton color="gray" variant="soft" icon="lucide:door-open" block @click="handleCatalogLogout">
+      <button type="button" class="profile-logout" @click="handleCatalogLogout">
+        <UIcon name="lucide:log-out" class="h-4 w-4" />
         {{ t('app.logout') || 'Выйти' }}
-      </UButton>
+      </button>
     </div>
   </USlideover>
 </template>
+
+<style scoped>
+.profile-avatar {
+  display: flex; height: 3.25rem; width: 3.25rem; flex-shrink: 0; align-items: center; justify-content: center;
+  border-radius: 9999px; font-size: 1.25rem; font-weight: 700; color: #fff;
+  background-image: linear-gradient(135deg, #2563eb, #10b981);
+  box-shadow: 0 10px 22px -10px rgba(37, 99, 235, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+}
+.profile-icon-btn {
+  display: inline-flex; height: 2.25rem; width: 2.25rem; flex-shrink: 0; align-items: center; justify-content: center;
+  border-radius: 9999px; color: #64748b; background: rgba(15, 23, 42, 0.05);
+  transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.profile-icon-btn:hover { background: rgba(15, 23, 42, 0.1); }
+.profile-icon-btn:active { transform: scale(0.92); }
+.dark .profile-icon-btn { color: #d4d4d4; background: rgba(255, 255, 255, 0.08); }
+.dark .profile-icon-btn:hover { background: rgba(255, 255, 255, 0.14); }
+
+.profile-tile {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.75rem; border-radius: 1.5rem; padding: 1rem;
+  background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s, box-shadow 0.4s;
+}
+.dark .profile-tile { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.profile-tile--btn { cursor: pointer; text-align: left; }
+.profile-tile--btn:hover { transform: translateY(-2px); }
+.profile-tile--btn:active { transform: scale(0.97); }
+.profile-tile--rose { background: rgba(244, 63, 94, 0.07); box-shadow: inset 0 0 0 1.5px rgba(244, 63, 94, 0.35); }
+.dark .profile-tile--rose { background: rgba(244, 63, 94, 0.1); }
+.profile-tile__icon {
+  display: flex; height: 2.5rem; width: 2.5rem; align-items: center; justify-content: center; border-radius: 0.9rem;
+  color: #475569; background: rgba(15, 23, 42, 0.06); transition: background 0.4s, color 0.4s;
+}
+.dark .profile-tile__icon { color: #d4d4d4; background: rgba(255, 255, 255, 0.08); }
+
+.profile-row {
+  display: flex; align-items: center; gap: 0.75rem; border-radius: 1.1rem; padding: 0.5rem 0.65rem;
+  transition: background 0.3s;
+}
+.profile-row:hover { background: rgba(15, 23, 42, 0.05); }
+.dark .profile-row:hover { background: rgba(255, 255, 255, 0.07); }
+
+.profile-logout {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 9999px; padding: 0.8rem 1rem;
+  font-size: 0.875rem; font-weight: 600; color: #475569; background: rgba(15, 23, 42, 0.05);
+  transition: background 0.3s, color 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.profile-logout:hover { color: #dc2626; background: rgba(239, 68, 68, 0.1); }
+.profile-logout:active { transform: scale(0.98); }
+.dark .profile-logout { color: #d4d4d4; background: rgba(255, 255, 255, 0.07); }
+.dark .profile-logout:hover { color: #f87171; background: rgba(239, 68, 68, 0.16); }
+</style>

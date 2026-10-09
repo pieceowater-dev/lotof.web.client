@@ -14,18 +14,18 @@ const { t } = useI18n();
 
 <template>
   <div v-if="reviews.length > 0">
-    <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+    <h3 class="mb-3 text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
       {{ t('home.reviewsHeading') || 'Отзывы' }}
     </h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div
         v-for="review in reviews"
         :key="review.key"
-        class="rounded-2xl p-4 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm"
+        class="catalog-panel p-5"
       >
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-2.5 min-w-0">
-            <span class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-300">
+            <span class="flex-shrink-0 w-9 h-9 rounded-full bg-gray-900/5 dark:bg-white/10 flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-300">
               {{ review.author.charAt(0) }}
             </span>
             <div class="min-w-0">
@@ -46,13 +46,13 @@ const { t } = useI18n();
         <NuxtLink
           v-if="review.businessTo"
           :to="review.businessTo"
-          class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors"
+          class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-900/5 dark:bg-white/10 hover:bg-gray-900/10 dark:hover:bg-white/15 transition-colors"
         >
           <UIcon name="lucide:store" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
           <span class="text-xs font-medium text-gray-700 dark:text-gray-200">{{ review.business }}</span>
           <UIcon name="lucide:chevron-right" class="w-3 h-3 text-gray-400" />
         </NuxtLink>
-        <div v-else class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-700">
+        <div v-else class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-gray-900/5 dark:bg-white/10">
           <UIcon name="lucide:store" class="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
           <span class="text-xs font-medium text-gray-700 dark:text-gray-200">{{ review.business }}</span>
         </div>

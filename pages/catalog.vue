@@ -19,6 +19,8 @@ import {
 import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
 import { maskProfanity } from '@/utils/profanityFilter';
 import { FilterPaginationLengthEnum } from '@gql-hub';
+import CatalogHeader from '@/components/catalog/CatalogHeader.vue';
+import CatalogSearch from '@/components/catalog/CatalogSearch.vue';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
@@ -60,6 +62,12 @@ onMounted(() => {
     autoProvisionPatron();
   }
 });
+
+const verticals = computed(() => [
+  { to: '/stores', icon: 'lucide:utensils', tile: 'bg-orange-50 dark:bg-orange-500/15', iconColor: 'text-orange-500', title: t('home.storesTitle') || 'Заведения', subtitle: t('home.browseStoresCta') || 'Кафе и рестораны на lota Menu' },
+  { to: '/memberships', icon: 'lucide:ticket', tile: 'bg-emerald-50 dark:bg-emerald-500/15', iconColor: 'text-emerald-500', title: t('membership.nav') || 'Абонементы', subtitle: t('home.browseMembershipsCta') || 'Залы, студии, бассейны' },
+  { to: '/services', icon: 'lucide:scissors', tile: 'bg-violet-50 dark:bg-violet-500/15', iconColor: 'text-violet-500', title: t('home.servicesTitle') || 'Услуги', subtitle: t('home.browseServicesCta') || 'Запись и бронирование на lota Plans' },
+]);
 
 const promoBanners = [
   {
@@ -301,18 +309,19 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-10 md:py-16">
-    <div class="flex flex-col gap-6">
-      <div class="flex flex-col gap-8">
+  <div class="max-w-7xl mx-auto px-4 pb-16 pt-6 md:pt-10">
+    <div class="flex flex-col">
+      <CatalogHeader :title="t('home.title') || 'Каталог'" :subtitle="t('home.seoDescription') || 'Заказы, карты лояльности и заведения на платформе lota'" />
+      <div class="flex flex-col gap-9">
         <!-- Promo banners: auto-rotating carousel on mobile (one slide at a
              time -- plenty of banners, not much width to show them side by
              side); a plain scrollable strip on tablet/desktop instead,
              where there's room to just show them all. -->
-        <div class="relative h-32 rounded-3xl sm:hidden">
+        <div class="relative h-32 rounded-[2rem] sm:hidden">
           <Transition name="banner-fade">
             <div
               :key="promoBanners[activeBannerSlide].key"
-              class="absolute inset-0 rounded-3xl p-5 bg-gradient-to-br overflow-hidden"
+              class="absolute inset-0 rounded-[2rem] p-5 bg-gradient-to-br overflow-hidden"
               :class="promoBanners[activeBannerSlide].gradient"
             >
               <UIcon
@@ -347,12 +356,12 @@ useSeoMeta({
           </div>
         </div>
 
-        <div class="hidden sm:block overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+        <div class="hidden sm:block overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
           <div class="flex gap-4">
             <div
               v-for="banner in promoBanners"
               :key="banner.key"
-              class="relative flex-shrink-0 w-[260px] md:w-[300px] h-32 rounded-3xl p-5 bg-gradient-to-br overflow-hidden"
+              class="relative flex-shrink-0 w-[260px] md:w-[300px] h-32 rounded-[2rem] p-5 bg-gradient-to-br overflow-hidden"
               :class="banner.gradient"
             >
               <UIcon
@@ -380,61 +389,19 @@ useSeoMeta({
              these link out to the single-vertical filtered views. -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <NuxtLink
-            to="/stores"
-            class="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+            v-for="v in verticals"
+            :key="v.to"
+            :to="v.to"
+            class="catalog-panel group flex items-center gap-3 p-4 transition-transform duration-500 hover:-translate-y-0.5"
           >
-            <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center">
-              <UIcon
-                name="lucide:utensils"
-                class="w-5 h-5 text-orange-500"
-              />
+            <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl" :class="v.tile">
+              <UIcon :name="v.icon" class="h-5 w-5" :class="v.iconColor" />
             </span>
             <span class="min-w-0">
-              <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('home.storesTitle') || 'Заведения' }}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('home.browseStoresCta') || 'Кафе и рестораны на lota Menu' }}</span>
+              <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ v.title }}</span>
+              <span class="block truncate text-xs text-gray-500 dark:text-gray-400">{{ v.subtitle }}</span>
             </span>
-            <UIcon
-              name="lucide:chevron-right"
-              class="w-4 h-4 flex-shrink-0 ml-auto text-gray-300 dark:text-gray-600"
-            />
-          </NuxtLink>
-          <NuxtLink
-            to="/memberships"
-            class="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center">
-              <UIcon
-                name="lucide:ticket"
-                class="w-5 h-5 text-emerald-500"
-              />
-            </span>
-            <span class="min-w-0">
-              <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('membership.nav') || 'Абонементы' }}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('home.browseMembershipsCta') || 'Залы, студии, бассейны' }}</span>
-            </span>
-            <UIcon
-              name="lucide:chevron-right"
-              class="w-4 h-4 flex-shrink-0 ml-auto text-gray-300 dark:text-gray-600"
-            />
-          </NuxtLink>
-          <NuxtLink
-            to="/services"
-            class="rounded-2xl p-4 flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
-          >
-            <span class="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center">
-              <UIcon
-                name="lucide:scissors"
-                class="w-5 h-5 text-violet-500"
-              />
-            </span>
-            <span class="min-w-0">
-              <span class="block text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('home.servicesTitle') || 'Услуги' }}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('home.browseServicesCta') || 'Запись и бронирование на lota Plans' }}</span>
-            </span>
-            <UIcon
-              name="lucide:chevron-right"
-              class="w-4 h-4 flex-shrink-0 ml-auto text-gray-300 dark:text-gray-600"
-            />
+            <UIcon name="lucide:chevron-right" class="ml-auto h-4 w-4 flex-shrink-0 text-gray-300 transition-transform duration-500 group-hover:translate-x-0.5 dark:text-gray-600" />
           </NuxtLink>
         </div>
 
@@ -443,17 +410,17 @@ useSeoMeta({
              separate quick filter (client-side, narrows to favorited
              businesses) rather than a tag. -->
         <div>
-          <h3 class="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">
+          <h3 class="mb-3 text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
             {{ t('home.categoriesHeading') || 'Категории' }}
           </h3>
-          <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+          <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
             <div class="flex gap-2">
               <button
                 type="button"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+                class="pill-filter"
                 :class="activeTagId === null && !favoritesOnly
-                  ? 'bg-amber-500 text-white border-amber-500'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                  ? 'pill-filter--active'
+                  : ''"
                 @click="favoritesOnly = false; selectTag(null)"
               >
                 <UIcon
@@ -464,10 +431,10 @@ useSeoMeta({
               </button>
               <button
                 type="button"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+                class="pill-filter"
                 :class="favoritesOnly
-                  ? 'bg-rose-500 text-white border-rose-500'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                  ? 'pill-filter--rose'
+                  : ''"
                 @click="toggleFavoritesOnly"
               >
                 <UIcon
@@ -481,10 +448,10 @@ useSeoMeta({
                 v-for="tag in tags"
                 :key="tag.id"
                 type="button"
-                class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+                class="pill-filter"
                 :class="activeTagId === tag.id && !favoritesOnly
-                  ? 'bg-amber-500 text-white border-amber-500'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                  ? 'pill-filter--active'
+                  : ''"
                 @click="favoritesOnly = false; selectTag(tag.id)"
               >
                 {{ tag.name }}
@@ -500,40 +467,24 @@ useSeoMeta({
         >
           <div v-if="section.items.length > 0 || (sectionIdx === 0 && searchQuery)">
             <div class="flex items-center justify-between mb-3">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              <h3 class="text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
                 {{ section.title }}
               </h3>
               <NuxtLink
                 :to="section.to"
-                class="text-sm font-medium text-blue-600 dark:text-blue-400"
+                class="text-sm font-semibold text-blue-600 hover:underline dark:text-blue-400"
               >
                 {{ t('home.seeAll') || 'Все' }}
               </NuxtLink>
             </div>
-            <div
-              v-if="sectionIdx === 0"
-              class="relative mb-3"
-            >
-              <UIcon
-                name="lucide:search"
-                class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-              />
-              <input
-                v-model="searchQuery"
-                type="search"
-                :placeholder="t('home.searchBusinesses') || 'Поиск заведений'"
-                :aria-label="t('home.searchBusinesses') || 'Поиск заведений'"
-                class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
-                @input="onSearchInput"
-              >
-            </div>
+            <CatalogSearch v-if="sectionIdx === 0" v-model="searchQuery" :placeholder="t('home.searchBusinesses') || 'Поиск заведений'" class="mb-4" @input="onSearchInput" />
             <p
               v-if="section.items.length === 0"
               class="text-sm text-gray-400 py-6 text-center"
             >
               {{ t('home.noSearchResults') || 'Ничего не найдено' }}
             </p>
-            <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+            <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
               <div class="flex gap-3 snap-x">
                 <div
                   v-for="biz in section.items"
@@ -561,7 +512,7 @@ useSeoMeta({
                in causes no page layout change. -->
           <div
             v-if="sectionIdx === 0 && !hasPatronToken"
-            class="rounded-3xl p-6 md:p-8 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col md:flex-row md:items-center gap-6"
+            class="catalog-panel p-6 md:p-8 flex flex-col md:flex-row md:items-center gap-6"
           >
             <div class="flex-shrink-0 w-14 h-14 rounded-2xl bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
               <UIcon
@@ -570,9 +521,9 @@ useSeoMeta({
               />
             </div>
             <div class="flex-1 min-w-0">
-              <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
                 {{ t('home.title') || 'Каталог' }}
-              </h1>
+              </h2>
               <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
                 {{ t('home.publicHint') || 'Заказы, карты лояльности и заведения рядом. Войдите, чтобы сохранить историю за собой.' }}
               </p>
@@ -602,7 +553,7 @@ useSeoMeta({
             </div>
             <button
               type="button"
-              class="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+              class="flex-shrink-0 inline-flex items-center justify-center gap-2 rounded-full border border-gray-200 dark:border-white/15 bg-white px-5 py-2.5 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
               @click="patronLogin()"
             >
               <svg
@@ -640,13 +591,6 @@ useSeoMeta({
 </template>
 
 <style scoped>
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
 .banner-fade-enter-active,
 .banner-fade-leave-active {
   transition: opacity 0.3s ease;

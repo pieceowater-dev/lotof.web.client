@@ -17,6 +17,8 @@ import { toDisplayBusiness, dedupeByBrand } from '@/utils/mapCatalogBusiness';
 import { maskProfanity } from '@/utils/profanityFilter';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import { logError } from '@/utils/logger';
+import CatalogHeader from '@/components/catalog/CatalogHeader.vue';
+import CatalogSearch from '@/components/catalog/CatalogSearch.vue';
 import BusinessCard from '@/components/catalog/BusinessCard.vue';
 import ReviewsSection from '@/components/catalog/ReviewsSection.vue';
 
@@ -172,40 +174,22 @@ useSeoMeta({
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto px-4 py-10 md:py-16">
-    <div class="flex flex-col gap-6">
-      <NuxtLink
-        to="/catalog"
-        class="inline-flex items-center gap-1.5 text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors w-fit"
-      >
-        <UIcon
-          name="lucide:arrow-left"
-          class="w-4 h-4"
-        />
-        {{ t('home.backToCatalog') || 'Каталог' }}
-      </NuxtLink>
-
-      <div>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {{ t('home.storesTitle') || 'Заведения' }}
-        </h1>
-        <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
-          {{ t('home.storesSubtitle') || 'Кафе, рестораны и доставка на lota Menu' }}
-        </p>
-      </div>
+  <div class="max-w-7xl mx-auto px-4 pb-16 pt-6 md:pt-10">
+    <div class="flex flex-col">
+      <CatalogHeader back :title="t('home.storesTitle') || 'Заведения'" :subtitle="t('home.storesSubtitle') || 'Кафе, рестораны и доставка на lota Menu'" />
 
       <div class="flex flex-col gap-8">
         <!-- Categories: real per-tenant Menu category names, actually
              filters the grid below. "Избранное" is a separate quick filter
              (client-side, narrows to favorited businesses). -->
-        <div class="overflow-x-auto -mx-4 px-4 pb-1 scrollbar-hide">
+        <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
           <div class="flex gap-2">
             <button
               type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+              class="pill-filter"
               :class="activeTagId === null && !favoritesOnly
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                ? 'pill-filter--active'
+                : ''"
               @click="favoritesOnly = false; selectTag(null)"
             >
               <UIcon
@@ -216,10 +200,10 @@ useSeoMeta({
             </button>
             <button
               type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+              class="pill-filter"
               :class="favoritesOnly
-                ? 'bg-rose-500 text-white border-rose-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                ? 'pill-filter--rose'
+                : ''"
               @click="toggleFavoritesOnly"
             >
               <UIcon
@@ -233,10 +217,10 @@ useSeoMeta({
               v-for="tag in tags"
               :key="tag.id"
               type="button"
-              class="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full border text-sm font-medium transition-colors"
+              class="pill-filter"
               :class="activeTagId === tag.id && !favoritesOnly
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700'"
+                ? 'pill-filter--active'
+                : ''"
               @click="favoritesOnly = false; selectTag(tag.id)"
             >
               {{ tag.name }}
@@ -245,21 +229,7 @@ useSeoMeta({
         </div>
 
         <!-- Search -->
-        <div class="relative">
-          <UIcon
-            name="lucide:search"
-            class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none"
-          />
-          <input
-            v-model="searchQuery"
-            type="search"
-            :placeholder="t('home.searchBusinesses') || 'Поиск заведений'"
-            :aria-label="t('home.searchBusinesses') || 'Поиск заведений'"
-            class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
-            @input="onSearchInput"
-          >
-        </div>
-
+        <CatalogSearch v-model="searchQuery" :placeholder="t('home.searchBusinesses') || 'Поиск заведений'" class="" @input="onSearchInput" />
         <!-- Businesses grid -->
         <p
           v-if="!displayedBusinesses.length"
@@ -286,12 +256,3 @@ useSeoMeta({
   </div>
 </template>
 
-<style scoped>
-.scrollbar-hide {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-</style>

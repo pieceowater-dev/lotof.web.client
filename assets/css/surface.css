@@ -156,3 +156,40 @@
   }
 }
 
+
+/* ---- Catalog family (/catalog /stores /memberships /services) ---- */
+.pill-filter {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  background: rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s;
+}
+.pill-filter:hover { background: rgba(15, 23, 42, 0.08); }
+.pill-filter:active { transform: scale(0.96); }
+.pill-filter--active { color: #fff; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: #2563eb; box-shadow: 0 8px 18px -10px rgba(37, 99, 235, 0.6); }
+.pill-filter--active:hover { background-color: #2563eb; }
+.pill-filter--rose { color: #fff; background: #f43f5e; box-shadow: none; }
+.pill-filter--rose:hover { background: #f43f5e; }
+.dark .pill-filter { color: #d4d4d4; background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1); }
+.dark .pill-filter:hover { background: rgba(255, 255, 255, 0.1); }
+.dark .pill-filter--active { color: #fff; background-color: #2563eb; }
+.dark .pill-filter--active:hover { background-color: #2563eb; }
+.dark .pill-filter--rose { color: #fff; background: #f43f5e; }
+
+.catalog-panel {
+  border-radius: 2rem;
+  background: rgba(15, 23, 42, 0.03);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07);
+}
+.dark .catalog-panel { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

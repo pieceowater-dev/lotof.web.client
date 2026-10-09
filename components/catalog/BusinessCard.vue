@@ -10,6 +10,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
 </script>
 
 <template>
+  <div class="bc-shell group">
   <!-- Two branches instead of a dynamic <component :is>: a runtime string
        -is didn't reliably resolve to the real NuxtLink component and
        silently produced a dead div instead (found live -- clicking cards
@@ -17,7 +18,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
   <NuxtLink
     v-if="business.to"
     :to="business.to"
-    class="relative block rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    class="relative block rounded-[1.4rem] overflow-hidden bg-gray-100 dark:bg-[#262626]"
     style="aspect-ratio: 1 / 1"
   >
     <div class="absolute inset-0 bg-gradient-to-br flex items-center justify-center" :class="business.gradient">
@@ -25,7 +26,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
     </div>
@@ -38,7 +39,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
     </span>
     <button
       type="button"
-      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 dark:bg-gray-900/70 backdrop-blur flex items-center justify-center shadow-sm"
+      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 dark:bg-black/50 flex items-center justify-center shadow-sm"
       @click.stop.prevent="$emit('toggle-favorite', business.key)"
     >
       <UIcon
@@ -71,7 +72,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
 
   <div
     v-else
-    class="relative rounded-2xl overflow-hidden bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow"
+    class="relative rounded-[1.4rem] overflow-hidden bg-gray-100 dark:bg-[#262626]"
     style="aspect-ratio: 1 / 1"
   >
     <div class="absolute inset-0 bg-gradient-to-br flex items-center justify-center" :class="business.gradient">
@@ -79,7 +80,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
         v-if="business.logoUrl"
         :src="business.logoUrl"
         :alt="business.name"
-        class="w-full h-full object-cover"
+        class="w-full h-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-105"
       >
       <UIcon v-else :name="business.icon" class="w-10 h-10" :class="business.iconColor" />
     </div>
@@ -92,7 +93,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
     </span>
     <button
       type="button"
-      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 dark:bg-gray-900/70 backdrop-blur flex items-center justify-center shadow-sm"
+      class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/85 dark:bg-black/50 flex items-center justify-center shadow-sm"
       @click.stop="$emit('toggle-favorite', business.key)"
     >
       <UIcon
@@ -119,4 +120,18 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
       </div>
     </div>
   </div>
+  </div>
 </template>
+
+<style scoped>
+.bc-shell {
+  border-radius: 1.75rem;
+  padding: 0.3rem;
+  background: rgba(15, 23, 42, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
+  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.bc-shell:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 32px -18px rgba(15, 23, 42, 0.3); }
+.dark .bc-shell { background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.dark .bc-shell:hover { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14); }
+</style>
