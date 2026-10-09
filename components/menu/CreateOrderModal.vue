@@ -8,6 +8,9 @@ import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import { buildTableTag } from '@/utils/tableTag';
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
+import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
+import type { MenuOrderField } from '@/api/menu/orderfield/list';
+import { missingRequiredFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 
 const { t } = useI18n();
 
@@ -63,6 +66,24 @@ const typeOptions = computed(() => [
   { value: 'delivery' as const, icon: 'lucide:truck', label: t('menu.delivery') || 'Delivery' },
   { value: 'table' as const, icon: 'lucide:map-pin-house', label: t('menu.typeOnSite') || 'On site' },
 ]);
+
+// Tenant-defined extra order fields (settings' "Order fields" tab). Only
+// active ones are asked for; required ones block submission.
+const orderFields = ref<MenuOrderField[]>([]);
+const customValues = reactive<CustomFieldValues>({});
+const missingFields = computed(() => missingRequiredFields(orderFields.value, customValues));
+
+async function loadOrderFields() {
+  try {
+    const { current } = useMenuToken();
+    const menuToken = current();
+    if (!menuToken) return;
+    const { menuOrderFieldsList } = await import('@/api/menu/orderfield/list');
+    orderFields.value = (await menuOrderFieldsList(menuToken, props.nsSlug, { onlyActive: true })).fields;
+  } catch (e) {
+    logError('[CreateOrderModal] loadOrderFields failed', e);
+  }
+}
 
 const branchOptions = computed(() => props.branches.map((b) => ({ label: b.name, value: b.id })));
 const categoryOptions = computed(() => categories.value.map((c) => ({ label: c.name, value: c.id })));
@@ -152,6 +173,8 @@ async function submitQuickAdd() {
 watch(() => props.modelValue, (open) => {
   if (!open) return;
   loadItems();
+  loadOrderFields();
+  for (const k of Object.keys(customValues)) delete customValues[k];
   form.type = 'table';
   form.branchId = '';
   form.phone = '';
@@ -168,6 +191,7 @@ const isFormValid = computed(() => {
   if (!isPhoneValid.value) return false;
   if (form.type === 'delivery' && !form.deliveryAddress.trim()) return false;
   if ((form.type === 'pickup' || form.type === 'table') && !form.branchId) return false;
+  if (missingFields.value.length > 0) return false;
   return cart.value.length > 0;
 });
 
@@ -186,6 +210,7 @@ function handleSubmit() {
     comment: form.comment.trim() || undefined,
     sourceTag: form.type === 'table' && form.tableNumber !== '' ? buildTableTag(form.tableNumber) : 'manual',
     totalAmount: cartTotal.value,
+    customFields: serializeCustomFields(customValues),
     items: cart.value.map((l) => ({
       menuItemId: l.menuItemId,
       name: l.name,
@@ -278,6 +303,16 @@ function handleSubmit() {
                   :ui="{ rounded: 'rounded-xl' }"
                   :popper="{ strategy: 'fixed' }"
                 />
+              </UFormGroup>
+            </div>
+
+            <div v-if="orderFields.length" class="space-y-3.5">
+              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <Icon name="lucide:list-plus" class="h-3.5 w-3.5" />
+                {{ t('menu.customFields') || 'Details' }}
+              </div>
+              <UFormGroup v-for="f in orderFields" :key="f.id" :label="f.label" :required="f.isRequired">
+                <OrderFieldInput :field="f" :model-value="customValues[f.id] ?? ''" @update:model-value="(v: string) => (customValues[f.id] = v)" />
               </UFormGroup>
             </div>
 

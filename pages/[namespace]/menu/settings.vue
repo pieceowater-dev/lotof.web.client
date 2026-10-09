@@ -10,6 +10,7 @@ import PromoBannersSection from '@/components/menu/settings/PromoBannersSection.
 import ShareLinkSection from '@/components/menu/settings/ShareLinkSection.vue';
 import TableQrSection from '@/components/menu/settings/TableQrSection.vue';
 import DocumentTemplatesSection from '@/components/menu/settings/DocumentTemplatesSection.vue';
+import OrderFieldsSection from '@/components/menu/settings/OrderFieldsSection.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -37,7 +38,7 @@ const goBack = () => {
   navigateTo(`/${nsSlug.value}/menu`);
 };
 
-type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'share' | 'tableqr' | 'documents';
+type TabKey = 'staff' | 'brand' | 'branches' | 'catalog' | 'promobanners' | 'share' | 'tableqr' | 'fields' | 'documents';
 
 const tabs = computed(() => [
   { key: 'staff' as TabKey, label: t('menu.staff') || 'Staff', icon: 'lucide:users' },
@@ -47,6 +48,7 @@ const tabs = computed(() => [
   { key: 'promobanners' as TabKey, label: t('menu.attraction') || 'Attraction', icon: 'lucide:megaphone' },
   { key: 'share' as TabKey, label: t('menu.shareTab') || 'Share', icon: 'lucide:link' },
   { key: 'tableqr' as TabKey, label: t('menu.tableQrTab') || 'Table QR', icon: 'lucide:qr-code' },
+  { key: 'fields' as TabKey, label: t('menu.orderFieldsTab') || 'Order fields', icon: 'lucide:list-plus' },
   { key: 'documents' as TabKey, label: t('menu.docTemplatesTab') || 'Documents', icon: 'lucide:file-text' },
 ]);
 
@@ -113,6 +115,7 @@ watch(activeTab, (tab) => {
       <PromoBannersSection v-else-if="activeTab === 'promobanners'" />
       <ShareLinkSection v-else-if="activeTab === 'share'" />
       <TableQrSection v-else-if="activeTab === 'tableqr'" />
+      <OrderFieldsSection v-else-if="activeTab === 'fields'" />
       <DocumentTemplatesSection v-else-if="activeTab === 'documents'" />
     </div>
   </div>
