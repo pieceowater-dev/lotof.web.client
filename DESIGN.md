@@ -303,6 +303,106 @@ Rules:
 
 ---
 
+## 10b. Page shells, layouts and landing pages
+
+- Layouts (`layouts/`): `default`, `full`, `quiet`, `workspace`. All render the floating `AppHeader`, then
+  `<main class="pt-20 …">` (top padding clears the floating pill — never remove it), then `AppFooter`
+  (`variant="full"` on `full`/`default`, `"minimal"` on `quiet`/`workspace`). Marketing/catalog/guide/feed pages use
+  `definePageMeta({ layout: 'full' })`; app workspaces use `workspace` (page roots are `h-full` and scroll internally).
+  Public storefronts opt out (`layout: false`) and own their whole shell (`.sf` root, `min-h-screen`, own scroll).
+- Page background in layouts is `bg-white dark:bg-gray-900` where `gray` is the neutral scale (`app.config.ts`:
+  primary = `blue`, gray = `neutral`) — keep it neutral, never retint.
+- **Landing-style pages** (home, product landings): hero = `.hero-mesh` glow + `.eyebrow` + oversized heading with one
+  `.grad-text` word + one primary and one ghost `.cta-pill`; below, sections at `py-14 md:py-24` made of bezel cards /
+  asymmetric bento (`col-span` mix collapsing to one column on mobile). Reveal every section with `v-reveal`.
+  Use real product screenshots/mocks inside bezel cores rather than stock imagery.
+- **Settings-like pages** (e.g. `/people`): compact title (not hero-sized), content in bezel/soft trays, two-column
+  where it helps; no decorative eyebrow labels that add nothing ("КОМАНДА"-style tags were rejected).
+- Public back-navigation: a small round/pill "back" control (`.sf-back`, or the Guide's back pill), never a bare link.
+
+## 10c. Forms, inputs, selects, tabs
+
+- Text fields: pill (single line) or `1.2–1.4rem` radius (textarea, `.sf-textarea`), hairline ring, brand focus ring,
+  `outline: none`. Labels use `.sf-label`-style micro-caps or `text-sm font-semibold`; helper text `text-xs` muted.
+- Choice rows (radio/checkbox/modifier lists): neutral `.sf-option`/`.pl-ns` rows that become ringed + tinted when
+  selected; the control glyph fills with the accent colour. Never a native bare radio.
+- Segmented controls / tabs: pill group on a soft fill (`.pl-toggle`, `.hdr-lang-group`); selected segment = raised white
+  pill (dark: `white/12%`). Product/category tabs use `.pill-filter` chips.
+- Validation: error text `text-xs text-red-600 dark:text-red-400` under the field; danger rings use red at low alpha.
+  Don't colour whole fields red.
+- Phone fields use `PhoneInput.vue`; colour fields use `ColorSwatch.vue` (curated palette only).
+- Required Nuxt UI inputs/selects inherit the global skin; when a page needs it rounder, override by class on a
+  wrapper (`.sf-fields …` pattern) instead of editing `app.config.ts` per page.
+
+## 10d. Feedback: modals, confirms, toasts, banners, badges
+
+- **Modals (`UModal`)** — centred dialog recipe: `rounded-2xl` (or `rounded-[2rem]` for large), overlay
+  `bg-gray-900/30 dark:bg-gray-950/60 backdrop-blur-sm`, card `bg-white/90 dark:bg-gray-900/85 backdrop-blur-xl`
+  (modal chrome is allowed to blur — it is fixed, not scrolling content), `ring-1 ring-black/5 dark:ring-white/10`,
+  header = title + round close button, footer = ghost "Cancel" + primary action pill. Width presets: `sm:max-w-sm`
+  confirms, `max-w-lg` forms, `max-w-3xl` complex editors. Long content scrolls inside the body, header/footer stay.
+  Prefer the shared `ConfirmDialog` + `useConfirm` for confirmations (colours: `red` destructive, `primary` neutral,
+  `amber` warning — tinted icon tile + title + text + two pills).
+- **Sheets**: side (`USlideover`, desktop) and bottom (mobile) — see §5. Same tray/row/tile vocabulary inside.
+- **Toasts** (`useToast`): styled globally via `app.config.ts` (rounded-3xl, white/90 + hairline, small title/description,
+  primary-colour action). Use short, neutral sentences; success = green icon, error = red icon. Never custom-built toasts.
+- **Banners / inline notices**: soft tinted pill-rounded blocks (`rounded-2xl`), tint = blue (info), green (success),
+  amber (warning), rose/red (error); icon tile on the left, one line + optional action link. No full-saturation alerts.
+- **Status badges**: tiny pills (`px-2.5 py-1 text-xs font-semibold rounded-full`) with tinted bg + darker text of the same
+  hue (blue info / emerald ok / amber pending / rose problem / slate neutral); dark = `/18%` bg with `-300` text.
+- **Destructive affordances**: neutral until hover, then red tint (`rgba(239,68,68,.1)`, text `#dc2626`; dark `#f87171`)
+  — see `.profile-logout`. Never a permanently red big button unless it is the confirm step of a destructive flow.
+
+## 10e. Tables & data views
+
+- Wrap tables in a rounded tray (`.pl-table` look: `2rem` radius, hairline ring, soft shadow, `overflow-hidden`).
+  Header row: muted micro-caps on a soft fill (neutral in dark — never the brand colour); rows separated by `rgba(15,23,42,.06)`
+  hairlines; hover row = soft fill; numbers `tabular-nums` right-aligned.
+- Use `AppTable`/`Table` as the base and re-skin via wrapper classes rather than forking.
+- Mobile: tables become stacked cards or scroll horizontally inside the tray (`overflow-x-auto no-scrollbar`) — never overflow the page.
+- Pagination/filters sit above the tray as `.pill-filter` chips + a pill search; pager buttons are round icon buttons.
+- Charts: soft tray, brand-blue→emerald palette for series, muted gridlines, no 3D/shadows.
+
+## 10f. People, avatars, identity
+
+- User avatar: round, brand-gradient background with initials (`.hdr-avatar` 1.75rem, `.profile-avatar` 3.25rem, ring/glow on
+  large ones); photo avatars use the same circle with `object-cover`. Use `UserAvatar.vue`.
+- Tenant/business logos: rounded-square tile (`.sf-logo`, radius ≈ 1.2–1.6rem) on white with a thin ring.
+
+## 10g. Content & copy
+
+- UI language: ru is the most complete; every user-visible string goes through `useI18n()` (`t('key') || 'fallback'`) and must
+  exist in `locales/ru.json`, `en.json` and `kk.json`. No hard-coded Russian/English in templates (except fallbacks).
+  Don't add terminology that contradicts the neutral vocabulary (catalog, item, spot, customer, executor — not
+  "menu/dish/table/guest" in generic screens).
+- Product names: **lota** (lowercase), "lota Гид", app names as in `config/apps`. Russian UI term for bundles = «готовая сборка».
+- Tone: short, plain, friendly; verbs on buttons ("Подключить", "Читать", "Посмотреть"); no exclamation spam
+  (one positive confirmation like "Подключено!" is fine).
+- Money via the shared formatters (`formatMoney`), dates localised (`ru-RU`), never raw ISO.
+
+## 10h. Accessibility & robustness
+
+- Interactive cards: `role="button" tabindex="0"` with Enter handler, or real `<a>/<button>`; icon-only buttons need `aria-label`.
+- Visible focus: rely on the brand focus ring / `focus-visible`; never remove focus without replacing it.
+- Contrast: text on brand fills uses `--brand-ink`; text/icons on neutral surfaces use ≥ 3:1 colours (use `--brand-fg` on storefronts).
+- Respect `prefers-reduced-motion` for looping/auto motion; no motion is required to understand a screen.
+- Touch targets ≥ 36px, spacing for thumbs, safe-area padding at the bottom (`pb-safe-or-4`).
+- Images: always `alt`, `width/height` set to avoid layout shift, `loading="lazy"` except above-the-fold (first card `eager`),
+  graceful fallback block on error.
+- SSR: data that should be in the first paint goes through `useAsyncData`; anything touching `window`/timers goes in `onMounted`
+  (watch for `setInterval` leaks on the server).
+
+## 10i. Process for redesigning a page (what we actually do)
+
+1. Read the page + its child components; list the logic that must not change (handlers, queries, SEO, routes).
+2. Rewrite the **template and styles only**, reusing §4 primitives; add new prefixed classes to `surface.css` (global when
+   anything is teleported).
+3. Seed realistic local data to see real states (empty, long titles, no image, many items).
+4. Screenshot **light, dark, and 390px mobile**; compare against neighbouring pages for consistency.
+5. Run a **production build** and hit the real route before pushing; stop `nuxt dev` first, restart after.
+6. Commit only your files; commit message describes the redesign; **no Claude/Co-Authored-By attribution lines**.
+   Push only after the owner says OK (unless told to push on completion); don't watch the deploy afterwards — report the commit hash.
+
 ## 11. Writing a new screen — checklist
 
 1. **Archetype:** pick the container (bezel / soft tray / storefront card) and the layout (bento, split,
