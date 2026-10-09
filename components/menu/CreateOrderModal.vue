@@ -33,7 +33,17 @@ const isOpen = computed({
   set: (v) => emit('update:modelValue', v),
 });
 
-type CartLine = { menuItemId: string; name: string; price: number; quantity: number; warrantyDays: number };
+type CartLine = {
+  menuItemId: string;
+  name: string;
+  price: number;
+  quantity: number;
+  warrantyDays: number;
+  // Snapshots from the catalog item, see utils/labour.ts.
+  itemKind: string;
+  costPrice: number;
+  workPayPercent: number;
+};
 
 // In warranty mode the work is done free of charge by default.
 const freeOfCharge = ref(true);
@@ -121,7 +131,12 @@ const filteredItems = computed(() => {
 function addToCart(item: MenuItem) {
   const existing = cart.value.find((l) => l.menuItemId === item.id);
   if (existing) existing.quantity += 1;
-  else cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: 1, warrantyDays: item.warrantyDays ?? 0 });
+  else cart.value.push({ menuItemId: item.id, name: item.name, price: item.price, quantity: 1,
+      warrantyDays: item.warrantyDays ?? 0,
+      itemKind: item.itemKind === 'WORK' ? 'WORK' : 'MATERIAL',
+      costPrice: item.costPrice ?? 0,
+      workPayPercent: item.workPayPercent ?? 0,
+    });
 }
 
 function changeQuantity(line: CartLine, delta: number) {
@@ -229,6 +244,9 @@ function handleSubmit() {
       priceAtPurchase: linePrice(l),
       quantity: l.quantity,
       warrantyDays: l.warrantyDays || undefined,
+      itemKind: l.itemKind,
+      costPriceAtPurchase: l.costPrice || undefined,
+      workPayPercent: l.workPayPercent || undefined,
     })),
   });
 }
@@ -431,7 +449,9 @@ function handleSubmit() {
                 :key="line.menuItemId"
                 class="flex items-center justify-between gap-2 px-3 py-2"
               >
-                <span class="text-sm flex-1 truncate">{{ line.name }}</span>
+                <span class="text-sm flex-1 truncate">
+                  <Icon v-if="line.itemKind === 'WORK'" name="lucide:wrench" class="mr-1 inline h-3.5 w-3.5 text-gray-400" />{{ line.name }}
+                </span>
                 <div class="flex items-center gap-1.5">
                   <UButton icon="lucide:minus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, -1)" />
                   <span class="w-5 text-center text-sm tabular-nums">{{ line.quantity }}</span>

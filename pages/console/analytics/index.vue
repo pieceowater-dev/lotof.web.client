@@ -1,12 +1,12 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
     <AdminHeader
       :title="t('admin.analytics')"
       :description="t('admin.analyticsDesc')"
     >
       <template #actions>
         <button
-          class="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          class="at-btn at-btn--blue"
           :disabled="loading"
           @click="load"
         >
@@ -22,7 +22,7 @@
         <p class="text-slate-500 animate-pulse">{{ t('admin.loadingAnalytics') }}</p>
       </div>
 
-      <div v-else-if="loadError" class="rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+      <div v-else-if="loadError" class="at-notice at-notice--err !p-5">
         {{ loadError }}
       </div>
 
@@ -32,12 +32,12 @@
           <div
             v-for="card in kpiCards"
             :key="card.key"
-            class="relative rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
+            class="relative at-panel"
           >
             <div class="flex items-start justify-between gap-2">
               <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ card.label }}</span>
+                  <span class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">{{ card.label }}</span>
                   <button
                     v-if="card.info"
                     type="button"
@@ -50,7 +50,7 @@
                   </button>
                 </div>
                 <div class="mt-2 text-2xl font-bold text-slate-900 dark:text-white">{{ card.value }}</div>
-                <div v-if="card.sub" class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ card.sub }}</div>
+                <div v-if="card.sub" class="mt-1 text-xs text-slate-500 dark:text-gray-400">{{ card.sub }}</div>
               </div>
               <div class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" :class="card.iconBg">
                 <Icon :name="card.icon" class="h-4.5 w-4.5" :class="card.iconColor" />
@@ -59,7 +59,7 @@
 
             <div
               v-if="openKpiInfo === card.key"
-              class="absolute left-4 right-4 top-12 z-20 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-xl dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              class="absolute left-4 right-4 top-12 z-20 rounded-2xl bg-white p-3.5 text-xs leading-relaxed text-slate-600 shadow-2xl ring-1 ring-black/5 dark:bg-[#262626] dark:text-slate-300 dark:ring-white/10"
               @click.stop
             >
               <div class="mb-1 font-semibold text-slate-900 dark:text-white">{{ card.label }}</div>
@@ -72,12 +72,12 @@
         <div v-if="openKpiInfo" class="fixed inset-0 z-10" @click="openKpiInfo = null" />
 
         <!-- Namespace growth -->
-        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="at-panel !p-6">
           <div class="mb-1 flex items-center justify-between">
             <h3 class="font-bold text-slate-900 dark:text-white">{{ t('admin.namespaceGrowth') }}</h3>
-            <span class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.cumulativeTotal') }}</span>
+            <span class="text-xs text-slate-500 dark:text-gray-400">{{ t('admin.cumulativeTotal') }}</span>
           </div>
-          <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.namespaceGrowthDesc') }}</p>
+          <p class="mb-4 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.namespaceGrowthDesc') }}</p>
 
           <div v-if="growthSeries.length < 2" class="py-10 text-center text-sm text-slate-400">
             {{ t('admin.notEnoughData') }}
@@ -93,7 +93,7 @@
               @blur="growthHoverIndex = null"
             >
               <!-- baseline -->
-              <line :x1="padL" :y1="chartH - padB" :x2="chartW - padR" :y2="chartH - padB" class="stroke-slate-200 dark:stroke-slate-800" stroke-width="1" />
+              <line :x1="padL" :y1="chartH - padB" :x2="chartW - padR" :y2="chartH - padB" class="stroke-slate-200 dark:stroke-white/10" stroke-width="1" />
               <!-- area -->
               <polygon :points="growthAreaPoints" class="fill-blue-500/10 dark:fill-blue-400/10" />
               <!-- line -->
@@ -105,7 +105,7 @@
                 :cx="p.x"
                 :cy="p.y"
                 r="3"
-                class="fill-white stroke-blue-600 dark:fill-slate-900 dark:stroke-blue-400"
+                class="fill-white stroke-blue-600 dark:fill-[#1f1f1f] dark:stroke-blue-400"
                 stroke-width="2"
               />
               <!-- hover crosshair -->
@@ -115,7 +115,7 @@
                 :y1="padT"
                 :x2="growthPointCoords[growthHoverIndex].x"
                 :y2="chartH - padB"
-                class="stroke-slate-300 dark:stroke-slate-700"
+                class="stroke-slate-300 dark:stroke-white/20"
                 stroke-width="1"
                 stroke-dasharray="3,3"
               />
@@ -126,19 +126,19 @@
             </div>
             <div
               v-if="growthHoverIndex !== null"
-              class="pointer-events-none absolute rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs shadow-lg dark:border-slate-700 dark:bg-slate-800"
+              class="pointer-events-none absolute rounded-xl bg-white px-3 py-2 text-xs shadow-xl ring-1 ring-black/5 dark:bg-[#262626] dark:ring-white/10"
               :style="growthTooltipStyle"
             >
               <div class="font-semibold text-slate-900 dark:text-white">{{ growthSeries[growthHoverIndex].label }}</div>
-              <div class="text-slate-500 dark:text-slate-400">{{ growthSeries[growthHoverIndex].value }} {{ t('admin.namespacesLower') }}</div>
+              <div class="text-slate-500 dark:text-gray-400">{{ growthSeries[growthHoverIndex].value }} {{ t('admin.namespacesLower') }}</div>
             </div>
           </div>
         </div>
 
         <!-- Per-app breakdown -->
-        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="at-panel !p-6">
           <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.activeSubscriptionsByApp') }}</h3>
-          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.activeSubscriptionsByAppDesc') }}</p>
+          <p class="mb-5 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.activeSubscriptionsByAppDesc') }}</p>
           <div v-if="!appBars.some(b => b.value > 0)" class="py-10 text-center text-sm text-slate-400">
             {{ t('admin.notEnoughData') }}
           </div>
@@ -153,19 +153,19 @@
                   :title="`${bar.label}: ${bar.value}`"
                 />
               </div>
-              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">{{ bar.label }}</span>
+              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-gray-400">{{ bar.label }}</span>
             </div>
           </div>
         </div>
 
         <!-- Namespace activity -->
-        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="at-panel !p-6">
           <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.namespaceActivity') || 'Активность неймспейсов' }}</h3>
-          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.namespaceActivityDesc') }}</p>
+          <p class="mb-5 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.namespaceActivityDesc') }}</p>
           <div class="space-y-2.5">
             <div v-for="bucket in activityBuckets" :key="bucket.key" class="flex items-center gap-3">
-              <span class="w-28 shrink-0 text-xs text-slate-600 dark:text-slate-400">{{ bucket.label }}</span>
-              <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+              <span class="w-28 shrink-0 text-xs text-slate-600 dark:text-gray-400">{{ bucket.label }}</span>
+              <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-[#262626]">
                 <div
                   class="h-full rounded transition-all"
                   :class="bucket.colorClass"
@@ -178,9 +178,9 @@
         </div>
 
         <!-- Product adoption: installed vs paid -->
-        <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="at-panel !p-6">
           <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.productAdoption') || 'Продукты: установлено vs платно' }}</h3>
-          <p class="mb-5 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.productAdoptionDesc') }}</p>
+          <p class="mb-5 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.productAdoptionDesc') }}</p>
           <div class="flex h-52 items-end gap-4 px-2">
             <div v-for="p in productAdoption" :key="p.key" class="group flex flex-1 flex-col items-center">
               <div class="mb-1.5 flex items-end gap-1 text-[11px] font-semibold text-slate-700 dark:text-slate-200">
@@ -201,10 +201,10 @@
                   :title="`${t('admin.paidLabel')}: ${p.paid}`"
                 />
               </div>
-              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-slate-400">{{ p.label }}</span>
+              <span class="mt-2 text-xs font-medium text-slate-600 dark:text-gray-400">{{ p.label }}</span>
             </div>
           </div>
-          <div class="mt-4 flex items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+          <div class="mt-4 flex items-center gap-4 text-[11px] text-slate-500 dark:text-gray-400">
             <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-slate-200 dark:bg-slate-700" />{{ t('admin.installedLabel') || 'Установлено' }}</span>
             <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-blue-600 dark:bg-blue-500" />{{ t('admin.paidLabel') || 'Платно' }}</span>
           </div>
@@ -212,13 +212,13 @@
 
         <!-- Revenue & subscriptions -->
         <div class="grid gap-6 lg:grid-cols-2">
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div class="at-panel !p-6">
             <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.revenueAndSubs') || 'Выручка и подписки' }}</h3>
-            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.estimatedMrrDesc') }}</p>
+            <p class="mb-4 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.estimatedMrrDesc') }}</p>
             <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ formatMoney(estimatedMrrCents) }}</div>
-            <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.estimatedMrr') || 'MRR (оценка)' }}</div>
+            <div class="mt-1 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.estimatedMrr') || 'MRR (оценка)' }}</div>
             <div class="mt-5">
-              <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ t('admin.subscriptionStatuses') || 'Статусы подписок' }}</div>
+              <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400">{{ t('admin.subscriptionStatuses') || 'Статусы подписок' }}</div>
               <div v-if="!subscriptionStatusRows.length" class="text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
               <div v-else class="flex flex-wrap gap-2">
                 <span
@@ -229,7 +229,7 @@
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-300'
                     : row.status === 'PAST_DUE'
                       ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800/40 dark:bg-rose-900/20 dark:text-rose-300'
-                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'"
+                      : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-[#262626] dark:text-slate-300'"
                 >
                   {{ row.status }}
                   <span class="font-bold">{{ row.value }}</span>
@@ -238,13 +238,13 @@
             </div>
           </div>
 
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div class="at-panel !p-6">
             <h3 class="mb-4 font-bold text-slate-900 dark:text-white">{{ t('admin.planDistribution') || 'Активные подписки по планам' }}</h3>
             <div v-if="!planDistribution.length" class="py-8 text-center text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
             <div v-else class="space-y-2.5">
               <div v-for="row in planDistribution" :key="row.name" class="flex items-center gap-3">
-                <span class="w-32 shrink-0 truncate text-xs text-slate-600 dark:text-slate-400" :title="row.name">{{ row.name }}</span>
-                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                <span class="w-32 shrink-0 truncate text-xs text-slate-600 dark:text-gray-400" :title="row.name">{{ row.name }}</span>
+                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-[#262626]">
                   <div class="h-full rounded bg-violet-500 transition-all dark:bg-violet-400" :style="{ width: row.pct + '%' }" />
                 </div>
                 <span class="w-8 shrink-0 text-right text-xs font-semibold text-slate-700 dark:text-slate-200">{{ row.value }}</span>
@@ -255,13 +255,13 @@
 
         <!-- Business verticals + new namespaces per month -->
         <div class="grid gap-6 lg:grid-cols-2">
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div class="at-panel !p-6">
             <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.businessVerticals') || 'Вертикали бизнеса' }}</h3>
-            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.businessVerticalsDesc') }}</p>
+            <p class="mb-4 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.businessVerticalsDesc') }}</p>
             <div class="space-y-2.5">
               <div v-for="row in verticalBreakdown" :key="row.key" class="flex items-center gap-3">
-                <span class="w-36 shrink-0 truncate text-xs text-slate-600 dark:text-slate-400" :title="row.label">{{ row.label }}</span>
-                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+                <span class="w-36 shrink-0 truncate text-xs text-slate-600 dark:text-gray-400" :title="row.label">{{ row.label }}</span>
+                <div class="h-4 flex-1 overflow-hidden rounded bg-slate-100 dark:bg-[#262626]">
                   <div
                     class="h-full rounded transition-all"
                     :class="row.key === '__unset__' ? 'bg-slate-300 dark:bg-slate-600' : 'bg-sky-500 dark:bg-sky-400'"
@@ -273,9 +273,9 @@
             </div>
           </div>
 
-          <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <div class="at-panel !p-6">
             <h3 class="mb-1 font-bold text-slate-900 dark:text-white">{{ t('admin.newNamespacesPerMonth') || 'Новые неймспейсы по месяцам' }}</h3>
-            <p class="mb-4 text-xs text-slate-500 dark:text-slate-400">{{ t('admin.newNamespacesPerMonthDesc') }}</p>
+            <p class="mb-4 text-xs text-slate-500 dark:text-gray-400">{{ t('admin.newNamespacesPerMonthDesc') }}</p>
             <div v-if="newPerMonth.length < 2" class="py-8 text-center text-sm text-slate-400">{{ t('admin.notEnoughData') }}</div>
             <div v-else class="flex h-40 items-end gap-1.5">
               <div v-for="(m, i) in newPerMonth" :key="i" class="group flex flex-1 flex-col items-center">
@@ -287,7 +287,7 @@
                     :title="`${m.label}: ${m.value}`"
                   />
                 </div>
-                <span class="mt-1.5 text-[10px] text-slate-500 dark:text-slate-400">{{ m.label }}</span>
+                <span class="mt-1.5 text-[10px] text-slate-500 dark:text-gray-400">{{ m.label }}</span>
               </div>
             </div>
           </div>
@@ -307,10 +307,10 @@
               <Icon name="lucide:arrow-right" class="h-3 w-3" />
             </NuxtLink>
           </div>
-          <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+          <div class="at-tray overflow-auto">
             <div class="overflow-x-auto">
               <table class="w-full min-w-[720px] text-left text-sm">
-                <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+                <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
                   <tr>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.slug') }}</th>
@@ -328,11 +328,11 @@
                   <tr
                     v-for="ns in recentNamespaces"
                     :key="ns.id"
-                    class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                    class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
                   >
                     <td class="px-6 py-3 font-semibold text-slate-900 dark:text-white">{{ ns.title }}</td>
-                    <td class="px-6 py-3 font-mono text-xs text-slate-500 dark:text-slate-400">{{ ns.slug }}</td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                    <td class="px-6 py-3 font-mono text-xs text-slate-500 dark:text-gray-400">{{ ns.slug }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">
                       <div v-if="ns.ownerInfo" class="flex flex-col">
                         <div class="flex items-center gap-1.5">
                           <span class="text-xs font-medium text-slate-900 dark:text-white">{{ ns.ownerInfo.username }}</span>
@@ -359,7 +359,7 @@
                       </div>
                       <span v-else class="text-slate-400">—</span>
                     </td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">
                       <a
                         v-if="ns.ownerInfo?.phone"
                         :href="`tel:${ns.ownerInfo.phone}`"
@@ -379,12 +379,12 @@
                       <span v-else class="text-slate-400">—</span>
                     </td>
                     <td class="px-6 py-3">
-                      <span class="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                      <span class="inline-flex items-center gap-1.5 text-xs text-slate-600 dark:text-gray-400">
                         <span class="h-2 w-2 rounded-full" :class="activityDotClass(ns.lastActiveAt)" />
                         {{ relativeActivity(ns.lastActiveAt) }}
                       </span>
                     </td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ formatDate(ns.createdAt) }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">{{ formatDate(ns.createdAt) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -397,11 +397,11 @@
           <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinks') }}</h3>
-              <p class="text-xs text-slate-500 dark:text-slate-400">{{ t('admin.deepLinksDesc') }}</p>
+              <p class="text-xs text-slate-500 dark:text-gray-400">{{ t('admin.deepLinksDesc') }}</p>
             </div>
             <div class="flex items-center gap-2">
               <button
-                class="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                class="at-btn !py-1.5 !text-xs"
                 @click="openCreateCategory"
               >
                 <Icon name="lucide:folder-plus" class="h-3.5 w-3.5" />
@@ -421,7 +421,7 @@
           <div class="mb-4 flex flex-wrap gap-2">
             <button
               class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-              :class="selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'"
+              :class="selectedCategoryId === null ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#262626] dark:text-slate-300'"
               @click="selectedCategoryId = null"
             >
               {{ t('admin.allCategories') }}
@@ -430,7 +430,7 @@
               v-for="cat in deepLinkCategories"
               :key="cat.id"
               class="group flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-              :class="selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300'"
+              :class="selectedCategoryId === cat.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-[#262626] dark:text-slate-300'"
             >
               <button @click="selectedCategoryId = cat.id">{{ cat.name }}</button>
               <button
@@ -450,10 +450,10 @@
             </div>
           </div>
 
-          <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+          <div class="at-tray overflow-auto">
             <div class="overflow-x-auto">
               <table class="w-full min-w-[880px] text-left text-sm">
-                <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+                <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
                   <tr>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkCode') }}</th>
                     <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.deepLinkCategories') }}</th>
@@ -477,7 +477,7 @@
                   <tr
                     v-for="link in pagedDeepLinks"
                     :key="link.id"
-                    class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                    class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
                   >
                     <td class="px-6 py-3">
                       <button
@@ -489,15 +489,15 @@
                         <Icon name="lucide:copy" class="h-3 w-3 flex-shrink-0" />
                       </button>
                     </td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ categoryName(link.categoryId) }}</td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ targetLabel(link.target) }}</td>
-                    <td class="px-6 py-3 text-slate-600 dark:text-slate-400">{{ link.label || '—' }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">{{ categoryName(link.categoryId) }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">{{ targetLabel(link.target) }}</td>
+                    <td class="px-6 py-3 text-slate-600 dark:text-gray-400">{{ link.label || '—' }}</td>
                     <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.clickCount }}</td>
                     <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.registrationCount }}</td>
                     <td class="px-6 py-3 text-right font-semibold text-slate-900 dark:text-white">{{ link.appInstallCount }}</td>
                     <td class="px-6 py-3">
                       <div class="flex items-center gap-2">
-                        <button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800" @click="openEditLink(link)">
+                        <button class="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-white/10" @click="openEditLink(link)">
                           <Icon name="lucide:pencil" class="h-3.5 w-3.5" />
                         </button>
                         <button class="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30" @click="deleteLinkPrompt(link)">
@@ -530,12 +530,12 @@
         @click.self="closeCategoryModal"
         @keydown.esc="closeCategoryModal"
       >
-        <div class="mx-auto my-8 w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+        <div class="mx-auto my-8 w-full max-w-sm rounded-[2rem] bg-white shadow-2xl ring-1 ring-black/5 dark:bg-[#1a1a1a] dark:ring-white/10">
+          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-white/10">
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">
               {{ categoryModal.mode === 'create' ? t('admin.newDeepLinkCategory') : t('admin.editDeepLinkCategory') }}
             </h3>
-            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeCategoryModal">
+            <button class="hdr-icon-btn !h-8 !w-8" @click="closeCategoryModal">
               <Icon name="lucide:x" class="h-4 w-4" />
             </button>
           </div>
@@ -546,22 +546,22 @@
                 id="deep-link-category-name"
                 v-model="categoryForm.name"
                 type="text"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/10 dark:bg-[#141414] dark:text-white"
                 placeholder="chekalka.kz"
                 @keyup.enter="submitCategoryModal"
               />
             </div>
-            <p v-if="categoryModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            <p v-if="categoryModal.error" class="at-notice at-notice--err !mb-0 !py-2 !text-xs">
               {{ categoryModal.error }}
             </p>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
-            <button class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeCategoryModal">
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-white/10">
+            <button class="at-btn" @click="closeCategoryModal">
               {{ t('app.cancel') }}
             </button>
             <button
               :disabled="categoryModal.saving"
-              class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              class="at-btn at-btn--primary disabled:opacity-60"
               @click="submitCategoryModal"
             >
               <Icon v-if="categoryModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />
@@ -580,12 +580,12 @@
         @click.self="closeLinkModal"
         @keydown.esc="closeLinkModal"
       >
-        <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-slate-800">
+        <div class="mx-auto my-8 w-full max-w-md rounded-[2rem] bg-white shadow-2xl ring-1 ring-black/5 dark:bg-[#1a1a1a] dark:ring-white/10">
+          <div class="flex items-center justify-between border-b border-slate-100 p-5 dark:border-white/10">
             <h3 class="text-lg font-bold text-slate-900 dark:text-white">
               {{ linkModal.mode === 'create' ? t('admin.newDeepLink') : t('admin.editDeepLink') }}
             </h3>
-            <button class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" @click="closeLinkModal">
+            <button class="hdr-icon-btn !h-8 !w-8" @click="closeLinkModal">
               <Icon name="lucide:x" class="h-4 w-4" />
             </button>
           </div>
@@ -595,7 +595,7 @@
               <select
                 id="deep-link-category"
                 v-model="linkForm.categoryId"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/10 dark:bg-[#141414] dark:text-white"
               >
                 <option value="">{{ t('admin.uncategorized') }}</option>
                 <option v-for="cat in deepLinkCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
@@ -606,7 +606,7 @@
               <select
                 id="deep-link-target"
                 v-model="linkForm.target"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/10 dark:bg-[#141414] dark:text-white"
               >
                 <option v-for="opt in TARGET_OPTIONS" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
               </select>
@@ -617,22 +617,22 @@
                 id="deep-link-label"
                 v-model="linkForm.label"
                 type="text"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                class="w-full rounded-full border border-slate-200 bg-white px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/10 dark:bg-[#141414] dark:text-white"
                 placeholder="banner 1"
                 @keyup.enter="submitLinkModal"
               />
             </div>
-            <p v-if="linkModal.error" class="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-700 dark:bg-red-900/20 dark:text-red-300">
+            <p v-if="linkModal.error" class="at-notice at-notice--err !mb-0 !py-2 !text-xs">
               {{ linkModal.error }}
             </p>
           </div>
-          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-slate-800">
-            <button class="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" @click="closeLinkModal">
+          <div class="flex items-center justify-end gap-2 border-t border-slate-100 p-4 dark:border-white/10">
+            <button class="at-btn" @click="closeLinkModal">
               {{ t('app.cancel') }}
             </button>
             <button
               :disabled="linkModal.saving"
-              class="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60"
+              class="at-btn at-btn--primary disabled:opacity-60"
               @click="submitLinkModal"
             >
               <Icon v-if="linkModal.saving" name="svg-spinners:ring-resize" class="h-3.5 w-3.5" />

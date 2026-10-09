@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
     <!-- Header -->
     <AdminHeader 
       :title="t('admin.team')" 
@@ -21,7 +21,7 @@
       <!-- Roles Overview -->
       <div class="mb-8 grid gap-6 md:grid-cols-3">
         <!-- Super Admin -->
-        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]">
           <div class="flex items-center gap-3 mb-4">
             <div class="inline-flex rounded-lg bg-red-100 p-2 dark:bg-red-900/30">
               <Icon name="lucide:shield" class="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -30,14 +30,14 @@
               <h3 class="font-bold text-slate-900 dark:text-white">{{ t('admin.superAdmin') }}</h3>
             </div>
           </div>
-          <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
             {{ t('admin.superAdminDesc') }}
           </p>
           <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ superAdminCount }}</div>
         </div>
 
         <!-- Admin -->
-        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]">
           <div class="flex items-center gap-3 mb-4">
             <div class="inline-flex rounded-lg bg-orange-100 p-2 dark:bg-orange-900/30">
               <Icon name="lucide:lock" class="h-5 w-5 text-orange-600 dark:text-orange-400" />
@@ -46,14 +46,14 @@
               <h3 class="font-bold text-slate-900 dark:text-white">{{ t('admin.admin') }}</h3>
             </div>
           </div>
-          <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
             {{ t('admin.adminDesc') }}
           </p>
           <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ adminCount }}</div>
         </div>
 
         <!-- CMS Editor -->
-        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+        <div class="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]">
           <div class="flex items-center gap-3 mb-4">
             <div class="inline-flex rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
               <Icon name="lucide:edit-3" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -62,7 +62,7 @@
               <h3 class="font-bold text-slate-900 dark:text-white">{{ t('admin.cmsEditor') }}</h3>
             </div>
           </div>
-          <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">
+          <p class="text-sm text-slate-600 dark:text-gray-400 mb-4">
             {{ t('admin.cmsEditorDesc') }}
           </p>
           <div class="text-3xl font-bold text-slate-900 dark:text-white">{{ editorCount }}</div>
@@ -78,10 +78,10 @@
         <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
           {{ t('admin.users') }}
         </h3>
-        <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+        <div class="at-tray overflow-auto">
           <div class="overflow-x-auto">
           <table class="w-full min-w-[820px] text-left text-sm">
-            <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+            <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
               <tr>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.name') }}</th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.email') }}</th>
@@ -93,17 +93,17 @@
             </thead>
             <tbody>
               <tr v-if="loading">
-                <td colspan="6" class="px-6 py-4 text-slate-500 dark:text-slate-400">Loading...</td>
+                <td colspan="6" class="px-6 py-4 text-slate-500 dark:text-gray-400">Loading...</td>
               </tr>
               <tr
                 v-for="admin in admins"
                 :key="admin.id"
-                class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
               >
                 <td class="px-6 py-4 font-semibold text-slate-900 dark:text-white">
                   {{ admin.name }}
                 </td>
-                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">
+                <td class="px-6 py-4 text-slate-600 dark:text-gray-400">
                   {{ admin.email }}
                 </td>
                 <td class="px-6 py-4">
@@ -126,14 +126,14 @@
                     {{ t('admin.active') }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-slate-600 dark:text-slate-400">
+                <td class="px-6 py-4 text-slate-600 dark:text-gray-400">
                   {{ admin.joined }}
                 </td>
                 <td class="px-6 py-4">
                   <div v-if="canManageAdmins && !admin.isCurrent && !admin.isOwner" class="flex items-center gap-2">
                     <button
                       @click="openRoleModal(admin)"
-                      class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+                      class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-100 dark:hover:bg-slate-950"
                     >
                       <Icon name="lucide:settings-2" class="h-4 w-4" />
                       <span>{{ t('admin.changeRoleAction') }}</span>
@@ -162,9 +162,9 @@
         <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
           {{ t('admin.pendingInvitations') }}
         </h3>
-        <div class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-slate-800 dark:bg-slate-900">
+        <div class="rounded-xl border border-slate-200 bg-slate-50 p-8 text-center dark:border-white/10 dark:bg-[#1f1f1f]">
           <Icon name="lucide:mail" class="mx-auto h-12 w-12 text-slate-400" />
-          <p class="mt-4 text-slate-600 dark:text-slate-400">
+          <p class="mt-4 text-slate-600 dark:text-gray-400">
             {{ t('admin.noRecentActivity') }}
           </p>
         </div>
@@ -214,9 +214,9 @@
       </div>
 
       <!-- Contact Settings (Обратная связь) -->
-      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]">
         <h4 class="font-bold text-slate-900 dark:text-white">{{ t('admin.contactSettingsTitle') }}</h4>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        <p class="mt-1 text-sm text-slate-600 dark:text-gray-400">
           {{ t('admin.contactSettingsDesc') }}
         </p>
         <div class="mt-4 grid gap-4 md:grid-cols-2">
@@ -229,7 +229,7 @@
               v-model="contactPhone"
               type="text"
               placeholder="+7 700 000 00 00"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100"
             />
           </div>
           <div>
@@ -241,7 +241,7 @@
               v-model="contactWhatsapp"
               type="text"
               placeholder="+7 700 000 00 00"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100"
             />
           </div>
         </div>
@@ -256,16 +256,16 @@
           >
             {{ contactSettingsSaving ? '...' : t('admin.save') }}
           </button>
-          <span v-if="contactSettingsSavedAt" class="text-xs text-slate-500 dark:text-slate-400">
+          <span v-if="contactSettingsSavedAt" class="text-xs text-slate-500 dark:text-gray-400">
             {{ t('admin.contactSettingsSaved') }}
           </span>
         </div>
       </div>
 
       <!-- Bot Integration (Telegram-бот уведомлений) -->
-      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+      <div class="mt-8 rounded-2xl border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]">
         <h4 class="font-bold text-slate-900 dark:text-white">{{ t('admin.botTitle') }}</h4>
-        <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+        <p class="mt-1 text-sm text-slate-600 dark:text-gray-400">
           {{ t('admin.botDesc') }}
         </p>
 
@@ -282,21 +282,21 @@
               <span>{{ t('admin.botShownOnce') }}</span>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <code class="flex-1 overflow-x-auto rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">{{ revealedBotApiKey }}</code>
+              <code class="flex-1 overflow-x-auto rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100">{{ revealedBotApiKey }}</code>
               <button
                 @click="copyBotApiKey"
-                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+                class="inline-flex items-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 dark:border-white/10 dark:text-slate-100 dark:hover:bg-slate-950"
               >
                 <Icon name="lucide:copy" class="h-4 w-4" />
                 <span>{{ botApiKeyCopied ? t('admin.botCopied') : t('admin.botCopy') }}</span>
               </button>
             </div>
           </div>
-          <div v-else-if="botSettings?.configured" class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+          <div v-else-if="botSettings?.configured" class="flex items-center gap-2 text-sm text-slate-500 dark:text-gray-400">
             <Icon name="lucide:check-circle-2" class="h-4 w-4 text-green-600 dark:text-green-400" />
             <span>{{ t('admin.botConfiguredHidden') }}</span>
           </div>
-          <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+          <div v-else class="text-sm text-slate-500 dark:text-gray-400">
             {{ t('admin.botNotConfigured') }}
           </div>
         </div>
@@ -315,7 +315,7 @@
 
     <!-- Invite Modal -->
     <div v-if="showInviteModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-slate-900">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-[#1f1f1f]">
         <h2 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
           {{ t('admin.inviteAdmin') }}
         </h2>
@@ -330,7 +330,7 @@
               v-model="inviteEmail"
               type="email"
               placeholder="admin@example.com"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100"
             />
           </div>
 
@@ -341,7 +341,7 @@
             <select
               id="admin-invite-role"
               v-model.number="inviteRole"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100"
             >
               <!-- Super Admin (role 0) is the account owner -- unique, and
                    the backend rejects assigning it via invite or role
@@ -367,7 +367,7 @@
           <button
             @click="showInviteModal = false"
             :disabled="inviteLoading"
-            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-100 dark:hover:bg-slate-950"
           >
             {{ t('admin.cancel') || 'Cancel' }}
           </button>
@@ -376,9 +376,9 @@
     </div>
 
     <div v-if="showRoleModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-slate-900">
+      <div class="w-full max-w-md rounded-lg bg-white p-6 dark:bg-[#1f1f1f]">
         <h2 class="mb-2 text-lg font-bold text-slate-900 dark:text-white">{{ t('admin.changeRoleTitle') }}</h2>
-        <p class="mb-4 text-sm text-slate-600 dark:text-slate-400">
+        <p class="mb-4 text-sm text-slate-600 dark:text-gray-400">
           {{ selectedAdminName }}
         </p>
 
@@ -390,7 +390,7 @@
             <select
               id="admin-change-role"
               v-model.number="selectedRole"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 dark:border-white/10 dark:bg-[#141414] dark:text-slate-100"
             >
               <!-- Super Admin (role 0) is the account owner -- unique, and
                    the backend rejects assigning it via invite or role
@@ -412,7 +412,7 @@
           <button
             @click="closeRoleModal"
             :disabled="actionLoading"
-            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-950"
+            class="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-white/10 dark:text-slate-100 dark:hover:bg-slate-950"
           >
             {{ t('admin.cancel') || 'Cancel' }}
           </button>

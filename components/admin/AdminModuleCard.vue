@@ -1,61 +1,39 @@
 <template>
   <NuxtLink
     :to="href"
-    :class="[
-      'group relative rounded-2xl border-2 p-8 transition-all duration-300',
-      'transform hover:scale-105',
-      status === 'coming'
-        ? 'pointer-events-none border-slate-200 opacity-50 dark:border-slate-800'
-        : 'border-transparent hover:shadow-2xl cursor-pointer',
-      bgGradient
-    ]"
+    class="cn-card group"
+    :class="status === 'coming' ? 'pointer-events-none opacity-50' : ''"
   >
-    <!-- Background glow effect -->
-    <div
-      :class="[
-        'absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100',
-        status === 'active' && 'group-hover:shadow-inner'
-      ]"
-    />
-
-    <!-- Content -->
-    <div class="relative z-10">
-      <!-- Icon -->
-      <div :class="['mb-6 inline-flex rounded-xl p-3', iconBg]">
+    <div class="flex items-start justify-between gap-3">
+      <span :class="['cn-ico', iconBg]">
         <Icon
           :name="icon"
-          :class="['h-8 w-8', iconColor]"
+          :class="['h-6 w-6', iconColor]"
         />
-      </div>
-
-      <!-- Title -->
-      <h3 class="flex items-center gap-2 text-xl font-bold text-slate-900 dark:text-white">
-        {{ title }}
-        <span
-          v-if="status === 'coming'"
-          class="inline-block rounded bg-slate-300 dark:bg-slate-600 px-2 py-0.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
-        >
-          {{ t('admin.comingSoon') }}
-        </span>
-      </h3>
-
-      <!-- Description -->
-      <p class="mt-3 text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-        {{ description }}
-      </p>
-
-      <!-- Arrow indicator (visible on hover for active items) -->
-      <div
+      </span>
+      <span
         v-if="status === 'active'"
-        class="mt-6 inline-flex gap-2 text-sm font-semibold text-slate-900 dark:text-white opacity-0 transition-all duration-300 group-hover:opacity-100"
+        class="cta-arrow !h-9 !w-9 !bg-slate-900/5 text-slate-600 dark:!bg-white/10 dark:text-slate-300"
       >
-        <span>{{ t('admin.open') }}</span>
         <Icon
-          name="lucide:arrow-right"
-          class="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1"
+          name="lucide:arrow-up-right"
+          class="h-4 w-4"
         />
-      </div>
+      </span>
     </div>
+
+    <h3 class="mt-5 flex items-center gap-2 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">
+      {{ title }}
+      <span
+        v-if="status === 'coming'"
+        class="at-chip !text-[10px] !font-bold uppercase"
+      >
+        {{ t('admin.comingSoon') }}
+      </span>
+    </h3>
+    <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-400">
+      {{ description }}
+    </p>
   </NuxtLink>
 </template>
 

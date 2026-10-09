@@ -1,9 +1,9 @@
 <template>
-  <div v-if="loading" class="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center">
+  <div v-if="loading" class="min-h-screen bg-slate-100 dark:bg-[#141414] flex items-center justify-center">
     <div class="text-sm text-slate-500">Загрузка статьи...</div>
   </div>
 
-  <div v-else-if="loadError" class="min-h-screen bg-slate-100 dark:bg-slate-950 flex items-center justify-center px-4">
+  <div v-else-if="loadError" class="min-h-screen bg-slate-100 dark:bg-[#141414] flex items-center justify-center px-4">
     <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
       {{ loadError }}
     </div>

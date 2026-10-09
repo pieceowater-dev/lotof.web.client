@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
     <AdminHeader
       :title="t('admin.publications')"
       :description="t('admin.publicationsDesc')"
@@ -27,12 +27,12 @@
         >
           <div class="flex items-center justify-between gap-3">
             <div>
-              <div class="text-xs font-medium uppercase tracking-[0.08em]" :class="selectedCategory === cat.value ? 'text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'">
+              <div class="text-xs font-medium uppercase tracking-[0.08em]" :class="selectedCategory === cat.value ? 'text-slate-700 dark:text-slate-200' : 'text-slate-500 dark:text-gray-400'">
                 {{ cat.label }}
               </div>
               <div class="mt-2 flex items-baseline gap-2">
                 <span class="text-3xl font-bold leading-none text-slate-900 dark:text-white">{{ categoryCount(cat.value) }}</span>
-                <span class="text-xs text-slate-500 dark:text-slate-400">материалов</span>
+                <span class="text-xs text-slate-500 dark:text-gray-400">материалов</span>
               </div>
             </div>
             <div class="inline-flex h-10 w-10 items-center justify-center rounded-xl border transition-colors" :class="selectedCategory === cat.value ? cat.iconActiveClass : cat.iconInactiveClass">
@@ -50,14 +50,14 @@
             type="text"
             placeholder="Поиск по заголовку или адресу"
             aria-label="Поиск по заголовку или адресу"
-            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-white"
           >
         </div>
-        <div class="inline-flex rounded-xl border border-slate-200 p-1 dark:border-slate-700">
+        <div class="inline-flex rounded-xl border border-slate-200 p-1 dark:border-white/10">
           <button
             type="button"
             class="rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="statusFilter === 'active' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'"
+            :class="statusFilter === 'active' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/10'"
             @click="selectStatusFilter('active')"
           >
             Активные
@@ -65,7 +65,7 @@
           <button
             type="button"
             class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
-            :class="statusFilter === 'archived' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800'"
+            :class="statusFilter === 'archived' ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/10'"
             @click="selectStatusFilter('archived')"
           >
             <Icon name="lucide:archive" class="h-3.5 w-3.5" />
@@ -74,16 +74,16 @@
         </div>
         <button
           type="button"
-          class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+          class="rounded-xl border border-slate-200 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10"
           @click="reload"
         >
           Обновить
         </button>
       </div>
 
-      <div class="mt-6 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 dark:border-slate-800">
+      <div class="mt-6 overflow-x-auto overflow-y-hidden rounded-xl border border-slate-200 dark:border-white/10">
         <table class="min-w-[980px] w-full text-left text-sm">
-          <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+          <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
             <tr>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Заголовок</th>
               <th class="px-4 py-3 font-semibold text-slate-900 dark:text-white">Адрес</th>
@@ -105,7 +105,7 @@
               v-for="row in rows"
               v-else
               :key="row.slug"
-              class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+              class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
             >
               <td class="px-4 py-3 text-slate-900 dark:text-white">
                 <button
@@ -174,7 +174,7 @@
         <div class="flex items-center gap-2">
           <button
             type="button"
-            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50 dark:border-slate-700"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50 dark:border-white/10"
             :disabled="page <= 1"
             @click="page = page - 1"
           >
@@ -183,7 +183,7 @@
           <span>{{ page }} / {{ totalPages }}</span>
           <button
             type="button"
-            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50 dark:border-slate-700"
+            class="rounded-lg border border-slate-200 px-3 py-1.5 disabled:opacity-50 dark:border-white/10"
             :disabled="page >= totalPages"
             @click="page = page + 1"
           >
@@ -217,54 +217,54 @@ const categories = computed(() => [
     label: t('app.all'),
     icon: 'lucide:layers-3',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
   {
     value: 'blog',
     label: t('admin.blog'),
     icon: 'lucide:rss',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
   {
     value: 'whatsnew',
     label: t('admin.whatsnew'),
     icon: 'lucide:sparkles',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
   {
     value: 'articles',
     label: t('admin.articles'),
     icon: 'lucide:file-text',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
   {
     value: 'academy',
     label: t('admin.academy'),
     icon: 'lucide:book',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
   {
     value: 'news',
     label: t('admin.news'),
     icon: 'lucide:newspaper',
     activeClass: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700',
-    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300',
-    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400',
+    inactiveClass: 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm dark:border-white/10 dark:bg-[#1f1f1f] dark:hover:border-slate-700',
+    iconActiveClass: 'border-blue-200 bg-white text-blue-600 dark:border-blue-700 dark:bg-[#1f1f1f] dark:text-blue-300',
+    iconInactiveClass: 'border-slate-200 bg-slate-50 text-slate-400 dark:border-white/10 dark:bg-[#262626] dark:text-gray-400',
   },
 ]);
 

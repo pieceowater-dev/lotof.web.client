@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
     <AdminHeader
       :title="t('admin.namespaces')"
       :description="t('admin.namespacesDesc')"
@@ -35,7 +35,7 @@
                 <span
                   v-for="app in row.apps"
                   :key="app.id"
-                  class="inline-flex items-center rounded-md border border-blue-100 bg-white px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:border-blue-800/30 dark:bg-slate-900 dark:text-blue-400"
+                  class="inline-flex items-center rounded-md border border-blue-100 bg-white px-1.5 py-0.5 text-[10px] font-bold text-blue-700 dark:border-blue-800/30 dark:bg-[#1f1f1f] dark:text-blue-400"
                 >{{ appLabel(app.appBundle) }}</span>
               </div>
               <div v-if="row.ownerInfo" class="mt-1.5 truncate text-[10px] text-slate-500">
@@ -54,10 +54,10 @@
             type="text"
             :placeholder="t('admin.searchNamespaces') || 'Название, слаг, имя, почта, телефон'"
             :aria-label="t('admin.searchNamespaces') || 'Название, слаг, имя, почта, телефон'"
-            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
+            class="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-900 outline-none focus:border-blue-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-white"
           >
         </div>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 dark:text-gray-400">
           <span v-if="searchActive">{{ t('admin.found') || 'Найдено' }}: {{ displayTotal }}</span>
           <span v-else>{{ t('admin.totalNamespaces') }}: {{ total }}</span>
           <span class="inline-flex items-center gap-1">
@@ -75,14 +75,14 @@
         <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-slate-400" />
       </div>
 
-      <div v-else-if="!displayRows.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+      <div v-else-if="!displayRows.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-gray-400">
         {{ t('admin.noNamespacesFound') || 'Неймспейсы не найдены' }}
       </div>
 
-      <div v-else class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+      <div v-else class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
         <div class="overflow-x-auto">
           <table class="w-full min-w-[1390px] text-left text-sm">
-            <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+            <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
               <tr>
                 <th class="w-10 px-4 py-3"><span class="sr-only">{{ t('admin.favorite') || 'Избранное' }}</span></th>
                 <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
@@ -97,7 +97,7 @@
             </thead>
             <tbody>
               <template v-for="row in displayRows" :key="row.id">
-                <tr class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900">
+                <tr class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900">
                   <td class="px-4 py-4">
                     <button
                       type="button"
@@ -154,7 +154,7 @@
                       v-if="row.apps?.length"
                       type="button"
                       :disabled="healthLoading[row.id]"
-                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
                       @click="toggleHealth(row)"
                     >
                       <Icon v-if="healthLoading[row.id]" name="lucide:loader-2" class="h-3.5 w-3.5 animate-spin" />
@@ -169,7 +169,7 @@
                     <button
                       v-if="row.memberInfos?.length"
                       type="button"
-                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                      class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
                       @click="toggleExpanded(row.id)"
                     >
                       <Icon name="lucide:users" class="h-3.5 w-3.5" />
@@ -179,23 +179,23 @@
                     <span v-else class="text-[10px] text-slate-400 italic">0</span>
                   </td>
                   <td class="px-6 py-4">
-                    <span v-if="row.leadSource" class="font-mono text-[10px] text-slate-600 dark:text-slate-400">{{ row.leadSource }}</span>
+                    <span v-if="row.leadSource" class="font-mono text-[10px] text-slate-600 dark:text-gray-400">{{ row.leadSource }}</span>
                     <span v-else class="text-slate-400 text-xs">&mdash;</span>
                   </td>
                   <td class="px-6 py-4">
                     <span
-                      class="inline-flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-slate-400"
+                      class="inline-flex items-center gap-1.5 text-[11px] text-slate-600 dark:text-gray-400"
                       :title="row.lastActiveAt || ''"
                     >
                       <span class="h-1.5 w-1.5 rounded-full" :class="lastActiveDotClass(row.lastActiveAt, loadedAt)" />
                       {{ relativeLastActive(row.lastActiveAt, loadedAt) }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ formatDate(row.createdAt) }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ formatDate(row.createdAt) }}</td>
                 </tr>
-                <tr v-if="healthExpanded[row.id]" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
+                <tr v-if="healthExpanded[row.id]" class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]/50">
                   <td colspan="9" class="px-6 py-4">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-2">
                       {{ t('admin.health') || 'Здоровье' }}
                     </div>
                     <div v-if="healthLoading[row.id] && !healthData[row.id]" class="text-xs text-slate-400">
@@ -205,7 +205,7 @@
                       <div
                         v-for="app in healthData[row.id]"
                         :key="app.appBundle"
-                        class="rounded-lg border px-3 py-2 dark:bg-slate-950"
+                        class="rounded-lg border px-3 py-2 dark:bg-[#141414]"
                         :class="healthCardClass(app)"
                       >
                         <div class="flex items-center justify-between gap-2">
@@ -214,7 +214,7 @@
                             {{ healthPillLabel(app) }}
                           </span>
                         </div>
-                        <div v-if="!app.reachable || !app.schemaReady" class="mt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                        <div v-if="!app.reachable || !app.schemaReady" class="mt-1 text-[10px] text-slate-500 dark:text-gray-400">
                           <div v-if="app.appliedVersion || app.targetVersion">
                             {{ t('admin.appliedVersion') || 'Применена' }}: {{ app.appliedVersion || '—' }} / {{ t('admin.targetVersion') || 'Целевая' }}: {{ app.targetVersion || '—' }}
                           </div>
@@ -224,16 +224,16 @@
                     </div>
                   </td>
                 </tr>
-                <tr v-if="expanded[row.id] && row.memberInfos?.length" class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900/50">
+                <tr v-if="expanded[row.id] && row.memberInfos?.length" class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]/50">
                   <td colspan="9" class="px-6 py-4">
-                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-2">
+                    <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:text-gray-400 mb-2">
                       {{ t('admin.members') || 'Участники' }}
                     </div>
                     <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       <div
                         v-for="member in row.memberInfos"
                         :key="member.id"
-                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-white/10 dark:bg-[#141414]"
                       >
                         <div class="text-xs font-medium text-slate-900 dark:text-white">{{ member.username }}</div>
                         <div class="text-[10px] text-slate-500">{{ member.email }}</div>

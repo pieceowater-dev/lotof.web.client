@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { useI18n } from '@/composables/useI18n';
+import { markupPercent } from '@/utils/labour';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
 import type { MenuItem } from '@/api/menu/menuitem/list';
 import type { MenuBadge } from '@/api/menu/badge/list';
@@ -39,6 +40,9 @@ const form = reactive({
   seoTitle: '',
   seoDescription: '',
   warrantyDays: 0,
+  itemKind: 'MATERIAL' as 'WORK' | 'MATERIAL',
+  costPrice: 0,
+  workPayPercent: 0,
 });
 
 const selectedBadgeIds = ref<string[]>([]);
@@ -58,11 +62,20 @@ watch(() => [props.modelValue, props.item], () => {
   form.seoTitle = it?.seoTitle || '';
   form.seoDescription = it?.seoDescription || '';
   form.warrantyDays = it?.warrantyDays ?? 0;
+  form.itemKind = it?.itemKind === 'WORK' ? 'WORK' : 'MATERIAL';
+  form.costPrice = it?.costPrice ?? 0;
+  form.workPayPercent = it?.workPayPercent ?? 0;
   selectedBadgeIds.value = [...(it?.badgeIds || [])];
   selectedModifierGroupIds.value = [...(it?.modifierGroupIds || [])];
   const excluded = new Set(it?.excludedBranchIds || []);
   availableBranchIds.value = (props.availableBranches || []).filter((b) => !excluded.has(b.id)).map((b) => b.id);
 }, { immediate: true });
+
+const kindOptions = computed(() => [
+  { value: 'MATERIAL' as const, icon: 'lucide:package', label: t('menu.itemKindMaterial') || 'Material / goods' },
+  { value: 'WORK' as const, icon: 'lucide:wrench', label: t('menu.itemKindWork') || 'Work / service' },
+]);
+const markup = computed(() => markupPercent(Number(form.price) || 0, Number(form.costPrice) || 0));
 
 const isFormValid = computed(() => form.name.trim().length > 0 && form.price >= 0);
 
@@ -101,6 +114,9 @@ function handleSubmit() {
     seoTitle: form.seoTitle.trim() || undefined,
     seoDescription: form.seoDescription.trim() || undefined,
     warrantyDays: Math.max(0, Math.round(Number(form.warrantyDays) || 0)),
+    itemKind: form.itemKind,
+    costPrice: Math.max(0, Number(form.costPrice) || 0),
+    workPayPercent: form.itemKind === 'WORK' ? Math.min(100, Math.max(0, Number(form.workPayPercent) || 0)) : 0,
     badgeIds: selectedBadgeIds.value,
     modifierGroupIds: selectedModifierGroupIds.value,
     excludedBranchIds,
@@ -127,6 +143,41 @@ function handleSubmit() {
         <UFormGroup :label="t('menu.price') || 'Price'" required>
           <UInput v-model.number="form.price" type="number" step="0.01" size="lg" />
         </UFormGroup>
+
+        <!-- Labour vs materials: a work item is paid to the employee as a share
+             of its price; a material can track its cost to show the markup. -->
+        <UFormGroup :label="t('menu.itemKind') || 'Type'">
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              v-for="opt in kindOptions"
+              :key="opt.value"
+              type="button"
+              class="flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-200"
+              :class="form.itemKind === opt.value
+                ? 'border-primary-300 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-700 dark:bg-primary-950/30 dark:text-primary-300'
+                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400'"
+              @click="form.itemKind = opt.value"
+            >
+              <Icon :name="opt.icon" class="h-4 w-4" />
+              {{ opt.label }}
+            </button>
+          </div>
+        </UFormGroup>
+        <div class="grid grid-cols-2 gap-3">
+          <UFormGroup
+            :label="t('menu.costPrice') || 'Cost price'"
+            :help="markup !== null ? (t('menu.markupHint', { value: markup }) || ('Markup ' + markup + '%')) : (t('menu.costPriceHint') || 'Optional')"
+          >
+            <UInput v-model.number="form.costPrice" type="number" min="0" step="0.01" size="lg" />
+          </UFormGroup>
+          <UFormGroup
+            v-if="form.itemKind === 'WORK'"
+            :label="t('menu.workPayPercent') || 'Employee pay, %'"
+            :help="t('menu.workPayPercentHint') || 'Share of the price paid to whoever did the work'"
+          >
+            <UInput v-model.number="form.workPayPercent" type="number" min="0" max="100" step="1" size="lg" />
+          </UFormGroup>
+        </div>
 
         <UFormGroup
           :label="t('menu.warrantyDays') || 'Warranty, days'"

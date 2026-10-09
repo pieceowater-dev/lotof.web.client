@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
     <!-- Header -->
     <AdminHeader 
       :title="t('admin.billing')" 
@@ -50,7 +50,7 @@
 
       <div v-else>
         <!-- Project Selector -->
-        <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div class="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-[#1f1f1f]">
           <p class="mb-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
             {{ t('admin.billingProjectSelector') }}
           </p>
@@ -63,7 +63,7 @@
                 'inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold transition-colors',
                 selectedProject === project.id
                   ? 'border-blue-600 bg-blue-600 text-white'
-                  : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:hover:border-slate-600'
+                  : 'border-slate-300 bg-white text-slate-700 hover:border-slate-400 dark:border-white/10 dark:bg-[#141414] dark:text-slate-300 dark:hover:border-slate-600'
               ]"
             >
               <Icon :name="project.icon" class="h-4 w-4" />
@@ -73,14 +73,14 @@
         </div>
 
         <!-- Tabs -->
-        <div class="mb-8 flex gap-4 border-b border-slate-200 dark:border-slate-800">
+        <div class="mb-8 flex gap-4 border-b border-slate-200 dark:border-white/10">
           <button
             @click="activeTab = 'plans'"
             :class="[
               'px-4 py-2 font-semibold transition-all duration-200',
               activeTab === 'plans'
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
             ]"
           >
             {{ t('admin.plans') }}
@@ -92,7 +92,7 @@
               'px-4 py-2 font-semibold transition-all duration-200',
               activeTab === 'accounts'
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
             ]"
           >
             {{ t('admin.accounts') }}
@@ -104,7 +104,7 @@
               'px-4 py-2 font-semibold transition-all duration-200',
               activeTab === 'subscriptions'
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
             ]"
           >
             {{ t('admin.subscriptions') }}
@@ -116,7 +116,7 @@
               'px-4 py-2 font-semibold transition-all duration-200',
               activeTab === 'invoices'
                 ? 'border-b-2 border-blue-600 text-blue-600 dark:text-blue-400'
-                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
+                : 'text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
             ]"
           >
             {{ t('admin.invoices') }}
@@ -128,10 +128,10 @@
           <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
             {{ t('admin.billingAccounts') }}
           </h3>
-          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <div class="overflow-x-auto">
             <table class="w-full min-w-[900px] text-left text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+              <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">ID</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
@@ -147,7 +147,7 @@
                 <tr
                   v-for="account in pagedAccounts"
                   :key="account.id"
-                  class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
                   <td class="px-6 py-4 font-mono text-[10px] text-slate-500">{{ account.id }}</td>
                   <td class="px-6 py-4">
@@ -161,8 +161,8 @@
                     </div>
                     <span v-else class="text-slate-400 text-xs">-</span>
                   </td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ account.displayName }}</td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ account.billingEmail }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ account.displayName }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ account.billingEmail }}</td>
                   <td class="px-6 py-4">
                     <div v-if="account.subscriptions?.subscriptions?.length" class="flex flex-col gap-1">
                       <div 
@@ -180,7 +180,7 @@
                       {{ account.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ new Date(account.createdAt).toLocaleDateString() }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ new Date(account.createdAt).toLocaleDateString() }}</td>
                 </tr>
               </tbody>
             </table>
@@ -212,7 +212,7 @@
 
             <div
               v-else-if="!groupedBundles.length"
-              class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
+              class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-gray-400"
             >
               {{ t('admin.noBundleCreated') || 'Сборок пока нет' }}
             </div>
@@ -221,12 +221,12 @@
               <div
                 v-for="group in groupedBundles"
                 :key="group.name"
-                class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+                class="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]"
               >
                 <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ group.name }}</h4>
-                <p v-if="group.rows[0].description" class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ group.rows[0].description }}</p>
+                <p v-if="group.rows[0].description" class="mt-1 text-sm text-slate-600 dark:text-gray-400">{{ group.rows[0].description }}</p>
 
-                <div class="mt-3 rounded-lg border border-slate-100 p-3 dark:border-slate-800">
+                <div class="mt-3 rounded-lg border border-slate-100 p-3 dark:border-white/10">
                   <p class="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-slate-400">{{ t('admin.bundleIncludes') || 'Входит' }}</p>
                   <ul class="space-y-1">
                     <li
@@ -245,7 +245,7 @@
                   <div
                     v-for="b in group.rows"
                     :key="b.id"
-                    class="rounded-lg border border-slate-100 p-3 dark:border-slate-800"
+                    class="rounded-lg border border-slate-100 p-3 dark:border-white/10"
                     :class="b.status === 'ARCHIVED' ? 'opacity-50' : ''"
                   >
                     <div class="flex items-center justify-between gap-2">
@@ -255,14 +255,14 @@
                       </div>
                       <span
                         v-if="b.status === 'ARCHIVED'"
-                        class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                        class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-[#262626] dark:text-gray-400"
                       >{{ t('admin.archived') }}</span>
                     </div>
                     <div class="mt-2 flex flex-col gap-2">
                       <span class="break-all font-mono text-[11px] text-slate-400">{{ b.code }}</span>
                       <div class="flex items-center gap-1.5">
                         <button
-                          class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                          class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
                           @click="openEditBundle(b)"
                         >
                           <Icon name="lucide:pencil" class="h-3 w-3" />
@@ -290,7 +290,7 @@
             </h3>
           </div>
 
-          <div v-if="!isBundlesView && !selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+          <div v-if="!isBundlesView && !selectedProjectPlans.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-gray-400">
             {{ t('admin.noPlanCreated') }}
           </div>
 
@@ -298,16 +298,16 @@
             <div
               v-for="group in groupedProjectPlans"
               :key="group.name"
-              class="rounded-lg border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+              class="rounded-lg border border-slate-200 bg-white p-6 dark:border-white/10 dark:bg-[#1f1f1f]"
             >
               <h4 class="text-lg font-bold text-slate-900 dark:text-white">{{ group.name }}</h4>
-              <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ resolvePlanDescription(group.plans[0]) }}</p>
+              <p class="mt-1 text-sm text-slate-600 dark:text-gray-400">{{ resolvePlanDescription(group.plans[0]) }}</p>
 
               <div class="mt-4 space-y-3">
                 <div
                   v-for="plan in group.plans"
                   :key="plan.id"
-                  class="rounded-lg border border-slate-100 p-3 dark:border-slate-800"
+                  class="rounded-lg border border-slate-100 p-3 dark:border-white/10"
                   :class="plan.status === 'PLAN_ARCHIVED' ? 'opacity-50' : ''"
                 >
                   <div class="flex items-center justify-between gap-2">
@@ -317,14 +317,14 @@
                     </div>
                     <span
                       v-if="plan.status === 'PLAN_ARCHIVED'"
-                      class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                      class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600 dark:bg-[#262626] dark:text-gray-400"
                     >{{ t('admin.archived') }}</span>
                   </div>
                   <div class="mt-2 flex flex-col gap-2">
                     <span class="break-all font-mono text-[11px] text-slate-400">{{ plan.code }}</span>
                     <div class="flex items-center gap-1.5">
                       <button
-                        class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+                        class="flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
                         @click="openEditPlan(plan)"
                       >
                         <Icon name="lucide:pencil" class="h-3 w-3" />
@@ -351,10 +351,10 @@
           <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
             {{ t('admin.activeSubscriptions') }} · {{ selectedProjectTitle }}
           </h3>
-          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <div class="overflow-x-auto">
             <table class="w-full min-w-[700px] text-left text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+              <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.plan') }}</th>
@@ -367,7 +367,7 @@
                 <tr
                   v-for="subscription in pagedSubscriptions"
                   :key="subscription.id"
-                  class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
                   <td class="px-6 py-4">
                     <div class="font-semibold text-slate-900 dark:text-white">{{ subscription.namespace }}</div>
@@ -382,14 +382,14 @@
                         'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold',
                         subscription.status === 'ACTIVE'
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400'
-                          : 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400'
+                          : 'bg-slate-100 text-slate-800 dark:bg-[#262626] dark:text-gray-400'
                       ]"
                     >
                       <span :class="['h-1.5 w-1.5 rounded-full', subscription.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-slate-400']"></span>
                       {{ subscription.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ subscription.periodEnd }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ subscription.periodEnd }}</td>
                   <td class="px-6 py-4 text-right">
                     <button
                       v-if="subscription.status === 'ACTIVE' || subscription.status === 'TRIALING'"
@@ -420,10 +420,10 @@
           <h3 class="mb-4 text-lg font-bold text-slate-900 dark:text-white">
             {{ t('admin.invoices') }} · {{ selectedProjectTitle }}
           </h3>
-          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-800">
+          <div class="overflow-hidden rounded-lg border border-slate-200 dark:border-white/10">
             <div class="overflow-x-auto">
             <table class="w-full min-w-[760px] text-left text-sm">
-              <thead class="border-b border-slate-200 bg-slate-50 dark:border-slate-800 dark:bg-slate-900">
+              <thead class="border-b border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-[#1f1f1f]">
                 <tr>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.invoice') }}</th>
                   <th class="px-6 py-3 font-bold text-slate-900 dark:text-white">{{ t('admin.namespace') }}</th>
@@ -436,7 +436,7 @@
                 <tr
                   v-for="invoice in pagedInvoices"
                   :key="invoice.id"
-                  class="border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900"
+                  class="border-b border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-900"
                 >
                   <td class="px-6 py-4 font-mono text-xs text-slate-900 dark:text-white">{{ invoice.id }}</td>
                   <td class="px-6 py-4">
@@ -456,7 +456,7 @@
                       {{ invoice.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 text-slate-600 dark:text-slate-400">{{ invoice.date }}</td>
+                  <td class="px-6 py-4 text-slate-600 dark:text-gray-400">{{ invoice.date }}</td>
                 </tr>
               </tbody>
             </table>

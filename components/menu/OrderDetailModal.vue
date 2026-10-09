@@ -33,6 +33,7 @@ import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
 import { warrantyInfo } from '@/utils/warranty';
+import { splitLabour } from '@/utils/labour';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
@@ -526,6 +527,9 @@ async function addExistingProduct(item: MenuItem, quantity = 1) {
       priceAtPurchase: item.price,
       quantity,
       warrantyDays: item.warrantyDays || undefined,
+      itemKind: item.itemKind === 'WORK' ? 'WORK' : 'MATERIAL',
+      costPriceAtPurchase: item.costPrice || undefined,
+      workPayPercent: item.workPayPercent || undefined,
     });
     emit('statusChanged', updated);
     await loadDetails();
@@ -837,6 +841,19 @@ function formatDate(iso: string) {
 function itemUnitPrice(i: MenuOrderItem): number {
   return i.priceAtPurchase + (i.modifiers || []).reduce((sum, m) => sum + m.priceAtPurchase, 0);
 }
+
+// Works and materials are listed (and subtotalled) separately as soon as the
+// order has at least one work line; a plain goods/cafe order stays one list.
+const labour = computed(() => splitLabour(items.value));
+const hasWorks = computed(() => labour.value.works.length > 0);
+const itemGroups = computed(() =>
+  hasWorks.value
+    ? [
+        { key: 'WORK', title: t('menu.groupWorks') || 'Works', rows: labour.value.works, total: labour.value.worksTotal },
+        { key: 'MATERIAL', title: t('menu.groupMaterials') || 'Materials', rows: labour.value.materials, total: labour.value.materialsTotal },
+      ].filter((g) => g.rows.length)
+    : [{ key: 'ALL', title: '', rows: items.value, total: 0 }]
+);
 
 const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitPrice(i) * i.quantity, 0));
 
@@ -1317,7 +1334,13 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               <div v-if="!items.length" class="text-sm text-gray-400 text-center py-6">{{ t('menu.noMenuItems') || 'No products' }}</div>
               <table v-else class="w-full text-sm">
                 <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-                  <tr v-for="i in items" :key="i.id" class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
+                  <template v-for="g in itemGroups" :key="g.key">
+                  <tr v-if="hasWorks" class="bg-gray-50 dark:bg-gray-800/40">
+                    <td class="px-4 py-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400" colspan="3">{{ g.title }}</td>
+                    <td class="px-4 py-1.5 text-right text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">{{ g.total }}</td>
+                    <td />
+                  </tr>
+                  <tr v-for="i in g.rows" :key="i.id" class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                     <td class="px-4 py-2.5">
                       <button type="button" class="text-left hover:text-primary-600 dark:hover:text-primary-300 hover:underline" @click="openProductDetail(i)">
                         {{ i.name }}
@@ -1366,12 +1389,17 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                       />
                     </td>
                   </tr>
+                  </template>
                 </tbody>
                 <tfoot>
                   <tr class="border-t border-gray-200 dark:border-gray-800 font-semibold">
                     <td class="px-4 py-2.5" colspan="3">{{ t('menu.total') || 'Total' }}</td>
                     <td class="px-4 py-2.5 text-right tabular-nums">{{ order.totalAmount ?? itemsTotal }}</td>
                     <td />
+                  </tr>
+                  <tr v-if="hasWorks && labour.payout > 0" class="border-t border-gray-100 dark:border-gray-800">
+                    <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.workPayout') || 'Employee pay for work' }}</td>
+                    <td class="px-4 py-2 text-right tabular-nums" colspan="2">{{ labour.payout }}</td>
                   </tr>
                   <tr v-if="previewDiscountAmount > 0" class="border-t border-gray-100 dark:border-gray-800">
                     <td class="px-4 py-2 text-gray-500 dark:text-gray-400" colspan="3">{{ t('menu.discount') || 'Discount' }}</td>

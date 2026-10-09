@@ -1,30 +1,30 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <div class="min-h-screen">
     <!-- Header -->
-    <div class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+    <div class="cn-head">
+      <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <NuxtLink
           :to="homePath()"
-          class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          class="at-btn mb-4 !px-3 !py-1.5 !text-xs"
         >
           <Icon name="lucide:arrow-left" class="h-3.5 w-3.5" />
           {{ t('admin.backToLota') }}
         </NuxtLink>
-        <div class="flex items-center justify-between">
+        <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 class="text-4xl font-bold text-slate-900 dark:text-white">
+            <h1 class="at-title !text-3xl sm:!text-4xl">
               {{ t('admin.panel') }}
             </h1>
-            <p class="mt-2 text-slate-600 dark:text-slate-400">
+            <p class="at-sub !text-base">
               {{ t('admin.manageOperations') }}
             </p>
           </div>
-          <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900">
-            <div class="flex items-center gap-2 text-slate-900 dark:text-white">
-              <Icon name="lucide:user" class="h-4 w-4" />
-              <span class="text-sm font-semibold">{{ username }}</span>
+          <div class="at-row flex items-center gap-3 !rounded-full !py-2 !pl-2 !pr-5">
+            <span class="hdr-avatar !h-9 !w-9 !text-sm">{{ (username || 'A').charAt(0).toUpperCase() }}</span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-bold text-gray-900 dark:text-white">{{ username }}</p>
+              <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ userEmail }}</p>
             </div>
-            <p class="mt-1 text-xs text-slate-600 dark:text-slate-400">{{ userEmail }}</p>
           </div>
         </div>
       </div>
@@ -34,18 +34,19 @@
       v-if="isOwner"
       class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8"
     >
-      <div class="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+      <div class="at-row flex items-center gap-2 !rounded-full !py-1.5 !pl-5 !pr-1.5">
+        <Icon name="lucide:user-round-cog" class="h-4 w-4 flex-shrink-0 text-gray-400" />
         <input
           v-model="impersonateEmail"
           type="email"
           placeholder="email@..."
           aria-label="Войти как (email)"
-          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-0 dark:text-white"
+          class="min-w-0 flex-1 border-0 bg-transparent text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-0 dark:text-white"
           @keyup.enter="onImpersonate"
         >
         <button
           type="button"
-          class="shrink-0 rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          class="at-btn at-btn--primary shrink-0 disabled:opacity-50"
           :disabled="!impersonateEmail || impersonateLoading"
           @click="onImpersonate"
         >
@@ -54,20 +55,20 @@
       </div>
       <p
         v-if="impersonateError"
-        class="mt-1 text-xs text-red-600 dark:text-red-400"
+        class="mt-1.5 px-2 text-xs text-red-600 dark:text-red-400"
       >
         {{ impersonateError }}
       </p>
     </div>
 
     <!-- Main Content -->
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+    <div class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <!-- Modules Grid -->
       <div>
-        <h2 class="mb-8 text-2xl font-bold text-slate-900 dark:text-white">
+        <h2 class="at-h2 mb-5 !text-xl">
           {{ t('admin.modules') }}
         </h2>
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <template v-if="isFullConsoleAdmin">
             <!-- Analytics Module -->
             <AdminModuleCard
@@ -76,7 +77,6 @@
               icon="lucide:bar-chart-2"
               status="active"
               href="/console/analytics"
-              bg-gradient="bg-white dark:bg-slate-900"
               icon-bg="bg-blue-100 dark:bg-blue-900/30"
               icon-color="text-blue-600 dark:text-blue-400"
             />
@@ -88,7 +88,6 @@
               icon="lucide:credit-card"
               status="active"
               href="/console/billing"
-              bg-gradient="bg-white dark:bg-slate-900"
               icon-bg="bg-emerald-100 dark:bg-emerald-900/30"
               icon-color="text-emerald-600 dark:text-emerald-400"
             />
@@ -100,7 +99,6 @@
               icon="lucide:building-2"
               status="active"
               href="/console/namespaces"
-              bg-gradient="bg-white dark:bg-slate-900"
               icon-bg="bg-purple-100 dark:bg-purple-900/30"
               icon-color="text-purple-600 dark:text-purple-400"
             />
@@ -118,7 +116,6 @@
             icon="lucide:book-open"
             status="active"
             href="/console/guide"
-            bg-gradient="bg-white dark:bg-slate-900"
             icon-bg="bg-sky-100 dark:bg-sky-900/30"
             icon-color="text-sky-600 dark:text-sky-400"
           />
@@ -129,7 +126,6 @@
             icon="lucide:newspaper"
             status="active"
             href="/console/publications"
-            bg-gradient="bg-white dark:bg-slate-900"
             icon-bg="bg-orange-100 dark:bg-orange-900/30"
             icon-color="text-orange-600 dark:text-orange-400"
           />
@@ -142,7 +138,6 @@
               icon="lucide:users"
               status="active"
               href="/console/people"
-              bg-gradient="bg-white dark:bg-slate-900"
               icon-bg="bg-rose-100 dark:bg-rose-900/30"
               icon-color="text-rose-600 dark:text-rose-400"
             />

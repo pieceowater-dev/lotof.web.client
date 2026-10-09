@@ -1,10 +1,10 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
-    <div class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+  <div class="min-h-screen">
+    <div class="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#141414]">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         <NuxtLink
           to="/console"
-          class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          class="mb-3 inline-flex items-center gap-1 text-xs font-medium text-slate-500 transition-colors hover:text-slate-900 dark:text-gray-400 dark:hover:text-white"
         >
           <Icon name="lucide:arrow-left" class="h-3.5 w-3.5" />
           {{ t('admin.backToConsole') }}
@@ -12,7 +12,7 @@
         <h1 class="text-3xl font-bold text-slate-900 dark:text-white">
           {{ t('admin.guide') }}
         </h1>
-        <p class="mt-2 text-slate-600 dark:text-slate-400">
+        <p class="mt-2 text-slate-600 dark:text-gray-400">
           {{ t('admin.guideDesc') }}
         </p>
       </div>
@@ -23,7 +23,7 @@
         <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
           {{ t('admin.guideProduct') }}
         </label>
-        <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">
+        <p class="mb-3 text-sm text-slate-500 dark:text-gray-400">
           {{ t('admin.guideProductHint') }}
         </p>
         <div class="flex flex-wrap items-center gap-2">
@@ -50,7 +50,7 @@
               <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
                 {{ t('admin.guideCategories') }}
               </h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p class="mt-1 text-sm text-slate-500 dark:text-gray-400">
                 {{ t('admin.guideCategoriesHint') }}
               </p>
             </div>
@@ -70,7 +70,7 @@
             {{ t('admin.guideAddCategory') }}
           </UButton>
         </div>
-        <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+        <div v-else class="divide-y divide-slate-100 dark:divide-white/10">
           <div
             v-for="row in orderedCategories"
             :key="row.category.id"
@@ -81,7 +81,7 @@
               <Icon v-if="row.depth > 0" name="lucide:corner-down-right" class="h-3.5 w-3.5 flex-shrink-0 text-slate-300 dark:text-slate-700" />
               <Icon :name="row.category.icon || 'lucide:book-open'" class="h-4 w-4 flex-shrink-0 text-slate-400" />
               <span class="truncate text-sm font-medium text-slate-900 dark:text-white">{{ row.category.nameRu || row.category.slug }}</span>
-              <span v-if="!row.category.isActive" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-slate-800">
+              <span v-if="!row.category.isActive" class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500 dark:bg-[#262626]">
                 {{ t('admin.guideInactive') }}
               </span>
             </div>
@@ -101,7 +101,7 @@
               <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
                 {{ t('admin.guideArticles') }}
               </h2>
-              <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+              <p class="mt-1 text-sm text-slate-500 dark:text-gray-400">
                 {{ t('admin.guideArticlesHint') }}
               </p>
             </div>
@@ -141,7 +141,7 @@
             {{ t('admin.guideAddArticle') }}
           </UButton>
         </div>
-        <div v-else class="divide-y divide-slate-100 dark:divide-slate-800">
+        <div v-else class="divide-y divide-slate-100 dark:divide-white/10">
           <div
             v-for="article in articles"
             :key="article.id"
@@ -156,7 +156,7 @@
                   class="rounded-full px-2 py-0.5 text-[11px]"
                   :class="article.status === 'PUBLISHED'
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'"
+                    : 'bg-slate-100 text-slate-500 dark:bg-[#262626] dark:text-gray-400'"
                 >
                   {{ article.status === 'PUBLISHED' ? t('admin.guidePublished') : t('admin.guideDraft') }}
                 </span>

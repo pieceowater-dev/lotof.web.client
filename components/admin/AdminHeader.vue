@@ -1,29 +1,31 @@
 <template>
-  <div class="border-b border-slate-200 dark:border-slate-800">
-    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <!-- Back button -->
+  <div class="cn-head">
+    <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-4">
           <NuxtLink
             to="/console"
-            class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition-colors"
+            class="hdr-icon-btn flex-shrink-0"
+            aria-label="Back"
           >
-            <Icon name="lucide:arrow-left" class="h-5 w-5" />
+            <Icon
+              name="lucide:arrow-left"
+              class="h-[18px] w-[18px]"
+            />
           </NuxtLink>
-
-          <!-- Breadcrumb / Title -->
-          <div>
-            <h1 class="text-2xl font-bold text-slate-900 dark:text-white">
+          <div class="min-w-0">
+            <h1 class="at-title !text-2xl truncate">
               {{ title }}
             </h1>
-            <p v-if="description" class="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <p
+              v-if="description"
+              class="at-sub"
+            >
               {{ description }}
             </p>
           </div>
         </div>
-
-        <!-- Action slot -->
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
           <slot name="actions" />
         </div>
       </div>
