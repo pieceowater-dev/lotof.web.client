@@ -166,3 +166,23 @@
     radial-gradient(50% 45% at 92% 8%, rgba(16, 185, 129, 0.12), transparent 70%),
     #141414;
 }
+
+/* ---- "My stats" page ---- */
+.me-hero {
+  position: relative; overflow: hidden; border-radius: 2rem; padding: 1.6rem; color: #fff;
+  background:
+    radial-gradient(90% 120% at 100% 0%, rgba(255, 255, 255, 0.22), transparent 60%),
+    linear-gradient(135deg, #2563eb 0%, #0ea5a4 60%, #10b981 100%);
+  box-shadow: 0 28px 48px -28px rgba(37, 99, 235, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+}
+.me-hero-chip { display: inline-flex; align-items: center; border-radius: 9999px; padding: 0.3rem 0.8rem; font-size: 0.75rem; font-weight: 600; background: rgba(255, 255, 255, 0.18); }
+.me-wd { display: inline-flex; height: 2.1rem; min-width: 2.1rem; align-items: center; justify-content: center; border-radius: 9999px; padding: 0 0.5rem; font-size: 0.75rem; font-weight: 700; color: #94a3b8; background: rgba(15, 23, 42, 0.05); }
+.me-wd--on { color: #fff; background-image: linear-gradient(135deg, #2563eb, #10b981); box-shadow: 0 8px 16px -10px rgba(37, 99, 235, 0.7); }
+.dark .me-wd { color: #737373; background: rgba(255, 255, 255, 0.07); }
+.dark .me-wd--on { color: #fff; background: linear-gradient(135deg, #2563eb, #10b981); }
+.me-bar { display: flex; height: 0.5rem; overflow: hidden; border-radius: 9999px; background: rgba(15, 23, 42, 0.07); }
+.dark .me-bar { background: rgba(255, 255, 255, 0.1); }
+.me-bar__ok { background-image: linear-gradient(90deg, #2563eb, #10b981); }
+.me-bar__bad { background: #f87171; }
+.me-day { display: flex; height: 3.1rem; width: 3.1rem; flex-shrink: 0; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem; border-radius: 1rem; color: #1d4ed8; background: rgba(37, 99, 235, 0.1); }
+.dark .me-day { color: #bfdbfe; background: rgba(96, 165, 250, 0.16); }

@@ -7,7 +7,6 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { CookieKeys } from '@/utils/storageKeys';
 import { isAtracePermissionError } from '@/utils/atracePermissions';
 import { GEO_CONFIRM_RADIUS_M } from '@/utils/geolocation';
-import AppTable from '@/components/ui/AppTable.vue';
 import type { AtraceAttendanceSummary } from '@/api/atrace/attendance/summary';
 import type { AtraceScheduleAssignment, AtraceShiftPattern } from '@/api/atrace/schedule/schedule';
 import type { AtraceSalaryCalculationResult, AtraceSalaryHistoryEntry } from '@/api/atrace/salary/payroll';
@@ -191,6 +190,39 @@ function formatAmount(amount: number, currency: string): string {
   return `${amount.toLocaleString('ru-RU', { maximumFractionDigits: 2 })} ${currency || ''}`.trim();
 }
 
+const monthTitle = new Date().toLocaleDateString('ru-RU', { month: 'long' });
+
+function monthLabel(y: number, m: number): string {
+  return new Date(y, m - 1, 1).toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' }).replace(' г.', '');
+}
+
+// Attendance ring: attended / required days this month.
+const ring = computed(() => {
+  const s = currentSummary.value;
+  const R = 46;
+  const C = 2 * Math.PI * R;
+  const pct = s && s.requiredDays ? Math.min(1, s.attendedDays / s.requiredDays) : 0;
+  return { R, C, off: C * (1 - pct), pct: Math.round(pct * 100) };
+});
+
+const activeWeekdays = computed(() => (pattern.value?.type === 'FIXED_WEEKDAYS' ? (pattern.value.workDaysOfWeek || []) : null));
+
+const histTab = ref<'attendance' | 'salary'>('attendance');
+
+function barPct(s: AtraceAttendanceSummary, k: 'attendedDays' | 'missedDays'): number {
+  const total = (s.attendedDays + s.missedDays) || 1;
+  return Math.round((100 * s[k]) / total);
+}
+
+function dayParts(date: string) {
+  const d = new Date(date);
+  return {
+    num: d.getDate(),
+    mon: d.toLocaleDateString('ru-RU', { month: 'short' }).replace('.', ''),
+    wd: d.toLocaleDateString('ru-RU', { weekday: 'short' }),
+  };
+}
+
 async function load() {
   loading.value = true;
   error.value = null;
@@ -310,227 +342,363 @@ onMounted(() => {
     />
 
     <template v-else>
-      <!-- Schedule -->
-      <div class="at-panel mb-5">
-        <h2 class="at-h2 mb-2">
-          {{ t('app.mySchedule') || 'Мой график' }}
-        </h2>
-        <div v-if="pattern">
-          <p class="font-medium">
-            {{ pattern.name }}
-          </p>
-          <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ patternSummary(pattern) }}
-          </p>
-          <p
-            v-if="assignment"
-            class="text-xs text-gray-400 mt-1"
-          >
-            {{ t('app.effectiveFrom') }}: {{ assignment.effectiveFrom }}
-          </p>
-        </div>
-        <p
-          v-else
-          class="text-sm text-gray-500 dark:text-gray-400"
-        >
-          {{ t('app.noScheduleAssigned') || 'График не назначен -- используется общая месячная норма.' }}
-        </p>
-      </div>
-
-      <!-- Current month -->
+      <!-- Row 1: salary hero + this month -->
       <div
-        v-if="currentSummary"
-        class="at-panel mb-5"
+        class="mb-4 grid gap-4"
+        :class="projectedSalary ? 'lg:grid-cols-[1.1fr_1fr]' : ''"
       >
-        <h2 class="at-h2 mb-3">
-          {{ t('app.thisMonth') || 'Текущий месяц' }}
-        </h2>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div class="at-stat">
-            <div class="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
-              {{ currentSummary.attendedDays }}/{{ currentSummary.requiredDays }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ t('app.attendedDays') || 'Отработано дней' }}
-            </div>
-          </div>
-          <div class="at-stat">
-            <div class="text-2xl font-semibold text-red-600 dark:text-red-400">
-              {{ currentSummary.missedDays }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ t('app.missedDays') || 'Пропущено' }}
-            </div>
-          </div>
-          <div class="at-stat">
-            <div class="text-2xl font-semibold text-amber-600 dark:text-amber-400">
-              {{ currentSummary.lateDays }}
-              <span
-                v-if="currentSummary.lateMadeUpDays > 0"
-                class="text-sm text-gray-400"
-              >(-{{ currentSummary.lateMadeUpDays }})</span>
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ t('app.lateDays') || 'Опоздания' }}
-            </div>
-          </div>
-          <div class="at-stat">
-            <div class="text-2xl font-semibold">
-              {{ currentSummary.totalWorkedHours.toFixed(1) }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ t('app.totalWorkedHours') || 'Часов' }}
-            </div>
+        <div
+          v-if="projectedSalary"
+          class="me-hero"
+        >
+          <p class="text-xs font-semibold uppercase tracking-[0.14em] text-white/75">
+            {{ t('app.projectedSalary') || 'Ожидаемая зарплата' }}
+          </p>
+          <p class="mt-3 text-4xl font-extrabold tracking-tight sm:text-5xl">
+            {{ formatAmount(projectedSalary.totalAmount, projectedSalary.currency) }}
+          </p>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <span class="me-hero-chip">{{ t('app.baseAmount') || 'База' }} · {{ formatAmount(projectedSalary.baseAmount, projectedSalary.currency) }}</span>
+            <span
+              v-if="projectedSalary.overtimeAmount > 0"
+              class="me-hero-chip"
+            >{{ t('app.overtimeAmount') || 'Переработка' }} · +{{ formatAmount(projectedSalary.overtimeAmount, projectedSalary.currency) }}</span>
+            <span
+              v-if="projectedSalary.penaltyAmount > 0"
+              class="me-hero-chip"
+            >{{ t('app.penaltyAmount') || 'Штрафы' }} · −{{ formatAmount(projectedSalary.penaltyAmount, projectedSalary.currency) }}</span>
           </div>
         </div>
-      </div>
 
-      <!-- Check-in history -->
-      <div class="mb-6">
-        <h2 class="at-h2 mb-3">
-          {{ t('app.myCheckInHistory') || 'История отметок' }}
-        </h2>
         <div
-          v-if="myRecordsLoading"
-          class="flex items-center gap-2 text-sm text-gray-500 py-4"
+          v-if="currentSummary"
+          class="at-panel"
         >
-          <UIcon name="i-heroicons-arrow-path" class="w-4 h-4 animate-spin" />
-          {{ t('app.loading') }}
-        </div>
-        <div
-          v-else-if="myRecordsByDay.length === 0"
-          class="text-sm text-gray-500 py-2"
-        >
-          {{ t('app.noAttendanceRecords') || 'Отметок пока нет' }}
-        </div>
-        <div v-else class="space-y-2">
-          <div
-            v-for="{ date, records } in myRecordsByDay"
-            :key="date"
-            class="at-row"
-          >
-            <div class="text-sm font-medium mb-1.5 capitalize">
-              {{ formatRecordDate(date) }}
-            </div>
-            <div class="flex flex-wrap gap-1.5">
-              <div
-                v-for="r in records"
-                :key="r.id"
-                class="at-chip"
+          <h2 class="at-h2 mb-4">
+            {{ t('app.thisMonth') || 'Текущий месяц' }}
+          </h2>
+          <div class="flex flex-col items-center gap-4 sm:flex-row sm:gap-5">
+            <div class="relative h-28 w-28 flex-shrink-0">
+              <svg
+                viewBox="0 0 100 100"
+                class="h-full w-full -rotate-90"
               >
-                <span class="font-medium">{{ formatRecordTime(r) }}</span>
-                <span class="text-gray-500">{{ recordDirectionLabel(r, records) }}</span>
-                <span
-                  v-if="postTitleById[r.postId]"
-                  class="text-gray-400"
-                >· {{ postTitleById[r.postId] }}</span>
-                <span class="text-gray-400">· {{ methodLabel(r.method) }}</span>
-                <UIcon
-                  v-if="r.suspicious"
-                  name="i-heroicons-exclamation-triangle"
-                  class="w-3.5 h-3.5 text-amber-500"
-                  :title="t('common.suspiciousReasons') || 'Отмечено как подозрительное'"
+                <defs>
+                  <linearGradient
+                    id="meRing"
+                    x1="0"
+                    y1="0"
+                    x2="1"
+                    y2="1"
+                  >
+                    <stop
+                      offset="0"
+                      stop-color="#2563eb"
+                    />
+                    <stop
+                      offset="1"
+                      stop-color="#10b981"
+                    />
+                  </linearGradient>
+                </defs>
+                <circle
+                  cx="50"
+                  cy="50"
+                  :r="ring.R"
+                  fill="none"
+                  stroke-width="9"
+                  class="stroke-slate-900/10 dark:stroke-white/10"
                 />
-                <UIcon
-                  v-if="r.geoConfirmed === true"
-                  name="i-heroicons-map-pin"
-                  class="w-3.5 h-3.5 text-emerald-500"
-                  :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M }) || 'Гео подтверждено'"
+                <circle
+                  cx="50"
+                  cy="50"
+                  :r="ring.R"
+                  fill="none"
+                  stroke-width="9"
+                  stroke-linecap="round"
+                  stroke="url(#meRing)"
+                  :stroke-dasharray="ring.C"
+                  :stroke-dashoffset="ring.off"
+                  style="transition: stroke-dashoffset 0.9s cubic-bezier(0.32, 0.72, 0, 1)"
                 />
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-2xl font-extrabold tracking-tight">{{ currentSummary.attendedDays }}<span class="text-sm font-semibold text-gray-400">/{{ currentSummary.requiredDays }}</span></span>
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-gray-400">{{ t('app.days') || 'дней' }}</span>
+              </div>
+            </div>
+            <div class="grid w-full flex-1 grid-cols-3 gap-2 text-center">
+              <div class="at-stat">
+                <div class="text-xl font-extrabold text-red-600 dark:text-red-400">
+                  {{ currentSummary.missedDays }}
+                </div>
+                <div class="text-[11px] leading-tight text-gray-500">
+                  {{ t('app.missedDays') || 'Пропущено' }}
+                </div>
+              </div>
+              <div class="at-stat">
+                <div class="text-xl font-extrabold text-amber-600 dark:text-amber-400">
+                  {{ currentSummary.lateDays }}<span
+                    v-if="currentSummary.lateMadeUpDays > 0"
+                    class="text-xs font-semibold text-gray-400"
+                  >(-{{ currentSummary.lateMadeUpDays }})</span>
+                </div>
+                <div class="text-[11px] leading-tight text-gray-500">
+                  {{ t('app.lateDays') || 'Опоздания' }}
+                </div>
+              </div>
+              <div class="at-stat">
+                <div class="text-xl font-extrabold">
+                  {{ currentSummary.totalWorkedHours.toFixed(1) }}
+                </div>
+                <div class="text-[11px] leading-tight text-gray-500">
+                  {{ t('app.totalWorkedHours') || 'Часов' }}
+                </div>
               </div>
             </div>
           </div>
-          <div
-            v-if="myRecordsHasMore"
-            class="flex justify-center pt-2"
-          >
-            <UButton
-              size="xs"
-              variant="soft"
-              :loading="myRecordsLoadingMore"
-              @click="loadMyRecords(false)"
+        </div>
+      </div>
+
+      <!-- Row 2: schedule + history | check-in timeline -->
+      <div class="grid gap-4 lg:grid-cols-2">
+        <div class="space-y-4">
+          <!-- Schedule -->
+          <div class="at-panel">
+            <h2 class="at-h2 mb-3">
+              {{ t('app.mySchedule') || 'Мой график' }}
+            </h2>
+            <div v-if="pattern">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="text-xl font-extrabold tracking-tight">
+                  {{ pattern.name }}
+                </p>
+                <span class="at-chip">
+                  <UIcon
+                    name="lucide:clock"
+                    class="h-3.5 w-3.5"
+                  />
+                  {{ pattern.shiftStartTime }}–{{ pattern.shiftEndTime }}
+                </span>
+              </div>
+              <div
+                v-if="activeWeekdays"
+                class="mt-3 flex flex-wrap gap-1.5"
+              >
+                <span
+                  v-for="w in WEEKDAYS"
+                  :key="w.value"
+                  class="me-wd"
+                  :class="activeWeekdays.includes(w.value) ? 'me-wd--on' : ''"
+                >{{ w.label }}</span>
+              </div>
+              <p
+                v-else
+                class="mt-2 text-sm text-gray-500 dark:text-gray-400"
+              >
+                {{ pattern.rotationWorkDays }}/{{ pattern.rotationOffDays }} · {{ pattern.shiftStartTime }}–{{ pattern.shiftEndTime }}
+              </p>
+              <p
+                v-if="assignment"
+                class="mt-3 text-xs text-gray-400"
+              >
+                {{ t('app.effectiveFrom') }}: {{ assignment.effectiveFrom }}
+              </p>
+            </div>
+            <p
+              v-else
+              class="text-sm text-gray-500 dark:text-gray-400"
             >
-              {{ t('app.loadMore') || 'Показать ещё' }}
-            </UButton>
+              {{ t('app.noScheduleAssigned') || 'График не назначен -- используется общая месячная норма.' }}
+            </p>
+          </div>
+
+          <!-- History by month (cards instead of tables) -->
+          <div class="at-panel">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h2 class="at-h2">
+                {{ histTab === 'attendance' ? (t('app.attendanceHistory') || 'История посещаемости') : (t('app.salaryHistory') || 'История зарплаты') }}
+              </h2>
+              <div
+                v-if="!salaryUnavailable && salaryHistoryRows.length > 0"
+                class="pl-toggle"
+              >
+                <button
+                  type="button"
+                  class="pl-toggle__btn !px-4 !py-1.5"
+                  :class="histTab === 'attendance' ? 'pl-toggle__btn--on' : ''"
+                  @click="histTab = 'attendance'"
+                >
+                  {{ t('app.attendance') || 'Посещаемость' }}
+                </button>
+                <button
+                  type="button"
+                  class="pl-toggle__btn !px-4 !py-1.5"
+                  :class="histTab === 'salary' ? 'pl-toggle__btn--on' : ''"
+                  @click="histTab = 'salary'"
+                >
+                  {{ t('app.salary') || 'Зарплата' }}
+                </button>
+              </div>
+            </div>
+
+            <template v-if="histTab === 'attendance'">
+              <p
+                v-if="summaryHistoryRows.length === 0"
+                class="text-sm text-gray-500"
+              >
+                {{ t('app.noData') || 'Нет данных' }}
+              </p>
+              <div
+                v-else
+                class="space-y-2"
+              >
+                <div
+                  v-for="s in [...summaryHistory].reverse()"
+                  :key="`${s.year}-${s.month}`"
+                  class="at-row"
+                >
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="text-sm font-bold capitalize">{{ monthLabel(s.year, s.month) }}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ s.attendedDays }}/{{ s.requiredDays }} {{ t('app.days') || 'дн.' }} · {{ s.totalWorkedHours.toFixed(1) }} {{ t('app.hoursShort') || 'ч' }}</span>
+                  </div>
+                  <div class="me-bar mt-2">
+                    <span
+                      class="me-bar__ok"
+                      :style="{ width: barPct(s, 'attendedDays') + '%' }"
+                    />
+                    <span
+                      class="me-bar__bad"
+                      :style="{ width: barPct(s, 'missedDays') + '%' }"
+                    />
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                    <span
+                      v-if="s.missedDays"
+                      class="at-chip !text-red-600 dark:!text-red-300"
+                    >{{ t('app.missedDays') || 'Пропущено' }}: {{ s.missedDays }}</span>
+                    <span
+                      v-if="s.lateDays"
+                      class="at-chip !text-amber-700 dark:!text-amber-300"
+                    >{{ t('app.lateDays') || 'Опоздания' }}: {{ s.lateDays }}<template v-if="s.lateMadeUpDays"> (−{{ s.lateMadeUpDays }})</template></span>
+                    <span
+                      v-if="s.earlyLeaveDays"
+                      class="at-chip"
+                    >{{ t('app.earlyLeaveDays') || 'Ранние уходы' }}: {{ s.earlyLeaveDays }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="space-y-2">
+                <div
+                  v-for="s in salaryHistoryRows"
+                  :key="s.period"
+                  class="at-row"
+                >
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="text-sm font-bold">{{ s.period }}</span>
+                    <span class="text-lg font-extrabold tracking-tight">{{ formatAmount(s.totalAmount, s.currency) }}</span>
+                  </div>
+                  <div class="mt-2 flex flex-wrap gap-1.5 text-[11px]">
+                    <span class="at-chip">{{ t('app.baseAmount') || 'База' }}: {{ formatAmount(s.baseAmount, s.currency) }}</span>
+                    <span
+                      v-if="s.overtimeAmount > 0"
+                      class="at-chip !text-emerald-700 dark:!text-emerald-300"
+                    >+{{ formatAmount(s.overtimeAmount, s.currency) }}</span>
+                    <span
+                      v-if="s.penaltyAmount > 0"
+                      class="at-chip !text-red-600 dark:!text-red-300"
+                    >−{{ formatAmount(s.penaltyAmount, s.currency) }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
           </div>
         </div>
-      </div>
 
-      <!-- Projected salary -->
-      <div
-        v-if="projectedSalary"
-        class="at-panel mb-5"
-      >
-        <h2 class="at-h2 mb-3">
-          {{ t('app.projectedSalary') || 'Ожидаемая зарплата (текущий месяц)' }}
-        </h2>
-        <div class="text-3xl font-extrabold tracking-tight grad-text mb-2 w-fit">
-          {{ formatAmount(projectedSalary.totalAmount, projectedSalary.currency) }}
-        </div>
-        <div class="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-500 dark:text-gray-400">
-          <span>{{ t('app.baseAmount') || 'База' }}: {{ formatAmount(projectedSalary.baseAmount, projectedSalary.currency) }}</span>
-          <span v-if="projectedSalary.overtimeAmount > 0">{{ t('app.overtimeAmount') || 'Переработка' }}: +{{ formatAmount(projectedSalary.overtimeAmount, projectedSalary.currency) }}</span>
-          <span v-if="projectedSalary.penaltyAmount > 0">{{ t('app.penaltyAmount') || 'Штрафы' }}: -{{ formatAmount(projectedSalary.penaltyAmount, projectedSalary.currency) }}</span>
-        </div>
-      </div>
-
-      <!-- Attendance history -->
-      <div class="mb-6">
-        <h2 class="at-h2 mb-3">
-          {{ t('app.attendanceHistory') || 'История посещаемости' }}
-        </h2>
-        <div
-          v-if="summaryHistoryRows.length === 0"
-          class="text-gray-500 text-sm"
-        >
-          {{ t('app.noData') || 'Нет данных' }}
-        </div>
-        <div
-          v-else
-          class="h-[300px]"
-        >
-          <AppTable
-            soft
-            :rows="summaryHistoryRows"
-            :columns="summaryColumns"
-            :pagination="false"
-            :total="summaryHistoryRows.length"
+        <!-- Check-in timeline -->
+        <div class="at-panel">
+          <h2 class="at-h2 mb-3">
+            {{ t('app.myCheckInHistory') || 'История отметок' }}
+          </h2>
+          <div
+            v-if="myRecordsLoading"
+            class="flex items-center gap-2 py-4 text-sm text-gray-500"
           >
-            <template #totalWorkedHours-data="{ row }">
-              {{ row.totalWorkedHours.toFixed(1) }}
-            </template>
-          </AppTable>
-        </div>
-      </div>
-
-      <!-- Salary history -->
-      <div v-if="!salaryUnavailable && salaryHistoryRows.length > 0">
-        <h2 class="at-h2 mb-3">
-          {{ t('app.salaryHistory') || 'История зарплаты' }}
-        </h2>
-        <div class="h-[300px]">
-          <AppTable
-            soft
-            :rows="salaryHistoryRows"
-            :columns="salaryColumns"
-            :pagination="false"
-            :total="salaryHistoryRows.length"
+            <UIcon
+              name="i-heroicons-arrow-path"
+              class="h-4 w-4 animate-spin"
+            />
+            {{ t('app.loading') }}
+          </div>
+          <p
+            v-else-if="myRecordsByDay.length === 0"
+            class="py-2 text-sm text-gray-500"
           >
-            <template #totalAmount-data="{ row }">
-              <span class="font-semibold">{{ formatAmount(row.totalAmount, row.currency) }}</span>
-            </template>
-            <template #baseAmount-data="{ row }">
-              {{ formatAmount(row.baseAmount, row.currency) }}
-            </template>
-            <template #overtimeAmount-data="{ row }">
-              <span v-if="row.overtimeAmount > 0" class="text-emerald-600 dark:text-emerald-400">+{{ formatAmount(row.overtimeAmount, row.currency) }}</span>
-              <span v-else class="text-gray-400">—</span>
-            </template>
-            <template #penaltyAmount-data="{ row }">
-              <span v-if="row.penaltyAmount > 0" class="text-red-600 dark:text-red-400">−{{ formatAmount(row.penaltyAmount, row.currency) }}</span>
-              <span v-else class="text-gray-400">—</span>
-            </template>
-          </AppTable>
+            {{ t('app.noAttendanceRecords') || 'Отметок пока нет' }}
+          </p>
+          <div
+            v-else
+            class="max-h-[640px] space-y-2 overflow-y-auto pr-1 no-scrollbar"
+          >
+            <div
+              v-for="{ date, records } in myRecordsByDay"
+              :key="date"
+              class="at-row flex gap-3"
+            >
+              <div class="me-day">
+                <span class="text-lg font-extrabold leading-none">{{ dayParts(date).num }}</span>
+                <span class="text-[10px] font-semibold uppercase tracking-wide">{{ dayParts(date).mon }}</span>
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="mb-1.5 text-xs font-semibold capitalize text-gray-400">
+                  {{ dayParts(date).wd }}
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                  <div
+                    v-for="r in records"
+                    :key="r.id"
+                    class="at-chip"
+                  >
+                    <span class="font-bold">{{ formatRecordTime(r) }}</span>
+                    <span class="text-gray-500">{{ recordDirectionLabel(r, records) }}</span>
+                    <span
+                      v-if="postTitleById[r.postId]"
+                      class="text-gray-400"
+                    >· {{ postTitleById[r.postId] }}</span>
+                    <span class="text-gray-400">· {{ methodLabel(r.method) }}</span>
+                    <UIcon
+                      v-if="r.suspicious"
+                      name="i-heroicons-exclamation-triangle"
+                      class="h-3.5 w-3.5 text-amber-500"
+                      :title="t('common.suspiciousReasons') || 'Отмечено как подозрительное'"
+                    />
+                    <UIcon
+                      v-if="r.geoConfirmed === true"
+                      name="i-heroicons-map-pin"
+                      class="h-3.5 w-3.5 text-emerald-500"
+                      :title="t('app.geoConfirmedHint', { meters: GEO_CONFIRM_RADIUS_M }) || 'Гео подтверждено'"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              v-if="myRecordsHasMore"
+              class="flex justify-center pt-2"
+            >
+              <button
+                type="button"
+                class="pill-outline !py-1.5 !text-xs"
+                :disabled="myRecordsLoadingMore"
+                @click="loadMyRecords(false)"
+              >
+                {{ t('app.loadMore') || 'Показать ещё' }}
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
