@@ -883,18 +883,18 @@ watch([articlesSearch, selectedArticleTag], () => {
            right. PromoVideo only fetches the file once it's near the
            viewport and starts playing (muted) at >60% visible. -->
       <div v-if="initialized" class="max-w-7xl mx-auto px-2 md:px-4 pb-10 md:pb-14">
-        <div class="rounded-3xl bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 px-6 py-10 sm:px-10 md:px-14 md:py-14">
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-14 items-center">
+        <div class="rounded-3xl bg-gray-50 dark:bg-gray-900 px-6 py-8 sm:px-10 md:px-14 md:py-10">
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-14 items-center">
             <div>
-              <h2 class="text-3xl md:text-5xl font-bold leading-tight text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
-              <p class="mt-5 text-lg md:text-xl leading-8 text-gray-700 dark:text-gray-300 max-w-xl">{{ t('app.promoVideoDesc') }}</p>
+              <h2 class="text-2xl md:text-3xl font-bold leading-snug text-gray-900 dark:text-gray-100">{{ t('app.promoVideoTitle') }}</h2>
+              <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300 max-w-lg">{{ t('app.promoVideoDesc') }}</p>
               <button
                 type="button"
-                class="mt-8 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-7 py-3.5 text-base font-semibold text-white shadow-lg hover:shadow-xl hover:from-emerald-600 hover:to-teal-600 transition-all"
+                class="mt-6 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:shadow-md hover:from-emerald-600 hover:to-teal-600 transition-all"
                 @click="handleGoToHub"
               >
                 {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
-                <UIcon name="lucide:arrow-right" class="w-5 h-5" />
+                <UIcon name="lucide:arrow-right" class="w-4 h-4" />
               </button>
             </div>
             <PromoVideo
