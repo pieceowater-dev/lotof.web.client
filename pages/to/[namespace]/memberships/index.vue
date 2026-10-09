@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { usePatronAuth } from '@/composables/usePatronAuth';
 import { resolveSiteUrl } from '@/utils/siteUrl';
 import { logError } from '@/utils/logger';
+import { readableOnLight } from '@/utils/color';
 import { getErrorMessage } from '@/utils/types/errors';
 import { telHref, whatsappHref } from '@/utils/phoneLinks';
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
