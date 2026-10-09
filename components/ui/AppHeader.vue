@@ -640,26 +640,26 @@ const goHome = () => {
           v-if="shouldUseBurger"
           class="flex shrink-0 items-center gap-1 pl-4"
         >
-          <UButton
+          <button
             v-if="showHelpButton"
+            type="button"
             data-tour="help-button"
-            variant="ghost"
-            size="sm"
+            class="hdr-icon-btn"
             :aria-label="t('guide.openGuide') || 'Open lota Гид'"
             :title="t('guide.openGuide') || 'Open lota Гид'"
             @click="handleHelpClick"
           >
-            <UIcon name="i-lucide-life-buoy" />
-          </UButton>
+            <UIcon name="i-lucide-life-buoy" class="h-[18px] w-[18px]" />
+          </button>
 
-          <UButton
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
+            class="hdr-icon-btn hdr-icon-btn--solid"
             :aria-label="t('app.feedMenu') || 'Open menu'"
             @click="isMobileMenuOpen = true"
           >
-            <UIcon name="i-lucide-menu" />
-          </UButton>
+            <UIcon name="i-lucide-menu" class="h-[18px] w-[18px]" />
+          </button>
         </div>
       </template>
     </div>
@@ -735,65 +735,62 @@ const goHome = () => {
     class="menu-bottom-sheet"
     :transition="false"
     :ui="{
-      container: 'items-end pb-3 px-2',
-      base: 'w-full rounded-3xl backdrop-blur-md bg-white/90 dark:bg-gray-800/90 border border-blue-100/80 dark:border-gray-700 shadow-sm'
+      container: 'items-end pb-2 px-2',
+      background: 'bg-white dark:bg-[#1a1a1a]',
+      ring: 'ring-1 ring-black/5 dark:ring-white/10',
+      rounded: 'rounded-[2rem]',
+      shadow: 'shadow-2xl',
+      base: 'w-full'
     }"
   >
-    <div class="p-4 max-h-[80vh] overflow-auto">
-      <div class="mb-4 flex items-center justify-between">
-        <h3 class="text-base font-semibold">
+    <div class="mm max-h-[80vh] overflow-auto p-3">
+      <div class="mb-2 flex items-center justify-between px-3 pt-2">
+        <h3 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">
           {{ t('app.apps') }}
         </h3>
-        <UButton
-          variant="ghost"
-          icon="lucide:x"
+        <button
+          type="button"
+          class="hdr-icon-btn"
           :aria-label="t('app.cancel') || 'Close menu'"
           @click="isMobileMenuOpen = false"
-        />
+        >
+          <UIcon name="lucide:x" class="h-4 w-4" />
+        </button>
       </div>
 
-      <div class="space-y-2">
+      <div class="mm-list">
         <button
           v-if="showHomeItem"
           type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left"
-          :class="isHomeActive ? 'bg-primary-50 dark:bg-primary-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'"
+          class="mm-row"
+          :class="isHomeActive && 'mm-row--on'"
           @click="handleHomeClick"
         >
-          <UIcon
-            name="i-lucide-home"
-            class="h-5 w-5 text-primary flex-shrink-0"
-          />
-          <span class="text-sm font-medium truncate" :class="isHomeActive && 'text-primary'">{{ homeText }}</span>
+          <span class="mm-ico"><UIcon name="i-lucide-home" class="h-[18px] w-[18px]" /></span>
+          <span class="flex-1 truncate text-left">{{ homeText }}</span>
         </button>
 
         <button
           v-if="canSeeConsole"
           type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
+          class="mm-row"
           @click="handleConsoleClick"
         >
-          <UIcon
-            name="lucide:terminal-square"
-            class="h-5 w-5 text-primary flex-shrink-0"
-          />
-          <span class="flex-1 text-sm font-medium truncate">Console</span>
+          <span class="mm-ico"><UIcon name="lucide:terminal-square" class="h-[18px] w-[18px]" /></span>
+          <span class="flex-1 truncate text-left">Console</span>
         </button>
 
         <button
           v-for="app in navApps"
           :key="app.bundle"
           type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800"
-          :class="{ 'text-gray-400 dark:text-gray-500': !app.canAdd }"
+          class="mm-row"
+          :class="!app.canAdd && 'mm-row--off'"
           :aria-disabled="!app.canAdd"
           @click="handleMenuSelect(app)"
         >
-          <UIcon
-            :name="app.icon"
-            class="h-5 w-5 text-primary flex-shrink-0"
-          />
-          <span class="flex-1 text-sm font-medium truncate">{{ t(app.titleKey) }}</span>
+          <span class="mm-ico"><UIcon :name="app.icon" class="h-[18px] w-[18px]" /></span>
+          <span class="flex-1 truncate text-left">{{ t(app.titleKey) }}</span>
         </button>
       </div>
     </div>

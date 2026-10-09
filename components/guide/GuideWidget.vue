@@ -37,10 +37,10 @@
         <!-- faq -->
         <div v-if="faqItems.length">
           <h3 class="sf-label mb-2.5 px-1">{{ t('guide.faqTitle') }}</h3>
-          <div class="gw-card gw-faq px-3">
+          <div class="gw-card gw-faq p-1.5">
             <UAccordion :items="faqAccordionItems" multiple>
               <template #item="{ item }">
-                <div class="gw-prose px-1 pb-3" v-html="item.contentHtml" />
+                <div class="gw-prose px-3 pb-3" v-html="item.contentHtml" />
               </template>
             </UAccordion>
           </div>
