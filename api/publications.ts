@@ -774,10 +774,10 @@ export function publicationBlocksToHtml(
         <a
           href="${loginHref}"
           onclick="${authBackToOnClick}"
-          class="mt-4 inline-flex items-center rounded-full border border-transparent px-5 py-2 text-sm font-semibold leading-none transition hover:brightness-[1.03]"
-          style="background:linear-gradient(rgba(255,255,255,0.94),rgba(255,255,255,0.94)) padding-box,linear-gradient(90deg,#3b82f6 0%,#10b981 100%) border-box;"
+          class="mt-4"
+          style="display:inline-flex;align-items:center;gap:.5rem;border-radius:9999px;padding:.65rem 1.4rem;font-size:.875rem;font-weight:700;line-height:1;color:#fff !important;text-decoration:none !important;background:linear-gradient(90deg,#2563eb 0%,#10b981 100%);box-shadow:0 12px 24px -12px rgba(37,99,235,.7);transition:transform .4s cubic-bezier(.32,.72,0,1),box-shadow .4s;"
         >
-          <span class="bg-gradient-to-r from-blue-600 to-emerald-500 bg-clip-text text-transparent">Посмотреть</span>
+          <span style="color:#fff">Посмотреть</span>
         </a>
         </div>
       </section>

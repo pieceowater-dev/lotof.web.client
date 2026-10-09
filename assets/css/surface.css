@@ -452,3 +452,15 @@
 .dark .mm-row--off { color: #737373; }
 .dark .mm-ico { color: #93c5fd; background: rgba(255, 255, 255, 0.08); }
 .dark .mm-row--off .mm-ico { color: #737373; }
+
+/* home/hub section headers (news + feed) */
+.sec-head { margin-bottom: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.sec-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.02em; color: #0f172a; }
+.dark .sec-title { color: #fff; }
+.sec-link { display: inline-flex; align-items: center; gap: 0.5rem; border-radius: 9999px; padding: 0.3rem 0.35rem 0.3rem 0.9rem; font-size: 0.8125rem; font-weight: 600; color: #1d4ed8; background: rgba(37, 99, 235, 0.08); transition: background 0.3s, transform 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
+.sec-link:hover { background: rgba(37, 99, 235, 0.14); }
+.sec-link:active { transform: scale(0.97); }
+.dark .sec-link { color: #bfdbfe; background: rgba(96, 165, 250, 0.14); }
+.dark .sec-link:hover { background: rgba(96, 165, 250, 0.22); }
+/* plan/bundle connect button: same box as .pl-active ("Подключено!") */
+.cta-pill.pl-btn { gap: 0.5rem; padding: 0.7rem 1rem; font-size: 0.875rem; font-weight: 700; line-height: 1.25rem; }

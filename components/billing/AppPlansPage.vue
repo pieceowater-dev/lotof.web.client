@@ -171,7 +171,7 @@ const {
             <button
               v-if="!isPlanActive(plan)"
               type="button"
-              class="cta-pill w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+              class="cta-pill pl-btn w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
               :class="plan.code.includes('start') ? 'cta-pill--primary' : 'cta-pill--ghost'"
               :disabled="subscribingPlanCode !== null"
               @click="subscribePlan(plan)"

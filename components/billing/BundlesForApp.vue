@@ -193,7 +193,7 @@ onMounted(load);
           <button
             v-if="!isActive(b)"
             type="button"
-            class="cta-pill cta-pill--primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
+            class="cta-pill pl-btn cta-pill--primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="activatingCode !== null"
             @click="subscribe(b)"
           >
