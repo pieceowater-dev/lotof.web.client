@@ -301,8 +301,8 @@ onMounted(load);
       </div>
     </div>
 
-    <UModal v-model="showOvertimeModal" :ui="{ width: 'w-full sm:max-w-lg' }">
-      <UCard>
+    <UModal class="at-modal" v-model="showOvertimeModal" :ui="{ ...atModalUi, width: 'w-full sm:max-w-lg' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ overtimeEditing ? t('common.edit') : (t('app.createRate') || 'Создать ставку') }}</h3>
         </template>
@@ -347,8 +347,8 @@ onMounted(load);
       </UCard>
     </UModal>
 
-    <UModal v-model="showPenaltyModal" :ui="{ width: 'w-full sm:max-w-lg' }">
-      <UCard>
+    <UModal class="at-modal" v-model="showPenaltyModal" :ui="{ ...atModalUi, width: 'w-full sm:max-w-lg' }">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ penaltyEditing ? t('common.edit') : (t('app.createRule') || 'Создать штраф') }}</h3>
         </template>

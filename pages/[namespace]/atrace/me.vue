@@ -275,7 +275,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-auto">
+  <div class="at-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-auto">
     <div class="flex justify-between items-center mb-4 flex-shrink-0">
       <div class="text-left">
         <h1 class="at-title">

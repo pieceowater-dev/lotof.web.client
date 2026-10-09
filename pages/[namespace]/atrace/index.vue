@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
        flex-1. Without h-full here the root just grew with its content, which
        only looked fine while that content was short; a tall view (the
        Analytics tab) then overflowed and the footer rode up over it. -->
-  <div class="flex flex-col h-full min-h-0">
+  <div class="at-scope flex flex-col h-full min-h-0">
     <CoverageApprovalBanner
       :banners="coverageApprovalBanners"
       @dismiss="dismissCoverageApprovalBanner"

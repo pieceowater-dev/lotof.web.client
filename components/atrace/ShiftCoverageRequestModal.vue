@@ -67,11 +67,11 @@ async function submitRequest() {
 </script>
 
 <template>
-  <UModal
+  <UModal class="at-modal"
     v-model="isOpen"
-    :ui="{ width: 'w-full sm:max-w-lg' }"
+    :ui="{ ...atModalUi, width: 'w-full sm:max-w-lg' }"
   >
-    <UCard>
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-base font-semibold">
           {{ t('app.requestCoverage') || 'Запросить подмену' }}

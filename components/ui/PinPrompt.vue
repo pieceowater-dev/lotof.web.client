@@ -15,9 +15,9 @@
         rounded: 'rounded-[2rem]',
         background: 'bg-white dark:bg-[#1a1a1a]',
         divide: '',
-        header: { padding: 'px-6 pt-6 pb-2 sm:px-6' },
-        body: { padding: 'px-6 py-3 sm:p-6 sm:pt-3 sm:pb-3' },
-        footer: { padding: 'px-6 pb-6 pt-3 sm:px-6' },
+        header: { padding: 'px-8 pt-8 pb-2 sm:px-8' },
+        body: { padding: 'px-8 py-3 sm:px-8 sm:py-3' },
+        footer: { padding: 'px-8 pb-8 pt-3 sm:px-8' },
       }"
     >
       <template #header>

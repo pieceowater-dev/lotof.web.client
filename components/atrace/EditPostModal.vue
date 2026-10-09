@@ -256,8 +256,8 @@ watch(() => props.modelValue, (isOpen) => {
 </script>
 
 <template>
-  <UModal v-model="open">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal class="at-modal" :ui="atModalUi" v-model="open">
+    <UCard :ui="{ ...atCardUi }">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">

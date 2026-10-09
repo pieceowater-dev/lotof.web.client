@@ -128,11 +128,11 @@ function handleTouchEnd() {
 </script>
 
 <template>
-  <UModal
+  <UModal class="at-modal"
     v-model="isOpen"
-    :ui="{ container: 'items-center' }"
+    :ui="{ ...atModalUi, container: 'items-center' }"
   >
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UCard :ui="{ ...atCardUi }">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold leading-6 text-gray-900 dark:text-white">

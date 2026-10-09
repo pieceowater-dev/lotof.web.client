@@ -613,11 +613,11 @@ watch(() => [props.postId, props.userId, props.startDate, props.endDate], () => 
     </div>
 
     <!-- Reason Modal -->
-    <UModal
+    <UModal class="at-modal"
       v-model="showReasonModal"
-      :ui="{ container: 'items-center' }"
+      :ui="{ ...atModalUi, container: 'items-center' }"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <UCard :ui="{ ...atCardUi }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">

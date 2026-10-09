@@ -20,7 +20,7 @@ const { t } = useI18n();
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6">
+  <div class="at-panel p-4 sm:p-6">
     <div class="mb-4">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
         <div>
@@ -101,7 +101,7 @@ const { t } = useI18n();
       <div
         v-for="row in rows"
         :key="row.userId"
-        class="group relative rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 shadow-sm hover:shadow-md transition-all duration-200"
+        class="group relative at-row transition-all duration-200"
       >
         <div class="p-4">
           <!-- User header -->
@@ -148,7 +148,7 @@ const { t } = useI18n();
           <!-- Progress stats -->
           <div class="grid grid-cols-4 gap-2">
             <!-- Completed -->
-            <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+            <div class="text-center at-stat !p-2">
               <div class="w-8 h-8 mx-auto rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-1.5">
                 <UIcon
                   name="i-heroicons-check-circle"
@@ -164,7 +164,7 @@ const { t } = useI18n();
             </div>
 
             <!-- Partial -->
-            <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+            <div class="text-center at-stat !p-2">
               <div class="w-8 h-8 mx-auto rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-1.5">
                 <UIcon
                   name="i-heroicons-exclamation-triangle"
@@ -180,7 +180,7 @@ const { t } = useI18n();
             </div>
 
             <!-- Violated -->
-            <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+            <div class="text-center at-stat !p-2">
               <div class="w-8 h-8 mx-auto rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-1.5">
                 <UIcon
                   name="i-heroicons-x-circle"
@@ -196,7 +196,7 @@ const { t } = useI18n();
             </div>
 
             <!-- Pending -->
-            <div class="text-center bg-white dark:bg-gray-900 rounded-lg p-2 border border-gray-200 dark:border-gray-700">
+            <div class="text-center at-stat !p-2">
               <div class="w-8 h-8 mx-auto rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center mb-1.5">
                 <UIcon
                   name="i-heroicons-clock"

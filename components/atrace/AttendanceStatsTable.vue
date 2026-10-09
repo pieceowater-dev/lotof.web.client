@@ -897,7 +897,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Stats Table -->
-    <div class="at-tray flex-1 min-h-0 overflow-auto mb-4">
+    <div class="at-tray min-h-0 max-h-full overflow-auto mb-4">
       <div
         v-if="!statsReady"
         class="flex flex-col items-center justify-center py-6"
@@ -1132,11 +1132,11 @@ function formatNumber(val: number, fractionDigits = 0) {
     </div>
 
     <!-- Custom Date Range Modal -->
-    <UModal
+    <UModal class="at-modal"
       v-model="showDateModal"
-      :ui="{ container: 'items-center', width: 'w-full max-w-2xl sm:max-w-3xl' }"
+      :ui="{ ...atModalUi, container: 'items-center', width: 'w-full max-w-2xl sm:max-w-3xl' }"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { padding: 'px-4 py-4 sm:px-6 sm:py-5' } }">
+      <UCard :ui="{ ...atCardUi, body: { padding: 'px-5 py-4 sm:px-8 sm:py-6' } }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -1290,11 +1290,11 @@ function formatNumber(val: number, fractionDigits = 0) {
     </UModal>
 
     <!-- Salary Calculation Modal -->
-    <UModal
+    <UModal class="at-modal"
       v-model="showSalaryModal"
-      :ui="{ container: 'items-center', width: 'w-full sm:max-w-2xl' }"
+      :ui="{ ...atModalUi, container: 'items-center', width: 'w-full sm:max-w-2xl' }"
     >
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+      <UCard :ui="{ ...atCardUi }">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -1537,8 +1537,8 @@ function formatNumber(val: number, fractionDigits = 0) {
     </UModal>
 
     <!-- Legend Modal -->
-    <UModal v-model="showLegendModal">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UModal class="at-modal" :ui="atModalUi" v-model="showLegendModal">
+      <UCard :ui="{ ...atCardUi }">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-base font-semibold leading-6 text-gray-900 dark:text-white">

@@ -19,7 +19,7 @@ const showStatInfoTooltip = ref(false);
 </script>
 
 <template>
-  <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-6 mb-4">
+  <div class="at-panel p-4 sm:p-6 mb-4">
     <div class="flex flex-col gap-4">
       <!-- Header -->
       <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
@@ -126,7 +126,7 @@ const showStatInfoTooltip = ref(false);
           v-if="showStatInfoTooltip"
           class="overflow-hidden mb-3"
         >
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
+          <div class="at-row p-3">
             <div class="text-xs text-gray-700 dark:text-gray-300 space-y-1.5">
               <div class="flex items-start gap-2">
                 <div class="w-5 h-5 rounded bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
@@ -183,7 +183,7 @@ const showStatInfoTooltip = ref(false);
         class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-2"
       >
         <!-- Total passes -->
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+        <div class="at-row">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
               <UIcon
@@ -203,7 +203,7 @@ const showStatInfoTooltip = ref(false);
         </div>
 
         <!-- Completed -->
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+        <div class="at-row">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center flex-shrink-0">
               <UIcon
@@ -223,7 +223,7 @@ const showStatInfoTooltip = ref(false);
         </div>
 
         <!-- Partial -->
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+        <div class="at-row">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0">
               <UIcon
@@ -243,7 +243,7 @@ const showStatInfoTooltip = ref(false);
         </div>
 
         <!-- Violations -->
-        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+        <div class="at-row">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
               <UIcon

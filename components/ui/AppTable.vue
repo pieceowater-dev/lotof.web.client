@@ -54,8 +54,8 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 
 <template>
   <div
-    class="overflow-hidden flex flex-col h-full"
-    :class="soft ? 'at-tray' : 'bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800'"
+    class="overflow-hidden flex flex-col"
+    :class="soft ? 'at-tray max-h-full' : 'h-full bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800'"
   >
     <div class="flex-1 min-h-0 overflow-auto">
       <div class="overflow-x-auto">

@@ -47,34 +47,33 @@ function dismiss() {
 
 <template>
   <Transition
-    enter-active-class="transition duration-300 ease-out"
-    enter-from-class="translate-y-4 opacity-0"
+    enter-active-class="transition duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+    enter-from-class="translate-y-6 opacity-0"
     enter-to-class="translate-y-0 opacity-100"
-    leave-active-class="transition duration-200 ease-in"
+    leave-active-class="transition duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]"
     leave-from-class="translate-y-0 opacity-100"
-    leave-to-class="translate-y-4 opacity-0"
+    leave-to-class="translate-y-6 opacity-0"
   >
     <div
       v-if="visible"
-      class="fixed inset-x-0 bottom-0 z-50 flex justify-center px-2.5 pb-safe-or-4"
+      class="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center px-3 pb-safe-or-4"
     >
-      <div
-        class="pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-lg border border-gray-200 bg-white/95 px-3 py-2 text-[11px] leading-snug text-gray-500 shadow-md backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 dark:text-gray-400"
-      >
+      <div class="ck pointer-events-auto">
+        <span class="ck-ico"><UIcon name="lucide:cookie" class="h-[18px] w-[18px]" /></span>
         <p class="min-w-0 flex-1">
           {{ t('legal.cookieNotice') || 'Только необходимые cookie и обезличенная аналитика.' }}
           <NuxtLink
             to="/guide/global/cookies"
             target="_blank"
             rel="noopener noreferrer"
-            class="whitespace-nowrap underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
+            class="ck-link"
           >
             {{ t('legal.cookieMore') || 'Подробнее' }}
           </NuxtLink>
         </p>
-        <UButton size="xs" color="primary" variant="soft" class="flex-shrink-0" @click="dismiss">
+        <button type="button" class="ck-btn" @click="dismiss">
           {{ t('legal.cookieAccept') || 'Хорошо' }}
-        </UButton>
+        </button>
       </div>
     </div>
   </Transition>

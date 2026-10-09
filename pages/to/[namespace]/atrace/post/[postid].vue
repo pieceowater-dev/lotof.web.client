@@ -518,38 +518,40 @@ onBeforeUnmount(() => {
             {{ qrError }}
           </div>
           <ClientOnly>
-            <div class="text-xs text-gray-500 mt-2 text-center">
-              QR обновится через {{ qrRefreshCountdown }}с.
-            </div>
-            <div class="text-xs text-gray-500 mt-1 text-center flex items-center justify-center gap-2">
-              <i class="i-lucide-clock" />
-              <span>{{ nowTime }}</span>
+            <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
+              <span class="at-chip text-gray-600 dark:text-gray-300">
+                <UIcon name="lucide:refresh-cw" class="h-3.5 w-3.5" />
+                QR обновится через {{ qrRefreshCountdown }}с.
+              </span>
+              <span class="at-chip tabular-nums text-gray-600 dark:text-gray-300">
+                <UIcon name="lucide:clock" class="h-3.5 w-3.5" />
+                {{ nowTime }}
+              </span>
             </div>
             <div
               v-if="wakeLockSupported"
-              class="text-xs mt-2 text-center"
+              class="mt-2 flex justify-center"
             >
               <span
                 v-if="wakeLockActive"
-                class="text-emerald-600"
+                class="at-chip !text-emerald-700 dark:!text-emerald-300"
               >Экран не будет гаснуть</span>
               <span
                 v-else
-                class="text-amber-600"
+                class="at-chip !text-amber-700 dark:!text-amber-300"
               >Экран может гаснуть</span>
             </div>
             <div
               v-if="wakeLockSupported && !wakeLockActive"
               class="mt-2"
             >
-              <UButton
-                size="xs"
-                variant="soft"
-                color="primary"
+              <button
+                type="button"
+                class="at-btn at-btn--blue !py-1.5 !text-xs"
                 @click="requestWakeLock"
               >
                 Включить удержание экрана
-              </UButton>
+              </button>
             </div>
             <div
               v-if="wakeLockError"

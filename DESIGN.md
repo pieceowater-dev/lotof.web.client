@@ -325,7 +325,10 @@ Rules: **UX and logic untouched**, only chrome changes.
 - Employee check-in flow (`atrace/qr`, `atrace/recorded`, public `to/:ns/atrace/post/:id`): single rounded `2rem` card on a neutral page, pill buttons, no gradient page backgrounds.
 - `PinPrompt` is the reference for small input modals: icon tile + title, pill input, ghost + gradient pill actions.
 - Semantic status colours inside data (emerald ok / red problem / amber late / blue geo) stay, but badges are pills.
-- Still to restyle in A-Trace: the long tail of modals (`CreatePostModal`, `EditPostModal`, `RouteModal`, `LeaveRequestModal`, `ShiftCoverageRequestModal`, `FilterModal`…), analytics charts, and the settings sections' inner forms.
+- **Modals recipe (all A-Trace modals):** `<UModal class="at-modal" :ui="{ ...atModalUi }">` + `<UCard :ui="{ ...atCardUi }">` (`utils/atraceUi.ts`: `2rem` radius, generous `px-7/8` header/body/footer padding so content clears the rounded corners — when you round more, **pad more and widen the modal**). `.at-modal` globally skins the teleported content: pill inputs/selects (`rounded-full`, textareas `1.2rem`), pill buttons, **solid-primary UButton → brand-gradient pill**. Footers use `flex flex-wrap justify-end` so long labels wrap on mobile.
+- `AppTable soft` is content-height (`max-h-full`), not stretched to the container — no big empty white area under short tables.
+- Segmented period/view filters → `.pill-filter`; analytics KPI cards → `.at-panel`; inner mini-tiles → `.at-row` / `.at-stat`.
+- Still to restyle in A-Trace: fine details of a few rarely-opened modals (`RouteModal` list rows, `PostRecordsDetails`, `UserAttendanceDetails`) — they already inherit the modal recipe.
 
 ## 10b. Page shells, layouts and landing pages
 
@@ -368,6 +371,7 @@ Rules: **UX and logic untouched**, only chrome changes.
   Prefer the shared `ConfirmDialog` + `useConfirm` for confirmations (colours: `red` destructive, `primary` neutral,
   `amber` warning — tinted icon tile + title + text + two pills).
 - **Sheets**: side (`USlideover`, desktop) and bottom (mobile) — see §5. Same tray/row/tile vocabulary inside.
+- **Cookie notice** (`CookieNotice`, `.ck-*`): floating glass pill at the bottom (`1.75rem`, blur, hairline ring), icon tile + one line + underlined link + gradient pill "Хорошо". The reference for any bottom-docked notice.
 - **Toasts** (`useToast`): styled globally via `app.config.ts` (rounded-3xl, white/90 + hairline, small title/description,
   primary-colour action). Use short, neutral sentences; success = green icon, error = red icon. Never custom-built toasts.
 - **Banners / inline notices**: soft tinted pill-rounded blocks (`rounded-2xl`), tint = blue (info), green (success),

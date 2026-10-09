@@ -20,11 +20,11 @@ const isOpen = computed({
 </script>
 
 <template>
-  <UModal
+  <UModal class="at-modal"
     v-model="isOpen"
-    :ui="{ width: 'sm:max-w-md' }"
+    :ui="{ ...atModalUi, width: 'sm:max-w-md' }"
   >
-    <UCard>
+    <UCard :ui="atCardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white">

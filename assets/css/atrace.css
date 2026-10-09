@@ -94,3 +94,26 @@
 
 /* empty state */
 .at-empty { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 2rem; padding: 2rem 1.5rem; max-width: 24rem; width: 100%; }
+
+/* ---- forms + buttons inside A-Trace modals (teleported → global) and page scopes ---- */
+.at-modal h3, .at-modal h2 { font-weight: 800; letter-spacing: -0.01em; }
+.at-modal h3 { font-size: 1.05rem; }
+.at-modal input.form-input, .at-modal select.form-select, .at-scope input.form-input, .at-scope select.form-select { border-radius: 9999px; }
+.at-modal textarea.form-textarea, .at-scope textarea.form-textarea { border-radius: 1.2rem; }
+.at-modal input.form-input:not([type="checkbox"]):not([type="radio"]):not([class*="ps-"]):not([class*="pl-"]), .at-modal select.form-select:not([class*="ps-"]):not([class*="pl-"]), .at-scope input.form-input:not([type="checkbox"]):not([type="radio"]):not([class*="ps-"]):not([class*="pl-"]), .at-scope select.form-select:not([class*="ps-"]):not([class*="pl-"]) { padding-left: 1rem; }
+.at-modal button[class*="inline-flex"][class*="items-center"]:not([role="switch"]):not([role="tab"]),
+.at-scope button[class*="inline-flex"][class*="items-center"]:not([role="switch"]):not([role="tab"]) { border-radius: 9999px; font-weight: 600; }
+.at-modal [class*="rounded-md"][class*="border"]:not(input):not(select):not(textarea):not(button),
+.at-modal [class*="rounded-lg"][class*="border"]:not(input):not(select):not(textarea):not(button) { border-radius: 1.2rem; }
+.at-modal label { font-weight: 600; }
+.dark .at-btn--primary, .dark .at-btn--primary:hover { color: #fff; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent; }
+
+/* primary actions inside A-Trace modals = brand gradient pill (UButton solid primary) */
+.at-modal button[class*="bg-primary-500"], .at-modal button[class*="bg-primary-400"] {
+  color: #fff !important; background-image: linear-gradient(90deg, #2563eb, #10b981); background-color: transparent !important;
+  box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7);
+}
+.at-modal button[class*="bg-primary-500"]:hover, .at-modal button[class*="bg-primary-400"]:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
+.at-modal button[class*="bg-primary-500"]:active, .at-modal button[class*="bg-primary-400"]:active { transform: scale(0.97); }
+.at-modal button[class*="bg-primary-500"]:disabled, .at-modal button[class*="bg-primary-400"]:disabled { opacity: 0.5; box-shadow: none; }
+.at-modal button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }

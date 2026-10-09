@@ -74,7 +74,7 @@ function close() {
         </p>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 space-y-5">
+      <div class="at-panel p-6 space-y-5">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <UFormGroup :label="t('common.title')" required>
             <UInput v-model="form.title" size="lg" :placeholder="t('common.title')" autofocus />
@@ -118,7 +118,7 @@ function close() {
           <div v-if="geoEnabled">
             <div
               ref="mapContainer"
-              class="w-full h-72 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-center"
+              class="w-full h-72 at-row flex items-center justify-center"
             >
               <span v-if="mapLoading" class="text-sm text-gray-500">{{ t('common.loading') }}</span>
               <span v-else-if="mapError" class="text-sm text-red-500">{{ mapError }}</span>
@@ -180,7 +180,7 @@ function close() {
         </p>
       </div>
 
-      <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 flex flex-col items-center">
+      <div class="at-panel p-6 flex flex-col items-center">
         <p class="text-sm text-gray-600 dark:text-gray-300 text-center max-w-sm mb-5">
           {{ t('app.atraceFirstCheckinInstruction') || 'Grab your phone camera and scan the QR code below to make your first check-in.' }}
         </p>

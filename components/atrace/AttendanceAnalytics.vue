@@ -184,27 +184,30 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
   <div class="h-full flex flex-col overflow-hidden">
     <!-- Period filter -->
     <div class="mb-3 flex flex-wrap items-center gap-1.5 flex-shrink-0">
-      <UButton
-        :color="period === 'month' ? 'primary' : 'gray'"
-        size="sm"
+      <button
+        type="button"
+        class="pill-filter"
+        :class="period === 'month' ? 'pill-filter--active' : ''"
         @click="period = 'month'"
       >
         {{ t('app.thisMonth') || 'Текущий месяц' }}
-      </UButton>
-      <UButton
-        :color="period === 'week' ? 'primary' : 'gray'"
-        size="sm"
+      </button>
+      <button
+        type="button"
+        class="pill-filter"
+        :class="period === 'week' ? 'pill-filter--active' : ''"
         @click="period = 'week'"
       >
         {{ t('app.thisWeek') || 'Неделя' }}
-      </UButton>
-      <UButton
-        :color="period === '30d' ? 'primary' : 'gray'"
-        size="sm"
+      </button>
+      <button
+        type="button"
+        class="pill-filter"
+        :class="period === '30d' ? 'pill-filter--active' : ''"
         @click="period = '30d'"
       >
         {{ t('app.analyticsLast30') || '30 дней' }}
-      </UButton>
+      </button>
     </div>
 
     <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
@@ -233,7 +236,7 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
           <div
             v-for="c in kpiCards"
             :key="c.key"
-            class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3"
+            class="at-panel p-3"
           >
             <div class="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
               <span>{{ c.label }}</span>
@@ -315,7 +318,7 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
         </div>
 
         <!-- Needs attention -->
-        <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 mb-4">
+        <div class="at-panel p-3 mb-4">
           <h4 class="text-sm font-semibold mb-2">
             {{ t('app.analyticsNeedsAttention') || 'Требуют внимания' }}
           </h4>
@@ -366,7 +369,7 @@ const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; l
         </div>
 
         <!-- Arrival distribution -->
-        <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3">
+        <div class="at-panel p-3">
           <div class="flex items-baseline justify-between mb-2 gap-2">
             <h4 class="text-sm font-semibold">
               {{ t('app.analyticsArrivalTitle') || 'Когда приходят' }}

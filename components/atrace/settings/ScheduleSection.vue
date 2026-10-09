@@ -460,11 +460,11 @@ onMounted(async () => {
     </div>
 
     <!-- Pattern create/edit modal -->
-    <UModal
+    <UModal class="at-modal"
       v-model="showPatternModal"
-      :ui="{ width: 'w-full sm:max-w-xl' }"
+      :ui="{ ...atModalUi, width: 'w-full sm:max-w-xl' }"
     >
-      <UCard>
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">
             {{ editingPattern ? (t('common.edit') || 'Редактировать') : (t('app.createSchedule') || 'Создать график') }}
@@ -609,11 +609,11 @@ onMounted(async () => {
     </UModal>
 
     <!-- Assign modal -->
-    <UModal
+    <UModal class="at-modal"
       v-model="showAssignModal"
-      :ui="{ width: 'w-full sm:max-w-lg' }"
+      :ui="{ ...atModalUi, width: 'w-full sm:max-w-lg' }"
     >
-      <UCard>
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">
             {{ t('app.assignSchedule') || 'Назначить график' }}

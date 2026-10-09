@@ -46,11 +46,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <UModal
+  <UModal class="at-modal"
     v-model="isOpen"
-    :ui="{ container: 'items-center justify-center' }"
+    :ui="{ ...atModalUi, container: 'items-center justify-center' }"
   >
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', base: 'w-full max-w-2xl', body: { base: 'w-full' } }">
+    <UCard :ui="{ ...atCardUi, base: 'w-full max-w-2xl', body: { ...atCardUi.body, base: 'w-full' } }">
       <template #header>
         <div class="flex items-center justify-between">
           <div>
@@ -170,7 +170,7 @@ onMounted(() => {
       </div>
 
       <template #footer>
-        <div class="flex justify-end gap-2">
+        <div class="flex flex-wrap justify-end gap-2">
           <UButton
             icon="lucide:x"
             color="primary"
