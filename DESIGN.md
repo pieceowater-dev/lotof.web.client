@@ -459,6 +459,14 @@ tables are `AppTable soft`. Kanban: `.is-col` (1.75rem soft ring column, status 
 are `.bezel .bezel-hover` + `.icon-tile`. Pitfall fixed here: raw `rounded-md` inputs with a leading icon (`ps-9`) must
 not get the blanket `padding-left: 1rem` from `contacts.css`.
 
+## 10l. Goods, Plans, shared modals, Console, responsive rules
+
+- Goods / Plans / Console pages follow §10j–§10k: root `at-scope ct-scope`, modals `at-modal` + `atModalUi`/`atCardUi`, tabs `.at-seg`, tables `AppTable soft`.
+- Shared dialogs (`ConfirmDialog`, `Modal`, `PinPrompt`, `StaffRoleModal`, `TourGuide`) use the same skin; destructive confirm is `.at-btn--danger` (red gradient, never black).
+- Dashed "empty slot" tiles are rewritten globally (`.at-scope/.at-modal .border-dashed`) to a soft ring tile.
+- Tour spotlight dim is neutral black (`rgba(0,0,0,.62)`): a slate tint is lighter than the dark theme and the dim disappears.
+- Responsive: back buttons inside `flex-col` headers need `self-start`; page headers with a CTA need `min-w-0` on the text block and an icon-only CTA below `sm`; floating decorative chips only from `xl`; popups cap their width to `viewport - 32px`.
+
 ## 11. Writing a new screen — checklist
 
 1. **Archetype:** pick the container (bezel / soft tray / storefront card) and the layout (bento, split,
@@ -508,10 +516,8 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 | Billing UI | `components/billing/*`, `pages/[namespace]/bundles.vue` |
 | Colour helpers | `utils/color.ts` (`getContrastTextColor`, `readableOnLight`, `BRAND_COLORS`) |
 
-### Not yet redesigned (candidates, in the same style)
+### Redesign status
 
-Product landing pages (`components/marketing/ProductLanding.vue`: /issues /menu /contacts /atrace
-/goods /plans, plus /chekalka), shared modals (`TourGuide`, `ConfirmDialog`,
-`ContactUsModal`, `PhoneRequiredModal`, `PinPrompt`, `CookieNotice`), shared `AppTable`/`Card`/`Accordion`,
-onboarding (`QuickSetupButton`, `OnboardingWizard`), `/console/*` (low priority). The `lota.tools/ns/{app}`
-product workspaces are intentionally out of scope for this redesign.
+Every workspace app (A-Trace, Menu, Contacts, Issues, Goods, Plans), Console, public storefronts, landing pages, hub,
+shared dialogs and the onboarding tour are in the bezel/pill language. Known leftovers: Plans settings tabs "Оформление"/
+"Правила записи" render blank until the tenant has settings (data-dependent, not a style issue).
