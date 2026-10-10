@@ -8,7 +8,7 @@
 // stored in the DB, not re-translated on read — same approach as the
 // server-side task-type presets in lotof.issues.msvc.core/tasktype/preset).
 
-export type BoardTemplateId = 'basic' | 'sales_funnel';
+export type BoardTemplateId = 'basic' | 'sales_funnel' | 'repairs';
 
 type Locale = 'ru' | 'kk' | 'en';
 
@@ -46,6 +46,20 @@ const SALES_FUNNEL_COLUMNS: TemplateColumn[] = [
   { key: 'lost', label: { ru: 'Отказ', kk: 'Бас тарту', en: 'Lost' }, is_terminal: true, outcome: 'lost', color: 'red' },
 ];
 
+// A repair shop's pipeline for lota Orders tasks: from intake to handing the
+// device back. Mirrors the neutral order lifecycle but with the steps a
+// technician actually tracks (diagnostics, price approval, waiting for a part).
+const REPAIRS_COLUMNS: TemplateColumn[] = [
+  { key: 'accepted', label: { ru: 'Принят', kk: 'Қабылданды', en: 'Accepted' }, color: '' },
+  { key: 'diagnostics', label: { ru: 'Диагностика', kk: 'Диагностика', en: 'Diagnostics' }, color: 'blue' },
+  { key: 'approval', label: { ru: 'Согласование цены', kk: 'Бағаны келісу', en: 'Price approval' }, color: 'yellow' },
+  { key: 'waiting_part', label: { ru: 'Ждём запчасть', kk: 'Бөлшекті күтеміз', en: 'Waiting for a part' }, color: 'yellow' },
+  { key: 'repair', label: { ru: 'В ремонте', kk: 'Жөндеуде', en: 'In repair' }, color: 'blue' },
+  { key: 'ready', label: { ru: 'Готов к выдаче', kk: 'Берілуге дайын', en: 'Ready for pickup' }, color: 'green' },
+  { key: 'handed_over', label: { ru: 'Выдан', kk: 'Берілді', en: 'Handed over' }, is_terminal: true, color: 'green' },
+  { key: 'cancelled', label: { ru: 'Отказ клиента', kk: 'Клиенттің бас тартуы', en: 'Cancelled by customer' }, is_terminal: true, color: 'red' },
+];
+
 export const BOARD_TEMPLATES: BoardTemplate[] = [
   {
     id: 'basic',
@@ -64,7 +78,22 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     integrationFlags: { contacts: true },
     columns: SALES_FUNNEL_COLUMNS,
   },
+  {
+    id: 'repairs',
+    icon: 'lucide:wrench',
+    titleKey: 'tasks.templateRepairs',
+    descKey: 'tasks.templateRepairsDesc',
+    businessType: 'service_center',
+    integrationFlags: { menu: true, contacts: true },
+    columns: REPAIRS_COLUMNS,
+  },
 ];
+
+/** Name of the board the service-center onboarding creates, per locale. */
+export const REPAIRS_BOARD_NAME: Record<Locale, string> = { ru: 'Ремонты', kk: 'Жөндеу', en: 'Repairs' };
+export function repairsBoardName(locale: string | undefined): string {
+  return REPAIRS_BOARD_NAME[normalizeLocale(locale)];
+}
 
 function normalizeLocale(locale: string | undefined): Locale {
   return locale === 'kk' || locale === 'en' ? locale : 'ru';

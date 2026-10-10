@@ -48,7 +48,10 @@ function buildItemsTable(items: MenuOrderItem[], emptyLabel: string, headers: { 
       </tr>`;
     })
     .join('');
-  return `<table style="width:100%;border-collapse:collapse;font-size:inherit">
+  // Fixed column widths so several item tables in one document (works, parts,
+  // everything) line up with each other.
+  return `<table style="width:100%;border-collapse:collapse;font-size:inherit;table-layout:fixed">
+    <colgroup><col style="width:6%"><col><col style="width:12%"><col style="width:18%"><col style="width:18%"></colgroup>
     <thead><tr>
       <th style="padding:4px 8px;border-bottom:2px solid #000;text-align:left">#</th>
       <th style="padding:4px 8px;border-bottom:2px solid #000;text-align:left">${escapeHtml(headers.name)}</th>

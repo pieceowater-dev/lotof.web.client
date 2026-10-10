@@ -7,6 +7,7 @@ import ImageUpload from '@/components/menu/ImageUpload.vue';
 import { getContrastTextColor } from '@/utils/color';
 import { CURRENCIES } from '@/utils/currency';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
+import { boardTemplatePayload, repairsBoardName } from '@/config/issuesBoardTemplates';
 import { serviceCenterOrderFields, serviceCenterTemplates, type ServiceCenterLocale } from '@/config/serviceCenterPreset';
 import { useNamespace } from '@/composables/useNamespace';
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
@@ -159,8 +160,35 @@ async function seedServiceCenter(menuToken: string) {
     failed = true;
     logError('[onboarding] seed service-center documents failed', e);
   }
+  await seedRepairsBoard(loc);
   if (failed) {
     useToast().add({ title: t('menu.onboardingServiceCenterPartial') || 'Some service-center templates could not be created — add them in Settings.', color: 'amber' });
+  }
+}
+
+// lota Issues is a separate product: only when it is installed in this
+// namespace (and no board already takes Menu orders) a "Repairs" board is
+// created with the Menu integration on, so "Create task" on an order lands on
+// a ready repair pipeline. Silent best effort -- never blocks the onboarding.
+async function seedRepairsBoard(loc: ServiceCenterLocale) {
+  try {
+    const { token } = useAuth();
+    if (!token.value) return;
+    const { hubIsAppInNamespace } = await import('@/api/hub/namespaces/isAppInNamespace');
+    if (!(await hubIsAppInNamespace(token.value, nsSlug.value, 'pieceowater.issues'))) return;
+    const { ensure } = useTasksToken();
+    const tasksToken = await ensure(nsSlug.value, token.value);
+    if (!tasksToken) return;
+    const { tasksBoardsList } = await import('@/api/tasks/board/list');
+    const { boards } = await tasksBoardsList(tasksToken, nsSlug.value);
+    const takesMenuOrders = boards.some((b) => {
+      try { return b.isActive && JSON.parse(b.integrationFlags || '{}').menu === true; } catch { return false; }
+    });
+    if (takesMenuOrders) return;
+    const { tasksCreateBoard } = await import('@/api/tasks/board/create');
+    await tasksCreateBoard(tasksToken, nsSlug.value, { name: repairsBoardName(loc), ...boardTemplatePayload('repairs', loc) });
+  } catch (e) {
+    logError('[onboarding] seed repairs board failed', e);
   }
 }
 
@@ -315,7 +343,7 @@ function finish() {
             {{ t('app.back') || 'Back' }}
           </UButton>
           <UButton color="primary" :loading="branchSaving" @click="continueFromBranches">
-            {{ t('app.continue') || 'Continue' }}
+            {{ t('menu.onboardingContinue') || 'Continue' }}
           </UButton>
         </div>
       </div>
