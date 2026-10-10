@@ -5,8 +5,10 @@ user-facing screen, and keep it updated when a new pattern is introduced. The go
 AI) can pick up a page and continue **in the same style** without guessing.
 
 Stack: Nuxt 3 · @nuxt/ui (v1, `UModal`/`USlideover`/`UButton`…) · Tailwind · Iconify (`lucide:*`).
-Shared styles live in `assets/css/surface.css` (platform) and `assets/css/storefront.css`
-(public tenant storefronts). Both are registered in `nuxt.config.ts → css`.
+Shared styles live in `assets/css/` and are all registered in `nuxt.config.ts → css`:
+`surface.css` (platform primitives, header, footer, switch skin), `storefront.css` (public tenant storefronts),
+`atrace.css` (workspace kit: `.at-*`, modals), `console.css` (`.cn-*`), `contacts.css` (re-skin of generic Tailwind blocks inside
+`.ct-scope` / `.at-modal`), `issues.css` (kanban). Modal ui presets: `utils/atraceUi.ts`; per-app brand gradients: `config/apps.ts`.
 
 ---
 
@@ -38,6 +40,13 @@ hardware with a glass plate sitting in a tray, not flat boxes with 1px grey bord
   (`.sec-link`) in the section header.
 - **Don't use Tailwind `aspect-square/video/auto`** — they generate no CSS here (nuxt/ui plugin
   clobbers the scale). Use inline `style="aspect-ratio: …"`.
+- **Switches are never restyled by button rules.** The global skin lives in `surface.css` (`button[role="switch"]`: gradient track on,
+  grey track off, white knob). A checked `UToggle` carries `bg-primary-500` in its class list, so any `[class*="bg-primary-500"]` button
+  rule must add `:not([role="switch"])`, otherwise the padding collapses the knob to 0 width.
+- **Match Tailwind tokens with `[class~="…"]`, not `[class*="…"]`** (`*=` also hits `bg-primary-500` when you meant `bg-primary-50`).
+- **Never apply a blanket `padding-left` to inputs**: leading-icon inputs (`ps-9`) lose their icon gutter. Exclude `[class*="ps-"]`/`[class*="pl-"]`.
+- **Overlays dim with neutral black** (`rgba(0,0,0,.6)`), never a slate/navy tint: in the dark theme a tinted dim is lighter than the page.
+- **Dashed "empty slot" tiles** are rewritten globally to a soft ring tile inside `.at-scope`/`.at-modal`; don't add new ones.
 - **Don't rely on Tailwind classes inside server-rendered HTML strings** (`server/api/publications/*`,
   `api/publications.ts`): they are not scanned. Use inline `style` there.
 
@@ -448,7 +457,9 @@ Rules: **UX and logic untouched**, only chrome changes.
 4. Screenshot **light, dark, and 390px mobile**; compare against neighbouring pages for consistency.
 5. Run a **production build** and hit the real route before pushing; stop `nuxt dev` first, restart after.
 6. Commit only your files; commit message describes the redesign; **no Claude/Co-Authored-By attribution lines**.
-   Push only after the owner says OK (unless told to push on completion); don't watch the deploy afterwards — report the commit hash.
+   Standing instruction from the owner: push to `main` as each step finishes (after the production build + route check); don't watch
+   the deploy afterwards unless asked — report the commit hash. Never commit foreign local edits (`api/menu/**`, `locales/*.json`, others' WIP).
+7. Responsive check before calling a page done: 390px and 320px (no horizontal page scroll, headers don't collide with CTAs), 768px, dark theme.
 
 ## 10k. Issues (`issues.css`)
 
@@ -516,7 +527,45 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 | Billing UI | `components/billing/*`, `pages/[namespace]/bundles.vue` |
 | Colour helpers | `utils/color.ts` (`getContrastTextColor`, `readableOnLight`, `BRAND_COLORS`) |
 
-### Redesign status
+### Design-system files (quick map)
 
-Every workspace app (A-Trace, Menu, Contacts, Issues, Goods, Plans), Console, public storefronts, landing pages, hub,
-shared dialogs and the onboarding tour are in the bezel/pill language.
+| Need | Use |
+|---|---|
+| Modal / slideover skin | `class="at-modal"` + `:ui="atModalUi"` (modal) or `:ui="{ ...atCardUi }"` (card) from `utils/atraceUi.ts` |
+| Page root of a workspace screen | `at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0` |
+| Section tabs | `.at-seg` + `.at-seg__btn(--on)`; filters `.pill-filter(--active)` |
+| Buttons | `.at-btn`, `--blue`, `--amber`, `--primary` (one per view), `--danger` (destructive confirm) |
+| Panels / rows / stats | `.at-panel`, `.at-row`, `.at-stat`, `.at-chip`, `.at-banner` |
+| Tables | `AppTable soft` (`.at-tray`; self-scrolling tables add `keep-scroll`) |
+| Cards with brand icon | `.bezel` + `.bezel-core` + `.icon-tile`; per-app gradient via `appIconStyle(key)` (`config/apps.ts`) |
+| Kanban | `.is-col`, `.is-col__head`, `.is-card` (`issues.css`) |
+
+## 13. Current state of the design (2026-10-10)
+
+**Language:** bezel / pill / brand-gradient, neutral gray dark theme. Every user-facing screen of the web client is in it.
+
+| Area | State | How it was checked |
+|---|---|---|
+| Home, hub, burger menu (coloured per-app tiles), app header/footer | Done | light + dark + 390px |
+| Public: catalog, stores, memberships, services, feed, news, guide, landing pages, Chekalka | Done | light desktop, selected dark/mobile |
+| Public storefronts `/to/:ns/{menu,plans,memberships}` | Done (own storefront system, §8) | light desktop |
+| A-Trace (pages, settings, all modals) | Done | light + dark + 390px; modals opened one by one |
+| Menu (orders, settings tabs, all modals, order slideover) | Done | light + dark + 390px; modals opened one by one |
+| Contacts (list, new, settings, memberships, all modals) | Done | light + dark + 390px |
+| Issues (boards, kanban, settings, analytics, map, Zen, modals) | Done | light + dark + 390px; Zen with an empty list only |
+| Goods (stock, catalog, movements, inventory, suppliers, reports, register, settings, modals) | Done | light + dark + 390px |
+| Plans (calendar, catalog, reports, settings, tariffs, booking modals) | Done | light + dark + 390px |
+| Console (home, billing, analytics, namespaces, team, publications, guide admin + editors) | Done | light + dark + 390px |
+| Shared dialogs (Confirm, Modal, PinPrompt, StaffRole, nickname, onboarding tour) | Done | light + dark |
+| Responsive | No horizontal page overflow at 320 / 390 / 768 on 37 routes (automated); tour popup capped to the viewport | Playwright overflow scan |
+
+**Known gaps (honest list)**
+- Not visually verified: the Issues *Automations* slideover (its button only shows when the Menu integration is on for a board; restyled
+  to the panel look and compiles, never rendered), Zen Mode with real tasks, publications editor with real content.
+- Dark and 390px were reviewed on contact sheets of ~17 key routes plus targeted modals, not on every single screen.
+- Colour palettes used for entity colours (Plans service/brand colours, task-type colours) still include a near-black swatch. It is a data
+  colour the owner picks, not a UI accent, so the "no black accent" rule does not apply — but don't use it as a default.
+- Some table columns are intentionally wider than a phone and scroll inside their tray (orders, goods, attendance).
+
+**Related fix worth knowing:** Plans/Goods `getToken` must go through `ensure()` (sets the in-memory client token); returning the bare
+cookie made requests go out without the app header after a full page reload.
