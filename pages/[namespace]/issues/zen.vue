@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
          courier PWA modeled after Yandex Delivery/DoorDash's driver apps,
          which stay bright for outdoor daytime readability rather than
          following the OS dark-mode setting. -->
-    <div class="sticky top-0 z-10 bg-white border-b border-gray-200 shadow-sm">
+    <div class="sticky top-0 z-10 bg-white rounded-b-[1.75rem] shadow-[0_14px_30px_-22px_rgba(15,23,42,0.45)]">
       <div class="px-4 pt-3 pb-2 flex items-center justify-between">
         <div class="flex items-center gap-1.5">
           <picture>
@@ -343,7 +343,7 @@ onBeforeUnmount(() => {
           </span>
         </p>
         <div class="flex items-center gap-2 flex-shrink-0">
-          <span v-if="pendingCount" class="text-[11px] px-2 py-1 rounded-full bg-amber-50 text-amber-700 font-medium">
+          <span v-if="pendingCount" class="text-[11px] px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-semibold">
             {{ pendingCount }} {{ t('tasks.zenPending') || 'pending' }}
           </span>
           <UButton icon="lucide:locate-fixed" size="xs" color="gray" variant="soft" :title="t('tasks.zenRefreshLocation') || 'Refresh location'" @click="manualRefreshLocation" />
@@ -381,8 +381,8 @@ onBeforeUnmount(() => {
       <div
         v-for="(task, idx) in openTasks"
         :key="task.id"
-        class="rounded-2xl bg-white p-4"
-        :class="idx === 0 ? 'border-2 border-primary-400 shadow-md' : 'border border-gray-100 shadow-sm'"
+        class="rounded-[1.75rem] bg-white p-5"
+        :class="idx === 0 ? 'shadow-[inset_0_0_0_2px_rgba(37,99,235,0.45),0_22px_36px_-24px_rgba(37,99,235,0.55)]' : 'shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08),0_14px_28px_-22px_rgba(15,23,42,0.3)]'"
       >
         <div v-if="idx === 0" class="flex items-center gap-1.5 text-[11px] font-bold text-primary-600 uppercase tracking-wide mb-2">
           <UIcon name="lucide:navigation-2" class="w-3.5 h-3.5" />
@@ -409,14 +409,14 @@ onBeforeUnmount(() => {
           <a
             v-if="task.clientPhoneSnapshot"
             :href="`tel:${task.clientPhoneSnapshot}`"
-            class="flex items-center gap-1.5 rounded-xl bg-gray-100 text-gray-700 px-3 py-2 text-sm font-medium hover:bg-gray-200 transition-colors flex-shrink-0"
+            class="at-btn flex-shrink-0"
           >
             <UIcon name="lucide:phone" class="w-4 h-4" />{{ t('tasks.zenCall') || 'Call' }}
           </a>
           <button
             v-if="task.lat && task.lng"
             type="button"
-            class="flex items-center gap-1.5 rounded-xl bg-gray-100 text-gray-700 px-3 py-2 text-sm font-medium hover:bg-gray-200 transition-colors flex-shrink-0"
+            class="at-btn flex-shrink-0"
             @click="openNavigateSheet(task)"
           >
             <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
@@ -425,14 +425,14 @@ onBeforeUnmount(() => {
             v-else-if="textAddressUrl(task)"
             :href="textAddressUrl(task)!"
             target="_blank"
-            class="flex items-center gap-1.5 rounded-xl bg-gray-100 text-gray-700 px-3 py-2 text-sm font-medium hover:bg-gray-200 transition-colors flex-shrink-0"
+            class="at-btn flex-shrink-0"
           >
             <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
           </a>
           <button
             v-if="nextStatus(task)"
             type="button"
-            class="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 rounded-xl bg-primary-600 text-white px-3 py-2.5 text-sm font-semibold hover:bg-primary-700 transition-colors whitespace-nowrap"
+            class="at-btn at-btn--primary flex-1 min-w-[120px] !py-2.5"
             @click="handleAdvanceClick(task, nextStatus(task)!)"
           >
             <UIcon name="lucide:arrow-right" class="w-4 h-4 flex-shrink-0" /><span class="truncate">{{ nextStatus(task)!.label }}</span>
@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
           <button
             v-if="terminalStatus(task) && terminalStatus(task)!.key !== nextStatus(task)?.key"
             type="button"
-            class="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 text-white px-3 py-2.5 text-sm font-semibold hover:bg-indigo-700 transition-colors whitespace-nowrap"
+            class="at-btn flex-1 min-w-[120px] !py-2.5 !bg-indigo-600 !text-white hover:!bg-indigo-700"
             @click="handleAdvanceClick(task, terminalStatus(task)!)"
           >
             <UIcon name="lucide:check-circle-2" class="w-4 h-4 flex-shrink-0" /><span class="truncate">{{ terminalStatus(task)!.label }}</span>

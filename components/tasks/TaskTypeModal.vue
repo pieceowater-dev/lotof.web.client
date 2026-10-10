@@ -108,7 +108,7 @@ function handleSubmit() {
         </div>
 
         <div class="flex items-end gap-3">
-          <UFormGroup :label="t('tasks.slaMinutes') || 'SLA (minutes)'" :hint="t('tasks.slaMinutesHint') || 'Optional escalation timer'">
+          <UFormGroup :label="t('tasks.slaMinutes') || 'SLA (minutes)'" :help="t('tasks.slaMinutesHint') || 'Optional escalation timer'">
             <UInput v-model.number="form.slaMinutes" type="number" min="1" size="lg" class="w-28" />
           </UFormGroup>
           <UFormGroup v-if="form.slaMinutes" :label="t('tasks.escalateTo') || 'Escalate to'" class="flex-1 min-w-0">
@@ -124,7 +124,7 @@ function handleSubmit() {
           </UFormGroup>
         </div>
 
-        <UFormGroup :label="t('tasks.estimationType') || 'Report as'" :hint="t('tasks.estimationTypeHint') || 'How this issue type counts toward sprint burndown reports'">
+        <UFormGroup :label="t('tasks.estimationType') || 'Report as'" :help="t('tasks.estimationTypeHint') || 'How this issue type counts toward sprint burndown reports'">
           <USelectMenu
             v-model="form.estimationType"
             :options="estimationOptions"
