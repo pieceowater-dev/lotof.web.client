@@ -42,7 +42,7 @@ type ColumnKey = 'NEW' | 'ACCEPTED' | 'IN_PREPARATION' | 'READY';
 const ALL_BOARD_COLUMNS: { status: ColumnKey; labelKey: string; fallback: string }[] = [
   { status: 'NEW', labelKey: 'menu.statusNew', fallback: 'New' },
   { status: 'ACCEPTED', labelKey: 'menu.statusAccepted', fallback: 'Accepted' },
-  { status: 'IN_PREPARATION', labelKey: 'menu.statusInPreparation', fallback: 'Preparing' },
+  { status: 'IN_PREPARATION', labelKey: 'menu.statusInPreparation', fallback: 'In progress' },
   { status: 'READY', labelKey: 'menu.statusReady', fallback: 'Ready' },
 ];
 // With auto-accept on, orders never meaningfully sit in NEW long enough for

@@ -66,10 +66,10 @@ const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'C
 const statusLabel = (s: string) => ({
   NEW: t('menu.statusNew') || 'New',
   ACCEPTED: t('menu.statusAccepted') || 'Accepted',
-  IN_PREPARATION: t('menu.statusInPreparation') || 'Preparing',
+  IN_PREPARATION: t('menu.statusInPreparation') || 'In progress',
   READY: t('menu.statusReady') || 'Ready',
   DELIVERING: t('menu.statusDelivering') || 'On the way',
-  COMPLETED: t('menu.statusCompleted') || 'Completed',
+  COMPLETED: t('menu.statusCompleted') || 'Handed over',
   CANCELLED: t('menu.statusCancelled') || 'Cancelled',
 }[s] || s);
 

@@ -36,10 +36,10 @@ const ORDER_STATUS_OPTIONS = computed(() => [
   { value: '', label: '—' },
   { value: 'NEW', label: t('menu.statusNew') || 'New' },
   { value: 'ACCEPTED', label: t('menu.statusAccepted') || 'Accepted' },
-  { value: 'IN_PREPARATION', label: t('menu.statusInPreparation') || 'Preparing' },
+  { value: 'IN_PREPARATION', label: t('menu.statusInPreparation') || 'In progress' },
   { value: 'READY', label: t('menu.statusReady') || 'Ready' },
   { value: 'DELIVERING', label: t('menu.statusDelivering') || 'On the way' },
-  { value: 'COMPLETED', label: t('menu.statusCompleted') || 'Completed' },
+  { value: 'COMPLETED', label: t('menu.statusCompleted') || 'Handed over' },
   { value: 'CANCELLED', label: t('menu.statusCancelled') || 'Cancelled' },
 ]);
 
