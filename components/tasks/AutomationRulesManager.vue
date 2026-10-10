@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -124,12 +125,12 @@ async function handleDelete(rule: AutomationRule) {
 </script>
 
 <template>
-  <USlideover class="at-modal" v-model="isOpen">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
+  <USlideover class="at-modal" v-model="isOpen" :ui="{ background: 'bg-white dark:bg-[#1a1a1a]', rounded: 'sm:rounded-l-[2rem]', shadow: 'shadow-2xl' }">
+    <UCard :ui="{ ...atCardUi, rounded: 'rounded-none sm:rounded-l-[2rem]', body: { base: 'flex-1 overflow-y-auto', padding: 'px-6 py-5' } }" class="flex flex-col h-full">
       <template #header>
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold">{{ t('tasks.automations') || 'Automations' }}</h3>
-          <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
+          <h3 class="text-lg font-extrabold tracking-tight">{{ t('tasks.automations') || 'Automations' }}</h3>
+          <button type="button" class="at-btn !p-2" aria-label="Close" @click="isOpen = false"><UIcon name="lucide:x" class="w-4 h-4" /></button>
         </div>
       </template>
 
@@ -148,7 +149,7 @@ async function handleDelete(rule: AutomationRule) {
         <div
           v-for="rule in rules"
           :key="rule.id"
-          class="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 p-3"
+          class="at-row flex items-center gap-3"
           :class="!rule.isActive && 'opacity-50'"
         >
           <UIcon name="lucide:zap" class="w-4 h-4 flex-shrink-0 text-gray-400" />

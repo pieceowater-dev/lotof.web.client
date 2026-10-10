@@ -519,5 +519,4 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 ### Redesign status
 
 Every workspace app (A-Trace, Menu, Contacts, Issues, Goods, Plans), Console, public storefronts, landing pages, hub,
-shared dialogs and the onboarding tour are in the bezel/pill language. Known leftovers: Plans settings tabs "Оформление"/
-"Правила записи" render blank until the tenant has settings (data-dependent, not a style issue).
+shared dialogs and the onboarding tour are in the bezel/pill language.
