@@ -22,7 +22,7 @@ export type UpsertBrandSettingsInput = {
 const UpsertBrandSettingsDocument = /* GraphQL */ `
   mutation UpsertBrandSettings($input: UpsertBrandSettingsInput!) {
     upsertBrandSettings(input: $input) {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog statusLabels
     }
   }
 `;

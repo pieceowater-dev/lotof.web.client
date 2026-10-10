@@ -34,6 +34,7 @@ import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
+import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import { warrantyInfo } from '@/utils/warranty';
 import { taskShortCode } from '@/utils/taskDisplay';
 import type { MenuOrderTask } from '@/api/menu/order/tasks';
@@ -81,15 +82,11 @@ const isOpen = computed({
   },
 });
 
-const statusLabel = (s: string) => ({
-  NEW: t('menu.statusNew') || 'New',
-  ACCEPTED: t('menu.statusAccepted') || 'Accepted',
-  IN_PREPARATION: t('menu.statusInPreparation') || 'In progress',
-  READY: t('menu.statusReady') || 'Ready',
-  DELIVERING: t('menu.statusDelivering') || 'On the way',
-  COMPLETED: t('menu.statusCompleted') || 'Handed over',
-  CANCELLED: t('menu.statusCancelled') || 'Cancelled',
-}[s] || s);
+// Declared above everything that formats a status so no setup-time call can hit it before it exists.
+const brandSettings = ref<MenuBrandSettings | null>(null);
+const customStatusLabels = computed<StatusLabels>(() => parseStatusLabels(brandSettings.value?.statusLabels));
+// The business's own status names (Settings -> Statuses) win over the defaults.
+const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t);
 
 const roleLabel = (r: string) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
@@ -1050,7 +1047,6 @@ async function savePayment() {
 // --- Print: render a document template with this order's data substituted
 // into its {{VARIABLE}} placeholders (see utils/documentVariableSubstitution.ts) ---
 const documentTemplates = ref<MenuDocumentTemplate[]>([]);
-const brandSettings = ref<MenuBrandSettings | null>(null);
 
 async function loadDocumentTemplates() {
   try {

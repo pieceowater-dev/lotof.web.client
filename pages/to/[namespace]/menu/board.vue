@@ -5,6 +5,7 @@ import { logError } from '@/utils/logger';
 import { getPublicStorefront } from '@/api/menu/public/storefront';
 import { getKitchenBoard } from '@/api/menu/public/board';
 import type { BoardOrder } from '@/api/menu/public/board';
+import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { statusBadgeStyle } from '@/utils/orderStatus';
@@ -26,6 +27,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const branchParam = computed(() => (route.query.b as string) || '');
 
 const brand = ref<MenuBrandSettings | null>(null);
+const customStatusLabels = computed<StatusLabels>(() => parseStatusLabels(brand.value?.statusLabels));
 const branches = ref<MenuBranch[]>([]);
 const branchId = computed(() => {
   if (!branchParam.value) return undefined;
@@ -211,7 +213,7 @@ useHead(() => ({
         >
           <span class="text-sm font-bold uppercase tracking-wide flex items-center gap-2">
             <Icon :name="statusBadgeStyle(col.status).icon" class="w-4 h-4" />
-            {{ t(col.labelKey) || col.fallback }}
+            {{ statusLabelFor(col.status, customStatusLabels, t) }}
           </span>
           <span class="text-sm font-bold tabular-nums bg-black/25 rounded-full px-2 py-0.5">{{ ordersByColumn[col.status].length }}</span>
         </div>

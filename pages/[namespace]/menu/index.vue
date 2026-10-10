@@ -22,6 +22,7 @@ import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
+import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import { subscribeOrderChanged } from '@/api/menu/subscriptions';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { menuTour } from '@/config/tours';
@@ -63,15 +64,9 @@ useHead(() => ({
 
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
 
-const statusLabel = (s: string) => ({
-  NEW: t('menu.statusNew') || 'New',
-  ACCEPTED: t('menu.statusAccepted') || 'Accepted',
-  IN_PREPARATION: t('menu.statusInPreparation') || 'In progress',
-  READY: t('menu.statusReady') || 'Ready',
-  DELIVERING: t('menu.statusDelivering') || 'On the way',
-  COMPLETED: t('menu.statusCompleted') || 'Handed over',
-  CANCELLED: t('menu.statusCancelled') || 'Cancelled',
-}[s] || s);
+const customStatusLabels = ref<StatusLabels>({});
+// The business's own status names (Settings -> Statuses) win over the defaults.
+const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t);
 
 const statusColor = (s: string): any => ({
   NEW: 'blue',
@@ -366,6 +361,7 @@ async function loadBrandName() {
     const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
     const brand = await menuGetBrandSettings(menuToken, nsSlug.value);
     brandName.value = brand?.name || '';
+    customStatusLabels.value = parseStatusLabels(brand?.statusLabels);
   } catch (e) {
     logError('[menu/index] loadBrandName failed', e);
   }

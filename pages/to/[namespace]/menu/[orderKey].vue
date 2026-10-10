@@ -4,6 +4,7 @@ import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getPublicStorefront, getPublicOrderStatus } from '@/api/menu/public/storefront';
 import type { PublicOrderStatus } from '@/api/menu/public/storefront';
+import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 import type { MenuBranch } from '@/api/menu/branch/list';
 import { getContrastTextColor } from '@/utils/color';
@@ -53,15 +54,9 @@ const brandVars = computed(() => ({ '--brand': primaryColor.value, '--brand-ink'
 // instead, same convention as the storefront's cart/checkout totals.
 const secondaryColor = computed(() => brand.value?.secondaryColor || primaryColor.value);
 
-const statusLabel = (s: string) => ({
-  NEW: t('menu.statusNew') || 'New',
-  ACCEPTED: t('menu.statusAccepted') || 'Accepted',
-  IN_PREPARATION: t('menu.statusInPreparation') || 'In progress',
-  READY: t('menu.statusReady') || 'Ready',
-  DELIVERING: t('menu.statusDelivering') || 'On the way',
-  COMPLETED: t('menu.statusCompleted') || 'Handed over',
-  CANCELLED: t('menu.statusCancelled') || 'Cancelled',
-}[s] || s);
+const customStatusLabels = computed<StatusLabels>(() => parseStatusLabels(brand.value?.statusLabels));
+// The business's own status names (Settings -> Statuses) win over the defaults.
+const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t);
 
 // The visible step track — DELIVERING only makes sense for delivery orders,
 // so a pickup/table order's track skips straight from READY to COMPLETED.

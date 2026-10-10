@@ -8,6 +8,8 @@ import { getContrastTextColor } from '@/utils/color';
 import { CURRENCIES } from '@/utils/currency';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
 import { boardTemplatePayload, repairsBoardName } from '@/config/issuesBoardTemplates';
+import { orderStatusPreset } from '@/config/orderStatusPresets';
+import { serializeStatusLabels } from '@/utils/orderStatusLabels';
 import { serviceCenterOrderFields, serviceCenterTemplates, type ServiceCenterLocale } from '@/config/serviceCenterPreset';
 import { useNamespace } from '@/composables/useNamespace';
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
@@ -192,6 +194,20 @@ async function seedRepairsBoard(loc: ServiceCenterLocale) {
   }
 }
 
+// Each business type calls the order stages differently (a repair shop says
+// "In repair", a cafe says "Preparing"); the type's names are applied as the
+// starting point and stay editable in Settings -> Statuses. Best effort.
+async function applyStatusPreset(menuToken: string, type: BusinessType) {
+  const labels = orderStatusPreset(type, locale.value);
+  if (!Object.keys(labels).length) return;
+  try {
+    const { menuUpdateOrderStatusLabels } = await import('@/api/menu/brandsettings/updateStatusLabels');
+    await menuUpdateOrderStatusLabels(menuToken, nsSlug.value, serializeStatusLabels(labels));
+  } catch (e) {
+    logError('[onboarding] apply status preset failed', e);
+  }
+}
+
 async function applyCatalogPresetAndFinish() {
   if (!selectedBusinessType.value) {
     finish();
@@ -202,6 +218,7 @@ async function applyCatalogPresetAndFinish() {
     const menuToken = await getToken();
     const { menuApplyCatalogPreset } = await import('@/api/menu/category/applyPreset');
     await menuApplyCatalogPreset(menuToken, nsSlug.value, selectedBusinessType.value, locale.value);
+    await applyStatusPreset(menuToken, selectedBusinessType.value);
     if (selectedBusinessType.value === 'service_center') await seedServiceCenter(menuToken);
     if (namespaceId.value) {
       const { hubSetNamespaceBusinessType } = await import('@/api/hub/namespaces/businessType');

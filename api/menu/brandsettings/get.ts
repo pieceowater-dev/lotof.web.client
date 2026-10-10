@@ -17,12 +17,14 @@ export type MenuBrandSettings = {
   autoAcceptOrders: boolean;
   showcaseViewOnly: boolean;
   listedInCatalog: boolean;
+  // JSON object {"<STATUS>": "<name>"}; see utils/orderStatusLabels.ts.
+  statusLabels?: string;
 };
 
 const BrandSettingsDocument = /* GraphQL */ `
   query BrandSettings {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog statusLabels
     }
   }
 `;
