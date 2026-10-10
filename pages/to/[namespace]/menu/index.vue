@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { absoluteMediaUrl } from '@/utils/mediaUrl';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -919,10 +920,10 @@ useHead(() => {
       { name: 'description', content: description },
       { property: 'og:title', content: title },
       { property: 'og:description', content: description },
-      ...(brand?.logoUrl ? [{ property: 'og:image', content: brand.logoUrl }] : []),
+      ...(brand?.logoUrl ? [{ property: 'og:image', content: absoluteMediaUrl(brand.logoUrl) }] : []),
       { name: 'twitter:title', content: title },
       { name: 'twitter:description', content: description },
-      ...(brand?.logoUrl ? [{ name: 'twitter:image', content: brand.logoUrl }] : []),
+      ...(brand?.logoUrl ? [{ name: 'twitter:image', content: absoluteMediaUrl(brand.logoUrl) }] : []),
     ],
   };
 });

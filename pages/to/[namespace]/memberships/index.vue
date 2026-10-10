@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { absoluteMediaUrl } from '@/utils/mediaUrl';
 import { useI18n } from '@/composables/useI18n';
 import { usePatronAuth } from '@/composables/usePatronAuth';
 import { resolveSiteUrl } from '@/utils/siteUrl';
@@ -65,7 +66,7 @@ useSeoMeta({
   ogDescription: () => brand.value?.seoDescription || brand.value?.welcomeMessage || '',
   ogType: 'website',
   ogUrl: `${siteUrl}/to/${nsSlug.value}/memberships`,
-  ogImage: () => brand.value?.logoUrl || undefined,
+  ogImage: () => absoluteMediaUrl(brand.value?.logoUrl) || undefined,
 });
 
 onMounted(() => {

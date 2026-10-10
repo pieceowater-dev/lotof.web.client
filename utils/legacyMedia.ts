@@ -1,7 +1,7 @@
-// The lota.kz mirror domain was removed (2026-09-10), but uploads made while it was live were stored
-// with an absolute `https://lota.kz/api-…/media/…` URL. The files themselves are served by the main
-// origin, so rewrite those URLs to origin-relative paths when a response arrives.
-const LEGACY_HOST = /^https?:\/\/(?:www\.)?lota\.kz(?=\/(?:api-|media\/))/i;
+// Rows written before domains were banned from the DB hold absolute `https://<host>/api-…/media/…`
+// URLs (the removed lota.kz mirror, lota.tools, localhost). The files are served by whatever origin the
+// page is on, so drop the host when a response arrives; new uploads are stored path-only (utils/mediaUrl.ts).
+const LEGACY_HOST = /^https?:\/\/[^/\s]+(?=\/api-[a-z]+\/media\/)/i;
 
 export function rewriteLegacyMediaHosts<T>(value: T): T {
   if (typeof value === 'string') {

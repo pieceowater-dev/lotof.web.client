@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from '@/utils/api-base';
+import { toStoredMediaPath } from '@/utils/mediaUrl';
 import { buildGraphqlUploadBody } from '@/utils/graphqlMultipartUpload';
 import { assertUploadSize } from '@/utils/imageCompression';
 
@@ -46,7 +47,7 @@ export async function goodsUploadImage(goodsToken: string, namespaceSlug: string
   if (!payload?.url) throw new Error('Upload did not return an image URL');
 
   return {
-    url: `${getApiBaseUrl('goods')}${payload.url}`,
+    url: toStoredMediaPath('goods', payload.url),
     key: payload.key,
     contentType: payload.contentType,
     size: payload.size,

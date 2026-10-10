@@ -9,9 +9,10 @@ describe('rewriteLegacyMediaHosts', () => {
     });
     expect(out.logo).toBe('/api-plans/media/plans/ns/a.jpeg');
     expect(out.list[0].photo).toBe('/api-menu/media/x.png');
+    expect(rewriteLegacyMediaHosts('https://lota.tools/api-goods/media/g.webp')).toBe('/api-goods/media/g.webp');
   });
   it('leaves everything else alone', () => {
-    const v = { a: 'https://lota.tools/api-plans/media/a.webp', b: 'https://lota.kz/other', c: 5, d: null };
+    const v = { a: '/api-plans/media/a.webp', b: 'https://lota.kz/other', c: 5, d: null };
     expect(rewriteLegacyMediaHosts({ ...v })).toEqual(v);
   });
 });
