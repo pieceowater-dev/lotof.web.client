@@ -1189,7 +1189,7 @@ watch([articlesSearch, selectedArticleTag], () => {
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 8px 20px -8px rgba(15, 23, 42, 0.25), inset 0 0 0 1px rgba(15, 23, 42, 0.05);
 }
-@media (min-width: 768px) {
+@media (min-width: 1280px) {
   .chip { display: inline-flex; }
 }
 .dark .chip { color: #fff; background: rgba(38, 38, 38, 0.92); }
