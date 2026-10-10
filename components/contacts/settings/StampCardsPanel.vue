@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
@@ -390,15 +391,7 @@ onMounted(async () => {
       </UButton>
     </div>
 
-    <div
-      v-if="stampCardsLoading"
-      class="flex items-center justify-center py-8"
-    >
-      <UIcon
-        name="lucide:loader-2"
-        class="w-5 h-5 animate-spin text-gray-400"
-      />
-    </div>
+    <div v-if="stampCardsLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
 
     <div
       v-else-if="stampCardsError"

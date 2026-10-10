@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -147,7 +148,7 @@ onMounted(async () => {
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto mt-3">
-      <div v-if="loading" class="text-center py-10 text-gray-400"><Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" /></div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
 
       <div v-else-if="activeTab === 'top'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
         <div v-for="(e, idx) in topGoods" :key="e.goodId" class="px-4 py-2.5 text-sm flex items-center gap-3">

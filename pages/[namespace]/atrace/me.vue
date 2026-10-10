@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -325,11 +326,8 @@ onMounted(() => {
       </button>
     </div>
 
-    <div
-      v-if="loading"
-      class="text-gray-500 text-sm"
-    >
-      {{ t('app.loading') }}
+    <div v-if="loading">
+      <AppSkeleton variant="stats" />
     </div>
 
     <UAlert

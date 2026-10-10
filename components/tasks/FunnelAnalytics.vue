@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 // Funnel analytics panel for a lota Issues board — stage funnel,
 // stage-to-stage conversion, per-stage dwell time, win rate, cycle times,
 // pipeline value, weekly throughput. The aggregation runs server-side (see
@@ -78,9 +79,8 @@ const maxWeekly = computed(() => Math.max(1, ...(result.value?.weekly.flatMap((w
     </div>
 
     <div class="flex-1 min-h-0 overflow-auto pb-safe-or-4">
-      <div v-if="loading && !result" class="flex flex-col items-center justify-center py-16 text-gray-400">
-        <div class="h-9 w-9 rounded-full border-[3px] border-gray-200 border-t-primary-500 animate-spin mb-3" />
-        <span class="text-sm">{{ t('app.loading') || 'Загрузка...' }}</span>
+      <div v-if="loading && !result" class="py-2">
+        <AppSkeleton variant="stats" />
       </div>
 
       <div v-else-if="error" class="flex flex-col items-center justify-center py-16 text-red-500">

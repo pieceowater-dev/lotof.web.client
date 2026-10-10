@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -296,15 +297,7 @@ function planSummary(p: MembershipPlan) {
     >
       {{ error }}
     </div>
-    <div
-      v-if="loading"
-      class="flex items-center justify-center flex-1"
-    >
-      <UIcon
-        name="lucide:loader-2"
-        class="w-6 h-6 animate-spin text-gray-400"
-      />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="cards" :rows="3" /></div>
 
     <div
       v-else

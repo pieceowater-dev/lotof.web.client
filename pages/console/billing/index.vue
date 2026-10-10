@@ -43,9 +43,8 @@
 
     <!-- Main Content -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
-      <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
-        <Icon name="svg-spinners:ring-resize" class="h-12 w-12 text-blue-600" />
-        <p class="text-slate-500 animate-pulse">{{ t('admin.loadingBilling') }}...</p>
+      <div v-if="loading">
+        <AppSkeleton variant="cards" :rows="6" />
       </div>
 
       <div v-else>
@@ -514,6 +513,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { computed, reactive, ref, onMounted, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';

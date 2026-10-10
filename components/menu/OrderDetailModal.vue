@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { useI18n } from '@/composables/useI18n';
@@ -1171,9 +1172,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         </div>
       </template>
 
-      <div v-if="loading" class="flex items-center justify-center py-12">
-        <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin text-gray-400" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
 
       <div v-else class="h-full lg:flex lg:flex-row-reverse">
         <!-- Status history: independently-scrolling side rail, desktop only.
@@ -1756,9 +1755,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         </div>
       </template>
 
-      <div v-if="productDetailLoading" class="flex items-center justify-center py-12">
-        <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin text-gray-400" />
-      </div>
+      <div v-if="productDetailLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
       <div v-else-if="selectedProductDetail" class="space-y-4">
         <div class="w-full rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center" style="aspect-ratio: 16 / 9">
           <img v-if="selectedProductDetail.imageUrl" :src="selectedProductDetail.imageUrl" :alt="selectedProductDetail.imageAlt || selectedProductDetail.name" class="w-full h-full object-cover">

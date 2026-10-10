@@ -74,7 +74,7 @@
 
           <!-- Level: categories -->
           <div v-else-if="level.type === 'categories'">
-            <div v-if="categoriesLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-if="categoriesLoading" class="py-3"><AppSkeleton variant="list" :rows="4" /></div>
             <div v-else class="gw-card p-1.5">
               <button type="button" class="gw-row" @click="openArticles(level, null)">
                 <span class="gw-row-icon"><UIcon name="lucide:layout-list" class="h-4 w-4" /></span>
@@ -99,7 +99,7 @@
 
           <!-- Level: articles -->
           <div v-else-if="level.type === 'articles'">
-            <div v-if="articlesLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-if="articlesLoading" class="py-3"><AppSkeleton variant="list" :rows="4" /></div>
             <div v-else class="gw-card p-1.5">
               <button v-for="article in currentArticles" :key="article.id" type="button" class="gw-row" @click="openArticle(level, article)">
                 <span class="gw-row-icon"><UIcon name="lucide:file-text" class="h-4 w-4" /></span>
@@ -112,7 +112,7 @@
 
           <!-- Level: article -->
           <div v-else-if="level.type === 'article'">
-            <div v-if="articleLoading" class="py-4 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+            <div v-if="articleLoading" class="py-3"><AppSkeleton variant="list" :rows="4" /></div>
             <div v-else-if="currentArticle" class="gw-card p-5">
               <h4 class="mb-3 text-xl font-extrabold leading-tight tracking-tight text-gray-900 dark:text-white">{{ localeTitle(currentArticle) }}</h4>
               <div class="gw-prose" v-html="localeContentHtml(currentArticle)" />
@@ -143,6 +143,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useOnboarding } from '@/composables/useOnboarding';

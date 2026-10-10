@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -714,9 +715,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <div v-if="loading" class="flex-1 min-h-0 flex items-center justify-center text-gray-400">
-      <Icon name="lucide:loader" class="w-6 h-6 animate-spin mx-auto" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="cards" :rows="8" /></div>
 
     <!-- No register yet on this warehouse -->
     <div v-else-if="!activeRegister" class="flex-1 min-h-0 flex items-center justify-center">
@@ -959,7 +958,7 @@ onMounted(async () => {
     <UModal class="at-modal" :ui="atModalUi" v-model="showShiftReport">
       <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ shiftReport?.status === 'CLOSED' ? t('goods.zReport') : t('goods.xReport') }}</h3></template>
-        <div v-if="loadingShiftReport" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
+        <div v-if="loadingShiftReport" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="shiftReport" class="space-y-2 text-sm">
           <div class="flex justify-between"><span class="text-gray-400">{{ t('goods.openingCash') }}</span><span>{{ formatCents(shiftReport.openingCashAmountCents) }}</span></div>
           <div class="flex justify-between"><span class="text-gray-400">{{ t('goods.expectedCash') }}</span><span class="font-semibold">{{ formatCents(shiftReport.expectedCashAmountCents) }}</span></div>
@@ -1068,7 +1067,7 @@ onMounted(async () => {
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }" v-model="showHistory">
       <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.history') }}</h3></template>
-        <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
+        <div v-if="loadingHistory" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="!recentSales.length" class="text-center py-6 text-sm text-gray-400">—</div>
         <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="s in recentSales" :key="s.id" class="py-2.5 space-y-1.5">

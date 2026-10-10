@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
@@ -669,17 +670,9 @@ async function handleRefreshFromRemote() {
     <!-- Loading State (only on initial load, not while having search) -->
     <div
       v-if="loading && clients.length === 0 && searchQuery === ''"
-      class="flex items-center justify-center py-16 px-4"
+      class="px-4 pb-4"
     >
-      <div class="text-center">
-        <UIcon
-          name="lucide:loader"
-          class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4"
-        />
-        <p class="text-gray-600 dark:text-gray-400">
-          {{ t('common.loading') }}
-        </p>
-      </div>
+      <AppSkeleton variant="table" :rows="8" :cols="6" />
     </div>
 
     <!-- Empty State (only when no clients exist AND no search) -->

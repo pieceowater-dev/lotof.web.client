@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -161,15 +162,7 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <div
-      v-if="!accessChecked"
-      class="flex-1 flex items-center justify-center"
-    >
-      <UIcon
-        name="i-heroicons-arrow-path"
-        class="h-6 w-6 animate-spin text-gray-400"
-      />
-    </div>
+    <div v-if="!accessChecked" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <div
       v-else-if="accessDenied"

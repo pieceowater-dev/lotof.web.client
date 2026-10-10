@@ -17,9 +17,8 @@
     </AdminHeader>
 
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-      <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
-        <Icon name="svg-spinners:ring-resize" class="h-10 w-10 text-blue-600" />
-        <p class="text-slate-500 animate-pulse">{{ t('admin.loadingAnalytics') }}</p>
+      <div v-if="loading">
+        <AppSkeleton variant="stats" :rows="8" />
       </div>
 
       <div v-else-if="loadError" class="at-notice at-notice--err !p-5">
@@ -646,6 +645,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { computed, reactive, ref, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';

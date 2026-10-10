@@ -1,6 +1,6 @@
 <template>
-  <div v-if="loading" class="min-h-screen bg-slate-100 dark:bg-[#141414] flex items-center justify-center">
-    <div class="text-sm text-slate-500">Загрузка статьи...</div>
+  <div v-if="loading" class="min-h-screen bg-slate-100 dark:bg-[#141414] mx-auto max-w-4xl px-4 py-10">
+    <AppSkeleton variant="panel" :rows="3" />
   </div>
 
   <div v-else-if="loadError" class="min-h-screen bg-slate-100 dark:bg-[#141414] flex items-center justify-center px-4">
@@ -23,6 +23,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { capitalArchivePublication, capitalGetPublicationBySlug, capitalUpdatePublication } from '@/api/publications';

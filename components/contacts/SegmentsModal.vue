@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
@@ -159,15 +160,7 @@ watch(() => props.isOpen, (newVal) => {
           <h3 class="text-sm font-semibold">
             Segments
           </h3>
-          <div
-            v-if="loading"
-            class="flex justify-center py-8"
-          >
-            <UIcon
-              name="lucide:loader"
-              class="w-6 h-6 animate-spin text-gray-400"
-            />
-          </div>
+          <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
           <div
             v-else
             class="space-y-1 max-h-[350px] overflow-y-auto"

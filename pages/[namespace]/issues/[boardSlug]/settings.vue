@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -415,9 +416,7 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
       </div>
     </div>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center text-gray-400">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
       <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">

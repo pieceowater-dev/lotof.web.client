@@ -518,7 +518,6 @@ function addTagToFilter(tagId: string, tagName: string) {
             <tr
               v-for="i in localPageSize"
               :key="`skeleton-${i}`"
-              class="animate-pulse"
             >
               <td
                 v-for="(col, colIndex) in columns"
@@ -526,8 +525,8 @@ function addTagToFilter(tagId: string, tagName: string) {
                 :style="{ width: `${col.width}px` }"
                 class="px-4 py-3"
               >
-                <div
-                  class="h-4 bg-gray-200 dark:bg-gray-700 rounded"
+                <span
+                  class="sk sk-line"
                   :class="colIndex === 0 ? 'w-6' : colIndex === 2 ? 'w-32' : 'w-24'"
                 />
               </td>

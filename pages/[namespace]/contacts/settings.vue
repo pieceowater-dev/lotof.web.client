@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -112,15 +113,7 @@ onMounted(async () => {
     </div>
 
     <!-- Loading State -->
-    <div
-      v-if="loading"
-      class="flex items-center justify-center flex-1"
-    >
-      <UIcon
-        name="lucide:loader-2"
-        class="w-6 h-6 animate-spin text-gray-400"
-      />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <!-- Settings Content -->
     <div

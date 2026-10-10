@@ -1,6 +1,6 @@
 <template>
-  <div v-if="loading" class="mx-auto max-w-2xl px-4 py-24 text-center text-sm text-gray-400">
-    {{ t('app.loading') }}
+  <div v-if="loading" class="mx-auto max-w-2xl px-4 py-16">
+    <AppSkeleton variant="panel" :rows="2" />
   </div>
   <div v-else-if="!article" class="mx-auto max-w-2xl px-4 py-24 text-center">
     <p class="text-gray-500">{{ t('guide.notFound') }}</p>
@@ -75,6 +75,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'full' });
 
 import { computed } from 'vue';

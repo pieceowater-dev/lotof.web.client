@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -787,9 +788,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       {{ error }}
     </div>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center text-gray-400">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="kanban" /></div>
 
     <!-- Columns stretch evenly to fill the full width; each keeps a 20%
          minimum on desktop (past 5 columns, or whenever they can no longer

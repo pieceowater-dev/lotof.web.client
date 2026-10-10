@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'quiet' });
 
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
@@ -297,9 +298,7 @@ onMounted(async () => {
       </div>
 
       <!-- Loading -->
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="cards" :rows="3" /></div>
 
       <template v-else>
 

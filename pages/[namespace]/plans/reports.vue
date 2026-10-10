@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -83,9 +84,7 @@ watch(rangeDays, loadAll);
       >{{ d }} {{ t('plans.days') || 'дн' }}</button>
     </div>
 
-    <div v-if="booting" class="py-16 flex justify-center">
-      <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" />
-    </div>
+    <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
       <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
@@ -101,9 +100,7 @@ watch(rangeDays, loadAll);
         <template #header>
           <h2 class="font-semibold text-gray-900 dark:text-white">{{ t('plans.masterLoad') || 'Загрузка мастеров' }}</h2>
         </template>
-        <div v-if="loading" class="py-6 flex justify-center">
-          <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-primary-500" />
-        </div>
+        <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="!load.length" class="text-sm text-gray-500 py-4">{{ t('plans.noData') || 'Нет данных за период' }}</div>
         <div v-else class="flex flex-col gap-3">
           <div v-for="l in load" :key="l.masterId">

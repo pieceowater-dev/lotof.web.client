@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n'
 
 const props = withDefaults(defineProps<{
@@ -98,6 +99,13 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           :hover="hover ?? true"
           @select="(row: any) => emit('select', row)"
         >
+          <!-- first load of an empty table: skeleton rows instead of a lone spinner -->
+          <template #loading-state>
+            <div class="px-4 py-4">
+              <AppSkeleton variant="list" :rows="5" />
+            </div>
+          </template>
+
           <!-- UTable doesn't stop the checkbox click from bubbling to the
                row's own @select handler, so ticking a box would also open
                the row underneath it — swallow the click here instead. -->

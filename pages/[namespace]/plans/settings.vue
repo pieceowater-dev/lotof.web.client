@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -396,9 +397,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
       </UButton>
     </div>
 
-    <div v-if="booting" class="flex-1 flex items-center justify-center">
-      <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" />
-    </div>
+    <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
       <!-- pill tabs -->
@@ -434,7 +433,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
               </UButton>
             </div>
 
-            <div v-if="staffLoading" class="py-8 flex justify-center"><UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-primary-500" /></div>
+            <div v-if="staffLoading" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
             <div v-else class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800 overflow-hidden">
               <div v-for="row in staffView" :key="row.member.userId"
                    class="px-4 py-3 flex items-center gap-3 hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors">

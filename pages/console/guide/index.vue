@@ -74,9 +74,7 @@
           </div>
         </template>
 
-        <div v-if="categoriesLoading" class="py-6 text-sm text-slate-500">
-          {{ t('app.loading') }}
-        </div>
+        <div v-if="categoriesLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
         <div v-else-if="!orderedCategories.length" class="py-10 text-center">
           <UIcon name="lucide:folder-tree" class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-700" />
           <p class="text-sm text-slate-500">{{ t('admin.guideNoCategories') }}</p>
@@ -145,9 +143,7 @@
           <UInput v-model="articleFilters.search" :placeholder="t('app.search')" icon="lucide:search" class="w-56" />
         </div>
 
-        <div v-if="articlesLoading" class="py-6 text-sm text-slate-500">
-          {{ t('app.loading') }}
-        </div>
+        <div v-if="articlesLoading" class="py-4"><AppSkeleton variant="list" :rows="5" /></div>
         <div v-else-if="!articles.length" class="py-10 text-center">
           <UIcon name="lucide:file-text" class="mx-auto mb-2 h-8 w-8 text-slate-300 dark:text-slate-700" />
           <p class="text-sm text-slate-500">{{ t('admin.guideNoArticles') }}</p>
@@ -234,6 +230,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atCardUi } from '@/utils/atraceUi';
 const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
 import { computed, reactive, ref, watch } from 'vue';

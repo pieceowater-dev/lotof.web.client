@@ -555,3 +555,43 @@ button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(
   animation: login-spin 0.6s linear infinite;
 }
 @keyframes login-spin { to { transform: rotate(360deg); } }
+
+/* ---- Skeletons (components/ui/AppSkeleton.vue) ---- */
+.sk { display: block; position: relative; overflow: hidden; border-radius: 0.6rem; background: rgba(15, 23, 42, 0.07); }
+.sk::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: sk-shimmer 1.3s ease-in-out infinite;
+}
+.dark .sk { background: rgba(255, 255, 255, 0.07); }
+.dark .sk::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent); }
+@keyframes sk-shimmer { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .sk::after { animation: none; } }
+.sk-wrap { width: 100%; }
+.sk-stack { display: flex; flex-direction: column; gap: 0.75rem; }
+.sk-row { display: flex; align-items: center; gap: 0.85rem; }
+.sk-col { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 0.45rem; }
+.sk-line { height: 0.8rem; border-radius: 9999px; }
+.sk-line--sm { height: 0.6rem; }
+.sk-line--lg { height: 1.4rem; }
+.sk-circle { width: 2.5rem; height: 2.5rem; flex-shrink: 0; border-radius: 9999px; }
+.sk-tile { width: 2.75rem; height: 2.75rem; flex-shrink: 0; border-radius: 0.9rem; }
+.sk-pill { height: 2.25rem; border-radius: 9999px; }
+.sk-pill--sm { width: 4.5rem; height: 1.6rem; flex-shrink: 0; }
+.sk-field { height: 2.5rem; border-radius: 9999px; }
+.sk-block { height: 9rem; border-radius: 1.2rem; }
+.sk-card, .sk-tray, .sk-column {
+  display: flex; flex-direction: column; gap: 0.8rem; border-radius: 1.6rem; padding: 1.1rem 1.25rem; background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 36px -28px rgba(15, 23, 42, 0.2);
+}
+.dark .sk-card, .dark .sk-tray, .dark .sk-column { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
+.sk-card--sm { gap: 0.55rem; padding: 0.85rem 1rem; border-radius: 1.25rem; }
+.sk-tray { padding: 0; gap: 0; overflow: hidden; }
+.sk-thead { display: flex; gap: 1.5rem; padding: 0.85rem 1.25rem; background: rgba(15, 23, 42, 0.04); }
+.dark .sk-thead { background: rgba(255, 255, 255, 0.05); }
+.sk-thead > * { flex: 1; }
+.sk-trow { display: grid; gap: 1.5rem; align-items: center; padding: 0.95rem 1.25rem; border-top: 1px solid rgba(15, 23, 42, 0.06); }
+.dark .sk-trow { border-top-color: rgba(255, 255, 255, 0.07); }
+.sk-grid { display: grid; gap: 1rem; }
+.sk-kanban { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.75rem; align-items: start; }
+.sk-column { background: rgba(15, 23, 42, 0.02); }

@@ -1,6 +1,6 @@
 <template>
-  <div v-if="loading" class="min-h-screen bg-slate-50 dark:bg-[#141414] flex items-center justify-center">
-    <div class="text-sm text-slate-500">Загрузка статьи...</div>
+  <div v-if="loading" class="min-h-screen bg-slate-50 dark:bg-[#141414] mx-auto max-w-4xl px-4 py-10">
+    <AppSkeleton variant="panel" :rows="3" />
   </div>
   <div v-else-if="loadError" class="min-h-screen bg-slate-50 dark:bg-[#141414] flex items-center justify-center px-4">
     <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
@@ -18,6 +18,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuth } from '@/composables/useAuth';

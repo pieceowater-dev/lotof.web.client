@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getPublicStorefront, getPublicOrderStatus } from '@/api/menu/public/storefront';
@@ -219,9 +220,8 @@ useHead(() => ({
 
     <div class="mx-auto max-w-lg px-4 py-8">
       <!-- Loading -->
-      <div v-if="loading" class="flex flex-col items-center justify-center py-20 text-gray-400">
-        <Icon name="lucide:loader-2" class="mb-2 h-6 w-6 animate-spin" />
-        {{ t('app.loading') || 'Loading...' }}
+      <div v-if="loading" class="py-6">
+        <AppSkeleton variant="panel" :rows="2" />
       </div>
 
       <!-- Showcase (view-only) mode: tracking is off entirely, not just "this

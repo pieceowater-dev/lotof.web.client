@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -160,15 +161,7 @@ function copyUrl() {
     >
       {{ error }}
     </div>
-    <div
-      v-if="loading"
-      class="flex items-center justify-center py-16"
-    >
-      <UIcon
-        name="lucide:loader-2"
-        class="w-6 h-6 animate-spin text-gray-400"
-      />
-    </div>
+    <div v-if="loading" class="py-4"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <div
       v-else

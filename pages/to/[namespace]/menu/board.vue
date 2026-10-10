@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
 import { getPublicStorefront } from '@/api/menu/public/storefront';
@@ -191,9 +192,7 @@ useHead(() => ({
       </div>
     </header>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center">
-      <UIcon name="lucide:loader-2" class="w-10 h-10 animate-spin text-gray-600" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="cards" :rows="6" /></div>
 
     <!-- Mobile/tablet: one continuous scroll through stacked column
          sections (each header stays sticky for orientation). Desktop/TV

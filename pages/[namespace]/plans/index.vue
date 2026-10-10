@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -370,9 +371,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
       </UButton>
     </div>
 
-    <div v-if="booting" class="flex-1 flex justify-center items-center">
-      <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" />
-    </div>
+    <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <div v-else-if="notSetUp"
          class="flex-1 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 p-8">
@@ -404,9 +403,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
 
         <!-- mobile: agenda for the selected day -->
         <div class="sm:hidden flex-1 min-h-0 overflow-y-auto flex flex-col gap-2">
-          <div v-if="loading && !bookings.length" class="py-10 flex justify-center">
-            <UIcon name="i-heroicons-arrow-path" class="w-6 h-6 animate-spin text-primary-500" />
-          </div>
+          <div v-if="loading && !bookings.length" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
           <div v-else-if="!dayBookings.length" class="py-14 text-center text-gray-500 dark:text-gray-400">
             <UIcon name="lucide:calendar-x" class="w-9 h-9 mx-auto mb-2 opacity-60" />
             {{ t('plans.noBookingsForDay') || 'На этот день записей нет' }}

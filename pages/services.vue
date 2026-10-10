@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'full' });
 
 import { computed } from 'vue';
@@ -59,9 +60,7 @@ useSeoMeta({
     <div class="flex flex-col">
       <CatalogHeader back :title="t('home.servicesTitle') || 'Услуги'" :subtitle="t('home.servicesSubtitle') || 'Запись и бронирование на lota Plans'" />
 
-      <div v-if="loading" class="py-16 flex justify-center">
-        <UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-gray-400" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="cards" :rows="6" /></div>
 
       <div v-else-if="!plansBusinesses.length"
            class="catalog-panel p-8 md:p-10 flex flex-col items-center text-center gap-3">

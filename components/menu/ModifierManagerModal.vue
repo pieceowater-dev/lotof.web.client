@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
@@ -264,9 +265,7 @@ watch(() => props.modelValue, (open) => {
             </UTooltip>
           </div>
           <div class="flex-1 overflow-y-auto px-2.5 pb-3">
-            <div v-if="groupsLoading" class="flex items-center justify-center py-8">
-              <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
-            </div>
+            <div v-if="groupsLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
             <div v-else-if="!groups.length" class="text-xs text-gray-500 dark:text-gray-400 px-2 py-4 text-center">
               {{ t('menu.noModifierGroups') || 'No modifier groups yet' }}
             </div>
@@ -360,9 +359,7 @@ watch(() => props.modelValue, (open) => {
               <Icon name="lucide:tags" class="h-3.5 w-3.5" />
               {{ t('menu.modifierOptions') || 'Options' }}
             </div>
-            <div v-if="optionsLoading" class="flex items-center justify-center py-4">
-              <UIcon name="lucide:loader-2" class="w-4 h-4 animate-spin text-gray-400" />
-            </div>
+            <div v-if="optionsLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
             <div v-else-if="!options.length" class="text-xs text-gray-500 dark:text-gray-400 rounded-xl border border-dashed border-gray-200 dark:border-gray-800 px-3 py-4 text-center">
               {{ t('menu.noModifierOptions') || 'No options yet — add the first one below' }}
             </div>

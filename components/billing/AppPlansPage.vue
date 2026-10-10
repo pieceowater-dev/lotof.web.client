@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import PlanComparisonTable from '@/components/billing/PlanComparisonTable.vue';
 import ContactSupportBanner from '@/components/ui/ContactSupportBanner.vue';
 import { useAppPlansPage, type AppPlansPageConfig } from '@/composables/useAppPlansPage';
@@ -82,9 +83,7 @@ const {
         </h2>
       </div>
 
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="cards" :rows="3" /></div>
 
       <UAlert
         v-else-if="error"

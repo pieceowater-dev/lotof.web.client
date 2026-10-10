@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -93,9 +94,7 @@ onMounted(load);
       {{ error }}
     </div>
 
-    <div v-if="loading && !board" class="flex-1 flex items-center justify-center text-gray-400">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin" />
-    </div>
+    <div v-if="loading && !board" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="stats" /></div>
 
     <FunnelAnalytics
       v-else-if="board"

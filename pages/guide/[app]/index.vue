@@ -30,7 +30,7 @@
           </div>
         </div>
 
-        <div v-if="loading" class="py-12 text-center text-sm text-gray-400">{{ t('app.loading') }}</div>
+        <div v-if="loading" class="py-6"><AppSkeleton variant="cards" :rows="4" /></div>
 
         <div v-else class="mt-8 space-y-8">
           <section v-for="(group, gi) in groups" :key="group.key" v-reveal="gi * 60">
@@ -66,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'full' });
 
 import { computed } from 'vue';

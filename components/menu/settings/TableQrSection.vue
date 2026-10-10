@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -271,9 +272,7 @@ onMounted(() => {
         <Icon name="lucide:list" class="h-3.5 w-3.5" />
         {{ t('menu.savedQrCodes') || 'Saved QR codes' }}
       </div>
-      <div v-if="loading" class="flex items-center justify-center py-8">
-        <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
       <div v-else-if="!qrLinks.length" class="text-sm text-gray-400 px-5 pb-5">
         {{ t('menu.noSavedQrCodes') || 'No QR codes saved yet — create one above.' }}
       </div>

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { usePwaInstall } from '@/composables/usePwaInstall';
@@ -368,9 +369,7 @@ onBeforeUnmount(() => {
 
     <div v-if="error" class="m-4 rounded-lg bg-red-50 text-red-700 text-sm px-3 py-2">{{ error }}</div>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center text-gray-400">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="list" :rows="4" /></div>
 
     <div v-else-if="!openTasks.length" class="flex-1 flex flex-col items-center justify-center gap-2 text-gray-400 text-center px-6">
       <UIcon name="lucide:coffee" class="w-10 h-10" />

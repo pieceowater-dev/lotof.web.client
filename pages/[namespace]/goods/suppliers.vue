@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -267,7 +268,7 @@ onMounted(loadAll);
     <UModal class="at-modal" :ui="atModalUi" v-model="showHistory">
       <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.priceHistory') }}</h3></template>
-        <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
+        <div v-if="loadingHistory" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">{{ t('goods.priceHistoryEmpty') }}</div>
         <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="(h, idx) in history" :key="idx" class="flex items-center justify-between text-sm py-2">

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -136,7 +137,7 @@ async function finish() {
             :class="step >= n ? 'bg-violet-500' : 'bg-gray-200 dark:bg-gray-800'" />
     </div>
 
-    <div v-if="booting" class="py-16 flex justify-center"><UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" /></div>
+    <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <UCard v-else :ui="atCardUi">
       <!-- STEP 1 — brand -->

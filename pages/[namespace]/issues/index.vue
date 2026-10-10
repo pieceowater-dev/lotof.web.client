@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -186,9 +187,7 @@ onMounted(() => {
       {{ error }}
     </div>
 
-    <div v-if="loading" class="flex-1 flex items-center justify-center text-gray-400">
-      <UIcon name="lucide:loader-2" class="w-6 h-6 animate-spin" />
-    </div>
+    <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="cards" :rows="3" /></div>
 
     <div v-else-if="!boards.length" class="flex-1 flex flex-col items-center justify-center text-center gap-3 text-gray-400">
       <UIcon name="lucide:clipboard-check" class="w-10 h-10" />

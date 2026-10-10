@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -601,12 +602,7 @@ onMounted(async () => {
           <UButton icon="lucide:plus" size="2xs" color="primary" variant="soft" @click="openCreateCategory" />
         </div>
         <div class="flex-1 overflow-y-auto">
-          <div
-            v-if="categoriesLoading"
-            class="flex items-center justify-center py-8"
-          >
-            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
-          </div>
+          <div v-if="categoriesLoading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
           <div
             v-else-if="!categories.length"
             class="text-sm text-gray-500 dark:text-gray-400 px-3 py-4"
@@ -680,9 +676,7 @@ onMounted(async () => {
           </div>
         </div>
         <div class="flex-1 min-h-0 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-          <div v-if="itemsLoading" class="flex items-center justify-center py-8">
-            <UIcon name="lucide:loader-2" class="w-5 h-5 animate-spin text-gray-400" />
-          </div>
+          <div v-if="itemsLoading" class="py-4"><AppSkeleton variant="table" :rows="6" /></div>
           <div v-else-if="!items.length" class="flex flex-col items-center justify-center gap-2 py-10 text-center">
             <UIcon name="lucide:package" class="w-6 h-6 text-gray-300 dark:text-gray-700" />
             <span class="text-sm text-gray-500 dark:text-gray-400">{{ t('menu.noMenuItems') || 'No items yet' }}</span>

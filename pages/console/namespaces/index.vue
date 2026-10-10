@@ -71,9 +71,7 @@
         </div>
       </div>
 
-      <div v-if="showSpinner" class="flex justify-center py-16">
-        <Icon name="lucide:loader-2" class="h-6 w-6 animate-spin text-slate-400" />
-      </div>
+      <div v-if="showSpinner" class="py-4"><AppSkeleton variant="table" :rows="7" /></div>
 
       <div v-else-if="!displayRows.length" class="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-10 text-center text-sm text-slate-500 dark:border-white/10 dark:bg-[#1f1f1f] dark:text-gray-400">
         {{ t('admin.noNamespacesFound') || 'Неймспейсы не найдены' }}
@@ -265,6 +263,7 @@
 </template>
 
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';

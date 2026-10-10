@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
@@ -186,19 +187,8 @@ function onCopyToClipboard(text: string) {
     />
 
     <!-- Loading State -->
-    <div
-      v-if="loading"
-      class="flex items-center justify-center py-20"
-    >
-      <div class="text-center">
-        <UIcon
-          name="lucide:loader"
-          class="w-8 h-8 mx-auto text-gray-400 animate-spin mb-4"
-        />
-        <p class="text-gray-600 dark:text-gray-400">
-          {{ t('common.loading') }}
-        </p>
-      </div>
+    <div v-if="loading" class="px-4 py-6">
+      <AppSkeleton variant="panel" :rows="3" />
     </div>
 
     <!-- Main Content -->

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'quiet' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -288,9 +289,7 @@ watch([plans, activeSubscription], () => {
 
       <BillingBundlesForApp application-code="pieceowater.plans" :namespace="nsSlug" :interval="selectedInterval" />
 
-      <div v-if="loading" class="flex justify-center items-center py-12">
-        <UIcon name="i-heroicons-arrow-path" class="w-8 h-8 animate-spin text-primary-500" />
-      </div>
+      <div v-if="loading" class="py-4"><AppSkeleton variant="cards" :rows="3" /></div>
 
       <UAlert
         v-else-if="error"

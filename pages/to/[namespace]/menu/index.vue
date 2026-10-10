@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { absoluteMediaUrl } from '@/utils/mediaUrl';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
@@ -946,9 +947,7 @@ useHead(() => {
       why `h-screen` (not `h-full`) is required here for overflow-y-auto
       to actually produce a scrollbar instead of a no-op.
     -->
-    <div v-if="loading" class="flex items-center justify-center min-h-screen">
-      <UIcon name="lucide:loader-2" class="w-8 h-8 animate-spin text-gray-400" />
-    </div>
+    <div v-if="loading" class="min-h-screen p-4"><AppSkeleton variant="cards" :rows="6" /></div>
 
     <div v-else-if="error" class="flex items-center justify-center min-h-screen px-4">
       <p class="text-gray-500 dark:text-gray-400 text-center">{{ error }}</p>
@@ -1368,9 +1367,7 @@ useHead(() => {
                   : (t('menu.modifierOptional') || 'Optional') }}
               </span>
             </div>
-            <div v-if="!modifierOptionsByGroup[group.id]" class="flex items-center justify-center py-3">
-              <UIcon name="lucide:loader-2" class="w-4 h-4 animate-spin text-gray-400" />
-            </div>
+            <div v-if="!modifierOptionsByGroup[group.id]" class="py-4"><AppSkeleton variant="list" :rows="2" /></div>
             <div v-else class="space-y-1.5">
               <label
                 v-for="opt in modifierOptionsByGroup[group.id]"
