@@ -75,7 +75,7 @@ async function submitPhone() {
   >
     <template #header>
       <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-emerald-500 text-white shadow-sm">
+        <div class="icon-tile !h-10 !w-10 !rounded-[0.9rem]">
           <Icon name="lucide:phone" class="h-5 w-5" />
         </div>
         <span class="font-semibold">{{ title }}</span>
@@ -95,7 +95,7 @@ async function submitPhone() {
           autocomplete="tel"
           :placeholder="t('admin.phonePlaceholder') || '+7 700 000 00 00'"
           :aria-label="t('admin.phoneGateTitle') || 'Подтвердите номер телефона'"
-          class="w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm outline-none transition-colors focus:ring-2 dark:bg-gray-950 dark:text-white"
+          class="w-full rounded-full border bg-white px-4 py-2.5 text-sm outline-none transition-colors focus:ring-2 dark:bg-gray-950 dark:text-white"
           :class="phoneLooksInvalid
             ? 'border-red-300 focus:border-red-400 focus:ring-red-500/30 dark:border-red-800'
             : 'border-gray-200 focus:border-blue-400 focus:ring-blue-500/30 dark:border-gray-700'"

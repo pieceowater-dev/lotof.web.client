@@ -5,8 +5,8 @@
     @update:model-value="close"
   >
     <template #header>
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:phone-call" class="h-5 w-5 text-blue-600 dark:text-blue-400" />
+      <div class="flex items-center gap-3">
+        <span class="icon-tile !h-10 !w-10 !rounded-[0.9rem]"><Icon name="lucide:phone-call" class="h-5 w-5" /></span>
         <span>{{ t('billing.contactUsTitle') || 'Свяжитесь с командой lota' }}</span>
       </div>
     </template>
@@ -16,14 +16,14 @@
         {{ t('billing.contactUsBody') || 'Оплата пока подключается вручную — напишите или позвоните нам, и мы включим тариф в течение дня.' }}
       </p>
 
-      <div v-if="!hasContact" class="rounded-lg bg-slate-100 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+      <div v-if="!hasContact" class="at-banner text-sm">
         {{ t('billing.contactUsNotConfigured') || 'Контакты пока не заполнены в админке.' }}
       </div>
       <div v-else class="flex flex-col gap-2">
         <a
           v-if="telHref"
           :href="telHref"
-          class="flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
+          class="at-btn at-btn--primary w-full !py-2.5"
           @click="() => trackContactClick('call')"
         >
           <Icon name="lucide:phone" class="h-4 w-4" />
@@ -34,7 +34,7 @@
           :href="whatsappHref"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-95"
+          class="at-btn w-full !py-2.5 !text-white" style="background: #25d366"
           @click="() => trackContactClick('whatsapp')"
         >
           <Icon name="simple-icons:whatsapp" class="h-4 w-4" />

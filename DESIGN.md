@@ -478,6 +478,25 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 - Tour spotlight dim is neutral black (`rgba(0,0,0,.62)`): a slate tint is lighter than the dark theme and the dim disappears.
 - Responsive: back buttons inside `flex-col` headers need `self-start`; page headers with a CTA need `min-w-0` on the text block and an icon-only CTA below `sm`; floating decorative chips only from `xl`; popups cap their width to `viewport - 32px`.
 
+## 10m. Motion speed, loading, pending states, media (2026-10-10)
+
+- **Motion is 2x faster than the original spec.** Tailwind's `duration-*`/`delay-*` scale is halved in `tailwind.config.ts`
+  (`duration-300` = 150ms) and every CSS `transition`/`animation` duration was halved. New code: use the Tailwind scale or half of
+  the old numbers (`.15–.35s`), never the old `.4–.9s` values. Ambient loops (spinners, floating chips, shimmer) keep their rhythm.
+- **Loading = skeletons, not spinners.** `components/ui/AppSkeleton.vue` (`variant`: `list`, `table`, `cards`, `kanban`, `panel`,
+  `stats`; `rows`, `cols`) renders the shape of what is loading; the shimmer is `.sk*` in `surface.css`. `AppTable` shows skeleton
+  rows on first load; page/section loaders use `<AppSkeleton>` inside the original `v-if="loading"`. A spinner is only for
+  in-place actions (upload overlay, button `loading`).
+- **Pending clicks show a spinner on the clicked element:** Google sign-in buttons (`utils/loginPending.ts` marks the clicked button
+  with `data-login-pending`) and header app items (`.hdr-item` gets `data-nav-pending` until `page:finish`,
+  `plugins/login-click.client.ts`). CSS in `surface.css` swaps the icon for a spinner.
+- **Tables with a pagination footer must fill the available height with flex** (`flex-1 min-h-0` on the table wrapper, scroller
+  `flex-1 min-h-0`) — a fixed `max-h-[calc(100vh-…)]` pushes the footer under the page fold (contacts table lost its pager that way).
+- **Domains never live in the database.** Uploads store `/api-<svc>/media/…` (`utils/mediaUrl.ts → toStoredMediaPath`); absolute URLs are
+  built on the fly from the current origin (`absoluteMediaUrl`, e.g. og:image); legacy rows with a host are rewritten on read
+  (`utils/legacyMedia.ts`, applied in `ApiClient.request`).
+- **Reads retry on 502/503/504** (backoff ~10s, `ApiClient.request`); mutations are never retried.
+
 ## 11. Writing a new screen — checklist
 
 1. **Archetype:** pick the container (bezel / soft tray / storefront card) and the layout (bento, split,
@@ -537,6 +556,7 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 | Buttons | `.at-btn`, `--blue`, `--amber`, `--primary` (one per view), `--danger` (destructive confirm) |
 | Panels / rows / stats | `.at-panel`, `.at-row`, `.at-stat`, `.at-chip`, `.at-banner` |
 | Tables | `AppTable soft` (`.at-tray`; self-scrolling tables add `keep-scroll`) |
+| Loading placeholder | `<AppSkeleton variant="list\|table\|cards\|kanban\|panel\|stats" :rows="n" />` |
 | Cards with brand icon | `.bezel` + `.bezel-core` + `.icon-tile`; per-app gradient via `appIconStyle(key)` (`config/apps.ts`) |
 | Kanban | `.is-col`, `.is-col__head`, `.is-card` (`issues.css`) |
 

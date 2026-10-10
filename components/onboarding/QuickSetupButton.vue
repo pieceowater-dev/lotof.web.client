@@ -1,7 +1,8 @@
 <template>
-  <UButton variant="soft" icon="lucide:sparkles" @click="open">
+  <button type="button" class="at-btn at-btn--blue" @click="open">
+    <UIcon name="lucide:sparkles" class="h-4 w-4" />
     {{ label || t('onboarding.needHelp') }}
-  </UButton>
+  </button>
 
   <Modal v-model="isOpen" :header="t('onboarding.quickSetupTitle')" :prevent-close="applying">
     <div class="space-y-4">
@@ -14,7 +15,7 @@
           v-for="option in BUSINESS_TYPES"
           :key="option.value"
           type="button"
-          class="flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors"
+          class="flex flex-col items-center gap-2 rounded-[1.4rem] border p-3 text-center transition-colors"
           :class="selected === option.value
             ? 'border-primary bg-primary-50 text-primary dark:bg-primary-900/20 dark:text-primary-300'
             : 'border-gray-200 hover:border-primary/50 dark:border-gray-700'"

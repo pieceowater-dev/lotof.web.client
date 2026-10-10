@@ -5,8 +5,8 @@
     @update:model-value="close"
   >
     <template #header>
-      <div class="flex items-center gap-2">
-        <Icon name="lucide:shield-alert" class="h-5 w-5 text-amber-500" />
+      <div class="flex items-center gap-3">
+        <span class="flex h-10 w-10 items-center justify-center rounded-[0.9rem] bg-amber-100 text-amber-600 dark:bg-amber-500/15"><Icon name="lucide:shield-alert" class="h-5 w-5" /></span>
         <span>{{ t('app.downgradeBlockedTitle') || 'Нельзя понизить тариф' }}</span>
       </div>
     </template>
@@ -20,7 +20,7 @@
         <li
           v-for="row in regressions"
           :key="row.key"
-          class="flex items-center justify-between gap-3 rounded-lg bg-amber-50 px-3 py-2 dark:bg-amber-950/30"
+          class="at-row flex items-center justify-between gap-3"
         >
           <span class="text-sm font-medium text-gray-800 dark:text-gray-200">
             {{ t(featureLabelKey(row.key)) || row.key }}

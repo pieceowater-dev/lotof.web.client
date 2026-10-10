@@ -223,32 +223,32 @@ function finish() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 overflow-y-auto">
+  <div class="at-scope ct-scope fixed inset-0 z-50 bg-white dark:bg-[#141414] overflow-y-auto">
     <div class="max-w-lg mx-auto px-4 py-10">
       <div class="text-center mb-6">
-        <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ t('menu.onboardingTitle') || "Let's set up your storefront" }}</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('menu.onboardingTitle') || "Let's set up your storefront" }}</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('menu.onboardingSubtitle') || 'A couple of quick steps and your shop is ready to share.' }}</p>
       </div>
 
       <div class="flex items-center justify-center gap-2 mb-6">
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 1 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 1 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">1</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 1 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">1</span>
           {{ t('menu.onboardingStepBrand') || 'Brand' }}
         </span>
         <span class="w-8 h-0.5" :class="step >= 2 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'" />
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 2 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 2 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">2</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 2 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">2</span>
           {{ t('menu.onboardingStepBranches') || 'Branches' }}
         </span>
         <span class="w-8 h-0.5" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'" />
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 3 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">3</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 3 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">3</span>
           {{ t('menu.onboardingStepCatalog') || 'Catalog' }}
         </span>
       </div>
 
       <!-- Step 1: Brand -->
-      <div v-if="step === 1" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-if="step === 1" class="at-panel !p-6 space-y-4">
         <div class="flex flex-col sm:flex-row gap-4">
           <ImageUpload v-model="form.logoUrl" :ns-slug="nsSlug" aspect="square" fit="contain" />
           <div class="flex-1 min-w-0">
@@ -298,11 +298,11 @@ function finish() {
       </div>
 
       <!-- Step 2: Branches (optional) -->
-      <div v-else-if="step === 2" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-else-if="step === 2" class="at-panel !p-6 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('menu.onboardingBranchesHint') || 'Add at least one branch so customers know where to find you — you can always add more later.' }}</p>
 
         <div v-if="addedBranches.length" class="space-y-1.5">
-          <div v-for="(b, idx) in addedBranches" :key="idx" class="flex items-center gap-2 text-sm rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2">
+          <div v-for="(b, idx) in addedBranches" :key="idx" class="at-row flex items-center gap-2 text-sm">
             <Icon name="lucide:check-circle-2" class="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span class="font-medium text-gray-900 dark:text-white">{{ b.name }}</span>
             <span class="text-gray-400 truncate">— {{ b.address }}</span>
@@ -349,7 +349,7 @@ function finish() {
       </div>
 
       <!-- Step 3: Catalog preset (optional) -->
-      <div v-else class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-else class="at-panel !p-6 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">
           {{ t('onboarding.quickSetupHint') || "Pick your business type and we'll pre-fill your catalog with a starting set of categories and items — fully editable afterward." }}
         </p>
@@ -359,7 +359,7 @@ function finish() {
             v-for="option in menuBusinessTypes"
             :key="option.value"
             type="button"
-            class="flex flex-col items-center gap-2 rounded-lg border p-3 text-center transition-colors"
+            class="flex flex-col items-center gap-2 rounded-[1.4rem] border p-3 text-center transition-colors"
             :class="selectedBusinessType === option.value
               ? 'border-primary bg-primary-50 text-primary dark:bg-primary-900/20 dark:text-primary-300'
               : 'border-gray-200 hover:border-primary/50 dark:border-gray-700'"
@@ -370,7 +370,7 @@ function finish() {
           </button>
         </div>
 
-        <p v-if="selectedBusinessType === 'service_center'" class="rounded-lg bg-primary-50 px-3 py-2 text-xs text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+        <p v-if="selectedBusinessType === 'service_center'" class="at-banner text-xs">
           {{ t('menu.onboardingServiceCenterHint') || 'You will get works and parts with employee pay and warranty, order fields (device, serial number, problem, accessories) and ready documents: completed-work act, sales receipt and intake act.' }}
         </p>
 

@@ -150,32 +150,32 @@ function finish() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 overflow-y-auto">
+  <div class="at-scope ct-scope fixed inset-0 z-50 bg-white dark:bg-[#141414] overflow-y-auto">
     <div class="max-w-lg mx-auto px-4 py-10">
       <div class="text-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.onboardingTitle') }}</h1>
+        <h1 class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('goods.onboardingTitle') }}</h1>
         <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ t('goods.onboardingSubtitle') }}</p>
       </div>
 
       <div class="flex items-center justify-center gap-2 mb-6">
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 1 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 1 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">1</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 1 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">1</span>
           {{ t('goods.onboardingStepWarehouse') }}
         </span>
         <span class="w-8 h-0.5" :class="step >= 2 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'" />
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 2 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 2 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">2</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 2 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">2</span>
           {{ t('goods.onboardingStepUnits') }}
         </span>
         <span class="w-8 h-0.5" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'" />
         <span class="flex items-center gap-1.5 text-xs font-medium" :class="step >= 3 ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400'">
-          <span class="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px]" :class="step >= 3 ? 'bg-primary-500' : 'bg-gray-300 dark:bg-gray-700'">3</span>
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-white text-[11px] font-bold" :class="step >= 3 ? 'bg-gradient-to-br from-blue-600 to-emerald-500' : 'bg-gray-300 dark:bg-gray-700'">3</span>
           {{ t('goods.onboardingStepGoods') }}
         </span>
       </div>
 
       <!-- Step 1: First warehouse -->
-      <div v-if="step === 1" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-if="step === 1" class="at-panel !p-6 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.onboardingWarehouseHint') }}</p>
 
         <UFormGroup :label="t('goods.warehouseName')" required>
@@ -196,7 +196,7 @@ function finish() {
       </div>
 
       <!-- Step 2: Units (optional) -->
-      <div v-else-if="step === 2" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-else-if="step === 2" class="at-panel !p-6 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.onboardingUnitsHint') }}</p>
 
         <div v-if="seededUnits.length" class="flex flex-wrap gap-1.5">
@@ -214,11 +214,11 @@ function finish() {
       </div>
 
       <!-- Step 3: First good (optional) -->
-      <div v-else class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 space-y-4">
+      <div v-else class="at-panel !p-6 space-y-4">
         <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('goods.onboardingGoodsHint') }}</p>
 
         <div v-if="addedGoods.length" class="space-y-1.5">
-          <div v-for="(g, idx) in addedGoods" :key="idx" class="flex items-center gap-2 text-sm rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2">
+          <div v-for="(g, idx) in addedGoods" :key="idx" class="at-row flex items-center gap-2 text-sm">
             <Icon name="lucide:check-circle-2" class="w-4 h-4 text-emerald-500 flex-shrink-0" />
             <span class="font-medium text-gray-900 dark:text-white">{{ g.name }}</span>
           </div>
