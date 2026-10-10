@@ -1,4 +1,4 @@
-export type BusinessType = 'restaurant_cafe' | 'retail' | 'services' | 'delivery_logistics' | 'other';
+export type BusinessType = 'restaurant_cafe' | 'retail' | 'services' | 'delivery_logistics' | 'service_center' | 'other';
 
 export type BusinessTypeOption = {
   value: BusinessType;
@@ -16,6 +16,7 @@ export const BUSINESS_TYPES: BusinessTypeOption[] = [
   { value: 'retail', icon: 'lucide:shopping-bag', titleKey: 'onboarding.businessTypeRetail' },
   { value: 'services', icon: 'lucide:scissors', titleKey: 'onboarding.businessTypeServices' },
   { value: 'delivery_logistics', icon: 'lucide:truck', titleKey: 'onboarding.businessTypeDeliveryLogistics' },
+  { value: 'service_center', icon: 'lucide:wrench', titleKey: 'onboarding.businessTypeServiceCenter' },
   { value: 'other', icon: 'lucide:shapes', titleKey: 'onboarding.businessTypeOther' },
 ];
 

@@ -7,6 +7,7 @@ import ImageUpload from '@/components/menu/ImageUpload.vue';
 import { getContrastTextColor } from '@/utils/color';
 import { CURRENCIES } from '@/utils/currency';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
+import { serviceCenterOrderFields, serviceCenterTemplates, type ServiceCenterLocale } from '@/config/serviceCenterPreset';
 import { useNamespace } from '@/composables/useNamespace';
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
@@ -132,6 +133,37 @@ const catalogSaving = ref(false);
 // shared with Tasks/Atrace/Contacts' own quick-setup flows.
 const menuBusinessTypes = computed(() => BUSINESS_TYPES.filter((o) => o.value !== 'services'));
 
+// A service center also gets the order fields a repair order needs and its
+// three printable documents (completed-work act, sales receipt, intake act).
+// Best effort: the catalog is already in place, so a failure here only warns --
+// everything can still be added by hand in Settings.
+async function seedServiceCenter(menuToken: string) {
+  const loc = (['ru', 'kk', 'en'].includes(locale.value) ? locale.value : 'ru') as ServiceCenterLocale;
+  let failed = false;
+  try {
+    const { menuCreateOrderField } = await import('@/api/menu/orderfield/create');
+    const fields = serviceCenterOrderFields(loc);
+    for (let i = 0; i < fields.length; i++) {
+      await menuCreateOrderField(menuToken, nsSlug.value, { ...fields[i], options: [], viewOrder: i });
+    }
+  } catch (e) {
+    failed = true;
+    logError('[onboarding] seed service-center order fields failed', e);
+  }
+  try {
+    const { menuCreateDocumentTemplate } = await import('@/api/menu/documenttemplate/create');
+    for (const tpl of serviceCenterTemplates(loc)) {
+      await menuCreateDocumentTemplate(menuToken, nsSlug.value, tpl.name, tpl.content, null);
+    }
+  } catch (e) {
+    failed = true;
+    logError('[onboarding] seed service-center documents failed', e);
+  }
+  if (failed) {
+    useToast().add({ title: t('menu.onboardingServiceCenterPartial') || 'Some service-center templates could not be created — add them in Settings.', color: 'amber' });
+  }
+}
+
 async function applyCatalogPresetAndFinish() {
   if (!selectedBusinessType.value) {
     finish();
@@ -142,6 +174,7 @@ async function applyCatalogPresetAndFinish() {
     const menuToken = await getToken();
     const { menuApplyCatalogPreset } = await import('@/api/menu/category/applyPreset');
     await menuApplyCatalogPreset(menuToken, nsSlug.value, selectedBusinessType.value, locale.value);
+    if (selectedBusinessType.value === 'service_center') await seedServiceCenter(menuToken);
     if (namespaceId.value) {
       const { hubSetNamespaceBusinessType } = await import('@/api/hub/namespaces/businessType');
       const { token } = useAuth();
@@ -308,6 +341,10 @@ function finish() {
             <span class="text-xs font-medium">{{ t(option.titleKey) }}</span>
           </button>
         </div>
+
+        <p v-if="selectedBusinessType === 'service_center'" class="rounded-lg bg-primary-50 px-3 py-2 text-xs text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
+          {{ t('menu.onboardingServiceCenterHint') || 'You will get works and parts with employee pay and warranty, order fields (device, serial number, problem, accessories) and ready documents: completed-work act, sales receipt and intake act.' }}
+        </p>
 
         <div class="flex justify-between pt-1">
           <div class="flex items-center gap-2">

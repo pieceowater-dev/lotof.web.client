@@ -34,6 +34,8 @@ import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
 import { warrantyInfo } from '@/utils/warranty';
+import { taskShortCode } from '@/utils/taskDisplay';
+import type { MenuOrderTask } from '@/api/menu/order/tasks';
 import { splitLabour } from '@/utils/labour';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
@@ -61,9 +63,21 @@ const emit = defineEmits<{
   (e: 'createWarranty', prefill: CreateOrderPrefill): void;
 }>();
 
+// The "create task" dialog is a sibling of the slideover, so a click inside it
+// counts as "outside" for the slideover and would close the order card. Ignore
+// close requests while that dialog is open and for a moment after it closes.
+const isTaskModalOpen = ref(false);
+let taskModalClosedAt = 0;
+watch(isTaskModalOpen, (open) => {
+  if (!open) taskModalClosedAt = Date.now();
+});
+
 const isOpen = computed({
   get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v),
+  set: (v) => {
+    if (!v && (isTaskModalOpen.value || Date.now() - taskModalClosedAt < 500)) return;
+    emit('update:modelValue', v);
+  },
 });
 
 const statusLabel = (s: string) => ({
@@ -399,6 +413,7 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     loadBrandSettings();
     loadOrderFields();
     loadWarrantyOrigin();
+    loadOrderTasks();
     resetPaymentForm();
     // Encode the order's smart date-prefixed number (not its UUID) into the
     // URL so it can be copied/shared and re-opened on a fresh page load —
@@ -419,6 +434,8 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
     isMobileTimelineOpen.value = false;
     isEditingOrder.value = false;
     isEditingFields.value = false;
+    isTaskModalOpen.value = false;
+    orderTasks.value = [];
     if (route.query.order) {
       const q = { ...route.query };
       delete q.order;
@@ -814,6 +831,90 @@ function startWarrantyCase() {
     tableNumber: tableTag ?? undefined,
     customFields: props.order.customFields,
   });
+}
+
+// --- Linked lota Issues tasks. The list comes from Issues through the Menu
+// gateway (empty when Issues isn't installed); a task can be created by hand
+// for any order, e.g. to hand a repair to a technician. ---
+const orderTasks = ref<MenuOrderTask[]>([]);
+
+async function loadOrderTasks() {
+  orderTasks.value = [];
+  if (!props.order) return;
+  try {
+    const menuToken = await getToken();
+    const { menuOrderTasks } = await import('@/api/menu/order/tasks');
+    orderTasks.value = await menuOrderTasks(menuToken, nsSlug.value, props.order.id);
+  } catch (e) {
+    logError('[OrderDetailModal] loadOrderTasks failed', e);
+  }
+}
+
+const creatingTask = ref(false);
+const taskForm = reactive({ title: '', description: '', dueAt: '', priority: 1, assigneeUserId: '' });
+
+const taskPriorityOptions = computed(() => [
+  { label: t('tasks.priorityLow') || 'Low', value: 0 },
+  { label: t('tasks.priorityMedium') || 'Medium', value: 1 },
+  { label: t('tasks.priorityHigh') || 'High', value: 2 },
+]);
+const taskAssigneeOptions = computed(() => [
+  { label: t('menu.taskNoAssignee') || 'Not assigned', value: '' },
+  ...hubMembers.value.map((m) => ({ label: memberDisplayNameWithFallback(m, m.email) || m.email, value: m.userId })),
+]);
+
+function taskLink(task: MenuOrderTask): string {
+  return `/${nsSlug.value}/issues/${task.boardSlug}?task=${taskShortCode(task.boardSlug, task.taskNumber)}`;
+}
+
+// The form starts from what the order already says, so a technician gets the
+// customer, the work and the device details without retyping them.
+function openTaskModal() {
+  if (!props.order) return;
+  const o = props.order;
+  const who = o.customerName || formatDisplayPhoneUniversal(o.phone || '');
+  taskForm.title = `${smartOrderNumber(o)}${who ? ' — ' + who : ''}`;
+  const lines: string[] = items.value.map((i) => `• ${i.name} × ${i.quantity}`);
+  const extra = visibleOrderFields.value
+    .map((f) => ({ f, text: formatCustomFieldValue(f, customValues.value[f.id], yesNoLabels.value) }))
+    .filter((x) => x.text)
+    .map((x) => `${x.f.label}: ${x.text}`);
+  if (extra.length) lines.push('', ...extra);
+  if (o.comment) lines.push('', o.comment);
+  taskForm.description = lines.join('\n');
+  taskForm.dueAt = '';
+  taskForm.priority = 1;
+  taskForm.assigneeUserId = '';
+  isTaskModalOpen.value = true;
+}
+
+async function submitTask() {
+  if (!props.order || creatingTask.value || !taskForm.title.trim()) return;
+  creatingTask.value = true;
+  try {
+    const menuToken = await getToken();
+    const { menuCreateOrderTask } = await import('@/api/menu/order/createTask');
+    const res = await menuCreateOrderTask(menuToken, nsSlug.value, {
+      orderId: props.order.id,
+      title: taskForm.title.trim(),
+      description: taskForm.description.trim() || undefined,
+      assigneeUserId: taskForm.assigneeUserId || undefined,
+      dueAt: taskForm.dueAt ? new Date(taskForm.dueAt).toISOString() : undefined,
+      priority: taskForm.priority,
+    });
+    if (res.success) {
+      isTaskModalOpen.value = false;
+      useToast().add({ title: t('menu.taskCreated') || 'Task created', color: 'primary' });
+      await loadOrderTasks();
+    } else {
+      useToast().add({ title: t('menu.taskNotCreated') || 'Could not create the task', description: res.message || undefined, color: 'amber' });
+    }
+  } catch (e) {
+    logError('[OrderDetailModal] submitTask failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create the task', color: 'red' });
+  } finally {
+    creatingTask.value = false;
+  }
 }
 
 // --- Share link ---
@@ -1461,6 +1562,33 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             </ul>
           </div>
 
+          <!-- Linked tasks (lota Issues) -->
+          <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                <Icon name="lucide:list-checks" class="w-3.5 h-3.5" />
+                {{ t('menu.linkedTasks') || 'Tasks' }}
+              </div>
+              <UButton size="2xs" color="primary" variant="soft" icon="lucide:plus" @click="openTaskModal">
+                {{ t('menu.createTask') || 'Create task' }}
+              </UButton>
+            </div>
+            <p v-if="!orderTasks.length" class="text-sm text-gray-500 dark:text-gray-400">
+              {{ t('menu.linkedTasksEmpty') || 'No tasks for this order yet.' }}
+            </p>
+            <ul v-else class="divide-y divide-gray-100 dark:divide-gray-800 text-sm">
+              <li v-for="task in orderTasks" :key="task.taskId" class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
+                <NuxtLink :to="taskLink(task)" class="min-w-0 hover:text-primary-600 dark:hover:text-primary-300">
+                  <span class="truncate block">{{ task.title }}</span>
+                  <span class="block text-xs text-gray-400">
+                    {{ taskShortCode(task.boardSlug, task.taskNumber) }} · {{ task.boardName }}<template v-if="task.assigneeUserId"> · {{ memberDisplayName(task.assigneeUserId) }}</template>
+                  </span>
+                </NuxtLink>
+                <UBadge :color="task.isTerminal ? 'emerald' : 'primary'" variant="subtle" class="flex-shrink-0">{{ task.statusLabel }}</UBadge>
+              </li>
+            </ul>
+          </div>
+
           <!-- Discount configurator: split out of the items table footer since
                it needs a type selector (+ a product picker for item-scoped
                types), not just a bare number field. -->
@@ -1582,6 +1710,40 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
       <OrderHistoryTimeline :history="history" :status-label="statusLabel" :member-display-name="memberDisplayName" :format-date="formatDate" />
     </UCard>
   </USlideover>
+
+  <!-- Create an Issues task for this order -->
+  <UModal v-model="isTaskModalOpen" class="at-modal" :ui="atModalUi">
+    <UCard :ui="atCardUi">
+      <template #header>
+        <h3 class="text-lg font-semibold">{{ t('menu.createTask') || 'Create task' }}</h3>
+      </template>
+      <div class="space-y-4">
+        <UFormGroup :label="t('menu.taskTitle') || 'Title'" required>
+          <UInput v-model="taskForm.title" :ui="{ rounded: 'rounded-xl' }" />
+        </UFormGroup>
+        <UFormGroup :label="t('menu.taskDescription') || 'Description'">
+          <UTextarea v-model="taskForm.description" :rows="6" :ui="{ rounded: 'rounded-xl' }" />
+        </UFormGroup>
+        <div class="grid grid-cols-2 gap-3">
+          <UFormGroup :label="t('menu.taskAssignee') || 'Assignee'">
+            <USelectMenu v-model="taskForm.assigneeUserId" :options="taskAssigneeOptions" value-attribute="value" option-attribute="label" :ui="{ rounded: 'rounded-xl' }" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+          <UFormGroup :label="t('menu.taskPriority') || 'Priority'">
+            <USelectMenu v-model="taskForm.priority" :options="taskPriorityOptions" value-attribute="value" option-attribute="label" :ui="{ rounded: 'rounded-xl' }" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+        </div>
+        <UFormGroup :label="t('menu.taskDueAt') || 'Due'">
+          <UInput v-model="taskForm.dueAt" type="datetime-local" :ui="{ rounded: 'rounded-xl' }" />
+        </UFormGroup>
+      </div>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" variant="ghost" :label="t('app.cancel')" :disabled="creatingTask" @click="isTaskModalOpen = false" />
+          <UButton color="primary" class="rounded-xl" :label="t('menu.createTask') || 'Create task'" :loading="creatingTask" :disabled="creatingTask || !taskForm.title.trim()" @click="submitTask" />
+        </div>
+      </template>
+    </UCard>
+  </UModal>
 
   <!-- Product detail dialog: live catalog data (image/description/badges),
        not just the order's purchase-time name+price snapshot. -->
