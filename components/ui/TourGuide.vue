@@ -154,10 +154,11 @@ function calculatePopupPosition(
   placement: 'top' | 'bottom' | 'left' | 'right',
   padding: number
 ) {
-  const popupWidth = 360; // max-w-sm = 384px, use 360 for safety
+  const viewport = getViewportMetrics();
+  // 360px max-w-sm cap, but never wider than the viewport minus gutters (320px phones).
+  const popupWidth = Math.min(360, Math.max(240, viewport.width - 32));
   const estimatedHeight = 220;
   const gap = 16;
-  const viewport = getViewportMetrics();
   const viewportWidth = viewport.width;
   const viewportHeight = viewport.height;
 
