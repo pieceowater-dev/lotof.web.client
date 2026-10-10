@@ -271,6 +271,7 @@ function planSummary(p: MembershipPlan) {
         size="xs"
         color="primary"
         variant="soft"
+        class="self-start"
         @click="goBack"
       >
         <span class="hidden sm:inline">{{ t('app.back') || 'Назад' }}</span>

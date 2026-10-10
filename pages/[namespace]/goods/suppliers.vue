@@ -190,8 +190,8 @@ onMounted(loadAll);
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex items-center justify-between flex-shrink-0">
-      <div>
+    <div class="flex items-center justify-between gap-3 flex-shrink-0">
+      <div class="min-w-0">
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.suppliers') }}</h1>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.suppliersSubtitle') }}</p>
       </div>

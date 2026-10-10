@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen">
+  <div class="at-scope ct-scope min-h-screen">
     <AdminHeader
       :title="t('admin.publications')"
       :description="t('admin.publicationsDesc')"

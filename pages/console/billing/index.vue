@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen">
+  <div class="at-scope ct-scope min-h-screen">
     <!-- Header -->
     <AdminHeader 
       :title="t('admin.billing')" 
