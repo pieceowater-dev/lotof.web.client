@@ -978,8 +978,7 @@ watch([articlesSearch, selectedArticleTag], () => {
             :sound-off-label="t('app.promoVideoSoundOff')"
           />
           <div>
-            <span class="eyebrow">{{ t('app.homeFilmEyebrow') }}</span>
-            <h3 class="mt-4 text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.homeFilmTitle') }}</h3>
+            <h3 class="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.homeFilmTitle') }}</h3>
             <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeFilmDesc') }}</p>
             <ul class="mt-5 flex flex-col gap-2.5">
               <li v-for="n in 3" :key="n" class="flex items-center gap-3 text-sm md:text-base text-gray-700 dark:text-gray-200">
@@ -993,6 +992,8 @@ watch([articlesSearch, selectedArticleTag], () => {
             </button>
           </div>
         </div>
+
+        <h3 v-reveal class="mb-4 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('app.homeBizAppsHead') }}</h3>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           <div v-for="(tile, i) in bizTiles" :key="tile.id" v-reveal="(i % 3) * 100">

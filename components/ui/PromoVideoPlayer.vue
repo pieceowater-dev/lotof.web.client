@@ -2,8 +2,8 @@
 // Single horizontal promo video in the same look as PromoVideoDeck's cards: iOS "continuous" corners,
 // a blurred shadow copy behind the card, poster under a soft shimmer until the first frame is ready,
 // a round sound button. Nothing is downloaded until the player is near the viewport; it plays (muted)
-// once >60% visible, pauses when scrolled away, and a click toggles play/pause (it is a 1-minute film,
-// not a loop). Width is capped by the parent (max-w-*), so a big file never swallows the whole block.
+// once >60% visible, pauses when scrolled away and loops while it stays in view (same visibility rules
+// as the deck cards above); a click toggles play/pause. Width is capped by the parent (max-w-*), so a big file never swallows the whole block.
 import { buildContinuousPath } from '@/utils/continuousCorners';
 
 const props = defineProps<{
@@ -123,6 +123,7 @@ onBeforeUnmount(() => {
           :height="props.height"
           :preload="nearView ? 'auto' : 'none'"
           muted
+          loop
           playsinline
           @loadeddata="ready = true"
           @play="playing = true; ended = false"
