@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appIconStyle } from '@/config/apps';
 import { useRouter, useRoute } from 'vue-router';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
@@ -776,7 +777,7 @@ const goHome = () => {
           class="mm-row"
           @click="handleConsoleClick"
         >
-          <span class="mm-ico"><UIcon name="lucide:terminal-square" class="h-[18px] w-[18px]" /></span>
+          <span class="mm-ico mm-ico--app" :style="appIconStyle('console')"><UIcon name="lucide:terminal-square" class="h-[18px] w-[18px]" /></span>
           <span class="flex-1 truncate text-left">Console</span>
         </button>
 
@@ -789,7 +790,7 @@ const goHome = () => {
           :aria-disabled="!app.canAdd"
           @click="handleMenuSelect(app)"
         >
-          <span class="mm-ico"><UIcon :name="app.icon" class="h-[18px] w-[18px]" /></span>
+          <span class="mm-ico mm-ico--app" :style="appIconStyle(app.address)"><UIcon :name="app.icon" class="h-[18px] w-[18px]" /></span>
           <span class="flex-1 truncate text-left">{{ t(app.titleKey) }}</span>
         </button>
       </div>

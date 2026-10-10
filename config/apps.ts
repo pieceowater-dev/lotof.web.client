@@ -106,3 +106,19 @@ export const ALL_APPS: AppConfig[] = [
     canAdd: true,
   },
 ];
+
+// Brand gradient per app (hub tiles and the mobile burger menu share it).
+export const APP_GRADIENTS: Record<string, [string, string]> = {
+  console: ['#475569', '#0f172a'],
+  issues: ['#3b82f6', '#6366f1'],
+  menu: ['#fbbf24', '#f97316'],
+  contacts: ['#a78bfa', '#d946ef'],
+  atrace: ['#22d3ee', '#2563eb'],
+  goods: ['#34d399', '#0d9488'],
+  plans: ['#fb7185', '#f43f5e'],
+};
+
+export function appIconStyle(key: string) {
+  const [from, to] = APP_GRADIENTS[key] || ['#3b82f6', '#10b981'];
+  return { backgroundImage: `linear-gradient(145deg, ${from}, ${to})` };
+}

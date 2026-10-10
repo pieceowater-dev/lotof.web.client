@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { appIconStyle } from '@/config/apps';
 import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
 import HomeNewsSection from '@/components/ui/HomeNewsSection.vue';
 definePageMeta({ layout: 'full' });
@@ -153,20 +154,6 @@ async function loadGuidePreview() {
   if (first) guideTab.value = first;
 }
 onMounted(() => { loadGuidePreview(); });
-const APP_GRADIENTS: Record<string, [string, string]> = {
-  console: ['#475569', '#0f172a'],
-  issues: ['#3b82f6', '#6366f1'],
-  menu: ['#fbbf24', '#f97316'],
-  contacts: ['#a78bfa', '#d946ef'],
-  atrace: ['#22d3ee', '#2563eb'],
-  goods: ['#34d399', '#0d9488'],
-  plans: ['#fb7185', '#f43f5e'],
-};
-function appIconStyle(key: string) {
-  const [from, to] = APP_GRADIENTS[key] || ['#3b82f6', '#10b981'];
-  return { backgroundImage: `linear-gradient(145deg, ${from}, ${to})` };
-}
-
 const namespaceAccordionOpen = ref(false);
 const settingsAccordionOpen = ref(false);
 const { appInstalled, appRoutePath: sharedAppRoutePath, ensureAppInstallStatus } = useAppInstallStatus();

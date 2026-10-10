@@ -452,6 +452,8 @@
 .dark .mm-row--off { color: #737373; }
 .dark .mm-ico { color: #93c5fd; background: rgba(255, 255, 255, 0.08); }
 .dark .mm-row--off .mm-ico { color: #737373; }
+.mm-ico--app, .dark .mm-ico--app { color: #fff; box-shadow: 0 8px 16px -10px rgba(15, 23, 42, 0.5); }
+.mm-row--off .mm-ico--app { opacity: 0.45; filter: saturate(0.4); }
 
 /* home/hub section headers (news + feed) */
 .sec-head { margin-bottom: 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
