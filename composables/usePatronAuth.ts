@@ -2,6 +2,7 @@ import { getPatronMe, type PatronMe } from '@/api/menu/public/patron';
 import { CookieKeys, LSKeys } from '@/utils/storageKeys';
 import { getApiBasePath } from '@/utils/api-base';
 import { logWarn } from '@/utils/logger';
+import { markLoginPending } from '@/utils/loginPending';
 
 const hubApiBase = getApiBasePath('hub');
 
@@ -71,6 +72,7 @@ export function usePatronAuth() {
   }
 
   function login(redirectUri?: string) {
+    markLoginPending();
     const redirect = encodeURIComponent(redirectUri || window.location.href);
     // Same /google/auth round trip useAuth().login() uses -- identity=patron
     // is the only thing that tells hub.gtw's callback to mint a Patron

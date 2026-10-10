@@ -539,3 +539,19 @@ button[role="switch"][aria-checked="false"] { background-color: #cbd5e1 !importa
 button[role="switch"] { padding: 0 !important; }
 button[role="switch"] > span:not(.sr-only) { flex-shrink: 0;  background: #fff !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.35); }
 button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); }
+
+/* ---- pending actions: Google sign-in redirect (utils/loginPending.ts) and header app switch (plugins/login-click.client.ts)
+   -- the clicked element shows a spinner instead of its icon ---- */
+[data-login-pending], [data-nav-pending] { pointer-events: none; cursor: progress; }
+[data-login-pending] svg, [data-nav-pending] svg,
+[data-login-pending] .iconify, [data-nav-pending] .iconify,
+[data-login-pending] img,
+[data-login-pending] [class*="i-lucide"], [data-nav-pending] [class*="i-lucide"],
+[data-login-pending] [class*="i-simple-icons"] { display: none !important; }
+[data-login-pending]::before, [data-nav-pending]::before {
+  content: ''; flex: none; box-sizing: border-box; display: inline-block;
+  width: 1rem; height: 1rem; margin-right: 0.5rem; border-radius: 9999px;
+  border: 2px solid currentColor; border-right-color: transparent;
+  animation: login-spin 0.6s linear infinite;
+}
+@keyframes login-spin { to { transform: rotate(360deg); } }

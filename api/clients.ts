@@ -11,6 +11,9 @@ import { rewriteLegacyMediaHosts } from '@/utils/legacyMedia';
 // -- a real cross-user leak (see FRONTEND_AUDIT.md E1). Nothing here may be
 // memoized in module scope; each accessor re-resolves it on every call.
 
+// Backoff for transient gateway errors (see ApiClient.request): ~10s total covers a pod restart.
+const TRANSIENT_RETRY_DELAYS_MS = [800, 1800, 3500, 5000];
+
 type ServiceKey = 'hub' | 'atrace' | 'contacts' | 'menu' | 'tasks' | 'goods' | 'plans';
 
 // useState() is already request-scoped by Nuxt (keyed off the current
@@ -158,7 +161,20 @@ export class ApiClient {
     variables?: Record<string, any>,
     options?: { headers?: Record<string, string>; suppressErrors?: boolean }
   ): Promise<T> {
-    return this.requestWithRetry<T>(query, variables, options, 0);
+    // A gateway restart (pod crash/redeploy) answers 502/503/504 for a few seconds. Reads are safe
+    // to repeat, so ride that out with a short backoff instead of surfacing an error page;
+    // mutations are never retried here (they could double-apply).
+    const isRead = typeof query === 'string' && !/^\s*mutation\b/i.test(query);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.requestWithRetry<T>(query, variables, options, 0);
+      } catch (error: any) {
+        const status = error?.response?.status ?? error?.response?.statusCode ?? error?.status;
+        const transient = status === 502 || status === 503 || status === 504;
+        if (!isRead || !transient || attempt >= TRANSIENT_RETRY_DELAYS_MS.length) throw error;
+        await new Promise((r) => setTimeout(r, TRANSIENT_RETRY_DELAYS_MS[attempt]));
+      }
+    }
   }
 
   // Matches both "unauthorized" and the gRPC-originated "Unauthenticated"

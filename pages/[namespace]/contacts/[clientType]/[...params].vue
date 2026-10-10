@@ -729,7 +729,7 @@ async function handleRefreshFromRemote() {
     <div
       v-else
       data-tour="contacts-table"
-      class="px-4 pb-safe-or-4"
+      class="px-4 pb-safe-or-4 flex-1 min-h-0 flex flex-col"
     >
       <ClientsTable 
         v-model:search-query="searchQuery" 

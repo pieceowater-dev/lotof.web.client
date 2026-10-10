@@ -453,7 +453,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 </script>
 
 <template>
-  <div class="at-tray relative overflow-hidden">
+  <div class="at-tray relative overflow-hidden flex flex-col flex-1 min-h-0 !max-h-none">
     <!-- Finder-style search bar -->
     <div data-tour="contacts-table-search" class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
       <FinderStyleSearch
@@ -469,7 +469,7 @@ function addTagToFilter(tagId: string, tagName: string) {
     <!-- Table container with horizontal scroll -->
     <div 
       ref="tableBodyRef"
-      class="keep-scroll overflow-x-auto overflow-y-auto max-h-[calc(100vh-360px)] relative"
+      class="keep-scroll overflow-x-auto overflow-y-auto flex-1 min-h-0 relative"
     >
       <table class="w-full border-collapse min-w-[1200px]">
         <!-- Header -->
@@ -846,7 +846,7 @@ function addTagToFilter(tagId: string, tagName: string) {
     </div>
 
     <!-- Footer with pagination -->
-    <div class="border-t-2 border-gray-300 dark:border-gray-600 px-4 py-3 bg-gray-100 dark:bg-gray-800">
+    <div class="at-tray-foot flex-shrink-0 border-t border-gray-200 dark:border-gray-700 px-4 py-3">
       <div class="flex flex-wrap justify-between items-center gap-4">
         <!-- Left: Info -->
         <div class="text-xs text-gray-600 dark:text-gray-400">
@@ -872,7 +872,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               option-attribute="label" 
               value-attribute="value"
               size="xs"
-              class="w-20"
+              class="w-24"
               @update:model-value="(val) => localPageSize = typeof val === 'number' ? val : parseInt(String(val), 10)"
             />
           </div>

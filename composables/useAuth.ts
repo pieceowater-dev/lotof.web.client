@@ -1,5 +1,6 @@
 import { hubBootstrap } from '@/api/hub/bootstrap';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
+import { markLoginPending } from '@/utils/loginPending';
 import { log, logWarn } from '@/utils/logger';
 import { setGlobalAuthToken } from '@/api/clients';
 import { setUnauthorizedHandler } from '@/api/clients';
@@ -99,6 +100,7 @@ export function useAuth() {
   function login(redirectPath = '') {
     if (loginRedirecting.value) return;
     loginRedirecting.value = true;
+    markLoginPending();
     // Redirect to hub auth
     const base = getApiBasePath('hub');
     const redirect = encodeURIComponent(window.location.origin + redirectPath);
