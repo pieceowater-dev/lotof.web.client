@@ -1,6 +1,7 @@
 import { GraphQLClient } from 'graphql-request';
 import { logError, logWarn } from '@/utils/logger';
 import { getApiBaseUrl } from '@/utils/api-base';
+import { rewriteLegacyMediaHosts } from '@/utils/legacyMedia';
 
 // ---- Per-request auth state ------------------------------------------------
 // Everything below used to be cached in module-level `let`s. On the Node SSR
@@ -215,7 +216,7 @@ export class ApiClient {
       this.client.setHeaders(headers);
     }
     try {
-      return await this.client.request<T>(query, variables);
+      return rewriteLegacyMediaHosts(await this.client.request<T>(query, variables));
     } catch (error: any) {
       const rawErrors = error.response?.errors;
       const status = error.response?.status ?? error.response?.statusCode ?? error.status;
