@@ -6,6 +6,7 @@
 //   [data-fx-scale]     grows from .92 to 1 as it scrolls into view
 //   .fx-spot            soft light follows the pointer (--mx/--my)
 //   .cta-pill           pulled a few px towards the pointer (magnetic)
+//   looping animations  only run while on screen (.fx-off pauses them), so the page stays light
 export function useHomeFx() {
   let cleanup: Array<() => void> = [];
 
@@ -14,6 +15,27 @@ export function useHomeFx() {
     const scroller = (document.querySelector('main') as HTMLElement | null) || (document.scrollingElement as HTMLElement);
     const root = document.querySelector('[data-home-fx]') as HTMLElement | null;
     if (!scroller || !root) return;
+
+    // ---- looping animations only while visible ----
+    const LOOPING = '.marquee, .hero-mesh, .grad-pan, .pw, .cv, .link-node, .link-wire, .start-banner';
+    const seen = new WeakSet<Element>();
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => e.target.classList.toggle('fx-off', !e.isIntersecting));
+    }, { rootMargin: '80px' });
+    const scan = () => {
+      root.querySelectorAll<HTMLElement>(LOOPING).forEach((el) => {
+        if (seen.has(el)) return;
+        seen.add(el);
+        el.classList.add('fx-off');
+        io.observe(el);
+      });
+    };
+    scan();
+    // blocks behind v-if appear after mount
+    let scanRaf = 0;
+    const mo = new MutationObserver(() => { if (!scanRaf) scanRaf = requestAnimationFrame(() => { scanRaf = 0; scan(); }); });
+    mo.observe(root, { childList: true, subtree: true });
+    cleanup.push(() => { io.disconnect(); mo.disconnect(); if (scanRaf) cancelAnimationFrame(scanRaf); });
 
     // ---- scroll-linked ----
     let raf = 0;

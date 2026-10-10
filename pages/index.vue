@@ -75,11 +75,15 @@ const stepsRef = ref<HTMLElement | null>(null);
 function pickStep(i: number) { activeStep.value = i; stepsCycle.value++; }
 let stepsTimer: ReturnType<typeof setInterval> | null = null;
 let stepsIO: IntersectionObserver | null = null;
-onMounted(() => {
-  if (stepsRef.value && typeof IntersectionObserver !== 'undefined') {
+// the block sits behind v-if="initialized", so it may mount after this component: observe it whenever the ref appears
+watch(stepsRef, (el) => {
+  stepsIO?.disconnect();
+  if (el && typeof IntersectionObserver !== 'undefined') {
     stepsIO = new IntersectionObserver(([e]) => { stepsInView.value = e.isIntersecting; }, { threshold: 0.35 });
-    stepsIO.observe(stepsRef.value);
+    stepsIO.observe(el);
   }
+}, { flush: 'post' });
+onMounted(() => {
   stepsTimer = setInterval(() => {
     if (stepsPaused.value || !stepsInView.value || document.hidden) return;
     activeStep.value = (activeStep.value + 1) % customerSteps.length;
@@ -786,18 +790,10 @@ watch([articlesSearch, selectedArticleTag], () => {
     <div class="pb-safe-or-4">
       <ClientOnly>
         <template #fallback>
-          <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[50vh]">
-            <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-            <USkeleton class="h-4 w-[250px]" />
-            <USkeleton class="h-4 w-[200px]" />
-          </div>
+          <HomeSkeleton />
         </template>
 
-        <div v-if="!initialized" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[50vh]">
-          <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-          <USkeleton class="h-4 w-[250px]" />
-          <USkeleton class="h-4 w-[200px]" />
-        </div>
+        <HomeSkeleton v-if="!initialized" />
       </ClientOnly>
 
       <!-- HERO: introduces lota and splits visitors into two paths --

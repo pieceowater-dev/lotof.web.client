@@ -817,3 +817,6 @@ button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(
 /* pill CTAs never wrap their label; on narrow phones they tighten instead */
 .cta-pill { white-space: nowrap; max-width: 100%; }
 @media (max-width: 380px) { .cta-pill { gap: 0.5rem; padding-left: 1.1rem; font-size: 0.875rem; } }
+
+/* looping animations are paused while their block is off screen (toggled by useHomeFx) */
+.fx-off, .fx-off *, .fx-off::before, .fx-off::after { animation-play-state: paused !important; }
