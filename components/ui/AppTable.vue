@@ -163,7 +163,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
 <style scoped>
 /* Table row hover effect */
 :deep(tbody tr) {
-  transition: background-color 150ms ease-in-out;
+  transition: background-color 75ms ease-in-out;
 }
 
 :deep(tbody tr:hover) {
@@ -188,11 +188,11 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
    100% keyframe), so the row stays visibly "unacknowledged" until the
    consumer removes the class (on open/status-change/row-click). */
 :deep(tr.row-flash-new) {
-  animation: row-flash-new 1.8s ease-out forwards;
+  animation: row-flash-new 0.9s ease-out forwards;
 }
 
 :deep(tr.row-flash-new td) {
-  animation: row-flash-new 1.8s ease-out forwards;
+  animation: row-flash-new 0.9s ease-out forwards;
 }
 
 @keyframes row-flash-new {

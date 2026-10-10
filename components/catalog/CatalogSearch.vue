@@ -42,7 +42,7 @@ function clear() {
   padding: 0.65rem 1.1rem;
   background: rgba(15, 23, 42, 0.04);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: box-shadow 0.2s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .catalog-search:focus-within { background: #fff; box-shadow: inset 0 0 0 1.5px #2563eb, 0 0 0 4px rgba(37, 99, 235, 0.12); }
 .dark .catalog-search { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }

@@ -22,7 +22,7 @@ const { t } = useI18n();
   border-radius: 9999px; padding: 0.45rem 1rem 0.45rem 0.8rem;
   font-size: 0.875rem; font-weight: 600; color: #334155;
   background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .catalog-back:hover { background: rgba(15, 23, 42, 0.08); }
 .catalog-back:active { transform: scale(0.96); }

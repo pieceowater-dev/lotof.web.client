@@ -7,7 +7,7 @@ export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.directive('reveal', {
     mounted(el: RevealEl, binding: { value?: number }) {
       el.classList.add('reveal');
-      if (binding.value) el.style.transitionDelay = `${binding.value}ms`;
+      if (binding.value) el.style.transitionDelay = `${binding.value / 2}ms`; // 2x faster motion
       if (typeof IntersectionObserver === 'undefined') {
         el.classList.add('reveal-in');
         return;

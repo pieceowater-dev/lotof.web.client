@@ -174,7 +174,7 @@ const results = computed(() => {
   color: #334155;
   background: rgba(255, 255, 255, 0.7);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .guide-back:hover { background: #fff; }
 .guide-back:active { transform: scale(0.96); }
@@ -190,11 +190,11 @@ const results = computed(() => {
   gap: 0.85rem;
   border-radius: 1.4rem;
   padding: 0.65rem 0.9rem 0.65rem 0.65rem;
-  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1), transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .guide-hit:hover { background: rgba(37, 99, 235, 0.07); transform: translateX(2px); }
 .dark .guide-hit:hover { background: rgba(255, 255, 255, 0.07); }
-.guide-fade-enter-active, .guide-fade-leave-active { transition: opacity 0.25s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+.guide-fade-enter-active, .guide-fade-leave-active { transition: opacity 0.125s cubic-bezier(0.32, 0.72, 0, 1), transform 0.2s cubic-bezier(0.32, 0.72, 0, 1); }
 .guide-fade-enter-from { opacity: 0; transform: translateY(10px); }
 .guide-fade-leave-to { opacity: 0; transform: translateY(-6px); }
 </style>

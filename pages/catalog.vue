@@ -593,7 +593,7 @@ useSeoMeta({
 <style scoped>
 .banner-fade-enter-active,
 .banner-fade-leave-active {
-  transition: opacity 0.3s ease;
+  transition: opacity 0.15s ease;
 }
 .banner-fade-enter-from,
 .banner-fade-leave-to {

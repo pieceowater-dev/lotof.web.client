@@ -1311,7 +1311,7 @@ onBeforeUnmount(() => {
 .article-content :deep(li) { margin: 0.35rem 0; }
 .article-content :deep(blockquote) { margin: 1.5rem 0; border-radius: 1rem; padding: 0.9rem 1.2rem; background: rgba(37, 99, 235, 0.06); box-shadow: inset 3px 0 0 #2563eb; }
 .article-content :deep(img) { border-radius: 1.5rem; }
-.article-content :deep(a) { transition: color 0.15s ease; }
+.article-content :deep(a) { transition: color 75ms ease; }
 .article-content :deep(img), .article-content :deep(video), .article-content :deep(iframe), .article-content :deep(table), .article-content :deep(pre) { max-width: 100%; }
 .article-content :deep(pre), .article-content :deep(code) { white-space: pre-wrap; word-break: break-word; }
 .article-content :deep(a:hover) { color: rgb(29 78 216); }

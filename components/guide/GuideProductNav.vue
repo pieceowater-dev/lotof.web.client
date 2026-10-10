@@ -56,7 +56,7 @@ onMounted(() => {
   color: #334155;
   background: rgba(15, 23, 42, 0.04);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.4s;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s cubic-bezier(0.32, 0.72, 0, 1), color 0.2s;
 }
 .guide-nav__all { padding-left: 0.9rem; color: #64748b; }
 @media (min-width: 1024px) {

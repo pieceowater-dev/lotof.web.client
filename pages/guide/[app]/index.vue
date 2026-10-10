@@ -176,7 +176,7 @@ const groups = computed<Group[]>(() => {
   gap: 0.9rem;
   border-radius: 1.4rem;
   padding: 0.8rem 1rem 0.8rem 0.8rem;
-  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1), transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .guide-row:hover { background: rgba(37, 99, 235, 0.07); transform: translateX(3px); }
 .guide-row-icon { display: flex; height: 2.25rem; width: 2.25rem; flex-shrink: 0; align-items: center; justify-content: center; border-radius: 0.8rem; color: #2563eb; background: rgba(37, 99, 235, 0.08); }

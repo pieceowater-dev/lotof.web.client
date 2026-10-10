@@ -419,7 +419,7 @@ onMounted(() => {
                   stroke="url(#meRing)"
                   :stroke-dasharray="ring.C"
                   :stroke-dashoffset="ring.off"
-                  style="transition: stroke-dashoffset 0.9s cubic-bezier(0.32, 0.72, 0, 1)"
+                  style="transition: stroke-dashoffset 0.45s cubic-bezier(0.32, 0.72, 0, 1)"
                 />
               </svg>
               <div class="absolute inset-0 flex flex-col items-center justify-center">

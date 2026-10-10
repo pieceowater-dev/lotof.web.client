@@ -357,7 +357,7 @@ watch(
 <style scoped>
 .mobile-sheet-enter-active,
 .mobile-sheet-leave-active {
-  transition: all 0.2s ease;
+  transition: all 0.1s ease;
 }
 
 .mobile-sheet-enter-from,

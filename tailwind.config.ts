@@ -27,6 +27,13 @@ import type { Config } from 'tailwindcss'
 export default <Partial<Config>>{
   theme: {
     extend: {
+      // Every UI motion runs at 2x speed: Tailwind's duration/delay scale is halved here (duration-300 → 150ms…).
+      transitionDuration: {
+        DEFAULT: '75ms', 75: '38ms', 100: '50ms', 150: '75ms', 200: '100ms', 300: '150ms', 500: '250ms', 700: '350ms', 1000: '500ms',
+      },
+      transitionDelay: {
+        75: '38ms', 100: '50ms', 150: '75ms', 200: '100ms', 300: '150ms', 500: '250ms', 700: '350ms', 1000: '500ms',
+      },
       colors: {
         // rgb(var(...) / <alpha-value>) is Tailwind's own convention for a
         // CSS-variable-backed color that still supports opacity modifiers

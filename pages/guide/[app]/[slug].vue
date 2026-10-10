@@ -203,19 +203,19 @@ useHead(() => ({
 </script>
 
 <style scoped>
-.crumb { border-radius: 9999px; padding: 0.25rem 0.7rem; background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); transition: background 0.4s; }
+.crumb { border-radius: 9999px; padding: 0.25rem 0.7rem; background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); transition: background 0.2s; }
 .crumb:hover { background: rgba(15, 23, 42, 0.08); }
 .dark .crumb { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
 .dark .crumb:hover { background: rgba(255, 255, 255, 0.1); }
 
-.side-link { display: block; border-radius: 0.9rem; padding: 0.5rem 0.8rem; font-size: 0.875rem; line-height: 1.35; color: #475569; transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s; }
+.side-link { display: block; border-radius: 0.9rem; padding: 0.5rem 0.8rem; font-size: 0.875rem; line-height: 1.35; color: #475569; transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1), color 0.15s; }
 .side-link:hover { background: rgba(15, 23, 42, 0.05); color: #0f172a; }
 .side-link--active { font-weight: 600; color: #1d4ed8; background: rgba(37, 99, 235, 0.08); }
 .dark .side-link { color: #a3a3a3; }
 .dark .side-link:hover { background: rgba(255, 255, 255, 0.06); color: #fff; }
 .dark .side-link--active { color: #93c5fd; background: rgba(255, 255, 255, 0.08); }
 
-.pn { display: flex; align-items: center; gap: 0.9rem; border-radius: 1.5rem; padding: 1rem 1.25rem; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07); transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s; }
+.pn { display: flex; align-items: center; gap: 0.9rem; border-radius: 1.5rem; padding: 1rem 1.25rem; background: rgba(15, 23, 42, 0.03); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.07); transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s; }
 .pn:hover { background: rgba(37, 99, 235, 0.06); transform: translateY(-2px); }
 .pn-arrow { color: #64748b; }
 .dark .pn { background: rgba(255, 255, 255, 0.04); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
@@ -229,7 +229,7 @@ useHead(() => ({
 .guide-prose :deep(h2) { font-size: 1.5rem; margin: 2.4rem 0 0.8rem; padding-top: 0.4rem; }
 .guide-prose :deep(h3) { font-size: 1.2rem; margin: 1.8rem 0 0.6rem; }
 .guide-prose :deep(p) { margin: 0.95rem 0; }
-.guide-prose :deep(a) { color: #2563eb; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(37, 99, 235, 0.35); text-underline-offset: 3px; transition: text-decoration-color 0.3s; }
+.guide-prose :deep(a) { color: #2563eb; font-weight: 500; text-decoration: underline; text-decoration-color: rgba(37, 99, 235, 0.35); text-underline-offset: 3px; transition: text-decoration-color 0.15s; }
 .guide-prose :deep(a:hover) { text-decoration-color: currentColor; }
 .guide-prose :deep(ul), .guide-prose :deep(ol) { margin: 0.95rem 0; padding-left: 1.4rem; }
 .guide-prose :deep(ul) { list-style: disc; }

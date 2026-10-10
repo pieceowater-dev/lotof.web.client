@@ -284,6 +284,6 @@ const statusLabel: Record<string, string> = {
 </template>
 
 <style scoped>
-.sf-fade-enter-active, .sf-fade-leave-active { transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+.sf-fade-enter-active, .sf-fade-leave-active { transition: opacity 0.15s cubic-bezier(0.32, 0.72, 0, 1), transform 0.2s cubic-bezier(0.32, 0.72, 0, 1); }
 .sf-fade-enter-from, .sf-fade-leave-to { opacity: 0; transform: translateY(-8px); }
 </style>

@@ -12,7 +12,7 @@
 .at-btn {
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem; white-space: nowrap;
   border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.8125rem; font-weight: 600; color: #475569; background: rgba(15, 23, 42, 0.05);
-  transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s;
+  transition: background 0.15s, transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s;
 }
 .at-btn:hover { background: rgba(15, 23, 42, 0.1); }
 .at-btn:active { transform: scale(0.97); }
@@ -36,7 +36,7 @@
 .at-post {
   position: relative; display: flex; flex-direction: column; border-radius: 1.6rem; padding: 1rem 1.25rem; cursor: pointer;
   background: #fff; box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04), 0 16px 32px -24px rgba(15, 23, 42, 0.22);
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .at-post:hover { box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.3), 0 20px 36px -24px rgba(37, 99, 235, 0.4); }
 .dark .at-post { background: #1f1f1f; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09); }
@@ -52,7 +52,7 @@
 .at-post-add {
   display: flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 0.5rem; border-radius: 1.6rem; padding: 1rem 1.25rem;
   font-size: 0.9375rem; font-weight: 700; color: #1d4ed8; background: transparent; box-shadow: inset 0 0 0 1.5px rgba(37, 99, 235, 0.4);
-  transition: background 0.3s, transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background 0.15s, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .at-post-add:hover { background: rgba(37, 99, 235, 0.07); transform: translateY(-2px); }
 .at-post-add:active { transform: scale(0.98); }
@@ -76,7 +76,7 @@
 /* segmented tabs (settings) — horizontally scrollable pill group */
 .at-seg { display: inline-flex; min-width: 100%; align-items: center; gap: 0.2rem; border-radius: 9999px; padding: 0.3rem; background: rgba(15, 23, 42, 0.05); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06); }
 .dark .at-seg { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
-.at-seg__btn { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.4rem; white-space: nowrap; border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #64748b; transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s, box-shadow 0.4s; }
+.at-seg__btn { position: relative; display: flex; flex-shrink: 0; align-items: center; gap: 0.4rem; white-space: nowrap; border-radius: 9999px; padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #64748b; transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1), color 0.15s, box-shadow 0.2s; }
 .at-seg__btn:hover { color: #0f172a; }
 .at-seg__btn--on, .at-seg__btn--on:hover { color: #0f172a; background: #fff; box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35); }
 .dark .at-seg__btn { color: #a3a3a3; }
@@ -122,7 +122,7 @@
 .at-modal button[class*="bg-primary-500"]:not([role="switch"]):hover, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
 .at-modal button[class*="bg-primary-500"]:not([role="switch"]):active, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):active { transform: scale(0.97); }
 .at-modal button[class*="bg-primary-500"]:not([role="switch"]):disabled, .at-modal button[class*="bg-primary-400"]:not([role="switch"]):disabled { opacity: 0.5; box-shadow: none; }
-.at-modal button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
+.at-modal button { transition: background 0.15s, transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s; }
 
 /* page-level solid primary buttons inside A-Trace pages (e.g. "Create route") share the gradient pill */
 .at-scope button[class*="bg-primary-500"]:not([role="switch"]), .at-scope button[class*="bg-primary-400"]:not([role="switch"]) {
@@ -131,7 +131,7 @@
 }
 .at-scope button[class*="bg-primary-500"]:not([role="switch"]):active, .at-scope button[class*="bg-primary-400"]:not([role="switch"]):active { transform: scale(0.97); }
 .at-scope button[class*="bg-primary-500"]:not([role="switch"]):disabled, .at-scope button[class*="bg-primary-400"]:not([role="switch"]):disabled { opacity: 0.5; box-shadow: none; }
-.at-scope button { transition: background 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.4s; }
+.at-scope button { transition: background 0.15s, transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s; }
 
 /* settings content: section head, hint, notices, empty box, form groups */
 .at-sechead { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }

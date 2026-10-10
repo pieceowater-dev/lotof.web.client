@@ -1105,7 +1105,7 @@ watch([articlesSearch, selectedArticleTag], () => {
 <style scoped>
 .mobile-sheet-enter-active,
 .mobile-sheet-leave-active {
-  transition: all 0.3s ease;
+  transition: all 0.15s ease;
 }
 
 .mobile-sheet-enter-from,
@@ -1123,7 +1123,7 @@ watch([articlesSearch, selectedArticleTag], () => {
 
 .catalog-fade-enter-active,
 .catalog-fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 75ms ease;
 }
 
 .catalog-fade-enter-from,
@@ -1133,7 +1133,7 @@ watch([articlesSearch, selectedArticleTag], () => {
 
 /* Split hero */
 .split-panel {
-  transition: flex-grow 0.8s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: flex-grow 0.4s cubic-bezier(0.32, 0.72, 0, 1);
 }
 @media (min-width: 768px) {
   .split-panel { flex: 1 1 0; }

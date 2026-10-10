@@ -852,7 +852,7 @@ async function removeMember(member: { userId: string; username: string; email: s
   border-radius: 9999px; padding: 0.45rem 1rem 0.45rem 0.8rem;
   font-size: 0.875rem; font-weight: 600; color: #334155;
   background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .pp-back:hover { background: rgba(15, 23, 42, 0.08); }
 .pp-back:active { transform: scale(0.96); }
@@ -864,7 +864,7 @@ async function removeMember(member: { userId: string; username: string; email: s
   border-radius: 9999px; padding: 0.5rem 1rem;
   font-size: 0.875rem; font-weight: 600; color: #334155;
   background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .pp-ghost:hover { background: rgba(15, 23, 42, 0.08); }
 .pp-ghost:active { transform: scale(0.96); }
@@ -875,7 +875,7 @@ async function removeMember(member: { userId: string; username: string; email: s
   display: flex; align-items: center; gap: 0.7rem;
   border-radius: 9999px; padding: 0.7rem 1.1rem;
   background: rgba(15, 23, 42, 0.04); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
-  transition: box-shadow 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.4s;
+  transition: box-shadow 0.2s cubic-bezier(0.32, 0.72, 0, 1), background 0.2s;
 }
 .pp-field:focus-within { background: #fff; box-shadow: inset 0 0 0 1.5px #2563eb, 0 0 0 4px rgba(37, 99, 235, 0.12); }
 .dark .pp-field { background: rgba(255, 255, 255, 0.06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12); }
@@ -901,7 +901,7 @@ async function removeMember(member: { userId: string; username: string; email: s
 .pp-row {
   display: flex; align-items: center; gap: 0.8rem;
   padding: 0.65rem 1rem;
-  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .pp-row:hover { background: rgba(15, 23, 42, 0.04); }
 .dark .pp-row:hover { background: rgba(255, 255, 255, 0.06); }
@@ -909,7 +909,7 @@ async function removeMember(member: { userId: string; username: string; email: s
 .pp-icon-btn {
   display: inline-flex; height: 2rem; width: 2rem; flex-shrink: 0; align-items: center; justify-content: center;
   border-radius: 9999px; color: #64748b;
-  transition: background 0.3s, color 0.3s, opacity 0.3s, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.2s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .pp-icon-btn:hover { background: rgba(15, 23, 42, 0.08); color: #0f172a; }
 .pp-icon-btn:active { transform: scale(0.92); }
@@ -926,7 +926,7 @@ async function removeMember(member: { userId: string; username: string; email: s
 .pp-accept {
   display: inline-flex; align-items: center; gap: 0.35rem; border-radius: 9999px; padding: 0.4rem 0.8rem;
   font-size: 0.75rem; font-weight: 600; color: #047857; background: rgba(16, 185, 129, 0.14);
-  transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s;
+  transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), background 0.15s;
 }
 .pp-accept:hover { background: rgba(16, 185, 129, 0.24); }
 .pp-accept:active { transform: scale(0.95); }
@@ -937,7 +937,7 @@ async function removeMember(member: { userId: string; username: string; email: s
 .pp-seg__btn {
   display: flex; min-width: 0; flex: 1; align-items: center; justify-content: center; gap: 0.4rem;
   border-radius: 9999px; padding: 0.45rem 0.6rem; font-size: 0.8125rem; font-weight: 600; color: #64748b;
-  transition: background 0.4s cubic-bezier(0.32, 0.72, 0, 1), color 0.3s, box-shadow 0.4s;
+  transition: background 0.2s cubic-bezier(0.32, 0.72, 0, 1), color 0.15s, box-shadow 0.2s;
 }
 .pp-seg__btn:hover { color: #0f172a; }
 .pp-seg__btn--active { color: #0f172a; background: #fff; box-shadow: 0 6px 16px -8px rgba(15, 23, 42, 0.35); }
@@ -945,6 +945,6 @@ async function removeMember(member: { userId: string; username: string; email: s
 .dark .pp-seg__btn:hover { color: #fff; }
 .dark .pp-seg__btn--active { color: #fff; background: rgba(255, 255, 255, 0.12); box-shadow: none; }
 
-.pp-pop-enter-active, .pp-pop-leave-active { transition: opacity 0.3s cubic-bezier(0.32, 0.72, 0, 1), transform 0.4s cubic-bezier(0.32, 0.72, 0, 1); }
+.pp-pop-enter-active, .pp-pop-leave-active { transition: opacity 0.15s cubic-bezier(0.32, 0.72, 0, 1), transform 0.2s cubic-bezier(0.32, 0.72, 0, 1); }
 .pp-pop-enter-from, .pp-pop-leave-to { opacity: 0; transform: translateX(6px) scale(0.96); }
 </style>

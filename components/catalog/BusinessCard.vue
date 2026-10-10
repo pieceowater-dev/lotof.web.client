@@ -129,7 +129,7 @@ defineEmits<{ (e: 'toggle-favorite', key: string): void }>();
   padding: 0.3rem;
   background: rgba(15, 23, 42, 0.04);
   box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.06);
-  transition: transform 0.6s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.6s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.3s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .bc-shell:hover { transform: translateY(-3px); box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 18px 32px -18px rgba(15, 23, 42, 0.3); }
 .dark .bc-shell { background: rgba(255, 255, 255, 0.05); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
