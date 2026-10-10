@@ -178,22 +178,6 @@ export default defineNuxtConfig({
         // Web app manifest
         { rel: "manifest", href: "/site.webmanifest" },
       ],
-      style: [
-        {
-          children: `
-            #preloader {
-              position: fixed;
-              inset: 0;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              backdrop-filter: blur(5px);
-              -webkit-backdrop-filter: blur(5px);
-              z-index: 9999;
-            }
-          `,
-        },
-      ],
     },
   },
   components: true,

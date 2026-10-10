@@ -15,7 +15,8 @@ import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
 import PromoVideoDeck from '@/components/ui/PromoVideoDeck.vue';
 import PromoVideoPlayer from '@/components/ui/PromoVideoPlayer.vue';
-import { useHomeFx } from '@/composables/useHomeFx';
+import { useHomeFx } from '@/composables/useHomeFx'
+import HomeSkeleton from '@/components/ui/HomeSkeleton.vue';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
 import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
