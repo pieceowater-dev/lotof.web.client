@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { maskProfanity } from '@/utils/profanityFilter';
 import type { Cycle } from '@/api/tasks/cycle/list';
@@ -177,8 +178,8 @@ const points = computed(() => {
 </script>
 
 <template>
-  <UModal v-model="isOpen" :ui="{ width: 'sm:max-w-2xl' }">
-    <UCard :ui="{ ring: '' }">
+  <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }">
+    <UCard :ui="atCardUi">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold flex items-center gap-2">

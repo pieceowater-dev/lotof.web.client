@@ -87,7 +87,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <USlideover v-model="isOpen" side="bottom" :ui="{ height: 'h-[70vh]' }">
+  <USlideover class="at-modal" v-model="isOpen" side="bottom" :ui="{ height: 'h-[70vh]' }">
     <div class="flex flex-col h-full">
       <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0">
         <h3 class="text-base font-semibold truncate">{{ task?.title }}</h3>

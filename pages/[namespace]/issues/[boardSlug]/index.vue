@@ -680,7 +680,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="flex items-center gap-2 min-w-0">
         <UButton icon="lucide:layout-grid" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues?pick=1`">
@@ -802,7 +802,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <div
           v-for="(col, idx) in boardStatuses"
           :key="col.key"
-          class="flex flex-col flex-1 basis-1/5 min-w-[85%] sm:min-w-[20%] rounded-xl border h-full transition-colors"
+          class="is-col flex flex-col flex-1 basis-1/5 min-w-[85%] sm:min-w-[20%] border h-full transition-colors"
           :class="dragOverColumnKey === col.key
             ? 'bg-primary-50 dark:bg-primary-950/30 border-primary-300 dark:border-primary-700'
             : columnColorClass(col.color)"
@@ -810,7 +810,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
           @dragleave="dragOverColumnKey === col.key && (dragOverColumnKey = null)"
           @drop.prevent="handleDrop(col)"
         >
-          <div class="flex items-center justify-between px-3 py-2.5 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+          <div class="is-col__head flex items-center justify-between px-4 py-3 flex-shrink-0">
             <span class="font-medium text-sm truncate">{{ col.label }}</span>
             <UBadge color="gray" variant="subtle" size="xs">{{ statusCounts[col.key] ?? 0 }}</UBadge>
           </div>
@@ -820,7 +820,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
               :key="task.id"
               type="button"
               draggable="true"
-              class="w-full text-left rounded-lg bg-white dark:bg-gray-900 border p-2.5 hover:shadow-sm transition-all"
+              class="is-card w-full text-left border p-3"
               :class="[
                 isTaskOverdue(task)
                   ? 'border-red-300 dark:border-red-800 hover:border-red-400 dark:hover:border-red-700'
@@ -882,7 +882,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
                always offers a way to add an issue without reaching for the
                header button -- a title-only inline input beats a modal
                round trip for the common case. -->
-          <div v-if="idx === 0" class="flex-shrink-0 p-2 border-t border-gray-200 dark:border-gray-800">
+          <div v-if="idx === 0" class="flex-shrink-0 p-2">
             <div v-if="quickAddOpen" class="flex items-center gap-1">
               <UInput
                 v-model="quickAddTitle"

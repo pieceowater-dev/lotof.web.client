@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -393,10 +394,12 @@ async function handleSave() {
 }
 
 onMounted(load);
+
+const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-5 flex-shrink-0 gap-3">
       <div class="text-left min-w-0">
         <h1 class="text-xl sm:text-2xl font-semibold truncate">{{ t('tasks.boardSettings') || 'Board settings' }}</h1>
@@ -417,25 +420,26 @@ onMounted(load);
     </div>
 
     <template v-else>
-      <div class="flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 mb-4 flex-shrink-0">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 transition-colors -mb-px"
-          :class="activeTab === tab.key
-            ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-            : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-          @click="activeTab = tab.key"
-        >
-          <UIcon :name="tab.icon" class="w-4 h-4" />
-          {{ tab.label }}
-        </button>
+      <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+        <div class="at-seg">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            type="button"
+            class="at-seg__btn"
+            :class="activeTab === tab.key ? 'at-seg__btn--on' : ''"
+            @click="activeTab = tab.key"
+          >
+            <UIcon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
+            <span>{{ tab.label }}</span>
+          </button>
+        </div>
       </div>
 
       <div class="flex-1 min-h-0 overflow-y-auto">
         <div class="max-w-2xl w-full space-y-4 pb-8">
           <template v-if="activeTab === 'general'">
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
                 <UIcon name="lucide:layout-panel-top" class="w-3.5 h-3.5" />
                 {{ t('tasks.sectionGeneral') || 'General' }}
@@ -451,7 +455,7 @@ onMounted(load);
               </div>
             </UCard>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <div class="flex items-start justify-between gap-3 mb-1">
                 <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
                   <UIcon name="lucide:tags" class="w-3.5 h-3.5" />
@@ -491,7 +495,7 @@ onMounted(load);
               {{ t('tasks.featureFlags') || 'Modules' }}
             </h4>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer">
                 <UToggle v-model="form.geoMap" size="sm" class="mt-0.5" />
                 <span>
@@ -501,7 +505,7 @@ onMounted(load);
               </label>
             </UCard>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer">
                 <UToggle v-model="form.zenMode" size="sm" class="mt-0.5" />
                 <span>
@@ -511,7 +515,7 @@ onMounted(load);
               </label>
             </UCard>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer">
                 <UToggle v-model="form.cycles" size="sm" class="mt-0.5" />
                 <span>
@@ -523,7 +527,7 @@ onMounted(load);
           </template>
 
           <template v-else-if="activeTab === 'columns'">
-          <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+          <UCard :ui="panelUi">
             <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
               <UIcon name="lucide:columns-3" class="w-3.5 h-3.5" />
               {{ t('tasks.statuses') || 'Kanban columns' }}
@@ -594,7 +598,7 @@ onMounted(load);
             </div>
           </UCard>
 
-          <UCard v-if="menuIntegrationEnabled" :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+          <UCard v-if="menuIntegrationEnabled" :ui="panelUi">
             <div class="flex items-start justify-between gap-3">
               <span>
                 <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:zap" class="w-4 h-4 text-gray-400" />{{ t('tasks.automations') || 'Automations' }}</span>
@@ -608,7 +612,7 @@ onMounted(load);
           </template>
 
           <template v-else-if="activeTab === 'integrations'">
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer" :class="!menuAppInstalled && 'opacity-50'">
                 <UToggle v-model="form.menuIntegration" size="sm" class="mt-0.5" :disabled="!menuAppInstalled" />
                 <span>
@@ -621,7 +625,7 @@ onMounted(load);
               </p>
             </UCard>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer" :class="!contactsAppInstalled && 'opacity-50'">
                 <UToggle v-model="form.contactsIntegration" size="sm" class="mt-0.5" :disabled="!contactsAppInstalled" />
                 <span>
@@ -634,7 +638,7 @@ onMounted(load);
               </p>
             </UCard>
 
-            <UCard :ui="{ ring: '', body: { padding: 'p-4 sm:p-5' } }">
+            <UCard :ui="panelUi">
               <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
                 <UIcon name="lucide:webhook" class="w-3.5 h-3.5" />
                 {{ t('tasks.webhookApi') || 'Webhook API' }}

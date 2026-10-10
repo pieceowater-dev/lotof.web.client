@@ -317,7 +317,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center gap-2 mb-4 flex-shrink-0">
       <UButton icon="lucide:arrow-left" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}`">
         {{ t('app.back') || 'Back' }}

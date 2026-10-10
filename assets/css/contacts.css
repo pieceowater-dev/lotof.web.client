@@ -43,11 +43,13 @@
 .ct-scope button[class*="bg-primary-500"]:not([role="switch"]), .at-modal button[class*="bg-primary-500"]:not([role="switch"]) { padding-left: 1rem; padding-right: 1rem; }
 .ct-scope table th { border-right: 0 !important; border-left: 0 !important; }
 .ct-scope table thead th { background-image: none; }
-.at-modal input.form-input[class*="pe-"], .ct-scope input.form-input[class*="pe-"] { border-radius: 9999px; padding-left: 1rem; }
+.at-modal input.form-input[class*="pe-"], .ct-scope input.form-input[class*="pe-"] { border-radius: 9999px; }
+.at-modal input.form-input[class*="pe-"]:not([class*="ps-"]):not([class*="pl-"]), .ct-scope input.form-input[class*="pe-"]:not([class*="ps-"]):not([class*="pl-"]) { padding-left: 1rem; }
 /* raw <input>/<select>/<textarea> written with Tailwind (rounded-md border) → pill / soft-rounded like UInput */
 .at-modal input.rounded-md:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]),
 .at-modal select.rounded-md, .ct-scope input.rounded-md:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), .ct-scope select.rounded-md,
-.at-modal input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .ct-scope input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { border-radius: 9999px; padding-left: 1rem; }
+.at-modal input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .ct-scope input.rounded-lg:not([type="checkbox"]):not([type="radio"]):not([type="file"]) { border-radius: 9999px; }
+.at-modal input.rounded-md:not([class*="ps-"]):not([class*="pl-"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), .ct-scope input.rounded-md:not([class*="ps-"]):not([class*="pl-"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="range"]), .at-modal select.rounded-md, .ct-scope select.rounded-md, .at-modal input.rounded-lg:not([class*="ps-"]):not([class*="pl-"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]), .ct-scope input.rounded-lg:not([class*="ps-"]):not([class*="pl-"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]) { padding-left: 1rem; }
 .at-modal textarea.rounded-md, .ct-scope textarea.rounded-md, .at-modal textarea.rounded-lg, .ct-scope textarea.rounded-lg { border-radius: 1.2rem; padding-left: 1rem; }
 
 /* UButton rendered as <a> (with `to`) gets the same treatment as <button> */

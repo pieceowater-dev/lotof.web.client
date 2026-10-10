@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { BUSINESS_TYPES, type BusinessType } from '@/config/businessTypes';
 import { BOARD_TEMPLATES, boardTemplatePayload, type BoardTemplateId } from '@/config/issuesBoardTemplates';
@@ -83,8 +84,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose" :ui="{ width: 'sm:max-w-md' }">
-    <UCard :ui="{ ring: '' }">
+  <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="{ ...atModalUi, width: 'sm:max-w-md' }">
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-lg font-semibold">{{ t('tasks.createBoard') || 'Create board' }}</h3>
       </template>

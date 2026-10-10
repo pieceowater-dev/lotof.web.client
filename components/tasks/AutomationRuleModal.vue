@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import type { AutomationRule } from '@/api/tasks/automation/list';
 
@@ -65,8 +66,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="atModalUi">
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-lg font-semibold">
           {{ rule ? (t('tasks.editAutomationRule') || 'Edit automation') : (t('tasks.addAutomationRule') || 'Add automation') }}

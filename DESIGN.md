@@ -450,6 +450,15 @@ Rules: **UX and logic untouched**, only chrome changes.
 6. Commit only your files; commit message describes the redesign; **no Claude/Co-Authored-By attribution lines**.
    Push only after the owner says OK (unless told to push on completion); don't watch the deploy afterwards — report the commit hash.
 
+## 10k. Issues (`issues.css`)
+
+Same recipe as Contacts/Menu: page roots carry `at-scope ct-scope`, every modal is `class="at-modal" :ui="atModalUi"`
++ `UCard :ui="atCardUi"` (board settings cards use `{ ...atCardUi, body: { padding: 'p-5' } }`), tabs are `.at-seg`,
+tables are `AppTable soft`. Kanban: `.is-col` (1.75rem soft ring column, status tint kept from `columnColorClass`),
+`.is-col__head`, `.is-card` (1.25rem ring card, hover lifts with a brand ring, overdue = red ring). Board picker tiles
+are `.bezel .bezel-hover` + `.icon-tile`. Pitfall fixed here: raw `rounded-md` inputs with a leading icon (`ps-9`) must
+not get the blanket `padding-left: 1rem` from `contacts.css`.
+
 ## 11. Writing a new screen — checklist
 
 1. **Archetype:** pick the container (bezel / soft tray / storefront card) and the layout (bento, split,

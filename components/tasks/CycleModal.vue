@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import type { Cycle } from '@/api/tasks/cycle/list';
 
@@ -49,8 +50,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose">
-    <UCard :ui="{ ring: '' }">
+  <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="atModalUi">
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-lg font-semibold">{{ cycle ? (t('tasks.editSprint') || 'Edit sprint') : (t('tasks.newSprint') || 'New sprint') }}</h3>
       </template>

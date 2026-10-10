@@ -124,7 +124,7 @@ async function handleDelete(rule: AutomationRule) {
 </script>
 
 <template>
-  <USlideover v-model="isOpen">
+  <USlideover class="at-modal" v-model="isOpen">
     <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-y-auto' } }" class="flex flex-col h-full">
       <template #header>
         <div class="flex items-center justify-between">

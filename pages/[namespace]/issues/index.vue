@@ -150,7 +150,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
         <h1 class="text-xl sm:text-2xl font-semibold">{{ t('tasks.title') || 'Boards' }}</h1>
@@ -198,20 +198,20 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <div v-else class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 content-start">
+    <div v-else class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start">
       <NuxtLink
         v-for="board in boards"
         :key="board.id"
         :to="`/${nsSlug}/issues/${board.slug}`"
-        class="group rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 hover:border-primary-300 dark:hover:border-primary-700 hover:shadow-sm transition-all"
+        class="group bezel bezel-hover block"
       >
-        <div class="flex items-start justify-between gap-2">
-          <div class="flex items-center gap-2.5 min-w-0">
-            <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40 flex-shrink-0">
-              <UIcon name="lucide:layout-grid" class="w-4 h-4 text-primary-600 dark:text-primary-300" />
+        <div class="bezel-core flex items-center justify-between gap-2 px-5 py-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class="icon-tile flex-shrink-0">
+              <UIcon name="lucide:layout-grid" class="w-5 h-5" />
             </span>
             <div class="min-w-0">
-              <div class="font-semibold truncate">{{ maskProfanity(board.name) }}</div>
+              <div class="font-extrabold tracking-tight text-lg truncate">{{ maskProfanity(board.name) }}</div>
               <UBadge v-if="!board.isActive" color="gray" variant="subtle" size="xs">{{ t('tasks.inactive') || 'Inactive' }}</UBadge>
             </div>
           </div>

@@ -529,7 +529,7 @@ async function handleDelete() {
 </script>
 
 <template>
-  <USlideover v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-2xl lg:max-w-4xl' }">
+  <USlideover class="at-modal" v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-2xl lg:max-w-4xl' }">
     <UCard v-if="task" :ui="{ ring: '', divide: '', rounded: 'rounded-none', shadow: 'shadow-none', body: { base: 'flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0', padding: 'p-0' }, header: { padding: 'px-0 py-0 sm:px-0 sm:py-0' } }" class="flex flex-col h-full overflow-hidden">
       <template #header>
         <div class="h-1" :class="priorityAccentClass" />
