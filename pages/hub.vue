@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import HubSkeleton from '@/components/ui/HubSkeleton.vue';
 import { appIconStyle } from '@/config/apps';
 import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
 import HomeNewsSection from '@/components/ui/HomeNewsSection.vue';
@@ -785,18 +786,10 @@ watch(user, (u) => {
     <div class="pb-safe-or-4">
       <ClientOnly>
         <template #fallback>
-          <div class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
-            <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-            <USkeleton class="h-4 w-[250px]" />
-            <USkeleton class="h-4 w-[200px]" />
-          </div>
+          <HubSkeleton />
         </template>
 
-        <div v-if="!initialized || !isLoggedIn" class="flex flex-col items-center text-center justify-center space-y-4 min-h-[65vh]">
-          <USkeleton class="h-12 w-12" :ui="{ rounded: 'rounded-full' }" />
-          <USkeleton class="h-4 w-[250px]" />
-          <USkeleton class="h-4 w-[200px]" />
-        </div>
+        <HubSkeleton v-if="!initialized || !isLoggedIn" />
       </ClientOnly>
 
       <!-- HUB: compact daily launcher (iCloud-style app grid on top). -->
