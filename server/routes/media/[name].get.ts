@@ -7,7 +7,8 @@ export default defineEventHandler(async (event) => {
 
   const raw = await useStorage('assets:media').getItemRaw(name);
   if (!raw) throw createError({ statusCode: 404 });
-  const buf = Buffer.from(raw as Uint8Array);
+  const u8 = raw as Uint8Array;
+  const buf = Buffer.from(u8.buffer, u8.byteOffset, u8.byteLength); // view, not a copy: the film is ~10 MB
   const size = buf.length;
 
   setHeader(event, 'Content-Type', 'video/mp4');

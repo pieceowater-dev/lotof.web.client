@@ -4,6 +4,8 @@
 // only a poster. Clicking a back card pulls it to the front and sends the old
 // front card to the back of the deck. Nothing is downloaded until a card is
 // the front card AND the deck is near the viewport.
+import { buildContinuousPath } from '@/utils/continuousCorners';
+
 export interface DeckSlide {
   id: string;
   src: string;
@@ -20,42 +22,7 @@ const props = defineProps<{
 
 const active = defineModel<number>('active', { default: 0 });
 
-// iPhone-style "continuous" corners (the iOS superellipse-ish curve, same
-// construction as app icons / device screens): three cubic beziers per
-// corner, built in pixels from the measured card size. CSS border-radius
-// only does circular arcs and `corner-shape` isn't in Safari/Firefox yet.
-// Until measured (SSR / first paint) a plain rounded rect stands in.
 const CORNER_RADIUS_RATIO = 0.12; // iPhone screen radius / width
-const CORNER: Array<[number, number]> = [
-  [1.08849296, 0], [0.86840694, 0], [0.63149379, 0.07491139],
-  [0.37282383, 0.16905956], [0.16905956, 0.37282383], [0.07491139, 0.63149379],
-  [0, 0.86840694], [0, 1.08849296], [0, 1.52866483],
-];
-
-function buildContinuousPath(w: number, h: number): string {
-  const r = w * CORNER_RADIUS_RATIO;
-  const ext = 1.52866483 * r;
-  const f = (n: number) => n.toFixed(2);
-  const corner = (map: (a: number, b: number) => [number, number]) => {
-    let out = '';
-    for (let i = 0; i < CORNER.length; i += 3) {
-      const pts = [0, 1, 2].map((k) => map(CORNER[i + k][0] * r, CORNER[i + k][1] * r));
-      out += `C${pts.map(([x, y]) => `${f(x)} ${f(y)}`).join(',')}`;
-    }
-    return out;
-  };
-  return (
-    `M${f(ext)} 0L${f(w - ext)} 0` +
-    corner((a, b) => [w - a, b]) +
-    `L${f(w)} ${f(h - ext)}` +
-    corner((a, b) => [w - b, h - a]) +
-    `L${f(ext)} ${f(h)}` +
-    corner((a, b) => [a, h - b]) +
-    `L0 ${f(ext)}` +
-    corner((a, b) => [b, a]) +
-    'Z'
-  );
-}
 
 // order[0] is the front card; the rest are the cards behind it, nearest first.
 const order = ref(props.slides.map((_, i) => i));
@@ -202,7 +169,7 @@ onMounted(() => {
   if (typeof ResizeObserver !== 'undefined' && cardRef.value) {
     sizeObserver = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      if (width > 0) clipPath.value = `path('${buildContinuousPath(width, height)}')`;
+      if (width > 0) clipPath.value = `path('${buildContinuousPath(width, height, width * CORNER_RADIUS_RATIO)}')`;
     });
     sizeObserver.observe(cardRef.value);
   }

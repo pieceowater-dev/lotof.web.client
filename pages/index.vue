@@ -13,8 +13,8 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
-import AppCard from '@/components/ui/AppCard.vue';
 import PromoVideoDeck from '@/components/ui/PromoVideoDeck.vue';
+import PromoVideoPlayer from '@/components/ui/PromoVideoPlayer.vue';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
 import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
@@ -260,42 +260,11 @@ useHead({
   titleTemplate: (s) => s ?? 'lota',
 });
 
-const activeApps = computed(() => ALL_APPS.filter(a => appInstalled[a.bundle]));
-const possibleApps = computed(() => ALL_APPS.filter(a => !appInstalled[a.bundle] && a.canAdd));
 
 function appRoutePath(app: AppConfig): string | null {
   const ns = selectedNS.value;
   if (!ns) return null;
   return sharedAppRoutePath(app, ns);
-}
-
-// Apps with a public, customer-facing page reachable straight from the
-// dashboard tile (opens in a new tab — see AppCard's storefront button).
-const STOREFRONT_APPS: Record<string, { path: (ns: string) => string; labelKey: string; fallback: string }> = {
-  menu: { path: (ns) => `/to/${ns}/menu`, labelKey: 'app.externalStorefront', fallback: 'Витрина' },
-  contacts: { path: (ns) => `/to/${ns}/memberships`, labelKey: 'app.externalMemberships', fallback: 'Абонементы' },
-  plans: { path: (ns) => `/to/${ns}/plans`, labelKey: 'app.externalBookingPage', fallback: 'Страница записи' },
-};
-
-function toCard(app: AppConfig) {
-  const routePath = appRoutePath(app);
-  const ns = dashboardNs.value;
-  const sf = STOREFRONT_APPS[app.address];
-  return {
-    key: app.bundle,
-    icon: app.icon,
-    title: t(app.titleKey),
-    name: app.name,
-    description: t(app.descriptionKey),
-    to: appInstalled[app.bundle] ? (routePath || undefined) : undefined,
-    action: appInstalled[app.bundle]
-      ? () => handleAppClick(app.address)
-      : (app.canAdd ? () => handleGetApp(app) : undefined),
-    installed: appInstalled[app.bundle] ?? false,
-    canAdd: app.canAdd,
-    storefrontTo: sf && ns ? sf.path(ns) : undefined,
-    storefrontLabel: sf ? (t(sf.labelKey) || sf.fallback) : undefined,
-  };
 }
 
 // Consumes the target_app cookie set by a product-targeted deep link
@@ -998,27 +967,34 @@ watch([articlesSearch, selectedArticleTag], () => {
           <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeBizDesc') }}</p>
         </div>
 
-        <div v-if="isLoggedIn && (activeApps.length || possibleApps.length)" class="space-y-6 md:space-y-10">
-        <div v-if="activeApps.length">
-          <h3 class="mb-4 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('app.installedHead') }}</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
-            <div v-for="app in activeApps" :key="app.bundle" class="h-full">
-              <AppCard v-bind="toCard(app)" />
-            </div>
+        <!-- Product film: same container edges as the heading above and the cards below — player left, copy right. -->
+        <div v-reveal="80" class="mb-8 grid items-center gap-8 lg:mb-12 lg:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] lg:gap-12">
+          <PromoVideoPlayer
+            src="/media/lota-full.mp4"
+            poster="/assets/lota-full-poster.jpg"
+            :width="1920"
+            :height="1080"
+            :sound-on-label="t('app.promoVideoSoundOn')"
+            :sound-off-label="t('app.promoVideoSoundOff')"
+          />
+          <div>
+            <span class="eyebrow">{{ t('app.homeFilmEyebrow') }}</span>
+            <h3 class="mt-4 text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.homeFilmTitle') }}</h3>
+            <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeFilmDesc') }}</p>
+            <ul class="mt-5 flex flex-col gap-2.5">
+              <li v-for="n in 3" :key="n" class="flex items-center gap-3 text-sm md:text-base text-gray-700 dark:text-gray-200">
+                <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-emerald-500 text-white"><UIcon name="lucide:check" class="h-4 w-4" /></span>
+                {{ t(`app.homeFilmPoint${n}`) }}
+              </li>
+            </ul>
+            <button type="button" class="cta-pill cta-pill--primary mt-7" @click="handleGoToHub">
+              {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
+              <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
+            </button>
           </div>
         </div>
 
-        <div v-if="possibleApps.length">
-          <h3 class="mb-4 text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('app.availableHead') }}</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 items-stretch">
-            <div v-for="app in possibleApps" :key="app.bundle" class="h-full">
-              <AppCard v-bind="toCard(app)" />
-            </div>
-          </div>
-        </div>
-        </div>
-
-        <div v-else class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           <div v-for="(tile, i) in bizTiles" :key="tile.id" v-reveal="(i % 3) * 100">
             <div class="bezel bezel-hover group h-full cursor-pointer" role="button" tabindex="0" @click="handleGoToHub" @keydown.enter="handleGoToHub">
               <div class="bezel-core relative flex h-full min-h-[11rem] flex-col overflow-hidden p-5 md:p-6">
