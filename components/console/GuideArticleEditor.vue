@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 dark:bg-slate-950">
+  <div class="at-scope ct-scope min-h-screen bg-slate-50 dark:bg-slate-950">
     <div class="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
       <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
         <NuxtLink
@@ -24,7 +24,7 @@
     </div>
 
     <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <UCard>
+      <UCard :ui="panelUi">
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label for="guide-product" class="mb-1 block text-xs font-medium text-slate-500">{{ t('admin.guideProduct') }}</label>
@@ -51,7 +51,7 @@
         </div>
       </UCard>
 
-      <UCard>
+      <UCard :ui="panelUi">
         <div class="mb-4 flex gap-1">
           <UButton
             v-for="locale in LOCALES"
@@ -152,6 +152,8 @@
 </template>
 
 <script setup lang="ts">
+import { atCardUi } from '@/utils/atraceUi';
+const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
 import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';

@@ -1,5 +1,5 @@
 <template>
-  <div class="publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+  <div class="at-scope ct-scope publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
     <!-- Header -->
     <ConsoleEditorHeader
       :mode="props.mode"

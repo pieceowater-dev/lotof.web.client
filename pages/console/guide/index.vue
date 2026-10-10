@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen">
+  <div class="at-scope ct-scope min-h-screen">
     <div class="border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#141414]">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 py-8">
         <NuxtLink
@@ -40,10 +40,24 @@
         </div>
       </div>
 
-      <UTabs v-model="selectedSection" :items="sections" />
+      <div class="overflow-x-auto no-scrollbar">
+        <div class="at-seg">
+          <button
+            v-for="(sec, i) in sections"
+            :key="i"
+            type="button"
+            class="at-seg__btn"
+            :class="selectedSection === i ? 'at-seg__btn--on' : ''"
+            @click="selectedSection = i"
+          >
+            <UIcon :name="sec.icon" class="w-4 h-4 flex-shrink-0" />
+            <span>{{ sec.label }}</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Categories -->
-      <UCard v-if="selectedSection === 0">
+      <UCard v-if="selectedSection === 0" :ui="panelUi">
         <template #header>
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -94,7 +108,7 @@
       </UCard>
 
       <!-- Articles -->
-      <UCard v-if="selectedSection === 1">
+      <UCard v-if="selectedSection === 1" :ui="panelUi">
         <template #header>
           <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
@@ -220,6 +234,8 @@
 </template>
 
 <script setup lang="ts">
+import { atCardUi } from '@/utils/atraceUi';
+const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
