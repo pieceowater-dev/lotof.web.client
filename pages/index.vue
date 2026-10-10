@@ -15,6 +15,7 @@ import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import type { HomeFeedPost } from '@/components/ui/HomePostsFeed.vue';
 import PromoVideoDeck from '@/components/ui/PromoVideoDeck.vue';
 import PromoVideoPlayer from '@/components/ui/PromoVideoPlayer.vue';
+import { useHomeFx } from '@/composables/useHomeFx';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
 import FeedSidebarWidget from '@/components/ui/FeedSidebarWidget.vue';
 import { extractFirstImage, excerptFromMarkdown, estimateReadTimeMinutes, formatPublishedDate } from '@/utils/markdown';
@@ -65,6 +66,45 @@ const promoSlides = [
   { id: 'referral', icon: 'lucide:gift', src: '/media/referral.mp4', poster: '/assets/referral-poster.jpg', titleKey: 'app.promoSlideReferralTitle', descKey: 'app.promoSlideReferralDesc' },
 ] as const;
 const activePromo = ref(0);
+// "Three steps" scenario: auto-advances while it is on screen, pauses on hover, a click picks a step.
+const activeStep = ref(0);
+const stepsCycle = ref(0); // bumps on every manual pick so the progress bar restarts
+const stepsPaused = ref(false);
+const stepsInView = ref(false);
+const stepsRef = ref<HTMLElement | null>(null);
+function pickStep(i: number) { activeStep.value = i; stepsCycle.value++; }
+let stepsTimer: ReturnType<typeof setInterval> | null = null;
+let stepsIO: IntersectionObserver | null = null;
+onMounted(() => {
+  if (stepsRef.value && typeof IntersectionObserver !== 'undefined') {
+    stepsIO = new IntersectionObserver(([e]) => { stepsInView.value = e.isIntersecting; }, { threshold: 0.35 });
+    stepsIO.observe(stepsRef.value);
+  }
+  stepsTimer = setInterval(() => {
+    if (stepsPaused.value || !stepsInView.value || document.hidden) return;
+    activeStep.value = (activeStep.value + 1) % customerSteps.length;
+  }, 5200);
+});
+onBeforeUnmount(() => { if (stepsTimer) clearInterval(stepsTimer); stepsIO?.disconnect(); });
+// Ribbon click: show that product's video in the deck and bring the deck into view.
+const PRODUCT_SLIDE: Record<string, string> = { menu: 'orders', atrace: 'atrace', contacts: 'contacts', goods: 'goods', issues: 'orders-issues', plans: 'plans' };
+function openProductVideo(tileId: string) {
+  const idx = promoSlides.findIndex((sl) => sl.id === PRODUCT_SLIDE[tileId]);
+  if (idx >= 0) activePromo.value = idx;
+  document.getElementById('promo-deck')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+// "How the products connect": the left one hands work over to the right one (a pulse runs along the wire).
+const linkPairs = [
+  { fromKey: 'app.homeLinkOrder', fromIcon: 'lucide:receipt-text', toKey: 'app.homeLinkDelivery', toIcon: 'lucide:truck' },
+  { fromKey: 'app.homeLinkShift', fromIcon: 'lucide:qr-code', toKey: 'app.homeLinkPayroll', toIcon: 'lucide:wallet' },
+  { fromKey: 'app.homeLinkReceipt', fromIcon: 'lucide:scan-line', toKey: 'app.homeLinkStock', toIcon: 'lucide:package' },
+] as const;
+// Localised product name for the ribbon (the tiles carry the brand names Orders, A-Trace...).
+function bizLabel(id: string): string {
+  const app = ALL_APPS.find((a) => a.address === id);
+  return app ? t(app.titleKey) : id;
+}
+useHomeFx();
 
 const catalogFeatures = [
   { key: 'businesses', icon: 'lucide:store', titleKey: 'app.catalogFeatureBusinessesTitle', descKey: 'app.catalogFeatureBusinessesDesc' },
@@ -741,7 +781,8 @@ watch([articlesSearch, selectedArticleTag], () => {
 });
 </script>
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col" data-home-fx>
+    <div class="fx-progress" aria-hidden="true" />
     <div class="pb-safe-or-4">
       <ClientOnly>
         <template #fallback>
@@ -762,12 +803,12 @@ watch([articlesSearch, selectedArticleTag], () => {
       <!-- HERO: introduces lota and splits visitors into two paths --
            customers (patrons) go to the Catalog, business staff to the Hub. -->
       <section v-if="initialized" class="relative -mt-20 overflow-hidden">
-        <div class="hero-mesh pointer-events-none absolute inset-0" aria-hidden="true" />
+        <div class="hero-mesh pointer-events-none absolute inset-x-0 -top-24 -bottom-24" data-fx-parallax="-0.12" aria-hidden="true" />
         <div class="relative max-w-7xl mx-auto px-4 pt-28 sm:pt-32 md:pt-40 pb-10 md:pb-14 text-center">
           <span v-reveal class="eyebrow">{{ t('app.homeHeroEyebrow') }}</span>
           <h1 v-reveal="80" class="mt-5 text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight leading-[1.1] text-gray-900 dark:text-white">
             {{ t('app.homeHeroTitleA') }}<br>
-            <span class="grad-text">{{ t('app.homeHeroTitleB') }}</span>
+            <span class="grad-text grad-pan">{{ t('app.homeHeroTitleB') }}</span>
           </h1>
           <p v-reveal="160" class="mt-4 mx-auto max-w-2xl text-base md:text-lg leading-relaxed text-gray-600 dark:text-gray-300">
             {{ t('app.homeHeroLead') }}
@@ -844,8 +885,30 @@ watch([articlesSearch, selectedArticleTag], () => {
         </div>
       </section>
 
+      <!-- product ribbon: seamless loop (4 identical copies, shifted by exactly one), pauses on hover;
+           a click opens that product's video in the deck below -->
+      <div v-if="initialized" class="marquee py-2">
+        <div class="marquee__track">
+          <template v-for="copy in 4" :key="copy">
+            <button
+              v-for="tile in bizTiles"
+              :key="`${copy}-${tile.id}`"
+              type="button"
+              class="marquee__chip"
+              :tabindex="copy === 1 ? 0 : -1"
+              :aria-hidden="copy === 1 ? undefined : true"
+              :aria-label="bizLabel(tile.id)"
+              @click="openProductVideo(tile.id)"
+            >
+              <span class="icon-tile !h-9 !w-9 !rounded-[0.7rem]"><UIcon :name="tile.icon" class="h-[18px] w-[18px]" /></span>
+              {{ bizLabel(tile.id) }}
+            </button>
+          </template>
+        </div>
+      </div>
+
       <!-- MEET LOTA: the video deck + per-video copy -->
-      <section v-if="initialized" class="max-w-7xl mx-auto px-4 py-14 md:py-24">
+      <section v-if="initialized" id="promo-deck" class="max-w-7xl mx-auto px-4 py-14 md:py-24">
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-start">
           <div v-reveal class="lg:pt-6">
             <span class="eyebrow">{{ t('app.homeSeeEyebrow') }}</span>
@@ -853,8 +916,8 @@ watch([articlesSearch, selectedArticleTag], () => {
               <div
                 v-for="(slide, i) in promoSlides"
                 :key="slide.id"
-                class="col-start-1 row-start-1 transition-opacity duration-300"
-                :class="i === activePromo ? 'opacity-100' : 'pointer-events-none opacity-0'"
+                class="col-start-1 row-start-1 transition-[opacity,transform] duration-300"
+                :class="i === activePromo ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-3 opacity-0'"
                 :aria-hidden="i !== activePromo"
               >
                 <div class="icon-tile mb-6"><UIcon :name="slide.icon" class="w-6 h-6" /></div>
@@ -907,10 +970,16 @@ watch([articlesSearch, selectedArticleTag], () => {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
             <div v-for="(feature, i) in catalogFeatures" :key="feature.key" v-reveal="i * 100">
               <div class="bezel h-full">
-                <div class="bezel-core h-full p-6">
+                <div class="bezel-core fx-spot h-full p-6">
                   <div class="icon-tile"><UIcon :name="feature.icon" class="w-6 h-6" /></div>
                   <p class="mt-6 text-lg font-bold leading-snug text-gray-900 dark:text-white">{{ t(feature.titleKey) }}</p>
                   <p class="mt-1.5 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t(feature.descKey) }}</p>
+                  <div class="cv" aria-hidden="true">
+                    <div v-if="feature.key === 'businesses'" class="cv-dots"><i v-for="n in 5" :key="n" :style="{ '--i': n, '--h': 150 + n * 35 }" /></div>
+                    <div v-else-if="feature.key === 'ratings'" class="cv-stars"><span v-for="n in 5" :key="n" :style="{ '--i': n }"><UIcon name="lucide:star" class="h-5 w-5" /></span></div>
+                    <div v-else-if="feature.key === 'services'" class="cv-chips"><i v-for="(w, n) in ['3.2rem', '4.6rem', '2.6rem', '3.8rem']" :key="n" :style="{ '--i': n, '--w': w }" /></div>
+                    <UIcon v-else name="lucide:sparkles" class="cv-spark h-6 w-6" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -923,16 +992,61 @@ watch([articlesSearch, selectedArticleTag], () => {
           <span class="eyebrow">{{ t('app.homeCustHowEyebrow') }}</span>
           <h2 class="mt-5 text-3xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t('app.homeCustHowTitle') }}</h2>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-5">
-          <div v-for="(step, i) in customerSteps" :key="step.n" v-reveal="i * 110">
-            <div class="bezel h-full">
-              <div class="bezel-core h-full p-6 md:p-8">
-                <div class="flex items-center justify-between">
-                  <span class="text-4xl font-extrabold tracking-tight grad-text">{{ step.n }}</span>
-                  <div class="icon-tile"><UIcon :name="step.icon" class="w-6 h-6" /></div>
+        <div
+          ref="stepsRef"
+          class="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-12"
+          :class="stepsPaused ? 'steps--paused' : ''"
+          @mouseenter="stepsPaused = true"
+          @mouseleave="stepsPaused = false"
+        >
+          <ol class="flex flex-col gap-3">
+            <li v-for="(step, i) in customerSteps" :key="step.n" v-reveal="i * 110">
+              <button type="button" class="step-btn" :class="i === activeStep ? 'step-btn--on' : ''" :aria-current="i === activeStep" @click="pickStep(i)">
+                <span class="step-btn__n grad-text">{{ step.n }}</span>
+                <span class="step-btn__body">
+                  <b class="step-btn__title">{{ t(step.titleKey) }}</b>
+                  <span class="step-btn__desc"><span>{{ t(step.descKey) }}</span></span>
+                </span>
+                <span class="step-btn__bar"><i v-if="i === activeStep" :key="`${activeStep}-${stepsCycle}`" /></span>
+              </button>
+            </li>
+          </ol>
+
+          <!-- the screen that goes with the active step (no text, so it works in every language) -->
+          <div v-reveal="150" class="bezel">
+            <div class="bezel-core step-stage" aria-hidden="true">
+              <div class="scene" :class="activeStep === 0 ? 'scene--on' : ''">
+                <div class="m-search"><UIcon name="lucide:search" class="h-5 w-5 text-gray-400" /><span class="m-type" /><span class="m-caret" /></div>
+                <div class="m-list">
+                  <div v-for="n in 3" :key="n" class="m-row" :style="{ '--d': `${0.5 + n * 0.3}s` }">
+                    <span class="m-thumb" :style="{ '--h': 205 + n * 45 }" />
+                    <span class="m-lines"><i style="width: 70%" /><i style="width: 42%" /></span>
+                    <span class="m-rate"><UIcon name="lucide:star" class="h-3.5 w-3.5" />{{ ['4.9', '4.8', '4.7'][n - 1] }}</span>
+                  </div>
                 </div>
-                <h3 class="mt-8 text-xl font-bold text-gray-900 dark:text-white">{{ t(step.titleKey) }}</h3>
-                <p class="mt-2 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t(step.descKey) }}</p>
+              </div>
+              <div class="scene" :class="activeStep === 1 ? 'scene--on' : ''">
+                <div class="m-list">
+                  <div v-for="n in 3" :key="n" class="m-row" :class="n === 2 ? 'm-row--pick' : ''" :style="{ '--d': `${n * 0.25}s` }">
+                    <span class="m-thumb" :style="{ '--h': 20 + n * 55 }" />
+                    <span class="m-lines"><i style="width: 62%" /><i style="width: 36%" /></span>
+                    <span class="m-price">{{ ['1 200', '1 800', '950'][n - 1] }}</span>
+                    <span class="m-plus"><UIcon name="lucide:plus" class="h-4 w-4" /></span>
+                  </div>
+                </div>
+                <div class="m-cart"><UIcon name="lucide:shopping-bag" class="h-4 w-4" />2 750</div>
+              </div>
+              <div class="scene" :class="activeStep === 2 ? 'scene--on' : ''">
+                <div class="m-card">
+                  <div class="m-card__head">
+                    <span class="icon-tile !h-11 !w-11 !rounded-[0.9rem]"><UIcon name="lucide:store" class="h-5 w-5" /></span>
+                    <span class="m-lines"><i style="width: 55%" /><i style="width: 34%" /></span>
+                  </div>
+                  <div class="m-stamps">
+                    <span v-for="n in 8" :key="n" class="m-stamp" :style="{ '--d': `${0.4 + n * 0.28}s` }"><UIcon name="lucide:check" class="h-4 w-4" /></span>
+                  </div>
+                </div>
+                <span class="m-bonus"><UIcon name="lucide:gift" class="h-4 w-4" />+140</span>
               </div>
             </div>
           </div>
@@ -967,16 +1081,29 @@ watch([articlesSearch, selectedArticleTag], () => {
           <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeBizDesc') }}</p>
         </div>
 
+        <!-- how the products hand work over to each other -->
+        <div v-reveal class="mb-8 grid grid-cols-1 gap-4 md:mb-10 md:grid-cols-3 md:gap-5" aria-hidden="true">
+          <div v-for="(pair, i) in linkPairs" :key="pair.fromKey" class="bezel">
+            <div class="bezel-core flex items-center gap-3 p-4 md:p-5">
+              <span class="link-node"><UIcon :name="pair.fromIcon" class="h-4 w-4" />{{ t(pair.fromKey) }}</span>
+              <span class="link-wire"><i :style="{ animationDelay: `${i * 0.9}s` }" /></span>
+              <span class="link-node link-node--to" :style="{ animationDelay: `${i * 0.9}s` }"><UIcon :name="pair.toIcon" class="h-4 w-4" />{{ t(pair.toKey) }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Product film: same container edges as the heading above and the cards below — player left, copy right. -->
         <div v-reveal="80" class="mb-8 grid items-center gap-8 lg:mb-12 lg:grid-cols-[minmax(0,2.15fr)_minmax(0,1fr)] lg:gap-12">
-          <PromoVideoPlayer
-            src="/media/lota-full.mp4"
-            poster="/assets/lota-full-poster.jpg"
-            :width="1920"
-            :height="1080"
-            :sound-on-label="t('app.promoVideoSoundOn')"
-            :sound-off-label="t('app.promoVideoSoundOff')"
-          />
+          <div data-fx-scale>
+            <PromoVideoPlayer
+              src="/media/lota-full.mp4"
+              poster="/assets/lota-full-poster.jpg"
+              :width="1920"
+              :height="1080"
+              :sound-on-label="t('app.promoVideoSoundOn')"
+              :sound-off-label="t('app.promoVideoSoundOff')"
+            />
+          </div>
           <div>
             <h3 class="text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white md:text-3xl">{{ t('app.homeFilmTitle') }}</h3>
             <p class="mt-3 text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeFilmDesc') }}</p>
@@ -998,13 +1125,21 @@ watch([articlesSearch, selectedArticleTag], () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5">
           <div v-for="(tile, i) in bizTiles" :key="tile.id" v-reveal="(i % 3) * 100">
             <div class="bezel bezel-hover group h-full cursor-pointer" role="button" tabindex="0" @click="handleGoToHub" @keydown.enter="handleGoToHub">
-              <div class="bezel-core relative flex h-full min-h-[11rem] flex-col overflow-hidden p-5 md:p-6">
+              <div class="bezel-core fx-spot relative flex h-full min-h-[11rem] flex-col overflow-hidden p-5 md:p-6">
                 <UIcon :name="tile.icon" class="pointer-events-none absolute -right-6 -bottom-8 h-40 w-40 text-gray-900 dark:text-white" style="opacity: 0.045" />
                 <div class="flex items-center gap-3">
                   <div class="icon-tile"><UIcon :name="tile.icon" class="w-6 h-6" /></div>
                   <h3 class="text-xl font-bold tracking-tight text-gray-900 dark:text-white">{{ tile.name }}</h3>
                 </div>
                 <p class="mt-4 text-sm md:text-base leading-6 text-gray-600 dark:text-gray-300">{{ t(tile.descKey) }}</p>
+                <div class="pw" aria-hidden="true">
+                  <div v-if="tile.id === 'menu'" class="pw-orders"><span v-for="n in 3" :key="n" :style="{ '--i': n }"><i /><b /></span></div>
+                  <div v-else-if="tile.id === 'atrace'" class="pw-scan"><span class="pw-scan__qr"><UIcon name="lucide:qr-code" class="h-7 w-7" /></span><span class="pw-time">08<em>:</em>58</span></div>
+                  <div v-else-if="tile.id === 'contacts'" class="pw-stamps"><span v-for="n in 5" :key="n" :style="{ '--i': n }" /></div>
+                  <div v-else-if="tile.id === 'goods'" class="pw-stock"><i /></div>
+                  <div v-else-if="tile.id === 'issues'" class="pw-kanban"><span /><span /><span /><em class="pw-kanban__card" /></div>
+                  <div v-else-if="tile.id === 'plans'" class="pw-slots"><span v-for="n in 7" :key="n" :style="{ '--i': n }" /></div>
+                </div>
               </div>
             </div>
           </div>
@@ -1012,17 +1147,20 @@ watch([articlesSearch, selectedArticleTag], () => {
 
         <div v-reveal class="mt-4 md:mt-5">
           <div class="bezel">
-            <div class="bezel-core flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between md:p-8">
-              <div class="max-w-2xl">
-                <h3 class="text-xl md:text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.homeStartTitle') }}</h3>
-                <ol class="mt-3 flex flex-col gap-1.5 text-sm md:text-base text-gray-600 dark:text-gray-300">
-                  <li v-for="step in startSteps" :key="step.n" class="flex items-baseline gap-2">
-                    <span class="grad-text font-bold">{{ step.n }}</span>
+            <div class="bezel-core start-banner relative flex flex-col gap-8 overflow-hidden p-6 md:flex-row md:items-center md:justify-between md:p-10">
+              <span class="start-orb start-orb--a" aria-hidden="true" />
+              <span class="start-orb start-orb--b" aria-hidden="true" />
+              <div class="relative max-w-2xl">
+                <h3 class="text-xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{{ t('app.homeStartTitle') }}</h3>
+                <ol class="mt-5 flex flex-col gap-3 text-sm md:text-base text-gray-600 dark:text-gray-300">
+                  <li v-for="(step, i) in startSteps" :key="step.n" class="flex items-start gap-3">
+                    <span class="start-tick" :style="{ '--i': i }"><UIcon name="lucide:check" class="h-3.5 w-3.5" /></span>
                     <span><b class="font-semibold text-gray-900 dark:text-white">{{ t(step.titleKey) }}.</b> {{ t(step.descKey) }}</span>
                   </li>
                 </ol>
               </div>
-              <div class="flex flex-shrink-0 flex-col items-start gap-3">
+              <div class="relative flex flex-shrink-0 flex-col items-start gap-4 md:items-center">
+                <div class="start-zero grad-text grad-pan" aria-hidden="true">0</div>
                 <button type="button" class="cta-pill cta-pill--primary" @click="handleGoToHub">
                   {{ isLoggedIn ? (t('app.hubRibbonCtaLoggedIn') || 'Рабочее пространство') : t('app.promoVideoCta') }}
                   <span class="cta-arrow"><UIcon name="lucide:arrow-up-right" class="w-4 h-4" /></span>
