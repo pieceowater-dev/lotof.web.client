@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -679,12 +680,12 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0 max-w-[1600px] mx-auto w-full space-y-3 tabular-nums">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0 max-w-[1600px] mx-auto w-full space-y-3 tabular-nums">
     <!-- Top bar -->
     <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
       <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center flex-shrink-0">
-          <Icon name="lucide:store" class="w-5 h-5 text-primary-600 dark:text-primary-400" />
+        <div class="icon-tile !h-10 !w-10 !rounded-[0.9rem]">
+          <Icon name="lucide:store" class="w-5 h-5" />
         </div>
         <div class="min-w-0">
           <h1 class="text-lg font-bold leading-tight text-gray-900 dark:text-white truncate">{{ t('goods.register') }}</h1>
@@ -700,11 +701,11 @@ onMounted(async () => {
                -- a `contents` element has a zero-size rect and the highlight
                lands in the top-left corner. -->
           <div data-tour="goods-register-shift-actions" class="flex items-center gap-1.5 flex-wrap">
-            <UButton color="gray" variant="ghost" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
-            <UButton color="gray" variant="ghost" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
-            <UButton color="gray" variant="ghost" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
-            <UButton color="gray" variant="ghost" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
-            <span class="w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
+            <UButton color="gray" variant="soft" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
+            <UButton color="gray" variant="soft" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
+            <UButton color="gray" variant="soft" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
+            <UButton color="gray" variant="soft" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
+            <span class="hidden sm:block w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
             <UButton color="red" variant="soft" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
               {{ t('goods.closeShift') }}
             </UButton>
@@ -937,8 +938,8 @@ onMounted(async () => {
       </div>
     </div>
 
-    <UModal v-model="showCloseShift">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showCloseShift">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="font-semibold">{{ t('goods.closeShift') }}</h3>
         </template>
@@ -955,8 +956,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- X/Z shift report -->
-    <UModal v-model="showShiftReport">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showShiftReport">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ shiftReport?.status === 'CLOSED' ? t('goods.zReport') : t('goods.xReport') }}</h3></template>
         <div v-if="loadingShiftReport" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
         <div v-else-if="shiftReport" class="space-y-2 text-sm">
@@ -975,8 +976,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- Cash in/out -->
-    <UModal v-model="showCashMovement">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showCashMovement">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.cashMovement') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.movementType')">
@@ -1020,8 +1021,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- Check-level discount -->
-    <UModal v-model="showDiscount">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showDiscount">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.applyDiscount') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup v-if="discountRules.length" :label="t('goods.discountRule')">
@@ -1048,8 +1049,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- Gift certificate payment -->
-    <UModal v-model="showGiftCertPay">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showGiftCertPay">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.payGiftCert') }}</h3></template>
         <UFormGroup :label="t('goods.giftCertCode')">
           <UInput v-model="giftCertCode" placeholder="XXXX-XXXX" @keyup.enter="payWithGiftCert" />
@@ -1064,8 +1065,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- History: recent sales, cancel + return -->
-    <UModal v-model="showHistory" :ui="{ width: 'sm:max-w-xl' }">
-      <UCard>
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }" v-model="showHistory">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.history') }}</h3></template>
         <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
         <div v-else-if="!recentSales.length" class="text-center py-6 text-sm text-gray-400">—</div>
@@ -1098,8 +1099,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- Return (chit-linked or free) -->
-    <UModal v-model="showReturn" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard>
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="showReturn">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ returnForm.originalSaleId ? t('goods.return') : t('goods.freeReturn') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.reason')">

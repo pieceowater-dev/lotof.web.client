@@ -238,7 +238,7 @@ onMounted(async () => {
     </div>
 
     <div class="flex-1 min-h-0">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:users">
+      <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:users">
         <template #userId-data="{ row }">
           <button
             type="button"

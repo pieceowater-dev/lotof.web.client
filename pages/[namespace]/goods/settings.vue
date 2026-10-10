@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -521,7 +522,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between flex-shrink-0 gap-2">
       <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
       <div class="flex items-center gap-1.5 flex-wrap justify-end">
@@ -540,18 +541,20 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="sticky top-0 z-10 flex gap-1 overflow-x-auto overflow-y-hidden border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 mt-3 flex-shrink-0">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        type="button"
-        class="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors"
-        :class="activeTab === tab.key ? 'border-primary-500 text-primary-600 dark:text-primary-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-        @click="activeTab = tab.key"
-      >
-        <Icon :name="tab.icon" class="w-4 h-4" />
-        {{ tab.label }}
-      </button>
+    <div class="mt-3 mb-1 flex-shrink-0 overflow-x-auto no-scrollbar">
+      <div class="at-seg">
+        <button
+          v-for="tab in TABS"
+          :key="tab.key"
+          type="button"
+          class="at-seg__btn"
+          :class="activeTab === tab.key ? 'at-seg__btn--on' : ''"
+          @click="activeTab = tab.key"
+        >
+          <Icon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
+          <span>{{ tab.label }}</span>
+        </button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto mt-4 space-y-4">
@@ -725,8 +728,8 @@ onMounted(() => {
     </div>
 
     <!-- Add/edit warehouse modal -->
-    <UModal v-model="showWarehouseModal">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showWarehouseModal">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ editingWarehouseId ? t('goods.editWarehouse') : t('goods.createWarehouse') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.warehouseName')" required>
@@ -762,8 +765,8 @@ onMounted(() => {
     </UModal>
 
     <!-- Price list items modal -->
-    <UModal v-model="showPriceListItems" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard>
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="showPriceListItems">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ activePriceList?.name }}</h3></template>
         <div class="space-y-3">
           <div class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -791,8 +794,8 @@ onMounted(() => {
     </UModal>
 
     <!-- Recipe form modal -->
-    <UModal v-model="showRecipeForm" :ui="{ width: 'sm:max-w-2xl' }">
-      <UCard>
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" v-model="showRecipeForm">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.addRecipe') }}</h3></template>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">

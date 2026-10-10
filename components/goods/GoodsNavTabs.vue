@@ -55,7 +55,7 @@ function isActive(address: string) {
         v-if="isOwnerOrManager"
         data-tour="goods-settings-btn"
         :to="`/${nsSlug}/goods/settings`"
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+        class="at-btn"
       >
         <Icon name="lucide:settings" class="w-4 h-4" />
         <span class="hidden sm:inline">{{ t('goods.settings') }}</span>
@@ -63,19 +63,19 @@ function isActive(address: string) {
       </div>
     </div>
 
-    <div class="flex items-center gap-1 overflow-x-auto border-b border-gray-200 dark:border-gray-800">
-      <NuxtLink
-        v-for="tab in TABS"
-        :key="tab.address"
-        :to="tabPath(tab.address)"
-        class="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors"
-        :class="isActive(tab.address)
-          ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
-      >
-        <Icon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
-        {{ t(tab.labelKey) }}
-      </NuxtLink>
+    <div class="overflow-x-auto no-scrollbar flex-shrink-0">
+      <div class="at-seg">
+        <NuxtLink
+          v-for="tab in TABS"
+          :key="tab.address"
+          :to="tabPath(tab.address)"
+          class="at-seg__btn"
+          :class="isActive(tab.address) ? 'at-seg__btn--on' : ''"
+        >
+          <Icon :name="tab.icon" class="w-4 h-4 flex-shrink-0" />
+          <span>{{ t(tab.labelKey) }}</span>
+        </NuxtLink>
+      </div>
     </div>
   </div>
 </template>

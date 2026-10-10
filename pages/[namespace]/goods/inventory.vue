@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 // Inventory counting used to be one-item-at-a-time via a picker modal, with
@@ -171,7 +172,7 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.inventory') }}</h1>
@@ -192,7 +193,7 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-1 min-h-0 mt-3">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check" @select="openGrid">
+      <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:clipboard-check" @select="openGrid">
         <template #warehouseName-data="{ row }">
           <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openGrid(row)">
             {{ row.warehouseName }}
@@ -204,8 +205,8 @@ onMounted(loadAll);
       </AppTable>
     </div>
 
-    <UModal v-model="showStart">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showStart">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.startCount') }}</h3></template>
         <UFormGroup :label="t('goods.selectWarehouse')" required>
           <USelectMenu v-model="startWarehouseId" :options="warehouses.map((w) => ({ label: w.name, value: w.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
@@ -220,7 +221,7 @@ onMounted(loadAll);
     </UModal>
 
     <!-- Bulk count grid -->
-    <USlideover v-model="showGrid">
+    <USlideover class="at-modal" v-model="showGrid">
       <UCard class="flex flex-col h-full overflow-hidden" :ui="{ body: { base: 'flex-1 overflow-y-auto' } }">
         <template #header>
           <div class="flex items-center justify-between">

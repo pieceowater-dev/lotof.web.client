@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -188,7 +189,7 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.suppliers') }}</h1>
@@ -210,7 +211,7 @@ onMounted(loadAll);
 
     <div class="flex-1 min-h-0 mt-3 flex flex-col gap-3">
       <div class="flex-1 min-h-0">
-        <AppTable :rows="filteredSuppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
+        <AppTable soft :rows="filteredSuppliers" :columns="columns" :loading="loading" empty-icon="lucide:truck">
           <template #name-data="{ row }">
             <div class="flex items-center gap-2" @mouseenter="resolveContactsSummary(row)" @focusin="resolveContactsSummary(row)">
               <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEdit(supplierById.get(row.id)!)">
@@ -238,8 +239,8 @@ onMounted(loadAll);
       </div>
     </div>
 
-    <UModal v-model="showForm">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showForm">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ editingSupplier ? t('goods.editSupplier') : t('goods.addSupplier') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')" required><UInput v-model="form.name" autofocus @keyup.enter="submitForm" /></UFormGroup>
@@ -263,8 +264,8 @@ onMounted(loadAll);
       </UCard>
     </UModal>
 
-    <UModal v-model="showHistory">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showHistory">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.priceHistory') }}</h3></template>
         <div v-if="loadingHistory" class="text-center py-6 text-gray-400"><Icon name="lucide:loader" class="w-5 h-5 animate-spin mx-auto" /></div>
         <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">{{ t('goods.priceHistoryEmpty') }}</div>

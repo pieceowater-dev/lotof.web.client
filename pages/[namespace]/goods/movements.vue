@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 // Replaces purchases.vue + receiving.vue + transfers.vue + writeoffs.vue --
@@ -367,7 +368,7 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.movements') }}</h1>
@@ -408,7 +409,7 @@ onMounted(loadAll);
     </div>
 
     <div class="flex-1 min-h-0 mt-3">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:arrow-left-right" @select="openDetail">
+      <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:arrow-left-right" @select="openDetail">
         <template #kind-data="{ row }">
           <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
             <UIcon :name="typeIcon(row.kind)" class="w-4 h-4" />
@@ -428,7 +429,7 @@ onMounted(loadAll);
     </div>
 
     <!-- Detail drill-down -->
-    <USlideover v-model="showDetail">
+    <USlideover class="at-modal" v-model="showDetail">
       <UCard class="flex flex-col h-full overflow-hidden" :ui="{ body: { base: 'flex-1 overflow-y-auto' } }">
         <template #header>
           <div class="flex items-center justify-between">
@@ -485,8 +486,8 @@ onMounted(loadAll);
     </USlideover>
 
     <!-- Create -->
-    <UModal v-model="showCreate" :ui="{ width: 'sm:max-w-2xl' }">
-      <UCard>
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" v-model="showCreate">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.movementType')">
@@ -558,8 +559,8 @@ onMounted(loadAll);
     </UModal>
 
     <!-- Quick supplier create -- rescue path when there are none yet -->
-    <UModal v-model="showQuickSupplier">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showQuickSupplier">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
         <UFormGroup :label="t('goods.goodName')" required>
           <UInput v-model="quickSupplierName" autofocus @keyup.enter="createQuickSupplier" />

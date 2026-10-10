@@ -180,7 +180,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
       <div>
         <h1 data-tour="goods-warehouse-title" class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
@@ -232,7 +232,7 @@ onMounted(async () => {
     </div>
 
     <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">
-      <AppTable :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
+      <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
         <template #name-data="{ row }">
           <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(row.goodId)">
             {{ row.name }}

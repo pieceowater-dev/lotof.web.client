@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -259,7 +260,7 @@ onMounted(loadAll);
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex items-center justify-between gap-3 flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
@@ -309,7 +310,7 @@ onMounted(loadAll);
 
     <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
       <div class="flex-1 min-h-0">
-        <AppTable :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
+        <AppTable soft :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
               {{ maskProfanity(row.name) }}
@@ -329,7 +330,7 @@ onMounted(loadAll);
 
     <div v-else-if="activeTab === 'categories'" class="flex-1 min-h-0 flex flex-col mt-3">
       <div class="flex-1 min-h-0">
-        <AppTable :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag">
+        <AppTable soft :rows="categories" :columns="categoryColumns" :loading="loading" empty-icon="lucide:tag">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditCategory(row)">
               {{ maskProfanity(row.name) }}
@@ -346,7 +347,7 @@ onMounted(loadAll);
 
     <div v-else class="flex-1 min-h-0 flex flex-col mt-3">
       <div class="flex-1 min-h-0">
-        <AppTable :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler">
+        <AppTable soft :rows="units" :columns="unitColumns" :loading="loading" empty-icon="lucide:ruler">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditUnit(row)">
               {{ maskProfanity(row.name) }}
@@ -371,8 +372,8 @@ onMounted(loadAll);
       @submit="submitGoodForm"
     />
 
-    <UModal v-model="showCategoryModal">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showCategoryModal">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ editingCategory ? t('goods.editCategory') : t('goods.addCategory') }}</h3></template>
         <UFormGroup :label="t('goods.goodName')" required>
           <UInput v-model="categoryForm.name" size="lg" autofocus @keyup.enter="submitCategoryForm" />
@@ -386,8 +387,8 @@ onMounted(loadAll);
       </UCard>
     </UModal>
 
-    <UModal v-model="showUnitModal">
-      <UCard>
+    <UModal class="at-modal" :ui="atModalUi" v-model="showUnitModal">
+      <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ editingUnit ? t('goods.editUnit') : t('goods.addUnit') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')" required><UInput v-model="unitForm.name" size="lg" autofocus @keyup.enter="submitUnitForm" /></UFormGroup>
