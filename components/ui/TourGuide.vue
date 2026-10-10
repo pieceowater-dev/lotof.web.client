@@ -378,6 +378,6 @@ const stepContent = computed(() => {
 
 .tour-spotlight-hole {
   border-radius: 1.1rem;
-  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
 }
 </style>
