@@ -300,7 +300,7 @@ const stepContent = computed(() => {
       <!-- Highlight border -->
       <div
         v-if="highlightRect"
-        class="fixed z-[9999] border-4 border-primary rounded-xl pointer-events-none"
+        class="fixed z-[9999] rounded-[1.1rem] pointer-events-none ring-[3px] ring-primary-500/90 shadow-[0_0_0_6px_rgba(37,99,235,0.18)]"
         :class="'transition-all duration-300'"
         :style="{
           top: `${highlightRect.top - highlightRect.padding}px`,
@@ -313,7 +313,7 @@ const stepContent = computed(() => {
       <!-- Popup card -->
       <div
         v-if="popupRect"
-        class="fixed z-[10000] bg-white dark:bg-gray-900 rounded-xl p-6 max-w-sm"
+        class="fixed z-[10000] bg-white dark:bg-[#1a1a1a] rounded-[1.75rem] p-6 max-w-sm ring-1 ring-black/5 dark:ring-white/10"
         :class="'shadow-2xl transition-all duration-300'"
         :style="{
           top: `${popupRect.top}px`,
@@ -327,16 +327,16 @@ const stepContent = computed(() => {
             <span>{{ t('app.step') || 'Step' }} {{ currentStepIndex + 1 }} / {{ totalSteps }}</span>
             <span>{{ Math.round(progress) }}%</span>
           </div>
-          <div class="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div class="h-1.5 bg-gray-200 dark:bg-white/10 rounded-full overflow-hidden">
             <div
-              class="h-full bg-primary transition-all duration-300"
+              class="h-full rounded-full bg-gradient-to-r from-blue-600 to-emerald-500 transition-all duration-300"
               :style="{ width: `${progress}%` }"
             />
           </div>
         </div>
 
         <!-- Title -->
-        <h3 class="text-lg font-semibold mb-3 text-gray-900 dark:text-white">
+        <h3 class="text-lg font-extrabold tracking-tight mb-3 text-gray-900 dark:text-white">
           {{ stepTitle }}
         </h3>
 
@@ -347,41 +347,21 @@ const stepContent = computed(() => {
 
         <!-- Navigation -->
         <div class="flex items-center justify-between gap-2">
-          <UButton
-            variant="ghost"
-            size="sm"
-            class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-            @click="skipTour"
-          >
+          <button type="button" class="at-btn" @click="skipTour">
             {{ t('app.skip') || 'Skip' }}
-          </UButton>
+          </button>
 
           <div class="flex gap-2">
-            <UButton
-              v-if="canGoPrevious"
-              variant="outline"
-              size="sm"
-              @click="previousStep"
-            >
+            <button v-if="canGoPrevious" type="button" class="at-btn !px-3" @click="previousStep">
               <UIcon name="i-lucide-chevron-left" />
-            </UButton>
+            </button>
 
-            <UButton
-              variant="solid"
-              size="sm"
-              @click="nextStep"
-            >
+            <button type="button" class="at-btn at-btn--primary" @click="nextStep">
               <span v-if="canGoNext">{{ t('app.next') || 'Next' }}</span>
               <span v-else>{{ t('app.finish') || 'Finish' }}</span>
-              <UIcon
-                v-if="canGoNext"
-                name="i-lucide-chevron-right"
-              />
-              <UIcon
-                v-else
-                name="i-lucide-check"
-              />
-            </UButton>
+              <UIcon v-if="canGoNext" name="i-lucide-chevron-right" />
+              <UIcon v-else name="i-lucide-check" />
+            </button>
           </div>
         </div>
       </div>
@@ -397,7 +377,7 @@ const stepContent = computed(() => {
 }
 
 .tour-spotlight-hole {
-  border-radius: 12px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  border-radius: 1.1rem;
+  box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.55);
 }
 </style>

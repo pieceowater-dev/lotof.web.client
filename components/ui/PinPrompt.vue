@@ -1,5 +1,6 @@
 <template>
   <UModal
+    class="at-modal"
     :model-value="modelValue"
     :ui="{
       width: 'sm:max-w-md',

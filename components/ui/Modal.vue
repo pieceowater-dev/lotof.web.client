@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
@@ -28,11 +29,13 @@ watch(() => props.modelValue, async (open) => {
 
 <template>
   <UModal
+    class="at-modal"
+    :ui="atModalUi"
     :model-value="props.modelValue"
     :prevent-close="props.preventClose"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+    <UCard :ui="atCardUi">
       <div
         ref="initialFocusEl"
         tabindex="-1"

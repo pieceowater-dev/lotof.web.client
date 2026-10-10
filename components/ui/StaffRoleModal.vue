@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 // Shared body behind menu/StaffModal.vue, tasks/StaffModal.vue and
 // goods/GoodsStaffModal.vue -- they were ~110 identical lines apiece,
 // differing only in the per-product role list/descriptions and which i18n
@@ -58,8 +59,8 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal v-model="isOpen" @close="handleClose">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }">
+  <UModal class="at-modal" :ui="atModalUi" v-model="isOpen" @close="handleClose">
+    <UCard :ui="atCardUi">
       <template #header>
         <div>
           <h3 class="text-lg font-semibold">

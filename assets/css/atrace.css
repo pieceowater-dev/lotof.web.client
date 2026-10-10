@@ -25,6 +25,9 @@
 .at-btn--amber { color: #b45309; background: rgba(245, 158, 11, 0.14); }
 .at-btn--amber:hover { background: rgba(245, 158, 11, 0.22); }
 .dark .at-btn--amber { color: #fcd34d; background: rgba(245, 158, 11, 0.16); }
+.at-btn--danger { color: #fff; background-image: linear-gradient(90deg, #dc2626, #f43f5e); box-shadow: 0 12px 24px -14px rgba(220, 38, 38, 0.7); }
+.at-btn--danger:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(220, 38, 38, 0.8); }
+.at-btn--danger:active { transform: scale(0.97); }
 .at-btn--primary { color: #fff; background-image: linear-gradient(90deg, #2563eb, #10b981); box-shadow: 0 12px 24px -14px rgba(37, 99, 235, 0.7); }
 .at-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 16px 28px -14px rgba(37, 99, 235, 0.8); }
 .at-btn--primary:active { transform: scale(0.97); }
