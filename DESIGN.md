@@ -562,30 +562,35 @@ not get the blanket `padding-left: 1rem` from `contacts.css`.
 
 ## 13. Current state of the design (2026-10-10)
 
-**Language:** bezel / pill / brand-gradient, neutral gray dark theme. Every user-facing screen of the web client is in it.
+**Language:** bezel / pill / brand-gradient, neutral gray dark theme, motion at 2x speed, skeleton loaders, spinner feedback on pending
+clicks. Every user-facing screen of the web client is in it, including the former "not yet redesigned" block (product landing pages,
+shared dialogs, onboarding wizards, QuickSetup, EmptyState, Console).
 
 | Area | State | How it was checked |
 |---|---|---|
-| Home, hub, burger menu (coloured per-app tiles), app header/footer | Done | light + dark + 390px |
+| Home, hub, burger menu (coloured per-app tiles), header (pending spinner), footer | Done | light + dark + 390px |
 | Public: catalog, stores, memberships, services, feed, news, guide, landing pages, Chekalka | Done | light desktop, selected dark/mobile |
-| Public storefronts `/to/:ns/{menu,plans,memberships}` | Done (own storefront system, §8) | light desktop |
-| A-Trace (pages, settings, all modals) | Done | light + dark + 390px; modals opened one by one |
-| Menu (orders, settings tabs, all modals, order slideover) | Done | light + dark + 390px; modals opened one by one |
-| Contacts (list, new, settings, memberships, all modals) | Done | light + dark + 390px |
-| Issues (boards, kanban, settings, analytics, map, Zen, modals) | Done | light + dark + 390px; Zen with an empty list only |
-| Goods (stock, catalog, movements, inventory, suppliers, reports, register, settings, modals) | Done | light + dark + 390px |
-| Plans (calendar, catalog, reports, settings, tariffs, booking modals) | Done | light + dark + 390px |
+| Public storefronts `/to/:ns/{menu,plans,memberships}` | Done (own storefront system, §8) | light desktop, images crawled on prod |
+| A-Trace, Menu, Contacts, Issues, Goods, Plans (pages, settings, all modals) | Done | light + dark + 390px; modals opened one by one |
 | Console (home, billing, analytics, namespaces, team, publications, guide admin + editors) | Done | light + dark + 390px |
-| Shared dialogs (Confirm, Modal, PinPrompt, StaffRole, nickname, onboarding tour) | Done | light + dark |
-| Responsive | No horizontal page overflow at 320 / 390 / 768 on 37 routes (automated); tour popup capped to the viewport | Playwright overflow scan |
+| Shared dialogs (Confirm, Modal, PinPrompt, StaffRole, nickname, ContactUs, PhoneRequired, Downgrade, Renewal), onboarding tour, wizards | Done | Confirm/Pin/tour rendered; ContactUs/PhoneRequired/Downgrade/Renewal/wizards compile, not rendered |
+| Loading states | `AppSkeleton` in ~60 places; kanban + board cards rendered | delayed-API screenshots |
+| Pagination | Contacts table fixed (flex fill); Menu/A-Trace/Goods footers verified in view | Playwright footer-visibility probe |
+| Responsive | No horizontal page overflow at 320 / 390 / 768 on 37 routes | Playwright overflow scan |
 
 **Known gaps (honest list)**
-- Not visually verified: the Issues *Automations* slideover (its button only shows when the Menu integration is on for a board; restyled
-  to the panel look and compiles, never rendered), Zen Mode with real tasks, publications editor with real content.
-- Dark and 390px were reviewed on contact sheets of ~17 key routes plus targeted modals, not on every single screen.
-- Colour palettes used for entity colours (Plans service/brand colours, task-type colours) still include a near-black swatch. It is a data
-  colour the owner picks, not a UI accent, so the "no black accent" rule does not apply — but don't use it as a default.
+- Not visually verified: Issues *Automations* slideover (button hidden for the test tenant), Zen Mode with real tasks, publications
+  editor with real content, the four shared modals listed above and both onboarding wizards.
+- Dark and 390px were reviewed on contact sheets of key routes plus targeted modals, not on every single screen.
+- Skeletons were only seen rendered for the kanban and board cards; other variants were not caught mid-load.
+- Entity colour palettes (Plans service/brand, task types) still include a near-black swatch — a data colour the owner picks, not a UI accent.
 - Some table columns are intentionally wider than a phone and scroll inside their tray (orders, goods, attendance).
 
-**Related fix worth knowing:** Plans/Goods `getToken` must go through `ensure()` (sets the in-memory client token); returning the bare
-cookie made requests go out without the app header after a full page reload.
+**Data / backend notes that affect the UI**
+- Media URLs in the DB are path-only. On 2026-10-10 36 legacy rows (`https://lota.kz|lota.tools/api-*/media/…`) in goods, menu, hub catalog
+  and plans were rewritten through the postgres bastion (old values: scratchpad `media-url-backup-2026-10-10.json`); the client still
+  strips a stored host on read as a safety net.
+- Plans/Goods `getToken` must go through `ensure()` (sets the in-memory client token); returning the bare cookie made requests go out
+  without the app header after a full page reload.
+- `capital-gtw` still crashes occasionally with the `x/net` HPACK panic (also present in v0.60); the client retries reads on 502/503/504
+  but that only hides short restarts.
