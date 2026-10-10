@@ -781,7 +781,7 @@ watch(user, (u) => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col" data-reveal-off-mobile>
     <div class="pb-safe-or-4">
       <ClientOnly>
         <template #fallback>

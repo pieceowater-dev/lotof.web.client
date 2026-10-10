@@ -6,6 +6,9 @@ type RevealEl = HTMLElement & { __revealIO?: IntersectionObserver };
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.directive('reveal', {
     mounted(el: RevealEl, binding: { value?: number }) {
+      // Pages that opt out (`data-reveal-off-mobile`, e.g. /hub) show everything at once on phones:
+      // hidden-until-scrolled blocks made visitors forget the content was there.
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches && el.closest('[data-reveal-off-mobile]')) return;
       el.classList.add('reveal');
       if (binding.value) el.style.transitionDelay = `${binding.value / 2}ms`; // 2x faster motion
       if (typeof IntersectionObserver === 'undefined') {
