@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -64,7 +65,7 @@ watch(rangeDays, loadAll);
 </script>
 
 <template>
-  <div class="p-4 pb-safe-or-4 flex flex-col gap-4">
+  <div class="at-scope ct-scope p-4 pb-safe-or-4 flex flex-col gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
       <div class="min-w-0">
         <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('plans.reports') }}</h1>
@@ -96,7 +97,7 @@ watch(rangeDays, loadAll);
         </div>
       </div>
 
-      <UCard :ui="{ body: { padding: 'p-3 sm:p-4' } }" class="mt-1">
+      <UCard :ui="{ ...atCardUi, body: { padding: 'p-4' } }" class="mt-1">
         <template #header>
           <h2 class="font-semibold text-gray-900 dark:text-white">{{ t('plans.masterLoad') || 'Загрузка мастеров' }}</h2>
         </template>

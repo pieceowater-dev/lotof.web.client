@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 // Unified "new booking" form used by the calendar (index.vue) and by
 // click-to-create on an empty grid cell. Keeps the slot lookup and the
 // nuxt/ui field markup in one place instead of re-implemented per call site.
@@ -109,8 +110,8 @@ function submit() {
 </script>
 
 <template>
-  <UModal :model-value="modelValue" :ui="{ width: 'sm:max-w-lg' }" @update:model-value="(v: boolean) => emit('update:modelValue', v)">
-    <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+  <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" :model-value="modelValue" @update:model-value="(v: boolean) => emit('update:modelValue', v)">
+    <UCard :ui="atCardUi">
       <template #header>
         <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('plans.newBooking') || 'Новая запись' }}</h3>
       </template>

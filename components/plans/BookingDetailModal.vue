@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 // Booking detail + quick actions, shown as a narrow iOS-style bottom sheet.
 // View mode: read-only summary + status flow. Edit mode: name / phone /
 // comment inline, plus a reschedule sub-panel for date + master.
@@ -30,7 +31,7 @@ const toast = useToast();
 // A plain centred dialog — narrow, content-height, scrolls internally past
 // ~80vh. (USlideover's flex-1 base fights every width/height override for a
 // bottom sheet, which is why it kept coming out full-width and stretched.)
-const sheetUi = { width: 'sm:max-w-lg' };
+const sheetUi = { ...atModalUi, width: 'sm:max-w-lg' };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
   NEW: { label: t('plans.statusNew') || 'Новая', color: 'blue' },
@@ -137,12 +138,12 @@ watch(() => props.modelValue, (o) => { if (!o) { reMode.value = false; editMode.
 </script>
 
 <template>
-  <UModal
+  <UModal class="at-modal"
     :model-value="modelValue"
     :ui="sheetUi"
     @update:model-value="(v: boolean) => emit('update:modelValue', v)"
   >
-    <div v-if="booking" class="flex flex-col max-h-[85vh]">
+    <div v-if="booking" class="flex flex-col max-h-[85vh] rounded-[2rem] overflow-hidden">
       <!-- header -->
       <div class="flex items-center gap-3 px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         <span class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-semibold flex-shrink-0"

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -190,7 +191,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="p-4 pb-safe-or-4 flex flex-col gap-4">
+  <div class="at-scope ct-scope p-4 pb-safe-or-4 flex flex-col gap-4">
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
       <div class="min-w-0">
         <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('plans.catalog') }}</h1>
@@ -205,15 +206,13 @@ onMounted(async () => {
     </div>
     <PlansNavTabs />
 
-    <div class="flex items-center gap-1 border-b border-gray-200 dark:border-gray-800">
-      <button
-        class="px-3 py-2.5 text-sm font-medium border-b-2 -mb-px border-primary-500 text-primary-600 dark:text-primary-400"
-        @click="tab = 'services'"
-      >{{ t('plans.services') || 'Услуги' }}</button>
-      <NuxtLink
-        :to="`/${nsSlug}/plans/settings?tab=staff`"
-        class="px-3 py-2.5 text-sm font-medium border-b-2 -mb-px border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 flex items-center gap-1"
-      >{{ t('plans.masters') || 'Мастера' }} <UIcon name="lucide:arrow-up-right" class="w-3.5 h-3.5" /></NuxtLink>
+    <div class="overflow-x-auto no-scrollbar">
+      <div class="at-seg">
+        <button type="button" class="at-seg__btn at-seg__btn--on" @click="tab = 'services'">{{ t('plans.services') || 'Услуги' }}</button>
+        <NuxtLink :to="`/${nsSlug}/plans/settings?tab=staff`" class="at-seg__btn">
+          {{ t('plans.masters') || 'Мастера' }} <UIcon name="lucide:arrow-up-right" class="w-3.5 h-3.5" />
+        </NuxtLink>
+      </div>
     </div>
 
     <div v-if="booting" class="py-16 flex justify-center">
@@ -222,7 +221,7 @@ onMounted(async () => {
 
     <!-- SERVICES -->
     <template v-else-if="tab === 'services'">
-      <UCard :ui="{ body: { padding: 'p-3 sm:p-4' } }">
+      <UCard :ui="{ ...atCardUi, body: { padding: 'p-4' } }">
         <div class="flex items-center gap-2 flex-wrap">
           <UInput v-model="newCat" size="xs" :placeholder="t('plans.newCategory') || 'Новая категория'" class="w-48" @keydown.enter="addCat" />
           <UButton size="xs" variant="soft" color="gray" icon="lucide:folder-plus" @click="addCat">{{ t('common.add') || 'Добавить' }}</UButton>
@@ -293,8 +292,8 @@ onMounted(async () => {
     </template>
 
     <!-- service modal -->
-    <UModal v-model="svcModal" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="svcModal">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ svcEditing ? (t('plans.editService') || 'Услуга') : (t('plans.addService') || 'Новая услуга') }}</h3>
         </template>
@@ -344,8 +343,8 @@ onMounted(async () => {
     </UModal>
 
     <!-- master modal -->
-    <UModal v-model="mstModal" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="mstModal">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ mstEditing ? (t('plans.editMaster') || 'Мастер') : (t('plans.addMaster') || 'Новый мастер') }}</h3>
         </template>

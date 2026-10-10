@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -121,7 +122,7 @@ async function finish() {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto px-4 py-10">
+  <div class="at-scope ct-scope max-w-md mx-auto px-4 py-10">
     <div class="text-center mb-6">
       <div class="w-12 h-12 rounded-2xl bg-violet-100 dark:bg-violet-950/50 flex items-center justify-center mx-auto mb-3">
         <UIcon name="lucide:calendar-check" class="w-6 h-6 text-violet-500" />
@@ -137,7 +138,7 @@ async function finish() {
 
     <div v-if="booting" class="py-16 flex justify-center"><UIcon name="i-heroicons-arrow-path" class="w-7 h-7 animate-spin text-primary-500" /></div>
 
-    <UCard v-else :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UCard v-else :ui="atCardUi">
       <!-- STEP 1 — brand -->
       <div v-if="step === 1" class="space-y-4">
         <h2 class="font-semibold text-gray-900 dark:text-white">{{ t('plans.brandStep') || 'Оформление' }}</h2>

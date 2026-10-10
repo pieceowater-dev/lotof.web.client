@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -375,7 +376,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <!-- header -->
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center flex-shrink-0">
       <div class="flex items-center gap-3 min-w-0">
@@ -655,8 +656,8 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
     </template>
 
     <!-- location modal -->
-    <UModal v-model="locModal" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="locModal">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ locEditing ? (t('plans.editLocation') || 'Точка') : (t('plans.addLocation') || 'Новая точка') }}</h3>
         </template>
@@ -703,8 +704,8 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
     </UModal>
 
     <!-- master (staff) create/edit modal -->
-    <UModal v-model="mstModal" :ui="{ width: 'sm:max-w-lg' }">
-      <UCard :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="mstModal">
+      <UCard :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ mstEditing ? (t('plans.editMaster') || 'Сотрудник') : (t('plans.addMaster') || 'Новый сотрудник') }}</h3>
         </template>
@@ -750,8 +751,8 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
     </UModal>
 
     <!-- master schedule modal -->
-    <UModal v-model="mstSchedOpen" :ui="{ width: 'sm:max-w-md' }">
-      <UCard v-if="mstSchedMaster" :ui="{ body: { padding: 'p-4 sm:p-5' } }">
+    <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-md' }" v-model="mstSchedOpen">
+      <UCard v-if="mstSchedMaster" :ui="atCardUi">
         <template #header>
           <h3 class="text-base font-semibold">{{ t('plans.schedule') || 'Расписание' }} — {{ mstSchedMaster.name }}</h3>
         </template>

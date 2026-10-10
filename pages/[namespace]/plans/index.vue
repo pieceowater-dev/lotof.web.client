@@ -282,7 +282,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
 </script>
 
 <template>
-  <div class="h-full flex flex-col p-4 min-h-0 gap-3">
+  <div class="at-scope ct-scope h-full flex flex-col p-4 min-h-0 gap-3">
     <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center flex-shrink-0">
       <div class="min-w-0">
         <h1 data-tour="plans-title" class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('app.plans') }}</h1>
