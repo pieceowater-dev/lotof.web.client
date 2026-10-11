@@ -10,7 +10,8 @@ import { useOnboarding, type TourConfig } from '@/composables/useOnboarding';
 type TourPage = { match: RegExp; home: (ns: string) => string };
 
 const TOUR_PAGES: Record<string, TourPage> = {
-  'atrace-intro': { match: /^\/[^/]+\/atrace\/?$/, home: (ns) => `/${ns}/atrace` },
+  // The dashboard lives at /{ns}/atrace/attendance/{postId|all} (tab routing).
+  'atrace-intro': { match: /^\/[^/]+\/atrace(\/attendance(\/[^/]+)*)?\/?$/, home: (ns) => `/${ns}/atrace/attendance/all` },
   'menu-intro': { match: /^\/[^/]+\/menu\/?$/, home: (ns) => `/${ns}/menu` },
   'plans-intro': { match: /^\/[^/]+\/plans\/?$/, home: (ns) => `/${ns}/plans` },
   'goods-intro': { match: /^\/[^/]+\/goods\/?$/, home: (ns) => `/${ns}/goods` },
