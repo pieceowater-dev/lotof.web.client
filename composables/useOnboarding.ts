@@ -110,6 +110,9 @@ class OnboardingManager {
    * Start a tour
    */
   startTour(config: TourConfig, fromStep?: number) {
+    // Pages auto-start their tour on first visit; a manual launch that already
+    // brought the same tour up must not be restarted by that late auto-start.
+    if (this.isRunning.value && this.currentTour.value?.id === config.id && fromStep === undefined) return;
     this.currentTour.value = config;
     this.currentStepIndex.value = fromStep ?? this.getProgress(config.id);
     this.isRunning.value = true;

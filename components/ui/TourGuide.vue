@@ -3,6 +3,7 @@ import { computed, watch, nextTick, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useOnboarding } from '@/composables/useOnboarding';
 import { useI18n } from '@/composables/useI18n';
 import { useEscapeToClose } from '@/composables/useEscapeToClose';
+import { useTourLauncher, isOnTourPage } from '@/composables/useTourLauncher';
 
 const { t } = useI18n();
 const {
@@ -15,13 +16,17 @@ const {
   nextStep,
   previousStep,
   skipTour,
+  startTour,
 } = useOnboarding();
+const route = useRoute();
+const { pending, pendingTours } = useTourLauncher();
 
 useEscapeToClose(isRunning, skipTour);
 
 // Highlight element position and size
 const highlightRect = ref<{ top: number; left: number; width: number; height: number; padding: number } | null>(null);
 const popupRect = ref<{ top: number; left: number; width: number; placement: 'top' | 'bottom' | 'left' | 'right' } | null>(null);
+const viewportSize = ref({ width: 0, height: 0 });
 const missingTargetAttempts = ref(0);
 const lastAutoScrollStepId = ref<string | null>(null);
 let rafUpdateId: number | null = null;
@@ -70,6 +75,11 @@ function getViewportMetrics() {
   };
 }
 
+function isRendered(el: Element): boolean {
+  const rect = el.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+}
+
 function resolveTargetElement(target: string | string[]): Element | null {
   const selectors = Array.isArray(target)
     ? target
@@ -81,8 +91,11 @@ function resolveTargetElement(target: string | string[]): Element | null {
     if (visible) return visible;
   }
 
+  // Rendered but currently scrolled out of view: scrollIntoView will bring it
+  // in. A display:none twin (e.g. the desktop-only copy of a mobile button)
+  // has no box and must not be spotlighted as a 0x0 dot in the corner.
   for (const selector of selectors) {
-    const node = document.querySelector(selector);
+    const node = Array.from(document.querySelectorAll(selector)).find(isRendered);
     if (node) return node;
   }
 
@@ -129,6 +142,7 @@ function updateHighlight(options?: { allowAutoScroll?: boolean }) {
   const rect = target.getBoundingClientRect();
   const padding = currentStep.value.highlightPadding || 8;
   const viewport = getViewportMetrics();
+  viewportSize.value = { width: window.innerWidth, height: window.innerHeight };
 
   highlightRect.value = {
     top: rect.top + viewport.offsetTop,
@@ -173,6 +187,7 @@ function calculatePopupPosition(
   let top = 0;
   let left = 0;
   let picked = order[0];
+  let fitted = false;
 
   for (const candidate of order) {
     if (candidate === 'left' && targetRect.left < popupWidth + gap) continue;
@@ -183,6 +198,7 @@ function calculatePopupPosition(
       left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
       if (top + estimatedHeight > viewport.offsetTop + viewportHeight) continue;
       picked = candidate;
+      fitted = true;
       break;
     }
 
@@ -191,6 +207,7 @@ function calculatePopupPosition(
       left = targetRect.left + viewport.offsetLeft + targetRect.width / 2 - popupWidth / 2;
       if (top < viewport.offsetTop + 8) continue;
       picked = candidate;
+      fitted = true;
       break;
     }
 
@@ -198,13 +215,28 @@ function calculatePopupPosition(
       top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
       left = targetRect.left + viewport.offsetLeft - popupWidth - gap;
       picked = candidate;
+      fitted = true;
       break;
     }
 
     top = targetRect.top + viewport.offsetTop + targetRect.height / 2 - estimatedHeight / 2;
     left = targetRect.right + viewport.offsetLeft + gap;
     picked = candidate;
+    fitted = true;
     break;
+  }
+
+  // Nothing fits beside a tall target (kanban board, long table): dock the
+  // card to the screen edge farther from the target's centre instead of
+  // dropping it on top of the thing being explained.
+  if (!fitted) {
+    const targetMid = targetRect.top + targetRect.height / 2;
+    const dockBottom = targetMid < viewportHeight / 2;
+    top = dockBottom
+      ? viewport.offsetTop + viewportHeight - estimatedHeight - 16
+      : viewport.offsetTop + 88;
+    left = viewport.offsetLeft + viewportWidth / 2 - popupWidth / 2;
+    picked = dockBottom ? 'bottom' : 'top';
   }
 
   // Constrain to viewport -- every placement branch above can still produce
@@ -219,6 +251,41 @@ function calculatePopupPosition(
 
   popupRect.value = { top, left, width: popupWidth, placement: picked };
 }
+
+// A tour launched from another page waits here for its own page to open
+// (the layout and this component remount on navigation, hence shared state),
+// then for its first target to render, and only then starts.
+let arrivalTimer: number | null = null;
+function clearArrival() {
+  if (arrivalTimer !== null) { window.clearTimeout(arrivalTimer); arrivalTimer = null; }
+}
+function firstTargetPresent(tour: { steps: Array<{ target: string | string[] }> }): boolean {
+  const el = resolveTargetElement(tour.steps[0].target);
+  return !!el && isRendered(el);
+}
+function tryStartPending(attempt = 0) {
+  clearArrival();
+  const id = pending.value;
+  const tour = id ? pendingTours.get(id) : undefined;
+  if (!id || !tour) return;
+  if (!isOnTourPage(id, route.path)) {
+    // Redirecting landing pages (e.g. /issues -> a board) settle quickly;
+    // give up if we never reach the tour's page.
+    if (attempt < 40) arrivalTimer = window.setTimeout(() => tryStartPending(attempt + 1), 250);
+    else { pending.value = null; pendingTours.delete(id); }
+    return;
+  }
+  if (!firstTargetPresent(tour) && attempt < 60) {
+    arrivalTimer = window.setTimeout(() => tryStartPending(attempt + 1), 250);
+    return;
+  }
+  pending.value = null;
+  pendingTours.delete(id);
+  startTour(tour, 0);
+}
+watch(() => [pending.value, route.path], () => {
+  if (pending.value && import.meta.client) tryStartPending();
+});
 
 watch([isRunning, currentStep], async () => {
   if (isRunning.value && currentStep.value) {
@@ -235,9 +302,11 @@ watch([isRunning, currentStep], async () => {
 
 onMounted(() => {
   if (isRunning.value) bindWindowListeners();
+  if (pending.value) tryStartPending();
 });
 
 onBeforeUnmount(() => {
+  clearArrival();
   unbindWindowListeners();
   if (retryTimeoutId !== null) {
     window.clearTimeout(retryTimeoutId);
@@ -247,6 +316,24 @@ onBeforeUnmount(() => {
     window.cancelAnimationFrame(rafUpdateId);
     rafUpdateId = null;
   }
+});
+
+// Blur layer clipped to "whole screen minus the spotlight" (even-odd rounded
+// rect). The black dim alone vanishes on the dark theme (dark cards on a dark
+// page), so the surroundings are also softly blurred to read as out of focus.
+const blurClip = computed(() => {
+  const r = highlightRect.value;
+  if (!r) return undefined;
+  const { width: vw, height: vh } = viewportSize.value;
+  const x = r.left - r.padding;
+  const y = r.top - r.padding;
+  const w = r.width + r.padding * 2;
+  const h = r.height + r.padding * 2;
+  const rad = Math.min(17.6, w / 2, h / 2);
+  const hole = `M${x + rad} ${y}H${x + w - rad}A${rad} ${rad} 0 0 1 ${x + w} ${y + rad}V${y + h - rad}`
+    + `A${rad} ${rad} 0 0 1 ${x + w - rad} ${y + h}H${x + rad}A${rad} ${rad} 0 0 1 ${x} ${y + h - rad}`
+    + `V${y + rad}A${rad} ${rad} 0 0 1 ${x + rad} ${y}Z`;
+  return `path(evenodd, 'M0 0H${vw}V${vh}H0Z${hole}')`;
 });
 
 const progress = computed(() => {
@@ -287,6 +374,10 @@ const stepContent = computed(() => {
         class="fixed inset-0 z-[9998] bg-black/60 pointer-events-none"
       />
       <template v-else>
+        <div
+          class="fixed inset-0 z-[9998] pointer-events-none tour-blur"
+          :style="{ clipPath: blurClip }"
+        />
         <div
           class="fixed z-[9998] pointer-events-none tour-spotlight-hole"
           :style="{
@@ -380,5 +471,14 @@ const stepContent = computed(() => {
 .tour-spotlight-hole {
   border-radius: 1.1rem;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
+}
+
+.tour-blur {
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
+}
+
+:global(.dark) .tour-spotlight-hole {
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78);
 }
 </style>

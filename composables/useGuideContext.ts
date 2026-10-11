@@ -2,7 +2,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS } from '@/config/apps';
-import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, plansTour } from '@/config/tours';
+import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, goodsRegisterTour, plansTour } from '@/config/tours';
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
@@ -76,6 +76,9 @@ export function useGuideContext() {
   const currentTour = computed<TourConfig | null>(() => {
     const id = currentAppId.value;
     if (!id || isConsoleRoute.value || isPublicationRoute.value) return null;
+    // The register screen has its own walkthrough; every other Goods page
+    // (settings, inventory, ...) offers the warehouse one.
+    if (id === 'goods' && /^\/[^/]+\/goods\/register\/?$/.test(route.path)) return goodsRegisterTour;
     return APP_TOURS[id] ?? null;
   });
 

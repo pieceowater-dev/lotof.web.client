@@ -146,7 +146,7 @@
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { useOnboarding } from '@/composables/useOnboarding';
+import { useTourLauncher } from '@/composables/useTourLauncher';
 import { GUIDE_APP_BY_ID, GUIDE_APP_IDS, useGuideContext } from '@/composables/useGuideContext';
 import { ALL_APPS } from '@/config/apps';
 import { useGuideApps } from '@/composables/useGuideApps';
@@ -162,7 +162,7 @@ const { t, locale } = useI18n();
 // the visitor is on (lota.tools / lota.kz / a mirror).
 const currentHost = import.meta.client ? window.location.host : useRequestURL({ xForwardedHost: true }).host;
 const { currentAppId, currentTour, currentAppName, currentGuideApp } = useGuideContext();
-const { startTour, reset } = useOnboarding();
+const { launchTour } = useTourLauncher();
 
 function localeSuffix(): 'Ru' | 'Kk' | 'En' {
   if (locale.value === 'kk') return 'Kk';
@@ -222,8 +222,8 @@ const browsableApps = computed(() => GUIDE_APP_IDS.map((id) => {
 
 function startCurrentTour() {
   if (!currentTour.value) return;
-  reset(currentTour.value.id);
-  startTour(currentTour.value, 0);
+  // Takes the visitor to the tour's page first when they are elsewhere.
+  launchTour(currentTour.value);
   isOpen.value = false;
 }
 
