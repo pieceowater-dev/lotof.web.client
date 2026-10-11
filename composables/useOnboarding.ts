@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { useAnalytics } from '@/composables/useAnalytics';
 
 export type TourStep = {
   id: string;
@@ -106,6 +107,10 @@ class OnboardingManager {
     }
   }
 
+  private track(event: string, tourId: string, step: number) {
+    try { useAnalytics().track(event, { tourId, step }); } catch {}
+  }
+
   /**
    * Start a tour
    */
@@ -116,6 +121,7 @@ class OnboardingManager {
     this.currentTour.value = config;
     this.currentStepIndex.value = fromStep ?? this.getProgress(config.id);
     this.isRunning.value = true;
+    this.track('tour_started', config.id, this.currentStepIndex.value);
   }
 
   /**
@@ -137,6 +143,7 @@ class OnboardingManager {
     
     if (nextIndex >= this.currentTour.value.steps.length) {
       // Tour completed
+      this.track('tour_completed', this.currentTour.value.id, nextIndex);
       this.markCompleted(this.currentTour.value.id);
       this.resetProgress(this.currentTour.value.id);
       this.stopTour();
@@ -163,6 +170,7 @@ class OnboardingManager {
    */
   skipTour() {
     if (this.currentTour.value) {
+      this.track('tour_skipped', this.currentTour.value.id, this.currentStepIndex.value);
       this.markSkipped(this.currentTour.value.id);
       this.resetProgress(this.currentTour.value.id);
     }

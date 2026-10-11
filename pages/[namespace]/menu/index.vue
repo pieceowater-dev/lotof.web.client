@@ -783,13 +783,14 @@ const updatingStatusId = ref<string | null>(null);
 async function handleStatusChange(order: MenuOrder, status: string) {
   if (order.status === status) return;
   updatingStatusId.value = order.id;
+  const fromStatus = order.status;
   try {
     const menuToken = await getToken();
     const { menuUpdateOrderStatus } = await import('@/api/menu/order/updateStatus');
     const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, order.id, status);
     const idx = orders.value.findIndex((o) => o.id === updated.id);
     if (idx !== -1) orders.value[idx] = updated;
-    useAnalytics().track('menu_order_status_changed', { orderId: order.id, fromStatus: order.status, toStatus: status });
+    useAnalytics().track('menu_order_status_changed', { orderId: order.id, fromStatus, toStatus: status });
     clearNewOrder(order.id);
     loadStatusCounts();
   } catch (e) {

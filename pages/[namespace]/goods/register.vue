@@ -537,6 +537,7 @@ async function payWith(method: GoodsPaymentMethod, giftCertificateCode?: string)
     const goodsToken = await getToken();
     const { goodsPaySale } = await import('@/api/goods/sale');
     await goodsPaySale(goodsToken, nsSlug.value, activeSale.value.id, [{ method, amountCents: activeSale.value.totalAmountCents, giftCertificateCode }]);
+    useAnalytics().track('goods_sale_paid', { method, totalAmountCents: activeSale.value.totalAmountCents });
     useToast().add({ title: t('goods.checkoutSuccess'), color: 'green' });
     activeSale.value = null;
     showGiftCertPay.value = false;

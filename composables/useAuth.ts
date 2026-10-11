@@ -69,6 +69,9 @@ export function useAuth() {
         if (data?.namespaces?.rows) {
           const { applyLoaded } = useNamespace();
           applyLoaded(data.namespaces.rows, token.value);
+          // A namespace restored from storage never goes through setNamespace,
+          // so stamp it onto the Amplitude profile/group here too.
+          try { useAnalytics().setNamespaceContext(useNamespace().selected.value); } catch {}
         }
       } catch (e) {
         const status = (e as any)?.response?.status ?? (e as any)?.response?.statusCode ?? (e as any)?.status;

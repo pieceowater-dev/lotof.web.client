@@ -488,6 +488,7 @@ async function handleTaskSubmit(payload: Record<string, any>) {
     const { tasksCreateTask } = await import('@/api/tasks/task/create');
     const created = await tasksCreateTask(token, nsSlug.value, { boardId: boardId.value, cycleId: defaultCycleIdForNewTask.value, ...payload } as any);
     tasks.value = [...tasks.value, created];
+    useAnalytics().track('issues_task_created', { source: 'modal' });
     isTaskModalOpen.value = false;
     loadTasks({ silent: true });
   } catch (e) {
@@ -543,6 +544,7 @@ async function submitQuickAdd() {
       // someone remembers to claim it.
       assigneeUserId: currentUser.value?.id || undefined,
     });
+    useAnalytics().track('issues_task_created', { source: 'quick_add' });
     tasks.value = [...tasks.value, created];
     quickAddTitle.value = '';
   } catch (e) {

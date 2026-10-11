@@ -180,6 +180,7 @@ async function submitCreate(payload: any) {
   creating.value = true;
   try {
     await plansApi.createBooking(nsSlug.value, payload);
+    useAnalytics().track('plans_booking_created', { source: 'staff' });
     showCreate.value = false;
     toast.add({ title: t('common.success'), description: t('plans.bookingCreated') || 'Запись создана', color: 'emerald' });
     await loadBookings(true);

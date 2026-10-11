@@ -41,7 +41,9 @@ export function useAnalytics() {
     initialized = true;
   }
 
-  function identifyUser(user: { id: string; username?: string; email?: string; phone?: string | null } | null) {
+  // Only the opaque user id plus a has_phone flag go to Amplitude -- no email
+  // or username, so the "anonymous analytics" promise in the cookie notice holds.
+  function identifyUser(user: { id: string; phone?: string | null } | null) {
     if (!process.client) return;
     if (!user) {
       amplitude.reset();
@@ -49,8 +51,6 @@ export function useAnalytics() {
     }
     amplitude.setUserId(user.id);
     const identity = new amplitude.Identify();
-    if (user.username) identity.set('username', user.username);
-    if (user.email) identity.set('email', user.email);
     identity.set('has_phone', Boolean(user.phone && user.phone.trim()));
     amplitude.identify(identity);
   }
