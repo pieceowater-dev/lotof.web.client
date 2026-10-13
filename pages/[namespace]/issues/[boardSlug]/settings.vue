@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { leadKey, leadEndpoint, leadFormSnippet } from '@/utils/leadForm';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
@@ -207,6 +208,20 @@ const webhookUrl = computed(() => {
   if (!board.value || typeof window === 'undefined') return '';
   return `${window.location.origin}${getApiBasePath('tasks')}/webhook/${nsSlug.value}/boards/${board.value.id}/tasks`;
 });
+
+// Public lead form for the customer's website: the address carries a key
+// derived from the webhook secret (see utils/leadForm.ts).
+const leadKeyValue = ref('');
+watch([webhookSecret, () => board.value?.id], async ([secret, id]) => {
+  leadKeyValue.value = secret && id ? await leadKey(secret as string, id as string) : '';
+}, { immediate: true });
+const leadUrl = computed(() => {
+  if (!board.value || !leadKeyValue.value || typeof window === 'undefined') return '';
+  return leadEndpoint(window.location.origin, getApiBasePath('tasks'), nsSlug.value, board.value.id, leadKeyValue.value);
+});
+const leadSnippet = computed(() => leadUrl.value ? leadFormSnippet(leadUrl.value, {
+  name: t('tasks.leadFieldName'), phone: t('tasks.leadFieldPhone'), comment: t('tasks.leadFieldComment'), send: t('tasks.leadSend'), thanks: t('tasks.leadThanks'),
+}) : '');
 
 async function copyToClipboard(value: string, toastKey: string, fallback: string) {
   if (!value) return;
@@ -679,6 +694,26 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
                   </UButton>
                 </div>
               </div>
+            </UCard>
+
+            <UCard :ui="panelUi">
+              <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                <UIcon name="lucide:globe" class="w-3.5 h-3.5" />
+                {{ t('tasks.leadForm') }}
+              </h4>
+              <p class="text-xs text-gray-400 mb-3">{{ t('tasks.leadFormHint') }}</p>
+              <div v-if="leadUrl" class="space-y-2">
+                <div class="flex items-center gap-2">
+                  <UInput :model-value="leadUrl" readonly size="sm" class="flex-1 font-mono text-xs" />
+                  <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" @click="copyToClipboard(leadUrl, 'tasks.webhookCopied', 'Copied to clipboard')" />
+                </div>
+                <UTextarea :model-value="leadSnippet" readonly :rows="6" class="font-mono text-xs" />
+                <button type="button" class="at-btn !px-3 !py-1.5" @click="copyToClipboard(leadSnippet, 'tasks.webhookCopied', 'Copied to clipboard')">
+                  <Icon name="lucide:copy" class="w-4 h-4" />{{ t('tasks.leadCopyForm') }}
+                </button>
+                <p class="at-hint">{{ t('tasks.leadFormNote') }}</p>
+              </div>
+              <p v-else class="text-xs text-gray-400">{{ t('tasks.leadFormNoSecret') }}</p>
             </UCard>
           </template>
         </div>

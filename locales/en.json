@@ -3233,6 +3233,16 @@
     "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
+    "leadForm": "Website lead form",
+    "leadFormHint": "Requests from your website become tasks on this board. Paste the code into a page of your site.",
+    "leadCopyForm": "Copy form code",
+    "leadFormNote": "The address contains a key. If you regenerate the webhook secret, the old form stops accepting requests. A repeat request from the same phone within 24 hours does not create a new task.",
+    "leadFormNoSecret": "Enable the webhook first: its secret is needed for the form key.",
+    "leadFieldName": "Name",
+    "leadFieldPhone": "Phone",
+    "leadFieldComment": "Comment",
+    "leadSend": "Send",
+    "leadThanks": "Thank you! We will contact you soon.",
     "viewOverdue": "Overdue",
     "viewNoDue": "No deadline",
     "viewProblem": "With a problem",
