@@ -120,6 +120,15 @@ const catalogFeatures = [
 
 // Marketing tiles for the logged-out "for business" bento (logged-in staff
 // see their real app dashboard instead). span = columns of the 6-col grid.
+// "What we added lately": short, plain lines; copy lives under app.homeNew*.
+const newItems = [
+  { icon: 'lucide:list-checks', key: 'Stages' },
+  { icon: 'lucide:globe', key: 'Leads' },
+  { icon: 'lucide:paperclip', key: 'Files' },
+  { icon: 'lucide:package-check', key: 'Stock' },
+  { icon: 'lucide:file-text', key: 'Docs' },
+  { icon: 'lucide:shield-check', key: 'Access' },
+];
 const bizTiles = [
   { id: 'menu', name: 'Orders', icon: 'lucide:receipt-text', descKey: 'app.homeProdOrders', span: 'md:col-span-4', big: true },
   { id: 'atrace', name: 'A-Trace', icon: 'lucide:qr-code', descKey: 'app.homeProdAtrace', span: 'md:col-span-2', big: false },
@@ -1136,6 +1145,23 @@ watch([articlesSearch, selectedArticleTag], () => {
                   <div v-else-if="tile.id === 'goods'" class="pw-stock"><i /></div>
                   <div v-else-if="tile.id === 'issues'" class="pw-kanban"><span /><span /><span /><em class="pw-kanban__card" /></div>
                   <div v-else-if="tile.id === 'plans'" class="pw-slots"><span v-for="n in 7" :key="n" :style="{ '--i': n }" /></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-reveal class="mt-10 md:mt-14">
+          <span class="eyebrow">{{ t('app.homeNewEyebrow') }}</span>
+          <h3 class="mt-4 text-2xl md:text-3xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">{{ t('app.homeNewTitle') }}</h3>
+          <p class="mt-2 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-300">{{ t('app.homeNewDesc') }}</p>
+          <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-for="item in newItems" :key="item.key" class="bezel">
+              <div class="bezel-core flex h-full gap-4 p-5">
+                <div class="icon-tile flex-shrink-0"><UIcon :name="item.icon" class="h-5 w-5" /></div>
+                <div>
+                  <h4 class="font-bold text-gray-900 dark:text-white">{{ t(`app.homeNew${item.key}Title`) }}</h4>
+                  <p class="mt-1 text-sm leading-6 text-gray-600 dark:text-gray-300">{{ t(`app.homeNew${item.key}Text`) }}</p>
                 </div>
               </div>
             </div>
