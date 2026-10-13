@@ -322,7 +322,7 @@ const returnableReceipts = computed(() => receipts.value.filter((r) => !form.war
 const returnReceipt = computed(() => receipts.value.find((r) => r.id === returnReceiptId.value) || null);
 const returnLines = computed(() => (returnReceipt.value?.items || []).map((i) => ({ goodId: i.goodId, unitId: i.unitId, received: i.quantity, qty: Number(returnQty[i.goodId] || 0) })));
 watch(returnReceiptId, () => { for (const k of Object.keys(returnQty)) delete returnQty[k]; });
-const receiptOptions = computed(() => returnableReceipts.value.map((r) => ({ label: `${r.number || r.id.slice(0, 8)} · ${supplierName(r.supplierId)} · ${formatDateOnly(r.createdAt, locale)}`, value: r.id })));
+const receiptOptions = computed(() => returnableReceipts.value.map((r) => ({ label: `${r.number || r.id.slice(0, 8)} · ${supplierName(r.supplierId)} · ${formatDateOnly(r.createdAt, locale.value)}`, value: r.id })));
 
 function resetCreateForm() {
   // Defaults to the first warehouse instead of forcing an empty selection --
