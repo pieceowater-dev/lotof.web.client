@@ -24,6 +24,7 @@ import OrderFlowPanel from '@/components/menu/OrderFlowPanel.vue';
 import OrderCalls from '@/components/menu/OrderCalls.vue';
 import OrderNotes from '@/components/menu/OrderNotes.vue';
 import OrderExtras from '@/components/menu/OrderExtras.vue';
+import { applyCustomDocVariables, parseCustomDocVariables } from '@/utils/customDocVariables';
 import { useOrderStages } from '@/composables/useOrderStages';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';
@@ -1183,7 +1184,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   }
   const linkTokens = new Set(Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_LINK.localTokens));
   const content = await expandQrTokens(template.content, (name) => (linkTokens.has(name) ? variables.ORDER_LINK : undefined));
-  const html = substituteMenuDocVariables(content, variables);
+  const html = applyCustomDocVariables(substituteMenuDocVariables(content, variables), parseCustomDocVariables(brandSettings.value?.orderRules));
   // Included in the document's <title>, which browsers use as the default
   // filename when the print dialog is used to "Save as PDF" -- without the
   // order number, printing the same template for different orders produces

@@ -6,6 +6,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import DocumentTemplateEditor from '@/components/menu/DocumentTemplateEditor.vue';
+import CustomDocVariablesCard from '@/components/menu/settings/CustomDocVariablesCard.vue';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
@@ -184,6 +185,8 @@ onMounted(() => {
     <div v-if="error" class="mb-4 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm px-3 py-2">
       {{ error }}
     </div>
+
+    <CustomDocVariablesCard class="mb-3 flex-shrink-0" />
 
     <div class="flex-1 min-h-0">
       <AppTable soft :rows="templates" :columns="columns" :loading="loading" empty-icon="lucide:file-text">

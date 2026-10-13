@@ -99,7 +99,7 @@ export async function menuOrderQuickCounts(token: string, ns: string, participan
   return r.orderQuickCounts;
 }
 
-export async function menuUpdateOrderRules(token: string, ns: string, rules: Record<string, boolean | string>): Promise<string> {
+export async function menuUpdateOrderRules(token: string, ns: string, rules: Record<string, boolean | string | Record<string, string>>): Promise<string> {
   const r = await call<{ updateOrderRules: { orderRules: string } }>(token, ns, `mutation Rules($rules: String!) { updateOrderRules(rules: $rules) { orderRules } }`, { rules: JSON.stringify(rules) });
   return r.updateOrderRules.orderRules;
 }
