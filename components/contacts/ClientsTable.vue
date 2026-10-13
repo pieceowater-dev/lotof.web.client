@@ -113,7 +113,7 @@ interface ColumnDef {
 const STORAGE_KEY = 'contacts-table-columns';
 
 const defaultColumns: ColumnDef[] = [
-  { key: 'type', label: 'Type', width: 50, minWidth: 50, sortable: false },
+  { key: 'type', label: 'Type', width: 76, minWidth: 76, sortable: false },
   { key: 'createdAt', label: 'Created', width: 160, minWidth: 140, sortable: true },
   { key: 'name', label: 'Name', width: 280, minWidth: 220, sortable: true },
   { key: 'contacts', label: 'Contacts', width: 340, minWidth: 260, sortable: false },
@@ -287,6 +287,38 @@ function getClientName(client: ClientRow): string {
     return maskProfanity(parts.join(' '));
   }
   return maskProfanity(client.legalEntity?.legalName) || '—';
+}
+
+// Row selection (kept across pages by id) + Excel of the selected clients.
+const selectedRows = ref<Record<string, ClientRow>>({});
+const selectedCount = computed(() => Object.keys(selectedRows.value).length);
+const pageAllSelected = computed(() => paginatedClients.value.length > 0 && paginatedClients.value.every((c) => !!selectedRows.value[c.client.id]));
+function toggleRow(c: ClientRow) {
+  const next = { ...selectedRows.value };
+  if (next[c.client.id]) delete next[c.client.id]; else next[c.client.id] = c;
+  selectedRows.value = next;
+}
+function togglePage() {
+  const next = { ...selectedRows.value };
+  if (pageAllSelected.value) paginatedClients.value.forEach((c) => delete next[c.client.id]);
+  else paginatedClients.value.forEach((c) => { next[c.client.id] = c; });
+  selectedRows.value = next;
+}
+async function exportSelected() {
+  const XLSX = await import('xlsx');
+  const data = Object.values(selectedRows.value).map((c) => ({
+    [t('contacts.name') || 'Name']: getClientName(c),
+    [t('contacts.type') || 'Type']: c.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity'),
+    [t('contacts.contacts') || 'Contacts']: (c.contacts || []).map((x) => x.value).join(', '),
+    [t('contacts.identifier') || 'BIN/IIN']: c.legalEntity?.binIin || '',
+    [t('contacts.additionalInfo') || 'Info']: c.additionalInfo || '',
+    [t('contacts.status') || 'Status']: c.client.status,
+    [t('contacts.tags') || 'Tags']: (c.tags || []).map((x) => x.name).join(', '),
+    [t('contacts.createdAt') || 'Created']: new Date(c.client.createdAt).toLocaleString(),
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'clients');
+  XLSX.writeFile(wb, `clients-${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
 function getClientIdentifier(client: ClientRow): string {
@@ -482,6 +514,12 @@ function addTagToFilter(tagId: string, tagName: string) {
             @update:search-query="(query) => emit('update:searchQuery', query)"
           />
         </div>
+        <button v-if="selectedCount" type="button" class="at-btn !px-3 !py-1.5 flex-shrink-0" @click="exportSelected">
+          <UIcon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel · {{ selectedCount }}
+        </button>
+        <button v-if="selectedCount" type="button" class="at-btn !px-2 !py-1.5 flex-shrink-0" :title="t('common.clear') || 'Clear'" @click="selectedRows = {}">
+          <UIcon name="lucide:x" class="h-4 w-4" />
+        </button>
         <div class="relative hidden flex-shrink-0 sm:block">
           <button type="button" class="at-btn !px-3 !py-1.5" @click="columnsOpen = !columnsOpen">
             <UIcon name="lucide:columns-3" class="h-4 w-4" />{{ t('contacts.columnsTitle') }}
@@ -524,6 +562,9 @@ function addTagToFilter(tagId: string, tagName: string) {
               @click="col.sortable ? handleSort(col.key) : undefined"
             >
               <div class="flex items-center gap-1">
+                <button v-if="index === 0" type="button" class="flex-shrink-0" @click.stop="togglePage">
+                  <UIcon :name="pageAllSelected ? 'lucide:check-square' : 'lucide:square'" class="h-4 w-4" :class="pageAllSelected ? 'text-accent-600' : 'text-gray-400'" />
+                </button>
                 <span>{{ t(`contacts.${col.key}`) }}</span>
                 <UIcon 
                   v-if="col.sortable && sortBy === col.key"
@@ -601,7 +642,10 @@ function addTagToFilter(tagId: string, tagName: string) {
               v-show="isVisible(0)" :style="{ width: `${columns[0].width}px` }"
               class="px-2 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
-              <div class="flex items-center justify-center">
+              <div class="flex items-center justify-center gap-2">
+                <button type="button" class="flex-shrink-0" @click.stop="toggleRow(client)">
+                  <UIcon :name="selectedRows[client.client.id] ? 'lucide:check-square' : 'lucide:square'" class="h-4 w-4" :class="selectedRows[client.client.id] ? 'text-accent-600' : 'text-gray-400'" />
+                </button>
                 <UIcon 
                   :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user' : 'lucide:building-2'" 
                   class="w-4 h-4"
