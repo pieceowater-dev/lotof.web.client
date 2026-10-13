@@ -195,6 +195,7 @@ const form = reactive({
   geoMap: false,
   zenMode: false,
   handoffAccept: false,
+  rolloverOverdue: false,
   menuIntegration: false,
   contactsIntegration: false,
   cycles: false,
@@ -299,6 +300,7 @@ function populateForm(b: TaskBoard) {
   form.geoMap = !!flags.geo_map;
   form.zenMode = !!flags.zen_mode;
   form.handoffAccept = !!(flags as any).handoff_accept;
+  form.rolloverOverdue = !!(flags as any).rollover_overdue;
   form.cycles = !!flags.cycles;
   form.cycleCarryOver = (flags as any).cycle_carry_over === 'next' ? 'next' : 'backlog';
   const integrations = parseFlags(b.integrationFlags);
@@ -393,7 +395,7 @@ async function handleSave() {
       // -- always send "none" since the column is unconditionally
       // overwritten on every board update regardless of what's passed.
       deliveryConfirmationMode: 'none',
-      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, handoff_accept: form.handoffAccept, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
+      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, handoff_accept: form.handoffAccept, rollover_overdue: form.rolloverOverdue, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
       integrationFlags: JSON.stringify({
         menu: form.menuIntegration && menuAppInstalled.value,
         contacts: form.contactsIntegration && contactsAppInstalled.value,
@@ -538,6 +540,16 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
                 <span>
                   <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:forward" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagHandoffAccept') }}</span>
                   <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagHandoffAcceptDesc') }}</span>
+                </span>
+              </label>
+            </UCard>
+
+            <UCard :ui="panelUi">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <UToggle v-model="form.rolloverOverdue" size="sm" class="mt-0.5" />
+                <span>
+                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:calendar-clock" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagRollover') }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagRolloverDesc') }}</span>
                 </span>
               </label>
             </UCard>

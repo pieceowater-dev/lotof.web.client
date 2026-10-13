@@ -3282,6 +3282,8 @@
     "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
+    "flagRollover": "Move overdue deadlines to today",
+    "flagRolloverDesc": "Open tasks due on an earlier day automatically get today as the deadline, at the same time of day. The task journal records it.",
     "fromTemplate": "From a template",
     "templateCreated": "Task created: {name}",
     "templates": "Task templates",
