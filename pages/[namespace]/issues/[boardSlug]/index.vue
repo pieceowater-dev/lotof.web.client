@@ -402,7 +402,7 @@ async function exportTasks() {
   const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString() : '');
   const data = visibleTasks.value.map((tk) => ({
     '#': tk.taskNumber,
-    [t('tasks.title') || 'Title']: tk.title,
+    [t('tasks.taskTitle') || 'Title']: tk.title,
     [t('tasks.status') || 'Status']: statusName(tk.status),
     [t('tasks.type') || 'Type']: typeName(tk.taskTypeId),
     [t('tasks.assignee') || 'Assignee']: who(tk.assigneeUserId),

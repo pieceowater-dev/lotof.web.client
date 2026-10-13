@@ -109,7 +109,7 @@ async function exportXlsx() {
   const rows = groups.value.flatMap((g) => g.tasks.map((tk, i) => ({
     [t('tasks.courier')]: nameOf(g.assigneeId),
     '#': i + 1,
-    [t('tasks.title')]: tk.title,
+    [t('tasks.taskTitle')]: tk.title,
     [t('tasks.status')]: statusLabel(tk.status),
     [t('tasks.timeWindow')]: timeWindowText(tk),
     [t('tasks.address')]: tk.textAddress || '',
