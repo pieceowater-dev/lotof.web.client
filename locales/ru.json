@@ -3014,7 +3014,8 @@
     "docVarOrderLink": "Публичная ссылка на заказ (для QR оберните: {{QR:ЗАКАЗ_ССЫЛКА}})",
     "cardName": "Название карточки",
     "cardSave": "Сохранить фильтр",
-    "columnsTitle": "Колонки"
+    "columnsTitle": "Колонки",
+    "myOrdersOnPhone": "На телефоне"
   },
   "plans": {
     "calendar": "Календарь",

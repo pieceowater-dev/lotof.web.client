@@ -12,6 +12,7 @@ import { defaultStatusLabel } from '@/utils/orderStatusLabels';
 import { displayOrderNumber } from '@/utils/orderNumber';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
+import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
 import type { MenuOrder } from '@/api/menu/order/list';
 
 // "My orders": a phone-first list for someone working in the field. Only the
@@ -32,6 +33,9 @@ const busyId = ref<string | null>(null);
 const showClosed = ref(false);
 const selected = ref<MenuOrder | null>(null);
 const detailOpen = ref(false);
+// On a desktop the page is shown as a QR to open it on a phone (installable as an app there).
+const phoneOpen = ref(false);
+const phoneUrl = computed(() => (typeof window === 'undefined' ? '' : `${window.location.origin}/${nsSlug.value}/menu/mine`));
 
 function token(): string {
   const tk = useMenuToken().current();
@@ -97,7 +101,10 @@ function onChanged(updated: MenuOrder) {
         <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrdersTitle') }}</h1>
         <p class="at-hint !mt-0.5">{{ t('menu.myOrdersHint') }}</p>
       </div>
-      <button type="button" class="at-btn !px-3 !py-1.5 flex-shrink-0" @click="load"><Icon name="lucide:refresh-cw" class="h-4 w-4" /></button>
+      <div class="flex flex-shrink-0 items-center gap-2">
+        <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" @click="phoneOpen = true"><Icon name="lucide:smartphone" class="h-4 w-4" />{{ t('menu.myOrdersOnPhone') }}</button>
+        <button type="button" class="at-btn !px-3 !py-1.5" :aria-label="t('common.refresh')" @click="load"><Icon name="lucide:refresh-cw" class="h-4 w-4" /></button>
+      </div>
     </div>
 
     <div class="mt-3 flex flex-shrink-0 items-center gap-1.5">
@@ -149,6 +156,7 @@ function onChanged(updated: MenuOrder) {
       </div>
     </div>
 
+    <OpenOnPhoneModal v-model="phoneOpen" :url="phoneUrl" />
     <OrderDetailModal v-model="detailOpen" :order="selected" @status-changed="onChanged" />
   </div>
 </template>

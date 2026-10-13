@@ -2722,7 +2722,8 @@
     "cardName": "Карточка атауы",
     "cardSave": "Сүзгіні сақтау",
     "columnsTitle": "Бағандар",
-    "customerName": "Аты"
+    "customerName": "Аты",
+    "myOrdersOnPhone": "Телефонда"
   },
   "goods": {
     "register": "Касса",
