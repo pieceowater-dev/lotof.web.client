@@ -2875,6 +2875,8 @@
     "histUrgentOn": "Отмечен как срочный",
     "histUrgentOff": "Срочность снята",
     "histPayment": "Оплата",
+    "histTaskCreated": "Задача создана",
+    "histTaskDone": "Задача выполнена",
     "histRefund": "Возврат",
     "histPaymentRemoved": "Оплата удалена",
     "stagesTitle": "Статусы заказа",

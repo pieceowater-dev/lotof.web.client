@@ -2870,6 +2870,8 @@
     "histUrgentOn": "Marked urgent",
     "histUrgentOff": "Urgency removed",
     "histPayment": "Payment",
+    "histTaskCreated": "Task created",
+    "histTaskDone": "Task done",
     "histRefund": "Refund",
     "histPaymentRemoved": "Payment removed",
     "stagesTitle": "Order statuses",

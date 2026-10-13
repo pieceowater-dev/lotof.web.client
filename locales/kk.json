@@ -2582,6 +2582,8 @@
     "histUrgentOn": "Шұғыл деп белгіленді",
     "histUrgentOff": "Шұғылдық алынды",
     "histPayment": "Төлем",
+    "histTaskCreated": "Тапсырма құрылды",
+    "histTaskDone": "Тапсырма орындалды",
     "histRefund": "Қайтару",
     "histPaymentRemoved": "Төлем жойылды",
     "stagesTitle": "Тапсырыс күйлері",

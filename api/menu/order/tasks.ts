@@ -16,12 +16,14 @@ export type MenuOrderTask = {
   boardId: string;
   boardName: string;
   boardSlug: string;
+  createdAt?: string | null;
+  closedAt?: string | null;
 };
 
 const OrderTasksDocument = /* GraphQL */ `
   query OrderTasks($orderId: ID!) {
     orderTasks(orderId: $orderId) {
-      taskId shortId taskNumber title statusKey statusLabel isTerminal assigneeUserId boardId boardName boardSlug
+      taskId shortId taskNumber title statusKey statusLabel isTerminal assigneeUserId boardId boardName boardSlug createdAt closedAt
     }
   }
 `;
