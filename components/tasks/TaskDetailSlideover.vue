@@ -39,6 +39,8 @@ const props = defineProps<{
   // Owning board's integration_flags.contacts -- turns on the "link a lota
   // Contacts client" widget in the Contact section.
   contactsIntegrationEnabled?: boolean;
+  // Owning board's integration_flags.menu -- offers "create an order" from a lead.
+  menuIntegrationEnabled?: boolean;
   // Board is funnel-shaped (has a won/lost column) -- show the deal-value field.
   dealFieldsEnabled?: boolean;
   // Board option: a hand-over to someone else waits until the receiver accepts it.
@@ -473,6 +475,15 @@ const coDone = computed(() => coAssignees.value.filter((m) => m.doneAt).length);
 const myMembership = computed(() => members.value.find((m) => m.role === 'ASSIGNEE' && m.userId === props.currentUserId));
 // Marking my part done asks for a short note (what was done) that lands in the task's comments;
 // taking the mark back is immediate.
+// Lead -> order: opens Menu's new-order form with the task's contact filled in.
+function createOrderFromTask() {
+  if (!props.task) return;
+  const q = new URLSearchParams({ newOrder: '1' });
+  if (props.task.clientPhoneSnapshot) q.set('phone', props.task.clientPhoneSnapshot);
+  if (props.task.clientNameSnapshot) q.set('name', props.task.clientNameSnapshot);
+  if (props.task.textAddress) q.set('address', props.task.textAddress);
+  void navigateTo(`/${props.nsSlug}/menu?${q.toString()}`);
+}
 function toggleMyPart() {
   if (!props.task || !myMembership.value) return;
   if (myMembership.value.doneAt) { void setMyPart(); return; }
@@ -978,6 +989,7 @@ async function handleDelete() {
             @input="onPhoneInput"
             @blur="commitClientPhone"
           />
+          <UButton v-if="menuIntegrationEnabled && !task.orderId" size="xs" color="gray" variant="soft" icon="lucide:shopping-bag" @click="createOrderFromTask">{{ t('tasks.createOrderFromLead') }}</UButton>
           <p v-if="phoneLooksInvalid" class="text-xs text-red-500">{{ t('contacts.invalidPhone') || 'Invalid phone format' }}</p>
           <div>
             <label for="task-contact-address" class="text-[11px] text-gray-400 mb-1 block">{{ t('tasks.address') || 'Contact address' }}</label>

@@ -93,6 +93,13 @@ const cyclesEnabled = computed(() => {
     return false;
   }
 });
+const menuIntegrationEnabled = computed(() => {
+  try {
+    return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).menu : false);
+  } catch {
+    return false;
+  }
+});
 const contactsIntegrationEnabled = computed(() => {
   try {
     return !!(board.value?.integrationFlags ? JSON.parse(board.value.integrationFlags).contacts : false);
@@ -1059,6 +1066,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       :cycles-enabled="cyclesEnabled"
       :cycles="cycles"
       :contacts-integration-enabled="contactsIntegrationEnabled"
+      :menu-integration-enabled="menuIntegrationEnabled"
       :deal-fields-enabled="funnelEnabled"
       :require-handoff-accept="requireHandoffAccept"
       :current-user-id="currentUser?.id"

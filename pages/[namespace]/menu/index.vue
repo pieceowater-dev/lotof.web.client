@@ -721,6 +721,18 @@ async function copyOrderLink(order: MenuOrder) {
 // collision this opens the most recently created match, which is the
 // overwhelmingly common case for a link someone just shared.
 async function openFromQuery() {
+  // From an Issues lead: ?newOrder=1&phone=&name=&address= opens the new-order form pre-filled.
+  if (route.query.newOrder) {
+    createOrderPrefill.value = {
+      warrantyOfOrderId: '', warrantyOrderLabel: '', type: 'pickup',
+      phone: String(route.query.phone || ''),
+      customerName: route.query.name ? String(route.query.name) : null,
+      deliveryAddress: route.query.address ? String(route.query.address) : null,
+    };
+    isCreateOrderOpen.value = true;
+    await navigateTo({ query: {} }, { replace: true });
+    return;
+  }
   const raw = route.query.order as string | undefined;
   if (!raw) return;
   const numericPart = raw.includes('-') ? raw.slice(raw.lastIndexOf('-') + 1) : raw;
