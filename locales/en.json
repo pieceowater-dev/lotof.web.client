@@ -3282,6 +3282,11 @@
     "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
+    "watcher": "Watcher",
+    "coAssignee": "Co-assignee",
+    "coProgress": "Co-assignees: {done} of {total} finished their part",
+    "coDone": "My part is done",
+    "coUndo": "Take back",
     "flagRollover": "Move overdue deadlines to today",
     "flagRolloverDesc": "Open tasks due on an earlier day automatically get today as the deadline, at the same time of day. The task journal records it.",
     "fromTemplate": "From a template",

@@ -464,12 +464,28 @@ async function loadMembers() {
   }
 }
 const newMemberUserId = ref('');
+const newMemberRole = ref<'WATCHER' | 'ASSIGNEE'>('WATCHER');
+const coAssignees = computed(() => members.value.filter((m) => m.role === 'ASSIGNEE'));
+const coDone = computed(() => coAssignees.value.filter((m) => m.doneAt).length);
+const myMembership = computed(() => members.value.find((m) => m.role === 'ASSIGNEE' && m.userId === props.currentUserId));
+async function toggleMyPart() {
+  if (!props.task || !myMembership.value) return;
+  try {
+    const token = await getToken();
+    const { tasksSetTaskMemberDone } = await import('@/api/tasks/task/members');
+    const updated = await tasksSetTaskMemberDone(token, props.nsSlug, props.task.id, !myMembership.value.doneAt);
+    members.value = members.value.map((m) => (m.id === updated.id ? updated : m));
+  } catch (e) {
+    logError('[TaskDetailSlideover] toggleMyPart failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
+  }
+}
 async function addMember() {
   if (!props.task || !newMemberUserId.value) return;
   try {
     const token = await getToken();
     const { tasksAddTaskMember } = await import('@/api/tasks/task/members');
-    const member = await tasksAddTaskMember(token, props.nsSlug, { taskId: props.task.id, userId: newMemberUserId.value, role: 'WATCHER' });
+    const member = await tasksAddTaskMember(token, props.nsSlug, { taskId: props.task.id, userId: newMemberUserId.value, role: newMemberRole.value });
     members.value = [...members.value, member];
     newMemberUserId.value = '';
   } catch (e) {
@@ -974,10 +990,23 @@ async function handleDelete() {
           <UIcon name="lucide:eye" class="w-3.5 h-3.5" />
           {{ t('tasks.members') || 'Watchers' }}
         </h4>
+        <div v-if="coAssignees.length" class="mb-2 flex flex-wrap items-center gap-2">
+          <span class="at-chip">{{ t('tasks.coProgress', { done: coDone, total: coAssignees.length }) }}</span>
+          <button v-if="myMembership" type="button" class="at-btn !px-3 !py-1" @click="toggleMyPart">
+            <Icon :name="myMembership.doneAt ? 'lucide:undo-2' : 'lucide:check'" class="h-4 w-4" />{{ myMembership.doneAt ? t('tasks.coUndo') : t('tasks.coDone') }}
+          </button>
+        </div>
         <div class="space-y-1.5">
           <div v-for="m in members" :key="m.id" class="flex items-center justify-between text-sm">
-            <span>{{ memberLabel(m.userId) }} <span class="text-gray-400">· {{ m.role }}</span></span>
+            <span class="flex items-center gap-1.5">
+              <Icon v-if="m.role === 'ASSIGNEE'" :name="m.doneAt ? 'lucide:check-circle-2' : 'lucide:circle'" class="h-4 w-4" :class="m.doneAt ? 'text-emerald-500' : 'text-gray-300'" />
+              {{ memberLabel(m.userId) }} <span class="text-gray-400">· {{ m.role === 'ASSIGNEE' ? t('tasks.coAssignee') : t('tasks.watcher') }}</span>
+            </span>
             <UButton icon="lucide:x" size="2xs" color="gray" variant="ghost" @click="removeMember(m.id)" />
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button type="button" class="pill-filter" :class="newMemberRole === 'WATCHER' ? 'pill-filter--active' : ''" @click="newMemberRole = 'WATCHER'">{{ t('tasks.watcher') }}</button>
+            <button type="button" class="pill-filter" :class="newMemberRole === 'ASSIGNEE' ? 'pill-filter--active' : ''" @click="newMemberRole = 'ASSIGNEE'">{{ t('tasks.coAssignee') }}</button>
           </div>
           <div class="flex items-center gap-2">
             <USelectMenu
