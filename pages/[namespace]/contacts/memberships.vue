@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 
 const { t } = useI18n();
@@ -22,7 +22,7 @@ watch([isOpen, () => props.url], async ([open, url]) => {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-sm' }">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">{{ t('tasks.openOnPhone') || 'Open on your phone' }}</h3>
       </template>

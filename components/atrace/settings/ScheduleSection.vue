@@ -337,7 +337,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
         v-else
         
       >
-        <AppTable
+        <AppTable :mobile-cards="false"
           soft
           v-model:page="patternsPage"
           v-model:page-count="patternsPageCount"
@@ -420,7 +420,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
         v-else
         
       >
-        <AppTable
+        <AppTable :mobile-cards="false"
           soft
           v-model:page="assignmentsPage"
           v-model:page-count="assignmentsPageCount"

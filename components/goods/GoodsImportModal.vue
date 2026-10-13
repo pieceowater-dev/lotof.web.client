@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { parseGoodsSheet, TEMPLATE_HEADERS, type ImportedGood } from '@/utils/goodsImport';
 import { generateSku } from '@/utils/slug';
 import { logError } from '@/utils/logger';
@@ -135,7 +135,7 @@ async function runImport() {
 
 <template>
   <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-3xl' }" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center justify-between gap-2">
           <h3 class="text-lg font-semibold">{{ t('goods.importTitle') }}</h3>

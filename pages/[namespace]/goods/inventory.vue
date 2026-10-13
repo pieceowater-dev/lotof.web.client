@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 // Inventory counting used to be one-item-at-a-time via a picker modal, with
@@ -206,7 +206,7 @@ onMounted(loadAll);
     </div>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showStart">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.startCount') }}</h3></template>
         <UFormGroup :label="t('goods.selectWarehouse')" required>
           <USelectMenu v-model="startWarehouseId" :options="warehouses.map((w) => ({ label: w.name, value: w.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atCardUi } from '@/utils/atraceUi';
+import { atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -126,7 +126,7 @@ async function handleDelete(rule: AutomationRule) {
 
 <template>
   <USlideover class="at-modal" v-model="isOpen" :ui="{ background: 'bg-white dark:bg-[#1a1a1a]', rounded: 'sm:rounded-l-[2rem]', shadow: 'shadow-2xl' }">
-    <UCard :ui="{ ...atCardUi, rounded: 'rounded-none sm:rounded-l-[2rem]', body: { base: 'flex-1 overflow-y-auto', padding: 'px-6 py-5' } }" class="flex flex-col h-full">
+    <UCard :ui="{ ...atCardUiFit, rounded: 'rounded-none sm:rounded-l-[2rem]', body: { base: 'flex-1 overflow-y-auto', padding: 'px-6 py-5' } }" class="flex flex-col h-full">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-extrabold tracking-tight">{{ t('tasks.automations') || 'Automations' }}</h3>

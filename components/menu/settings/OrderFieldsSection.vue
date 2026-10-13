@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -210,7 +210,7 @@ onMounted(load);
     </div>
 
     <UModal class="at-modal" v-model="isModalOpen" :ui="{ ...atModalUi, width: 'sm:max-w-md' }">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-lg font-semibold">
             {{ editing ? (t('menu.orderFieldEdit') || 'Edit field') : (t('menu.orderFieldNew') || 'New field') }}

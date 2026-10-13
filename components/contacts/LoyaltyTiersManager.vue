@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { maskProfanity } from '@/utils/profanityFilter';

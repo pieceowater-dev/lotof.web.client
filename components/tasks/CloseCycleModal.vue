@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 
 const { t } = useI18n();
@@ -36,7 +36,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="atModalUi">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold flex items-center gap-2">
           <UIcon name="lucide:flag" class="w-5 h-5 text-gray-400" />

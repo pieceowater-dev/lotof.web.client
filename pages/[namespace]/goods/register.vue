@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -939,7 +939,7 @@ onMounted(async () => {
     </div>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showCloseShift">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="font-semibold">{{ t('goods.closeShift') }}</h3>
         </template>
@@ -957,7 +957,7 @@ onMounted(async () => {
 
     <!-- X/Z shift report -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showShiftReport">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ shiftReport?.status === 'CLOSED' ? t('goods.zReport') : t('goods.xReport') }}</h3></template>
         <div v-if="loadingShiftReport" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="shiftReport" class="space-y-2 text-sm">
@@ -977,7 +977,7 @@ onMounted(async () => {
 
     <!-- Cash in/out -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showCashMovement">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.cashMovement') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.movementType')">
@@ -1022,7 +1022,7 @@ onMounted(async () => {
 
     <!-- Check-level discount -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showDiscount">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.applyDiscount') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup v-if="discountRules.length" :label="t('goods.discountRule')">
@@ -1050,7 +1050,7 @@ onMounted(async () => {
 
     <!-- Gift certificate payment -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showGiftCertPay">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.payGiftCert') }}</h3></template>
         <UFormGroup :label="t('goods.giftCertCode')">
           <UInput v-model="giftCertCode" placeholder="XXXX-XXXX" @keyup.enter="payWithGiftCert" />
@@ -1066,7 +1066,7 @@ onMounted(async () => {
 
     <!-- History: recent sales, cancel + return -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }" v-model="showHistory">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.history') }}</h3></template>
         <div v-if="loadingHistory" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="!recentSales.length" class="text-center py-6 text-sm text-gray-400">—</div>
@@ -1100,7 +1100,7 @@ onMounted(async () => {
 
     <!-- Return (chit-linked or free) -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="showReturn">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ returnForm.originalSaleId ? t('goods.return') : t('goods.freeReturn') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.reason')">

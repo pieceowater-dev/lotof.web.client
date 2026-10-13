@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 // Booking detail + quick actions, shown as a narrow iOS-style bottom sheet.
 // View mode: read-only summary + status flow. Edit mode: name / phone /
 // comment inline, plus a reschedule sub-panel for date + master.

@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useAuth } from '@/composables/useAuth';
 import { useNamespaceStaticRoles, roleTone, roleLabel, type StaticAccessRole } from '@/composables/useNamespaceStaticRoles';
 import { staticRoleOptions, rolesPageSizeOptions } from '@/utils/constants/contactsSettings';
@@ -244,7 +244,7 @@ onMounted(async () => {
       v-model="showRoleModal"
       @close="closeRoleModal"
     >
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <div class="flex items-center justify-between">
             <div>

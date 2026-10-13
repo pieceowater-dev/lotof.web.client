@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { computed, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { maskProfanity } from '@/utils/profanityFilter';
@@ -641,7 +641,7 @@ async function submitStampFromModal() {
     v-model="isEarnModalOpen"
     :ui="{ ...atModalUi, width: 'sm:max-w-md' }"
   >
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center gap-3">
           <div
@@ -779,7 +779,7 @@ async function submitStampFromModal() {
     v-model="isStampPinModalOpen"
     :ui="{ ...atModalUi, width: 'sm:max-w-md' }"
   >
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-base font-semibold text-gray-900 dark:text-white">

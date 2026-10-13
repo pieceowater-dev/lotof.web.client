@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -236,7 +236,7 @@ watch(() => props.modelValue, (open) => {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-3xl' }">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center gap-3">
           <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40 flex-shrink-0">

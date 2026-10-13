@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useContactsToken } from '@/composables/useContactsToken';
@@ -498,7 +498,7 @@ onMounted(async () => {
       v-model="showCreateModal"
       @close="closeCreateModal"
     >
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -725,7 +725,7 @@ onMounted(async () => {
       v-model="showEditModal"
       @close="closeEditModal"
     >
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">

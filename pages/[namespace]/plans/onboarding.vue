@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -139,7 +139,7 @@ async function finish() {
 
     <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="2" /></div>
 
-    <UCard v-else :ui="atCardUi">
+    <UCard v-else :ui="atCardUiFit">
       <!-- STEP 1 — brand -->
       <div v-if="step === 1" class="space-y-4">
         <h2 class="font-semibold text-gray-900 dark:text-white">{{ t('plans.brandStep') || 'Оформление' }}</h2>

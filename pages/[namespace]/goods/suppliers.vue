@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -240,7 +240,7 @@ onMounted(loadAll);
     </div>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showForm">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ editingSupplier ? t('goods.editSupplier') : t('goods.addSupplier') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')" required><UInput v-model="form.name" autofocus @keyup.enter="submitForm" /></UFormGroup>
@@ -265,7 +265,7 @@ onMounted(loadAll);
     </UModal>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showHistory">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.priceHistory') }}</h3></template>
         <div v-if="loadingHistory" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
         <div v-else-if="!history.length" class="text-center py-6 text-sm text-gray-400">{{ t('goods.priceHistoryEmpty') }}</div>

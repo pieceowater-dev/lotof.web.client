@@ -93,7 +93,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
       v-else
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4 member-table"
     >
-      <AppTable
+      <AppTable :mobile-cards="false"
        soft
         v-model:page="membersPage"
         v-model:page-count="membersPageCount"

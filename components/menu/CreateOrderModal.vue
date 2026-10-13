@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
@@ -261,7 +261,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-3xl' }" @close="handleClose">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center gap-2.5">
           <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 dark:bg-primary-900/40">

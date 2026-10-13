@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { ref, computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue';
@@ -1512,7 +1512,7 @@ useHead(() => ({
       v-model="showConfirmDialog"
       :ui="{ ...atModalUi, width: 'sm' }"
     >
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <div class="flex items-center gap-3">
             <UIcon

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 // Replaces purchases.vue + receiving.vue + transfers.vue + writeoffs.vue --
@@ -610,7 +610,7 @@ onMounted(loadAll);
 
     <!-- Create -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" v-model="showCreate">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
         <div class="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
           <UFormGroup :label="t('goods.movementType')">
@@ -724,7 +724,7 @@ onMounted(loadAll);
 
     <!-- Quick supplier create -- rescue path when there are none yet -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showQuickSupplier">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
         <UFormGroup :label="t('goods.goodName')" required>
           <UInput v-model="quickSupplierName" autofocus @keyup.enter="createQuickSupplier" />

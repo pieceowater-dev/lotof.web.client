@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePwaInstall } from '@/composables/usePwaInstall';
 
@@ -35,7 +35,7 @@ watch([isOpen, platform], async ([open, p]) => {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-sm' }">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">{{ t('tasks.installApp') || 'Install app' }}</h3>
       </template>

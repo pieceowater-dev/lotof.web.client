@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import ImageUpload from '@/components/menu/ImageUpload.vue';
 import type { MenuPromoBanner } from '@/api/menu/promobanner/list';
@@ -76,7 +76,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }" @close="handleClose">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">
           {{ banner ? (t('menu.editBanner') || 'Edit banner') : (t('menu.addBanner') || 'Add banner') }}

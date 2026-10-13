@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import type { MenuCategory } from '@/api/menu/category/list';
 
@@ -99,7 +99,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" :ui="atModalUi" v-model="isOpen" @close="handleClose">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">
           {{ category ? (t('menu.editCategory') || 'Edit category') : (t('menu.createCategory') || 'Add category') }}

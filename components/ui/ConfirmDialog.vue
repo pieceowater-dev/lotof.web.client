@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useConfirm } from '@/composables/useConfirm';
 
@@ -20,7 +20,7 @@ const colorStyles: Record<string, { iconBg: string; iconColor: string }> = {
     :ui="{ ...atModalUi, width: 'sm:max-w-sm' }"
     @update:model-value="(v: boolean) => { if (!v) handleCancel(); }"
   >
-    <UCard :ui="{ ...atCardUi, divide: '', body: { padding: 'p-7' } }">
+    <UCard :ui="{ ...atCardUiFit, divide: '', body: { padding: 'p-7' } }">
       <div class="flex items-start gap-4">
         <span
           class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full"

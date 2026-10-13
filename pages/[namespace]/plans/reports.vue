@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -96,7 +96,7 @@ watch(rangeDays, loadAll);
         </div>
       </div>
 
-      <UCard :ui="{ ...atCardUi, body: { padding: 'p-4' } }" class="mt-1">
+      <UCard :ui="{ ...atCardUiFit, body: { padding: 'p-4' } }" class="mt-1">
         <template #header>
           <h2 class="font-semibold text-gray-900 dark:text-white">{{ t('plans.masterLoad') || 'Загрузка мастеров' }}</h2>
         </template>

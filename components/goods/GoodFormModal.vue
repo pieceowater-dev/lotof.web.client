@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 // Unified create/edit-good form -- replaces three divergent copies that used
 // to live in index.vue, catalog.vue and OnboardingWizard.vue, each with a
 // different field subset. SKU auto-fill (transliteration) and cents
@@ -84,7 +84,7 @@ function submit() {
 
 <template>
   <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" :model-value="modelValue" @update:model-value="(v: boolean) => emit('update:modelValue', v)">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">{{ good ? t('goods.editGood') : t('goods.addGood') }}</h3>
       </template>

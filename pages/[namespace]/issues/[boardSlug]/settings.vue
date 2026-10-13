@@ -2,7 +2,7 @@
 import TaskTemplatesCard from '@/components/tasks/TaskTemplatesCard.vue';
 import { leadKey, leadEndpoint, leadFormSnippet } from '@/utils/leadForm';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atCardUi } from '@/utils/atraceUi';
+import { atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -416,7 +416,7 @@ async function handleSave() {
 
 onMounted(load);
 
-const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
+const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
 </script>
 
 <template>

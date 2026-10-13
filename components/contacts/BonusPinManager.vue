@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { changeBonusPin, type ChangePinInput } from '@/api/contacts/loyalty';
@@ -223,7 +223,7 @@ defineExpose({
       v-model="isModalOpen"
       @close="closeModal"
     >
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">

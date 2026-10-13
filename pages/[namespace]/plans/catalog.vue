@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -220,7 +220,7 @@ onMounted(async () => {
 
     <!-- SERVICES -->
     <template v-else-if="tab === 'services'">
-      <UCard :ui="{ ...atCardUi, body: { padding: 'p-4' } }">
+      <UCard :ui="{ ...atCardUiFit, body: { padding: 'p-4' } }">
         <div class="flex items-center gap-2 flex-wrap">
           <UInput v-model="newCat" size="xs" :placeholder="t('plans.newCategory') || 'Новая категория'" class="w-48" @keydown.enter="addCat" />
           <UButton size="xs" variant="soft" color="gray" icon="lucide:folder-plus" @click="addCat">{{ t('common.add') || 'Добавить' }}</UButton>
@@ -292,7 +292,7 @@ onMounted(async () => {
 
     <!-- service modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="svcModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ svcEditing ? (t('plans.editService') || 'Услуга') : (t('plans.addService') || 'Новая услуга') }}</h3>
         </template>
@@ -343,7 +343,7 @@ onMounted(async () => {
 
     <!-- master modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="mstModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ mstEditing ? (t('plans.editMaster') || 'Мастер') : (t('plans.addMaster') || 'Новый мастер') }}</h3>
         </template>

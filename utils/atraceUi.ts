@@ -13,8 +13,16 @@ export const atCardUi = {
   shadow: 'shadow-none',
   background: 'bg-white dark:bg-[#1a1a1a]',
   divide: 'divide-y divide-slate-900/5 dark:divide-white/10',
+  header: { padding: 'px-7 pt-6 pb-4 sm:px-8' },
+  body: { padding: 'px-7 py-5 sm:px-8 sm:py-6' },
+  footer: { padding: 'px-7 pt-4 pb-6 sm:px-8' },
+}
+
+// The same card for every product except A-Trace: on a phone a tall form scrolls inside the card,
+// above its buttons, instead of running off the screen, and the paddings are tighter.
+export const atCardUiFit = {
+  ...atCardUi,
   header: { padding: 'px-5 pt-5 pb-3 sm:px-8 sm:pt-6 sm:pb-4' },
-  // A tall form must scroll inside the card, above its buttons, instead of running off the phone screen.
   body: { base: 'max-h-[calc(100dvh-12rem)] overflow-y-auto', padding: 'px-5 py-4 sm:px-8 sm:py-6' },
   footer: { padding: 'px-5 pt-3 pb-5 sm:px-8 sm:pt-4 sm:pb-6' },
 }

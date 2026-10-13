@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -383,7 +383,7 @@ onMounted(loadAll);
     />
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showCategoryModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ editingCategory ? t('goods.editCategory') : t('goods.addCategory') }}</h3></template>
         <UFormGroup :label="t('goods.goodName')" required>
           <UInput v-model="categoryForm.name" size="lg" autofocus @keyup.enter="submitCategoryForm" />
@@ -398,7 +398,7 @@ onMounted(loadAll);
     </UModal>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="showUnitModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ editingUnit ? t('goods.editUnit') : t('goods.addUnit') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.goodName')" required><UInput v-model="unitForm.name" size="lg" autofocus @keyup.enter="submitUnitForm" /></UFormGroup>

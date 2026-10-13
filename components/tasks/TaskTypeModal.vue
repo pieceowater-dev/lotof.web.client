@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import IconPicker from '@/components/tasks/IconPicker.vue';
 import { TASK_TYPE_COLOR_PRESETS, ESTIMATION_TYPE_OPTIONS } from '@/utils/taskDisplay';
@@ -70,7 +70,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="{ ...atModalUi, width: 'sm:max-w-md' }">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">
           {{ taskType ? (t('tasks.editTaskType') || 'Edit issue type') : (t('tasks.createTaskType') || 'Add issue type') }}

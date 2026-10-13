@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { ref, watch, nextTick } from 'vue';
 
 const props = defineProps<{
@@ -35,7 +35,7 @@ watch(() => props.modelValue, async (open) => {
     :prevent-close="props.preventClose"
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <div
         ref="initialFocusEl"
         tabindex="-1"

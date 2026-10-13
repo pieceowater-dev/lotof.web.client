@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsStockMovement } from '@/api/goods/stock';
@@ -48,7 +48,7 @@ const when = (iso: string) => formatDateTime(iso, locale.value);
 
 <template>
   <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" :model-value="modelValue" @update:model-value="emit('update:modelValue', $event)">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0">

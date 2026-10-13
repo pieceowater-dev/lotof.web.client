@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
@@ -1780,7 +1780,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 
   <!-- Create an Issues task for this order -->
   <UModal v-model="isTaskModalOpen" class="at-modal" :ui="atModalUi">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">{{ t('menu.createTask') || 'Create task' }}</h3>
       </template>
@@ -1815,7 +1815,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   <!-- Product detail dialog: live catalog data (image/description/badges),
        not just the order's purchase-time name+price snapshot. -->
   <UModal class="at-modal" :ui="atModalUi" v-model="isProductDetailOpen">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center justify-between">
           <h3 class="text-lg font-semibold">{{ selectedProductDetail?.name || (t('menu.product') || 'Product') }}</h3>

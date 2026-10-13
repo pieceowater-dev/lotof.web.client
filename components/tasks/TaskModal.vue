@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import { sanitizePhoneInput, isPhoneInputValid } from '@/utils/phone';
@@ -135,7 +135,7 @@ function handleSubmit() {
 
 <template>
   <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }">
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <h3 class="text-lg font-semibold">{{ t('tasks.createTask') || 'Create issue' }}</h3>
       </template>

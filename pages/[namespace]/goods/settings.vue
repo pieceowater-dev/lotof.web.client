@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -731,7 +731,7 @@ onMounted(() => {
 
     <!-- Add/edit warehouse modal -->
     <UModal class="at-modal" :ui="atModalUi" v-model="showWarehouseModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="text-lg font-semibold">{{ editingWarehouseId ? t('goods.editWarehouse') : t('goods.createWarehouse') }}</h3></template>
         <div class="space-y-3">
           <UFormGroup :label="t('goods.warehouseName')" required>
@@ -768,7 +768,7 @@ onMounted(() => {
 
     <!-- Price list items modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="showPriceListItems">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ activePriceList?.name }}</h3></template>
         <div class="space-y-3">
           <div class="divide-y divide-gray-100 dark:divide-gray-800">
@@ -797,7 +797,7 @@ onMounted(() => {
 
     <!-- Recipe form modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" v-model="showRecipeForm">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.addRecipe') }}</h3></template>
         <div class="space-y-3">
           <div class="grid grid-cols-2 gap-3">

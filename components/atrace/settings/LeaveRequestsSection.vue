@@ -156,7 +156,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
       v-else
       class="flex-1 min-h-0 overflow-auto pb-safe-or-4"
     >
-      <AppTable
+      <AppTable :mobile-cards="false"
         soft
         :rows="rows"
         :columns="columns"
@@ -165,7 +165,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
         :pagination="false"
       >
         <template #type-data="{ row }">
-          {{ typeLabel[row.type] || row.type }}
+          {{ typeLabel[String(row.type).toLowerCase()] || row.type }}
         </template>
         <template #status-data="{ row }">
           <span

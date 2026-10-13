@@ -152,8 +152,8 @@
 </template>
 
 <script setup lang="ts">
-import { atCardUi } from '@/utils/atraceUi';
-const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
+import { atCardUiFit } from '@/utils/atraceUi';
+const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
 import { computed, reactive, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';

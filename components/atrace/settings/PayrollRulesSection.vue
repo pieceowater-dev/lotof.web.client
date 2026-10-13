@@ -231,7 +231,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
       <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
       <SectionEmpty v-else-if="overtimeRates.length === 0" icon="lucide:timer" :text="t('app.noRates') || 'Ставок пока нет'" />
       <div v-else>
-        <AppTable
+        <AppTable :mobile-cards="false"
           soft
           :rows="overtimeRates"
           :columns="overtimeColumns"
@@ -266,7 +266,7 @@ import SectionEmpty from '@/components/atrace/SectionEmpty.vue';
       <div v-if="loading" class="text-gray-500 text-sm">{{ t('app.loading') }}</div>
       <SectionEmpty v-else-if="penaltyRules.length === 0" icon="lucide:gavel" :text="t('app.noRules') || 'Штрафов пока нет'" />
       <div v-else>
-        <AppTable
+        <AppTable :mobile-cards="false"
           soft
           :rows="penaltyRules"
           :columns="penaltyColumns"

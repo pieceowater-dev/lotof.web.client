@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -658,7 +658,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
 
     <!-- location modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="locModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ locEditing ? (t('plans.editLocation') || 'Точка') : (t('plans.addLocation') || 'Новая точка') }}</h3>
         </template>
@@ -706,7 +706,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
 
     <!-- master (staff) create/edit modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }" v-model="mstModal">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ mstEditing ? (t('plans.editMaster') || 'Сотрудник') : (t('plans.addMaster') || 'Новый сотрудник') }}</h3>
         </template>
@@ -753,7 +753,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
 
     <!-- master schedule modal -->
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-md' }" v-model="mstSchedOpen">
-      <UCard v-if="mstSchedMaster" :ui="atCardUi">
+      <UCard v-if="mstSchedMaster" :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ t('plans.schedule') || 'Расписание' }} — {{ mstSchedMaster.name }}</h3>
         </template>

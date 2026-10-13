@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { ref, computed, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
@@ -254,7 +254,7 @@ function handleKeyDown(event: KeyboardEvent) {
     @close="handleClose"
     @keydown="handleKeyDown"
   >
-    <UCard :ui="atCardUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">

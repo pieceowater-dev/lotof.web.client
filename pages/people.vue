@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { atModalUi, atCardUi } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'full' });
 
 import { ref, computed, onMounted, watch } from 'vue';
@@ -819,7 +819,7 @@ async function removeMember(member: { userId: string; username: string; email: s
     </section>
 
     <UModal class="at-modal" :ui="atModalUi" v-model="nicknameModalOpen">
-      <UCard :ui="atCardUi">
+      <UCard :ui="atCardUiFit">
         <template #header>
           <h3 class="text-base font-semibold">{{ t('app.setNickname') || 'Задать никнейм' }}</h3>
         </template>
