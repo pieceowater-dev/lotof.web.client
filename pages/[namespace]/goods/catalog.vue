@@ -13,9 +13,11 @@ import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
+import GoodsImportModal from '@/components/goods/GoodsImportModal.vue';
 import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsUnit } from '@/api/goods/unit';
+import type { GoodsWarehouse } from '@/api/goods/warehouse';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -48,14 +50,16 @@ async function loadAll() {
   loading.value = true;
   try {
     const token = await getToken();
-    const [{ goods: g }, { categories: c }, { units: u }] = await Promise.all([
+    const [{ goods: g }, { categories: c }, { units: u }, { warehouses: w }] = await Promise.all([
       (await import('@/api/goods/good')).goodsListGoods(token, nsSlug.value),
       (await import('@/api/goods/category')).goodsListCategories(token, nsSlug.value),
       (await import('@/api/goods/unit')).goodsListUnits(token, nsSlug.value),
+      (await import('@/api/goods/warehouse')).goodsListWarehouses(token, nsSlug.value),
     ]);
     goods.value = g;
     categories.value = c;
     units.value = u;
+    warehouses.value = w;
   } catch (e) {
     logError('[goods/catalog] loadAll failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to load catalog', color: 'red' });
@@ -90,6 +94,9 @@ const unitColumns = [
   { key: 'symbol', label: t('goods.unitSymbol') },
   { key: 'actions', label: '' },
 ];
+
+const showImport = ref(false);
+const warehouses = ref<GoodsWarehouse[]>([]);
 
 // --- Good create/edit (shared GoodFormModal) ---
 const showGoodModal = ref(false);
@@ -295,6 +302,9 @@ onMounted(loadAll);
           </div>
         </template>
         <template #action>
+          <button v-if="activeTab === 'goods'" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex flex-shrink-0 mr-2" @click="showImport = true">
+            <Icon name="lucide:file-up" class="w-4 h-4" />{{ t('goods.importButton') }}
+          </button>
           <UButton
             color="primary"
             icon="lucide:plus"
@@ -361,6 +371,8 @@ onMounted(loadAll);
         </AppTable>
       </div>
     </div>
+
+    <GoodsImportModal v-model="showImport" :ns-slug="nsSlug" :units="units" :categories="categories" :warehouses="warehouses" :get-token="getToken" @done="loadAll" />
 
     <GoodFormModal
       v-model="showGoodModal"
