@@ -100,7 +100,9 @@ export function useAuth() {
   // redirectPath: where to land after a successful login, relative to the
   // origin (e.g. '/hub'). Defaults to the bare origin, unchanged from
   // before this param existed.
-  function login(redirectPath = '') {
+  // reauth: ask Google to sign the person in again even if they have a live
+  // session (used before sensitive actions, which need a fresh sign-in).
+  function login(redirectPath = '', opts: { reauth?: boolean } = {}) {
     if (loginRedirecting.value) return;
     loginRedirecting.value = true;
     markLoginPending();
@@ -133,7 +135,8 @@ export function useAuth() {
       if (referralCode) refParam = `&ref=${encodeURIComponent(referralCode)}`;
     } catch {}
     useAnalytics().track('login_initiated');
-    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}${appParam}${refParam}`;
+    const reauthParam = opts.reauth ? '&reauth=1' : '';
+    window.location.href = `${base}/google/auth?redirect_uri=${redirect}${leadParam}${appParam}${refParam}${reauthParam}`;
   }
 
   function logout() {

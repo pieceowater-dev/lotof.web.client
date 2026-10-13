@@ -3728,5 +3728,10 @@
     "telegramWaiting": "Waiting…",
     "telegramPressStart": "Telegram opens the bot — press Start. This confirms by itself.",
     "telegramLinked": "Telegram connected"
+  },
+  "security": {
+    "reauthTitle": "Confirm it's you",
+    "reauthText": "This action touches secrets and connections. For safety, sign in with Google once more — we never store passwords. You will come back here and can repeat the action.",
+    "reauthConfirm": "Confirm with Google"
   }
 }

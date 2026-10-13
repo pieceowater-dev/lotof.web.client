@@ -2970,5 +2970,10 @@
     "telegramWaiting": "Күтілуде…",
     "telegramPressStart": "Telegram-да бот ашылады — Start басыңыз. Мұнда өзі расталады.",
     "telegramLinked": "Telegram қосылды"
+  },
+  "security": {
+    "reauthTitle": "Кіруді растаңыз",
+    "reauthText": "Бұл әрекет құпиялар мен қосылымдарға қатысты. Қауіпсіздік үшін Google арқылы қайта кіріңіз — құпиясөздерді сақтамаймыз. Кіргеннен кейін осы жерге қайтасыз.",
+    "reauthConfirm": "Google арқылы растау"
   }
 }

@@ -15,6 +15,7 @@
     <CallPlayerWidget />
     <TourGuide />
     <CookieNotice />
+    <ReauthPrompt />
   </div>
 </template>
 
@@ -25,6 +26,7 @@ import CallPlayerWidget from '@/components/contacts/CallPlayerWidget.vue';
 import CallPopup from '@/components/contacts/CallPopup.vue';
 import TourGuide from '@/components/ui/TourGuide.vue';
 import CookieNotice from '@/components/ui/CookieNotice.vue';
+import ReauthPrompt from '@/components/ui/ReauthPrompt.vue';
 
 // H1: one of 3 layouts extracted verbatim from the old layouts/default.vue
 // regex (git history), for the per-namespace app workspace pages themselves
