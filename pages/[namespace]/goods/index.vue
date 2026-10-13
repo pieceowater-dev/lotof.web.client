@@ -102,7 +102,7 @@ const stockedItemsCount = computed(() => stock.value.length);
 
 // Stat tiles double as quick filters (mirrors Menu's order-status cards) --
 // clicking "low stock" narrows the table instead of just reporting a number.
-const statFilter = ref<'all' | 'lowStock'>('all');
+const statFilter = ref<'all' | 'inStock' | 'outOfStock' | 'lowStock' | 'reserved'>('all');
 
 const allRows = computed(() => stock.value.map((s) => {
   const good = goodById.value.get(s.goodId);
@@ -113,11 +113,26 @@ const allRows = computed(() => stock.value.map((s) => {
     quantity: s.quantity,
     reservedQuantity: s.reservedQuantity,
     available: s.available,
+    costCents: good?.costPriceCents || 0,
+    valueCents: s.quantity * (good?.costPriceCents || 0),
   };
 }));
+const stockValueCents = computed(() => allRows.value.reduce((sum, r) => sum + Math.max(0, r.valueCents), 0));
+const money = (cents: number) => (cents / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const STOCK_FILTERS = [
+  { key: 'all', label: 'goods.stockFilterAll' },
+  { key: 'inStock', label: 'goods.stockFilterIn' },
+  { key: 'outOfStock', label: 'goods.stockFilterOut' },
+  { key: 'lowStock', label: 'goods.lowStock' },
+  { key: 'reserved', label: 'goods.stockFilterReserved' },
+] as const;
 const searchQuery = ref('');
 const rows = computed(() => {
-  let list = statFilter.value === 'lowStock' ? allRows.value.filter((r) => r.available <= 5) : allRows.value;
+  let list = allRows.value;
+  if (statFilter.value === 'inStock') list = list.filter((r) => r.quantity > 0);
+  else if (statFilter.value === 'outOfStock') list = list.filter((r) => r.quantity <= 0);
+  else if (statFilter.value === 'lowStock') list = list.filter((r) => r.available <= 5);
+  else if (statFilter.value === 'reserved') list = list.filter((r) => r.reservedQuantity > 0);
   const q = searchQuery.value.trim().toLowerCase();
   if (q) list = list.filter((r) => r.name.toLowerCase().includes(q) || r.sku.toLowerCase().includes(q));
   return list;
@@ -129,7 +144,17 @@ const columns = [
   { key: 'quantity', label: t('goods.quantity') },
   { key: 'reservedQuantity', label: t('goods.reserved') },
   { key: 'available', label: t('goods.available') },
+  { key: 'costCents', label: t('goods.costPrice') },
+  { key: 'valueCents', label: t('goods.stockValue') },
 ];
+
+async function exportStock() {
+  const { exportStockToXlsx } = await import('@/utils/exportStock');
+  exportStockToXlsx(rows.value, {
+    name: t('goods.goodName'), sku: t('goods.goodSku'), quantity: t('goods.quantity'), reserved: t('goods.reserved'),
+    available: t('goods.available'), cost: t('goods.costPrice'), value: t('goods.stockValue'), sheet: t('goods.warehouse'),
+  }, 'stock');
+}
 
 // --- Edit good (shared GoodFormModal) -- adding a new good lives on the
 // Catalog page, not here; the dashboard only edits what's already in stock. ---
@@ -222,8 +247,8 @@ onMounted(async () => {
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.catalog') }}</div>
       </button>
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ stockedItemsCount }}</div>
-        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.available') }}</div>
+        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ money(stockValueCents) }}</div>
+        <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.stockValue') }} · {{ stockedItemsCount }} {{ t('goods.stockPositions') }}</div>
       </div>
       <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'lowStock' ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = statFilter === 'lowStock' ? 'all' : 'lowStock'">
         <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
@@ -231,8 +256,19 @@ onMounted(async () => {
       </button>
     </div>
 
+    <div v-if="!loading" class="flex items-center justify-between gap-2 flex-shrink-0 mt-3">
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+        <button v-for="f in STOCK_FILTERS" :key="f.key" type="button" class="pill-filter whitespace-nowrap" :class="statFilter === f.key ? 'pill-filter--active' : ''" @click="statFilter = f.key">{{ t(f.label) }}</button>
+      </div>
+      <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex flex-shrink-0" :disabled="!rows.length" @click="exportStock">
+        <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ t('goods.exportExcel') }}
+      </button>
+    </div>
+
     <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">
       <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
+        <template #costCents-data="{ row }"><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ money(row.costCents) }}</span></template>
+        <template #valueCents-data="{ row }"><span class="tabular-nums font-medium">{{ money(row.valueCents) }}</span></template>
         <template #name-data="{ row }">
           <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(row.goodId)">
             {{ row.name }}
