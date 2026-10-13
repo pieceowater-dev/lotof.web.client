@@ -9,6 +9,7 @@ definePageMeta({ layout: 'workspace' });
 // warehouse -- see StartInventoryCount on the backend) as a bulk-entry grid
 // with autosave per row and a live progress/discrepancy view.
 import { useI18n } from '@/composables/useI18n';
+import { printHtmlDocument } from '@/utils/printWindow';
 import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
@@ -150,6 +151,42 @@ async function submitOne(item: GoodsInventoryCountItem) {
   }
 }
 
+// Barcode entry: a scan (or typed code + Enter) adds one to that good's counted quantity.
+const scanCode = ref('');
+async function scanSubmit() {
+  const code = scanCode.value.trim();
+  if (!code || !activeCount.value) return;
+  scanCode.value = '';
+  try {
+    const token = await getToken();
+    const { goodsFindByBarcode } = await import('@/api/goods/good');
+    const found = await goodsFindByBarcode(token, nsSlug.value, code);
+    const goodId = found?.good?.id;
+    const item = activeCount.value.items.find((i) => i.goodId === goodId);
+    if (!goodId || !item) {
+      useToast().add({ title: t('goods.scanNotInCount'), color: 'amber' });
+      return;
+    }
+    countedInputs[goodId] = (countedInputs[goodId] ?? 0) + 1;
+    await submitOne(item);
+  } catch (e) {
+    logError('[goods/inventory] scan failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('goods.scanNotInCount'), color: 'amber' });
+  }
+}
+
+// Printable count sheet: name, article, expected, an empty box for the counted quantity.
+function printSheet() {
+  const c = activeCount.value;
+  if (!c) return;
+  const esc = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const rows = c.items.map((i, n) => `<tr><td>${n + 1}</td><td>${esc(goodName(i.goodId))}</td><td>${esc(goods.value.find((g) => g.id === i.goodId)?.sku || '')}</td><td style="text-align:right">${esc(i.expectedQty)}</td><td style="width:90px"></td></tr>`).join('');
+  const wh = warehouses.value.find((w) => w.id === c.warehouseId)?.name || '';
+  printHtmlDocument(`${t('goods.countSheet')} ${wh}`, `<h2>${esc(t('goods.countSheet'))} · ${esc(wh)}</h2><p>${esc(new Date().toLocaleDateString())}</p>
+    <table style="width:100%;border-collapse:collapse" border="1" cellpadding="6"><thead><tr><th>#</th><th>${esc(t('goods.good'))}</th><th>${esc(t('goods.goodSku'))}</th><th>${esc(t('goods.expectedQty'))}</th><th>${esc(t('goods.countedQty'))}</th></tr></thead><tbody>${rows}</tbody></table>
+    <p style="margin-top:40px">${esc(t('goods.signatureGave'))}: ____________</p>`);
+}
+
 const completing = ref(false);
 async function completeActive() {
   if (!activeCount.value) return;
@@ -231,8 +268,12 @@ onMounted(loadAll);
                 {{ activeCount.items.filter((i) => i.countedQty != null).length }} / {{ activeCount.items.length }} {{ t('goods.countedQty').toLowerCase() }}
               </p>
             </div>
-            <UButton color="gray" variant="ghost" icon="lucide:x" size="xs" @click="showGrid = false" />
+            <div class="flex items-center gap-1">
+              <UButton color="gray" variant="ghost" icon="lucide:printer" size="xs" :title="t('goods.countSheet')" @click="printSheet" />
+              <UButton color="gray" variant="ghost" icon="lucide:x" size="xs" @click="showGrid = false" />
+            </div>
           </div>
+          <UInput v-if="activeCount && activeCount.status !== 'COMPLETED'" v-model="scanCode" class="mt-3" icon="lucide:scan-barcode" :placeholder="t('goods.scanBarcode')" @keyup.enter="scanSubmit" />
         </template>
 
         <div v-if="activeCount" class="divide-y divide-gray-100 dark:divide-gray-800">
