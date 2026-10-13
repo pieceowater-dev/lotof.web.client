@@ -6,6 +6,7 @@ import { contactsListClients, type ClientRow } from '@/api/contacts/listClients'
 import { contactsFindDuplicates, contactsMergeClients } from '@/api/contacts/mergeClients';
 import { logError } from '@/utils/logger';
 import { maskProfanity } from '@/utils/profanityFilter';
+import { previewMerge } from '@/utils/mergeConflicts';
 
 const props = defineProps<{
   isOpen: boolean;
@@ -44,6 +45,8 @@ function phonesOf(c: ClientRow): string {
 
 const primaryId = computed(() => props.primary?.client.id || '');
 const selectedList = computed(() => [...selected.value.values()]);
+const preview = computed(() => (props.primary && selectedList.value.length ? previewMerge(props.primary, selectedList.value) : null));
+const conflictLabel = (f: string) => t(`contacts.mergeConflict_${f}`);
 
 // Only clients of the same type that are not already merged can be picked.
 function eligible(c: ClientRow): boolean {
@@ -192,6 +195,21 @@ async function doMerge() {
             <div class="text-xs text-gray-500 truncate">{{ phonesOf(c) }}</div>
           </div>
         </button>
+      </div>
+
+      <div v-if="preview" class="at-panel !p-3 space-y-2 text-sm">
+        <div class="text-xs font-semibold uppercase tracking-wide text-gray-500">{{ t('contacts.mergePreview') }}</div>
+        <div class="flex flex-wrap gap-2">
+          <span class="at-chip"><Icon name="lucide:plus" class="h-3.5 w-3.5" />{{ t('contacts.mergeNewContacts', { n: preview.newContacts }) }}</span>
+          <span v-if="preview.sameContacts" class="at-chip"><Icon name="lucide:equal" class="h-3.5 w-3.5" />{{ t('contacts.mergeSameContacts', { n: preview.sameContacts }) }}</span>
+        </div>
+        <div v-if="preview.conflicts.length" class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+          <div class="font-medium">{{ t('contacts.mergeConflicts') }}</div>
+          <ul class="mt-1 space-y-0.5 text-xs">
+            <li v-for="c in preview.conflicts" :key="c.field + c.other">{{ conflictLabel(c.field) }}: <b>{{ c.kept }}</b> ← {{ c.other }}</li>
+          </ul>
+          <div class="mt-1 text-xs opacity-80">{{ t('contacts.mergeConflictsHint') }}</div>
+        </div>
       </div>
 
       <div v-if="confirming" class="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">

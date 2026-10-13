@@ -1216,6 +1216,14 @@
     }
   },
   "contacts": {
+    "mergePreview": "Что произойдёт",
+    "mergeNewContacts": "Добавится контактов: {n}",
+    "mergeSameContacts": "Уже есть, не дублируются: {n}",
+    "mergeConflicts": "Данные расходятся",
+    "mergeConflictsHint": "Останется значение основного клиента.",
+    "mergeConflict_birthDate": "Дата рождения",
+    "mergeConflict_binIin": "БИН/ИИН",
+    "mergeConflict_gender": "Пол",
     "clients": "Клиенты",
     "createClient": "Создать клиента",
     "clientCreated": "Клиент успешно создан",

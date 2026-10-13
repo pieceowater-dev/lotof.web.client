@@ -1085,6 +1085,14 @@
     }
   },
   "contacts": {
+    "mergePreview": "Не болады",
+    "mergeNewContacts": "Қосылатын байланыс: {n}",
+    "mergeSameContacts": "Бұрыннан бар, қайталанбайды: {n}",
+    "mergeConflicts": "Деректер сәйкес емес",
+    "mergeConflictsHint": "Негізгі клиенттің мәні қалады.",
+    "mergeConflict_birthDate": "Туған күні",
+    "mergeConflict_binIin": "БИН/ЖСН",
+    "mergeConflict_gender": "Жынысы",
     "clients": "Клиенттер",
     "createClient": "Клиент құру",
     "clientCreated": "Клиент сәтті құрылды",
