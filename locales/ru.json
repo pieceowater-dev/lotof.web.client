@@ -2950,7 +2950,8 @@
     "noteSaveTemplate": "В шаблоны",
     "docVarOrderLink": "Публичная ссылка на заказ (для QR оберните: {{QR:ЗАКАЗ_ССЫЛКА}})",
     "cardName": "Название карточки",
-    "cardSave": "Сохранить фильтр"
+    "cardSave": "Сохранить фильтр",
+    "columnsTitle": "Колонки"
   },
   "plans": {
     "calendar": "Календарь",

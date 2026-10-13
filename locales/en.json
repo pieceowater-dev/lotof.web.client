@@ -2897,7 +2897,8 @@
     "noteSaveTemplate": "Save as template",
     "docVarOrderLink": "Public order link (wrap as {{QR:ORDER_LINK}} for a QR code)",
     "cardName": "Card name",
-    "cardSave": "Save filter"
+    "cardSave": "Save filter",
+    "columnsTitle": "Columns"
   },
   "goods": {
     "register": "Register",

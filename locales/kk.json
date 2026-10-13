@@ -2526,7 +2526,8 @@
     "noteSaveTemplate": "Үлгі ретінде сақтау",
     "docVarOrderLink": "Тапсырыстың ашық сілтемесі (QR үшін: {{QR:ТАПСЫРЫС_СІЛТЕМЕ}})",
     "cardName": "Карточка атауы",
-    "cardSave": "Сүзгіні сақтау"
+    "cardSave": "Сүзгіні сақтау",
+    "columnsTitle": "Бағандар"
   },
   "goods": {
     "register": "Касса",

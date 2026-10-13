@@ -590,16 +590,41 @@ watch([page, pageCount], () => {
   loadOrders();
 });
 
+// Optional columns the user can switch on/off; the choice is remembered per
+// namespace in this browser. Number, customer, status and actions always show.
+const OPTIONAL_COLUMNS = [
+  { key: 'phone', label: 'menu.phone' },
+  { key: 'type', label: 'menu.type' },
+  { key: 'totalAmount', label: 'menu.total' },
+  { key: 'paidAmount', label: 'menu.colPaid' },
+  { key: 'readyAt', label: 'menu.readySince' },
+  { key: 'nextContactAt', label: 'menu.nextContact' },
+  { key: 'createdAt', label: 'menu.createdAt' },
+] as const;
+const DEFAULT_COLUMNS = ['phone', 'type', 'totalAmount', 'createdAt'];
+const COLUMNS_KEY = computed(() => `menu:columns:${nsSlug.value}`);
+const visibleColumns = ref<string[]>([...DEFAULT_COLUMNS]);
+if (process.client) {
+  try {
+    const raw = localStorage.getItem(`menu:columns:${route.params.namespace}`);
+    if (raw) visibleColumns.value = JSON.parse(raw);
+  } catch { /* storage unavailable */ }
+}
+function toggleColumn(key: string) {
+  visibleColumns.value = visibleColumns.value.includes(key) ? visibleColumns.value.filter((k) => k !== key) : [...visibleColumns.value, key];
+  try { localStorage.setItem(COLUMNS_KEY.value, JSON.stringify(visibleColumns.value)); } catch { /* storage unavailable */ }
+}
 const columns = computed(() => [
   { key: 'number', label: t('menu.orderNumber') || 'Order #', sortable: true },
   { key: 'customerName', label: t('menu.customer') || 'Customer' },
-  { key: 'phone', label: t('menu.phone') || 'Phone' },
-  { key: 'type', label: t('menu.type') || 'Type' },
+  ...OPTIONAL_COLUMNS.filter((c) => visibleColumns.value.includes(c.key)).map((c) => ({
+    key: c.key, label: t(c.label), sortable: c.key === 'totalAmount' || c.key === 'createdAt',
+  })),
   { key: 'status', label: t('menu.status') || 'Status' },
-  { key: 'totalAmount', label: t('menu.total') || 'Total', sortable: true },
-  { key: 'createdAt', label: t('menu.createdAt') || 'Created', sortable: true },
   { key: 'actions', label: '' },
 ]);
+const columnsOpen = ref(false);
+
 
 function formatDate(iso: string) {
   try {
@@ -1253,6 +1278,15 @@ async function handleCreateOrder(payload: any) {
           </span>
           <span v-else class="font-semibold tabular-nums">{{ row.totalAmount.toLocaleString() }}</span>
         </template>
+        <template #paidAmount-data="{ row }">
+          <span class="tabular-nums" :class="row.paidAmount >= orderNetAmount(row) && row.totalAmount > 0 ? 'text-accent-700 dark:text-blue-300 font-semibold' : 'text-gray-500 dark:text-gray-400'">{{ (row.paidAmount || 0).toLocaleString() }}</span>
+        </template>
+        <template #readyAt-data="{ row }">
+          <span class="text-gray-500 dark:text-gray-400">{{ row.readyAt ? formatDate(row.readyAt) : '—' }}</span>
+        </template>
+        <template #nextContactAt-data="{ row }">
+          <span :class="row.nextContactAt && !row.closedAt && row.nextContactAt.slice(0, 10) <= new Date().toISOString().slice(0, 10) ? 'text-rose-600 font-medium' : 'text-gray-500 dark:text-gray-400'">{{ row.nextContactAt ? new Date(row.nextContactAt).toLocaleDateString() : '—' }}</span>
+        </template>
         <template #createdAt-data="{ row }">
           <span class="text-gray-500 dark:text-gray-400">{{ formatDate(row.createdAt) }}</span>
         </template>
@@ -1288,6 +1322,14 @@ async function handleCreateOrder(payload: any) {
       </label>
 
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <div class="relative hidden sm:block">
+        <button type="button" class="at-btn !px-3 !py-1.5" @click="columnsOpen = !columnsOpen"><Icon name="lucide:columns-3" class="w-4 h-4" />{{ t('menu.columnsTitle') }}</button>
+        <div v-if="columnsOpen" class="absolute bottom-full right-0 z-30 mb-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+          <button v-for="c in OPTIONAL_COLUMNS" :key="c.key" type="button" class="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5" @click="toggleColumn(c.key)">
+            <Icon :name="visibleColumns.includes(c.key) ? 'lucide:check-square' : 'lucide:square'" class="w-4 h-4" :class="visibleColumns.includes(c.key) ? 'text-accent-600' : 'text-gray-400'" />{{ t(c.label) }}
+          </button>
+        </div>
+      </div>
       <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!orders.length" @click="exportOrders">
         <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ selectedSummary ? t('menu.exportSelected') : t('menu.exportPage') }}
       </button>
