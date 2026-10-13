@@ -35,7 +35,7 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
-import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, buildOrderQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, warrantyCarryOver, type CustomFieldValues } from '@/utils/orderCustomFields';
@@ -1166,6 +1166,11 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   const socialTokens = Object.values(MENU_DOC_VARIABLES_BY_KEY.SOCIAL_LINKS_QR.localTokens);
   if (socialTokens.some((token) => template.content.includes(`{{${token}}}`))) {
     variables.SOCIAL_LINKS_QR = await buildSocialLinksQrBlock(brandSettings.value?.socialLinks, noneLabel);
+  }
+  const qrTokens = Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_QR.localTokens);
+  if (qrTokens.some((token) => template.content.includes(`{{${token}}}`))) {
+    const digits = phoneDigitsForLink(props.order.phone);
+    variables.ORDER_QR = digits ? await buildOrderQrBlock(`${window.location.origin}/to/${nsSlug.value}/menu/${smartOrderNumber(props.order)}-${digits}`) : '';
   }
   const html = substituteMenuDocVariables(template.content, variables);
   // Included in the document's <title>, which browsers use as the default

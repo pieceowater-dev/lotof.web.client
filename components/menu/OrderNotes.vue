@@ -34,6 +34,30 @@ const editBody = ref('');
 const lightbox = ref<string | null>(null);
 const MAX_FILES = 10;
 
+// Quick phrases: tap to drop a typical comment into the composer. Kept per
+// browser; the first ones ship as starters and the list is editable.
+const TEMPLATES_KEY = 'menu:noteTemplates';
+const starter = () => [t('menu.noteTpl1'), t('menu.noteTpl2'), t('menu.noteTpl3')];
+const templates = ref<string[]>([]);
+function loadTemplates() {
+  try {
+    const raw = localStorage.getItem(TEMPLATES_KEY);
+    templates.value = raw ? JSON.parse(raw) : starter();
+  } catch { templates.value = starter(); }
+}
+function persistTemplates() {
+  try { localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates.value)); } catch { /* storage unavailable */ }
+}
+function useTemplate(tpl: string) { body.value = body.value ? `${body.value}\n${tpl}` : tpl; }
+function saveAsTemplate() {
+  const v = body.value.trim();
+  if (!v || templates.value.includes(v) || templates.value.length >= 12) return;
+  templates.value = [...templates.value, v.slice(0, 160)];
+  persistTemplates();
+}
+function dropTemplate(i: number) { templates.value = templates.value.filter((_, j) => j !== i); persistTemplates(); }
+onMounted(loadTemplates);
+
 const visible = computed(() => notes.value.slice().sort((a, b) => {
   const w = (n: OrderNote) => (n.deleted ? -2 : 0) + (n.pinned ? 2 : 0) + (n.important ? 1 : 0);
   return w(b) - w(a) || b.createdAt.localeCompare(a.createdAt);
@@ -125,6 +149,13 @@ async function remove(n: OrderNote, restore = false) {
     <!-- composer -->
     <div class="space-y-2">
       <UTextarea v-model="body" :rows="2" autoresize :placeholder="t('menu.notePlaceholder')" @paste="onPaste" />
+      <div class="flex flex-wrap gap-1.5">
+        <span v-for="(tpl, i) in templates" :key="tpl" class="pill-filter !pr-1.5 group cursor-pointer" @click="useTemplate(tpl)">
+          {{ tpl }}
+          <button type="button" class="ml-1 opacity-50 hover:opacity-100" :aria-label="t('common.delete')" @click.stop="dropTemplate(i)"><Icon name="lucide:x" class="w-3 h-3" /></button>
+        </span>
+        <button v-if="body.trim() && !templates.includes(body.trim())" type="button" class="pill-outline" @click="saveAsTemplate"><Icon name="lucide:bookmark-plus" class="w-3.5 h-3.5" />{{ t('menu.noteSaveTemplate') }}</button>
+      </div>
       <div v-if="previews.length" class="flex gap-2 flex-wrap">
         <div v-for="(p, i) in previews" :key="p" class="relative">
           <img :src="p" alt="" class="h-16 w-16 rounded-xl object-cover ring-1 ring-black/5">

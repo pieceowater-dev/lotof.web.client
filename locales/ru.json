@@ -2925,7 +2925,13 @@
     "reportFieldHint": "Закрытые заказы за период в разрезе значения поля: сколько выполнено, сколько отменено, средний чек.",
     "reportBlank": "Не заполнено",
     "reportDone": "Выполнено",
-    "reportCancelled": "Отменено"
+    "reportCancelled": "Отменено",
+    "docVarOrderRecommendation": "Рекомендация клиенту",
+    "docVarOrderQr": "QR-код отслеживания заказа",
+    "noteTpl1": "Клиент не отвечает",
+    "noteTpl2": "Ждём запчасть",
+    "noteTpl3": "Согласовали с клиентом",
+    "noteSaveTemplate": "В шаблоны"
   },
   "plans": {
     "calendar": "Календарь",

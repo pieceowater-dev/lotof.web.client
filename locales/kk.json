@@ -2501,7 +2501,13 @@
     "reportFieldHint": "Кезеңдегі жабылған тапсырыстар өріс мәні бойынша: орындалған, бас тартылған, орташа чек.",
     "reportBlank": "Толтырылмаған",
     "reportDone": "Орындалған",
-    "reportCancelled": "Бас тартылған"
+    "reportCancelled": "Бас тартылған",
+    "docVarOrderRecommendation": "Клиентке ұсыныс",
+    "docVarOrderQr": "Тапсырысты бақылау QR-коды",
+    "noteTpl1": "Клиент жауап бермейді",
+    "noteTpl2": "Қосалқы бөлшекті күтудеміз",
+    "noteTpl3": "Клиентпен келістік",
+    "noteSaveTemplate": "Үлгі ретінде сақтау"
   },
   "goods": {
     "register": "Касса",

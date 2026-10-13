@@ -2882,7 +2882,13 @@
     "reportFieldHint": "Closed orders of the period split by a field's value: done, cancelled, average check.",
     "reportBlank": "Not filled",
     "reportDone": "Done",
-    "reportCancelled": "Cancelled"
+    "reportCancelled": "Cancelled",
+    "docVarOrderRecommendation": "Recommendation for the customer",
+    "docVarOrderQr": "Order tracking QR code",
+    "noteTpl1": "Customer not answering",
+    "noteTpl2": "Waiting for a part",
+    "noteTpl3": "Agreed with the customer",
+    "noteSaveTemplate": "Save as template"
   },
   "goods": {
     "register": "Register",

@@ -157,6 +157,7 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     ORDER_MATERIALS_TOTAL: formatMoney(labour.materialsTotal),
     CUSTOM_FIELDS: customFieldsBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     ORDER_WARRANTY: warrantyBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
+    ORDER_RECOMMENDATION: escapeHtml(order.recommendation || '').replace(/\n/g, '<br>'),
     CLIENT_NAME: escapeHtml(order.customerName || guestLabel),
     CLIENT_PHONE: escapeHtml(order.phone ? formatDisplayPhoneUniversal(order.phone) : ''),
     CLIENT_ADDRESS: escapeHtml(order.deliveryAddress || ''),
@@ -191,6 +192,15 @@ export async function buildSocialLinksQrBlock(socialLinksJson: string | null | u
     })
   );
   return `<div>${cells.join('')}</div>`;
+}
+
+// ORDER_QR: a scannable code of the customer's tracking page for this order
+// (stick it on the device). Async for the same reason as the social QR.
+export async function buildOrderQrBlock(trackingUrl: string): Promise<string> {
+  if (!trackingUrl) return '';
+  const QRCode = (await import('qrcode')).default;
+  const dataUrl = await QRCode.toDataURL(trackingUrl, { width: 120, margin: 1 });
+  return `<div style="display:inline-block;text-align:center"><img src="${dataUrl}" alt="QR" style="width:120px;height:120px" /></div>`;
 }
 
 // Cyrillic range covers Russian; the extra chars are the Kazakh-only
