@@ -6,7 +6,7 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 const CreateBoardDocument = /* GraphQL */ `
   mutation CreateBoard($input: CreateBoardInput!) {
     createBoard(input: $input) {
-      id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses webhookSecret
+      id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses taskTemplates webhookSecret
     }
   }
 `;

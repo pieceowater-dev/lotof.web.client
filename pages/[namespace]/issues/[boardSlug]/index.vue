@@ -26,6 +26,7 @@ import BurndownModal from '@/components/tasks/BurndownModal.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
+import { parseTaskTemplates, templateDueAt, type TaskTemplate } from '@/utils/taskTemplates';
 import type { Cycle } from '@/api/tasks/cycle/list';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; askReason: boolean }
@@ -564,6 +565,32 @@ function cancelQuickAdd() {
   quickAddOpen.value = false;
   quickAddTitle.value = '';
 }
+// --- Create from a template: one click, the template fills title, text,
+// priority and deadline ---
+const taskTemplates = computed(() => parseTaskTemplates(board.value?.taskTemplates));
+const templateMenuItems = computed(() => [taskTemplates.value.map((tpl) => ({ label: tpl.name, icon: 'lucide:file-plus-2', click: () => createFromTemplate(tpl) }))]);
+async function createFromTemplate(tpl: TaskTemplate) {
+  const taskTypeId = tpl.task_type_id || board.value?.defaultTaskTypeId || taskTypes.value[0]?.id;
+  if (!taskTypeId) {
+    useToast().add({ title: t('tasks.noTaskTypesYet') || 'Create an issue type first', color: 'red' });
+    return;
+  }
+  try {
+    const token = await getToken();
+    const { tasksCreateTask } = await import('@/api/tasks/task/create');
+    const created = await tasksCreateTask(token, nsSlug.value, {
+      boardId: boardId.value, taskTypeId, title: tpl.title, description: tpl.description || undefined, priority: tpl.priority,
+      status: boardStatuses.value[0]?.key, cycleId: defaultCycleIdForNewTask.value, dueAt: templateDueAt(tpl),
+      assigneeUserId: currentUser.value?.id || undefined,
+    });
+    tasks.value = [...tasks.value, created];
+    useToast().add({ title: t('tasks.templateCreated', { name: tpl.name }), color: 'primary' });
+  } catch (e) {
+    logError('[tasks/board] create from template failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create issue', color: 'red' });
+  }
+}
+
 async function submitQuickAdd() {
   // Guards against a double-create: pressing Enter can itself trigger the
   // input's blur handler before this async call finishes clearing the
@@ -781,6 +808,9 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <UButton v-if="isOwnerOrManager" icon="lucide:settings" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/settings`" data-tour="issues-settings-btn">
           {{ t('tasks.configure') || 'Configure' }}
         </UButton>
+        <UDropdown v-if="taskTemplates.length" :items="templateMenuItems" :popper="{ placement: 'bottom-end' }">
+          <UButton icon="lucide:file-plus-2" size="xs" color="gray" variant="soft" trailing-icon="lucide:chevron-down">{{ t('tasks.fromTemplate') }}</UButton>
+        </UDropdown>
         <UButton icon="lucide:plus" size="xs" color="primary" variant="soft" data-tour="issues-create-btn" @click="openCreateTask">
           {{ t('tasks.createTask') || 'Create issue' }}
         </UButton>

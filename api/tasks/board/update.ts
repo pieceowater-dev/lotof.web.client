@@ -6,7 +6,7 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 const UpdateBoardDocument = /* GraphQL */ `
   mutation UpdateBoard($input: UpdateBoardInput!) {
     updateBoard(input: $input) {
-      id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses webhookSecret
+      id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses taskTemplates webhookSecret
     }
   }
 `;
@@ -20,6 +20,8 @@ export interface UpdateBoardInput {
   deliveryConfirmationMode?: string;
   defaultTaskTypeId?: string;
   statuses?: string;
+  // JSON array; "[]" clears the templates.
+  taskTemplates?: string;
 }
 
 export async function tasksUpdateBoard(tasksToken: string, namespaceSlug: string, input: UpdateBoardInput) {

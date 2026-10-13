@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import TaskTemplatesCard from '@/components/tasks/TaskTemplatesCard.vue';
 import { leadKey, leadEndpoint, leadFormSnippet } from '@/utils/leadForm';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atCardUi } from '@/utils/atraceUi';
@@ -694,6 +695,10 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
                   </UButton>
                 </div>
               </div>
+            </UCard>
+
+            <UCard v-if="board" :ui="panelUi">
+              <TaskTemplatesCard :board="board" :task-types="taskTypes" :ns-slug="nsSlug" :get-token="getToken" @saved="(b: TaskBoard) => { board = b }" />
             </UCard>
 
             <UCard :ui="panelUi">

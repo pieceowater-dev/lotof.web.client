@@ -6,7 +6,7 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 const RegenerateBoardWebhookSecretDocument = /* GraphQL */ `
   mutation RegenerateBoardWebhookSecret($id: ID!) {
     regenerateBoardWebhookSecret(id: $id) {
-      id name isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses webhookSecret
+      id name isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses taskTemplates webhookSecret
     }
   }
 `;

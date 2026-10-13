@@ -12,13 +12,14 @@ export interface TaskBoard {
   deliveryConfirmationMode: string;
   defaultTaskTypeId?: string | null;
   statuses: string;
+  taskTemplates?: string;
   webhookSecret: string;
 }
 
 const BoardsDocument = /* GraphQL */ `
   query Boards($filter: DefaultFilterInput) {
     boards(filter: $filter) {
-      rows { id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses webhookSecret }
+      rows { id name slug isActive featureFlags integrationFlags deliveryConfirmationMode defaultTaskTypeId statuses taskTemplates webhookSecret }
       info { count }
     }
   }
