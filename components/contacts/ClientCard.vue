@@ -71,7 +71,7 @@ const statusColor = computed(() => {
           size="xs"
           class="ml-2 flex-shrink-0"
         >
-          {{ client.client.status }}
+          {{ t(`contacts.clientStatus_${client.client.status}`) || client.client.status }}
         </UBadge>
       </div>
 

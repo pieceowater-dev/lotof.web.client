@@ -13,6 +13,7 @@ import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInp
 import { twoGisSearchHref, osmEmbedSrc } from '@/utils/geo';
 import { formatMoney } from '@/utils/currency';
 import { smartOrderNumber, parseSmartOrderNumber } from '@/utils/orderNumber';
+import { defaultStatusLabel } from '@/utils/orderStatusLabels';
 import { withRetry } from '@/utils/retry';
 import { parseWorkingHours, isOpenNow, nextOpenLabel } from '@/utils/workingHours';
 import { isCategoryAvailableNow } from '@/utils/categoryAvailability';
@@ -1493,7 +1494,7 @@ useHead(() => {
                   class="sf-option flex items-center justify-between text-xs px-3.5 py-2.5"
                 >
                   <span class="font-mono font-medium text-gray-900 dark:text-white">{{ smartOrderNumber(o) }}</span>
-                  <span class="text-gray-400">{{ o.status }}</span>
+                  <span class="text-gray-400">{{ defaultStatusLabel(o.status, t) }}</span>
                   <span class="text-gray-500">{{ formatMoney(o.totalAmount, data?.storefront.brandSettings?.currencyCode) }}</span>
                 </a>
               </div>

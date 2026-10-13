@@ -73,7 +73,7 @@ const clientType = computed(() => {
               :color="statusColor"
               size="md"
             >
-              {{ client.client.status }}
+              {{ t(`contacts.clientStatus_${client.client.status}`) || client.client.status }}
             </UBadge>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">

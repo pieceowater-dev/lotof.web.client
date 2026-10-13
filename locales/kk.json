@@ -1804,7 +1804,19 @@
     "exportCreated": "Құрылған",
     "exportNotes": "Ескертпе",
     "exportSheet": "Клиенттер",
-    "file": "Файл"
+    "file": "Файл",
+    "clientStatus_ACTIVE": "Белсенді",
+    "clientStatus_BLOCKED": "Бұғатталған",
+    "clientStatus_ARCHIVED": "Мұрағатта",
+    "identityType_phone": "Телефон",
+    "identityType_email": "Пошта",
+    "identityType_telegram": "Telegram",
+    "identityType_whatsapp": "WhatsApp",
+    "identityType_website": "Сайт",
+    "identityType_other": "Басқа",
+    "cardStatus_ACTIVE": "Белсенді",
+    "cardStatus_INACTIVE": "Белсенді емес",
+    "cardStatus_ARCHIVED": "Мұрағатта"
   },
   "admin": {
     "panel": "Консоль",

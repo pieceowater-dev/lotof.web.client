@@ -1804,7 +1804,19 @@
     "exportCreated": "Создан",
     "exportNotes": "Примечание",
     "exportSheet": "Клиенты",
-    "file": "Файл"
+    "file": "Файл",
+    "clientStatus_ACTIVE": "Активен",
+    "clientStatus_BLOCKED": "Заблокирован",
+    "clientStatus_ARCHIVED": "В архиве",
+    "identityType_phone": "Телефон",
+    "identityType_email": "Почта",
+    "identityType_telegram": "Telegram",
+    "identityType_whatsapp": "WhatsApp",
+    "identityType_website": "Сайт",
+    "identityType_other": "Другое",
+    "cardStatus_ACTIVE": "Активна",
+    "cardStatus_INACTIVE": "Не активна",
+    "cardStatus_ARCHIVED": "В архиве"
   },
   "landing": {
     "getStarted": "Получить",

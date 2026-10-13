@@ -441,7 +441,7 @@ onMounted(async () => {
                 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
               ]"
             >
-              {{ card.status }}
+              {{ t(`contacts.cardStatus_${card.status}`) || card.status }}
             </span>
             <UButton
               icon="lucide:pencil"

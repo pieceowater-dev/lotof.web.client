@@ -242,7 +242,7 @@ watch(() => props.isOpen, (newVal) => {
                   {{ identity.value }}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ identity.type }}
+                  {{ t(`contacts.identityType_${identity.type}`) || identity.type }}
                   <span
                     v-if="identity.isPrimary"
                     class="ml-2 text-emerald-600 dark:text-emerald-400"
