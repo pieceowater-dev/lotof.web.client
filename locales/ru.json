@@ -2927,11 +2927,11 @@
     "reportDone": "Выполнено",
     "reportCancelled": "Отменено",
     "docVarOrderRecommendation": "Рекомендация клиенту",
-    "docVarOrderQr": "QR-код отслеживания заказа",
     "noteTpl1": "Клиент не отвечает",
     "noteTpl2": "Ждём запчасть",
     "noteTpl3": "Согласовали с клиентом",
-    "noteSaveTemplate": "В шаблоны"
+    "noteSaveTemplate": "В шаблоны",
+    "docVarOrderLink": "Публичная ссылка на заказ (для QR оберните: {{QR:ЗАКАЗ_ССЫЛКА}})"
   },
   "plans": {
     "calendar": "Календарь",

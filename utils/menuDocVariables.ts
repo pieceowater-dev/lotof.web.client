@@ -32,7 +32,7 @@ export type MenuDocVariableKey =
   | 'BRANCH_PHONE'
   | 'SOCIAL_LINKS_QR'
   | 'ORDER_RECOMMENDATION'
-  | 'ORDER_QR';
+  | 'ORDER_LINK';
 
 export type MenuDocVariableLocale = 'en' | 'ru' | 'kk';
 
@@ -140,8 +140,8 @@ export const MENU_DOC_VARIABLES: MenuDocVariableInfo[] = [
     localTokens: { en: 'ORDER_RECOMMENDATION', ru: 'ЗАКАЗ_РЕКОМЕНДАЦИЯ', kk: 'ТАПСЫРЫС_ҰСЫНЫС' },
   },
   {
-    key: 'ORDER_QR', labelKey: 'menu.docVarOrderQr', fallback: 'Order tracking QR code', group: 'order',
-    localTokens: { en: 'ORDER_QR', ru: 'ЗАКАЗ_QR', kk: 'ТАПСЫРЫС_QR' },
+    key: 'ORDER_LINK', labelKey: 'menu.docVarOrderLink', fallback: 'Public order tracking link (wrap as {{QR:ORDER_LINK}} for a QR code)', group: 'order',
+    localTokens: { en: 'ORDER_LINK', ru: 'ЗАКАЗ_ССЫЛКА', kk: 'ТАПСЫРЫС_СІЛТЕМЕ' },
   },
 ];
 

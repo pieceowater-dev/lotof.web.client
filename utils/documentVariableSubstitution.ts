@@ -130,6 +130,8 @@ export type BuildMenuDocVariablesInput = {
   customFieldsBlock?: string;
   // Pre-rendered ORDER_WARRANTY table; see buildWarrantyTable.
   warrantyBlock?: string;
+  // Public tracking link of the order (plain text, used by ORDER_LINK and {{QR:ORDER_LINK}}).
+  orderLink?: string;
 };
 
 // Builds the {{VARIABLE}} -> value map for one order, entirely from data the
@@ -138,7 +140,7 @@ export type BuildMenuDocVariablesInput = {
 // at print time. SOCIAL_LINKS_QR is a separate async step (see
 // buildSocialLinksQrBlock) since QR generation can't happen synchronously.
 export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record<string, string> {
-  const { order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock, warrantyBlock } = input;
+  const { orderLink, order, items, members, memberDisplayName, guestLabel, noneLabel, itemsTableHeaders, brand, branch, customFieldsBlock, warrantyBlock } = input;
   const amountDue = order.totalAmount - order.discountAmount - order.paidAmount;
   const labour = splitLabour(items);
   const employeeNames = members.map((m) => memberDisplayName(m.userId)).filter(Boolean);
@@ -157,6 +159,7 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     ORDER_MATERIALS_TOTAL: formatMoney(labour.materialsTotal),
     CUSTOM_FIELDS: customFieldsBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
     ORDER_WARRANTY: warrantyBlock ?? `<p>${escapeHtml(noneLabel)}</p>`,
+    ORDER_LINK: orderLink ?? '',
     ORDER_RECOMMENDATION: escapeHtml(order.recommendation || '').replace(/\n/g, '<br>'),
     CLIENT_NAME: escapeHtml(order.customerName || guestLabel),
     CLIENT_PHONE: escapeHtml(order.phone ? formatDisplayPhoneUniversal(order.phone) : ''),
@@ -194,13 +197,27 @@ export async function buildSocialLinksQrBlock(socialLinksJson: string | null | u
   return `<div>${cells.join('')}</div>`;
 }
 
-// ORDER_QR: a scannable code of the customer's tracking page for this order
-// (stick it on the device). Async for the same reason as the social QR.
-export async function buildOrderQrBlock(trackingUrl: string): Promise<string> {
-  if (!trackingUrl) return '';
+// {{QR:<something>}} turns a link into a QR code image while printing, so no
+// variable needs its own QR twin: wrap any link variable ({{QR:ORDER_LINK}},
+// in any locale spelling) or a literal address ({{QR:https://example.com}}).
+// `resolve` returns the raw text for a variable name, or undefined.
+export async function expandQrTokens(content: string, resolve: (name: string) => string | undefined): Promise<string> {
+  const re = /\{\{\s*QR\s*:\s*([^}]+?)\s*\}\}/gi;
+  const matches = [...content.matchAll(re)];
+  if (!matches.length) return content;
   const QRCode = (await import('qrcode')).default;
-  const dataUrl = await QRCode.toDataURL(trackingUrl, { width: 120, margin: 1 });
-  return `<div style="display:inline-block;text-align:center"><img src="${dataUrl}" alt="QR" style="width:120px;height:120px" /></div>`;
+  let out = content;
+  for (const m of matches) {
+    const arg = m[1].trim();
+    const text = /^https?:\/\//i.test(arg) ? arg : resolve(arg);
+    let html = '';
+    if (text) {
+      const dataUrl = await QRCode.toDataURL(text, { width: 120, margin: 1 });
+      html = `<div style="display:inline-block;text-align:center"><img src="${dataUrl}" alt="QR" style="width:120px;height:120px" /></div>`;
+    }
+    out = out.replace(m[0], html);
+  }
+  return out;
 }
 
 // Cyrillic range covers Russian; the extra chars are the Kazakh-only

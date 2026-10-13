@@ -35,7 +35,7 @@ import type { MenuBadge } from '@/api/menu/badge/list';
 import type { MenuCategory } from '@/api/menu/category/list';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
-import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, buildOrderQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
+import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, expandQrTokens, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, warrantyCarryOver, type CustomFieldValues } from '@/utils/orderCustomFields';
@@ -1138,7 +1138,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   if (!props.order) return;
   const branch = props.order.branchId ? branchById.value[props.order.branchId] : undefined;
   const noneLabel = t('menu.docVarNoneLabel') || '—';
+  const phoneDigitsForDoc = phoneDigitsForLink(props.order.phone);
   const variables = buildMenuDocVariables({
+    orderLink: phoneDigitsForDoc ? `${window.location.origin}/to/${nsSlug.value}/menu/${smartOrderNumber(props.order)}-${phoneDigitsForDoc}` : '',
     order: props.order,
     items: items.value,
     members: members.value,
@@ -1167,12 +1169,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   if (socialTokens.some((token) => template.content.includes(`{{${token}}}`))) {
     variables.SOCIAL_LINKS_QR = await buildSocialLinksQrBlock(brandSettings.value?.socialLinks, noneLabel);
   }
-  const qrTokens = Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_QR.localTokens);
-  if (qrTokens.some((token) => template.content.includes(`{{${token}}}`))) {
-    const digits = phoneDigitsForLink(props.order.phone);
-    variables.ORDER_QR = digits ? await buildOrderQrBlock(`${window.location.origin}/to/${nsSlug.value}/menu/${smartOrderNumber(props.order)}-${digits}`) : '';
-  }
-  const html = substituteMenuDocVariables(template.content, variables);
+  const linkTokens = new Set(Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_LINK.localTokens));
+  const content = await expandQrTokens(template.content, (name) => (linkTokens.has(name) ? variables.ORDER_LINK : undefined));
+  const html = substituteMenuDocVariables(content, variables);
   // Included in the document's <title>, which browsers use as the default
   // filename when the print dialog is used to "Save as PDF" -- without the
   // order number, printing the same template for different orders produces

@@ -2884,11 +2884,11 @@
     "reportDone": "Done",
     "reportCancelled": "Cancelled",
     "docVarOrderRecommendation": "Recommendation for the customer",
-    "docVarOrderQr": "Order tracking QR code",
     "noteTpl1": "Customer not answering",
     "noteTpl2": "Waiting for a part",
     "noteTpl3": "Agreed with the customer",
-    "noteSaveTemplate": "Save as template"
+    "noteSaveTemplate": "Save as template",
+    "docVarOrderLink": "Public order link (wrap as {{QR:ORDER_LINK}} for a QR code)"
   },
   "goods": {
     "register": "Register",

@@ -1252,7 +1252,7 @@ async function handleCreateOrder(payload: any) {
          report over a period; checking specific rows switches it to just
          that subset) only appears once there's something to show. -->
     <div
-      class="flex-shrink-0 mt-2 flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm transition-colors"
+      class="flex-shrink-0 mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-xl border px-4 py-2.5 text-sm transition-colors"
       :class="selectedSummary
         ? 'border-primary-200 dark:border-primary-800 bg-primary-50/60 dark:bg-primary-950/20'
         : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'"
@@ -1269,8 +1269,8 @@ async function handleCreateOrder(payload: any) {
         </span>
       </label>
 
-      <div class="flex items-center gap-3">
-      <button type="button" class="at-btn !px-3 !py-1.5" :disabled="!orders.length" @click="exportOrders">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!orders.length" @click="exportOrders">
         <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ selectedSummary ? t('menu.exportSelected') : t('menu.exportPage') }}
       </button>
       <template v-if="selectedSummary || summary">

@@ -2503,11 +2503,11 @@
     "reportDone": "Орындалған",
     "reportCancelled": "Бас тартылған",
     "docVarOrderRecommendation": "Клиентке ұсыныс",
-    "docVarOrderQr": "Тапсырысты бақылау QR-коды",
     "noteTpl1": "Клиент жауап бермейді",
     "noteTpl2": "Қосалқы бөлшекті күтудеміз",
     "noteTpl3": "Клиентпен келістік",
-    "noteSaveTemplate": "Үлгі ретінде сақтау"
+    "noteSaveTemplate": "Үлгі ретінде сақтау",
+    "docVarOrderLink": "Тапсырыстың ашық сілтемесі (QR үшін: {{QR:ТАПСЫРЫС_СІЛТЕМЕ}})"
   },
   "goods": {
     "register": "Касса",

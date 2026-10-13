@@ -126,9 +126,9 @@ onMounted(async () => { await Promise.all([loadNames(), load()]); });
       <button v-if="tab === 'executors'" type="button" class="at-btn" :disabled="!rows.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" />Excel</button>
     </div>
 
-    <div class="at-seg">
+    <div class="overflow-x-auto -mx-1 px-1"><div class="at-seg">
       <button v-for="k in (['executors', 'times', 'field', 'journal'] as const)" :key="k" type="button" class="at-seg__btn" :class="tab === k ? 'at-seg__btn--on' : ''" @click="setTab(k)">{{ t('menu.reportTab_' + k) }}</button>
-    </div>
+    </div></div>
 
     <div class="at-panel !p-4 flex items-end gap-3 flex-wrap">
       <div class="space-y-1"><label class="text-xs font-medium text-slate-500">{{ t('menu.executorsFrom') }}</label><UInput v-model="from" type="date" /></div>

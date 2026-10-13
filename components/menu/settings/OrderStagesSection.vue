@@ -168,10 +168,10 @@ async function toggleRule(key: string, value: boolean | string) {
         <div class="text-sm font-semibold">{{ t('menu.numberingTitle') }}</div>
         <div class="at-hint !mt-0.5">{{ t('menu.numberingHint') }}</div>
       </div>
-      <div class="at-seg">
+      <div class="overflow-x-auto"><div class="at-seg">
         <button type="button" class="at-seg__btn" :class="(rules.numbering || 'daily') === 'daily' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'daily')">{{ t('menu.numberingDaily') }}</button>
         <button type="button" class="at-seg__btn" :class="rules.numbering === 'continuous' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'continuous')">{{ t('menu.numberingContinuous') }}</button>
-      </div>
+      </div></div>
       <div class="flex items-center gap-2">
         <UInput v-model="prefixDraft" maxlength="5" :placeholder="t('menu.numberPrefixPlaceholder')" class="w-40" />
         <button type="button" class="at-btn at-btn--blue !px-3 !py-1.5" :disabled="prefixDraft === (rules.numberPrefix || '')" @click="toggleRule('numberPrefix', prefixDraft.trim())">{{ t('common.save') }}</button>
