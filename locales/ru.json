@@ -2947,6 +2947,8 @@
     "stageAutoTask": "Задача в Issues",
     "stageAutoTaskPlaceholder": "Напр.: Озвучить цену клиенту",
     "stageAutoTaskHint": "Когда заказ впервые попадает в этот статус, в Issues создаётся задача с этим названием. Пусто — без задачи.",
+    "printSelected": "Печать ({n})",
+    "printNoTemplates": "Нет шаблонов документов",
     "myOrdersTitle": "Мои заказы",
     "myOrdersHint": "Заказы, в которых вы участвуете",
     "myOrdersOpen": "Открытые",

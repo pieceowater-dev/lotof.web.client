@@ -2523,6 +2523,8 @@
     "stageAutoTask": "Issues-тегі тапсырма",
     "stageAutoTaskPlaceholder": "Мыс.: Клиентке бағаны айту",
     "stageAutoTaskHint": "Тапсырыс бұл мәртебеге алғаш түскенде Issues-те осы атаумен тапсырма жасалады. Бос болса — тапсырма жоқ.",
+    "printSelected": "Басып шығару ({n})",
+    "printNoTemplates": "Құжат үлгілері жоқ",
     "myOrdersTitle": "Менің тапсырыстарым",
     "myOrdersHint": "Сіз қатысатын тапсырыстар",
     "myOrdersOpen": "Ашық",

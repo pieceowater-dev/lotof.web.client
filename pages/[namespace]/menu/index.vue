@@ -22,6 +22,7 @@ import { orderTypeLabelInfo } from '@/utils/orderType';
 import { parseTableTag } from '@/utils/tableTag';
 import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
+import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import { PaginationLength } from '@/utils/constants';
 import OnboardingWizard from '@/components/menu/OnboardingWizard.vue';
 import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
@@ -268,6 +269,57 @@ async function exportOrders() {
     recommendation: t('menu.recommendation'), sheet: t('menu.exportSheet'), yes: t('common.yes'),
   }, (o) => stageLabel(o), 'orders');
 }
+// --- Print one document for every selected order ---
+const printTemplates = ref<MenuDocumentTemplate[]>([]);
+const printing = ref(false);
+async function loadPrintTemplates() {
+  if (printTemplates.value.length) return;
+  try {
+    const { menuDocumentTemplatesList } = await import('@/api/menu/documenttemplate/list');
+    printTemplates.value = (await menuDocumentTemplatesList(await getToken(), nsSlug.value)).templates.filter((tpl) => tpl.isActive);
+  } catch (e) {
+    logError('[menu/index] loadPrintTemplates failed', e);
+  }
+}
+const printMenuItems = computed(() => [
+  printTemplates.value.length
+    ? printTemplates.value.map((tpl) => ({ label: tpl.name, click: () => printSelected(tpl) }))
+    : [{ label: t('menu.printNoTemplates'), disabled: true }],
+]);
+async function printSelected(template: MenuDocumentTemplate) {
+  const chosen = selectedOrders.value.slice(0, 50);
+  if (!chosen.length || printing.value) return;
+  printing.value = true;
+  try {
+    const token = await getToken();
+    const [{ menuOrderDetailsBundle }, { menuGetBrandSettings }, { menuOrderFieldsList }, { renderOrderDocument }, { printHtmlDocument }] = await Promise.all([
+      import('@/api/menu/order/detailsBundle'),
+      import('@/api/menu/brandsettings/get'),
+      import('@/api/menu/orderfield/list'),
+      import('@/utils/renderOrderDocument'),
+      import('@/utils/printWindow'),
+    ]);
+    const [brand, fields] = await Promise.all([menuGetBrandSettings(token, nsSlug.value), menuOrderFieldsList(token, nsSlug.value)]);
+    const names = new Map(participantOptions.value.map((o) => [o.value, o.label]));
+    const pages: string[] = [];
+    for (const order of chosen) {
+      const bundle = await menuOrderDetailsBundle(token, nsSlug.value, order.id);
+      pages.push(await renderOrderDocument({
+        template, order, items: bundle.items, members: bundle.members,
+        memberDisplayName: (id) => names.get(id) || (t('menu.unknownMember') || 'Unknown member'),
+        brand, branch: branches.value.find((b) => b.id === order.branchId), orderFields: fields.fields,
+        nsSlug: nsSlug.value, origin: window.location.origin, t,
+      }));
+    }
+    printHtmlDocument(`${template.name} (${chosen.length})`, pages.map((h) => `<div style="page-break-after:always">${h}</div>`).join(''));
+  } catch (e) {
+    logError('[menu/index] printSelected failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
+  } finally {
+    printing.value = false;
+  }
+}
+
 const selectedSummary = computed(() => {
   if (!selectedOrders.value.length) return null;
   return {
@@ -1339,6 +1391,11 @@ async function handleCreateOrder(payload: any) {
           </button>
         </div>
       </div>
+      <UDropdown v-if="selectedOrders.length" :items="printMenuItems" :popper="{ placement: 'top-end' }" class="hidden sm:block">
+        <button type="button" class="at-btn !px-3 !py-1.5" :disabled="printing" @click="loadPrintTemplates">
+          <Icon name="lucide:printer" class="w-4 h-4" />{{ t('menu.printSelected', { n: Math.min(selectedOrders.length, 50) }) }}
+        </button>
+      </UDropdown>
       <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!orders.length" @click="exportOrders">
         <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ selectedSummary ? t('menu.exportSelected') : t('menu.exportPage') }}
       </button>

@@ -2893,6 +2893,8 @@
     "stageAutoTask": "Task in Issues",
     "stageAutoTaskPlaceholder": "E.g.: Quote the price to the customer",
     "stageAutoTaskHint": "The first time an order enters this status, a task with this title is created in Issues. Empty means no task.",
+    "printSelected": "Print ({n})",
+    "printNoTemplates": "No document templates",
     "myOrdersTitle": "My orders",
     "myOrdersHint": "Orders you take part in",
     "myOrdersOpen": "Open",

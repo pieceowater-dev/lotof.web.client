@@ -41,6 +41,7 @@ import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, warrantyCarryOver, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
+import { renderOrderDocument } from '@/utils/renderOrderDocument';
 import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import { warrantyInfo } from '@/utils/warranty';
 import { taskShortCode } from '@/utils/taskDisplay';
@@ -1149,42 +1150,19 @@ const printMenuItems = computed(() => [
 
 async function printWithTemplate(template: MenuDocumentTemplate) {
   if (!props.order) return;
-  const branch = props.order.branchId ? branchById.value[props.order.branchId] : undefined;
-  const noneLabel = t('menu.docVarNoneLabel') || '—';
-  const phoneDigitsForDoc = phoneDigitsForLink(props.order.phone);
-  const variables = buildMenuDocVariables({
-    orderLink: phoneDigitsForDoc ? `${window.location.origin}/to/${nsSlug.value}/menu/${smartOrderNumber(props.order)}-${phoneDigitsForDoc}` : '',
+  const html = await renderOrderDocument({
+    template,
     order: props.order,
     items: items.value,
     members: members.value,
     memberDisplayName,
-    guestLabel: t('menu.guestCustomer') || 'Guest',
-    noneLabel,
-    itemsTableHeaders: {
-      name: t('menu.name') || 'Name',
-      qty: t('menu.quantity') || 'Qty',
-      price: t('menu.price') || 'Price',
-      sum: t('menu.total') || 'Total',
-    },
     brand: brandSettings.value,
-    branch,
-    customFieldsBlock: buildCustomFieldsTable(orderFields.value, props.order.customFields, noneLabel, yesNoLabels.value),
-    warrantyBlock: buildWarrantyTable(items.value, props.order, noneLabel, {
-      item: t('menu.name') || 'Name',
-      until: t('menu.warrantyUntil') || 'Warranty until',
-      days: t('menu.warrantyDaysShort') || 'days',
-    }),
+    branch: props.order.branchId ? branchById.value[props.order.branchId] : undefined,
+    orderFields: orderFields.value,
+    nsSlug: nsSlug.value,
+    origin: window.location.origin,
+    t,
   });
-  // QR generation is async and only worth doing if the template actually
-  // references the variable -- checking every locale's token spelling
-  // covers a template authored in any of them, not just the current UI locale.
-  const socialTokens = Object.values(MENU_DOC_VARIABLES_BY_KEY.SOCIAL_LINKS_QR.localTokens);
-  if (socialTokens.some((token) => template.content.includes(`{{${token}}}`))) {
-    variables.SOCIAL_LINKS_QR = await buildSocialLinksQrBlock(brandSettings.value?.socialLinks, noneLabel);
-  }
-  const linkTokens = new Set(Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_LINK.localTokens));
-  const content = await expandQrTokens(template.content, (name) => (linkTokens.has(name) ? variables.ORDER_LINK : undefined));
-  const html = applyCustomDocVariables(substituteMenuDocVariables(content, variables), parseCustomDocVariables(brandSettings.value?.orderRules));
   // Included in the document's <title>, which browsers use as the default
   // filename when the print dialog is used to "Save as PDF" -- without the
   // order number, printing the same template for different orders produces
