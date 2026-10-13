@@ -1294,7 +1294,6 @@ async function handleCreateOrder(payload: any) {
         </UButton>
       </template>
       </div>
-</div>
     </div>
 
     <CreateOrderModal
