@@ -636,15 +636,6 @@ async function handleRefreshFromRemote() {
             {{ t('contacts.callsTitle') }}
           </UButton>
           <UButton
-            icon="lucide:plug-zap"
-            size="xs"
-            color="primary"
-            variant="soft"
-            :to="`/${nsSlug}/contacts/integrations`"
-          >
-            {{ t('contacts.integrationsTitle') }}
-          </UButton>
-          <UButton
             icon="lucide:ticket"
             size="xs"
             color="primary"

@@ -14,7 +14,7 @@ import PlanLimitsBanner from '@/components/contacts/settings/PlanLimitsBanner.vu
 import StampCardsPanel from '@/components/contacts/settings/StampCardsPanel.vue';
 import DynamicFieldsPanel from '@/components/contacts/settings/DynamicFieldsPanel.vue';
 import MembersRolesPanel from '@/components/contacts/settings/MembersRolesPanel.vue';
-import IntegrationsSummary from '@/components/contacts/settings/IntegrationsSummary.vue';
+import IntegrationsPanel from '@/components/contacts/settings/IntegrationsPanel.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -194,7 +194,7 @@ onMounted(async () => {
         <MembersRolesPanel v-else-if="activeTab === 'access'" />
 
         <!-- Integrations -->
-        <IntegrationsSummary v-else-if="activeTab === 'integrations'" />
+        <IntegrationsPanel v-else-if="activeTab === 'integrations'" />
       </div>
     </div>
 

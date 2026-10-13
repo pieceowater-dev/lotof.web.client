@@ -214,7 +214,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
         <p class="at-sub">{{ nsTitle }}</p>
       </div>
       <div class="flex gap-2 flex-wrap">
-        <NuxtLink :to="`/${nsSlug}/contacts/integrations`" class="at-btn">
+        <NuxtLink :to="`/${nsSlug}/contacts/settings?tab=integrations`" class="at-btn">
           <Icon name="lucide:plug-zap" class="w-4 h-4" />{{ t('contacts.integrationsTitle') }}
         </NuxtLink>
         <button type="button" class="at-btn at-btn--blue" @click="goBack">
