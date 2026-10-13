@@ -1288,7 +1288,7 @@ async function handleCreateOrder(payload: any) {
       </label>
 
       <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-      <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!orders.length" @click="exportOrders">
+      <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!orders.length" @click="exportOrders">
         <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ selectedSummary ? t('menu.exportSelected') : t('menu.exportPage') }}
       </button>
       <template v-if="selectedSummary || summary">

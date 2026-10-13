@@ -1766,7 +1766,17 @@
     "dynamicFields": {
       "title": "Пользовательские поля",
       "description": "Дополнительные поля для карточки клиента."
-    }
+    },
+    "exportExcel": "Экспорт",
+    "exportType": "Тип",
+    "exportName": "Имя",
+    "exportPhones": "Телефоны",
+    "exportEmails": "Почта",
+    "exportTags": "Теги",
+    "exportStatus": "Статус",
+    "exportCreated": "Создан",
+    "exportNotes": "Примечание",
+    "exportSheet": "Клиенты"
   },
   "landing": {
     "getStarted": "Получить",

@@ -1635,7 +1635,17 @@
     "dynamicFields": {
       "title": "Қолданушы өрістері",
       "description": "Клиент картасына арналған қосымша өрістер."
-    }
+    },
+    "exportExcel": "Экспорт",
+    "exportType": "Түрі",
+    "exportName": "Аты",
+    "exportPhones": "Телефондар",
+    "exportEmails": "Пошта",
+    "exportTags": "Тегтер",
+    "exportStatus": "Мәртебе",
+    "exportCreated": "Құрылған",
+    "exportNotes": "Ескертпе",
+    "exportSheet": "Клиенттер"
   },
   "admin": {
     "panel": "Консоль",

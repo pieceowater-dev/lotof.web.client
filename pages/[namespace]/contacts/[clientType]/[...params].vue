@@ -9,6 +9,8 @@ import { useRouter, useRoute } from 'vue-router';
 import { logError } from '@/utils/logger';
 import type { ClientRow } from '@/api/contacts/listClients';
 import { contactsListClients } from '@/api/contacts/listClients';
+import { contactsCan } from '@/api/contacts/access';
+import { exportClientsToXlsx } from '@/utils/exportClients';
 import { getClientsBatch } from '@/api/contacts/getClient';
 import { contactsUpdateIndividualClient, contactsUpdateLegalEntityClient } from '@/api/contacts/mutations';
 import { updateIdentity, createIdentity } from '@/api/contacts/identities';
@@ -162,6 +164,26 @@ function buildUrlQuery(): Record<string, string | string[]> {
   return query;
 }
 
+// Export copies the client list out of the system, so it is a capability of
+// admins and owners only (the server decides; the button just follows).
+const canExport = ref(false);
+async function loadCapabilities(contactsToken: string | null) {
+  if (!contactsToken || !selectedNS.value) return;
+  try {
+    canExport.value = !!(await contactsCan(contactsToken, selectedNS.value, ['contacts.client.export']))['contacts.client.export'];
+  } catch (e) {
+    logError('[contacts] capabilities failed', e);
+  }
+}
+function exportClients() {
+  if (!clients.value.length) return;
+  exportClientsToXlsx(clients.value, {
+    type: t('contacts.exportType'), name: t('contacts.exportName'), phones: t('contacts.exportPhones'), emails: t('contacts.exportEmails'),
+    tags: t('contacts.exportTags'), status: t('contacts.exportStatus'), created: t('contacts.exportCreated'), notes: t('contacts.exportNotes'),
+    individual: t('contacts.individual'), legal: t('contacts.legalEntity'), sheet: t('contacts.exportSheet'),
+  });
+}
+
 onMounted(async () => {
   const { ensure } = useContactsToken();
 
@@ -169,6 +191,7 @@ onMounted(async () => {
   const contactsToken = (token.value && selectedNS.value)
     ? await ensure(selectedNS.value, token.value)
     : null;
+  loadCapabilities(contactsToken);
 
   // Initialize selectedTags from ?t= URL params
   const t = route.query.t;
@@ -687,6 +710,18 @@ async function handleRefreshFromRemote() {
             @click="handleRefreshFromRemote"
           >
             {{ t('contacts.refreshUpdates') || 'Обновить' }}
+          </UButton>
+          <UButton
+            v-if="canExport"
+            icon="lucide:file-spreadsheet"
+            size="sm"
+            color="gray"
+            variant="soft"
+            class="hidden sm:inline-flex"
+            :disabled="!clients.length"
+            @click="exportClients"
+          >
+            {{ t('contacts.exportExcel') }}
           </UButton>
           <UButton
             icon="lucide:plus"
