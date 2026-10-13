@@ -152,6 +152,7 @@ const KNOWN_BUSINESS_ERRORS: Array<[RegExp, string]> = [
   [/warehouse still holds goods/i, 'goods.errWarehouseNotEmpty'],
   [/document is already cancelled/i, 'goods.errAlreadyCancelled'],
   [/required fields are empty/i, 'menu.errRequiredFields'],
+  [/order already has an open task/i, 'tasks.errOrderTaskExists'],
 ]
 
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
