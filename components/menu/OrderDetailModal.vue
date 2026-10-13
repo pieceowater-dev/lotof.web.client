@@ -932,6 +932,22 @@ const shareUrl = computed(() => {
   if (!process.client || !props.order) return '';
   return `${window.location.origin}/${nsSlug.value}/menu?order=${smartOrderNumber(props.order)}`;
 });
+async function copySummary() {
+  const o = props.order;
+  if (!o) return;
+  const lines = [
+    `${displayOrderNumber(o)}${o.customerName ? ' — ' + o.customerName : ''}`,
+    o.phone ? `${t('menu.colPhone')}: ${o.phone}` : '',
+    o.deliveryAddress ? `${t('menu.colAddress')}: ${o.deliveryAddress}` : '',
+    `${t('menu.colTotal')}: ${o.totalAmount}`,
+  ].filter(Boolean);
+  try {
+    await navigator.clipboard.writeText(lines.join('\n'));
+    useToast().add({ title: t('menu.linkCopied') || 'Copied', color: 'primary' });
+  } catch (e) {
+    logError('[OrderDetailModal] copySummary failed', e);
+  }
+}
 async function copyShareLink() {
   if (!shareUrl.value) return;
   try {
@@ -1149,6 +1165,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           <div class="flex items-center gap-1 flex-shrink-0">
             <UTooltip :text="t('menu.statusHistory') || 'Status history'" class="lg:hidden">
               <UButton icon="lucide:history" size="sm" color="gray" variant="ghost" class="lg:hidden" @click="isMobileTimelineOpen = true" />
+            </UTooltip>
+            <UTooltip :text="t('menu.copySummary')">
+              <UButton icon="lucide:clipboard-copy" size="sm" color="gray" variant="ghost" @click="copySummary" />
             </UTooltip>
             <UTooltip :text="t('menu.copyLink') || 'Copy share link'">
               <UButton icon="lucide:link" size="sm" color="gray" variant="ghost" @click="copyShareLink" />

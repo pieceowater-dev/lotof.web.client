@@ -1054,7 +1054,8 @@
       "newPinSameAsOld": "Жаңа PIN-код ескісінен өзгеше болуы керек",
       "pinChangeFailed": "PIN-кодты өзгерту сәтсіз аяқталды"
     },
-    "clear": "Тазалау"
+    "clear": "Тазалау",
+    "yes": "Иә"
   },
   "contacts": {
     "clients": "Клиенттер",
@@ -2442,7 +2443,21 @@
     "numberingDaily": "Күндік",
     "numberingContinuous": "Үздіксіз",
     "numberPrefixPlaceholder": "Префикс, мыс. A",
-    "numberPreview": "Мысал"
+    "numberPreview": "Мысал",
+    "colNumber": "Нөмір",
+    "colStatus": "Мәртебе",
+    "colCreated": "Құрылған",
+    "colClosed": "Жабылған",
+    "colCustomer": "Клиент",
+    "colPhone": "Телефон",
+    "colAddress": "Мекенжай",
+    "colTotal": "Сома",
+    "colDiscount": "Жеңілдік",
+    "colPaid": "Төленген",
+    "exportSheet": "Тапсырыстар",
+    "exportSelected": "Таңдалғандарды экспорттау",
+    "exportPage": "Excel-ге экспорт",
+    "copySummary": "Қысқаша көшіру"
   },
   "goods": {
     "register": "Касса",

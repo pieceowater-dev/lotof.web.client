@@ -1724,7 +1724,8 @@
         "description": "Additional fields for the client card."
       }
     },
-    "clear": "Clear"
+    "clear": "Clear",
+    "yes": "Yes"
   },
   "landing": {
     "getStarted": "Get started",
@@ -2824,7 +2825,21 @@
     "numberingDaily": "Daily",
     "numberingContinuous": "Continuous",
     "numberPrefixPlaceholder": "Prefix, e.g. A",
-    "numberPreview": "Example"
+    "numberPreview": "Example",
+    "colNumber": "Number",
+    "colStatus": "Status",
+    "colCreated": "Created",
+    "colClosed": "Closed",
+    "colCustomer": "Customer",
+    "colPhone": "Phone",
+    "colAddress": "Address",
+    "colTotal": "Total",
+    "colDiscount": "Discount",
+    "colPaid": "Paid",
+    "exportSheet": "Orders",
+    "exportSelected": "Export selected",
+    "exportPage": "Export to Excel",
+    "copySummary": "Copy summary"
   },
   "goods": {
     "register": "Register",

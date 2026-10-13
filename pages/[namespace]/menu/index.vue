@@ -27,6 +27,7 @@ import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/or
 import { subscribeOrderChanged } from '@/api/menu/subscriptions';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { menuTour } from '@/config/tours';
+import { exportOrdersToXlsx } from '@/utils/exportOrders';
 
 const { t } = useI18n();
 const { isOwnerOrManager } = useMenuStaffRole();
@@ -254,6 +255,16 @@ const summary = ref<OrdersSummary | null>(null);
 // pulling a total on an arbitrary hand-picked subset the filters can't
 // express (e.g. "these 5 orders the courier is taking this run").
 const selectedOrders = ref<MenuOrder[]>([]);
+async function exportOrders() {
+  const rows = selectedOrders.value.length ? selectedOrders.value : orders.value;
+  if (!rows.length) return;
+  exportOrdersToXlsx(rows, {
+    number: t('menu.colNumber'), status: t('menu.colStatus'), created: t('menu.colCreated'), closed: t('menu.colClosed'),
+    customer: t('menu.colCustomer'), phone: t('menu.colPhone'), address: t('menu.colAddress'), total: t('menu.colTotal'),
+    discount: t('menu.colDiscount'), paid: t('menu.colPaid'), urgent: t('menu.urgent'), nextContact: t('menu.nextContact'),
+    recommendation: t('menu.recommendation'), sheet: t('menu.exportSheet'), yes: t('common.yes'),
+  }, (o) => stageLabel(o), 'orders');
+}
 const selectedSummary = computed(() => {
   if (!selectedOrders.value.length) return null;
   return {
@@ -1246,7 +1257,11 @@ async function handleCreateOrder(payload: any) {
         </span>
       </label>
 
-      <div v-if="selectedSummary || summary" class="flex items-center gap-3">
+      <div class="flex items-center gap-3">
+      <button type="button" class="at-btn !px-3 !py-1.5" :disabled="!orders.length" @click="exportOrders">
+        <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ selectedSummary ? t('menu.exportSelected') : t('menu.exportPage') }}
+      </button>
+      <template v-if="selectedSummary || summary">
         <span class="text-gray-500 dark:text-gray-400">
           {{ selectedSummary ? (t('menu.summarySelected') || 'Selected') : (t('menu.summaryOrders') || 'Orders') }}:
           <span class="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">{{ (selectedSummary || summary)!.count }}</span>
@@ -1265,7 +1280,9 @@ async function handleCreateOrder(payload: any) {
         >
           {{ t('menu.clearSelection') || 'Clear selection' }}
         </UButton>
+      </template>
       </div>
+</div>
     </div>
 
     <CreateOrderModal

@@ -1186,7 +1186,8 @@
       "pinChangeFailed": "Не удалось изменить PIN-код"
     },
     "invalidPhone": "Проверьте номер телефона",
-    "clear": "Очистить"
+    "clear": "Очистить",
+    "yes": "Да"
   },
   "contacts": {
     "clients": "Клиенты",
@@ -2867,7 +2868,21 @@
     "numberingDaily": "Дневная",
     "numberingContinuous": "Сквозная",
     "numberPrefixPlaceholder": "Префикс, напр. A",
-    "numberPreview": "Пример"
+    "numberPreview": "Пример",
+    "colNumber": "Номер",
+    "colStatus": "Статус",
+    "colCreated": "Создан",
+    "colClosed": "Закрыт",
+    "colCustomer": "Клиент",
+    "colPhone": "Телефон",
+    "colAddress": "Адрес",
+    "colTotal": "Сумма",
+    "colDiscount": "Скидка",
+    "colPaid": "Оплачено",
+    "exportSheet": "Заказы",
+    "exportSelected": "Экспорт выбранных",
+    "exportPage": "Экспорт в Excel",
+    "copySummary": "Копировать сводку"
   },
   "plans": {
     "calendar": "Календарь",
