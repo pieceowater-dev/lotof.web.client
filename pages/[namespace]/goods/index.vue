@@ -108,6 +108,7 @@ const statFilter = ref<'all' | 'inStock' | 'outOfStock' | 'lowStock' | 'reserved
 const allRows = computed(() => stock.value.map((s) => {
   const good = goodById.value.get(s.goodId);
   return {
+    id: s.goodId,
     goodId: s.goodId,
     name: good?.name || t('goods.unknownItem'),
     sku: good?.sku || '',
@@ -149,9 +150,17 @@ const columns = computed(() => [
   { key: 'valueCents', label: t('goods.stockValue') },
 ]);
 
+// Ticked rows: their own totals and their own Excel.
+const selectedRows = ref<any[]>([]);
+const selectedTotals = computed(() => ({
+  qty: selectedRows.value.reduce((a, r) => a + r.quantity, 0),
+  value: selectedRows.value.reduce((a, r) => a + Math.max(0, r.valueCents), 0),
+}));
+watch(rows, (list) => { selectedRows.value = selectedRows.value.filter((r) => list.some((x) => x.id === r.id)); });
+
 async function exportStock() {
   const { exportStockToXlsx } = await import('@/utils/exportStock');
-  exportStockToXlsx(rows.value, {
+  exportStockToXlsx(selectedRows.value.length ? selectedRows.value : rows.value, {
     name: t('goods.goodName'), sku: t('goods.goodSku'), quantity: t('goods.quantity'), reserved: t('goods.reserved'),
     available: t('goods.available'), cost: t('goods.costPrice'), value: t('goods.stockValue'), sheet: t('goods.warehouse'),
   }, 'stock');
@@ -271,8 +280,15 @@ onMounted(async () => {
       </button>
     </div>
 
+    <div v-if="selectedRows.length" class="mt-3 flex flex-wrap items-center gap-2 text-sm flex-shrink-0">
+      <span class="at-chip">{{ t('goods.selectedCount') }}: <b class="tabular-nums">{{ selectedRows.length }}</b></span>
+      <span class="at-chip">{{ t('goods.quantity') }}: <b class="tabular-nums">{{ selectedTotals.qty }}</b></span>
+      <span class="at-chip">{{ t('goods.stockValue') }}: <b class="tabular-nums">{{ money(selectedTotals.value) }}</b></span>
+      <button type="button" class="at-btn !px-2 !py-1" @click="selectedRows = []"><Icon name="lucide:x" class="w-4 h-4" /></button>
+    </div>
+
     <div data-tour="goods-stock-table" class="flex-1 min-h-0 mt-3">
-      <AppTable soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
+      <AppTable v-model:selected="selectedRows" soft :rows="rows" :columns="columns" :loading="loading" empty-icon="lucide:package">
         <template #costCents-data="{ row }"><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ money(row.costCents) }}</span></template>
         <template #valueCents-data="{ row }"><span class="tabular-nums font-medium">{{ money(row.valueCents) }}</span></template>
         <template #name-data="{ row }">
