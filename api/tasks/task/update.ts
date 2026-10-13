@@ -10,7 +10,7 @@ const TASK_FIELDS = `
   id boardId taskTypeId title description status assigneeUserId priority
   textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
   orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-  escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+  escalatedAt estimateValue visitedStatuses dealAmount dealCurrency collectAmount courierFee courierKind previousAssigneeUserId
         dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
 `;
 
@@ -57,6 +57,9 @@ export interface UpdateTaskInput {
   estimateValue?: number;
   dealAmount?: number;
   dealCurrency?: string;
+  collectAmount?: number;
+  courierFee?: number;
+  courierKind?: string;
 }
 
 export async function tasksUpdateTask(tasksToken: string, namespaceSlug: string, input: UpdateTaskInput) {

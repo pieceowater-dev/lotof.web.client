@@ -31,6 +31,10 @@ export interface TaskItem {
   estimateValue?: number | null;
   visitedStatuses?: string[];
   dealAmount?: number | null;
+  collectAmount?: number | null;
+  courierFee?: number | null;
+  courierKind?: string | null;
+  previousAssigneeUserId?: string | null;
   dealCurrency?: string | null;
   dueFrom?: string | null;
   problemReportedAt?: string | null;
@@ -66,7 +70,7 @@ const TasksBundleDocument = /* GraphQL */ `
         id boardId taskTypeId title description status assigneeUserId priority
         textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
         orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-        escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+        escalatedAt estimateValue visitedStatuses dealAmount dealCurrency collectAmount courierFee courierKind previousAssigneeUserId
         dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId parentId
       }
       info { count }

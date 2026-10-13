@@ -29,7 +29,7 @@ const TASK_FIELDS = `
   id boardId taskTypeId title description status assigneeUserId priority
   textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
   orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-  escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+  escalatedAt estimateValue visitedStatuses dealAmount dealCurrency collectAmount courierFee courierKind previousAssigneeUserId
   dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
 `;
 const COMMENT_FIELDS = 'id taskId authorId body important pinned createdAt updatedAt deleted attachments { url name mime sizeBytes kind }';

@@ -9,7 +9,7 @@ const CreateTaskDocument = /* GraphQL */ `
       id boardId taskTypeId title description status assigneeUserId priority
       textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
       orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
-      escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+      escalatedAt estimateValue visitedStatuses dealAmount dealCurrency collectAmount courierFee courierKind previousAssigneeUserId
         dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
     }
   }
@@ -41,6 +41,9 @@ export interface CreateTaskInput {
   estimateValue?: number;
   dealAmount?: number;
   dealCurrency?: string;
+  collectAmount?: number;
+  courierFee?: number;
+  courierKind?: string;
 }
 
 export async function tasksCreateTask(tasksToken: string, namespaceSlug: string, input: CreateTaskInput) {

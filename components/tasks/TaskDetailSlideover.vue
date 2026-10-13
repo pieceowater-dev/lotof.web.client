@@ -43,6 +43,8 @@ const props = defineProps<{
   menuIntegrationEnabled?: boolean;
   // Board is funnel-shaped (has a won/lost column) -- show the deal-value field.
   dealFieldsEnabled?: boolean;
+  // Board option: delivery money (to collect / courier fee), courier kind and the "refuse" action.
+  deliveryMoneyEnabled?: boolean;
   // Board option: a hand-over to someone else waits until the receiver accepts it.
   requireHandoffAccept?: boolean;
   // The signed-in user, to show the hand-over banner to its receiver.
@@ -108,6 +110,9 @@ async function saveField(patch: Record<string, any>) {
       estimateValue: props.task.estimateValue ?? undefined,
       dealAmount: props.task.dealAmount ?? undefined,
       dealCurrency: props.task.dealCurrency ?? undefined,
+      collectAmount: props.task.collectAmount ?? undefined,
+      courierFee: props.task.courierFee ?? undefined,
+      courierKind: props.task.courierKind ?? undefined,
       ...patch,
     });
     emit('changed', updated);
@@ -209,6 +214,42 @@ function commitDeal() {
   saveField({ dealAmount: amt, dealCurrency: amt != null ? cur : undefined });
 }
 
+// --- Delivery money: what to take from the client / what the courier earns ---
+const collectDraft = ref<number | undefined>(undefined);
+const feeDraft = ref<number | undefined>(undefined);
+watch(() => props.task?.id, () => {
+  collectDraft.value = props.task?.collectAmount || undefined;
+  feeDraft.value = props.task?.courierFee || undefined;
+}, { immediate: true });
+function commitDeliveryMoney() {
+  const c = collectDraft.value ?? undefined;
+  const f = feeDraft.value ?? undefined;
+  if ((c ?? 0) === (props.task?.collectAmount ?? 0) && (f ?? 0) === (props.task?.courierFee ?? 0)) return;
+  saveField({ collectAmount: c, courierFee: f });
+}
+function setCourierKind(kind: string) {
+  if ((props.task?.courierKind || '') === kind) return;
+  saveField({ courierKind: kind });
+}
+// "Refuse": the executor hands the task back -- it returns to the first column, nobody is assigned,
+// the previous executor is remembered by the server.
+function openRefuse() {
+  reasonKind.value = 'refuse';
+  reasonOpen.value = true;
+}
+async function refuseTask(reason: string) {
+  if (!props.task) return;
+  const first = props.boardStatuses.find((st) => !st.isTerminal);
+  const token = await getToken();
+  const { tasksUpdateTaskStatus, tasksAssignTask } = await import('@/api/tasks/task/update');
+  let updated = props.task;
+  if (first && first.key !== props.task.status) {
+    updated = await tasksUpdateTaskStatus(token, props.nsSlug, { taskId: props.task.id, status: first.key, isTerminal: false, comment: reason || undefined });
+  }
+  updated = await tasksAssignTask(token, props.nsSlug, { taskId: props.task.id, assigneeUserId: null, comment: reason || undefined, requireAccept: false });
+  emit('changed', updated);
+}
+
 // --- Contact (name / phone with mask+validation / address) ---
 const clientNameDraft = ref('');
 const clientPhoneDraft = ref('');
@@ -279,13 +320,14 @@ const isStatusPickerOpen = ref(false);
 // Reason dialog shared by status moves (columns with "ask for a reason") and hand-overs.
 const reasonOpen = ref(false);
 const reasonBusy = ref(false);
-const reasonKind = ref<'status' | 'handoff' | 'problem' | 'done'>('status');
+const reasonKind = ref<'status' | 'handoff' | 'problem' | 'done' | 'refuse'>('status');
 const reasonTarget = ref<StatusRow | null>(null);
 const reasonAssignee = ref('');
 const reasonTitle = computed(() => {
   if (reasonKind.value === 'handoff') return t('tasks.reasonHandoffTitle');
   if (reasonKind.value === 'problem') return t('tasks.problemTitle');
   if (reasonKind.value === 'done') return t('tasks.coDoneTitle');
+  if (reasonKind.value === 'refuse') return t('tasks.refuseTitle');
   return reasonTarget.value?.isTerminal ? t('tasks.reasonCancelTitle') : t('tasks.reasonStatusTitle');
 });
 const PROBLEM_REASONS = computed(() => [
@@ -313,6 +355,7 @@ async function applyStatus(s: StatusRow, comment?: string, dueAt?: string) {
         priority: updated.priority, clientNameSnapshot: updated.clientNameSnapshot || undefined, clientPhoneSnapshot: updated.clientPhoneSnapshot || undefined,
         dueAt, dueFrom: updated.dueFrom || undefined, estimateValue: updated.estimateValue ?? undefined,
         dealAmount: updated.dealAmount ?? undefined, dealCurrency: updated.dealCurrency ?? undefined,
+        collectAmount: updated.collectAmount ?? undefined, courierFee: updated.courierFee ?? undefined, courierKind: updated.courierKind ?? undefined,
       });
     }
     emit('changed', updated);
@@ -356,6 +399,8 @@ async function onReasonConfirm(v: { text: string; dueAt?: string }) {
       emit('changed', await tasksAssignTask(token, props.nsSlug, { taskId: props.task.id, assigneeUserId: reasonAssignee.value || null, comment: v.text || undefined, requireAccept: !!props.requireHandoffAccept }));
     } else if (reasonKind.value === 'done') {
       await setMyPart(v.text);
+    } else if (reasonKind.value === 'refuse') {
+      await refuseTask(v.text);
     } else if (reasonKind.value === 'problem' && props.task) {
       const token = await getToken();
       const { tasksReportProblem } = await import('@/api/tasks/task/extra');
@@ -888,6 +933,23 @@ async function handleDelete() {
               <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.estimateValue') || 'Estimate' }} ({{ estimateLabel }})</div>
               <UInput v-model.number="estimateDraft" type="number" min="0" step="0.5" @blur="commitEstimate" />
             </div>
+          </div>
+          <div v-if="deliveryMoneyEnabled" class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.collectAmount') }}</div>
+                <UInput v-model.number="collectDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
+              </div>
+              <div>
+                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.courierFee') }}</div>
+                <UInput v-model.number="feeDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button v-for="k in [{ v: 'self', l: 'tasks.courierSelf' }, { v: 'courier', l: 'tasks.courierHired' }]" :key="k.v" type="button" class="pill-filter" :class="(task.courierKind || 'self') === k.v ? 'pill-filter--active' : ''" @click="setCourierKind(k.v)">{{ t(k.l) }}</button>
+              <button v-if="task.assigneeUserId" type="button" class="at-btn !px-3 !py-1 ml-auto" @click="openRefuse"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('tasks.refuse') }}</button>
+            </div>
+            <p v-if="task.previousAssigneeUserId" class="text-xs text-gray-400">{{ t('tasks.previousExecutor') }}: {{ memberOptions.find((m) => m.value === task.previousAssigneeUserId)?.label || '—' }}</p>
           </div>
           <div v-if="dealFieldsEnabled">
             <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dealAmount') || 'Deal amount' }}</div>
