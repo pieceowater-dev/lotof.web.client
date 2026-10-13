@@ -14,7 +14,11 @@ const props = withDefaults(defineProps<{
   pageCountOptions?: number[]
   // Flag to enable pagination
   pagination?: boolean
+  // On phones a wide table is unreadable (the important columns end up off-screen), so each
+  // row is shown as a card instead. Switch off for tables that must stay tables.
+  mobileCards?: boolean
 }>(), {
+  mobileCards: true,
   emptyIcon: 'lucide:bird',
   total: null,
   pageCountOptions: () => [10, 25, 50, 100],
@@ -47,6 +51,11 @@ const hasPaging = computed(() => {
 const pageModel = computed<number>({ get: () => page.value ?? 1, set: (v) => (page.value = v) })
 const pageCountModel = computed<number>({ get: () => pageCount.value ?? options.value[0], set: (v) => (pageCount.value = v) })
 
+// Cards: the first column is the card's title, columns without a label are actions.
+const titleCol = computed(() => props.columns.find((c) => c.key !== 'select' && c.key !== 'actions'))
+const detailCols = computed(() => props.columns.filter((c) => c !== titleCol.value && c.key !== 'select' && c.key !== 'actions' && c.label !== ''))
+const actionCols = computed(() => props.columns.filter((c) => c.key === 'actions'))
+
 // Use provided total or fall back to rows.length
 const effectiveTotal = computed(() => props.total ?? props.rows.length)
 const pageFrom = computed(() => hasPaging.value ? ((pageModel.value - 1) * pageCountModel.value) + 1 : 0)
@@ -59,7 +68,39 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
     :class="soft ? 'at-tray max-h-full' : 'h-full bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800'"
   >
     <div class="flex-1 min-h-0 overflow-auto">
-      <div>
+      <!-- Phones: one card per row -->
+      <div v-if="mobileCards" class="sm:hidden divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-if="loading && !rows.length" class="px-4 py-4"><AppSkeleton variant="list" :rows="4" /></div>
+        <div v-else-if="!rows.length" class="flex flex-col items-center gap-2 px-4 py-10 text-sm text-gray-500">
+          <UIcon :name="emptyIcon || 'lucide:bird'" class="h-8 w-8 opacity-50" />{{ t('app.emptyTable') }}
+        </div>
+        <div
+          v-for="(row, i) in rows"
+          :key="row.id ?? i"
+          class="space-y-2 px-4 py-3 active:bg-gray-50 dark:active:bg-white/5"
+          role="button"
+          tabindex="0"
+          @click="emit('select', row)"
+          @keydown.enter="emit('select', row)"
+        >
+          <div v-if="titleCol" class="min-w-0 text-sm font-semibold">
+            <slot :name="`${titleCol.key}-data`" :row="row" :column="titleCol">{{ row[titleCol.key] }}</slot>
+          </div>
+          <dl class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
+            <template v-for="col in detailCols" :key="col.key">
+              <dt class="text-gray-400">{{ col.label }}</dt>
+              <dd class="min-w-0 text-right text-gray-700 dark:text-gray-200">
+                <slot :name="`${col.key}-data`" :row="row" :column="col">{{ row[col.key] }}</slot>
+              </dd>
+            </template>
+          </dl>
+          <div v-if="actionCols.length" class="flex justify-end" @click.stop>
+            <slot v-for="col in actionCols" :key="col.key" :name="`${col.key}-data`" :row="row" :column="col" />
+          </div>
+        </div>
+      </div>
+
+      <div :class="mobileCards ? 'hidden sm:block' : ''">
         <UTable
           v-model:sort="sort"
           v-model="selected"

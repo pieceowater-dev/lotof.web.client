@@ -1010,7 +1010,7 @@ async function handleCreateOrder(payload: any) {
 </script>
 
 <template>
-  <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
+  <div class="at-scope ct-scope min-h-full md:h-full flex flex-col p-4 pb-safe-or-4 md:min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
       <div class="text-left" data-tour="menu-title">
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
@@ -1206,7 +1206,7 @@ async function handleCreateOrder(payload: any) {
         class="w-full sm:flex-1"
         :ui="{ rounded: 'rounded-xl' }"
       />
-      <div class="flex rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex-shrink-0">
+      <div class="flex rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto max-w-full flex-shrink-0">
         <button
           v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }, { value: 'table', label: t('menu.tableService') || 'Table' }]"
           :key="opt.value"
