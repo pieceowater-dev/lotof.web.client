@@ -3621,6 +3621,8 @@
     "viewOverdue": "Просроченные",
     "viewNoDue": "Без срока",
     "viewProblem": "С проблемой",
+    "viewUrgent": "Срочные",
+    "viewNewWeek": "Новые за неделю",
     "created": "Создана",
     "closed": "Закрыта",
     "activity": "Активность",

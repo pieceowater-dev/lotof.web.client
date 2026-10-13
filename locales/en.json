@@ -3419,6 +3419,8 @@
     "viewOverdue": "Overdue",
     "viewNoDue": "No deadline",
     "viewProblem": "With a problem",
+    "viewUrgent": "Urgent",
+    "viewNewWeek": "New this week",
     "created": "Created",
     "closed": "Closed",
     "activity": "Activity",

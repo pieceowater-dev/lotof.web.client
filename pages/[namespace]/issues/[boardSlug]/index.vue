@@ -377,18 +377,22 @@ async function loadTasks(opts: { silent?: boolean } = {}) {
 }
 
 // Quick views over the loaded tasks (client-side, no extra requests).
-type QuickView = '' | 'overdue' | 'noDue' | 'problem';
+type QuickView = '' | 'overdue' | 'noDue' | 'problem' | 'urgent' | 'newWeek';
 const quickView = ref<QuickView>('');
 const QUICK_VIEWS: { key: QuickView; label: string; icon: string }[] = [
   { key: 'overdue', label: 'tasks.viewOverdue', icon: 'lucide:alarm-clock' },
   { key: 'noDue', label: 'tasks.viewNoDue', icon: 'lucide:infinity' },
   { key: 'problem', label: 'tasks.viewProblem', icon: 'lucide:triangle-alert' },
+  { key: 'urgent', label: 'tasks.viewUrgent', icon: 'lucide:chevrons-up' },
+  { key: 'newWeek', label: 'tasks.viewNewWeek', icon: 'lucide:calendar-days' },
 ];
 function matchesQuickView(task: TaskItem): boolean {
   if (!quickView.value) return true;
   const terminal = !!boardStatuses.value.find((s) => s.key === task.status)?.isTerminal;
   if (quickView.value === 'problem') return !!task.problemReportedAt && !terminal;
+  if (quickView.value === 'newWeek') return Date.now() - new Date(task.createdAt).getTime() < 7 * 86400000;
   if (terminal) return false;
+  if (quickView.value === 'urgent') return task.priority >= 3;
   if (quickView.value === 'noDue') return !task.dueAt;
   return (!!task.dueAt && new Date(task.dueAt).getTime() < Date.now()) || isTaskOverdue(task);
 }
