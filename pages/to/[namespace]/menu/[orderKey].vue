@@ -2,6 +2,7 @@
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { logError } from '@/utils/logger';
+import { getErrorMessage } from '@/utils/types/errors';
 import { getPublicStorefront, getPublicOrderStatus } from '@/api/menu/public/storefront';
 import type { PublicOrderStatus } from '@/api/menu/public/storefront';
 import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
@@ -78,6 +79,25 @@ function formatDateTime(iso: string): string {
     return d.toLocaleDateString(tag, { day: 'numeric', month: 'short' }) + ', ' + d.toLocaleTimeString(tag, { hour: '2-digit', minute: '2-digit' });
   } catch {
     return iso;
+  }
+}
+
+// A quoted price the customer has not agreed to yet shows an "Agree" button.
+const approving = ref(false);
+const priceWaiting = computed(() => !!order.value?.priceQuotedAt && !order.value?.priceApprovedAt && order.value.status !== 'CANCELLED' && order.value.status !== 'COMPLETED');
+async function approvePrice() {
+  const parsed = parseOrderStatusKey(orderKey.value);
+  if (!parsed || approving.value) return;
+  approving.value = true;
+  try {
+    const { approvePublicOrderPrice } = await import('@/api/menu/public/storefront');
+    const updated = await approvePublicOrderPrice(nsSlug.value, parsed.number, parsed.phone, parsed.createdFrom, parsed.createdTo);
+    if (updated) order.value = updated;
+  } catch (e) {
+    logError('[order-status] approve price failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
+  } finally {
+    approving.value = false;
   }
 }
 
@@ -302,6 +322,15 @@ useHead(() => ({
                   {{ t('menu.closedAt') || 'Closed' }}
                 </span>
                 <span class="text-gray-700 dark:text-gray-300">{{ formatDateTime(order.closedAt) }}</span>
+              </div>
+              <div v-if="priceWaiting" class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+                <div class="font-semibold text-amber-800 dark:text-amber-200">{{ t('menu.priceNeedsApproval') }}</div>
+                <button type="button" class="sf-btn mt-3 w-full" :disabled="approving" @click="approvePrice">
+                  <Icon :name="approving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="{ 'animate-spin': approving }" />{{ t('menu.priceAgree') }}
+                </button>
+              </div>
+              <div v-else-if="order.priceApprovedAt" class="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+                <Icon name="lucide:badge-check" class="h-4 w-4 flex-shrink-0" />{{ t('menu.priceAgreed') }}
               </div>
               <div class="flex items-center justify-between border-t border-gray-100 pt-3 dark:border-white/10">
                 <span class="text-base font-bold text-gray-900 dark:text-white">{{ t('menu.total') || 'Total' }}</span>

@@ -297,6 +297,8 @@ export async function submitPublicOrder(namespaceSlug: string, input: PublicOrde
 // placed under is trusted to be its owner (no OTP verification).
 export type PublicOrderStatus = {
   id: string;
+  priceQuotedAt?: string | null;
+  priceApprovedAt?: string | null;
   number: number;
   branchId?: string | null;
   type: string;
@@ -313,7 +315,7 @@ export type PublicOrderStatus = {
 const OrderStatusDocument = /* GraphQL */ `
   query PublicOrderStatus($number: Int!, $phone: String!, $createdFrom: String!, $createdTo: String!) {
     orderStatus(number: $number, phone: $phone, createdFrom: $createdFrom, createdTo: $createdTo) {
-      id number branchId type status customerName deliveryAddress deliveryAt sourceTag totalAmount createdAt closedAt
+      id number branchId type status customerName deliveryAddress deliveryAt sourceTag totalAmount createdAt closedAt priceQuotedAt priceApprovedAt
     }
   }
 `;
@@ -331,6 +333,30 @@ export async function getPublicOrderStatus(
     { number, phone, createdFrom, createdTo }
   );
   return res.orderStatus;
+}
+
+const ApproveOrderPriceDocument = /* GraphQL */ `
+  mutation ApproveOrderPrice($number: Int!, $phone: String!, $createdFrom: String!, $createdTo: String!) {
+    approveOrderPrice(number: $number, phone: $phone, createdFrom: $createdFrom, createdTo: $createdTo) {
+      id number branchId type status customerName deliveryAddress deliveryAt sourceTag totalAmount createdAt closedAt priceQuotedAt priceApprovedAt
+    }
+  }
+`;
+
+// The customer agrees to the quoted price from the tracking link (same trust model as the lookup).
+export async function approvePublicOrderPrice(
+  namespaceSlug: string,
+  number: number,
+  phone: string,
+  createdFrom: string,
+  createdTo: string
+): Promise<PublicOrderStatus | null> {
+  const client = await freshClient(namespaceSlug);
+  const res = await client.request<{ approveOrderPrice: PublicOrderStatus | null }>(
+    ApproveOrderPriceDocument,
+    { number, phone, createdFrom, createdTo }
+  );
+  return res.approveOrderPrice;
 }
 
 // "Your previous orders" for the checkout form — public/unauthenticated,
