@@ -16,6 +16,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
+import GoodFormModal from '@/components/goods/GoodFormModal.vue';
 import MovementItemBuilder from '@/components/goods/MovementItemBuilder.vue';
 import type { MovementExtraField, MovementDraftItem } from '@/components/goods/MovementItemBuilder.vue';
 import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/purchaseorder';
@@ -27,7 +28,7 @@ import type { GoodsStockTransfer, GoodsStockTransferStatus } from '@/api/goods/s
 import type { GoodsWriteOff, GoodsWriteOffReason } from '@/api/goods/writeoff';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsSupplier } from '@/api/goods/supplier';
-import type { GoodsGood } from '@/api/goods/good';
+import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsUnit } from '@/api/goods/unit';
 
 const { t, locale } = useI18n();
@@ -350,6 +351,26 @@ const creatingQuickSupplier = ref(false);
 function openQuickSupplier() {
   quickSupplierName.value = '';
   showQuickSupplier.value = true;
+}
+
+// New good without leaving the receipt: created, added to the picker, document keeps its draft.
+const showQuickGood = ref(false);
+const savingQuickGood = ref(false);
+async function createQuickGood(payload: CreateGoodInput | UpdateGoodInput) {
+  if ('id' in payload) return;
+  savingQuickGood.value = true;
+  try {
+    const token = await getToken();
+    const { goodsCreateGood } = await import('@/api/goods/good');
+    const created = await goodsCreateGood(token, nsSlug.value, payload);
+    goods.value.push(created);
+    showQuickGood.value = false;
+  } catch (e) {
+    logError('[goods/movements] createQuickGood failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to create good', color: 'red' });
+  } finally {
+    savingQuickGood.value = false;
+  }
 }
 
 async function createQuickSupplier() {
@@ -696,6 +717,9 @@ onMounted(loadAll);
               <template v-if="item.batchNumber"> · {{ item.batchNumber }}</template>
             </template>
           </MovementItemBuilder>
+          <button v-if="createType === 'receipt' || createType === 'purchase'" type="button" class="at-btn !px-3 !py-1" @click="showQuickGood = true">
+            <UIcon name="lucide:plus" class="h-4 w-4" />{{ t('goods.quickNewGood') }}
+          </button>
 
           <div v-if="createType === 'receipt' && openShifts.length && receiptTotalCents > 0" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
             <label class="flex items-center gap-2 text-sm font-medium">
@@ -737,5 +761,6 @@ onMounted(loadAll);
         </template>
       </UCard>
     </UModal>
+    <GoodFormModal v-model="showQuickGood" :units="units" :saving="savingQuickGood" :ns-slug="nsSlug" @submit="createQuickGood" />
   </div>
 </template>
