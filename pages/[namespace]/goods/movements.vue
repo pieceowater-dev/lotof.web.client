@@ -279,6 +279,28 @@ const draftItems = ref<MovementDraftItem[]>([]);
 // A return goes back against one receipt: pick it, then say how much of each
 // line returns. The server refuses more than the receipt brought in minus what
 // already went back.
+// Paying the supplier from the till: only offered when a register has an open shift.
+const payFromRegister = ref(false);
+const registerId = ref('');
+const openShifts = ref<Array<{ registerId: string; registerName: string; shiftId: string }>>([]);
+async function loadOpenShifts() {
+  try {
+    const token = await getToken();
+    const { goodsListRegisters, goodsCurrentShift } = await import('@/api/goods/register');
+    const { registers } = await goodsListRegisters(token, nsSlug.value);
+    const found: typeof openShifts.value = [];
+    for (const r of registers.filter((x) => x.isActive)) {
+      const shift = await goodsCurrentShift(token, nsSlug.value, r.id).catch(() => null);
+      if (shift && shift.status === 'OPEN') found.push({ registerId: r.id, registerName: r.name, shiftId: shift.id });
+    }
+    openShifts.value = found;
+    registerId.value = found[0]?.registerId || '';
+  } catch (e) {
+    logError('[goods/movements] loadOpenShifts failed', e);
+  }
+}
+const receiptTotalCents = computed(() => draftItems.value.reduce((s, i) => s + Math.round(Number(i.costPriceCents || 0) * 100 * Number(i.quantity || 0)), 0));
+
 const returnReceiptId = ref('');
 const returnComment = ref('');
 const returnQty = reactive<Record<string, number>>({});
@@ -300,7 +322,7 @@ function resetCreateForm() {
   form.supplierId = ''; form.expectedDate = ''; form.reason = 'OTHER';
   draftItems.value = [];
 }
-watch(showCreate, (open) => { if (open) resetCreateForm(); });
+watch(showCreate, (open) => { if (open) { resetCreateForm(); payFromRegister.value = false; loadOpenShifts(); } });
 watch(createType, () => { draftItems.value = []; returnReceiptId.value = ''; returnComment.value = ''; });
 
 // --- Quick supplier create (rescue path from the movement modal when the
@@ -376,13 +398,25 @@ async function submitCreate() {
       }
       case 'receipt': {
         const { goodsCreateReceipt } = await import('@/api/goods/goodsreceipt');
-        await goodsCreateReceipt(token, nsSlug.value, {
+        const receipt = await goodsCreateReceipt(token, nsSlug.value, {
           warehouseId: form.warehouseId, supplierId: form.supplierId || undefined,
           items: draftItems.value.map((i) => ({
             goodId: i.goodId, unitId: i.unitId, quantity: i.quantity, costPriceCents: Math.round(Number(i.costPriceCents || 0) * 100),
             batchNumber: (i.batchNumber as string) || undefined, expiryDate: (i.expiryDate as string) || undefined,
           })),
         });
+        const shift = openShifts.value.find((x) => x.registerId === registerId.value);
+        if (payFromRegister.value && shift && receiptTotalCents.value > 0) {
+          try {
+            await (await import('@/api/goods/sale')).goodsRecordCashMovement(token, nsSlug.value, {
+              registerId: shift.registerId, shiftId: shift.shiftId, type: 'CASH_OUT', amountCents: receiptTotalCents.value,
+              reason: `${t('goods.paySupplierReason')} ${receipt.number || ''}`.trim(),
+            });
+          } catch (e) {
+            logError('[goods/movements] pay supplier failed', e);
+            useToast().add({ title: getErrorMessage(e, t) || t('goods.paySupplierFailed'), color: 'amber' });
+          }
+        }
         break;
       }
       case 'transfer': {
@@ -618,6 +652,16 @@ onMounted(loadAll);
             <UFormGroup :label="t('goods.returnComment')">
               <UInput v-model="returnComment" maxlength="500" />
             </UFormGroup>
+          </div>
+
+          <div v-if="createType === 'receipt' && openShifts.length && receiptTotalCents > 0" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+            <label class="flex items-center gap-2 text-sm font-medium">
+              <UToggle v-model="payFromRegister" size="sm" />
+              {{ t('goods.payFromRegister', { sum: (receiptTotalCents / 100).toFixed(2) }) }}
+            </label>
+            <div v-if="payFromRegister && openShifts.length > 1" class="mt-2 flex flex-wrap gap-1.5">
+              <button v-for="s in openShifts" :key="s.registerId" type="button" class="pill-filter" :class="registerId === s.registerId ? 'pill-filter--active' : ''" @click="registerId = s.registerId">{{ s.registerName }}</button>
+            </div>
           </div>
 
           <MovementItemBuilder v-else v-model="draftItems" :goods="goods" :units="units" :extra-fields="extraFieldsByType[createType]">

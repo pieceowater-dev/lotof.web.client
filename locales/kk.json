@@ -3062,7 +3062,10 @@
     "linkToContactsCreate": "Contacts-та жасау",
     "linkToContactsUnavailable": "Contacts бұл кеңістікке қосылмаған — байланыстыру қолжетімсіз.",
     "linkToContactsSelected": "Contacts-қа байланыстырылды",
-    "linkToContactsUnlink": "Байланысты үзу"
+    "linkToContactsUnlink": "Байланысты үзу",
+    "payFromRegister": "Жеткізушіге кассадан төлеу ({sum})",
+    "paySupplierReason": "Жеткізушіге төлем, кіріс",
+    "paySupplierFailed": "Кіріс өткізілді, бірақ кассадан шығысты жазу мүмкін болмады"
   },
   "guide": {
     "title": "Гид",

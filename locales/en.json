@@ -3349,7 +3349,10 @@
     "linkToContactsCreate": "Create in Contacts",
     "linkToContactsUnavailable": "Contacts isn't connected to this namespace — linking is unavailable.",
     "linkToContactsSelected": "Linked to Contacts",
-    "linkToContactsUnlink": "Unlink"
+    "linkToContactsUnlink": "Unlink",
+    "payFromRegister": "Pay the supplier from the till ({sum})",
+    "paySupplierReason": "Supplier payment, receipt",
+    "paySupplierFailed": "The receipt is posted, but the cash-out could not be recorded"
   },
   "tasks": {
     "watcher": "Watcher",
