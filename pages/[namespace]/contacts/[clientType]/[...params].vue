@@ -716,33 +716,37 @@ async function handleRefreshFromRemote() {
       data-tour="contacts-empty-state"
       class="flex-1 flex items-center justify-center px-4 py-12 sm:py-16"
     >
-      <div class="w-full max-w-2xl rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm">
-        <div class="px-6 py-8 sm:px-10 sm:py-10 text-center">
-          <div class="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100 dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700">
+      <div class="bezel w-full max-w-2xl">
+        <div class="bezel-core px-6 py-10 sm:px-12 sm:py-12 text-center">
+          <div class="icon-tile mx-auto mb-6 !h-16 !w-16 !rounded-[1.4rem]">
             <UIcon
               name="lucide:users"
-              class="w-7 h-7 text-gray-600 dark:text-gray-300"
+              class="w-8 h-8"
             />
           </div>
 
-          <h2 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white mb-2">
+          <h2 class="at-title !text-2xl sm:!text-3xl mb-3">
             {{ t('contacts.noClients') }}
           </h2>
-          <p class="text-sm sm:text-base text-gray-600 dark:text-gray-400 max-w-xl mx-auto mb-7 leading-relaxed">
-            {{ t('contacts.noClientsDescription') || 'Создавайте новых клиентов и управляйте всеми деталями их контактной информации в одном месте' }}
+          <p class="at-hint mx-auto !text-base mb-6">
+            {{ t('contacts.noClientsDescription') }}
           </p>
 
+          <div class="mb-8 flex flex-wrap justify-center gap-2">
+            <span class="at-chip !px-3 !py-1.5 !text-sm"><UIcon name="lucide:phone" class="w-3.5 h-3.5 text-blue-600" />{{ t('contacts.emptyHintContacts') }}</span>
+            <span class="at-chip !px-3 !py-1.5 !text-sm"><UIcon name="lucide:tag" class="w-3.5 h-3.5 text-blue-600" />{{ t('contacts.emptyHintTags') }}</span>
+            <span class="at-chip !px-3 !py-1.5 !text-sm"><UIcon name="lucide:file-spreadsheet" class="w-3.5 h-3.5 text-blue-600" />{{ t('contacts.emptyHintImport') }}</span>
+          </div>
+
           <div class="flex flex-wrap justify-center gap-3">
-            <UButton
-              icon="lucide:plus"
-              size="md"
-              color="primary"
-              class="w-auto"
+            <NuxtLink
+              class="at-btn at-btn--primary !px-6 !py-3 !text-sm"
               data-tour="contacts-create-empty"
               :to="`/${nsSlug}/contacts/new`"
             >
-              {{ t('contacts.createFirstClient') || t('contacts.createClient') }}
-            </UButton>
+              <UIcon name="lucide:plus" class="w-4 h-4" />
+              {{ t('contacts.createClient') }}
+            </NuxtLink>
             <QuickSetupButton
               v-if="namespaceId"
               :namespace-id="namespaceId"

@@ -11,7 +11,7 @@ const { state, close } = useCallPlayer();
 
 const POS_KEY = 'lota-call-player-pos';
 const MARGIN = 12;
-const SPEEDS = [1, 1.5, 2];
+const SPEEDS = [1, 1.25, 1.5, 1.75, 2, 3];
 
 const root = ref<HTMLElement | null>(null);
 const audio = ref<HTMLAudioElement | null>(null);
@@ -100,9 +100,9 @@ function seek(e: Event) {
   const a = audio.value;
   if (a) a.currentTime = Number((e.target as HTMLInputElement).value);
 }
-function cycleSpeed() {
-  speed.value = SPEEDS[(SPEEDS.indexOf(speed.value) + 1) % SPEEDS.length];
-  if (audio.value) audio.value.playbackRate = speed.value;
+function setSpeed(v: number) {
+  speed.value = v;
+  if (audio.value) audio.value.playbackRate = v;
 }
 
 const fmt = (sec: number) => {
@@ -182,13 +182,27 @@ const subtitle = computed(() => {
             >
             <span class="w-9 text-right text-[11px] tabular-nums text-gray-500">{{ fmt(duration) }}</span>
           </div>
-          <div class="flex items-center justify-center gap-2">
-            <button type="button" class="cp-icon" :aria-label="'-10'" @click="skip(-10)"><Icon name="lucide:rotate-ccw" class="w-4 h-4" /></button>
+          <!-- play sits dead centre; skips are symmetrical on both sides -->
+          <div class="flex items-center justify-center gap-4">
+            <button type="button" class="cp-icon" aria-label="-10" @click="skip(-10)"><Icon name="lucide:rotate-ccw" class="w-4 h-4" /></button>
             <button type="button" class="cp-play" :aria-label="playing ? t('contacts.playerPause') : t('contacts.playerPlay')" @click="toggle">
               <Icon :name="playing ? 'lucide:pause' : 'lucide:play'" class="w-5 h-5" />
             </button>
-            <button type="button" class="cp-icon" :aria-label="'+10'" @click="skip(10)"><Icon name="lucide:rotate-cw" class="w-4 h-4" /></button>
-            <button type="button" class="pill-filter !px-3 !py-1 ml-2 tabular-nums" @click="cycleSpeed">{{ speed }}×</button>
+            <button type="button" class="cp-icon" aria-label="+10" @click="skip(10)"><Icon name="lucide:rotate-cw" class="w-4 h-4" /></button>
+          </div>
+          <div class="flex items-center justify-center gap-1" role="radiogroup" :aria-label="t('contacts.playerSpeed')">
+            <button
+              v-for="v in SPEEDS"
+              :key="v"
+              type="button"
+              role="radio"
+              :aria-checked="speed === v"
+              class="pill-filter !px-2.5 !py-1 !text-xs tabular-nums"
+              :class="speed === v ? 'pill-filter--active' : ''"
+              @click="setSpeed(v)"
+            >
+              {{ v }}×
+            </button>
           </div>
         </template>
       </div>
