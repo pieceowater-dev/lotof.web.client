@@ -393,6 +393,12 @@ function matchesQuickView(task: TaskItem): boolean {
   return (!!task.dueAt && new Date(task.dueAt).getTime() < Date.now()) || isTaskOverdue(task);
 }
 const visibleTasks = computed(() => tasks.value.filter(matchesQuickView));
+// How many open tasks on this board are mine (assignee), shown on the "My tasks" button.
+const myOpenCount = computed(() => {
+  const me = currentUser.value?.id;
+  if (!me) return 0;
+  return tasks.value.filter((tk) => tk.assigneeUserId === me && !boardStatuses.value.find((s) => s.key === tk.status)?.isTerminal).length;
+});
 
 async function exportTasks() {
   const XLSX = await import('xlsx');
@@ -864,7 +870,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         class="flex-shrink-0"
         @click="myTasksOnly = !myTasksOnly"
       >
-        {{ t('tasks.myTasks') || 'My tasks' }}
+        {{ t('tasks.myTasks') || 'My tasks' }}<span v-if="myOpenCount" class="ml-1 tabular-nums opacity-70">· {{ myOpenCount }}</span>
       </UButton>
     </div>
 
