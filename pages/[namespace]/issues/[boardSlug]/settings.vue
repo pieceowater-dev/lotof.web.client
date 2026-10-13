@@ -197,6 +197,7 @@ const form = reactive({
   handoffAccept: false,
   rolloverOverdue: false,
   onePerOrder: false,
+  closeWhenAllDone: false,
   menuIntegration: false,
   contactsIntegration: false,
   cycles: false,
@@ -303,6 +304,7 @@ function populateForm(b: TaskBoard) {
   form.handoffAccept = !!(flags as any).handoff_accept;
   form.rolloverOverdue = !!(flags as any).rollover_overdue;
   form.onePerOrder = !!(flags as any).one_per_order;
+  form.closeWhenAllDone = !!(flags as any).close_when_all_done;
   form.cycles = !!flags.cycles;
   form.cycleCarryOver = (flags as any).cycle_carry_over === 'next' ? 'next' : 'backlog';
   const integrations = parseFlags(b.integrationFlags);
@@ -397,7 +399,7 @@ async function handleSave() {
       // -- always send "none" since the column is unconditionally
       // overwritten on every board update regardless of what's passed.
       deliveryConfirmationMode: 'none',
-      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, handoff_accept: form.handoffAccept, rollover_overdue: form.rolloverOverdue, one_per_order: form.onePerOrder, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
+      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, handoff_accept: form.handoffAccept, rollover_overdue: form.rolloverOverdue, one_per_order: form.onePerOrder, close_when_all_done: form.closeWhenAllDone, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
       integrationFlags: JSON.stringify({
         menu: form.menuIntegration && menuAppInstalled.value,
         contacts: form.contactsIntegration && contactsAppInstalled.value,
@@ -561,6 +563,15 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
                 <span>
                   <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:link-2" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagOnePerOrder') }}</span>
                   <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagOnePerOrderDesc') }}</span>
+                </span>
+              </label>
+            </UCard>
+            <UCard :ui="panelUi">
+              <label class="flex items-start gap-3 cursor-pointer">
+                <UToggle v-model="form.closeWhenAllDone" size="sm" class="mt-0.5" />
+                <span>
+                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:users-round" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCloseAllDone') }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCloseAllDoneDesc') }}</span>
                 </span>
               </label>
             </UCard>

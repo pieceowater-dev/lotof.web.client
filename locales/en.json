@@ -3376,6 +3376,8 @@
     "flagRolloverDesc": "Open tasks due on an earlier day automatically get today as the deadline, at the same time of day. The task journal records it.",
     "flagOnePerOrder": "One open task per order",
     "flagOnePerOrderDesc": "While an order has an unfinished task on this board, a second one cannot be created (for delivery).",
+    "flagCloseAllDone": "Close when everyone is done",
+    "flagCloseAllDoneDesc": "A task with several executors closes by itself once each of them marks their part.",
     "errOrderTaskExists": "This order already has an open task on the board",
     "fromTemplate": "From a template",
     "templateCreated": "Task created: {name}",
