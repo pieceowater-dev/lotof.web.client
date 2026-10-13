@@ -3011,7 +3011,8 @@
     "cardName": "Card name",
     "cardSave": "Save filter",
     "columnsTitle": "Columns",
-    "myOrdersOnPhone": "On your phone"
+    "myOrdersOnPhone": "On your phone",
+    "errRequiredFields": "Fill in this status’s required fields first"
   },
   "goods": {
     "register": "Register",
@@ -3358,7 +3359,11 @@
     "refundToRegister": "Put the money back into the till",
     "supplierRefundReason": "Refund from the supplier",
     "supplierRefundFailed": "The return is posted, but the cash-in could not be recorded",
-    "priceDeviation": "The purchase price differs a lot from the current cost. Check it is not a typo:"
+    "priceDeviation": "The purchase price differs a lot from the current cost. Check it is not a typo:",
+    "errReturnExceeds": "You cannot return more than is left of this receipt",
+    "errNotInReceipt": "This good is not in the chosen receipt",
+    "errWarehouseNotEmpty": "The warehouse still holds goods: move or write them off first",
+    "errAlreadyCancelled": "The document is already cancelled"
   },
   "tasks": {
     "watcher": "Watcher",

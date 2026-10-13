@@ -82,6 +82,8 @@ const TECHNICAL_PATTERNS = [
   // variables and all. Never fit to show as-is; isRateLimitError below
   // carves out 429 specifically for a friendlier, actionable message.
   /^GraphQL Error \(Code: \d+\)/,
+  // client-side guards like `throw new Error('No plans token')`
+  /^No \w+ token$/i,
 ]
 
 function isTechnicalDetail(raw: string): boolean {
@@ -143,6 +145,15 @@ export function isInsufficientStockError(e: unknown): boolean {
   return INSUFFICIENT_STOCK_RE.test(desc)
 }
 
+// Business refusals the services word in plain English; each gets a localized message.
+const KNOWN_BUSINESS_ERRORS: Array<[RegExp, string]> = [
+  [/return quantity exceeds/i, 'goods.errReturnExceeds'],
+  [/not part of this receipt/i, 'goods.errNotInReceipt'],
+  [/warehouse still holds goods/i, 'goods.errWarehouseNotEmpty'],
+  [/document is already cancelled/i, 'goods.errAlreadyCancelled'],
+  [/required fields are empty/i, 'menu.errRequiredFields'],
+]
+
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
 // stack traces, bare "rpc error: code = Unknown desc = ...") to end users —
 // they're meaningless and alarming. The detail is never lost though: it's
@@ -176,6 +187,15 @@ export function getErrorMessage(e: unknown, t?: (key: string) => string): string
   if (isInsufficientStockError(e)) {
     console.error('[app] insufficient stock (hidden from UI):', raw, e)
     return t ? (t('common.insufficientStock') || '') : ''
+  }
+  if (t) {
+    const desc0 = (raw.match(GRPC_WRAPPER_RE)?.[2]) ?? raw
+    for (const [re, key] of KNOWN_BUSINESS_ERRORS) {
+      if (re.test(desc0)) {
+        const msg = t(key)
+        if (msg) return msg
+      }
+    }
   }
   // Every other "safe" business error (an intentional status.Error(...) with
   // a non-technical code) still crossed the wire as "rpc error: code = X
