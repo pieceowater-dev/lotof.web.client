@@ -949,7 +949,7 @@ async function handleDelete() {
               <button v-for="k in [{ v: 'self', l: 'tasks.courierSelf' }, { v: 'courier', l: 'tasks.courierHired' }]" :key="k.v" type="button" class="pill-filter" :class="(task.courierKind || 'self') === k.v ? 'pill-filter--active' : ''" @click="setCourierKind(k.v)">{{ t(k.l) }}</button>
               <button v-if="task.assigneeUserId" type="button" class="at-btn !px-3 !py-1 ml-auto" @click="openRefuse"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('tasks.refuse') }}</button>
             </div>
-            <p v-if="task.previousAssigneeUserId" class="text-xs text-gray-400">{{ t('tasks.previousExecutor') }}: {{ memberOptions.find((m) => m.value === task.previousAssigneeUserId)?.label || '—' }}</p>
+            <p v-if="task.previousAssigneeUserId" class="text-xs text-gray-400">{{ t('tasks.previousExecutor') }}: {{ memberOptions.find((m) => m.value === task?.previousAssigneeUserId)?.label || '—' }}</p>
           </div>
           <div v-if="dealFieldsEnabled">
             <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dealAmount') || 'Deal amount' }}</div>
