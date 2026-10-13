@@ -277,12 +277,13 @@ const isStatusPickerOpen = ref(false);
 // Reason dialog shared by status moves (columns with "ask for a reason") and hand-overs.
 const reasonOpen = ref(false);
 const reasonBusy = ref(false);
-const reasonKind = ref<'status' | 'handoff' | 'problem'>('status');
+const reasonKind = ref<'status' | 'handoff' | 'problem' | 'done'>('status');
 const reasonTarget = ref<StatusRow | null>(null);
 const reasonAssignee = ref('');
 const reasonTitle = computed(() => {
   if (reasonKind.value === 'handoff') return t('tasks.reasonHandoffTitle');
   if (reasonKind.value === 'problem') return t('tasks.problemTitle');
+  if (reasonKind.value === 'done') return t('tasks.coDoneTitle');
   return reasonTarget.value?.isTerminal ? t('tasks.reasonCancelTitle') : t('tasks.reasonStatusTitle');
 });
 const PROBLEM_REASONS = computed(() => [
@@ -351,6 +352,8 @@ async function onReasonConfirm(v: { text: string; dueAt?: string }) {
       const token = await getToken();
       const { tasksAssignTask } = await import('@/api/tasks/task/update');
       emit('changed', await tasksAssignTask(token, props.nsSlug, { taskId: props.task.id, assigneeUserId: reasonAssignee.value || null, comment: v.text || undefined, requireAccept: !!props.requireHandoffAccept }));
+    } else if (reasonKind.value === 'done') {
+      await setMyPart(v.text);
     } else if (reasonKind.value === 'problem' && props.task) {
       const token = await getToken();
       const { tasksReportProblem } = await import('@/api/tasks/task/extra');
@@ -468,15 +471,27 @@ const newMemberRole = ref<'WATCHER' | 'ASSIGNEE'>('WATCHER');
 const coAssignees = computed(() => members.value.filter((m) => m.role === 'ASSIGNEE'));
 const coDone = computed(() => coAssignees.value.filter((m) => m.doneAt).length);
 const myMembership = computed(() => members.value.find((m) => m.role === 'ASSIGNEE' && m.userId === props.currentUserId));
-async function toggleMyPart() {
+// Marking my part done asks for a short note (what was done) that lands in the task's comments;
+// taking the mark back is immediate.
+function toggleMyPart() {
+  if (!props.task || !myMembership.value) return;
+  if (myMembership.value.doneAt) { void setMyPart(); return; }
+  reasonKind.value = 'done';
+  reasonOpen.value = true;
+}
+async function setMyPart(note?: string) {
   if (!props.task || !myMembership.value) return;
   try {
     const token = await getToken();
+    if (note) {
+      const { tasksCreateComment } = await import('@/api/tasks/task/extra');
+      await tasksCreateComment(token, props.nsSlug, { taskId: props.task.id, body: `✅ ${note}` });
+    }
     const { tasksSetTaskMemberDone } = await import('@/api/tasks/task/members');
     const updated = await tasksSetTaskMemberDone(token, props.nsSlug, props.task.id, !myMembership.value.doneAt);
     members.value = members.value.map((m) => (m.id === updated.id ? updated : m));
   } catch (e) {
-    logError('[TaskDetailSlideover] toggleMyPart failed', e);
+    logError('[TaskDetailSlideover] setMyPart failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
   }
 }
