@@ -11,6 +11,8 @@ export type LabourLine = {
   quantity: number;
   costPriceAtPurchase?: number | null;
   workPayPercent?: number | null;
+  // 'TOTAL' = the price is for the whole line, quantity is informational.
+  priceMode?: string | null;
   modifiers?: { priceAtPurchase: number }[] | null;
 };
 
@@ -36,7 +38,7 @@ export function lineUnitPrice(line: LabourLine): number {
 }
 
 export function lineTotal(line: LabourLine): number {
-  return lineUnitPrice(line) * line.quantity;
+  return lineUnitPrice(line) * (line.priceMode === 'TOTAL' ? 1 : line.quantity);
 }
 
 const round2 = (n: number) => Math.round(n * 100) / 100;

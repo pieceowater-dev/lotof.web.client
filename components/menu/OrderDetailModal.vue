@@ -44,7 +44,7 @@ import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/or
 import { warrantyInfo } from '@/utils/warranty';
 import { taskShortCode } from '@/utils/taskDisplay';
 import type { MenuOrderTask } from '@/api/menu/order/tasks';
-import { splitLabour } from '@/utils/labour';
+import { splitLabour, lineTotal } from '@/utils/labour';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
@@ -548,6 +548,7 @@ async function removeMember(m: MenuOrderMember) {
 
 // --- Products: add existing / quick-create / detail view ---
 const isAddProductOpen = ref(false);
+const addAsTotal = ref(false); // price the next added line as a whole, not per unit
 const productSearch = ref('');
 const addingProductId = ref<string | null>(null);
 
@@ -578,6 +579,7 @@ async function addExistingProduct(item: MenuItem, quantity = 1) {
       itemKind: item.itemKind === 'WORK' ? 'WORK' : 'MATERIAL',
       costPriceAtPurchase: item.costPrice || undefined,
       workPayPercent: item.workPayPercent || undefined,
+      priceMode: addAsTotal.value ? 'TOTAL' : undefined,
     });
     emit('statusChanged', updated);
     await loadDetails();
@@ -1007,7 +1009,7 @@ const itemGroups = computed(() =>
     : [{ key: 'ALL', title: '', rows: items.value, total: 0 }]
 );
 
-const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + itemUnitPrice(i) * i.quantity, 0));
+const itemsTotal = computed(() => items.value.reduce((sum, i) => sum + lineTotal(i), 0));
 
 // --- Discount / paid amount (echoes to UpdateOrderPayment) ---
 const paymentForm = reactive({
@@ -1050,7 +1052,7 @@ const previewDiscountAmount = computed(() => {
   if (paymentForm.discountType === 'ORDER_PERCENT') return (props.order.totalAmount * Math.min(value, 100)) / 100;
   const item = items.value.find((i) => i.id === paymentForm.discountItemId);
   if (!item) return 0;
-  const subtotal = itemUnitPrice(item) * item.quantity;
+  const subtotal = lineTotal(item);
   return paymentForm.discountType === 'ITEM_AMOUNT' ? Math.min(value, subtotal) : (subtotal * Math.min(value, 100)) / 100;
 });
 
@@ -1451,6 +1453,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 
             <!-- Add-product panel -->
             <div v-if="isAddProductOpen" class="mb-3 rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50/50 dark:bg-primary-950/20 p-3 space-y-2.5">
+              <div class="at-switch"><UToggle v-model="addAsTotal" /><div><div class="text-sm font-semibold">{{ t('menu.priceWholeToggle') }}</div><div class="at-hint !mt-0.5">{{ t('menu.priceWholeHint') }}</div></div></div>
               <div class="flex items-center justify-between gap-2">
                 <UInput v-model="productSearch" size="sm" icon="lucide:search" :placeholder="t('menu.searchProducts') || 'Search products'" class="flex-1" :ui="{ rounded: 'rounded-lg' }" />
                 <button type="button" class="flex-shrink-0 flex items-center gap-1 text-xs font-medium text-primary-600 dark:text-primary-300" @click="toggleQuickAdd">
@@ -1547,8 +1550,8 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                         />
                       </div>
                     </td>
-                    <td class="px-4 py-2.5 text-right w-28 tabular-nums">{{ itemUnitPrice(i) }} × {{ i.quantity }}</td>
-                    <td class="px-4 py-2.5 text-right w-24 font-medium tabular-nums">{{ itemUnitPrice(i) * i.quantity }}</td>
+                    <td class="px-4 py-2.5 text-right w-28 tabular-nums"><template v-if="i.priceMode === 'TOTAL'">{{ t('menu.priceWholeShort') }} · {{ i.quantity }}</template><template v-else>{{ itemUnitPrice(i) }} × {{ i.quantity }}</template></td>
+                    <td class="px-4 py-2.5 text-right w-24 font-medium tabular-nums">{{ lineTotal(i) }}</td>
                     <td class="px-2 py-2.5 w-9">
                       <UButton
                         icon="lucide:trash-2"

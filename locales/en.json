@@ -2868,7 +2868,10 @@
     "stageAutoTask": "Task in Issues",
     "stageAutoTaskPlaceholder": "E.g.: Quote the price to the customer",
     "stageAutoTaskHint": "The first time an order enters this status, a task with this title is created in Issues. Empty means no task.",
-    "stageAutoTaskBadge": "Task"
+    "stageAutoTaskBadge": "Task",
+    "priceWholeShort": "flat",
+    "priceWholeToggle": "Flat price, not per unit",
+    "priceWholeHint": "For the next line you add: the price counts once, the quantity is just informational."
   },
   "goods": {
     "register": "Register",

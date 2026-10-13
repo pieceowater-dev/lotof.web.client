@@ -2911,7 +2911,10 @@
     "stageAutoTask": "Задача в Issues",
     "stageAutoTaskPlaceholder": "Напр.: Озвучить цену клиенту",
     "stageAutoTaskHint": "Когда заказ впервые попадает в этот статус, в Issues создаётся задача с этим названием. Пусто — без задачи.",
-    "stageAutoTaskBadge": "Задача"
+    "stageAutoTaskBadge": "Задача",
+    "priceWholeShort": "за всё",
+    "priceWholeToggle": "Цена за всё, а не за штуку",
+    "priceWholeHint": "Для следующей добавленной строки: сумма берётся целиком, количество — справочное (напр. «ремонт платы — 15 000»)."
   },
   "plans": {
     "calendar": "Календарь",

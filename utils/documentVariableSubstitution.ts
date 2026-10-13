@@ -9,7 +9,7 @@ import { MENU_DOC_VARIABLES } from '@/utils/menuDocVariables';
 import { parseSocialLinks, socialLabel } from '@/utils/social';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import { warrantyInfo } from '@/utils/warranty';
-import { splitLabour } from '@/utils/labour';
+import { splitLabour, lineTotal } from '@/utils/labour';
 import { fieldsForOrder, formatCustomFieldValue, parseCustomFields } from '@/utils/orderCustomFields';
 
 // Order customerName/phone/deliveryAddress and item names are free text a
@@ -44,7 +44,7 @@ function buildItemsTable(items: MenuOrderItem[], emptyLabel: string, headers: { 
         <td style="padding:4px 8px;border-bottom:1px solid #ddd">${escapeHtml(i.name)}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #ddd;text-align:right">${i.quantity}</td>
         <td style="padding:4px 8px;border-bottom:1px solid #ddd;text-align:right">${formatMoney(unit)}</td>
-        <td style="padding:4px 8px;border-bottom:1px solid #ddd;text-align:right">${formatMoney(unit * i.quantity)}</td>
+        <td style="padding:4px 8px;border-bottom:1px solid #ddd;text-align:right">${formatMoney(lineTotal(i))}</td>
       </tr>`;
     })
     .join('');

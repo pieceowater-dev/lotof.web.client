@@ -13,6 +13,7 @@ export type AddOrderItemInput = {
   itemKind?: string;
   costPriceAtPurchase?: number;
   workPayPercent?: number;
+  priceMode?: 'UNIT' | 'TOTAL';
 };
 
 const AddOrderItemDocument = /* GraphQL */ `

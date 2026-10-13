@@ -27,3 +27,11 @@ describe('custom field extras', () => {
     expect(missingRequiredFields([f({ dataType: 'HEADING', isRequired: true })], {})).toEqual([]);
   });
 });
+
+import { lineTotal } from '@/utils/labour';
+describe('line price mode', () => {
+  it('counts a flat line once whatever the quantity', () => {
+    expect(lineTotal({ priceAtPurchase: 100, quantity: 3, priceMode: 'TOTAL' })).toBe(100);
+    expect(lineTotal({ priceAtPurchase: 100, quantity: 3 })).toBe(300);
+  });
+});
