@@ -33,7 +33,13 @@ const loading = ref(false);
 const list = ref<CallList | null>(null);
 const search = ref('');
 const direction = ref<CallDirection | ''>('');
-const status = ref<CallStatus | ''>('');
+type StatusGroup = '' | 'ACCEPTED' | 'MISSED' | 'OTHER';
+const statusGroup = ref<StatusGroup>('');
+const STATUS_GROUPS: Record<Exclude<StatusGroup, ''>, CallStatus[]> = {
+  ACCEPTED: ['ACCEPTED'],
+  MISSED: ['MISSED'],
+  OTHER: ['BUSY', 'CANCELLED', 'NOT_AVAILABLE', 'NOT_ALLOWED', 'NOT_FOUND'],
+};
 const favouritesOnly = ref(false);
 const period = ref<'today' | '7d' | '30d' | 'all'>('7d');
 const page = ref(1);
@@ -64,7 +70,7 @@ async function loadJournal() {
     list.value = await listCalls(c.token, c.ns, {
       search: search.value || undefined,
       direction: direction.value || undefined,
-      statuses: status.value ? [status.value] : undefined,
+      statuses: statusGroup.value ? STATUS_GROUPS[statusGroup.value] : undefined,
       favouritesOnly: favouritesOnly.value || undefined,
       ...range(),
       pagination: { page: page.value, length: 'THIRTY' },
@@ -105,7 +111,7 @@ async function refresh() {
 }
 
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
-watch([direction, status, favouritesOnly, period], () => { page.value = 1; refresh(); });
+watch([direction, statusGroup, favouritesOnly, period], () => { page.value = 1; refresh(); });
 watch(search, () => {
   if (searchTimer) clearTimeout(searchTimer);
   searchTimer = setTimeout(() => { page.value = 1; loadJournal(); }, 300);
@@ -188,7 +194,6 @@ async function callBack(c: Call) {
   window.location.href = `tel:${c.clientPhone}`;
 }
 
-const statusOptions: CallStatus[] = ['ACCEPTED', 'MISSED', 'BUSY', 'CANCELLED', 'NOT_AVAILABLE', 'NOT_ALLOWED', 'NOT_FOUND'];
 const totalPages = computed(() => Math.max(1, Math.ceil((list.value?.info.count || 0) / 30)));
 
 function mmss(sec: number) {
@@ -202,117 +207,155 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
+    <!-- header -->
+    <div class="flex flex-col md:flex-row md:justify-between md:items-start mb-4 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{{ t('contacts.callsTitle') }}</h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ nsTitle }}</span>
+        <h1 class="at-title !text-2xl sm:!text-3xl">{{ t('contacts.callsTitle') }}</h1>
+        <p class="at-sub">{{ nsTitle }}</p>
       </div>
-      <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" class="self-start" @click="goBack">
-        {{ t('app.back') }}
-      </UButton>
+      <div class="flex gap-2 flex-wrap">
+        <NuxtLink :to="`/${nsSlug}/contacts/integrations`" class="at-btn">
+          <Icon name="lucide:plug-zap" class="w-4 h-4" />{{ t('contacts.integrationsTitle') }}
+        </NuxtLink>
+        <button type="button" class="at-btn at-btn--blue" @click="goBack">
+          <Icon name="lucide:arrow-left" class="w-4 h-4" />{{ t('app.back') }}
+        </button>
+      </div>
     </div>
 
-    <div class="flex items-center gap-2 mb-3 flex-shrink-0 overflow-x-auto">
-      <button class="pill-filter" :class="tab === 'journal' ? 'pill-filter--active' : ''" @click="tab = 'journal'">{{ t('contacts.callsJournal') }}</button>
-      <button class="pill-filter" :class="tab === 'missed' ? 'pill-filter--active' : ''" @click="tab = 'missed'">
-        {{ t('contacts.callsMissed') }}<span v-if="missedCount" class="ml-1.5 text-xs px-1.5 rounded-full bg-red-500 text-white">{{ missedCount }}</span>
-      </button>
-      <button class="pill-filter" :class="tab === 'stats' ? 'pill-filter--active' : ''" @click="tab = 'stats'">{{ t('contacts.callsStats') }}</button>
-      <span class="flex-1" />
-      <select v-if="tab !== 'missed'" v-model="period" class="text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1">
-        <option value="today">{{ t('contacts.periodToday') }}</option>
-        <option value="7d">{{ t('contacts.period7d') }}</option>
-        <option value="30d">{{ t('contacts.period30d') }}</option>
-        <option value="all">{{ t('contacts.periodAll') }}</option>
-      </select>
+    <!-- tabs -->
+    <div class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
+      <div class="at-seg" role="tablist">
+        <button type="button" role="tab" class="at-seg__btn" :class="tab === 'journal' ? 'at-seg__btn--on' : ''" @click="tab = 'journal'">
+          <Icon name="lucide:phone-call" class="w-4 h-4" /><span>{{ t('contacts.callsJournal') }}</span>
+        </button>
+        <button type="button" role="tab" class="at-seg__btn" :class="tab === 'missed' ? 'at-seg__btn--on' : ''" @click="tab = 'missed'">
+          <Icon name="lucide:phone-missed" class="w-4 h-4" /><span>{{ t('contacts.callsMissed') }}</span>
+          <span v-if="missedCount" class="rounded-full bg-rose-500 px-1.5 text-[11px] font-bold leading-5 text-white">{{ missedCount }}</span>
+        </button>
+        <button type="button" role="tab" class="at-seg__btn" :class="tab === 'stats' ? 'at-seg__btn--on' : ''" @click="tab = 'stats'">
+          <Icon name="lucide:bar-chart-3" class="w-4 h-4" /><span>{{ t('contacts.callsStats') }}</span>
+        </button>
+      </div>
     </div>
 
-    <div class="flex-1 min-h-0 overflow-y-auto space-y-3">
+    <div class="flex-1 min-h-0 overflow-y-auto space-y-4 pt-3">
       <!-- Journal -->
       <template v-if="tab === 'journal'">
-        <div class="flex gap-2 flex-wrap items-center">
-          <UInput v-model="search" size="sm" icon="lucide:search" :placeholder="t('contacts.callsSearch')" class="w-56" />
-          <select v-model="direction" class="text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1">
-            <option value="">{{ t('contacts.callsAll') }}</option>
-            <option value="IN">{{ t('contacts.callIn') }}</option>
-            <option value="OUT">{{ t('contacts.callOut') }}</option>
-          </select>
-          <select v-model="status" class="text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1">
-            <option value="">{{ t('contacts.callsAnyStatus') }}</option>
-            <option v-for="s in statusOptions" :key="s" :value="s">{{ t(`contacts.callStatus_${s}`) }}</option>
-          </select>
-          <label class="text-sm flex items-center gap-1 cursor-pointer"><input v-model="favouritesOnly" type="checkbox"> {{ t('contacts.callFavourites') }}</label>
-          <div v-if="list" class="ml-auto text-xs text-gray-500">
-            {{ list.info.count }} · {{ t('contacts.callMin') }} {{ mmss(list.minDurationSec) }} · {{ t('contacts.callAvg') }} {{ mmss(list.avgDurationSec) }} · {{ t('contacts.callMax') }} {{ mmss(list.maxDurationSec) }}
+        <!-- filters: chips on a soft tray, never native selects -->
+        <div class="at-panel !p-3 space-y-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <UInput v-model="search" icon="lucide:search" class="w-full sm:w-72" :placeholder="t('contacts.callsSearch')" />
+            <div class="flex gap-1.5 flex-wrap">
+              <button v-for="p in (['today', '7d', '30d', 'all'] as const)" :key="p" type="button" class="pill-filter" :class="period === p ? 'pill-filter--active' : ''" @click="period = p">
+                {{ t(p === 'today' ? 'contacts.periodToday' : p === '7d' ? 'contacts.period7d' : p === '30d' ? 'contacts.period30d' : 'contacts.periodAll') }}
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <button type="button" class="pill-filter" :class="direction === '' ? 'pill-filter--active' : ''" @click="direction = ''">{{ t('contacts.callsAll') }}</button>
+            <button type="button" class="pill-filter" :class="direction === 'IN' ? 'pill-filter--active' : ''" @click="direction = 'IN'"><Icon name="lucide:phone-incoming" class="w-3.5 h-3.5" />{{ t('contacts.callIn') }}</button>
+            <button type="button" class="pill-filter" :class="direction === 'OUT' ? 'pill-filter--active' : ''" @click="direction = 'OUT'"><Icon name="lucide:phone-outgoing" class="w-3.5 h-3.5" />{{ t('contacts.callOut') }}</button>
+            <span class="mx-1 h-5 w-px bg-slate-200 dark:bg-white/10" />
+            <button type="button" class="pill-filter" :class="statusGroup === '' ? 'pill-filter--active' : ''" @click="statusGroup = ''">{{ t('contacts.callsAnyStatus') }}</button>
+            <button type="button" class="pill-filter" :class="statusGroup === 'ACCEPTED' ? 'pill-filter--active' : ''" @click="statusGroup = 'ACCEPTED'">{{ t('contacts.callStatus_ACCEPTED') }}</button>
+            <button type="button" class="pill-filter" :class="statusGroup === 'MISSED' ? 'pill-filter--active' : ''" @click="statusGroup = 'MISSED'">{{ t('contacts.callStatus_MISSED') }}</button>
+            <button type="button" class="pill-filter" :class="statusGroup === 'OTHER' ? 'pill-filter--active' : ''" @click="statusGroup = 'OTHER'">{{ t('contacts.callsOtherStatuses') }}</button>
+            <span class="mx-1 h-5 w-px bg-slate-200 dark:bg-white/10" />
+            <button type="button" class="pill-filter" :class="favouritesOnly ? 'pill-filter--rose' : ''" @click="favouritesOnly = !favouritesOnly">
+              <Icon name="lucide:star" class="w-3.5 h-3.5" />{{ t('contacts.callFavourites') }}
+            </button>
+          </div>
+          <div v-if="list && list.info.count" class="flex items-center gap-1.5 flex-wrap text-xs">
+            <span class="at-chip">{{ list.info.count }} {{ t('contacts.callsCountSuffix') }}</span>
+            <span class="at-chip">{{ t('contacts.callMin') }} {{ mmss(list.minDurationSec) }}</span>
+            <span class="at-chip">{{ t('contacts.callAvg') }} {{ mmss(list.avgDurationSec) }}</span>
+            <span class="at-chip">{{ t('contacts.callMax') }} {{ mmss(list.maxDurationSec) }}</span>
           </div>
         </div>
 
         <AppSkeleton v-if="loading && !list" variant="table" :rows="6" :cols="4" />
-        <div v-else-if="list && !list.rows.length" class="text-sm text-gray-500 py-8 text-center">{{ t('contacts.callsEmpty') }}</div>
+        <div v-else-if="list && !list.rows.length" class="at-empty-box">
+          <div class="at-empty-ico"><Icon name="lucide:phone-off" class="w-5 h-5" /></div>
+          <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('contacts.callsEmpty') }}</p>
+        </div>
 
-        <div v-for="c in list?.rows" :key="c.id" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-          <div class="flex items-center gap-3 flex-wrap cursor-pointer" @click="open(c)">
-            <div class="min-w-0 flex-1 space-y-0.5">
-              <div class="flex items-center gap-2">
-                <NuxtLink v-if="c.clientId" :to="`/${nsSlug}/contacts/${c.clientId}`" class="font-medium hover:underline" @click.stop>{{ c.clientName || c.clientPhone }}</NuxtLink>
-                <span v-else class="font-medium">{{ c.clientPhone }}</span>
-                <span v-if="c.clientId" class="text-xs text-gray-500">{{ c.clientPhone }}</span>
-                <span v-if="c.extension" class="text-xs text-gray-400">· {{ c.extension }}</span>
+        <div v-for="c in list?.rows" :key="c.id" class="at-row !p-3.5">
+          <div class="flex items-start gap-3 flex-wrap">
+            <div class="min-w-0 flex-1 space-y-1.5">
+              <div class="flex items-baseline gap-2 flex-wrap">
+                <NuxtLink v-if="c.clientId" :to="`/${nsSlug}/contacts/${c.clientId}`" class="font-semibold hover:underline">{{ c.clientName || c.clientPhone }}</NuxtLink>
+                <span v-else class="font-semibold">{{ c.clientPhone }}</span>
+                <span v-if="c.clientId" class="text-xs text-slate-500">{{ c.clientPhone }}</span>
+                <span v-if="c.extension" class="text-xs text-slate-400">· {{ c.extension }}</span>
               </div>
               <CallRecord :call="c" />
-              <div v-if="c.comment" class="text-xs text-gray-600 dark:text-gray-300">{{ c.comment }}</div>
-              <div v-if="c.orderIds.length" class="text-xs text-gray-500">{{ t('contacts.callLinkedOrders') }}: {{ c.orderIds.join(', ') }}</div>
+              <p v-if="c.comment" class="text-xs text-slate-600 dark:text-slate-300">{{ c.comment }}</p>
+              <p v-if="c.orderIds.length" class="text-xs text-slate-500">{{ t('contacts.callLinkedOrders') }}: {{ c.orderIds.join(', ') }}</p>
             </div>
-            <button class="text-gray-400 hover:text-amber-500" @click.stop="toggleFavourite(c)">
-              <UIcon :name="c.favourite ? 'lucide:star' : 'lucide:star'" class="w-5 h-5" :class="c.favourite ? 'text-amber-500 fill-amber-400' : ''" />
-            </button>
+            <div class="flex items-center gap-1.5">
+              <button type="button" class="cp-icon" :class="c.favourite ? '!bg-rose-500/10 !text-rose-500' : ''" :aria-label="t('contacts.callFavourites')" @click="toggleFavourite(c)">
+                <Icon name="lucide:star" class="w-4 h-4" :class="c.favourite ? 'fill-current' : ''" />
+              </button>
+              <button type="button" class="cp-icon" :aria-label="t('contacts.callComment')" @click="open(c)">
+                <Icon name="lucide:message-square-text" class="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div v-if="openId === c.id" class="mt-3 space-y-2 border-t border-gray-200 dark:border-gray-700 pt-3">
-            <div class="flex gap-2 flex-wrap">
-              <select :value="draftTemplate" class="text-sm rounded-md border border-gray-300 dark:border-gray-600 bg-transparent px-2 py-1" @change="pickTemplate(($event.target as HTMLSelectElement).value)">
-                <option value="">{{ t('contacts.callTemplate') }}</option>
-                <option v-for="tpl in templates" :key="tpl.id" :value="tpl.id">{{ tpl.text }}</option>
-              </select>
-              <div class="flex items-center gap-1 text-sm">
-                {{ t('contacts.callRating') }}:
-                <button v-for="n in 5" :key="n" @click="draftRating = draftRating === n ? 0 : n">
-                  <UIcon name="lucide:star" class="w-4 h-4" :class="n <= draftRating ? 'text-amber-500 fill-amber-400' : 'text-gray-300'" />
-                </button>
-              </div>
+
+          <div v-if="openId === c.id" class="mt-3 space-y-3 border-t border-slate-900/5 pt-3 dark:border-white/10">
+            <div v-if="templates.length" class="flex gap-1.5 flex-wrap">
+              <button v-for="tpl in templates" :key="tpl.id" type="button" class="pill-filter" :class="draftTemplate === tpl.id ? 'pill-filter--active' : ''" @click="pickTemplate(tpl.id)">{{ tpl.text }}</button>
+            </div>
+            <div class="flex items-center gap-1 text-sm">
+              <span class="mr-1 text-slate-500">{{ t('contacts.callRating') }}</span>
+              <button v-for="n in 5" :key="n" type="button" :aria-label="String(n)" @click="draftRating = draftRating === n ? 0 : n">
+                <Icon name="lucide:star" class="w-5 h-5" :class="n <= draftRating ? 'text-amber-500 fill-current' : 'text-slate-300 dark:text-slate-600'" />
+              </button>
             </div>
             <UTextarea v-model="draftComment" :rows="2" autoresize :placeholder="t('contacts.callComment')" />
             <div class="flex justify-end gap-2">
-              <UButton size="xs" color="gray" variant="soft" @click="openId = null">{{ t('common.cancel') }}</UButton>
-              <UButton size="xs" @click="saveCall(c)">{{ t('contacts.notesSave') }}</UButton>
+              <button type="button" class="at-btn" @click="openId = null">{{ t('common.cancel') }}</button>
+              <button type="button" class="at-btn at-btn--primary" @click="saveCall(c)">{{ t('contacts.notesSave') }}</button>
             </div>
           </div>
         </div>
 
         <div v-if="totalPages > 1" class="flex items-center justify-center gap-3 py-2">
-          <UButton size="xs" color="gray" variant="soft" :disabled="page <= 1" icon="lucide:chevron-left" @click="page--" />
-          <span class="text-sm">{{ page }} / {{ totalPages }}</span>
-          <UButton size="xs" color="gray" variant="soft" :disabled="page >= totalPages" icon="lucide:chevron-right" @click="page++" />
+          <button type="button" class="cp-icon" :disabled="page <= 1" @click="page--"><Icon name="lucide:chevron-left" class="w-4 h-4" /></button>
+          <span class="text-sm tabular-nums">{{ page }} / {{ totalPages }}</span>
+          <button type="button" class="cp-icon" :disabled="page >= totalPages" @click="page++"><Icon name="lucide:chevron-right" class="w-4 h-4" /></button>
         </div>
       </template>
 
       <!-- Missed callbacks -->
       <template v-else-if="tab === 'missed'">
-        <p class="text-sm text-gray-500">{{ t('contacts.callsMissedHint') }}</p>
-        <div v-if="missed && !missed.rows.length" class="text-sm text-gray-500 py-8 text-center">{{ t('contacts.callsMissedEmpty') }}</div>
-        <div v-for="c in missed?.rows" :key="c.id" class="rounded-xl border border-red-200 dark:border-red-900/60 bg-white dark:bg-gray-800 px-4 py-3 flex items-center gap-3 flex-wrap">
-          <div class="min-w-0 flex-1">
-            <NuxtLink v-if="c.clientId" :to="`/${nsSlug}/contacts/${c.clientId}`" class="font-medium hover:underline">{{ c.clientName || c.clientPhone }}</NuxtLink>
-            <span v-else class="font-medium">{{ c.clientPhone }}</span>
-            <span v-if="c.clientId" class="text-xs text-gray-500 ml-2">{{ c.clientPhone }}</span>
+        <div class="at-banner"><span class="text-sm">{{ t('contacts.callsMissedHint') }}</span></div>
+        <div v-if="missed && !missed.rows.length" class="at-empty-box">
+          <div class="at-empty-ico"><Icon name="lucide:check-check" class="w-5 h-5" /></div>
+          <p class="text-sm text-slate-500 dark:text-slate-400">{{ t('contacts.callsMissedEmpty') }}</p>
+        </div>
+        <div v-for="c in missed?.rows" :key="c.id" class="at-row !p-3.5 flex items-center gap-3 flex-wrap">
+          <div class="min-w-0 flex-1 space-y-1.5">
+            <div class="flex items-baseline gap-2 flex-wrap">
+              <NuxtLink v-if="c.clientId" :to="`/${nsSlug}/contacts/${c.clientId}`" class="font-semibold hover:underline">{{ c.clientName || c.clientPhone }}</NuxtLink>
+              <span v-else class="font-semibold">{{ c.clientPhone }}</span>
+              <span v-if="c.clientId" class="text-xs text-slate-500">{{ c.clientPhone }}</span>
+            </div>
             <CallRecord :call="c" />
           </div>
-          <UButton size="xs" color="primary" variant="soft" icon="lucide:phone" @click="callBack(c)">{{ t('contacts.callsCallBack') }}</UButton>
-          <UButton size="xs" color="gray" variant="soft" icon="lucide:check" @click="done(c)">{{ t('contacts.callbackMark') }}</UButton>
+          <button type="button" class="at-btn at-btn--primary" @click="callBack(c)"><Icon name="lucide:phone" class="w-4 h-4" />{{ t('contacts.callsCallBack') }}</button>
+          <button type="button" class="at-btn" @click="done(c)"><Icon name="lucide:check" class="w-4 h-4" />{{ t('contacts.callbackMark') }}</button>
         </div>
       </template>
 
       <!-- Stats -->
       <template v-else>
+        <div class="flex gap-1.5 flex-wrap">
+          <button v-for="p in (['today', '7d', '30d', 'all'] as const)" :key="p" type="button" class="pill-filter" :class="period === p ? 'pill-filter--active' : ''" @click="period = p">
+            {{ t(p === 'today' ? 'contacts.periodToday' : p === '7d' ? 'contacts.period7d' : p === '30d' ? 'contacts.period30d' : 'contacts.periodAll') }}
+          </button>
+        </div>
         <AppSkeleton v-if="!stats" variant="panel" :rows="2" />
         <template v-else>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -321,32 +364,33 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
               { k: 'statsOutgoing', v: stats.outgoing }, { k: 'statsMissed', v: stats.missed },
               { k: 'statsUnreturned', v: stats.missedUnreturned }, { k: 'statsCallbacks', v: stats.callbacksDone },
               { k: 'statsAvgDuration', v: mmss(stats.avgDurationSec) }, { k: 'statsMaxDuration', v: mmss(stats.maxDurationSec) },
-            ]" :key="card.k" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-              <div class="text-xs text-gray-500">{{ t(`contacts.${card.k}`) }}</div>
-              <div class="text-2xl font-bold tabular-nums">{{ card.v }}</div>
+            ]" :key="card.k" class="at-stat !py-4">
+              <div class="text-2xl font-extrabold tabular-nums grad-text">{{ card.v }}</div>
+              <div class="mt-1 text-xs text-slate-500">{{ t(`contacts.${card.k}`) }}</div>
             </div>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-              <h3 class="font-semibold mb-2">{{ t('contacts.statsByDay') }}</h3>
-              <div v-for="d in stats.byDay" :key="d.day" class="flex justify-between text-sm py-0.5">
-                <span>{{ d.day }}</span><span class="tabular-nums">{{ d.total }} <span v-if="d.missed" class="text-red-600">({{ d.missed }})</span></span>
+            <div class="at-panel">
+              <h3 class="at-h2 mb-2">{{ t('contacts.statsByDay') }}</h3>
+              <div v-for="d in stats.byDay" :key="d.day" class="flex justify-between py-1 text-sm">
+                <span>{{ d.day }}</span><span class="tabular-nums">{{ d.total }} <span v-if="d.missed" class="text-rose-600">({{ d.missed }})</span></span>
               </div>
+              <p v-if="!stats.byDay.length" class="text-sm text-slate-400">—</p>
             </div>
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-              <h3 class="font-semibold mb-2">{{ t('contacts.statsByOperator') }}</h3>
-              <div v-for="o in stats.byOperator" :key="o.operatorUserId" class="flex justify-between text-sm py-0.5">
+            <div class="at-panel">
+              <h3 class="at-h2 mb-2">{{ t('contacts.statsByOperator') }}</h3>
+              <div v-for="o in stats.byOperator" :key="o.operatorUserId" class="flex justify-between py-1 text-sm">
                 <span class="truncate">{{ o.operatorUserId.slice(0, 8) }}</span>
                 <span class="tabular-nums">{{ o.acceptedIn }} / {{ o.outgoing }} · {{ mmss(o.talkSeconds) }}</span>
               </div>
-              <div v-if="!stats.byOperator.length" class="text-sm text-gray-400">—</div>
+              <p v-if="!stats.byOperator.length" class="text-sm text-slate-400">—</p>
             </div>
-            <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3">
-              <h3 class="font-semibold mb-2">{{ t('contacts.statsByLine') }}</h3>
-              <div v-for="l in stats.byLine" :key="l.lineNumber + l.source" class="flex justify-between text-sm py-0.5">
-                <span class="truncate">{{ l.lineNumber }}<span v-if="l.source" class="text-gray-400"> · {{ l.source }}</span></span><span class="tabular-nums">{{ l.total }}</span>
+            <div class="at-panel">
+              <h3 class="at-h2 mb-2">{{ t('contacts.statsByLine') }}</h3>
+              <div v-for="l in stats.byLine" :key="l.lineNumber + l.source" class="flex justify-between py-1 text-sm">
+                <span class="truncate">{{ l.lineNumber }}<span v-if="l.source" class="text-slate-400"> · {{ l.source }}</span></span><span class="tabular-nums">{{ l.total }}</span>
               </div>
-              <div v-if="!stats.byLine.length" class="text-sm text-gray-400">—</div>
+              <p v-if="!stats.byLine.length" class="text-sm text-slate-400">—</p>
             </div>
           </div>
         </template>

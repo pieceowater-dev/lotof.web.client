@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
@@ -36,6 +36,7 @@ import ContactCalls from '@/components/contacts/ContactCalls.vue';
 import ContactMarks from '@/components/contacts/ContactMarks.vue';
 import ContactQuickActions from '@/components/contacts/ContactQuickActions.vue';
 import type { ClientAddress } from '@/api/contacts/addresses';
+import type { Call } from '@/api/contacts/telephony';
 
 definePageMeta({
   layout: 'workspace',
@@ -57,6 +58,13 @@ const currentUserId = computed(() => user.value?.id || '');
 const isTagsModalOpen = ref(false);
 const isMergeModalOpen = ref(false);
 const clientAddresses = ref<ClientAddress[]>([]);
+const clientCalls = ref<Call[]>([]);
+// A live call event of this namespace: pull the new timeline entries too.
+const callTick = useState<number>('call-events-tick', () => 0);
+watch(callTick, () => {
+  const id = client.value?.client.id;
+  if (id && contactsAppToken.value) loadInitialEvents(contactsAppToken.value, id, []);
+});
 const statusChangeLoading = ref(false);
 
 // Core client data (client/identities/tags/loyalty) + load orchestration.
@@ -304,7 +312,7 @@ function onCopyToClipboard(text: string) {
 
           <ContactNotes :client-id="client?.client.id" />
 
-          <ContactCalls :client-id="client?.client.id" />
+          <ContactCalls :client-id="client?.client.id" @loaded="(c) => clientCalls = c" />
 
           <!-- Loyalty Section -->
           <ContactLoyalty
@@ -345,6 +353,7 @@ function onCopyToClipboard(text: string) {
             :events="events"
             :tag-name-by-id="tagNameById"
             :dynamic-field-name-by-id="dynamicFieldNameById"
+            :calls="clientCalls"
             :loading="loading"
             :has-more="hasMoreEvents"
             :loading-more="eventsLoadingMore"

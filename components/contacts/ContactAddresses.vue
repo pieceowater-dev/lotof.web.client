@@ -106,7 +106,7 @@ const copy = (text: string) => copyToClipboard(text, toast, t);
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5 flex-wrap">
                 <span v-if="a.label" class="font-medium">{{ a.label }}</span>
-                <span v-if="a.isPrimary" class="text-[11px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ t('contacts.addressPrimaryBadge') }}</span>
+                <span v-if="a.isPrimary" class="text-[11px] px-1.5 py-0.5 rounded-full bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-blue-300">{{ t('contacts.addressPrimaryBadge') }}</span>
                 <span v-if="a.isDelivery" class="text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">{{ t('contacts.addressDeliveryBadge') }}</span>
               </div>
               <div class="text-gray-700 dark:text-gray-200 break-words">{{ a.address }}</div>
@@ -133,8 +133,8 @@ const copy = (text: string) => copyToClipboard(text, toast, t);
         <UInput v-model="form.label" size="sm" :placeholder="t('contacts.addressLabel')" />
         <UTextarea v-model="form.address" :rows="2" autoresize :placeholder="t('contacts.addressText')" />
         <div class="flex items-center gap-4 text-sm flex-wrap">
-          <label class="flex items-center gap-1 cursor-pointer"><input v-model="form.isPrimary" type="checkbox"> {{ t('contacts.addressPrimary') }}</label>
-          <label class="flex items-center gap-1 cursor-pointer"><input v-model="form.isDelivery" type="checkbox"> {{ t('contacts.addressDelivery') }}</label>
+          <button type="button" class="pill-filter" :class="form.isPrimary ? 'pill-filter--active' : ''" @click="form.isPrimary = !form.isPrimary"><Icon name="lucide:star" class="w-3.5 h-3.5" />{{ t('contacts.addressPrimary') }}</button>
+          <button type="button" class="pill-filter" :class="form.isDelivery ? 'pill-filter--active' : ''" @click="form.isDelivery = !form.isDelivery"><Icon name="lucide:truck" class="w-3.5 h-3.5" />{{ t('contacts.addressDelivery') }}</button>
           <span class="flex-1" />
           <UButton size="xs" color="gray" variant="soft" @click="editing = null">{{ t('common.cancel') }}</UButton>
           <UButton size="xs" :loading="saving" :disabled="!form.address.trim()" @click="save">{{ t('contacts.notesSave') }}</UButton>

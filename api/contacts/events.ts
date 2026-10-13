@@ -124,6 +124,17 @@ export function getEventIcon(eventType: string): string {
     'segment_created': 'lucide:layers',
     'segment_updated': 'lucide:layers',
     'segment_deleted': 'lucide:layers-3',
+    'call_recorded': 'lucide:phone-call',
+    'client_note_added': 'lucide:sticky-note',
+    'client_note_updated': 'lucide:sticky-note',
+    'client_note_deleted': 'lucide:sticky-note',
+    'client_note_restored': 'lucide:sticky-note',
+    'client_address_created': 'lucide:map-pin',
+    'client_address_updated': 'lucide:map-pin',
+    'client_address_deleted': 'lucide:map-pin',
+    'clients_merged': 'lucide:git-merge',
+    'client_merged_into': 'lucide:git-merge',
+    'client_marks_updated': 'lucide:star',
   };
   return icons[eventType] || icons[normalized] || 'lucide:activity';
 }

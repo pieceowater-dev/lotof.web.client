@@ -149,6 +149,8 @@ async function removeOperator(id: string) {
   operators.value = operators.value.filter(o => o.id !== id);
 }
 
+const memberOptions = computed(() => namespaceMembers.value.map((m: any) => ({ value: m.id, label: memberDisplayName(m) })));
+
 function userName(id: string) {
   const m = namespaceMembers.value.find((x: any) => x.id === id);
   return m ? memberDisplayName(m) : id.slice(0, 8);
@@ -178,7 +180,7 @@ function userName(id: string) {
         <button
           v-for="a in adapters"
           :key="a.code"
-          class="text-left rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:border-emerald-400 hover:shadow-md transition"
+          class="at-row !p-4 text-left transition hover:shadow-md hover:ring-2 hover:ring-blue-400/40"
           @click="pick(a.code)"
         >
           <div class="flex items-center gap-3">
@@ -189,8 +191,8 @@ function userName(id: string) {
           </div>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">{{ t(`contacts.integrationDesc_${a.code}`) }}</p>
           <div class="flex gap-1.5 mt-3 flex-wrap">
-            <span class="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700">{{ t('contacts.integrationCapIncoming') }}</span>
-            <span v-if="a.canMakeCall" class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200">{{ t('contacts.integrationCapOutgoing') }}</span>
+            <span class="at-chip">{{ t('contacts.integrationCapIncoming') }}</span>
+            <span v-if="a.canMakeCall" class="text-[11px] px-2 py-0.5 rounded-full bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-blue-300">{{ t('contacts.integrationCapOutgoing') }}</span>
             <span v-if="a.canProvideRecording" class="text-[11px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">{{ t('contacts.integrationCapRecording') }}</span>
           </div>
         </button>
@@ -198,9 +200,16 @@ function userName(id: string) {
 
       <!-- Step 2 / edit -->
       <template v-else>
-        <div v-if="current" class="flex gap-2 border-b border-gray-200 dark:border-gray-700">
-          <button class="px-3 py-2 text-sm font-medium -mb-px border-b-2" :class="tab === 'connection' ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'border-transparent text-gray-500'" @click="tab = 'connection'">{{ t('contacts.integrationTabConnection') }}</button>
-          <button class="px-3 py-2 text-sm font-medium -mb-px border-b-2" :class="tab === 'staff' ? 'border-emerald-500 text-emerald-700 dark:text-emerald-300' : 'border-transparent text-gray-500'" @click="tab = 'staff'">{{ t('contacts.integrationTabStaff') }} <span v-if="operators.length" class="text-xs text-gray-400">{{ operators.length }}</span></button>
+        <div v-if="current" class="overflow-x-auto no-scrollbar">
+          <div class="at-seg" role="tablist">
+            <button type="button" role="tab" class="at-seg__btn" :class="tab === 'connection' ? 'at-seg__btn--on' : ''" @click="tab = 'connection'">
+              <Icon name="lucide:plug" class="w-4 h-4" /><span>{{ t('contacts.integrationTabConnection') }}</span>
+            </button>
+            <button type="button" role="tab" class="at-seg__btn" :class="tab === 'staff' ? 'at-seg__btn--on' : ''" @click="tab = 'staff'">
+              <Icon name="lucide:users" class="w-4 h-4" /><span>{{ t('contacts.integrationTabStaff') }}</span>
+              <span v-if="operators.length" class="rounded-full bg-blue-500/15 px-1.5 text-[11px] font-bold leading-5 text-blue-700 dark:text-blue-300">{{ operators.length }}</span>
+            </button>
+          </div>
         </div>
 
         <div v-if="tab === 'connection'" class="space-y-5">
@@ -209,10 +218,10 @@ function userName(id: string) {
               <span class="text-sm font-medium">{{ t('contacts.integrationName') }}</span>
               <UInput v-model="name" :placeholder="adapter?.title" />
             </label>
-            <label class="flex items-center gap-2 sm:self-end sm:pb-2 cursor-pointer text-sm">
-              <input v-model="enabled" type="checkbox" class="w-4 h-4">
-              {{ t('contacts.integrationEnabledLabel') }}
-            </label>
+            <div class="at-switch sm:self-end">
+              <UToggle v-model="enabled" />
+              <span class="text-sm font-semibold">{{ t('contacts.integrationEnabledLabel') }}</span>
+            </div>
           </div>
 
           <div class="space-y-3">
@@ -237,7 +246,7 @@ function userName(id: string) {
             <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-500">{{ t('contacts.integrationWebhook') }}</h3>
             <div class="flex items-center gap-2 rounded-xl bg-gray-100 dark:bg-gray-900 px-3 py-2">
               <code class="text-xs break-all flex-1">{{ url }}</code>
-              <UButton size="xs" color="gray" variant="soft" icon="lucide:copy" @click="copy(url)">{{ t('contacts.integrationCopy') }}</UButton>
+              <button type="button" class="at-btn at-btn--blue" @click="copy(url)"><Icon name="lucide:copy" class="w-4 h-4" />{{ t('contacts.integrationCopy') }}</button>
             </div>
             <ol class="list-decimal pl-5 space-y-1 text-sm text-gray-600 dark:text-gray-300">
               <li v-for="(s, i) in steps" :key="i">{{ s }}</li>
@@ -250,25 +259,26 @@ function userName(id: string) {
 
           <div class="flex items-center gap-2 pt-1 flex-wrap">
             <template v-if="current">
-              <UButton v-if="!confirmDelete" color="red" variant="ghost" size="sm" icon="lucide:trash-2" @click="confirmDelete = true">{{ t('contacts.integrationDelete') }}</UButton>
+              <button v-if="!confirmDelete" type="button" class="at-btn hover:!bg-rose-500/10 hover:!text-rose-600" @click="confirmDelete = true"><Icon name="lucide:trash-2" class="w-4 h-4" />{{ t('contacts.integrationDelete') }}</button>
               <template v-else>
                 <span class="text-sm text-red-600">{{ t('contacts.integrationDeleteConfirm') }}</span>
-                <UButton color="red" size="sm" @click="remove">{{ t('contacts.integrationDeleteYes') }}</UButton>
-                <UButton color="gray" variant="soft" size="sm" @click="confirmDelete = false">{{ t('common.cancel') }}</UButton>
+                <button type="button" class="at-btn at-btn--danger" @click="remove">{{ t('contacts.integrationDeleteYes') }}</button>
+                <button type="button" class="at-btn" @click="confirmDelete = false">{{ t('common.cancel') }}</button>
               </template>
             </template>
             <span class="flex-1" />
-            <UButton v-if="!current" color="gray" variant="soft" @click="step = 'pick'">{{ t('app.back') }}</UButton>
-            <UButton :loading="saving" :disabled="missingRequired" @click="save()">
+            <button v-if="!current" type="button" class="at-btn" @click="step = 'pick'">{{ t('app.back') }}</button>
+            <button type="button" class="at-btn at-btn--primary disabled:opacity-50" :disabled="missingRequired || saving" @click="save()">
+              <Icon v-if="saving" name="lucide:loader-2" class="w-4 h-4 animate-spin" />
               {{ current ? t('contacts.notesSave') : t('contacts.integrationConnect') }}
-            </UButton>
+            </button>
           </div>
         </div>
 
         <!-- Staff mapping of this integration -->
         <div v-else class="space-y-3">
           <p class="text-sm text-gray-500">{{ t('contacts.telephonyOperatorsHint') }}</p>
-          <div v-for="o in operators" :key="o.id" class="flex items-center gap-3 rounded-xl border border-gray-200 dark:border-gray-700 px-3 py-2 text-sm">
+          <div v-for="o in operators" :key="o.id" class="at-row flex items-center gap-3 text-sm">
             <span class="font-mono w-20">{{ o.extension }}</span>
             <UIcon name="lucide:arrow-right" class="w-4 h-4 text-gray-400" />
             <span class="flex-1 truncate">{{ userName(o.userId) }}</span>
@@ -277,11 +287,15 @@ function userName(id: string) {
           <p v-if="!operators.length" class="text-sm text-gray-400">{{ t('contacts.integrationNoStaff') }}</p>
           <div class="flex gap-2 flex-wrap items-center pt-1">
             <UInput v-model="opForm.extension" class="w-36" :placeholder="t('contacts.telephonyExtension')" />
-            <select v-model="opForm.userId" class="flex-1 min-w-44 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2">
-              <option value="">{{ t('contacts.telephonyUser') }}</option>
-              <option v-for="m in namespaceMembers" :key="(m as any).id" :value="(m as any).id">{{ memberDisplayName(m) }}</option>
-            </select>
-            <UButton icon="lucide:plus" :disabled="!opForm.extension.trim() || !opForm.userId" @click="addOperator">{{ t('contacts.addressesAdd') }}</UButton>
+            <USelect
+              v-model="opForm.userId"
+              class="flex-1 min-w-44"
+              :options="memberOptions"
+              option-attribute="label"
+              value-attribute="value"
+              :placeholder="t('contacts.telephonyUser')"
+            />
+            <button type="button" class="pill-outline" :disabled="!opForm.extension.trim() || !opForm.userId" @click="addOperator"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.addressesAdd') }}</button>
           </div>
         </div>
       </template>

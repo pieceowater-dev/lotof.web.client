@@ -155,35 +155,43 @@ async function doMerge() {
 
       <div v-if="suggestions.length" class="space-y-2">
         <div class="text-xs font-medium uppercase tracking-wide text-gray-500">{{ t('contacts.mergeSuggestions') }}</div>
-        <label
+        <button
           v-for="c in suggestions"
           :key="c.client.id"
-          class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
-          :class="{ 'ring-2 ring-emerald-500': selected.has(c.client.id) }"
+          type="button"
+          class="at-row flex w-full items-center gap-3 text-left transition"
+          :class="selected.has(c.client.id) ? 'ring-2 ring-blue-500/60 !bg-blue-500/5' : ''"
+          @click="toggle(c)"
         >
-          <input type="checkbox" :checked="selected.has(c.client.id)" @change="toggle(c)">
+          <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" :class="selected.has(c.client.id) ? 'bg-gradient-to-br from-blue-500 to-emerald-500 text-white' : 'ring-1 ring-slate-300 dark:ring-white/20'">
+            <Icon v-if="selected.has(c.client.id)" name="lucide:check" class="h-3 w-3" />
+          </span>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ nameOf(c) }}</div>
             <div class="text-xs text-gray-500 truncate">{{ phonesOf(c) }}</div>
           </div>
-        </label>
+        </button>
       </div>
 
       <div class="space-y-2">
         <UInput v-model="search" size="sm" icon="lucide:search" :placeholder="t('contacts.mergeSearch')" />
         <div v-if="searching" class="text-xs text-gray-500">{{ t('common.loading') }}</div>
-        <label
+        <button
           v-for="c in results"
           :key="c.client.id"
-          class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer"
-          :class="{ 'ring-2 ring-emerald-500': selected.has(c.client.id) }"
+          type="button"
+          class="at-row flex w-full items-center gap-3 text-left transition"
+          :class="selected.has(c.client.id) ? 'ring-2 ring-blue-500/60 !bg-blue-500/5' : ''"
+          @click="toggle(c)"
         >
-          <input type="checkbox" :checked="selected.has(c.client.id)" @change="toggle(c)">
+          <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full" :class="selected.has(c.client.id) ? 'bg-gradient-to-br from-blue-500 to-emerald-500 text-white' : 'ring-1 ring-slate-300 dark:ring-white/20'">
+            <Icon v-if="selected.has(c.client.id)" name="lucide:check" class="h-3 w-3" />
+          </span>
           <div class="min-w-0">
             <div class="text-sm font-medium truncate">{{ nameOf(c) }}</div>
             <div class="text-xs text-gray-500 truncate">{{ phonesOf(c) }}</div>
           </div>
-        </label>
+        </button>
       </div>
 
       <div v-if="confirming" class="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">

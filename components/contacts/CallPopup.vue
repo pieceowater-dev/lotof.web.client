@@ -12,6 +12,7 @@ import CallWidget from '@/components/contacts/CallWidget.vue';
 const route = useRoute();
 const { ctx } = useCrmAuth();
 
+const tick = useState<number>('call-events-tick', () => 0);
 const nsSlug = computed(() => (route.params.namespace as string) || '');
 const cards = ref<Record<string, CallCardEvent>>({});
 let dispose: (() => void) | null = null;
@@ -25,6 +26,7 @@ function dismiss(id: string) {
 }
 
 function onEvent(ev: CallCardEvent) {
+  tick.value++;
   const id = ev.call.id;
   // A finished call closes its card after a moment (also when another operator took it).
   if (!ev.call.inProgress && ev.call.status) {

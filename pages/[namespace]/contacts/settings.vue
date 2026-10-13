@@ -138,22 +138,21 @@ onMounted(async () => {
       v-else
       class="flex-1 flex flex-col min-h-0 gap-4"
     >
-      <!-- Tabs -->
-      <div class="flex-shrink-0 -mx-1 px-1 overflow-x-auto">
-        <div class="inline-flex gap-1 p-1 rounded-full bg-gray-100 dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/70" role="tablist">
+      <!-- Tabs: the same segmented pill group as Goods / A-Trace settings (DESIGN.md §10a) -->
+      <div class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
+        <div class="at-seg" role="tablist">
           <button
             v-for="tb in tabs"
             :key="tb.key"
+            type="button"
             role="tab"
             :aria-selected="activeTab === tb.key"
-            class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all"
-            :class="activeTab === tb.key
-              ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-              : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+            class="at-seg__btn"
+            :class="activeTab === tb.key ? 'at-seg__btn--on' : ''"
             @click="setTab(tb.key)"
           >
-            <UIcon :name="tb.icon" class="w-4 h-4" />
-            {{ t(tb.label) }}
+            <Icon :name="tb.icon" class="w-4 h-4 flex-shrink-0" />
+            <span>{{ t(tb.label) }}</span>
           </button>
         </div>
       </div>

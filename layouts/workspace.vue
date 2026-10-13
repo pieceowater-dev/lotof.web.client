@@ -12,6 +12,7 @@
       <AppFooter variant="minimal" class="flex-shrink-0" />
     </main>
     <CallPopup />
+    <CallPlayerWidget />
     <TourGuide />
     <CookieNotice />
   </div>
@@ -20,6 +21,7 @@
 <script lang="ts" setup>
 import AppHeader from '@/components/ui/AppHeader.vue';
 import AppFooter from '@/components/ui/AppFooter.vue';
+import CallPlayerWidget from '@/components/contacts/CallPlayerWidget.vue';
 import CallPopup from '@/components/contacts/CallPopup.vue';
 import TourGuide from '@/components/ui/TourGuide.vue';
 import CookieNotice from '@/components/ui/CookieNotice.vue';

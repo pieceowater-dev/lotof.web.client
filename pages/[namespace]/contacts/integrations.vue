@@ -91,9 +91,9 @@ function adapterTitle(code: string) {
 }
 
 function statusOf(i: TelephonyProviderConfig): { text: string; tone: string } {
-  if (!i.enabled) return { text: t('contacts.integrationStatusOff'), tone: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300' };
-  if (!i.lastEventAt) return { text: t('contacts.integrationStatusWaiting'), tone: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-200' };
-  return { text: t('contacts.integrationStatusOk'), tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-200' };
+  if (!i.enabled) return { text: t('contacts.integrationStatusOff'), tone: 'bg-slate-100 text-slate-600 dark:bg-white/10 dark:text-slate-300' };
+  if (!i.lastEventAt) return { text: t('contacts.integrationStatusWaiting'), tone: 'bg-amber-100 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300' };
+  return { text: t('contacts.integrationStatusOk'), tone: 'bg-accent-100 text-accent-700 dark:bg-accent-500/20 dark:text-blue-300' };
 }
 
 async function addTemplate() {
@@ -118,12 +118,12 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-5 flex-shrink-0 gap-3">
       <div class="text-left">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">{{ t('contacts.integrationsTitle') }}</h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ nsTitle }}</span>
+        <h1 class="at-title !text-2xl sm:!text-3xl">{{ t('contacts.integrationsTitle') }}</h1>
+        <p class="at-sub">{{ nsTitle }}</p>
       </div>
       <div class="flex gap-2">
-        <UButton icon="lucide:plus" size="sm" color="primary" variant="soft" :disabled="loading || error" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
-        <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" @click="goBack">{{ t('app.back') }}</UButton>
+        <button type="button" class="at-btn at-btn--primary" :disabled="loading || error" @click="connect"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.integrationConnect') }}</button>
+        <button type="button" class="at-btn at-btn--blue" @click="goBack"><Icon name="lucide:arrow-left" class="w-4 h-4" />{{ t('app.back') }}</button>
       </div>
     </div>
 
@@ -138,20 +138,18 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
           <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('contacts.telephonyHint') }}</p>
         </div>
 
-        <div v-if="!integrations.length" class="at-panel flex flex-col items-center text-center gap-3 py-10">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center">
-            <UIcon name="lucide:phone-incoming" class="w-7 h-7" />
-          </div>
-          <h3 class="text-lg font-semibold">{{ t('contacts.integrationEmptyTitle') }}</h3>
-          <p class="text-sm text-gray-500 max-w-md">{{ t('contacts.integrationEmptyText') }}</p>
-          <UButton color="primary" variant="soft" icon="lucide:plus" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
+        <div v-if="!integrations.length" class="at-empty-box">
+          <div class="at-empty-ico"><Icon name="lucide:phone-incoming" class="w-5 h-5" /></div>
+          <h3 class="at-h2">{{ t('contacts.integrationEmptyTitle') }}</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md">{{ t('contacts.integrationEmptyText') }}</p>
+          <button type="button" class="at-btn at-btn--primary" @click="connect"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.integrationConnect') }}</button>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           <div
             v-for="i in integrations"
             :key="i.id"
-            class="at-panel !p-5 flex flex-col gap-4 cursor-pointer hover:shadow-md transition"
+            class="at-panel !p-5 flex flex-col gap-4 cursor-pointer transition hover:ring-2 hover:ring-blue-400/30"
             @click="edit(i)"
           >
             <div class="flex items-start gap-3">
@@ -162,10 +160,9 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
                 <div class="font-semibold truncate">{{ i.name }}</div>
                 <div class="text-xs text-gray-500">{{ adapterTitle(i.provider) }}</div>
               </div>
-              <label class="inline-flex items-center cursor-pointer" :title="t('contacts.integrationEnabledLabel')" @click.stop>
-                <input type="checkbox" class="sr-only peer" :checked="i.enabled" @change="toggle(i)">
-                <span class="w-9 h-5 rounded-full bg-gray-300 dark:bg-gray-600 peer-checked:bg-emerald-500 relative transition after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-4 after:h-4 after:bg-white after:rounded-full after:transition peer-checked:after:translate-x-4" />
-              </label>
+              <span :title="t('contacts.integrationEnabledLabel')" @click.stop>
+                <UToggle :model-value="i.enabled" @update:model-value="toggle(i)" />
+              </span>
             </div>
             <div class="flex items-center gap-2 flex-wrap text-xs">
               <span class="px-2 py-0.5 rounded-full font-medium" :class="statusOf(i).tone">{{ statusOf(i).text }}</span>
@@ -173,13 +170,6 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
             </div>
           </div>
 
-          <button
-            class="rounded-[2rem] border-2 border-dashed border-gray-300 dark:border-gray-600 min-h-[8.5rem] flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-emerald-600 hover:border-emerald-400 transition"
-            @click="connect"
-          >
-            <UIcon name="lucide:plus" class="w-6 h-6" />
-            <span class="text-sm font-medium">{{ t('contacts.integrationConnect') }}</span>
-          </button>
         </div>
       </section>
 
@@ -190,7 +180,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
           <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('contacts.integrationTemplatesHint') }}</p>
         </div>
         <div class="flex flex-wrap gap-2">
-          <span v-for="tpl in templates" :key="tpl.id" class="inline-flex items-center gap-1.5 text-sm rounded-full bg-gray-100 dark:bg-gray-700 px-3 py-1.5">
+          <span v-for="tpl in templates" :key="tpl.id" class="at-chip !py-1.5 !text-sm">
             {{ tpl.text }}
             <button class="text-gray-400 hover:text-red-600" @click="removeTemplate(tpl.id)"><UIcon name="lucide:x" class="w-3.5 h-3.5" /></button>
           </span>
@@ -198,7 +188,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
         </div>
         <div class="flex gap-2 max-w-xl">
           <UInput v-model="newTemplate" class="flex-1" :placeholder="t('contacts.telephonyTemplatePlaceholder')" @keyup.enter="addTemplate" />
-          <UButton icon="lucide:plus" :disabled="!newTemplate.trim()" @click="addTemplate">{{ t('contacts.addressesAdd') }}</UButton>
+          <button type="button" class="pill-outline" :disabled="!newTemplate.trim()" @click="addTemplate"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.addressesAdd') }}</button>
         </div>
       </section>
     </div>

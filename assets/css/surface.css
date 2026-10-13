@@ -840,3 +840,17 @@ button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(
   0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
   100% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
 }
+
+/* ---- Call player widget (components/contacts/CallPlayerWidget.vue): teleported → global ---- */
+.cp-icon { display: inline-flex; height: 2rem; width: 2rem; align-items: center; justify-content: center; border-radius: 9999px; color: #475569; background: rgba(15, 23, 42, 0.05); transition: background 0.15s, transform 0.2s cubic-bezier(0.32, 0.72, 0, 1); }
+.cp-icon:hover { background: rgba(15, 23, 42, 0.1); }
+.cp-icon:active { transform: scale(0.94); }
+.dark .cp-icon { color: #d4d4d4; background: rgba(255, 255, 255, 0.08); }
+.dark .cp-icon:hover { background: rgba(255, 255, 255, 0.14); }
+.cp-play { display: inline-flex; height: 2.75rem; width: 2.75rem; align-items: center; justify-content: center; border-radius: 9999px; color: #fff; background-image: linear-gradient(135deg, #2563eb, #10b981); box-shadow: 0 12px 24px -12px rgba(37, 99, 235, 0.7); transition: transform 0.2s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.2s; }
+.cp-play:hover { transform: translateY(-1px); }
+.cp-play:active { transform: scale(0.95); }
+.cp-range { -webkit-appearance: none; appearance: none; height: 0.35rem; border-radius: 9999px; outline: none; cursor: pointer; background: linear-gradient(90deg, #2563eb, #10b981) 0 / var(--p, 0%) 100% no-repeat, rgba(15, 23, 42, 0.12); }
+.dark .cp-range { background: linear-gradient(90deg, #2563eb, #10b981) 0 / var(--p, 0%) 100% no-repeat, rgba(255, 255, 255, 0.16); }
+.cp-range::-webkit-slider-thumb { -webkit-appearance: none; height: 0.95rem; width: 0.95rem; border-radius: 9999px; background: #fff; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35); }
+.cp-range::-moz-range-thumb { height: 0.95rem; width: 0.95rem; border: 0; border-radius: 9999px; background: #fff; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35); }

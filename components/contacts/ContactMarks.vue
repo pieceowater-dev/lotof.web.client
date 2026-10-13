@@ -40,10 +40,10 @@ async function save(next: ClientMarks) {
 const setRating = (n: number) => save({ ...state.value, rating: state.value.rating === n ? 0 : n });
 const toggle = (k: 'isSupplier' | 'isProblematic' | 'isVip') => save({ ...state.value, [k]: !state.value[k] });
 
-const chips: Array<{ key: 'isSupplier' | 'isProblematic' | 'isVip'; label: string; on: string }> = [
-  { key: 'isSupplier', label: 'markSupplier', on: 'bg-sky-100 text-sky-700 border-sky-300 dark:bg-sky-900/40 dark:text-sky-200 dark:border-sky-700' },
-  { key: 'isVip', label: 'markVip', on: 'bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/40 dark:text-amber-200 dark:border-amber-700' },
-  { key: 'isProblematic', label: 'markProblematic', on: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/40 dark:text-red-200 dark:border-red-700' },
+const chips: Array<{ key: 'isSupplier' | 'isProblematic' | 'isVip'; label: string; icon: string }> = [
+  { key: 'isSupplier', label: 'markSupplier', icon: 'lucide:truck' },
+  { key: 'isVip', label: 'markVip', icon: 'lucide:crown' },
+  { key: 'isProblematic', label: 'markProblematic', icon: 'lucide:flag' },
 ];
 </script>
 
@@ -58,12 +58,13 @@ const chips: Array<{ key: 'isSupplier' | 'isProblematic' | 'isVip'; label: strin
       <button
         v-for="c in chips"
         :key="c.key"
+        type="button"
         :disabled="saving"
-        class="text-xs px-2.5 py-1 rounded-full border transition-colors"
-        :class="state[c.key] ? c.on : 'border-gray-300 text-gray-500 dark:border-gray-600 dark:text-gray-400'"
+        class="pill-filter"
+        :class="state[c.key] ? (c.key === 'isProblematic' ? 'pill-filter--rose' : 'pill-filter--active') : ''"
         @click="toggle(c.key)"
       >
-        {{ t(`contacts.${c.label}`) }}
+        <Icon :name="c.icon" class="w-3.5 h-3.5" />{{ t(`contacts.${c.label}`) }}
       </button>
     </div>
     <span class="text-[11px] text-gray-400">{{ t('contacts.marksHint') }}</span>

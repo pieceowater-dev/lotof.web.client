@@ -7,6 +7,8 @@ import { listCalls, type Call } from '@/api/contacts/telephony';
 import CallRecord from '@/components/contacts/CallRecord.vue';
 
 const props = defineProps<{ clientId?: string }>();
+const emit = defineEmits<{ (e: 'loaded', calls: Call[]): void }>();
+const tick = useState<number>('call-events-tick', () => 0);
 const { t } = useI18n();
 const { ctx } = useCrmAuth();
 
@@ -19,7 +21,8 @@ async function load() {
   if (!c) return;
   loading.value = true;
   try {
-    calls.value = (await listCalls(c.token, c.ns, { clientId: props.clientId, pagination: { page: 1, length: 'TWENTY' } })).rows;
+    calls.value = (await listCalls(c.token, c.ns, { clientId: props.clientId, pagination: { page: 1, length: 'FIFTY' } })).rows;
+    emit('loaded', calls.value);
   } catch (e) {
     logError('Failed to load calls:', e);
   } finally {
@@ -29,6 +32,8 @@ async function load() {
 
 onMounted(load);
 watch(() => props.clientId, load);
+// A call event of this namespace arrived (see CallPopup): refresh the list.
+watch(tick, load);
 </script>
 
 <template>

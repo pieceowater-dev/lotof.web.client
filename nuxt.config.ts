@@ -326,6 +326,7 @@ export default defineNuxtConfig({
             "style-src 'self' 'unsafe-inline'; " +
             "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
             "font-src 'self' data:; " +
+            "media-src 'self' https: blob:; " +
             "connect-src 'self' wss: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
             "frame-ancestors 'none'; " +
             "base-uri 'self'; " +

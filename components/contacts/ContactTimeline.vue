@@ -3,6 +3,8 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientEvent } from '@/api/contacts/events';
 import { getEventIcon, parseEventPayload } from '@/api/contacts/events';
+import type { Call } from '@/api/contacts/telephony';
+import CallRecord from '@/components/contacts/CallRecord.vue';
 
 interface Props {
   events: ClientEvent[];
@@ -11,6 +13,8 @@ interface Props {
   loading?: boolean;
   hasMore?: boolean;
   loadingMore?: boolean;
+  /** The client's calls; rows of call events show their live data and a player. */
+  calls?: Call[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -19,6 +23,7 @@ const props = withDefaults(defineProps<Props>(), {
   loadingMore: false,
   tagNameById: () => ({}),
   dynamicFieldNameById: () => ({}),
+  calls: () => [],
 });
 
 const emit = defineEmits<{
@@ -218,6 +223,7 @@ type TimelineItem = {
   icon: string;
   title: string;
   changes: Array<{ key: string; label?: string; before?: any; after?: any }>;
+  callId?: string;
 };
 
 type TimelineChange = { key: string; label?: string; before?: any; after?: any };
@@ -228,15 +234,28 @@ type TimelineGroup = {
   items: TimelineItem[];
 };
 
+const callById = computed(() => new Map((props.calls || []).map(c => [c.id, c])));
+
 const timelineItems = computed<TimelineItem[]>(() => {
   return (props.events || [])
     .slice()
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .map((event) => {
+    .map((event): TimelineItem | null => {
       const payload = parseEventPayload(event.payload);
       const eventName = String(payload.name || event.eventType || '').toLowerCase();
       if (hiddenTimelineEvents.has(eventName)) {
         return null;
+      }
+
+      if (eventName === 'call_recorded') {
+        return {
+          id: event.id,
+          createdAt: event.createdAt,
+          icon: getEventIcon(eventName),
+          title: getTimelineEventTitle(eventName),
+          changes: [],
+          callId: String((payload as any).entity_id || ''),
+        };
       }
 
       if (eventName === 'client_created') {
@@ -627,6 +646,19 @@ function formatFieldLabel(rawKey: string): string {
                   </p>
                   <p class="text-xs text-gray-500 dark:text-gray-400">
                     {{ formatDate(item.createdAt) }}
+                  </p>
+                </div>
+
+                <div
+                  v-if="item.callId && callById.get(item.callId)"
+                  class="mt-2 space-y-1"
+                >
+                  <CallRecord :call="callById.get(item.callId)!" />
+                  <p
+                    v-if="callById.get(item.callId)!.comment"
+                    class="text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words"
+                  >
+                    {{ callById.get(item.callId)!.comment }}
                   </p>
                 </div>
 

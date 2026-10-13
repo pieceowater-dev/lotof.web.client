@@ -144,10 +144,9 @@ function fmt(d: string) {
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white flex-1">
         {{ t('contacts.notesTitle') }}
       </h2>
-      <label class="text-xs text-gray-500 flex items-center gap-1 cursor-pointer">
-        <input v-model="showDeleted" type="checkbox">
-        {{ t('contacts.notesShowDeleted') }}
-      </label>
+      <button type="button" class="pill-filter" :class="showDeleted ? 'pill-filter--active' : ''" @click="showDeleted = !showDeleted">
+        <Icon name="lucide:trash-2" class="w-3.5 h-3.5" />{{ t('contacts.notesShowDeleted') }}
+      </button>
     </div>
 
     <div class="px-5 py-4 space-y-3">
@@ -167,13 +166,10 @@ function fmt(d: string) {
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="onPick">
-          <UButton size="xs" color="gray" variant="soft" icon="lucide:image-plus" @click="fileInput?.click()">
-            {{ t('contacts.notesAttach') }}
-          </UButton>
-          <label class="text-xs text-gray-600 dark:text-gray-300 flex items-center gap-1 cursor-pointer">
-            <input v-model="important" type="checkbox">
-            {{ t('contacts.notesMarkImportant') }}
-          </label>
+          <button type="button" class="pill-filter" @click="fileInput?.click()"><Icon name="lucide:image-plus" class="w-3.5 h-3.5" />{{ t('contacts.notesAttach') }}</button>
+          <button type="button" class="pill-filter" :class="important ? 'pill-filter--active' : ''" @click="important = !important">
+            <Icon name="lucide:alert-triangle" class="w-3.5 h-3.5" />{{ t('contacts.notesMarkImportant') }}
+          </button>
           <UButton
             class="ml-auto"
             size="xs"
