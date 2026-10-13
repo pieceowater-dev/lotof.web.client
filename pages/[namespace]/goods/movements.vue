@@ -22,6 +22,7 @@ import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/p
 import type { GoodsReceipt } from '@/api/goods/goodsreceipt';
 import type { GoodsSupplierReturn } from '@/api/goods/supplierreturn';
 import { useConfirm } from '@/composables/useConfirm';
+import { formatDateTime, formatDateOnly } from '@/utils/formatDate';
 import type { GoodsStockTransfer, GoodsStockTransferStatus } from '@/api/goods/stocktransfer';
 import type { GoodsWriteOff, GoodsWriteOffReason } from '@/api/goods/writeoff';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
@@ -29,7 +30,7 @@ import type { GoodsSupplier } from '@/api/goods/supplier';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsUnit } from '@/api/goods/unit';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
@@ -61,19 +62,19 @@ const supplierName = (id?: string | null) => (id && suppliers.value.find((s) => 
 const goodName = (id: string) => goods.value.find((g) => g.id === id)?.name || t('goods.unknownItem');
 const unitSymbol = (id: string) => units.value.find((u) => u.id === id)?.symbol || '';
 
-const REASON_LABELS: Record<GoodsWriteOffReason, string> = { DAMAGE: t('goods.reasonDamage'), EXPIRED: t('goods.reasonExpired'), LOST: t('goods.reasonLost'), OTHER: t('goods.reasonOther') };
-const REASON_OPTIONS_LABELED = computed(() => (['DAMAGE', 'EXPIRED', 'LOST', 'OTHER'] as GoodsWriteOffReason[]).map((value) => ({ label: REASON_LABELS[value], value })));
+const REASON_LABELS = computed<Record<GoodsWriteOffReason, string>>(() => ({ DAMAGE: t('goods.reasonDamage'), EXPIRED: t('goods.reasonExpired'), LOST: t('goods.reasonLost'), OTHER: t('goods.reasonOther') }));
+const REASON_OPTIONS_LABELED = computed(() => (['DAMAGE', 'EXPIRED', 'LOST', 'OTHER'] as GoodsWriteOffReason[]).map((value) => ({ label: REASON_LABELS.value[value], value })));
 
-const PO_STATUS_LABELS: Record<GoodsPurchaseOrderStatus, string> = {
+const PO_STATUS_LABELS = computed<Record<GoodsPurchaseOrderStatus, string>>(() => ({
   DRAFT: t('goods.poStatusDraft'), SENT: t('goods.poStatusSent'), PARTIALLY_RECEIVED: t('goods.poStatusPartiallyReceived'),
   RECEIVED: t('goods.poStatusReceived'), CANCELLED: t('goods.poStatusCancelled'),
-};
+}));
 const PO_STATUS_COLORS: Record<GoodsPurchaseOrderStatus, string> = {
   DRAFT: 'gray', SENT: 'primary', PARTIALLY_RECEIVED: 'amber', RECEIVED: 'green', CANCELLED: 'red',
 };
-const TRANSFER_STATUS_LABELS: Record<GoodsStockTransferStatus, string> = {
+const TRANSFER_STATUS_LABELS = computed<Record<GoodsStockTransferStatus, string>>(() => ({
   DRAFT: t('goods.transferStatusDraft'), IN_TRANSIT: t('goods.transferStatusInTransit'), COMPLETED: t('goods.transferStatusCompleted'), CANCELLED: t('goods.transferStatusCancelled'),
-};
+}));
 const TRANSFER_STATUS_COLORS: Record<GoodsStockTransferStatus, string> = {
   DRAFT: 'gray', IN_TRANSIT: 'primary', COMPLETED: 'green', CANCELLED: 'red',
 };
@@ -84,8 +85,8 @@ const TRANSFER_STATUS_COLORS: Record<GoodsStockTransferStatus, string> = {
 // labeled/colored from the right map.
 function rowStatusLabel(row: { kind: MovementKind; status: string | null }): string {
   if (!row.status) return '';
-  if (row.kind === 'purchase') return PO_STATUS_LABELS[row.status as GoodsPurchaseOrderStatus] || row.status;
-  if (row.kind === 'transfer') return TRANSFER_STATUS_LABELS[row.status as GoodsStockTransferStatus] || row.status;
+  if (row.kind === 'purchase') return PO_STATUS_LABELS.value[row.status as GoodsPurchaseOrderStatus] || row.status;
+  if (row.kind === 'transfer') return TRANSFER_STATUS_LABELS.value[row.status as GoodsStockTransferStatus] || row.status;
   if (row.status === 'CANCELLED') return t('goods.cancelledBadge');
   return row.status;
 }
@@ -156,7 +157,7 @@ const allRows = computed<MovementRow[]>(() => {
     ...receipts.value.map((r) => ({ kind: 'receipt' as const, id: r.id, number: r.number, summary: supplierName(r.supplierId), status: r.cancelledAt ? 'CANCELLED' : null, date: r.createdAt, itemsCount: r.items.length })),
     ...transfers.value.map((tr) => ({ kind: 'transfer' as const, id: tr.id, number: tr.number, summary: `${warehouseName(tr.fromWarehouseId)} → ${warehouseName(tr.toWarehouseId)}`, status: tr.status, date: tr.createdAt, itemsCount: tr.items.length })),
     ...supplierReturns.value.map((sr) => ({ kind: 'supplierReturn' as const, id: sr.id, number: sr.number, summary: supplierName(sr.supplierId), status: sr.cancelledAt ? 'CANCELLED' : null, date: sr.createdAt, itemsCount: sr.items.length })),
-    ...writeOffs.value.map((wo) => ({ kind: 'writeoff' as const, id: wo.id, number: wo.number, summary: REASON_LABELS[wo.reason], status: wo.cancelledAt ? 'CANCELLED' : null, date: wo.createdAt, itemsCount: wo.items.length })),
+    ...writeOffs.value.map((wo) => ({ kind: 'writeoff' as const, id: wo.id, number: wo.number, summary: REASON_LABELS.value[wo.reason], status: wo.cancelledAt ? 'CANCELLED' : null, date: wo.createdAt, itemsCount: wo.items.length })),
   ];
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1));
 });
@@ -171,14 +172,13 @@ const rows = computed(() => {
 const typeLabel = (kind: MovementKind) => t(TYPE_TABS.find((x) => x.key === kind)!.labelKey);
 const typeIcon = (kind: MovementKind) => TYPE_TABS.find((x) => x.key === kind)!.icon;
 
-const columns = [
+const columns = computed(() => [
   { key: 'kind', label: t('goods.type') },
   { key: 'number', label: '#' },
   { key: 'summary', label: t('goods.supplier') },
   { key: 'status', label: t('common.status') },
   { key: 'date', label: t('goods.date') },
-];
-
+]);
 // --- Detail drill-down ---
 const showDetail = ref(false);
 const detailRow = ref<MovementRow | null>(null);
@@ -200,7 +200,7 @@ function openDetail(row: MovementRow) {
   showDetail.value = true;
 }
 
-const PO_STATUS_OPTIONS = computed(() => (['DRAFT', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'] as GoodsPurchaseOrderStatus[]).map((value) => ({ label: PO_STATUS_LABELS[value], value })));
+const PO_STATUS_OPTIONS = computed(() => (['DRAFT', 'SENT', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'] as GoodsPurchaseOrderStatus[]).map((value) => ({ label: PO_STATUS_LABELS.value[value], value })));
 const busyAction = ref(false);
 
 async function updatePoStatus(status: GoodsPurchaseOrderStatus) {
@@ -322,7 +322,7 @@ const returnableReceipts = computed(() => receipts.value.filter((r) => !form.war
 const returnReceipt = computed(() => receipts.value.find((r) => r.id === returnReceiptId.value) || null);
 const returnLines = computed(() => (returnReceipt.value?.items || []).map((i) => ({ goodId: i.goodId, unitId: i.unitId, received: i.quantity, qty: Number(returnQty[i.goodId] || 0) })));
 watch(returnReceiptId, () => { for (const k of Object.keys(returnQty)) delete returnQty[k]; });
-const receiptOptions = computed(() => returnableReceipts.value.map((r) => ({ label: `${r.number || r.id.slice(0, 8)} · ${supplierName(r.supplierId)} · ${r.createdAt.slice(0, 10)}`, value: r.id })));
+const receiptOptions = computed(() => returnableReceipts.value.map((r) => ({ label: `${r.number || r.id.slice(0, 8)} · ${supplierName(r.supplierId)} · ${formatDateOnly(r.createdAt, locale)}`, value: r.id })));
 
 function resetCreateForm() {
   // Defaults to the first warehouse instead of forcing an empty selection --
@@ -537,6 +537,7 @@ onMounted(loadAll);
             {{ row.number }}
           </button>
         </template>
+        <template #date-data="{ row }"><span class="whitespace-nowrap text-gray-500 dark:text-gray-400">{{ formatDateTime(row.date, locale) }}</span></template>
         <template #status-data="{ row }">
           <UBadge v-if="row.status" :color="rowStatusColor(row)" variant="soft" size="xs">{{ rowStatusLabel(row) }}</UBadge>
           <span v-else class="text-gray-300 dark:text-gray-700">—</span>
@@ -558,7 +559,7 @@ onMounted(loadAll);
         </template>
 
         <div v-if="detailRow && detailDoc" class="space-y-4">
-          <div class="text-sm text-gray-500 dark:text-gray-400">{{ detailRow.summary }} · {{ detailRow.date }}</div>
+          <div class="text-sm text-gray-500 dark:text-gray-400">{{ detailRow.summary }} · {{ formatDateTime(detailRow.date, locale) }}</div>
 
           <!-- Purchase order status -->
           <div v-if="detailRow.kind === 'purchase'">
@@ -578,7 +579,7 @@ onMounted(loadAll);
 
           <!-- Posted documents are cancelled, never deleted: the stock goes back and the document stays in the history -->
           <div v-if="detailRow && CANCELLABLE.includes(detailRow.kind)" class="flex items-center gap-2">
-            <UBadge v-if="detailCancelledAt" color="red" variant="soft" size="xs">{{ t('goods.cancelledBadge') }} · {{ detailCancelledAt.slice(0, 10) }}</UBadge>
+            <UBadge v-if="detailCancelledAt" color="red" variant="soft" size="xs">{{ t('goods.cancelledBadge') }} · {{ formatDateOnly(detailCancelledAt, locale) }}</UBadge>
             <UButton v-else size="sm" color="red" variant="soft" icon="lucide:undo-2" :loading="busyAction" @click="cancelDocument">{{ t('goods.cancelDocument') }}</UButton>
           </div>
 

@@ -68,13 +68,13 @@ async function loadAll() {
   }
 }
 
-const goodColumns = [
+const goodColumns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'sku', label: t('goods.goodSku') },
   { key: 'salePriceCents', label: t('goods.salePrice') },
   { key: 'isActive', label: t('common.status') },
   { key: 'actions', label: '' },
-];
+]);
 const goodSearchQuery = ref('');
 const goodRows = computed(() => {
   const q = goodSearchQuery.value.trim().toLowerCase();
@@ -83,18 +83,16 @@ const goodRows = computed(() => {
 });
 const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 
-const categoryColumns = [
+const categoryColumns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'sortOrder', label: '#' },
   { key: 'actions', label: '' },
-];
-
-const unitColumns = [
+]);
+const unitColumns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'symbol', label: t('goods.unitSymbol') },
   { key: 'actions', label: '' },
-];
-
+]);
 const showImport = ref(false);
 const warehouses = ref<GoodsWarehouse[]>([]);
 

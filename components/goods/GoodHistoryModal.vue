@@ -3,6 +3,7 @@ import { atModalUi, atCardUi } from '@/utils/atraceUi';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsStockMovement } from '@/api/goods/stock';
+import { formatDateTime } from '@/utils/formatDate';
 
 // The history of one good: what moved, by how much, the balance before and
 // after, and which document it came from.
@@ -15,7 +16,7 @@ const props = defineProps<{
   getToken: () => Promise<string>;
 }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: boolean): void }>();
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 const rows = ref<GoodsStockMovement[]>([]);
 const loading = ref(false);
@@ -42,7 +43,7 @@ const TYPE_KEYS: Record<string, string> = {
 };
 const typeLabel = (type: string) => (TYPE_KEYS[type] ? t(TYPE_KEYS[type]) : type);
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
-const when = (iso: string) => new Date(iso).toLocaleString();
+const when = (iso: string) => formatDateTime(iso, locale.value);
 </script>
 
 <template>

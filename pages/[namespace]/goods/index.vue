@@ -139,7 +139,7 @@ const rows = computed(() => {
   return list;
 });
 
-const columns = [
+const columns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'sku', label: t('goods.goodSku') },
   { key: 'quantity', label: t('goods.quantity') },
@@ -147,7 +147,7 @@ const columns = [
   { key: 'available', label: t('goods.available') },
   { key: 'costCents', label: t('goods.costPrice') },
   { key: 'valueCents', label: t('goods.stockValue') },
-];
+]);
 
 async function exportStock() {
   const { exportStockToXlsx } = await import('@/utils/exportStock');

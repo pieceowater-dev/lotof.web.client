@@ -170,15 +170,14 @@ const kpiCards = computed<KpiCard[]>(() => {
   ];
 });
 
-const insightMeta: Record<AnalyticsInsightKind, { icon: string; color: string; label: string }> = {
+const insightMeta = computed<Record<AnalyticsInsightKind, { icon: string; color: string; label: string }>>(() => ({
   'no-show': { icon: 'i-heroicons-user-minus', color: 'text-red-600 dark:text-red-400', label: t('app.analyticsFlagNoShow') || 'Не отмечается' },
   'no-checkout': { icon: 'i-heroicons-arrow-right-on-rectangle', color: 'text-amber-600 dark:text-amber-400', label: t('app.analyticsFlagNoCheckout') || 'Не закрывает смену' },
   'frequently-late': { icon: 'i-heroicons-clock', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagLate') || 'Часто опаздывает' },
   'frequently-early': { icon: 'i-heroicons-arrow-left-on-rectangle', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagEarly') || 'Часто уходит раньше' },
   'low-attendance': { icon: 'i-heroicons-chart-bar', color: 'text-orange-600 dark:text-orange-400', label: t('app.analyticsFlagLowAttendance') || 'Низкая посещаемость' },
   'config-hint': { icon: 'i-heroicons-information-circle', color: 'text-blue-600 dark:text-blue-400', label: t('app.analyticsFlagConfig') || 'Настройка' },
-};
-</script>
+}));</script>
 
 <template>
   <div class="h-full flex flex-col overflow-hidden">

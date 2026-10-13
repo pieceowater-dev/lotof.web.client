@@ -47,11 +47,11 @@ const bookings = ref<PlansBooking[]>([]);
 const serviceNames = ref<Record<string, string>>({});
 const locationHours = ref<PlansWorkingHours[]>([]);
 
-const VIEWS: { key: CalView; label: string }[] = [
+const VIEWS = computed<{ key: CalView; label: string }[]>(() => [
   { key: 'day', label: t('plans.viewDay') || 'День' },
   { key: 'week', label: t('plans.viewWeek') || 'Неделя' },
   { key: 'month', label: t('plans.viewMonth') || 'Месяц' },
-];
+]);
 const view = ref<CalView>(['day', 'week', 'month'].includes(route.query.view as string) ? route.query.view as CalView : 'week');
 const selectedDate = ref<string>(ymd(new Date()));
 const selectedLocationId = ref<string>('');

@@ -41,24 +41,22 @@ const columns = computed(() => ([
   { key: 'actions', label: t('common.actions') },
 ]));
 
-const typeLabel: Record<string, string> = {
+const typeLabel = computed<Record<string, string>>(() => ({
   day_off: t('app.leaveTypeDayOff') || 'Отгул',
   vacation: t('app.leaveTypeVacation') || 'Отпуск',
-};
-
+}));
 const statusColor: Record<string, string> = {
   pending: 'amber',
   approved: 'emerald',
   rejected: 'red',
   cancelled: 'gray',
 };
-const statusLabel: Record<string, string> = {
+const statusLabel = computed<Record<string, string>>(() => ({
   pending: t('app.coveragePending') || 'На согласовании',
   approved: t('app.coverageApproved') || 'Согласовано',
   rejected: t('app.coverageRejected') || 'Отклонено',
   cancelled: t('app.coverageCancelled') || 'Отменено',
-};
-
+}));
 async function load() {
   loading.value = true;
   error.value = null;

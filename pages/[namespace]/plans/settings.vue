@@ -52,14 +52,14 @@ const CURRENCY_OPTIONS = [
 ];
 
 type TabKey = 'staff' | 'locations' | 'public' | 'brand' | 'rules';
-const TABS: { key: TabKey; label: string; icon: string }[] = [
+const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'staff', label: t('plans.staffTab') || 'Сотрудники', icon: 'lucide:users' },
   { key: 'locations', label: t('plans.locations') || 'Точки', icon: 'lucide:map-pin' },
   { key: 'brand', label: t('plans.brandTab') || 'Оформление', icon: 'lucide:palette' },
   { key: 'rules', label: t('plans.rulesTab') || 'Правила записи', icon: 'lucide:sliders-horizontal' },
   { key: 'public', label: t('plans.publicPage') || 'Публичная страница', icon: 'lucide:link' },
-];
-const activeTab = ref<TabKey>((TABS.some(x => x.key === route.query.tab) ? route.query.tab : 'staff') as TabKey);
+]);
+const activeTab = ref<TabKey>((TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'staff') as TabKey);
 watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { replace: true }));
 
 async function loadAll() {

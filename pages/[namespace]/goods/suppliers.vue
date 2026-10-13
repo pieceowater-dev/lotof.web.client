@@ -65,13 +65,12 @@ async function loadAll() {
   }
 }
 
-const columns = [
+const columns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'phone', label: t('goods.phone') },
   { key: 'contactPerson', label: t('goods.contactPerson') },
   { key: 'actions', label: '' },
-];
-
+]);
 // --- Add / edit ---
 const showForm = ref(false);
 const saving = ref(false);

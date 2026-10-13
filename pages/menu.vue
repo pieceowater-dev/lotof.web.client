@@ -31,28 +31,25 @@ useHead({
   link: [{ rel: 'canonical', href: `${siteUrl}/menu` }],
 });
 
-const features = [
+const features = computed(() => [
   { icon: 'lucide:qr-code', title: t('landing.menu.f1Title') || 'Меню по QR', description: t('landing.menu.f1Desc') || 'Гость сканирует код за столом и заказывает сам — без бумажного меню и официанта с блокнотом.' },
   { icon: 'lucide:bell-ring', title: t('landing.menu.f2Title') || 'Заказы в реальном времени', description: t('landing.menu.f2Desc') || 'Новый заказ появляется мгновенно, без обновления страницы.' },
   { icon: 'lucide:monitor', title: t('landing.menu.f3Title') || 'Кухонный дисплей', description: t('landing.menu.f3Desc') || 'Экран для кухни показывает очередь заказов по стадиям готовки.' },
   { icon: 'lucide:building-2', title: t('landing.menu.f4Title') || 'Несколько филиалов', description: t('landing.menu.f4Desc') || 'Своё меню, персонал и QR-коды на каждую точку сети.' },
   { icon: 'lucide:megaphone', title: t('landing.menu.f5Title') || 'Промо-баннеры и бейджи', description: t('landing.menu.f5Desc') || 'Поднимайте продажи нужных позиций акциями прямо в меню.' },
   { icon: 'lucide:truck', title: t('landing.menu.f6Title') || 'Доставка через Issues', description: t('landing.menu.f6Desc') || 'Готовый заказ сам становится задачей курьеру в lota Issues.' },
-];
-
-const steps = [
+]);
+const steps = computed(() => [
   { title: t('landing.menu.s1Title') || 'Соберите меню', description: t('landing.menu.s1Desc') || 'Категории, позиции, цены и фото — за один присест.' },
   { title: t('landing.menu.s2Title') || 'Разместите QR-коды', description: t('landing.menu.s2Desc') || 'Распечатайте и расставьте на столах или витрине.' },
   { title: t('landing.menu.s3Title') || 'Принимайте заказы', description: t('landing.menu.s3Desc') || 'Заказы летят на кухню и в статистику сразу же.' },
-];
-
-const whoFor = [
+]);
+const whoFor = computed(() => [
   t('landing.menu.who1') || 'Кафе и рестораны',
   t('landing.menu.who2') || 'Доставка еды',
   t('landing.menu.who3') || 'Фудтраки',
   t('landing.menu.who4') || 'Сети с несколькими точками',
-];
-</script>
+]);</script>
 
 <template>
   <ProductLanding

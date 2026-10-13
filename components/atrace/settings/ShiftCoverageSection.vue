@@ -47,13 +47,12 @@ const statusColor: Record<string, string> = {
   rejected: 'red',
   cancelled: 'gray',
 };
-const statusLabel: Record<string, string> = {
+const statusLabel = computed<Record<string, string>>(() => ({
   pending: t('app.coveragePending') || 'На согласовании',
   approved: t('app.coverageApproved') || 'Согласовано',
   rejected: t('app.coverageRejected') || 'Отклонено',
   cancelled: t('app.coverageCancelled') || 'Отменено',
-};
-
+}));
 async function load() {
   loading.value = true;
   error.value = null;

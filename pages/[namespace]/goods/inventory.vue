@@ -29,9 +29,9 @@ useHead(() => ({
   title: titleBySlug(nsSlug.value) ? `${t('goods.inventory')} — ${titleBySlug(nsSlug.value)}` : t('goods.inventory'),
 }));
 
-const COUNT_STATUS_LABELS: Record<GoodsInventoryCountStatus, string> = {
+const COUNT_STATUS_LABELS = computed<Record<GoodsInventoryCountStatus, string>>(() => ({
   DRAFT: t('goods.countStatusDraft'), IN_PROGRESS: t('goods.countStatusInProgress'), COMPLETED: t('goods.countStatusCompleted'),
-};
+}));
 const COUNT_STATUS_COLORS: Record<GoodsInventoryCountStatus, any> = { DRAFT: 'gray', IN_PROGRESS: 'amber', COMPLETED: 'green' };
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
@@ -68,12 +68,12 @@ async function loadAll() {
   }
 }
 
-const columns = [
+const columns = computed(() => [
   { key: 'warehouseName', label: t('goods.selectWarehouse') },
   { key: 'status', label: t('common.status') },
   { key: 'progress', label: t('goods.countedQty') },
   { key: 'startedAt', label: t('goods.startCount') },
-];
+]);
 const searchQuery = ref('');
 const rows = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();

@@ -79,12 +79,11 @@ const contactPersonForm = ref({
 // Client status
 const clientStatus = ref<'ACTIVE' | 'ARCHIVED' | 'BLOCKED'>('ACTIVE');
 
-const statusOptions = [
+const statusOptions = computed(() => [
   { value: 'ACTIVE', label: t('contacts.active') },
   { value: 'BLOCKED', label: t('contacts.blocked') },
   { value: 'ARCHIVED', label: t('contacts.archived') },
-];
-
+]);
 function updatePhoneValue(index: number, value: string) {
   phones.value[index] = sanitizePhoneInput(value);
 }

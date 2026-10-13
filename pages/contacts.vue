@@ -31,28 +31,25 @@ useHead({
   link: [{ rel: 'canonical', href: `${siteUrl}/contacts` }],
 });
 
-const features = [
+const features = computed(() => [
   { icon: 'lucide:contact', title: t('landing.contacts.f1Title') || 'Единая карточка клиента', description: t('landing.contacts.f1Desc') || 'Имя, телефон, история и заметки — в одном месте, доступном всей команде.' },
   { icon: 'lucide:gift', title: t('landing.contacts.f2Title') || 'Программы лояльности', description: t('landing.contacts.f2Desc') || 'Бонусы и скидки постоянным клиентам без отдельного сервиса.' },
   { icon: 'lucide:list-plus', title: t('landing.contacts.f3Title') || 'Кастомные поля', description: t('landing.contacts.f3Desc') || 'Добавьте поля под свою специфику — от даты рождения до номера договора.' },
   { icon: 'lucide:history', title: t('landing.contacts.f4Title') || 'История обращений', description: t('landing.contacts.f4Desc') || 'Видно, что и когда обсуждали с клиентом в прошлый раз.' },
   { icon: 'lucide:upload', title: t('landing.contacts.f5Title') || 'Импорт из таблиц', description: t('landing.contacts.f5Desc') || 'Перенесите базу из Excel или Google Таблиц за пару минут.' },
   { icon: 'lucide:puzzle', title: t('landing.contacts.f6Title') || 'Связь с Orders и Issues', description: t('landing.contacts.f6Desc') || 'Одна карточка клиента — и в заказах, и в задачах.' },
-];
-
-const steps = [
+]);
+const steps = computed(() => [
   { title: t('landing.contacts.s1Title') || 'Импортируйте базу', description: t('landing.contacts.s1Desc') || 'Из таблицы или заведите клиентов вручную.' },
   { title: t('landing.contacts.s2Title') || 'Настройте поля', description: t('landing.contacts.s2Desc') || 'Опишите, что важно фиксировать именно у вас.' },
   { title: t('landing.contacts.s3Title') || 'Ведите клиентов', description: t('landing.contacts.s3Desc') || 'Вся история — в одной карточке, а не в трёх чатах.' },
-];
-
-const whoFor = [
+]);
+const whoFor = computed(() => [
   t('landing.contacts.who1') || 'Бизнес',
   t('landing.contacts.who2') || 'Сфера услуг',
   t('landing.contacts.who3') || 'Салоны и клиники',
   t('landing.contacts.who4') || 'Отделы продаж',
-];
-</script>
+]);</script>
 
 <template>
   <ProductLanding

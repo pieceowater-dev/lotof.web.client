@@ -33,12 +33,11 @@ const statusColor: Record<string, string> = {
   approved: 'emerald',
   rejected: 'red',
 };
-const statusLabel: Record<string, string> = {
+const statusLabel = computed<Record<string, string>>(() => ({
   pending: t('app.coveragePending') || 'На согласовании',
   approved: t('app.coverageApproved') || 'Согласовано',
   rejected: t('app.coverageRejected') || 'Отклонено',
-};
-
+}));
 async function load() {
   loading.value = true;
   error.value = null;

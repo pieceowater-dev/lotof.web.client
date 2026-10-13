@@ -559,10 +559,10 @@ function formatCents(cents: number): string {
   return formatMoney(cents / 100, currencyCode.value);
 }
 
-const SALE_STATUS_LABELS: Record<GoodsSaleStatus, string> = {
+const SALE_STATUS_LABELS = computed<Record<GoodsSaleStatus, string>>(() => ({
   OPEN: t('goods.saleStatusOpen'), PAID: t('goods.saleStatusPaid'), VOID: t('goods.saleStatusVoid'),
   REFUNDED: t('goods.saleStatusRefunded'), PARTIALLY_REFUNDED: t('goods.saleStatusPartiallyRefunded'),
-};
+}));
 const SALE_STATUS_COLORS: Record<GoodsSaleStatus, any> = {
   OPEN: 'primary', PAID: 'green', VOID: 'gray', REFUNDED: 'red', PARTIALLY_REFUNDED: 'amber',
 };

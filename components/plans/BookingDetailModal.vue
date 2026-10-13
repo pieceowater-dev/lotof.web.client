@@ -33,13 +33,13 @@ const toast = useToast();
 // bottom sheet, which is why it kept coming out full-width and stretched.)
 const sheetUi = { ...atModalUi, width: 'sm:max-w-lg' };
 
-const STATUS_META: Record<string, { label: string; color: string }> = {
+const STATUS_META = computed<Record<string, { label: string; color: string }>>(() => ({
   NEW: { label: t('plans.statusNew') || 'Новая', color: 'blue' },
   CONFIRMED: { label: t('plans.statusConfirmed') || 'Подтверждена', color: 'primary' },
   COMPLETED: { label: t('plans.statusCompleted') || 'Завершена', color: 'emerald' },
   CANCELLED: { label: t('plans.statusCancelled') || 'Отменена', color: 'red' },
   NO_SHOW: { label: t('plans.statusNoShow') || 'Не пришёл', color: 'amber' },
-};
+}));
 function nextStatuses(s: string): string[] {
   if (s === 'NEW') return ['CONFIRMED', 'CANCELLED'];
   if (s === 'CONFIRMED') return ['COMPLETED', 'NO_SHOW', 'CANCELLED'];

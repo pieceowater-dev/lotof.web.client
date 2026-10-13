@@ -34,7 +34,7 @@ useHead({
   link: [{ rel: 'canonical', href: `${siteUrl}/atrace` }],
 });
 
-const features = [
+const features = computed(() => [
   { icon: 'lucide:qr-code', title: t('landing.atrace.f1Title') || 'QR-отметки', description: t('landing.atrace.f1Desc') || 'Сотрудник сканирует код на точке — приход и уход фиксируются сами.' },
   { icon: 'lucide:calendar-days', title: t('landing.atrace.f2Title') || 'Графики смен', description: t('landing.atrace.f2Desc') || 'Составляйте расписание и сразу видно, кто должен быть на месте.' },
   { icon: 'lucide:wallet', title: t('landing.atrace.f3Title') || 'Зарплата по факту', description: t('landing.atrace.f3Desc') || 'Начисления считаются по реально отработанным часам, а не на глаз.' },
@@ -46,21 +46,18 @@ const features = [
   // a content/publication concept), so it shouldn't be claimed on any
   // landing page, not just the chekalka.kz-specific one.
   { icon: 'lucide:repeat-2', title: t('landing.atrace.f7Title') || 'Отгулы и отпуска', description: t('landing.atrace.f7Desc') || 'Заявки согласуются в системе и сразу учитываются в статистике и зарплате.' },
-];
-
-const steps = [
+]);
+const steps = computed(() => [
   { title: t('landing.atrace.s1Title') || 'Добавьте сотрудников', description: t('landing.atrace.s1Desc') || 'Пригласите команду — им останется только сканировать QR.' },
   { title: t('landing.atrace.s2Title') || 'Разместите QR на точке', description: t('landing.atrace.s2Desc') || 'Один код на вход — печатается за минуту.' },
   { title: t('landing.atrace.s3Title') || 'Смотрите отчёты', description: t('landing.atrace.s3Desc') || 'Часы, опоздания и зарплата считаются автоматически.' },
-];
-
-const whoFor = [
+]);
+const whoFor = computed(() => [
   t('landing.atrace.who1') || 'Розница',
   t('landing.atrace.who2') || 'Общепит',
   t('landing.atrace.who3') || 'Склады',
   t('landing.atrace.who4') || 'Сменный персонал',
-];
-</script>
+]);</script>
 
 <template>
   <ProductLanding

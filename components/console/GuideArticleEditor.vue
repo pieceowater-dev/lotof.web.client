@@ -191,15 +191,14 @@ const LOCALES: Array<{ code: 'Ru' | 'Kk' | 'En'; label: string }> = [
   { code: 'En', label: 'English' },
 ];
 
-const appOptions: Array<{ value: GuideApp; label: string }> = [
+const appOptions = computed<Array<{ value: GuideApp; label: string }>>(() => [
   { value: 'GLOBAL', label: t('guide.appGlobal') },
   { value: 'LANDING', label: t('guide.appLanding') },
   { value: 'ISSUES', label: t('app.tasks') },
   { value: 'MENU', label: t('app.menu') },
   { value: 'CONTACTS', label: t('app.clients') },
   { value: 'ATRACE', label: t('app.attendance') },
-];
-
+]);
 const form = reactive<GuideArticleInput>({
   categoryId: props.initialArticle?.categoryId ?? null,
   app: props.initialArticle?.app ?? 'GLOBAL',

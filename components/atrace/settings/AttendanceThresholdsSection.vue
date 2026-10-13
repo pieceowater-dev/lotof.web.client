@@ -15,12 +15,12 @@ const roundingModel = computed({
   get: () => String(roundingMinutes.value),
   set: (v: string) => { roundingMinutes.value = Number(v) || 0; },
 });
-const roundingOptions = [
+const roundingOptions = computed(() => [
   { value: '0', label: t('app.roundingOff') || 'Без округления' },
   { value: '5', label: '5 ' + (t('app.minShort') || 'мин') },
   { value: '10', label: '10 ' + (t('app.minShort') || 'мин') },
   { value: '15', label: '15 ' + (t('app.minShort') || 'мин') },
-];
+]);
 const loading = ref(false);
 const saving = ref(false);
 const error = ref<string | null>(null);
