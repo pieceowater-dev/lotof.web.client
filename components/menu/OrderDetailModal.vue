@@ -479,6 +479,26 @@ const addingMember = ref(false);
 // assigned — no separate role picker either, since their order role is just
 // their staff role (matches what they can actually do). The current user is
 // pinned first since self-assigning is the most common case.
+const executorOptions = computed(() => [
+  { label: t('menu.executorNone'), value: '' },
+  ...hubMembers.value.filter((m) => staffRoleByUserId.value[m.userId]).map((m) => ({
+    label: memberDisplayNameWithFallback(m, m.email) || (t('menu.unknownMember') || 'Unknown member'),
+    value: m.userId,
+  })),
+]);
+async function setExecutor(item: MenuOrderItem, userId: string) {
+  const prev = item.executorId;
+  item.executorId = userId || null;
+  try {
+    const { menuSetItemExecutor } = await import('@/api/menu/order/extra');
+    await menuSetItemExecutor(await getToken(), nsSlug.value, item.id, userId || null);
+  } catch (e) {
+    item.executorId = prev;
+    logError('[OrderDetailModal] setExecutor failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
+  }
+}
+
 const memberOptions = computed(() => {
   const taken = new Set(members.value.map((m) => m.userId));
   const eligible = hubMembers.value.filter((m) => !taken.has(m.userId) && staffRoleByUserId.value[m.userId]);
@@ -1473,6 +1493,19 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                       <button type="button" class="text-left hover:text-primary-600 dark:hover:text-primary-300 hover:underline" @click="openProductDetail(i)">
                         {{ i.name }}
                       </button>
+                      <div v-if="i.itemKind === 'WORK'" class="mt-1 max-w-[14rem]">
+                        <USelectMenu
+                          :model-value="i.executorId || ''"
+                          size="xs"
+                          :options="executorOptions"
+                          value-attribute="value"
+                          option-attribute="label"
+                          :placeholder="t('menu.executorNone')"
+                          :ui="{ rounded: 'rounded-lg' }"
+                          :popper="{ strategy: 'fixed' }"
+                          @update:model-value="(v: string) => setExecutor(i, v)"
+                        />
+                      </div>
                       <div v-if="i.modifiers?.length" class="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
                         <span
                           v-for="m in i.modifiers"

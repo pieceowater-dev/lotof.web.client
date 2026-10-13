@@ -1725,7 +1725,8 @@
       }
     },
     "clear": "Clear",
-    "yes": "Yes"
+    "yes": "Yes",
+    "refresh": "Refresh"
   },
   "landing": {
     "getStarted": "Get started",
@@ -2839,7 +2840,19 @@
     "exportSheet": "Orders",
     "exportSelected": "Export selected",
     "exportPage": "Export to Excel",
-    "copySummary": "Copy summary"
+    "copySummary": "Copy summary",
+    "executorNone": "No executor",
+    "executorsTitle": "Executor report",
+    "executorsHint": "Closed orders in a period: lines, revenue and pay by the work percentage.",
+    "executorsFrom": "From",
+    "executorsTo": "To",
+    "executorsLines": "Lines",
+    "executorsOrders": "Orders",
+    "executorsRevenue": "Revenue",
+    "executorsPay": "Pay",
+    "executorsUnassigned": "Unassigned",
+    "executorsEmpty": "No closed orders in this period",
+    "executorsOpen": "Executors"
   },
   "goods": {
     "register": "Register",

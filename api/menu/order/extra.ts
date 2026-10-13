@@ -142,3 +142,14 @@ export async function menuUpdateOrderExtras(token: string, ns: string, input: { 
   const r = await call<{ updateOrderExtras: MenuOrder }>(token, ns, `mutation Extras($orderId: ID!, $nextContactAt: String, $recommendation: String, $internalNotes: String) { updateOrderExtras(orderId: $orderId, nextContactAt: $nextContactAt, recommendation: $recommendation, internalNotes: $internalNotes) { ${ORDER_FIELDS} } }`, input);
   return r.updateOrderExtras;
 }
+
+export type ExecutorReportRow = { executorId?: string | null; lines: number; orders: number; revenue: number; pay: number };
+
+export async function menuSetItemExecutor(token: string, ns: string, itemId: string, executorId: string | null) {
+  await call(token, ns, `mutation Executor($itemId: ID!, $executorId: String) { updateOrderItemExecutor(itemId: $itemId, executorId: $executorId) { id executorId } }`, { itemId, executorId });
+}
+
+export async function menuExecutorReport(token: string, ns: string, closedFrom?: string, closedTo?: string): Promise<ExecutorReportRow[]> {
+  const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo) { executorId lines orders revenue pay } }`, { closedFrom, closedTo });
+  return r.executorReport;
+}

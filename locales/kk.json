@@ -1055,7 +1055,9 @@
       "pinChangeFailed": "PIN-кодты өзгерту сәтсіз аяқталды"
     },
     "clear": "Тазалау",
-    "yes": "Иә"
+    "yes": "Иә",
+    "refresh": "Жаңарту",
+    "back": "Артқа"
   },
   "contacts": {
     "clients": "Клиенттер",
@@ -2457,7 +2459,19 @@
     "exportSheet": "Тапсырыстар",
     "exportSelected": "Таңдалғандарды экспорттау",
     "exportPage": "Excel-ге экспорт",
-    "copySummary": "Қысқаша көшіру"
+    "copySummary": "Қысқаша көшіру",
+    "executorNone": "Орындаушы жоқ",
+    "executorsTitle": "Орындаушылар есебі",
+    "executorsHint": "Кезеңдегі жабылған тапсырыстар: жолдар, түсім және жұмыс пайызы бойынша төлем.",
+    "executorsFrom": "Бастап",
+    "executorsTo": "Дейін",
+    "executorsLines": "Жолдар",
+    "executorsOrders": "Тапсырыс",
+    "executorsRevenue": "Түсім",
+    "executorsPay": "Төлем",
+    "executorsUnassigned": "Орындаушысыз",
+    "executorsEmpty": "Кезеңде жабылған тапсырыс жоқ",
+    "executorsOpen": "Орындаушылар"
   },
   "goods": {
     "register": "Касса",

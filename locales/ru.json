@@ -1187,7 +1187,8 @@
     },
     "invalidPhone": "Проверьте номер телефона",
     "clear": "Очистить",
-    "yes": "Да"
+    "yes": "Да",
+    "refresh": "Обновить"
   },
   "contacts": {
     "clients": "Клиенты",
@@ -2882,7 +2883,19 @@
     "exportSheet": "Заказы",
     "exportSelected": "Экспорт выбранных",
     "exportPage": "Экспорт в Excel",
-    "copySummary": "Копировать сводку"
+    "copySummary": "Копировать сводку",
+    "executorNone": "Исполнитель не выбран",
+    "executorsTitle": "Отчёт по исполнителям",
+    "executorsHint": "Закрытые заказы за период: строки, выручка и выплата по проценту работ.",
+    "executorsFrom": "С",
+    "executorsTo": "По",
+    "executorsLines": "Строк",
+    "executorsOrders": "Заказов",
+    "executorsRevenue": "Выручка",
+    "executorsPay": "К выплате",
+    "executorsUnassigned": "Без исполнителя",
+    "executorsEmpty": "За период нет закрытых заказов",
+    "executorsOpen": "Исполнители"
   },
   "plans": {
     "calendar": "Календарь",
