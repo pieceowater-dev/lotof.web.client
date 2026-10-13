@@ -28,6 +28,7 @@ export interface Call {
   callbackDone: boolean;
   firstFromNumber: boolean;
   orderIds: string[];
+  integrationId?: string | null;
 }
 
 export interface CallList {
@@ -49,6 +50,7 @@ export interface CallFilter {
   from?: string;
   to?: string;
   favouritesOnly?: boolean;
+  integrationId?: string;
   pagination?: { page?: number; length?: string };
 }
 
@@ -68,6 +70,8 @@ export interface TelephonyAdapter {
 }
 
 export interface TelephonyProviderConfig {
+  id: string;
+  name: string;
   provider: string;
   enabled: boolean;
   hasApiKey: boolean;
@@ -78,9 +82,10 @@ export interface TelephonyProviderConfig {
   baseUrl: string;
   extraJson: string;
   updatedAt: string;
+  lastEventAt?: string | null;
 }
 
-export interface CallOperator { id: string; provider: string; extension: string; userId: string }
+export interface CallOperator { id: string; integrationId: string; provider: string; extension: string; userId: string }
 export interface CallCommentTemplate { id: string; text: string }
 
 export interface CallStats {
@@ -94,7 +99,7 @@ export interface CallStats {
 export const CALL_FIELDS = `
   id provider providerCallId direction clientPhone lineNumber extension operatorUserId status inProgress
   startedAt durationSec clientId clientName recordingRef source operatorRating clientRating favourite
-  commentTemplateId comment callbackDone firstFromNumber orderIds
+  commentTemplateId comment callbackDone firstFromNumber orderIds integrationId
 `;
 const LIST_FIELDS = `rows { ${CALL_FIELDS} } info { count } minDurationSec avgDurationSec maxDurationSec totalDurationSec`;
 
@@ -149,11 +154,11 @@ export async function markCallbackDone(token: string, ns: string, callId: string
   await crmRequest(token, ns, `mutation Done($id: ID!) { markCallbackDone(callId: $id) { id } }`, { id: callId });
 }
 
-export async function makeCall(token: string, ns: string, phone: string, clientId?: string) {
+export async function makeCall(token: string, ns: string, phone: string, clientId?: string, integrationId?: string) {
   const data = await crmRequest<{ makeCall: { supported: boolean; providerCallId?: string; call?: Call } }>(
     token, ns,
-    `mutation MakeCall($phone: String!, $clientId: ID) { makeCall(phone: $phone, clientId: $clientId) { supported providerCallId call { ${CALL_FIELDS} } } }`,
-    { phone, clientId },
+    `mutation MakeCall($phone: String!, $clientId: ID, $integrationId: ID) { makeCall(phone: $phone, clientId: $clientId, integrationId: $integrationId) { supported providerCallId call { ${CALL_FIELDS} } } }`,
+    { phone, clientId, integrationId },
   );
   return data.makeCall;
 }
@@ -190,7 +195,7 @@ export async function getTelephonySettings(token: string, ns: string) {
     `query TelephonySettings {
       telephonySettings {
         adapters { code title canMakeCall canProvideRecording canAnswerContactQuery }
-        configs { provider enabled hasApiKey apiKeyHint hasApiSecret apiSecretHint webhookToken baseUrl extraJson updatedAt }
+        configs { id name provider enabled hasApiKey apiKeyHint hasApiSecret apiSecretHint webhookToken baseUrl extraJson updatedAt lastEventAt }
       }
     }`,
   );
@@ -199,28 +204,36 @@ export async function getTelephonySettings(token: string, ns: string) {
 
 export async function saveTelephonyProvider(
   token: string, ns: string,
-  input: { provider: string; enabled: boolean; apiKey?: string; apiSecret?: string; baseUrl?: string; extraJson?: string; rotateToken?: boolean },
+  input: { id?: string; name?: string; provider: string; enabled: boolean; apiKey?: string; apiSecret?: string; baseUrl?: string; extraJson?: string; rotateToken?: boolean },
 ) {
   const data = await crmRequest<{ saveTelephonyProvider: TelephonyProviderConfig }>(
     token, ns,
     `mutation Save($input: SaveTelephonyProviderInput!) {
-      saveTelephonyProvider(input: $input) { provider enabled hasApiKey apiKeyHint hasApiSecret apiSecretHint webhookToken baseUrl extraJson updatedAt }
+      saveTelephonyProvider(input: $input) { id name provider enabled hasApiKey apiKeyHint hasApiSecret apiSecretHint webhookToken baseUrl extraJson updatedAt lastEventAt }
     }`,
     { input },
   );
   return data.saveTelephonyProvider;
 }
 
-export async function listCallOperators(token: string, ns: string) {
-  const data = await crmRequest<{ callOperators: CallOperator[] }>(token, ns, `query Ops { callOperators { id provider extension userId } }`);
+export async function deleteTelephonyIntegration(token: string, ns: string, id: string) {
+  await crmRequest(token, ns, `mutation DelIntegration($id: ID!) { deleteTelephonyIntegration(id: $id) }`, { id });
+}
+
+export async function listCallOperators(token: string, ns: string, integrationId?: string) {
+  const data = await crmRequest<{ callOperators: CallOperator[] }>(
+    token, ns,
+    `query Ops($integrationId: ID) { callOperators(integrationId: $integrationId) { id integrationId provider extension userId } }`,
+    { integrationId },
+  );
   return data.callOperators;
 }
 
-export async function upsertCallOperator(token: string, ns: string, provider: string, extension: string, userId: string) {
+export async function upsertCallOperator(token: string, ns: string, integrationId: string, extension: string, userId: string) {
   const data = await crmRequest<{ upsertCallOperator: CallOperator }>(
     token, ns,
-    `mutation Op($p: String!, $e: String!, $u: ID!) { upsertCallOperator(provider: $p, extension: $e, userId: $u) { id provider extension userId } }`,
-    { p: provider, e: extension, u: userId },
+    `mutation Op($i: ID!, $e: String!, $u: ID!) { upsertCallOperator(integrationId: $i, extension: $e, userId: $u) { id integrationId provider extension userId } }`,
+    { i: integrationId, e: extension, u: userId },
   );
   return data.upsertCallOperator;
 }

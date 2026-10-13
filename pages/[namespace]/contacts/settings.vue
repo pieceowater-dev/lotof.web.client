@@ -13,7 +13,6 @@ import PlanLimitsBanner from '@/components/contacts/settings/PlanLimitsBanner.vu
 import StampCardsPanel from '@/components/contacts/settings/StampCardsPanel.vue';
 import DynamicFieldsPanel from '@/components/contacts/settings/DynamicFieldsPanel.vue';
 import MembersRolesPanel from '@/components/contacts/settings/MembersRolesPanel.vue';
-import TelephonyPanel from '@/components/contacts/settings/TelephonyPanel.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -165,7 +164,16 @@ onMounted(async () => {
           </div>
         </div>
 
-        <TelephonyPanel />
+        <NuxtLink :to="`/${nsSlug}/contacts/integrations`" class="at-panel flex items-center gap-4 hover:shadow-md transition">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
+            <UIcon name="lucide:plug-zap" class="w-6 h-6" />
+          </div>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ t('contacts.integrationsTitle') }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('contacts.integrationsCardHint') }}</p>
+          </div>
+          <UIcon name="lucide:chevron-right" class="w-5 h-5 text-gray-400" />
+        </NuxtLink>
 
         <DynamicFieldsPanel />
 
