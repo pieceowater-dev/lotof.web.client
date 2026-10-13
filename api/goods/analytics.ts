@@ -77,3 +77,19 @@ export async function goodsMarginReport(token: string, ns: string, from: string,
     return res.marginReport;
   }, ns);
 }
+
+export type GoodsTurnoverEntry = { goodId: string; goodName: string; opening: number; received: number; issued: number; closing: number; closingValueCents: number };
+
+const TurnoverDocument = /* GraphQL */ `
+  query TurnoverReport($warehouseId: ID, $from: String!, $to: String!) {
+    turnoverReport(warehouseId: $warehouseId, from: $from, to: $to) { goodId goodName opening received issued closing closingValueCents }
+  }
+`;
+
+export async function goodsTurnoverReport(token: string, ns: string, from: string, to: string, warehouseId?: string): Promise<GoodsTurnoverEntry[]> {
+  const dev = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ turnoverReport: GoodsTurnoverEntry[] }>(TurnoverDocument, { warehouseId, from, to }, { headers: headers(token, ns, dev) });
+    return res.turnoverReport;
+  }, ns);
+}

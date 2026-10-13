@@ -7,7 +7,7 @@ import { useGoodsAuth } from '@/composables/useGoodsAuth';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import type { GoodsTopGoodsEntry, GoodsAbcEntry, GoodsMarginReport } from '@/api/goods/analytics';
+import type { GoodsTopGoodsEntry, GoodsAbcEntry, GoodsMarginReport, GoodsTurnoverEntry } from '@/api/goods/analytics';
 import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsBatch } from '@/api/goods/goodbatch';
 import type { GoodsGood } from '@/api/goods/good';
@@ -33,6 +33,7 @@ const TABS = [
   { key: 'top', labelKey: 'goods.topGoods', icon: 'lucide:trending-up' },
   { key: 'abc', labelKey: 'goods.abcAnalysis', icon: 'lucide:layers' },
   { key: 'margin', labelKey: 'goods.marginReport', icon: 'lucide:percent' },
+  { key: 'turnover', labelKey: 'goods.turnoverReport', icon: 'lucide:arrow-left-right' },
   { key: 'alerts', labelKey: 'goods.lowStockAlerts', icon: 'lucide:bell' },
 ] as const;
 const activeTab = ref<(typeof TABS)[number]['key']>('top');
@@ -48,6 +49,23 @@ const to = ref(today.toISOString().slice(0, 10));
 const topGoods = ref<GoodsTopGoodsEntry[]>([]);
 const abcEntries = ref<GoodsAbcEntry[]>([]);
 const marginReport = ref<GoodsMarginReport | null>(null);
+const turnover = ref<GoodsTurnoverEntry[]>([]);
+const money = (cents: number) => (cents / 100).toFixed(2);
+const turnoverTotals = computed(() => ({
+  received: turnover.value.reduce((s, e) => s + e.received, 0),
+  issued: turnover.value.reduce((s, e) => s + e.issued, 0),
+  value: turnover.value.reduce((s, e) => s + e.closingValueCents, 0),
+}));
+async function exportTurnover() {
+  const XLSX = await import('xlsx');
+  const rows = turnover.value.map((e) => ({
+    [t('goods.goodName')]: e.goodName, [t('goods.turnOpening')]: e.opening, [t('goods.turnReceived')]: e.received,
+    [t('goods.turnIssued')]: e.issued, [t('goods.turnClosing')]: e.closing, [t('goods.stockValue')]: e.closingValueCents / 100,
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'turnover');
+  XLSX.writeFile(wb, `turnover-${from.value}-${to.value}.xlsx`);
+}
 const lowStock = ref<GoodsStock[]>([]);
 const expiringBatches = ref<GoodsBatch[]>([]);
 
@@ -70,6 +88,9 @@ async function loadReport() {
     } else if (activeTab.value === 'abc') {
       const { goodsAbcAnalysis } = await import('@/api/goods/analytics');
       abcEntries.value = await goodsAbcAnalysis(token, nsSlug.value, f, tt);
+    } else if (activeTab.value === 'turnover') {
+      const { goodsTurnoverReport } = await import('@/api/goods/analytics');
+      turnover.value = await goodsTurnoverReport(token, nsSlug.value, f, tt);
     } else if (activeTab.value === 'margin') {
       const { goodsMarginReport } = await import('@/api/goods/analytics');
       marginReport.value = await goodsMarginReport(token, nsSlug.value, f, tt);
@@ -209,6 +230,42 @@ onMounted(async () => {
             <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.marginCents / 100).toFixed(2) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
           </div>
           <EmptyState v-if="!marginReport.entries.length" icon="lucide:percent" :title="t('goods.noReportData')" />
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'turnover'" class="space-y-3">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-wrap gap-2">
+            <span class="at-chip">{{ t('goods.turnReceived') }}: <b class="tabular-nums">{{ turnoverTotals.received }}</b></span>
+            <span class="at-chip">{{ t('goods.turnIssued') }}: <b class="tabular-nums">{{ turnoverTotals.issued }}</b></span>
+            <span class="at-chip">{{ t('goods.stockValue') }}: <b class="tabular-nums">{{ money(turnoverTotals.value) }}</b></span>
+          </div>
+          <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!turnover.length" @click="exportTurnover"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
+        </div>
+        <div class="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <table class="w-full text-sm">
+            <thead class="text-xs uppercase tracking-wide text-gray-500">
+              <tr class="border-b border-gray-100 dark:border-gray-800">
+                <th class="px-4 py-2 text-left font-medium">{{ t('goods.goodName') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('goods.turnOpening') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('goods.turnReceived') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('goods.turnIssued') }}</th>
+                <th class="px-3 py-2 text-right font-medium">{{ t('goods.turnClosing') }}</th>
+                <th class="hidden px-4 py-2 text-right font-medium sm:table-cell">{{ t('goods.stockValue') }}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+              <tr v-for="e in turnover" :key="e.goodId">
+                <td class="px-4 py-2 font-medium">{{ e.goodName }}</td>
+                <td class="px-3 py-2 text-right tabular-nums text-gray-500">{{ e.opening }}</td>
+                <td class="px-3 py-2 text-right tabular-nums text-emerald-600">{{ e.received || '' }}</td>
+                <td class="px-3 py-2 text-right tabular-nums text-rose-600">{{ e.issued || '' }}</td>
+                <td class="px-3 py-2 text-right font-semibold tabular-nums">{{ e.closing }}</td>
+                <td class="hidden px-4 py-2 text-right tabular-nums text-gray-500 sm:table-cell">{{ money(e.closingValueCents) }}</td>
+              </tr>
+            </tbody>
+          </table>
+          <EmptyState v-if="!turnover.length" icon="lucide:arrow-left-right" :title="t('goods.noReportData')" />
         </div>
       </div>
 
