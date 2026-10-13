@@ -281,6 +281,7 @@ const draftItems = ref<MovementDraftItem[]>([]);
 // already went back.
 // Paying the supplier from the till: only offered when a register has an open shift.
 const payFromRegister = ref(false);
+const refundToRegister = ref(false);
 const registerId = ref('');
 const openShifts = ref<Array<{ registerId: string; registerName: string; shiftId: string }>>([]);
 async function loadOpenShifts() {
@@ -299,6 +300,19 @@ async function loadOpenShifts() {
     logError('[goods/movements] loadOpenShifts failed', e);
   }
 }
+// A purchase price far from the current cost is usually a typo; warn, never block.
+const PRICE_DEVIATION = 0.3;
+const priceWarnings = computed(() => {
+  if (createType.value !== 'receipt') return [] as Array<{ name: string; entered: number; current: number }>;
+  const out: Array<{ name: string; entered: number; current: number }> = [];
+  for (const i of draftItems.value) {
+    const good = goods.value.find((g) => g.id === i.goodId);
+    const entered = Number(i.costPriceCents || 0);
+    const current = (good?.costPriceCents || 0) / 100;
+    if (good && current > 0 && entered > 0 && Math.abs(entered - current) / current > PRICE_DEVIATION) out.push({ name: good.name, entered, current });
+  }
+  return out;
+});
 const receiptTotalCents = computed(() => draftItems.value.reduce((s, i) => s + Math.round(Number(i.costPriceCents || 0) * 100 * Number(i.quantity || 0)), 0));
 
 const returnReceiptId = ref('');
@@ -322,7 +336,7 @@ function resetCreateForm() {
   form.supplierId = ''; form.expectedDate = ''; form.reason = 'OTHER';
   draftItems.value = [];
 }
-watch(showCreate, (open) => { if (open) { resetCreateForm(); payFromRegister.value = false; loadOpenShifts(); } });
+watch(showCreate, (open) => { if (open) { resetCreateForm(); payFromRegister.value = false; refundToRegister.value = false; loadOpenShifts(); } });
 watch(createType, () => { draftItems.value = []; returnReceiptId.value = ''; returnComment.value = ''; });
 
 // --- Quick supplier create (rescue path from the movement modal when the
@@ -429,10 +443,22 @@ async function submitCreate() {
       }
       case 'supplierReturn': {
         const { goodsCreateSupplierReturn } = await import('@/api/goods/supplierreturn');
-        await goodsCreateSupplierReturn(token, nsSlug.value, {
+        const created = await goodsCreateSupplierReturn(token, nsSlug.value, {
           goodsReceiptId: returnReceiptId.value, comment: returnComment.value.trim() || undefined,
           items: returnLines.value.filter((l) => l.qty > 0).map((l) => ({ goodId: l.goodId, quantity: l.qty })),
         });
+        const till = openShifts.value.find((x) => x.registerId === registerId.value);
+        if (refundToRegister.value && till && created.totalCents > 0) {
+          try {
+            await (await import('@/api/goods/sale')).goodsRecordCashMovement(token, nsSlug.value, {
+              registerId: till.registerId, shiftId: till.shiftId, type: 'CASH_IN', amountCents: created.totalCents,
+              reason: `${t('goods.supplierRefundReason')} ${created.number || ''}`.trim(),
+            });
+          } catch (e) {
+            logError('[goods/movements] supplier refund failed', e);
+            useToast().add({ title: getErrorMessage(e, t) || t('goods.supplierRefundFailed'), color: 'amber' });
+          }
+        }
         break;
       }
       case 'writeoff': {
@@ -652,7 +678,23 @@ onMounted(loadAll);
             <UFormGroup :label="t('goods.returnComment')">
               <UInput v-model="returnComment" maxlength="500" />
             </UFormGroup>
+            <div v-if="openShifts.length" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
+              <label class="flex items-center gap-2 text-sm font-medium"><UToggle v-model="refundToRegister" size="sm" />{{ t('goods.refundToRegister') }}</label>
+              <div v-if="refundToRegister && openShifts.length > 1" class="mt-2 flex flex-wrap gap-1.5">
+                <button v-for="s in openShifts" :key="s.registerId" type="button" class="pill-filter" :class="registerId === s.registerId ? 'pill-filter--active' : ''" @click="registerId = s.registerId">{{ s.registerName }}</button>
+              </div>
+            </div>
           </div>
+
+          <template v-else>
+          <MovementItemBuilder v-model="draftItems" :goods="goods" :units="units" :extra-fields="extraFieldsByType[createType]">
+            <template #item-summary="{ item }">
+              {{ item.quantity }} {{ unitSymbol(item.unitId as string) }}
+              <template v-if="item.priceCents"> · {{ Number(item.priceCents).toFixed(2) }}</template>
+              <template v-if="item.costPriceCents"> · {{ Number(item.costPriceCents).toFixed(2) }}</template>
+              <template v-if="item.batchNumber"> · {{ item.batchNumber }}</template>
+            </template>
+          </MovementItemBuilder>
 
           <div v-if="createType === 'receipt' && openShifts.length && receiptTotalCents > 0" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
             <label class="flex items-center gap-2 text-sm font-medium">
@@ -664,14 +706,11 @@ onMounted(loadAll);
             </div>
           </div>
 
-          <MovementItemBuilder v-else v-model="draftItems" :goods="goods" :units="units" :extra-fields="extraFieldsByType[createType]">
-            <template #item-summary="{ item }">
-              {{ item.quantity }} {{ unitSymbol(item.unitId as string) }}
-              <template v-if="item.priceCents"> · {{ Number(item.priceCents).toFixed(2) }}</template>
-              <template v-if="item.costPriceCents"> · {{ Number(item.costPriceCents).toFixed(2) }}</template>
-              <template v-if="item.batchNumber"> · {{ item.batchNumber }}</template>
-            </template>
-          </MovementItemBuilder>
+          <div v-if="priceWarnings.length" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
+            <div class="font-medium">{{ t('goods.priceDeviation') }}</div>
+            <div v-for="w in priceWarnings" :key="w.name">{{ w.name }}: {{ w.entered.toFixed(2) }} ← {{ w.current.toFixed(2) }}</div>
+          </div>
+          </template>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
