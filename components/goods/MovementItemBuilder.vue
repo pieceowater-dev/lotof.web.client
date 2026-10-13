@@ -67,11 +67,11 @@ function removeDraftItem(idx: number) {
     <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ t('goods.items') }}</div>
 
     <div class="grid grid-cols-12 gap-2">
-      <div :style="{ gridColumn: `span ${goodCol}` }">
+      <div class="mi-cell" :style="{ '--span': goodCol, '--m': 12 }">
         <label for="movement-item-good" class="text-xs text-gray-400 mb-1 block">{{ t('goods.good') }}</label>
         <GoodPicker id="movement-item-good" v-model="itemDraft.goodId" :goods="goods" />
       </div>
-      <div v-if="showUnit" class="col-span-2">
+      <div v-if="showUnit" class="mi-cell" :style="{ '--span': 2, '--m': 6 }">
         <label for="movement-item-unit" class="text-xs text-gray-400 mb-1 block">{{ t('goods.unit') }}</label>
         <USelectMenu
           id="movement-item-unit"
@@ -83,11 +83,11 @@ function removeDraftItem(idx: number) {
           :popper="{ strategy: 'fixed' }"
         />
       </div>
-      <div :style="{ gridColumn: `span ${qtyCol}` }">
+      <div class="mi-cell" :style="{ '--span': qtyCol, '--m': 6 }">
         <label for="movement-item-quantity" class="text-xs text-gray-400 mb-1 block">{{ t('goods.quantity') }}</label>
         <UInput id="movement-item-quantity" v-model.number="itemDraft.quantity" type="number" min="0" size="sm" />
       </div>
-      <div v-for="f in extraFields" :key="f.key" :style="{ gridColumn: `span ${f.colSpan || 12 - goodCol - (showUnit ? 2 : 0) - qtyCol}` }">
+      <div v-for="f in extraFields" :key="f.key" class="mi-cell" :style="{ '--span': f.colSpan || 12 - goodCol - (showUnit ? 2 : 0) - qtyCol, '--m': 6 }">
         <label :for="`movement-item-${f.key}`" class="text-xs text-gray-400 mb-1 block">{{ t(f.labelKey) }}</label>
         <UInput :id="`movement-item-${f.key}`" v-model="itemDraft[f.key]" :type="f.type" :min="f.min" :step="f.step" size="sm" />
       </div>
@@ -109,3 +109,11 @@ function removeDraftItem(idx: number) {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Phones: the good takes a whole line and the rest pair up; wider screens use the 12-column spans. */
+.mi-cell { grid-column: span var(--m, 12); min-width: 0; }
+@media (min-width: 640px) {
+  .mi-cell { grid-column: span var(--span, 12); }
+}
+</style>

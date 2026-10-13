@@ -612,7 +612,7 @@ onMounted(loadAll);
     <UModal class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }" v-model="showCreate">
       <UCard :ui="atCardUi">
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
-        <div class="space-y-4">
+        <div class="space-y-4 max-h-[68vh] overflow-y-auto pr-1">
           <UFormGroup :label="t('goods.movementType')">
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <button
