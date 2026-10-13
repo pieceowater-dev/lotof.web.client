@@ -13,6 +13,9 @@ export interface DynamicField {
   dataType: DynamicFieldDataType;
   isRequired: boolean;
   searchable: boolean;
+  hint: string;
+  defaultValue: string;
+  showInFilters: boolean;
   clientTypeScope: DynamicFieldClientScope;
   createdBy: string;
   createdAt: string;
@@ -35,6 +38,9 @@ export interface CreateDynamicFieldInput {
   dataType: DynamicFieldDataType;
   isRequired?: boolean;
   searchable?: boolean;
+  hint?: string;
+  defaultValue?: string;
+  showInFilters?: boolean;
   clientTypeScope: DynamicFieldClientScope;
   createdBy?: string;
 }
@@ -46,6 +52,9 @@ export interface UpdateDynamicFieldInput {
   options?: string[];
   isRequired: boolean;
   searchable: boolean;
+  hint?: string;
+  defaultValue?: string;
+  showInFilters?: boolean;
 }
 
 export interface DynamicFieldValue {
@@ -82,6 +91,9 @@ const LIST_DYNAMIC_FIELDS_QUERY = gql`
         dataType
         isRequired
         searchable
+        hint
+        defaultValue
+        showInFilters
         clientTypeScope
         createdBy
         createdAt
@@ -106,6 +118,9 @@ const CREATE_DYNAMIC_FIELD_MUTATION = gql`
       dataType
       isRequired
       searchable
+      hint
+      defaultValue
+      showInFilters
       clientTypeScope
       createdBy
       createdAt
@@ -126,6 +141,9 @@ const UPDATE_DYNAMIC_FIELD_MUTATION = gql`
       dataType
       isRequired
       searchable
+      hint
+      defaultValue
+      showInFilters
       clientTypeScope
       createdBy
       createdAt
@@ -154,6 +172,9 @@ const RESTORE_DYNAMIC_FIELD_MUTATION = gql`
       dataType
       isRequired
       searchable
+      hint
+      defaultValue
+      showInFilters
       clientTypeScope
       createdBy
       createdAt
@@ -220,6 +241,9 @@ const DYNAMIC_FIELDS_WITH_VALUES_QUERY = gql`
         dataType
         isRequired
         searchable
+        hint
+        defaultValue
+        showInFilters
         clientTypeScope
         createdBy
         createdAt

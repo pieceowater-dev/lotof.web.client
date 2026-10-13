@@ -126,8 +126,10 @@ const multiSelectLabel = computed(() => {
         v-model="inputValue"
         class="w-full"
         :type="field.dataType === 'NUMBER' ? 'number' : field.dataType === 'DATE' ? 'date' : 'text'"
+        :placeholder="field.hint || undefined"
         :disabled="disabled"
       />
     </template>
+    <p v-if="field.hint && field.dataType !== 'STRING' && field.dataType !== 'NUMBER' && field.dataType !== 'DATE'" class="text-xs text-gray-500 dark:text-gray-400">{{ field.hint }}</p>
   </div>
 </template>

@@ -52,6 +52,8 @@ const createDynamicFieldForm = ref({
   clientTypeScope: 'ALL' as DynamicFieldClientScope,
   isRequired: false,
   searchable: false,
+  hint: '',
+  defaultValue: '',
 });
 const createDynamicFieldOptions = ref<string[]>(['']);
 const createPreviewValue = ref<DynamicFieldPreviewValue>('');
@@ -65,6 +67,9 @@ const editDynamicFieldForm = ref({
   clientTypeScope: 'ALL' as DynamicFieldClientScope,
   isRequired: false,
   searchable: false,
+  hint: '',
+  defaultValue: '',
+  showInFilters: false,
   deletedAt: '' as string | null,
 });
 const editDynamicFieldOptions = ref<string[]>(['']);
@@ -132,6 +137,8 @@ const resetCreateDynamicFieldForm = () => {
     clientTypeScope: 'ALL',
     isRequired: false,
     searchable: false,
+    hint: '',
+    defaultValue: '',
   };
   createDynamicFieldOptions.value = [''];
   createPreviewValue.value = defaultPreviewValue(createDynamicFieldForm.value.dataType);
@@ -169,6 +176,9 @@ const openEditDynamicFieldModal = (field: DynamicField) => {
     clientTypeScope: field.clientTypeScope,
     isRequired: field.dataType === 'BOOLEAN' ? false : field.isRequired,
     searchable: field.searchable,
+    hint: field.hint || '',
+    defaultValue: field.defaultValue || '',
+    showInFilters: !!field.showInFilters,
     deletedAt: field.deletedAt || null,
   };
   editDynamicFieldOptions.value =
@@ -271,6 +281,8 @@ async function handleCreateDynamicField() {
       clientTypeScope: data.clientTypeScope,
       isRequired: data.dataType === 'BOOLEAN' ? false : data.isRequired,
       searchable: data.searchable,
+      hint: data.hint.trim(),
+      defaultValue: data.defaultValue.trim(),
     });
     closeCreateDynamicFieldModal();
     await loadDynamicFieldsData(token);
@@ -317,6 +329,9 @@ async function handleEditDynamicField() {
         : undefined,
       isRequired: data.dataType === 'BOOLEAN' ? false : data.isRequired,
       searchable: data.searchable,
+      hint: data.hint.trim(),
+      defaultValue: data.defaultValue.trim(),
+      showInFilters: data.showInFilters,
     });
     closeEditDynamicFieldModal();
     await loadDynamicFieldsData(token);
@@ -361,6 +376,9 @@ async function moveDynamicField(field: DynamicField, direction: 'up' | 'down') {
         viewOrder: target.viewOrder,
         isRequired: current.isRequired,
         searchable: current.searchable,
+        hint: current.hint,
+        defaultValue: current.defaultValue,
+        showInFilters: current.showInFilters,
       }),
       updateDynamicField(token, nsSlug.value, {
         id: target.id,
@@ -368,6 +386,9 @@ async function moveDynamicField(field: DynamicField, direction: 'up' | 'down') {
         viewOrder: current.viewOrder,
         isRequired: target.isRequired,
         searchable: target.searchable,
+        hint: target.hint,
+        defaultValue: target.defaultValue,
+        showInFilters: target.showInFilters,
       }),
     ]);
 
@@ -696,6 +717,15 @@ onMounted(async () => {
             </div>
           </div>
 
+          <div v-if="createDynamicFieldForm.dataType !== 'BOOLEAN'" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <UFormGroup :label="t('contacts.fieldHint') || 'Подсказка'">
+              <UInput v-model="createDynamicFieldForm.hint" maxlength="255" :disabled="createDynamicFieldLoading" />
+            </UFormGroup>
+            <UFormGroup :label="t('contacts.fieldDefault') || 'Значение по умолчанию'">
+              <UInput v-model="createDynamicFieldForm.defaultValue" maxlength="255" :disabled="createDynamicFieldLoading" />
+            </UFormGroup>
+          </div>
+
           <div
             v-if="createDynamicFieldForm.dataType === 'SELECT' || createDynamicFieldForm.dataType === 'MULTI_SELECT'"
             class="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-900/20 p-3 space-y-3"
@@ -831,6 +861,15 @@ onMounted(async () => {
                 :disabled="editDynamicFieldLoading || editDynamicFieldForm.dataType === 'BOOLEAN'"
               />
             </div>
+          </div>
+
+          <div v-if="editDynamicFieldForm.dataType !== 'BOOLEAN'" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <UFormGroup :label="t('contacts.fieldHint') || 'Подсказка'">
+              <UInput v-model="editDynamicFieldForm.hint" maxlength="255" :disabled="editDynamicFieldLoading" />
+            </UFormGroup>
+            <UFormGroup :label="t('contacts.fieldDefault') || 'Значение по умолчанию'">
+              <UInput v-model="editDynamicFieldForm.defaultValue" maxlength="255" :disabled="editDynamicFieldLoading" />
+            </UFormGroup>
           </div>
 
           <div

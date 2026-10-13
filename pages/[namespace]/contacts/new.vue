@@ -385,15 +385,20 @@ function initializeDynamicFieldDrafts(fields: DynamicField[]) {
 
   for (const field of fields) {
     if (nextDrafts[field.id] !== undefined) continue;
+    const def = (field.defaultValue || '').trim();
     if (field.dataType === 'BOOLEAN') {
       nextDrafts[field.id] = false;
       continue;
     }
     if (field.dataType === 'MULTI_SELECT') {
-      nextDrafts[field.id] = [];
+      nextDrafts[field.id] = def && (field.options || []).includes(def) ? [def] : [];
       continue;
     }
-    nextDrafts[field.id] = '';
+    if (field.dataType === 'NUMBER') {
+      nextDrafts[field.id] = def && !Number.isNaN(Number(def)) ? Number(def) : '';
+      continue;
+    }
+    nextDrafts[field.id] = def;
   }
 
   for (const fieldId of Object.keys(nextDrafts)) {
