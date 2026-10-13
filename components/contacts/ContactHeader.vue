@@ -11,6 +11,7 @@ interface Props {
 
 interface Emits {
   back: [];
+  merge: [];
 }
 
 const props = defineProps<Props>();
@@ -85,6 +86,17 @@ useHead(() => ({
             </span>
           </div>
         </div>
+        <UButton
+          v-if="client && client.client.status !== 'ARCHIVED'"
+          icon="lucide:git-merge"
+          size="xs"
+          color="gray"
+          variant="soft"
+          class="min-w-fit gap-2 mr-2"
+          @click="emit('merge')"
+        >
+          <span class="hidden sm:inline">{{ t('contacts.mergeAction') }}</span>
+        </UButton>
         <!-- Back Button -->
         <UButton
           icon="i-heroicons-arrow-left"

@@ -29,6 +29,7 @@ import ContactTimeline from '@/components/contacts/ContactTimeline.vue';
 import ContactTags from '@/components/contacts/ContactTags.vue';
 import ContactDynamicFields from '@/components/contacts/ContactDynamicFields.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
+import MergeClientsModal from '@/components/contacts/MergeClientsModal.vue';
 
 definePageMeta({
   layout: 'workspace',
@@ -48,6 +49,7 @@ const createdByUserId = computed(() => user.value?.id || '00000000-0000-0000-000
 const currentUserId = computed(() => user.value?.id || '');
 
 const isTagsModalOpen = ref(false);
+const isMergeModalOpen = ref(false);
 const statusChangeLoading = ref(false);
 
 // Core client data (client/identities/tags/loyalty) + load orchestration.
@@ -184,6 +186,7 @@ function onCopyToClipboard(text: string) {
       :client="client"
       :namespace="nsSlug"
       @back="onBack"
+      @merge="isMergeModalOpen = true"
     />
 
     <!-- Loading State -->
@@ -321,6 +324,15 @@ function onCopyToClipboard(text: string) {
         </div>
       </div>
     </div>
+
+    <MergeClientsModal
+      :is-open="isMergeModalOpen"
+      :primary="client"
+      :token="contactsAppToken"
+      :namespace="selectedNS || nsSlug"
+      @close="isMergeModalOpen = false"
+      @merged="loadClient"
+    />
 
     <!-- Tags Modal -->
     <TagsModal
