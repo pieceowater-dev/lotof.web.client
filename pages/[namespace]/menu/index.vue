@@ -1042,6 +1042,10 @@ async function handleCreateOrder(payload: any) {
           <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ totalCount }}</span>
         </span>
       </button>
+      <NuxtLink :to="`/${nsSlug}/menu/mine`" class="sm:hidden group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/60 px-3.5 py-2.5 text-left dark:border-indigo-800 dark:bg-indigo-950/20">
+        <Icon name="lucide:smartphone" class="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
+        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('menu.myOrdersTitle') }}</span>
+      </NuxtLink>
       <!-- A different filter dimension from the status cards (who's on the
            order, not what state it's in) — orders where the current staff
            member is a participant (see order_members / Participants on the
