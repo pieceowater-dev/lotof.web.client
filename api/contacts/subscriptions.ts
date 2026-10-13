@@ -61,3 +61,44 @@ export function subscribeClientChanged(
   };
 }
 
+
+export function subscribeCallEvents(
+  contactsToken: string,
+  namespace: string,
+  onEvent: (event: import('./telephony').CallCardEvent) => void,
+  operatorUserId?: string,
+  onError?: (error: unknown) => void,
+): Disposable {
+  if (!process.client || !contactsToken || !namespace) return () => {};
+
+  const client = createContactsSubscriptionsClient(contactsToken, namespace);
+  const unsubscribe = client.subscribe(
+    {
+      query: `
+        subscription CallEvents($operatorUserId: ID) {
+          callEvents(operatorUserId: $operatorUserId) {
+            eventType clientName clientKnown
+            call {
+              id direction clientPhone lineNumber extension operatorUserId status inProgress startedAt durationSec
+              clientId clientName firstFromNumber comment orderIds
+            }
+          }
+        }
+      `,
+      variables: { operatorUserId: operatorUserId || null },
+    },
+    {
+      next: (result: any) => {
+        const event = result?.data?.callEvents;
+        if (event) onEvent(event);
+      },
+      error: (error) => { if (onError) onError(error); },
+      complete: () => {},
+    },
+  );
+
+  return () => {
+    unsubscribe();
+    client.dispose();
+  };
+}

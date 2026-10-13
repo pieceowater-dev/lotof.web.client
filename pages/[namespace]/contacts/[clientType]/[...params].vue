@@ -597,6 +597,15 @@ async function handleRefreshFromRemote() {
             {{ t('contacts.segments') }}
           </UButton> -->
           <UButton
+            icon="lucide:phone-call"
+            size="xs"
+            color="primary"
+            variant="soft"
+            :to="`/${nsSlug}/contacts/calls`"
+          >
+            {{ t('contacts.callsTitle') }}
+          </UButton>
+          <UButton
             icon="lucide:ticket"
             size="xs"
             color="primary"

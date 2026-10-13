@@ -110,7 +110,8 @@ function getCreateClientErrorToast(error: unknown): { title: string; description
 const phoneInputRef = ref<any>(null);
 
 // Contact information (most important for call center)
-const phones = ref<string[]>(['']);
+// ?phone=... comes from the live call card ("create client" for an unknown caller).
+const phones = ref<string[]>([typeof route.query.phone === 'string' ? sanitizePhoneInput(route.query.phone) : '']);
 const emails = ref<string[]>(['']);
 const telegram = ref('');
 const whatsapp = ref('');

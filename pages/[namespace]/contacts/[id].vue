@@ -30,6 +30,11 @@ import ContactTags from '@/components/contacts/ContactTags.vue';
 import ContactDynamicFields from '@/components/contacts/ContactDynamicFields.vue';
 import TagsModal from '@/components/contacts/TagsModal.vue';
 import MergeClientsModal from '@/components/contacts/MergeClientsModal.vue';
+import ContactNotes from '@/components/contacts/ContactNotes.vue';
+import ContactAddresses from '@/components/contacts/ContactAddresses.vue';
+import ContactCalls from '@/components/contacts/ContactCalls.vue';
+import ContactQuickActions from '@/components/contacts/ContactQuickActions.vue';
+import type { ClientAddress } from '@/api/contacts/addresses';
 
 definePageMeta({
   layout: 'workspace',
@@ -50,6 +55,7 @@ const currentUserId = computed(() => user.value?.id || '');
 
 const isTagsModalOpen = ref(false);
 const isMergeModalOpen = ref(false);
+const clientAddresses = ref<ClientAddress[]>([]);
 const statusChangeLoading = ref(false);
 
 // Core client data (client/identities/tags/loyalty) + load orchestration.
@@ -222,6 +228,13 @@ function onCopyToClipboard(text: string) {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
+          <ContactQuickActions
+            :client-id="client?.client.id"
+            :display-name="displayName"
+            :identities="identities"
+            :addresses="clientAddresses"
+          />
+
           <!-- Personal Info Section -->
           <ContactPersonalInfo
             :client="client"
@@ -276,6 +289,15 @@ function onCopyToClipboard(text: string) {
             @copy-to-clipboard="onCopyToClipboard"
             @navigate-related-client="openRelatedClient"
           />
+
+          <ContactAddresses
+            :client-id="client?.client.id"
+            @changed="(list) => clientAddresses = list"
+          />
+
+          <ContactNotes :client-id="client?.client.id" />
+
+          <ContactCalls :client-id="client?.client.id" />
 
           <!-- Loyalty Section -->
           <ContactLoyalty

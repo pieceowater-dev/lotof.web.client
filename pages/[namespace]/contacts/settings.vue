@@ -13,6 +13,7 @@ import PlanLimitsBanner from '@/components/contacts/settings/PlanLimitsBanner.vu
 import StampCardsPanel from '@/components/contacts/settings/StampCardsPanel.vue';
 import DynamicFieldsPanel from '@/components/contacts/settings/DynamicFieldsPanel.vue';
 import MembersRolesPanel from '@/components/contacts/settings/MembersRolesPanel.vue';
+import TelephonyPanel from '@/components/contacts/settings/TelephonyPanel.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -163,6 +164,8 @@ onMounted(async () => {
             </div>
           </div>
         </div>
+
+        <TelephonyPanel />
 
         <DynamicFieldsPanel />
 
