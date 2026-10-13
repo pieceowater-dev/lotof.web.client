@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useCrmAuth } from '@/composables/useCrmAuth';
 import { compressImageForUpload } from '@/utils/imageCompression';
+import { uploadClientFile } from '@/api/contacts/files';
 import { logError } from '@/utils/logger';
 import {
   listClientNotes, createClientNote, updateClientNote, pinClientNote, deleteClientNote, restoreClientNote,
@@ -15,8 +16,7 @@ const { t } = useI18n();
 const toast = useToast();
 const { ctx } = useCrmAuth();
 
-const MAX_PHOTOS = 5;
-const MAX_DATA_URL = 240_000; // chars; photos are stored inline, so keep them small
+const MAX_PHOTOS = 8;
 
 const notes = ref<ClientNote[]>([]);
 const loading = ref(false);
@@ -24,7 +24,8 @@ const saving = ref(false);
 const showDeleted = ref(false);
 const body = ref('');
 const important = ref(false);
-const photos = ref<NoteAttachment[]>([]);
+// Files already stored for the note being written; `previewUrl` is only for display.
+const photos = ref<Array<NoteAttachment & { previewUrl?: string }>>([]);
 const fileInput = ref<HTMLInputElement | null>(null);
 const editingId = ref<string | null>(null);
 const editingBody = ref('');
@@ -51,32 +52,25 @@ onMounted(load);
 watch(() => props.clientId, load);
 watch(showDeleted, load);
 
-function readAsDataURL(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error || new Error('read failed'));
-    reader.readAsDataURL(file);
-  });
-}
+const isImage = (mime?: string | null) => !!mime && mime.startsWith('image/');
+const sizeLabel = (b?: number | null) => (!b ? '' : b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
 async function onPick(e: Event) {
   const input = e.target as HTMLInputElement;
+  const c = await ctx();
+  if (!c) { input.value = ''; return; }
   for (const file of Array.from(input.files || [])) {
     if (photos.value.length >= MAX_PHOTOS) {
       toast.add({ title: t('contacts.notesAttachLimit').replace('{n}', String(MAX_PHOTOS)), color: 'amber' });
       break;
     }
     try {
-      const compressed = await compressImageForUpload(file, { t, maxDimension: 1100, quality: 0.7 });
-      const dataUrl = await readAsDataURL(compressed);
-      if (dataUrl.length > MAX_DATA_URL) {
-        toast.add({ title: t('contacts.notesPhotoTooHeavy'), color: 'red' });
-        continue;
-      }
-      photos.value.push({ fileUrl: dataUrl, fileName: file.name, mime: compressed.type || 'image/jpeg', sizeBytes: compressed.size });
+      // Photos are shrunk in the browser first; documents go as they are.
+      const toSend: File = file.type.startsWith('image/') ? await compressImageForUpload(file, { t, maxDimension: 1600, quality: 0.8 }) : file;
+      const up = await uploadClientFile(c.token, toSend);
+      photos.value.push({ fileUrl: up.ref, fileName: up.name || file.name, mime: up.mime, sizeBytes: up.size, previewUrl: up.url });
     } catch (err) {
-      logError('Photo attach failed:', err);
+      logError('File attach failed:', err);
       toast.add({ title: t('common.error'), description: (err as Error).message, color: 'red' });
     }
   }
@@ -90,7 +84,8 @@ async function add() {
   saving.value = true;
   try {
     await createClientNote(c.token, c.ns, props.clientId, {
-      body: body.value, important: important.value, attachments: photos.value,
+      body: body.value, important: important.value,
+      attachments: photos.value.map(({ fileUrl, fileName, mime, sizeBytes }) => ({ fileUrl, fileName, mime, sizeBytes })),
     });
     body.value = '';
     important.value = false;
@@ -155,7 +150,8 @@ function fmt(d: string) {
         <UTextarea v-model="body" :rows="2" autoresize :placeholder="t('contacts.notesPlaceholder')" />
         <div v-if="photos.length" class="flex flex-wrap gap-2">
           <div v-for="(p, i) in photos" :key="i" class="relative">
-            <img :src="p.fileUrl" :alt="p.fileName" class="w-16 h-16 object-cover rounded-md border border-gray-200 dark:border-gray-600">
+            <img v-if="isImage(p.mime)" :src="p.previewUrl || p.fileUrl" :alt="p.fileName" class="w-16 h-16 object-cover rounded-md border border-gray-200 dark:border-gray-600">
+            <span v-else class="flex h-16 max-w-[10rem] items-center gap-1.5 rounded-md border border-gray-200 px-2 text-xs dark:border-gray-600"><Icon name="lucide:file-text" class="w-4 h-4 shrink-0" /><span class="truncate">{{ p.fileName }}</span></span>
             <button
               class="absolute -top-1.5 -right-1.5 bg-white dark:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-500 p-0.5"
               @click="photos.splice(i, 1)"
@@ -165,7 +161,7 @@ function fmt(d: string) {
           </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
-          <input ref="fileInput" type="file" accept="image/*" multiple class="hidden" @change="onPick">
+          <input ref="fileInput" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" multiple class="hidden" @change="onPick">
           <button type="button" class="pill-filter" @click="fileInput?.click()"><Icon name="lucide:image-plus" class="w-3.5 h-3.5" />{{ t('contacts.notesAttach') }}</button>
           <button type="button" class="pill-filter" :class="important ? 'pill-filter--active' : ''" @click="important = !important">
             <Icon name="lucide:alert-triangle" class="w-3.5 h-3.5" />{{ t('contacts.notesMarkImportant') }}
@@ -230,7 +226,8 @@ function fmt(d: string) {
 
           <div v-if="n.attachments.length" class="flex flex-wrap gap-2 mt-2">
             <a v-for="a in n.attachments" :key="a.id" :href="a.fileUrl" target="_blank" rel="noopener">
-              <img :src="a.fileUrl" :alt="a.fileName" class="w-20 h-20 object-cover rounded-md border border-gray-200 dark:border-gray-600">
+              <img v-if="isImage(a.mime)" :src="a.fileUrl" :alt="a.fileName" class="w-20 h-20 object-cover rounded-md border border-gray-200 dark:border-gray-600">
+              <span v-else class="at-chip !text-xs"><Icon name="lucide:file-text" class="w-3.5 h-3.5" />{{ a.fileName || t('contacts.file') }}<span v-if="a.sizeBytes" class="text-gray-400"> · {{ sizeLabel(a.sizeBytes) }}</span></span>
             </a>
           </div>
         </div>

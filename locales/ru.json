@@ -1776,7 +1776,8 @@
     "exportStatus": "Статус",
     "exportCreated": "Создан",
     "exportNotes": "Примечание",
-    "exportSheet": "Клиенты"
+    "exportSheet": "Клиенты",
+    "file": "Файл"
   },
   "landing": {
     "getStarted": "Получить",

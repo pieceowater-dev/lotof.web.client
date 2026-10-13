@@ -1645,7 +1645,8 @@
     "exportStatus": "Мәртебе",
     "exportCreated": "Құрылған",
     "exportNotes": "Ескертпе",
-    "exportSheet": "Клиенттер"
+    "exportSheet": "Клиенттер",
+    "file": "Файл"
   },
   "admin": {
     "panel": "Консоль",

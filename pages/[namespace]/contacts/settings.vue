@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -161,6 +162,7 @@ onMounted(async () => {
         <!-- General -->
         <template v-if="activeTab === 'general'">
           <PlanLimitsBanner />
+          <StorageUsageCard app="contacts" :ns-slug="nsSlug" :get-token="async () => (hubToken && nsSlug ? await ensure(nsSlug, hubToken) : null)" />
           <div class="at-panel">
             <div class="flex items-center justify-between gap-3 flex-wrap">
               <div>
