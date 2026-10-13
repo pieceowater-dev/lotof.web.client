@@ -89,8 +89,8 @@ export async function menuCreateOrderPayment(token: string, ns: string, input: {
   return r.createOrderPayment;
 }
 
-export async function menuDeleteOrderPayment(token: string, ns: string, paymentId: string): Promise<MenuOrder> {
-  const r = await call<{ deleteOrderPayment: MenuOrder }>(token, ns, `mutation DelPay($paymentId: ID!) { deleteOrderPayment(paymentId: $paymentId) { ${ORDER_FIELDS} } }`, { paymentId });
+export async function menuDeleteOrderPayment(token: string, ns: string, paymentId: string, orderId?: string): Promise<MenuOrder> {
+  const r = await call<{ deleteOrderPayment: MenuOrder }>(token, ns, `mutation DelPay($paymentId: ID!, $orderId: ID) { deleteOrderPayment(paymentId: $paymentId, orderId: $orderId) { ${ORDER_FIELDS} } }`, { paymentId, orderId });
   return r.deleteOrderPayment;
 }
 

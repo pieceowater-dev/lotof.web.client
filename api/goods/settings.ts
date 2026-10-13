@@ -10,11 +10,12 @@ export type GoodsSettings = {
   receiptFooterText: string;
   barcodeLabelSize: string;
   contactsIntegrationEnabled: boolean;
+  orderPaymentsToRegister?: boolean;
 };
 
 const GoodsSettingsDocument = /* GraphQL */ `
   query GoodsSettings {
-    goodsSettings { currency defaultWarehouseId maxCashierDiscountPercent openSaleReservationTimeoutMinutes receiptFooterText barcodeLabelSize contactsIntegrationEnabled }
+    goodsSettings { currency defaultWarehouseId maxCashierDiscountPercent openSaleReservationTimeoutMinutes receiptFooterText barcodeLabelSize contactsIntegrationEnabled orderPaymentsToRegister }
   }
 `;
 
@@ -32,7 +33,7 @@ export async function goodsGetSettings(goodsToken: string, namespaceSlug: string
 
 const UpdateGoodsSettingsDocument = /* GraphQL */ `
   mutation UpdateGoodsSettings($input: UpdateGoodsSettingsInput!) {
-    updateGoodsSettings(input: $input) { currency defaultWarehouseId maxCashierDiscountPercent openSaleReservationTimeoutMinutes receiptFooterText barcodeLabelSize contactsIntegrationEnabled }
+    updateGoodsSettings(input: $input) { currency defaultWarehouseId maxCashierDiscountPercent openSaleReservationTimeoutMinutes receiptFooterText barcodeLabelSize contactsIntegrationEnabled orderPaymentsToRegister }
   }
 `;
 

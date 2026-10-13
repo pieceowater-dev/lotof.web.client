@@ -94,7 +94,7 @@ async function addPayment(value?: number) {
 async function removePayment(p: OrderPayment) {
   busy.value = true;
   try {
-    emit('updated', await menuDeleteOrderPayment(await props.getToken(), props.nsSlug, p.id));
+    emit('updated', await menuDeleteOrderPayment(await props.getToken(), props.nsSlug, p.id, props.order.id));
     await loadPayments();
   } catch (e) { fail(e); } finally { busy.value = false; }
 }

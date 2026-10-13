@@ -633,6 +633,13 @@ onMounted(() => {
           </div>
           <UToggle v-model="settings.contactsIntegrationEnabled" />
         </div>
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <div class="text-sm text-gray-900 dark:text-white">{{ t('goods.orderPaymentsToRegister') }}</div>
+            <p class="text-xs text-gray-400 mt-0.5">{{ t('goods.orderPaymentsToRegisterHint') }}</p>
+          </div>
+          <UToggle v-model="settings.orderPaymentsToRegister" />
+        </div>
       </div>
 
       <UButton color="primary" :loading="savingSettings" @click="saveSettings">{{ t('common.save') }}</UButton>

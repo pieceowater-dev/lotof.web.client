@@ -3042,6 +3042,8 @@
     "addGood": "Add good",
     "quickNewGood": "New good",
     "toBuy": "To buy",
+    "orderPaymentsToRegister": "Order cash goes to the till",
+    "orderPaymentsToRegisterHint": "Cash paid on a Menu order is added to the open cash shift automatically (a refund is a cash-out). Works while a shift is open.",
     "selectedCount": "Selected",
     "printDoc": "Print",
     "signatureGave": "Handed over",

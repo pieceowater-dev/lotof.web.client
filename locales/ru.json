@@ -3244,6 +3244,8 @@
     "addGood": "Добавить товар",
     "quickNewGood": "Новый товар",
     "toBuy": "Нужно закупить",
+    "orderPaymentsToRegister": "Наличные по заказам — в кассу",
+    "orderPaymentsToRegisterHint": "Наличная оплата заказа из Menu автоматически попадает в открытую смену кассы (возврат — расход). Работает, если смена открыта.",
     "selectedCount": "Выбрано",
     "printDoc": "Печать",
     "signatureGave": "Сдал",
