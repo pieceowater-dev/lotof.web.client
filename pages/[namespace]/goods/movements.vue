@@ -761,23 +761,24 @@ onMounted(loadAll);
           </div>
         </template>
       </UCard>
-    </UModal>
 
-    <!-- Quick supplier create -- rescue path when there are none yet -->
-    <UModal class="at-modal" :ui="atModalUi" v-model="showQuickSupplier">
-      <UCard :ui="atCardUiFit">
-        <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
-        <UFormGroup :label="t('goods.goodName')" required>
-          <UInput v-model="quickSupplierName" autofocus @keyup.enter="createQuickSupplier" />
-        </UFormGroup>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UButton color="gray" variant="ghost" @click="showQuickSupplier = false">{{ t('common.cancel') }}</UButton>
-            <UButton color="primary" :loading="creatingQuickSupplier" :disabled="!quickSupplierName.trim()" @click="createQuickSupplier">{{ t('common.save') }}</UButton>
-          </div>
-        </template>
-      </UCard>
+      <!-- Nested inside the create modal so clicking in them does not count as an outside click on it -->
+      <!-- Quick supplier create -- rescue path when there are none yet -->
+      <UModal class="at-modal" :ui="atModalUi" v-model="showQuickSupplier">
+        <UCard :ui="atCardUiFit">
+          <template #header><h3 class="font-semibold">{{ t('goods.addSupplier') }}</h3></template>
+          <UFormGroup :label="t('goods.goodName')" required>
+            <UInput v-model="quickSupplierName" autofocus @keyup.enter="createQuickSupplier" />
+          </UFormGroup>
+          <template #footer>
+            <div class="flex justify-end gap-2">
+              <UButton color="gray" variant="ghost" @click="showQuickSupplier = false">{{ t('common.cancel') }}</UButton>
+              <UButton color="primary" :loading="creatingQuickSupplier" :disabled="!quickSupplierName.trim()" @click="createQuickSupplier">{{ t('common.save') }}</UButton>
+            </div>
+          </template>
+        </UCard>
+      </UModal>
+      <GoodFormModal v-model="showQuickGood" :units="units" :saving="savingQuickGood" :ns-slug="nsSlug" @submit="createQuickGood" />
     </UModal>
-    <GoodFormModal v-model="showQuickGood" :units="units" :saving="savingQuickGood" :ns-slug="nsSlug" @submit="createQuickGood" />
   </div>
 </template>
