@@ -249,15 +249,15 @@ onMounted(async () => {
 
     <div v-if="!loading" class="grid grid-cols-3 gap-3 flex-shrink-0 mt-3">
       <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'all' ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = 'all'">
-        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ goods.length }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ goods.length }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.catalog') }}</div>
       </button>
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-        <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ money(stockValueCents) }}</div>
+        <div class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ money(stockValueCents) }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.stockValue') }} · {{ stockedItemsCount }} {{ t('goods.stockPositions') }}</div>
       </div>
       <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'lowStock' ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = statFilter === 'lowStock' ? 'all' : 'lowStock'">
-        <div class="text-2xl font-bold tabular-nums" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
+        <div class="text-xl sm:text-2xl font-bold tabular-nums truncate" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
       </button>
     </div>
