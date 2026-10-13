@@ -112,6 +112,9 @@ const page = computed<number>(() => pageParts.value.page);
 
 const pageSize = computed<number>(() => pageParts.value.pageSize);
 
+const markFilter = ref<'' | 'supplier' | 'vip' | 'problematic'>('');
+watch(markFilter, () => { loadClients(); });
+
 const clientTypeFilter = computed({
   get: () => currentClientType.value,
   set: (newType: 'ALL' | 'INDIVIDUAL' | 'LEGAL') => {
@@ -372,6 +375,10 @@ async function loadClients() {
       filter.clientType = clientTypeFilter.value;
     }
     
+    if (markFilter.value) {
+      filter.mark = markFilter.value;
+    }
+
     // Add tag filter if tags are selected
     if (selectedTags.value && selectedTags.value.length > 0) {
       filter.tagIds = selectedTags.value.map(t => t.id);
@@ -649,6 +656,16 @@ async function handleRefreshFromRemote() {
                   ? t('contacts.individual')
                   : t('contacts.legalEntity')
             }}
+          </button>
+          <span class="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+          <button
+            v-for="m in (['supplier', 'vip', 'problematic'] as const)"
+            :key="m"
+            class="pill-filter"
+            :class="markFilter === m ? 'pill-filter--active' : ''"
+            @click="markFilter = markFilter === m ? '' : m"
+          >
+            {{ t(m === 'supplier' ? 'contacts.markSupplier' : m === 'vip' ? 'contacts.markVip' : 'contacts.markProblematic') }}
           </button>
         </div>
         <div class="flex items-center gap-2">

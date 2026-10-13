@@ -17,6 +17,10 @@ const GET_CLIENT_QUERY = gql`
         status
         createdAt
         updatedAt
+        rating
+        isSupplier
+        isProblematic
+        isVip
       }
       individual {
         firstName
@@ -47,6 +51,10 @@ const GET_CLIENT_BY_SHORT_ID_QUERY = gql`
         status
         createdAt
         updatedAt
+        rating
+        isSupplier
+        isProblematic
+        isVip
       }
       individual {
         firstName
@@ -77,6 +85,10 @@ const GET_CLIENT_BY_IDENTITY_QUERY = gql`
         status
         createdAt
         updatedAt
+        rating
+        isSupplier
+        isProblematic
+        isVip
       }
       individual {
         firstName

@@ -33,6 +33,7 @@ import MergeClientsModal from '@/components/contacts/MergeClientsModal.vue';
 import ContactNotes from '@/components/contacts/ContactNotes.vue';
 import ContactAddresses from '@/components/contacts/ContactAddresses.vue';
 import ContactCalls from '@/components/contacts/ContactCalls.vue';
+import ContactMarks from '@/components/contacts/ContactMarks.vue';
 import ContactQuickActions from '@/components/contacts/ContactQuickActions.vue';
 import type { ClientAddress } from '@/api/contacts/addresses';
 
@@ -233,6 +234,12 @@ function onCopyToClipboard(text: string) {
             :display-name="displayName"
             :identities="identities"
             :addresses="clientAddresses"
+          />
+
+          <ContactMarks
+            :client-id="client?.client.id"
+            :marks="client?.client || {}"
+            @changed="(m) => client && Object.assign(client.client, m)"
           />
 
           <!-- Personal Info Section -->

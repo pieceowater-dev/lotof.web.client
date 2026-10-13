@@ -13,6 +13,10 @@ export interface ClientRow {
     status: 'ACTIVE' | 'ARCHIVED' | 'BLOCKED';
     createdAt: string;
     updatedAt: string;
+    rating?: number;
+    isSupplier?: boolean;
+    isProblematic?: boolean;
+    isVip?: boolean;
   };
   additionalInfo?: string;
   contacts?: Array<{
@@ -61,6 +65,10 @@ const LIST_CLIENTS_QUERY = /* GraphQL */ `
           status
           createdAt
           updatedAt
+          rating
+          isSupplier
+          isProblematic
+          isVip
         }
         individual {
           firstName
