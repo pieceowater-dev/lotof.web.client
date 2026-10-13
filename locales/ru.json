@@ -3541,6 +3541,12 @@
     "linkToContactsUnlink": "Отвязать"
   },
   "tasks": {
+    "subtasks": "Подзадачи",
+    "subtasksProgress": "Выполнено {done} из {total}",
+    "subtaskPlaceholder": "Новая подзадача",
+    "subtaskAdd": "Добавить",
+    "subtaskDone": "Отметить выполненной",
+    "subtaskReopen": "Вернуть в работу",
     "logisticsTitle": "Логистика",
     "logisticsHint": "Задачи на выбранный день по исполнителям, в порядке, который вы задали на доске",
     "logisticsEmpty": "На этот день задач нет",

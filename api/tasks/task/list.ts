@@ -37,6 +37,7 @@ export interface TaskItem {
   problemReason?: string | null;
   pendingAssigneeUserId?: string | null;
   pendingFromUserId?: string | null;
+  parentId?: string | null;
 }
 
 export interface TasksFilter {
@@ -52,6 +53,7 @@ export interface TasksFilter {
   cycleId?: string;
   backlogOnly?: boolean;
   participantUserId?: string;
+  parentId?: string;
 }
 
 // TasksBundleDocument fetches the board's tasks and the per-status counts
@@ -65,7 +67,7 @@ const TasksBundleDocument = /* GraphQL */ `
         textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
         orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
         escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
-        dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
+        dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId parentId
       }
       info { count }
     }

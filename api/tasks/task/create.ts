@@ -32,6 +32,8 @@ export interface CreateTaskInput {
   // resolved automatically from this id once, at creation, if Contacts is
   // installed and reachable (plan §6.3).
   clientId?: string;
+  // Makes the new task a subtask of this one.
+  parentId?: string;
   dueAt?: string;
   dueFrom?: string;
   // Omit to leave the task in the backlog (no cycle).

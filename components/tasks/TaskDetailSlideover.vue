@@ -12,6 +12,7 @@ import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, bloc
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import TaskClientLink from '@/components/tasks/TaskClientLink.vue';
 import TaskComments from '@/components/tasks/TaskComments.vue';
+import TaskSubtasks from '@/components/tasks/TaskSubtasks.vue';
 import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
@@ -767,6 +768,16 @@ async function handleDelete() {
         <p v-else class="text-sm text-gray-400 italic cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 py-0.5" role="button" tabindex="0" @click="startDescriptionEdit" @keydown.enter="startDescriptionEdit">
           {{ t('tasks.addDescription') || 'Add a description...' }}
         </p>
+      </div>
+      <div v-if="!task.parentId" class="py-4">
+        <TaskSubtasks
+          :parent="task"
+          :ns-slug="nsSlug"
+          :get-token="getToken"
+          :done-status="boardStatuses.find((s) => s.isTerminal && !/cancel|reject|declin|spam|lost/i.test(s.key))?.key || boardStatuses.find((s) => s.isTerminal)?.key || null"
+          :open-status="boardStatuses.find((s) => !s.isTerminal)?.key || null"
+          :terminal-keys="boardStatuses.filter((s) => s.isTerminal).map((s) => s.key)"
+        />
       </div>
       <div class="py-4">
         <TaskComments

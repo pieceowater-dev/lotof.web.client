@@ -3282,6 +3282,12 @@
     "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
+    "subtasks": "Subtasks",
+    "subtasksProgress": "{done} of {total} done",
+    "subtaskPlaceholder": "New subtask",
+    "subtaskAdd": "Add",
+    "subtaskDone": "Mark as done",
+    "subtaskReopen": "Reopen",
     "logisticsTitle": "Logistics",
     "logisticsHint": "Tasks for the chosen day by assignee, in the order you set on the board",
     "logisticsEmpty": "No tasks for this day",
