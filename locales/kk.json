@@ -2471,7 +2471,19 @@
     "executorsPay": "Төлем",
     "executorsUnassigned": "Орындаушысыз",
     "executorsEmpty": "Кезеңде жабылған тапсырыс жоқ",
-    "executorsOpen": "Орындаушылар"
+    "executorsOpen": "Орындаушылар",
+    "orderFieldTypeTextarea": "Көп жолды мәтін",
+    "orderFieldTypeDateTime": "Күні мен уақыты",
+    "orderFieldTypeMulti": "Тізімнен бірнешеуі",
+    "orderFieldTypeHeading": "Тақырып (бөлгіш)",
+    "orderFieldSource": "Мәндер қайдан",
+    "orderFieldSourceStatic": "Өз тізімі",
+    "orderFieldSourceStaff": "Қызметкерлер",
+    "orderFieldSourceBranches": "Филиалдар",
+    "orderFieldDefault": "Әдепкі мән",
+    "orderFieldPlaceholder": "Өрістегі кеңес",
+    "orderFieldHint": "Өрістің астындағы түсініктеме",
+    "orderFieldCopyWarranty": "Кепілдік тапсырысқа көшіру"
   },
   "goods": {
     "register": "Касса",

@@ -19,11 +19,21 @@ const error = ref<string | null>(null);
 
 const typeOptions = computed<{ label: string; value: OrderFieldDataType }[]>(() => [
   { label: t('menu.orderFieldTypeText') || 'Text', value: 'TEXT' },
+  { label: t('menu.orderFieldTypeTextarea'), value: 'TEXTAREA' },
   { label: t('menu.orderFieldTypeNumber') || 'Number', value: 'NUMBER' },
   { label: t('menu.orderFieldTypeBoolean') || 'Yes / No', value: 'BOOLEAN' },
   { label: t('menu.orderFieldTypeDate') || 'Date', value: 'DATE' },
+  { label: t('menu.orderFieldTypeDateTime'), value: 'DATETIME' },
   { label: t('menu.orderFieldTypeSelect') || 'Choice from list', value: 'SELECT' },
+  { label: t('menu.orderFieldTypeMulti'), value: 'MULTISELECT' },
+  { label: t('menu.orderFieldTypeHeading'), value: 'HEADING' },
 ]);
+const sourceOptions = computed(() => [
+  { label: t('menu.orderFieldSourceStatic'), value: 'STATIC' },
+  { label: t('menu.orderFieldSourceStaff'), value: 'STAFF' },
+  { label: t('menu.orderFieldSourceBranches'), value: 'BRANCHES' },
+]);
+const isList = (ty: string) => ty === 'SELECT' || ty === 'MULTISELECT';
 const typeLabel = (type: string) => typeOptions.value.find((o) => o.value === type)?.label || type;
 
 const columns = computed(() => [
@@ -65,6 +75,11 @@ const form = reactive({
   isRequired: false,
   isActive: true,
   viewOrder: 0,
+  defaultValue: '',
+  placeholder: '',
+  hint: '',
+  source: 'STATIC',
+  copyToWarranty: true,
 });
 
 function openCreate() {
@@ -74,6 +89,7 @@ function openCreate() {
   form.optionsText = '';
   form.isRequired = false;
   form.isActive = true;
+  Object.assign(form, { defaultValue: '', placeholder: '', hint: '', source: 'STATIC', copyToWarranty: true });
   form.viewOrder = fields.value.length ? Math.max(...fields.value.map((f) => f.viewOrder)) + 1 : 0;
   isModalOpen.value = true;
 }
@@ -85,6 +101,7 @@ function openEdit(row: MenuOrderField) {
   form.optionsText = row.options.join('\n');
   form.isRequired = row.isRequired;
   form.isActive = row.isActive;
+  Object.assign(form, { defaultValue: row.defaultValue || '', placeholder: row.placeholder || '', hint: row.hint || '', source: row.source || 'STATIC', copyToWarranty: row.copyToWarranty !== false });
   form.viewOrder = row.viewOrder;
   isModalOpen.value = true;
 }
@@ -93,7 +110,7 @@ const parsedOptions = computed(() =>
   form.optionsText.split('\n').map((o) => o.trim()).filter(Boolean)
 );
 const isFormValid = computed(() =>
-  form.label.trim().length > 0 && (form.dataType !== 'SELECT' || parsedOptions.value.length > 0)
+  form.label.trim().length > 0 && (!isList(form.dataType) || form.source !== 'STATIC' || parsedOptions.value.length > 0)
 );
 
 async function handleSave() {
@@ -104,8 +121,13 @@ async function handleSave() {
       label: form.label.trim(),
       dataType: form.dataType,
       isRequired: form.isRequired,
-      options: form.dataType === 'SELECT' ? parsedOptions.value : [],
+      options: isList(form.dataType) && form.source === 'STATIC' ? parsedOptions.value : [],
       viewOrder: Number(form.viewOrder) || 0,
+      defaultValue: form.defaultValue.trim(),
+      placeholder: form.placeholder.trim(),
+      hint: form.hint.trim(),
+      source: isList(form.dataType) ? form.source : 'STATIC',
+      copyToWarranty: form.copyToWarranty,
     };
     if (editing.value) {
       const { menuUpdateOrderField } = await import('@/api/menu/orderfield/update');
@@ -209,22 +231,40 @@ onMounted(load);
               :popper="{ strategy: 'fixed' }"
             />
           </UFormGroup>
+          <UFormGroup v-if="isList(form.dataType)" :label="t('menu.orderFieldSource')">
+            <div class="at-seg">
+              <button v-for="o in sourceOptions" :key="o.value" type="button" class="at-seg__btn" :class="form.source === o.value ? 'at-seg__btn--on' : ''" @click="form.source = o.value">{{ o.label }}</button>
+            </div>
+          </UFormGroup>
           <UFormGroup
-            v-if="form.dataType === 'SELECT'"
+            v-if="isList(form.dataType) && form.source === 'STATIC'"
             :label="t('menu.orderFieldOptions') || 'Options'"
             :help="t('menu.orderFieldOptionsHint') || 'One option per line'"
             required
           >
             <UTextarea v-model="form.optionsText" :rows="4" :ui="{ rounded: 'rounded-xl' }" />
           </UFormGroup>
+          <template v-if="form.dataType !== 'HEADING'">
+            <UFormGroup :label="t('menu.orderFieldDefault')">
+              <UInput v-model="form.defaultValue" :ui="{ rounded: 'rounded-xl' }" />
+            </UFormGroup>
+            <div class="grid grid-cols-2 gap-4">
+              <UFormGroup :label="t('menu.orderFieldPlaceholder')"><UInput v-model="form.placeholder" :ui="{ rounded: 'rounded-xl' }" /></UFormGroup>
+              <UFormGroup :label="t('menu.orderFieldHint')"><UInput v-model="form.hint" :ui="{ rounded: 'rounded-xl' }" /></UFormGroup>
+            </div>
+          </template>
           <div class="grid grid-cols-2 gap-4">
             <UFormGroup :label="t('menu.orderFieldOrder') || 'Order'">
               <UInput v-model="form.viewOrder" type="number" min="0" :ui="{ rounded: 'rounded-xl' }" />
             </UFormGroup>
             <div class="flex flex-col justify-end gap-3 pb-1">
-              <label class="flex items-center gap-2 text-sm">
+              <label v-if="form.dataType !== 'HEADING'" class="flex items-center gap-2 text-sm">
                 <UToggle v-model="form.isRequired" />
                 {{ t('menu.orderFieldRequired') || 'Required' }}
+              </label>
+              <label v-if="form.dataType !== 'HEADING'" class="flex items-center gap-2 text-sm">
+                <UToggle v-model="form.copyToWarranty" />
+                {{ t('menu.orderFieldCopyWarranty') }}
               </label>
               <label v-if="editing" class="flex items-center gap-2 text-sm">
                 <UToggle v-model="form.isActive" />

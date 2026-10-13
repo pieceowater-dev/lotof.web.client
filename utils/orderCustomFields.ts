@@ -42,7 +42,7 @@ export function fieldsForOrder(fields: MenuOrderField[], values: CustomFieldValu
 }
 
 export function missingRequiredFields(fields: MenuOrderField[], values: CustomFieldValues): MenuOrderField[] {
-  return fields.filter((f) => f.isActive && f.isRequired && !(values[f.id] ?? '').trim());
+  return fields.filter((f) => f.isActive && f.isRequired && f.dataType !== 'HEADING' && !(values[f.id] ?? '').trim());
 }
 
 export function formatCustomFieldValue(
@@ -52,6 +52,14 @@ export function formatCustomFieldValue(
 ): string {
   if (value === undefined || value === '') return '';
   switch (field.dataType) {
+    case 'HEADING':
+      return '';
+    case 'MULTISELECT':
+      return parseMulti(value).join(', ');
+    case 'DATETIME': {
+      const d = new Date(value);
+      return Number.isNaN(d.getTime()) ? value : d.toLocaleString();
+    }
     case 'BOOLEAN':
       return value === 'true' ? labels.yes : labels.no;
     case 'DATE': {
@@ -61,4 +69,34 @@ export function formatCustomFieldValue(
     default:
       return value;
   }
+}
+
+// MULTISELECT values are stored as a JSON array of strings.
+export function parseMulti(value: string | undefined): string[] {
+  if (!value) return [];
+  try {
+    const v = JSON.parse(value);
+    return Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export function serializeMulti(values: string[]): string {
+  return values.length ? JSON.stringify(values) : '';
+}
+
+// Defaults of the active fields, for a brand-new order.
+export function defaultValuesFor(fields: MenuOrderField[]): CustomFieldValues {
+  const out: CustomFieldValues = {};
+  for (const f of fields) if (f.isActive && f.defaultValue && f.dataType !== 'HEADING') out[f.id] = f.defaultValue;
+  return out;
+}
+
+// Values to carry into a warranty order: only the fields that opted in.
+export function warrantyCarryOver(fields: MenuOrderField[], json: string | null | undefined): string {
+  const values = parseCustomFields(json);
+  const keep: CustomFieldValues = {};
+  for (const f of fields) if (f.copyToWarranty !== false && values[f.id] !== undefined) keep[f.id] = values[f.id];
+  return serializeCustomFields(keep);
 }

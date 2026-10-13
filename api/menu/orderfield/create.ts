@@ -15,6 +15,11 @@ export type OrderFieldInput = {
   isRequired: boolean;
   options: string[];
   viewOrder: number;
+  defaultValue?: string;
+  placeholder?: string;
+  hint?: string;
+  source?: string;
+  copyToWarranty?: boolean;
 };
 
 export async function menuCreateOrderField(menuToken: string, namespaceSlug: string, input: OrderFieldInput): Promise<MenuOrderField> {

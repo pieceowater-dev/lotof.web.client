@@ -2,7 +2,8 @@ import { menuClient } from '@/api/clients';
 import { menuRequestWithRefresh } from '@/api/menu/menuRequestWithRefresh';
 import { getDeviceHeaders } from '@/utils/device';
 
-export type OrderFieldDataType = 'TEXT' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'SELECT';
+export type OrderFieldDataType = 'TEXT' | 'TEXTAREA' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'DATETIME' | 'SELECT' | 'MULTISELECT' | 'HEADING';
+export type OrderFieldSource = 'STATIC' | 'STAFF' | 'BRANCHES';
 
 export type MenuOrderField = {
   id: string;
@@ -12,9 +13,14 @@ export type MenuOrderField = {
   options: string[];
   viewOrder: number;
   isActive: boolean;
+  defaultValue?: string;
+  placeholder?: string;
+  hint?: string;
+  source?: OrderFieldSource;
+  copyToWarranty?: boolean;
 };
 
-export const ORDER_FIELD_FRAGMENT = 'id label dataType isRequired options viewOrder isActive';
+export const ORDER_FIELD_FRAGMENT = 'id label dataType isRequired options viewOrder isActive defaultValue placeholder hint source copyToWarranty';
 
 const OrderFieldsDocument = /* GraphQL */ `
   query OrderFields($filter: DefaultFilterInput, $onlyActive: Boolean) {

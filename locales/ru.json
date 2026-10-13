@@ -2895,7 +2895,19 @@
     "executorsPay": "К выплате",
     "executorsUnassigned": "Без исполнителя",
     "executorsEmpty": "За период нет закрытых заказов",
-    "executorsOpen": "Исполнители"
+    "executorsOpen": "Исполнители",
+    "orderFieldTypeTextarea": "Многострочный текст",
+    "orderFieldTypeDateTime": "Дата и время",
+    "orderFieldTypeMulti": "Несколько из списка",
+    "orderFieldTypeHeading": "Заголовок (разделитель)",
+    "orderFieldSource": "Откуда значения",
+    "orderFieldSourceStatic": "Свой список",
+    "orderFieldSourceStaff": "Сотрудники",
+    "orderFieldSourceBranches": "Филиалы",
+    "orderFieldDefault": "Значение по умолчанию",
+    "orderFieldPlaceholder": "Подсказка в поле",
+    "orderFieldHint": "Пояснение под полем",
+    "orderFieldCopyWarranty": "Переносить в гарантийный заказ"
   },
   "plans": {
     "calendar": "Календарь",

@@ -12,7 +12,8 @@ import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from 
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
-import { missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
+import { missingRequiredFields, parseCustomFields, serializeCustomFields, defaultValuesFor, type CustomFieldValues } from '@/utils/orderCustomFields';
+import { useStaffNames } from '@/composables/useStaffNames';
 
 const { t } = useI18n();
 
@@ -88,6 +89,8 @@ const typeOptions = computed(() => [
 const orderFields = ref<MenuOrderField[]>([]);
 const customValues = reactive<CustomFieldValues>({});
 const missingFields = computed(() => missingRequiredFields(orderFields.value, customValues));
+const { names: staffNames, load: loadStaffNames } = useStaffNames();
+const fieldSources = computed(() => ({ staff: staffNames.value, branches: props.branches.map((b) => b.name) }));
 
 async function loadOrderFields() {
   try {
@@ -96,6 +99,9 @@ async function loadOrderFields() {
     if (!menuToken) return;
     const { menuOrderFieldsList } = await import('@/api/menu/orderfield/list');
     orderFields.value = (await menuOrderFieldsList(menuToken, props.nsSlug, { onlyActive: true })).fields;
+    if (orderFields.value.some((f) => f.source === 'STAFF')) loadStaffNames(props.nsSlug);
+    // defaults only fill what the prefill (e.g. a warranty copy) did not bring
+    for (const [id, v] of Object.entries(defaultValuesFor(orderFields.value))) if (customValues[id] === undefined) customValues[id] = v;
   } catch (e) {
     logError('[CreateOrderModal] loadOrderFields failed', e);
   }
@@ -357,9 +363,12 @@ function handleSubmit() {
                 <Icon name="lucide:list-plus" class="h-3.5 w-3.5" />
                 {{ t('menu.customFields') || 'Details' }}
               </div>
-              <UFormGroup v-for="f in orderFields" :key="f.id" :label="f.label" :required="f.isRequired">
-                <OrderFieldInput :field="f" :model-value="customValues[f.id] ?? ''" @update:model-value="(v: string) => (customValues[f.id] = v)" />
-              </UFormGroup>
+              <template v-for="f in orderFields" :key="f.id">
+                <OrderFieldInput v-if="f.dataType === 'HEADING'" :field="f" model-value="" />
+                <UFormGroup v-else :label="f.label" :required="f.isRequired" :help="f.hint || undefined">
+                  <OrderFieldInput :field="f" :source-options="fieldSources" :model-value="customValues[f.id] ?? ''" @update:model-value="(v: string) => (customValues[f.id] = v)" />
+                </UFormGroup>
+              </template>
             </div>
 
             <UFormGroup :label="t('menu.comment') || 'Comment'">

@@ -38,7 +38,7 @@ import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buildSocialLinksQrBlock, substituteMenuDocVariables } from '@/utils/documentVariableSubstitution';
 import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField } from '@/api/menu/orderfield/list';
-import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, type CustomFieldValues } from '@/utils/orderCustomFields';
+import { fieldsForOrder, formatCustomFieldValue, missingRequiredFields, parseCustomFields, serializeCustomFields, warrantyCarryOver, type CustomFieldValues } from '@/utils/orderCustomFields';
 import { printHtmlDocument } from '@/utils/printWindow';
 import { parseStatusLabels, statusLabelFor, type StatusLabels } from '@/utils/orderStatusLabels';
 import { warrantyInfo } from '@/utils/warranty';
@@ -786,6 +786,10 @@ async function loadOrderFields() {
 
 const customValues = computed<CustomFieldValues>(() => parseCustomFields(props.order?.customFields));
 const visibleOrderFields = computed(() => fieldsForOrder(orderFields.value, customValues.value));
+const fieldSources = computed(() => ({
+  staff: Object.values(memberNameById.value).filter(Boolean),
+  branches: (props.branches || []).map((b) => b.name),
+}));
 const yesNoLabels = computed(() => ({ yes: t('menu.yes') || 'Yes', no: t('menu.no') || 'No' }));
 
 const isEditingFields = ref(false);
@@ -859,7 +863,7 @@ function startWarrantyCase() {
     deliveryAddress: props.order.deliveryAddress,
     branchId: props.order.branchId,
     tableNumber: tableTag ?? undefined,
-    customFields: props.order.customFields,
+    customFields: warrantyCarryOver(orderFields.value, props.order.customFields),
   });
 }
 
@@ -1407,17 +1411,23 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             </div>
 
             <dl v-if="!isEditingFields" class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
-              <div v-for="f in visibleOrderFields" :key="f.id" class="min-w-0">
+              <div v-for="f in visibleOrderFields" :key="f.id" class="min-w-0" :class="f.dataType === 'HEADING' ? 'sm:col-span-2 pt-1' : ''">
+                <dt v-if="f.dataType === 'HEADING'" class="text-sm font-semibold text-slate-700 dark:text-slate-200">{{ f.label }}</dt>
+                <template v-else>
                 <dt class="text-xs text-gray-500 dark:text-gray-400">{{ f.label }}</dt>
                 <dd class="text-gray-900 dark:text-gray-100 break-words">
                   {{ formatCustomFieldValue(f, customValues[f.id], yesNoLabels) || '—' }}
                 </dd>
+                </template>
               </div>
             </dl>
             <div v-else class="space-y-2.5">
-              <UFormGroup v-for="f in visibleOrderFields" :key="f.id" :label="f.label" :required="f.isRequired && f.isActive">
-                <OrderFieldInput :field="f" :model-value="fieldsForm[f.id] ?? ''" @update:model-value="(v: string) => (fieldsForm[f.id] = v)" />
-              </UFormGroup>
+              <template v-for="f in visibleOrderFields" :key="f.id">
+                <OrderFieldInput v-if="f.dataType === 'HEADING'" :field="f" model-value="" />
+                <UFormGroup v-else :label="f.label" :required="f.isRequired && f.isActive" :help="f.hint || undefined">
+                  <OrderFieldInput :field="f" :source-options="fieldSources" :model-value="fieldsForm[f.id] ?? ''" @update:model-value="(v: string) => (fieldsForm[f.id] = v)" />
+                </UFormGroup>
+              </template>
               <div class="flex justify-end gap-2 pt-1">
                 <UButton size="sm" color="gray" variant="ghost" :disabled="savingFields" @click="isEditingFields = false">
                   {{ t('app.cancel') || 'Cancel' }}

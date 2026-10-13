@@ -2852,7 +2852,19 @@
     "executorsPay": "Pay",
     "executorsUnassigned": "Unassigned",
     "executorsEmpty": "No closed orders in this period",
-    "executorsOpen": "Executors"
+    "executorsOpen": "Executors",
+    "orderFieldTypeTextarea": "Multi-line text",
+    "orderFieldTypeDateTime": "Date and time",
+    "orderFieldTypeMulti": "Several from a list",
+    "orderFieldTypeHeading": "Heading (divider)",
+    "orderFieldSource": "Values come from",
+    "orderFieldSourceStatic": "Own list",
+    "orderFieldSourceStaff": "Staff",
+    "orderFieldSourceBranches": "Branches",
+    "orderFieldDefault": "Default value",
+    "orderFieldPlaceholder": "Placeholder",
+    "orderFieldHint": "Help text",
+    "orderFieldCopyWarranty": "Carry into a warranty order"
   },
   "goods": {
     "register": "Register",
