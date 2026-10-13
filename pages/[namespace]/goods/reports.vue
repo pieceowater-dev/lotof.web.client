@@ -67,6 +67,22 @@ async function exportTurnover() {
   XLSX.writeFile(wb, `turnover-${from.value}-${to.value}.xlsx`);
 }
 const lowStock = ref<GoodsStock[]>([]);
+const thresholds = ref<Array<{ goodId: string; warehouseId?: string | null; thresholdQty: number }>>([]);
+// How many to buy to get back to the threshold (the warehouse's own threshold wins over the shared one).
+function toBuy(s: GoodsStock): number {
+  const own = thresholds.value.find((x) => x.goodId === s.goodId && x.warehouseId === s.warehouseId)
+    || thresholds.value.find((x) => x.goodId === s.goodId && !x.warehouseId);
+  return own ? Math.max(0, own.thresholdQty - s.available) : 0;
+}
+async function exportToBuy() {
+  const XLSX = await import('xlsx');
+  const rows = lowStock.value.map((s) => ({
+    [t('goods.good')]: goodName(s.goodId), [t('goods.available')]: s.available, [t('goods.toBuy')]: toBuy(s),
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), 'to-buy');
+  XLSX.writeFile(wb, `to-buy-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
 const expiringBatches = ref<GoodsBatch[]>([]);
 
 // Lightweight bar visualization without pulling in a charting dependency --
@@ -97,10 +113,13 @@ async function loadReport() {
     } else {
       const { goodsListStock } = await import('@/api/goods/stock');
       const { goodsListExpiringBatches } = await import('@/api/goods/goodbatch');
-      const [{ stock }, batches] = await Promise.all([
+      const { goodsListLowStockThresholds } = await import('@/api/goods/lowstock');
+      const [{ stock }, batches, ths] = await Promise.all([
         goodsListStock(token, nsSlug.value, { lowStockOnly: true }),
         goodsListExpiringBatches(token, nsSlug.value),
+        goodsListLowStockThresholds(token, nsSlug.value),
       ]);
+      thresholds.value = ths;
       lowStock.value = stock;
       expiringBatches.value = batches;
     }
@@ -271,11 +290,17 @@ onMounted(async () => {
 
       <div v-else-if="activeTab === 'alerts'" class="space-y-4">
         <div>
-          <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">{{ t('goods.lowStockAlerts') }}</h3>
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('goods.lowStockAlerts') }}</h3>
+            <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!lowStock.length" @click="exportToBuy"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
+          </div>
           <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
             <div v-for="s in lowStock" :key="`${s.warehouseId}-${s.goodId}`" class="flex items-center justify-between px-4 py-2.5 text-sm">
               <span class="font-medium">{{ goodName(s.goodId) }}</span>
-              <UBadge color="amber" variant="soft">{{ s.available }}</UBadge>
+              <span class="flex items-center gap-2">
+                <span v-if="toBuy(s)" class="text-xs text-gray-500">{{ t('goods.toBuy') }}: <b class="tabular-nums">{{ toBuy(s) }}</b></span>
+                <UBadge color="amber" variant="soft">{{ s.available }}</UBadge>
+              </span>
             </div>
             <EmptyState v-if="!lowStock.length" icon="lucide:package-check" :title="t('goods.noLowStock')" />
           </div>
