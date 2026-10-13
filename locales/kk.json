@@ -1,5 +1,7 @@
 {
   "app": {
+    "unitMb": "МБ",
+    "unitGb": "ГБ",
     "title": "lota",
     "tagline": "Барлығы қол астыңда.",
     "description": "Командамен тиімді жұмысқа арналған сервистер",
@@ -722,6 +724,7 @@
     "downgradeBlockedBody": "Жаңа тарифтің лимиттері сіз қазір пайдаланып жатқаннан төмен. Пайдалануды азайтыңыз немесе лимиттері кем емес тариф таңдаңыз:",
     "downgradeBlockedOk": "Түсінікті",
     "planFeature": {
+      "storage_mb": "Қойма: {value}",
       "max_clients": "{value} клиентке дейін",
       "max_custom_fields": "{value} қолданушы өрісіне дейін",
       "max_loyalty_programs": "{value} адалдық бағдарламасына дейін",

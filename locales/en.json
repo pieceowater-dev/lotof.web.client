@@ -1,5 +1,7 @@
 {
   "app": {
+    "unitMb": "MB",
+    "unitGb": "GB",
     "done": "Done",
     "edit": "Edit",
     "title": "lota",
@@ -837,6 +839,7 @@
     "downgradeBlockedBody": "The new plan's limits are lower than what you're already using. Reduce usage or pick a plan with limits at least this high:",
     "downgradeBlockedOk": "Got it",
     "planFeature": {
+      "storage_mb": "Storage: {value}",
       "max_clients": "Up to {value} clients",
       "max_custom_fields": "Up to {value} custom fields",
       "max_loyalty_programs": "Up to {value} loyalty programs",

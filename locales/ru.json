@@ -1,5 +1,7 @@
 {
   "app": {
+    "unitMb": "МБ",
+    "unitGb": "ГБ",
     "done": "Готово",
     "edit": "Редактировать",
     "title": "lota",
@@ -837,6 +839,7 @@
     "downgradeBlockedBody": "На новом тарифе лимиты ниже, чем вы уже используете. Уменьшите использование или выберите тариф с лимитами не ниже текущих:",
     "downgradeBlockedOk": "Понятно",
     "planFeature": {
+      "storage_mb": "Хранилище: {value}",
       "max_clients": "До {value} клиентов",
       "max_custom_fields": "До {value} пользовательских полей",
       "max_loyalty_programs": "До {value} программ лояльности",

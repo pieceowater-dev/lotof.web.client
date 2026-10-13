@@ -41,7 +41,21 @@ function humanizeKey(key: string): string {
 //   1. app.planFeature.<key>  -- localised template with "{value}" baked in
 //   2. a real (non-namespaced) label from metadata -> "<label>: <value>"
 //   3. humanised key          -> "Boards: <value>"
+/** 512 → "512 МБ", 5120 → "5 ГБ" (units from the caller, so it stays translatable). */
+export function formatStorageMb(mb: number, units: { mb: string; gb: string } = { mb: 'MB', gb: 'GB' }): string {
+  if (!Number.isFinite(mb) || mb <= 0) return '';
+  if (mb >= 1024) {
+    const gb = mb / 1024;
+    return `${Number.isInteger(gb) ? gb : gb.toFixed(1)} ${units.gb}`;
+  }
+  return `${mb} ${units.mb}`;
+}
+
 export function planFeatureLabel(f: PlanFeature, t: (k: string, params?: Record<string, string | number>) => string): string {
+  if (f.key === 'storage_mb' && Number(f.value) > 0) {
+    const size = formatStorageMb(Number(f.value), { mb: t('app.unitMb') || 'MB', gb: t('app.unitGb') || 'GB' });
+    return t('app.planFeature.storage_mb', { value: size });
+  }
   const byKey = t('app.planFeature.' + f.key, { value: f.value as string | number });
   if (byKey) return byKey;
 

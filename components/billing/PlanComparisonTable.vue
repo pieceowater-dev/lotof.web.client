@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
-import { parsePlanFeatures, planFeatureLabel, orderedFeatureKeys } from '@/utils/planFeatures';
+import { parsePlanFeatures, planFeatureLabel, orderedFeatureKeys, formatStorageMb } from '@/utils/planFeatures';
 import FeatureComparisonTable from '@/components/billing/FeatureComparisonTable.vue';
 import type { CellValue } from '@/utils/planFeatures';
 
@@ -70,6 +70,9 @@ const groups = computed(() => {
       values: Object.fromEntries(
         parsed.map(({ plan, features }) => {
           const f = features.find((x) => x.key === key);
+          if (f && key === 'storage_mb' && Number(f.value) > 0) {
+            return [plan.id, formatStorageMb(Number(f.value), { mb: t('app.unitMb') || 'MB', gb: t('app.unitGb') || 'GB' })];
+          }
           return [plan.id, f ? f.value : null];
         })
       ),
