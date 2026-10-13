@@ -7,9 +7,10 @@ export type GoodsWriteOffItem = { id: string; goodId: string; unitId: string; qu
 export type GoodsWriteOff = {
   id: string; warehouseId: string; reason: GoodsWriteOffReason; number: string; createdBy: string; createdAt: string;
   items: GoodsWriteOffItem[];
+  cancelledAt?: string | null; cancelReason?: string;
 };
 
-const WRITEOFF_FIELDS = `id warehouseId reason number createdBy createdAt items { id goodId unitId quantity }`;
+const WRITEOFF_FIELDS = `id warehouseId reason number createdBy createdAt cancelledAt cancelReason items { id goodId unitId quantity }`;
 
 function headers(token: string, ns: string, dev: Record<string, string>) {
   return { GoodsAuthorization: `Bearer ${token}`, Namespace: ns, ...dev };
@@ -44,5 +45,16 @@ export async function goodsCreateWriteOff(token: string, ns: string, input: Crea
   return goodsRequestWithRefresh(async () => {
     const res = await goodsClient.request<{ createWriteOff: GoodsWriteOff }>(CreateDocument, { input }, { headers: headers(token, ns, dev) });
     return res.createWriteOff;
+  }, ns);
+}
+
+export async function goodsCancelWriteOff(token: string, ns: string, id: string, reason?: string): Promise<GoodsWriteOff> {
+  const dev = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ cancelWriteOff: GoodsWriteOff }>(
+      /* GraphQL */ `mutation CancelWriteOff($id: ID!, $reason: String) { cancelWriteOff(id: $id, reason: $reason) { ${WRITEOFF_FIELDS} } }`,
+      { id, reason }, { headers: { GoodsAuthorization: `Bearer ${token}`, Namespace: ns, ...dev } }
+    );
+    return res.cancelWriteOff;
   }, ns);
 }

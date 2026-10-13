@@ -21,6 +21,7 @@ import type { MovementExtraField, MovementDraftItem } from '@/components/goods/M
 import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/purchaseorder';
 import type { GoodsReceipt } from '@/api/goods/goodsreceipt';
 import type { GoodsSupplierReturn } from '@/api/goods/supplierreturn';
+import { useConfirm } from '@/composables/useConfirm';
 import type { GoodsStockTransfer, GoodsStockTransferStatus } from '@/api/goods/stocktransfer';
 import type { GoodsWriteOff, GoodsWriteOffReason } from '@/api/goods/writeoff';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
@@ -85,12 +86,14 @@ function rowStatusLabel(row: { kind: MovementKind; status: string | null }): str
   if (!row.status) return '';
   if (row.kind === 'purchase') return PO_STATUS_LABELS[row.status as GoodsPurchaseOrderStatus] || row.status;
   if (row.kind === 'transfer') return TRANSFER_STATUS_LABELS[row.status as GoodsStockTransferStatus] || row.status;
+  if (row.status === 'CANCELLED') return t('goods.cancelledBadge');
   return row.status;
 }
 function rowStatusColor(row: { kind: MovementKind; status: string | null }): any {
   if (!row.status) return 'gray';
   if (row.kind === 'purchase') return PO_STATUS_COLORS[row.status as GoodsPurchaseOrderStatus] || 'gray';
   if (row.kind === 'transfer') return TRANSFER_STATUS_COLORS[row.status as GoodsStockTransferStatus] || 'gray';
+  if (row.status === 'CANCELLED') return 'red';
   return 'gray';
 }
 
@@ -150,10 +153,10 @@ type MovementRow = {
 const allRows = computed<MovementRow[]>(() => {
   const rows: MovementRow[] = [
     ...orders.value.map((o) => ({ kind: 'purchase' as const, id: o.id, number: o.number, summary: supplierName(o.supplierId), status: o.status, date: o.expectedDate || o.createdAt, itemsCount: o.items.length })),
-    ...receipts.value.map((r) => ({ kind: 'receipt' as const, id: r.id, number: r.number, summary: supplierName(r.supplierId), status: null, date: r.createdAt, itemsCount: r.items.length })),
+    ...receipts.value.map((r) => ({ kind: 'receipt' as const, id: r.id, number: r.number, summary: supplierName(r.supplierId), status: r.cancelledAt ? 'CANCELLED' : null, date: r.createdAt, itemsCount: r.items.length })),
     ...transfers.value.map((tr) => ({ kind: 'transfer' as const, id: tr.id, number: tr.number, summary: `${warehouseName(tr.fromWarehouseId)} → ${warehouseName(tr.toWarehouseId)}`, status: tr.status, date: tr.createdAt, itemsCount: tr.items.length })),
-    ...supplierReturns.value.map((sr) => ({ kind: 'supplierReturn' as const, id: sr.id, number: sr.number, summary: supplierName(sr.supplierId), status: null, date: sr.createdAt, itemsCount: sr.items.length })),
-    ...writeOffs.value.map((wo) => ({ kind: 'writeoff' as const, id: wo.id, number: wo.number, summary: REASON_LABELS[wo.reason], status: null, date: wo.createdAt, itemsCount: wo.items.length })),
+    ...supplierReturns.value.map((sr) => ({ kind: 'supplierReturn' as const, id: sr.id, number: sr.number, summary: supplierName(sr.supplierId), status: sr.cancelledAt ? 'CANCELLED' : null, date: sr.createdAt, itemsCount: sr.items.length })),
+    ...writeOffs.value.map((wo) => ({ kind: 'writeoff' as const, id: wo.id, number: wo.number, summary: REASON_LABELS[wo.reason], status: wo.cancelledAt ? 'CANCELLED' : null, date: wo.createdAt, itemsCount: wo.items.length })),
   ];
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1));
 });
@@ -231,6 +234,29 @@ async function transferAction(fn: (token: string, ns: string, id: string) => Pro
     busyAction.value = false;
   }
 }
+const { confirm } = useConfirm();
+const CANCELLABLE: MovementKind[] = ['receipt', 'writeoff', 'supplierReturn'];
+const detailCancelledAt = computed(() => (detailDoc.value as any)?.cancelledAt as string | null | undefined);
+async function cancelDocument() {
+  if (!detailRow.value || !CANCELLABLE.includes(detailRow.value.kind)) return;
+  if (!(await confirm({ message: t('goods.cancelDocConfirm'), confirmLabel: t('goods.cancelDocument'), icon: 'lucide:undo-2' }))) return;
+  busyAction.value = true;
+  try {
+    const token = await getToken();
+    const { id, kind } = detailRow.value;
+    if (kind === 'receipt') await (await import('@/api/goods/goodsreceipt')).goodsCancelReceipt(token, nsSlug.value, id);
+    else if (kind === 'writeoff') await (await import('@/api/goods/writeoff')).goodsCancelWriteOff(token, nsSlug.value, id);
+    else await (await import('@/api/goods/supplierreturn')).goodsCancelSupplierReturn(token, nsSlug.value, id);
+    await loadAll();
+    useToast().add({ title: t('goods.cancelDocDone'), color: 'primary' });
+  } catch (e) {
+    logError('[goods/movements] cancelDocument failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to cancel', color: 'red' });
+  } finally {
+    busyAction.value = false;
+  }
+}
+
 async function sendTransfer() { const { goodsSendStockTransfer } = await import('@/api/goods/stocktransfer'); await transferAction(goodsSendStockTransfer); }
 async function receiveTransfer() { const { goodsReceiveStockTransfer } = await import('@/api/goods/stocktransfer'); await transferAction(goodsReceiveStockTransfer); }
 async function cancelTransfer() { const { goodsCancelStockTransfer } = await import('@/api/goods/stocktransfer'); await transferAction(goodsCancelStockTransfer); }
@@ -488,6 +514,12 @@ onMounted(loadAll);
               :popper="{ strategy: 'fixed' }"
               @update:model-value="updatePoStatus"
             />
+          </div>
+
+          <!-- Posted documents are cancelled, never deleted: the stock goes back and the document stays in the history -->
+          <div v-if="detailRow && CANCELLABLE.includes(detailRow.kind)" class="flex items-center gap-2">
+            <UBadge v-if="detailCancelledAt" color="red" variant="soft" size="xs">{{ t('goods.cancelledBadge') }} · {{ detailCancelledAt.slice(0, 10) }}</UBadge>
+            <UButton v-else size="sm" color="red" variant="soft" icon="lucide:undo-2" :loading="busyAction" @click="cancelDocument">{{ t('goods.cancelDocument') }}</UButton>
           </div>
 
           <!-- Transfer workflow actions -->

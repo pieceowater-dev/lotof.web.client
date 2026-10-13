@@ -9,9 +9,10 @@ export type GoodsReceiptItem = {
 export type GoodsReceipt = {
   id: string; warehouseId: string; supplierId?: string | null; purchaseOrderId?: string | null;
   number: string; createdBy: string; createdAt: string; items: GoodsReceiptItem[];
+  cancelledAt?: string | null; cancelReason?: string;
 };
 
-const RECEIPT_FIELDS = `id warehouseId supplierId purchaseOrderId number createdBy createdAt items { id goodId unitId quantity costPriceCents batchNumber expiryDate }`;
+const RECEIPT_FIELDS = `id warehouseId supplierId purchaseOrderId number createdBy createdAt cancelledAt cancelReason items { id goodId unitId quantity costPriceCents batchNumber expiryDate }`;
 
 function headers(token: string, ns: string, dev: Record<string, string>) {
   return { GoodsAuthorization: `Bearer ${token}`, Namespace: ns, ...dev };
@@ -67,5 +68,16 @@ export async function goodsSupplierPriceHistory(token: string, ns: string, goodI
   return goodsRequestWithRefresh(async () => {
     const res = await goodsClient.request<{ supplierPriceHistory: SupplierPriceHistoryEntry[] }>(PriceHistoryDocument, { goodId }, { headers: headers(token, ns, dev) });
     return res.supplierPriceHistory;
+  }, ns);
+}
+
+export async function goodsCancelReceipt(token: string, ns: string, id: string, reason?: string): Promise<GoodsReceipt> {
+  const dev = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ cancelGoodsReceipt: GoodsReceipt }>(
+      /* GraphQL */ `mutation CancelGoodsReceipt($id: ID!, $reason: String) { cancelGoodsReceipt(id: $id, reason: $reason) { ${RECEIPT_FIELDS} } }`,
+      { id, reason }, { headers: headers(token, ns, dev) }
+    );
+    return res.cancelGoodsReceipt;
   }, ns);
 }

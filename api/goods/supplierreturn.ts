@@ -6,9 +6,10 @@ export type GoodsSupplierReturnItem = { id: string; goodId: string; unitId: stri
 export type GoodsSupplierReturn = {
   id: string; goodsReceiptId: string; warehouseId: string; supplierId?: string | null; number: string; comment: string;
   createdBy: string; createdAt: string; totalCents: number; items: GoodsSupplierReturnItem[];
+  cancelledAt?: string | null; cancelReason?: string;
 };
 
-const FIELDS = `id goodsReceiptId warehouseId supplierId number comment createdBy createdAt totalCents items { id goodId unitId quantity costPriceCents }`;
+const FIELDS = `id goodsReceiptId warehouseId supplierId number comment createdBy createdAt totalCents cancelledAt cancelReason items { id goodId unitId quantity costPriceCents }`;
 
 function headers(token: string, ns: string, dev: Record<string, string>) {
   return { GoodsAuthorization: `Bearer ${token}`, Namespace: ns, ...dev };
@@ -43,5 +44,16 @@ export async function goodsCreateSupplierReturn(token: string, ns: string, input
   return goodsRequestWithRefresh(async () => {
     const res = await goodsClient.request<{ createSupplierReturn: GoodsSupplierReturn }>(CreateDocument, { input }, { headers: headers(token, ns, dev) });
     return res.createSupplierReturn;
+  }, ns);
+}
+
+export async function goodsCancelSupplierReturn(token: string, ns: string, id: string, reason?: string): Promise<GoodsSupplierReturn> {
+  const dev = await getDeviceHeaders();
+  return goodsRequestWithRefresh(async () => {
+    const res = await goodsClient.request<{ cancelSupplierReturn: GoodsSupplierReturn }>(
+      /* GraphQL */ `mutation CancelSupplierReturn($id: ID!, $reason: String) { cancelSupplierReturn(id: $id, reason: $reason) { ${FIELDS} } }`,
+      { id, reason }, { headers: headers(token, ns, dev) }
+    );
+    return res.cancelSupplierReturn;
   }, ns);
 }
