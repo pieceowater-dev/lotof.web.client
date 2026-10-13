@@ -176,14 +176,16 @@ const createdTo = ref('');
 const closedFrom = ref('');
 const closedTo = ref('');
 const participantFilter = ref('');
+const visitedStageFilter = ref('');
+const visitedStageOptions = computed(() => [{ label: t('menu.any') || 'Any', value: '' }, ...allOrderStages.value.map((s) => ({ label: s.name, value: s.id }))]);
 // Quick filters over the list: urgent, overdue (longer in a stage than its limit), ready.
 const quickFilter = ref<'' | 'urgent' | 'overdue' | 'ready' | 'contact'>('');
-const { load: loadOrderStages, byId: stageById } = useOrderStages();
+const { load: loadOrderStages, byId: stageById, stages: allOrderStages } = useOrderStages();
 const quickCounts = ref({ urgent: 0, overdue: 0, ready: 0, contactDue: 0 });
 const stageColor = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.color || statusBadgeStyle(row.status).bg;
 const stageLabel = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.name || statusLabel(row.status);
 const rowOverdue = (row: any) => orderIsOverdue(row, stageById(row.stageId));
-const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '', participantUserId: '' });
+const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '', participantUserId: '', visitedStageId: '' });
 const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
 
 // Staff eligible to be picked as a "participant" filter — same "has an
@@ -323,6 +325,7 @@ const currentFilterParams = computed(() => ({
   closedFrom: dateInputToRfc3339(appliedFilterPanel.closedFrom),
   closedTo: dateInputToRfc3339(appliedFilterPanel.closedTo, true),
   participantUserId: appliedFilterPanel.participantUserId || undefined,
+  visitedStageId: appliedFilterPanel.visitedStageId || undefined,
   urgent: quickFilter.value === 'urgent' || undefined,
   overdue: quickFilter.value === 'overdue' || undefined,
   readyOnly: quickFilter.value === 'ready' || undefined,
@@ -336,6 +339,7 @@ function applyFilterPanel() {
   appliedFilterPanel.closedFrom = closedFrom.value;
   appliedFilterPanel.closedTo = closedTo.value;
   appliedFilterPanel.participantUserId = participantFilter.value;
+  appliedFilterPanel.visitedStageId = visitedStageFilter.value;
   isFilterPanelOpen.value = false;
   resetPageAndReload();
 }
@@ -347,6 +351,7 @@ function clearFilterPanel() {
   closedFrom.value = '';
   closedTo.value = '';
   participantFilter.value = '';
+  visitedStageFilter.value = '';
   applyFilterPanel();
 }
 
@@ -1426,6 +1431,23 @@ async function handleCreateOrder(payload: any) {
               :popper="{ strategy: 'fixed' }"
             />
             <p class="text-xs text-gray-400">{{ t('menu.participantFilterHint') || 'Orders this staff member is assigned to' }}</p>
+          </div>
+
+          <div v-if="allOrderStages.length" class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              <Icon name="lucide:history" class="h-3.5 w-3.5" />
+              {{ t('menu.visitedStageFilterLabel') }}
+            </div>
+            <USelectMenu
+              v-model="visitedStageFilter"
+              :options="visitedStageOptions"
+              value-attribute="value"
+              option-attribute="label"
+              searchable
+              icon="lucide:history"
+              :popper="{ strategy: 'fixed' }"
+            />
+            <p class="text-xs text-gray-400">{{ t('menu.visitedStageFilterHint') }}</p>
           </div>
 
           <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">

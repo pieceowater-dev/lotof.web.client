@@ -97,7 +97,7 @@ const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t
 const priceStageEnabled = computed(() => {
   try { return !!JSON.parse(brandSettings.value?.orderRules || '{}').priceStage; } catch { return false; }
 });
-const { load: loadStages } = useOrderStages();
+const { load: loadStages, byId: stageById } = useOrderStages();
 
 const roleLabel = (r: string) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
@@ -456,6 +456,18 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
 
 async function changeStatus(status: string, stageId?: string) {
   if (!props.order || (props.order.status === status && !stageId)) return;
+  // A stage can ask for order fields before an order enters it: send the person
+  // to those fields instead of letting the server refuse the move.
+  const target = stageId ? stageById(stageId) : undefined;
+  if (target?.requiredFieldIds?.length && stageId !== props.order.stageId) {
+    const empty = target.requiredFieldIds.filter((id) => !String(customValues.value[id] ?? '').trim());
+    if (empty.length) {
+      const names = empty.map((id) => orderFields.value.find((f) => f.id === id)?.label).filter(Boolean).join(', ');
+      useToast().add({ title: t('menu.stageFillFirst', { fields: names }), color: 'amber' });
+      startEditFields();
+      return;
+    }
+  }
   updatingStatus.value = true;
   try {
     const menuToken = await getToken();

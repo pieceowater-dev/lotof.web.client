@@ -10,6 +10,7 @@ import { ORDER_STATUS_KEYS, defaultStatusLabel, parseStatusLabels, statusLabelFo
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
+import type { MenuOrderField } from '@/api/menu/orderfield/list';
 import {
   menuCreateOrderStage, menuUpdateOrderStage, menuDeleteOrderStage, menuApplyStagePreset, menuUpdateOrderRules,
   type OrderStage,
@@ -34,7 +35,14 @@ const confirmDeleteId = ref<string | null>(null);
 const busy = ref(false);
 const palette = BRAND_COLORS.filter(c => c.toLowerCase() !== '#111827'); // never a black accent
 
-const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '' });
+const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', requiredFieldIds: [] as string[] });
+const orderFieldList = ref<MenuOrderField[]>([]);
+const requirableFields = computed(() => orderFieldList.value.filter((f) => f.isActive && f.dataType !== 'HEADING'));
+function toggleRequired(id: string) {
+  const i = form.requiredFieldIds.indexOf(id);
+  if (i >= 0) form.requiredFieldIds.splice(i, 1); else form.requiredFieldIds.push(id);
+}
+const fieldName = (id: string) => orderFieldList.value.find((f) => f.id === id)?.label || '';
 
 const PRESETS: Array<{ key: string; icon: string; label: string }> = [
   { key: 'service', icon: 'lucide:wrench', label: 'menu.stagePresetService' },
@@ -62,6 +70,10 @@ async function load() {
   loading.value = true;
   try {
     await loadStages(token(), nsSlug.value, true);
+    try {
+      const { menuOrderFieldsList } = await import('@/api/menu/orderfield/list');
+      orderFieldList.value = (await menuOrderFieldsList(token(), nsSlug.value)).fields;
+    } catch { orderFieldList.value = []; }
     const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
     const brand = await menuGetBrandSettings(token(), nsSlug.value);
     labels.value = parseStatusLabels(brand?.statusLabels);
@@ -82,13 +94,13 @@ function fail(e: unknown) {
 
 function openNew(group: string) {
   editing.value = null;
-  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '' });
+  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', requiredFieldIds: [] });
   modalOpen.value = true;
 }
 
 function openEdit(s: OrderStage) {
   editing.value = s;
-  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue, autoTaskTitle: s.autoTaskTitle || '' });
+  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue, autoTaskTitle: s.autoTaskTitle || '', requiredFieldIds: [...(s.requiredFieldIds || [])] });
   modalOpen.value = true;
 }
 
@@ -97,9 +109,9 @@ async function save() {
   busy.value = true;
   try {
     if (editing.value) {
-      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim() });
+      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), requiredFieldIds: [...form.requiredFieldIds] });
     } else {
-      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim() });
+      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), requiredFieldIds: [...form.requiredFieldIds] });
     }
     modalOpen.value = false;
     await loadStages(token(), nsSlug.value, true);
@@ -196,6 +208,7 @@ async function toggleRule(key: string, value: boolean | string) {
             <div class="mt-0.5 flex flex-wrap gap-1">
               <span v-if="s.slaMinutes" class="at-chip !text-[11px]"><Icon name="lucide:timer" class="w-3 h-3" />{{ slaText(s.slaMinutes) }}</span>
               <span v-if="s.isUrgent" class="at-chip !text-[11px]"><Icon name="lucide:flame" class="w-3 h-3" />{{ t('menu.urgent') }}</span>
+              <span v-if="s.requiredFieldIds?.length" class="at-chip !text-[11px]" :title="s.requiredFieldIds.map(fieldName).filter(Boolean).join(', ')"><Icon name="lucide:asterisk" class="w-3 h-3" />{{ s.requiredFieldIds.length }}</span>
               <span v-if="s.autoTaskTitle" class="at-chip !text-[11px]" :title="s.autoTaskTitle"><Icon name="lucide:list-checks" class="w-3 h-3" />{{ t('menu.stageAutoTaskBadge') }}</span>
               <span v-if="s.isOverdue" class="at-chip !text-[11px]"><Icon name="lucide:alarm-clock" class="w-3 h-3" />{{ t('menu.overdue') }}</span>
             </div>
@@ -241,6 +254,13 @@ async function toggleRule(key: string, value: boolean | string) {
           <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageAutoTask') }}</div>
           <UInput v-model="form.autoTaskTitle" maxlength="160" :placeholder="t('menu.stageAutoTaskPlaceholder')" :ui="{ rounded: 'rounded-xl' }" />
           <p class="at-hint">{{ t('menu.stageAutoTaskHint') }}</p>
+        </div>
+        <div v-if="requirableFields.length" class="space-y-1.5">
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageRequiredFields') }}</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="f in requirableFields" :key="f.id" type="button" class="pill-filter" :class="form.requiredFieldIds.includes(f.id) ? 'pill-filter--active' : ''" @click="toggleRequired(f.id)">{{ f.label }}</button>
+          </div>
+          <p class="at-hint">{{ t('menu.stageRequiredFieldsHint') }}</p>
         </div>
         <div class="flex justify-end gap-2">
           <button type="button" class="at-btn" @click="modalOpen = false">{{ t('common.cancel') }}</button>

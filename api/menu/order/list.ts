@@ -58,6 +58,7 @@ export type OrdersFilter = {
   readyOnly?: boolean;
   contactDue?: boolean;
   stageIds?: string[];
+  visitedStageId?: string;
   page?: number;
   length?: string;
 };
@@ -105,8 +106,8 @@ export async function menuOrdersList(menuToken: string, namespaceSlug: string, p
       OrdersDocument,
       {
         filter: { pagination: { page: params.page || 1, length: params.length || 'FIFTY' } },
-        extra: params.urgent || params.overdue || params.readyOnly || params.contactDue || params.stageIds?.length
-          ? { urgent: params.urgent || undefined, overdue: params.overdue || undefined, readyOnly: params.readyOnly || undefined, contactDue: params.contactDue || undefined, stageIds: params.stageIds?.length ? params.stageIds : undefined }
+        extra: params.urgent || params.overdue || params.readyOnly || params.contactDue || params.stageIds?.length || params.visitedStageId
+          ? { urgent: params.urgent || undefined, overdue: params.overdue || undefined, readyOnly: params.readyOnly || undefined, contactDue: params.contactDue || undefined, stageIds: params.stageIds?.length ? params.stageIds : undefined, visitedStageIds: params.visitedStageId ? [params.visitedStageId] : undefined }
           : undefined,
         ...filterVars(params),
       },

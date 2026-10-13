@@ -16,6 +16,7 @@ export type OrderStage = {
   isUrgent: boolean;
   isOverdue: boolean;
   autoTaskTitle?: string;
+  requiredFieldIds?: string[];
 };
 
 export type OrderPayment = {
@@ -33,7 +34,7 @@ export type OrderPayment = {
 export type OrderQuickCounts = { urgent: number; overdue: number; ready: number; mine: number; contactDue: number };
 
 const ORDER_FIELDS = `id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber`;
-const STAGE_FIELDS = 'id status name color sortOrder slaMinutes isUrgent isOverdue autoTaskTitle';
+const STAGE_FIELDS = 'id status name color sortOrder slaMinutes isUrgent isOverdue autoTaskTitle requiredFieldIds';
 const PAYMENT_FIELDS = 'id orderId amount method kind paidAt userId comment externalRef';
 
 async function call<T>(menuToken: string, ns: string, query: string, variables?: Record<string, unknown>): Promise<T> {
@@ -49,12 +50,12 @@ export async function menuOrderStages(token: string, ns: string): Promise<OrderS
   return r.orderStages;
 }
 
-export async function menuCreateOrderStage(token: string, ns: string, input: { status: string; name: string; color?: string; slaMinutes?: number; isUrgent?: boolean; isOverdue?: boolean; autoTaskTitle?: string }) {
+export async function menuCreateOrderStage(token: string, ns: string, input: { status: string; name: string; color?: string; slaMinutes?: number; isUrgent?: boolean; isOverdue?: boolean; autoTaskTitle?: string; requiredFieldIds?: string[] }) {
   const r = await call<{ createOrderStage: OrderStage }>(token, ns, `mutation CreateStage($input: CreateOrderStageInput!) { createOrderStage(input: $input) { ${STAGE_FIELDS} } }`, { input });
   return r.createOrderStage;
 }
 
-export async function menuUpdateOrderStage(token: string, ns: string, input: { id: string; name: string; color?: string; sortOrder?: number; slaMinutes?: number; isUrgent?: boolean; isOverdue?: boolean; autoTaskTitle?: string }) {
+export async function menuUpdateOrderStage(token: string, ns: string, input: { id: string; name: string; color?: string; sortOrder?: number; slaMinutes?: number; isUrgent?: boolean; isOverdue?: boolean; autoTaskTitle?: string; requiredFieldIds?: string[] }) {
   const r = await call<{ updateOrderStage: OrderStage }>(token, ns, `mutation UpdateStage($input: UpdateOrderStageInput!) { updateOrderStage(input: $input) { ${STAGE_FIELDS} } }`, { input });
   return r.updateOrderStage;
 }
