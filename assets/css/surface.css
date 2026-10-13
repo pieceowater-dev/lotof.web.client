@@ -820,3 +820,23 @@ button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(
 
 /* looping animations are paused while their block is off screen (toggled by useHomeFx) */
 .fx-off, .fx-off *, .fx-off::before, .fx-off::after { animation-play-state: paused !important; }
+
+/* ---- Floating call widget (components/contacts/CallWidget.vue): the header's glass, as a draggable card ---- */
+.call-widget {
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7);
+  backdrop-filter: blur(22px) saturate(1.7);
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08), 0 24px 60px -20px rgba(15, 23, 42, 0.35), 0 4px 14px -6px rgba(15, 23, 42, 0.18);
+}
+.dark .call-widget {
+  background: rgba(26, 26, 26, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 24px 60px -20px rgba(0, 0, 0, 0.7);
+}
+.call-widget__grip { cursor: grab; touch-action: none; user-select: none; }
+.call-widget--dragging .call-widget__grip { cursor: grabbing; }
+.call-widget__ring { animation: call-ring 1.6s ease-out infinite; }
+@keyframes call-ring {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
+  100% { box-shadow: 0 0 0 14px rgba(16, 185, 129, 0); }
+}
