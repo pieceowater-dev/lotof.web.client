@@ -109,7 +109,7 @@ void user;
         <UButton
           v-else
           size="xs"
-          color="emerald"
+          color="primary" variant="soft"
           :to="`/${nsSlug}/contacts/new?phone=${encodeURIComponent(ev.call.clientPhone)}`"
           icon="lucide:user-plus"
         >

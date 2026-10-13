@@ -87,7 +87,7 @@ const lastCallText = computed(() => {
     <UButton
       v-if="primaryPhone"
       size="sm"
-      color="emerald"
+      color="primary" variant="soft"
       icon="lucide:phone"
       :loading="calling"
       @click="call(primaryPhone.value)"

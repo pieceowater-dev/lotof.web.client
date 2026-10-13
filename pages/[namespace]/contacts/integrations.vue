@@ -122,7 +122,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
         <span class="text-sm text-gray-600 dark:text-gray-400">{{ nsTitle }}</span>
       </div>
       <div class="flex gap-2">
-        <UButton icon="lucide:plus" size="sm" color="emerald" :disabled="loading || error" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
+        <UButton icon="lucide:plus" size="sm" color="primary" variant="soft" :disabled="loading || error" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
         <UButton icon="lucide:arrow-left" size="xs" color="primary" variant="soft" @click="goBack">{{ t('app.back') }}</UButton>
       </div>
     </div>
@@ -144,7 +144,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/settings`);
           </div>
           <h3 class="text-lg font-semibold">{{ t('contacts.integrationEmptyTitle') }}</h3>
           <p class="text-sm text-gray-500 max-w-md">{{ t('contacts.integrationEmptyText') }}</p>
-          <UButton color="emerald" icon="lucide:plus" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
+          <UButton color="primary" variant="soft" icon="lucide:plus" @click="connect">{{ t('contacts.integrationConnect') }}</UButton>
         </div>
 
         <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">

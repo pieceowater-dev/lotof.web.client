@@ -306,7 +306,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
             <span v-if="c.clientId" class="text-xs text-gray-500 ml-2">{{ c.clientPhone }}</span>
             <CallRecord :call="c" />
           </div>
-          <UButton size="xs" color="emerald" icon="lucide:phone" @click="callBack(c)">{{ t('contacts.callsCallBack') }}</UButton>
+          <UButton size="xs" color="primary" variant="soft" icon="lucide:phone" @click="callBack(c)">{{ t('contacts.callsCallBack') }}</UButton>
           <UButton size="xs" color="gray" variant="soft" icon="lucide:check" @click="done(c)">{{ t('contacts.callbackMark') }}</UButton>
         </div>
       </template>

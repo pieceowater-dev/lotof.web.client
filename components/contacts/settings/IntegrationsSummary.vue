@@ -32,7 +32,7 @@ function status(i: TelephonyProviderConfig) {
         <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ t('contacts.telephonyTitle') }}</h3>
         <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('contacts.integrationsCardHint') }}</p>
       </div>
-      <UButton :to="`/${nsSlug}/contacts/integrations`" color="emerald" icon="lucide:plug-zap">{{ t('contacts.integrationsManage') }}</UButton>
+      <UButton :to="`/${nsSlug}/contacts/integrations`" color="primary" variant="soft" icon="lucide:plug-zap">{{ t('contacts.integrationsManage') }}</UButton>
     </div>
 
     <div v-if="loaded && !items.length" class="text-sm text-gray-500">{{ t('contacts.integrationEmptyText') }}</div>
