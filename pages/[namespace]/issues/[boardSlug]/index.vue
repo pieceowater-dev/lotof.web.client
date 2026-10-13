@@ -769,6 +769,9 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         <UButton v-if="zenModeEnabled" icon="lucide:smartphone" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/zen`" target="_blank" @click="handleOpenZenClick">
           {{ t('tasks.openZenMode') || 'Zen Mode' }}
         </UButton>
+ <UButton v-if="isOwnerOrManager" icon="lucide:route" size="xs" color="gray" variant="soft" class="hidden sm:inline-flex" :to="`/${nsSlug}/issues/${boardSlug}/logistics`">
+          {{ t('tasks.logisticsTitle') }}
+        </UButton>
         <UButton v-if="isOwnerOrManager" icon="lucide:clipboard-list" size="xs" color="gray" variant="soft" class="hidden sm:inline-flex" :to="`/${nsSlug}/issues/${boardSlug}/report`">
           {{ t('tasks.reportOpen') }}
         </UButton>
