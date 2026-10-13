@@ -126,6 +126,19 @@ const defaultColumns: ColumnDef[] = [
 
 const columns = ref<ColumnDef[]>([...defaultColumns]);
 
+// Columns the user switched off, remembered in this browser. The name column
+// always stays: a row without a name is not a client.
+const HIDDEN_KEY = 'contacts-table-hidden';
+const ALWAYS_VISIBLE = ['name'];
+const hiddenKeys = ref<string[]>([]);
+const columnsOpen = ref(false);
+const isVisible = (i: number) => !hiddenKeys.value.includes(columns.value[i]?.key);
+function toggleColumn(key: string) {
+  if (ALWAYS_VISIBLE.includes(key)) return;
+  hiddenKeys.value = hiddenKeys.value.includes(key) ? hiddenKeys.value.filter((k) => k !== key) : [...hiddenKeys.value, key];
+  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(hiddenKeys.value)); } catch { /* storage unavailable */ }
+}
+
 const pageSizeOptions = [
   { value: 10, label: '10' },
   { value: 20, label: '20' },
@@ -193,6 +206,10 @@ watch(() => sortedClients.value.length, () => {
 
 // Load column widths from localStorage
 onMounted(() => {
+  try {
+    const hidden = localStorage.getItem(HIDDEN_KEY);
+    if (hidden) hiddenKeys.value = (JSON.parse(hidden) as string[]).filter((k) => !ALWAYS_VISIBLE.includes(k));
+  } catch { /* storage unavailable */ }
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -456,12 +473,32 @@ function addTagToFilter(tagId: string, tagName: string) {
   <div class="at-tray relative overflow-hidden flex flex-col flex-1 min-h-0 !max-h-none">
     <!-- Finder-style search bar -->
     <div data-tour="contacts-table-search" class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 px-4 py-3">
-      <FinderStyleSearch
-        :selected-tags="selectedTags"
-        :search-query="searchQuery"
-        @update:selected-tags="(tags) => emit('update:selectedTags', tags)"
-        @update:search-query="(query) => emit('update:searchQuery', query)"
-      />
+      <div class="flex items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <FinderStyleSearch
+            :selected-tags="selectedTags"
+            :search-query="searchQuery"
+            @update:selected-tags="(tags) => emit('update:selectedTags', tags)"
+            @update:search-query="(query) => emit('update:searchQuery', query)"
+          />
+        </div>
+        <div class="relative hidden flex-shrink-0 sm:block">
+          <button type="button" class="at-btn !px-3 !py-1.5" @click="columnsOpen = !columnsOpen">
+            <UIcon name="lucide:columns-3" class="h-4 w-4" />{{ t('contacts.columnsTitle') }}
+          </button>
+          <div v-if="columnsOpen" class="absolute right-0 top-full z-30 mt-2 w-56 rounded-2xl border border-gray-200 bg-white p-2 shadow-lg dark:border-gray-800 dark:bg-gray-900">
+            <button
+              v-for="c in columns.filter((x) => !ALWAYS_VISIBLE.includes(x.key))"
+              :key="c.key"
+              type="button"
+              class="flex w-full items-center gap-2 rounded-xl px-2.5 py-1.5 text-sm hover:bg-gray-50 dark:hover:bg-white/5"
+              @click="toggleColumn(c.key)"
+            >
+              <UIcon :name="hiddenKeys.includes(c.key) ? 'lucide:square' : 'lucide:check-square'" class="h-4 w-4" :class="hiddenKeys.includes(c.key) ? 'text-gray-400' : 'text-accent-600'" />{{ t(`contacts.${c.key}`) }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- No blocking overlay to avoid table blinking on updates -->
@@ -478,6 +515,7 @@ function addTagToFilter(tagId: string, tagName: string) {
             <th
               v-for="(col, index) in columns"
               :key="col.key"
+              v-show="isVisible(index)"
               :style="{ width: `${col.width}px`, minWidth: `${col.minWidth}px` }"
               :class="[
                 'relative px-4 py-2.5 text-left',
@@ -522,6 +560,7 @@ function addTagToFilter(tagId: string, tagName: string) {
               <td
                 v-for="(col, colIndex) in columns"
                 :key="`skeleton-${i}-${col.key}`"
+                v-show="isVisible(colIndex)"
                 :style="{ width: `${col.width}px` }"
                 class="px-4 py-3"
               >
@@ -536,7 +575,7 @@ function addTagToFilter(tagId: string, tagName: string) {
           <!-- Empty state -->
           <tr v-else-if="paginatedClients.length === 0">
             <td
-              :colspan="columns.length"
+              :colspan="Math.max(1, columns.length - hiddenKeys.length)"
               class="px-4 py-12 text-center"
             >
               <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
@@ -559,7 +598,7 @@ function addTagToFilter(tagId: string, tagName: string) {
           >
             <!-- Type -->
             <td
-              :style="{ width: `${columns[0].width}px` }"
+              v-show="isVisible(0)" :style="{ width: `${columns[0].width}px` }"
               class="px-2 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="flex items-center justify-center">
@@ -573,7 +612,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Created At -->
             <td
-              :style="{ width: `${columns[1].width}px` }"
+              v-show="isVisible(1)" :style="{ width: `${columns[1].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">
@@ -589,7 +628,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Name -->
             <td
-              :style="{ width: `${columns[2].width}px` }"
+              v-show="isVisible(2)" :style="{ width: `${columns[2].width}px` }"
               class="px-4 py-3 text-sm font-medium"
               @click.stop
             >
@@ -667,7 +706,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Contacts -->
             <td
-              :style="{ width: `${columns[3].width}px` }"
+              v-show="isVisible(3)" :style="{ width: `${columns[3].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
               @click.stop
             >
@@ -751,7 +790,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Identifier (BIN/IIN) -->
             <td
-              :style="{ width: `${columns[4].width}px` }"
+              v-show="isVisible(4)" :style="{ width: `${columns[4].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate font-mono">
@@ -761,7 +800,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Additional Info -->
             <td
-              :style="{ width: `${columns[5].width}px` }"
+              v-show="isVisible(5)" :style="{ width: `${columns[5].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">
@@ -771,7 +810,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Status -->
             <td
-              :style="{ width: `${columns[6].width}px` }"
+              v-show="isVisible(6)" :style="{ width: `${columns[6].width}px` }"
               class="px-4 py-3 text-sm"
             >
               <span :class="getStatusBadgeClass(client.client.status)">
@@ -781,7 +820,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Tags -->
             <td
-              :style="{ width: `${columns[7].width}px` }"
+              v-show="isVisible(7)" :style="{ width: `${columns[7].width}px` }"
               class="px-3 py-2 text-sm group/tags"
               @click.stop
             >
@@ -826,7 +865,7 @@ function addTagToFilter(tagId: string, tagName: string) {
 
             <!-- Updated At -->
             <td
-              :style="{ width: `${columns[8].width}px` }"
+              v-show="isVisible(8)" :style="{ width: `${columns[8].width}px` }"
               class="px-4 py-3 text-sm text-gray-600 dark:text-gray-300"
             >
               <div class="truncate">

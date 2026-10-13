@@ -1085,6 +1085,7 @@
     }
   },
   "contacts": {
+    "columnsTitle": "Бағандар",
     "mergePreview": "Не болады",
     "mergeNewContacts": "Қосылатын байланыс: {n}",
     "mergeSameContacts": "Бұрыннан бар, қайталанбайды: {n}",

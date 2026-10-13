@@ -1216,6 +1216,7 @@
     }
   },
   "contacts": {
+    "columnsTitle": "Колонки",
     "mergePreview": "Что произойдёт",
     "mergeNewContacts": "Добавится контактов: {n}",
     "mergeSameContacts": "Уже есть, не дублируются: {n}",
