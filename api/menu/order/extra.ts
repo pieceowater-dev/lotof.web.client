@@ -173,3 +173,19 @@ export async function menuOrderEvents(token: string, ns: string, p: { userId?: s
   const r = await call<{ orderEvents: { rows: OrderEvent[]; info: { count: number } } }>(token, ns, `query Events($userId: String, $from: String, $to: String, $filter: DefaultFilterInput) { orderEvents(userId: $userId, from: $from, to: $to, filter: $filter) { rows { id orderId number displayNumber previousStatus newStatus stageId userId comment createdAt } info { count } } }`, { userId: p.userId, from: p.from, to: p.to, filter: { pagination: { page: p.page || 1, length: 'FIFTY' } } });
   return { rows: r.orderEvents.rows, count: r.orderEvents.info.count };
 }
+
+export type OrderCardDef = { id: string; name: string; filter: string; sortOrder: number };
+
+export async function menuMyOrderCards(token: string, ns: string): Promise<OrderCardDef[]> {
+  const r = await call<{ myOrderCards: OrderCardDef[] }>(token, ns, `query MyCards { myOrderCards { id name filter sortOrder } }`);
+  return r.myOrderCards;
+}
+
+export async function menuCreateOrderCard(token: string, ns: string, name: string, filter: string): Promise<OrderCardDef> {
+  const r = await call<{ createOrderCard: OrderCardDef }>(token, ns, `mutation CardCreate($name: String!, $filter: String!) { createOrderCard(name: $name, filter: $filter) { id name filter sortOrder } }`, { name, filter });
+  return r.createOrderCard;
+}
+
+export async function menuDeleteOrderCard(token: string, ns: string, id: string): Promise<void> {
+  await call(token, ns, `mutation CardDelete($id: ID!) { deleteOrderCard(id: $id) }`, { id });
+}

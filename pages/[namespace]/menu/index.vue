@@ -12,6 +12,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
+import MyOrderCards, { type CardFilter } from '@/components/menu/MyOrderCards.vue';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { smartOrderNumber, displayOrderNumber } from '@/utils/orderNumber';
@@ -540,6 +541,15 @@ function toggleQuick(k: 'urgent' | 'overdue' | 'ready' | 'contact') {
   resetPageAndReload();
 }
 
+const currentCardFilter = computed<CardFilter>(() => ({ statuses: selectedStatuses.value, quick: quickFilter.value, mine: myOrdersFilterActive.value }));
+function applyCard(f: CardFilter) {
+  selectedStatuses.value = [...(f.statuses || [])];
+  quickFilter.value = f.quick || '';
+  const next = f.mine ? (currentUser.value?.id || '') : '';
+  participantFilter.value = next;
+  appliedFilterPanel.participantUserId = next;
+  resetPageAndReload();
+}
 function toggleMyOrdersFilter() {
   const next = myOrdersFilterActive.value ? '' : (currentUser.value?.id || '');
   participantFilter.value = next;
@@ -1048,6 +1058,14 @@ async function handleCreateOrder(payload: any) {
           <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ q.n }}</span>
         </span>
       </button>
+      <MyOrderCards
+        :ns-slug="nsSlug"
+        :get-token="getToken"
+        :user-id="currentUser?.id"
+        :branch-ids="selectedBranchIds"
+        :current="currentCardFilter"
+        @apply="applyCard"
+      />
       <button
         v-for="s in STATUSES"
         :key="s"

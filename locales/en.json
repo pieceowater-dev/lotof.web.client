@@ -2888,7 +2888,9 @@
     "noteTpl2": "Waiting for a part",
     "noteTpl3": "Agreed with the customer",
     "noteSaveTemplate": "Save as template",
-    "docVarOrderLink": "Public order link (wrap as {{QR:ORDER_LINK}} for a QR code)"
+    "docVarOrderLink": "Public order link (wrap as {{QR:ORDER_LINK}} for a QR code)",
+    "cardName": "Card name",
+    "cardSave": "Save filter"
   },
   "goods": {
     "register": "Register",
