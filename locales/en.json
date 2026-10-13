@@ -1726,7 +1726,14 @@
     },
     "clear": "Clear",
     "yes": "Yes",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "storage": {
+      "title": "Storage",
+      "hint": "This app's photos and files. The limit comes from your plan.",
+      "unlimited": "Your plan sets no limit",
+      "files": "files",
+      "almostFull": "Storage is almost full — new uploads will be rejected. Move to a larger plan."
+    }
   },
   "landing": {
     "getStarted": "Get started",

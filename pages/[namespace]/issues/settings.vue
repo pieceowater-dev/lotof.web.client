@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -231,6 +232,8 @@ onMounted(() => {
         </UButton>
       </div>
     </div>
+
+    <StorageUsageCard class="mb-4" app="issues" :ns-slug="nsSlug" :get-token="() => useTasksToken().current()" />
 
     <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1 flex-shrink-0 flex items-center gap-2">
       <UIcon name="lucide:users" class="w-4 h-4" />

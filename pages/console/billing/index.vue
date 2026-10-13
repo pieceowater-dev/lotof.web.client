@@ -560,6 +560,7 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
     { key: 'max_clients', label: 'Макс. клиентов' },
     { key: 'max_custom_fields', label: 'Макс. доп. полей' },
     { key: 'max_loyalty_programs', label: 'Макс. программ лояльности' },
+    { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
   ],
   menu: [
     { key: 'max_staff', label: 'Макс. персонала' },
@@ -568,16 +569,22 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
     { key: 'max_promobanners', label: 'Макс. промо-баннеров' },
     { key: 'max_badges', label: 'Макс. бейджей' },
     { key: 'max_links', label: 'Макс. ссылок' },
+    { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
   ],
   issues: [
     { key: 'max_boards', label: 'Макс. досок' },
     { key: 'max_staff', label: 'Макс. сотрудников' },
+    { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
+  ],
+  plans: [
+    { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
   ],
   goods: [
     { key: 'max_warehouses', label: 'Макс. складов' },
     { key: 'max_staff', label: 'Макс. персонала' },
     { key: 'max_registers', label: 'Макс. касс' },
     { key: 'max_goods', label: 'Макс. товаров' },
+    { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
   ],
 };
 

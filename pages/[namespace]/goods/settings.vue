@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -583,6 +584,7 @@ onMounted(() => {
 
     <!-- General -->
     <div v-else-if="activeTab === 'general' && settings" class="space-y-4">
+      <StorageUsageCard app="goods" :ns-slug="nsSlug" :get-token="getToken" />
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
         <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ t('goods.generalSettings') }}</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">

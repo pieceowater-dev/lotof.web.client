@@ -2,6 +2,8 @@
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
+import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
+import { useMenuToken } from '@/composables/useMenuToken';
 import StaffSection from '@/components/menu/settings/StaffSection.vue';
 import BrandSection from '@/components/menu/settings/BrandSection.vue';
 import BranchesSection from '@/components/menu/settings/BranchesSection.vue';
@@ -26,6 +28,7 @@ useHead({ title: 'Настройки — Orders' });
 // going to reject anyway (@menuAuth(roles: [OWNER, MANAGER]) on all of it).
 // Bounce back rather than show a settings screen that can't do anything.
 const { role: staffRole, isOwnerOrManager } = useMenuStaffRole();
+const menuTokenStore = useMenuToken();
 watch(staffRole, (r) => {
   if (r && !isOwnerOrManager.value) {
     navigateTo(`/${nsSlug.value}/menu`);
@@ -113,7 +116,10 @@ watch(activeTab, (tab) => {
 
     <div class="flex-1 min-h-0 overflow-y-auto">
       <StaffSection v-if="activeTab === 'staff'" />
-      <BrandSection v-else-if="activeTab === 'brand'" />
+      <div v-else-if="activeTab === 'brand'" class="space-y-4">
+        <StorageUsageCard app="menu" :ns-slug="nsSlug" :get-token="() => menuTokenStore.current()" />
+        <BrandSection />
+      </div>
       <BranchesSection v-else-if="activeTab === 'branches'" />
       <CatalogSection v-else-if="activeTab === 'catalog'" />
       <PromoBannersSection v-else-if="activeTab === 'promobanners'" />

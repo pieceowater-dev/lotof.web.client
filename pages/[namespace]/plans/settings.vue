@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUi } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
@@ -400,6 +401,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
     <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
+      <StorageUsageCard class="mt-4" app="plans" :ns-slug="nsSlug" :get-token="() => getToken(nsSlug)" />
       <!-- pill tabs -->
       <div class="mt-4 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 p-1 flex-shrink-0">
         <button
