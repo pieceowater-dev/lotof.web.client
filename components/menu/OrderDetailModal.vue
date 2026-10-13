@@ -21,6 +21,9 @@ import { parseTableTag } from '@/utils/tableTag';
 import OrderHistoryTimeline from '@/components/menu/OrderHistoryTimeline.vue';
 import OrderStatusPicker from '@/components/menu/OrderStatusPicker.vue';
 import OrderFlowPanel from '@/components/menu/OrderFlowPanel.vue';
+import OrderCalls from '@/components/menu/OrderCalls.vue';
+import OrderNotes from '@/components/menu/OrderNotes.vue';
+import OrderExtras from '@/components/menu/OrderExtras.vue';
 import { useOrderStages } from '@/composables/useOrderStages';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';
@@ -1183,6 +1186,12 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             :member-display-name="memberDisplayName"
             @updated="(o) => emit('statusChanged', o)"
           />
+
+          <OrderCalls :order-id="order.id" :client-id="order.clientId" />
+
+          <OrderNotes :order-id="order.id" :ns-slug="nsSlug" :get-token="getToken" :format-date="formatDate" :member-display-name="memberDisplayName" />
+
+          <OrderExtras :order="order" :ns-slug="nsSlug" :get-token="getToken" @updated="(o) => emit('statusChanged', o)" />
 
           <!-- Contact card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">

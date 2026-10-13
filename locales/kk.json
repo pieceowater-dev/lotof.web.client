@@ -1053,7 +1053,8 @@
       "pinsMustMatch": "PIN-кодтар сәйкес келмейді",
       "newPinSameAsOld": "Жаңа PIN-код ескісінен өзгеше болуы керек",
       "pinChangeFailed": "PIN-кодты өзгерту сәтсіз аяқталды"
-    }
+    },
+    "clear": "Тазалау"
   },
   "contacts": {
     "clients": "Клиенттер",
@@ -2411,7 +2412,31 @@
     "stageSlaHint": "Тапсырыс бұл күйде одан ұзақ тұрса, «Мерзімі өткен» тізіміне түседі.",
     "slaNone": "Мерзімсіз",
     "stageUrgentFlag": "Бұл күйдегі барлық тапсырыс шұғыл саналады",
-    "stageOverdueFlag": "Бұл күйдегі барлық тапсырыс мерзімі өткен саналады"
+    "stageOverdueFlag": "Бұл күйдегі барлық тапсырыс мерзімі өткен саналады",
+    "orderCallsTitle": "Тапсырыс қоңыраулары",
+    "orderCallsPull": "Клиент қоңырауларын қосу",
+    "orderCallsEmpty": "Бұл тапсырыс бойынша қоңырау әзірге жоқ",
+    "orderCallsDetach": "Тапсырыстан ажырату",
+    "notesTitle": "Жазбалар",
+    "notePlaceholder": "Тапсырысқа жазба (скриншот қоюға болады)",
+    "noteAddPhoto": "Фото",
+    "noteImportant": "Маңызды",
+    "noteSend": "Қосу",
+    "notesEmpty": "Жазбалар әзірге жоқ",
+    "noteSystem": "Жүйе",
+    "noteEdited": "өзгертілді",
+    "notePinned": "Бекітілген",
+    "notePin": "Бекіту",
+    "noteRestore": "Қайтару",
+    "noteDeleted": "Жазба жойылды",
+    "followUpTitle": "Клиентпен байланыс",
+    "nextContact": "Байланысу мерзімі",
+    "contactDueNow": "Байланысатын уақыт",
+    "recommendation": "Клиентке ұсыныс",
+    "recommendationHint": "Клиентке не кеңес беру керек",
+    "internalNotes": "Ішкі жазбалар",
+    "internalNotesHint": "Тек қызметкерлерге көрінеді, құжатқа шықпайды",
+    "contactDueCard": "Байланысу"
   },
   "goods": {
     "register": "Касса",

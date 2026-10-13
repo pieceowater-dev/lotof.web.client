@@ -175,9 +175,9 @@ const closedFrom = ref('');
 const closedTo = ref('');
 const participantFilter = ref('');
 // Quick filters over the list: urgent, overdue (longer in a stage than its limit), ready.
-const quickFilter = ref<'' | 'urgent' | 'overdue' | 'ready'>('');
+const quickFilter = ref<'' | 'urgent' | 'overdue' | 'ready' | 'contact'>('');
 const { load: loadOrderStages, byId: stageById } = useOrderStages();
-const quickCounts = ref({ urgent: 0, overdue: 0, ready: 0 });
+const quickCounts = ref({ urgent: 0, overdue: 0, ready: 0, contactDue: 0 });
 const stageColor = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.color || statusBadgeStyle(row.status).bg;
 const stageLabel = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.name || statusLabel(row.status);
 const rowOverdue = (row: any) => orderIsOverdue(row, stageById(row.stageId));
@@ -314,6 +314,7 @@ const currentFilterParams = computed(() => ({
   urgent: quickFilter.value === 'urgent' || undefined,
   overdue: quickFilter.value === 'overdue' || undefined,
   readyOnly: quickFilter.value === 'ready' || undefined,
+  contactDue: quickFilter.value === 'contact' || undefined,
 }));
 
 function applyFilterPanel() {
@@ -512,7 +513,7 @@ async function loadMyOrdersCount() {
     myOrdersCount.value = res.count;
     const { menuOrderQuickCounts } = await import('@/api/menu/order/extra');
     const q = await menuOrderQuickCounts(menuToken, nsSlug.value, currentUser.value.id);
-    quickCounts.value = { urgent: q.urgent, overdue: q.overdue, ready: q.ready };
+    quickCounts.value = { urgent: q.urgent, overdue: q.overdue, ready: q.ready, contactDue: q.contactDue };
     await loadOrderStages(menuToken, nsSlug.value);
   } catch (e) {
     logError('[menu/index] loadMyOrdersCount failed', e);
@@ -523,7 +524,7 @@ async function loadMyOrdersCount() {
 // dropdown drives — "my orders" is just that filter pinned to yourself, so
 // picking a colleague there correctly turns this card off, and vice versa.
 const myOrdersFilterActive = computed(() => !!currentUser.value?.id && appliedFilterPanel.participantUserId === currentUser.value.id);
-function toggleQuick(k: 'urgent' | 'overdue' | 'ready') {
+function toggleQuick(k: 'urgent' | 'overdue' | 'ready' | 'contact') {
   quickFilter.value = quickFilter.value === k ? '' : k;
   resetPageAndReload();
 }
@@ -1008,6 +1009,7 @@ async function handleCreateOrder(payload: any) {
         v-for="q in ([
           { k: 'urgent', icon: 'lucide:flame', label: t('menu.urgent'), n: quickCounts.urgent, on: 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30' },
           { k: 'overdue', icon: 'lucide:alarm-clock', label: t('menu.overdue'), n: quickCounts.overdue, on: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30' },
+          { k: 'contact', icon: 'lucide:phone-forwarded', label: t('menu.contactDueCard'), n: quickCounts.contactDue, on: 'border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/30' },
           { k: 'ready', icon: 'lucide:package-check', label: t('menu.readyCard'), n: quickCounts.ready, on: 'border-teal-300 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30' },
         ] as const)"
         :key="q.k"

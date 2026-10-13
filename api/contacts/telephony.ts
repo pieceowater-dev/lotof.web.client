@@ -171,6 +171,15 @@ export async function unlinkCall(token: string, ns: string, callId: string, orde
   await crmRequest(token, ns, `mutation U($c: ID!, $o: ID) { unlinkCall(callId: $c, orderId: $o) { id } }`, { c: callId, o: orderId });
 }
 
+export async function attachClientCallsToOrder(token: string, ns: string, clientId: string, orderId: string): Promise<number> {
+  const data = await crmRequest<{ attachClientCallsToOrder: number }>(
+    token, ns,
+    `mutation Attach($c: ID!, $o: ID!) { attachClientCallsToOrder(clientId: $c, orderId: $o) }`,
+    { c: clientId, o: orderId },
+  );
+  return data.attachClientCallsToOrder;
+}
+
 export async function listCommentTemplates(token: string, ns: string) {
   const data = await crmRequest<{ callCommentTemplates: CallCommentTemplate[] }>(
     token, ns, `query T { callCommentTemplates { id text } }`,

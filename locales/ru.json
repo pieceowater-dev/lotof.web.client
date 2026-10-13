@@ -1185,7 +1185,8 @@
       "newPinSameAsOld": "Новый PIN-код должен отличаться от старого",
       "pinChangeFailed": "Не удалось изменить PIN-код"
     },
-    "invalidPhone": "Проверьте номер телефона"
+    "invalidPhone": "Проверьте номер телефона",
+    "clear": "Очистить"
   },
   "contacts": {
     "clients": "Клиенты",
@@ -2836,7 +2837,31 @@
     "stageSlaHint": "Если заказ дольше этого срока в статусе, он попадёт в «Просрочен».",
     "slaNone": "Без срока",
     "stageUrgentFlag": "Все заказы в этом статусе считаются срочными",
-    "stageOverdueFlag": "Все заказы в этом статусе считаются просроченными"
+    "stageOverdueFlag": "Все заказы в этом статусе считаются просроченными",
+    "orderCallsTitle": "Звонки по заказу",
+    "orderCallsPull": "Подтянуть звонки клиента",
+    "orderCallsEmpty": "Звонков по этому заказу пока нет",
+    "orderCallsDetach": "Отвязать от заказа",
+    "notesTitle": "Заметки",
+    "notePlaceholder": "Заметка к заказу (можно вставить скриншот)",
+    "noteAddPhoto": "Фото",
+    "noteImportant": "Важная",
+    "noteSend": "Добавить",
+    "notesEmpty": "Заметок пока нет",
+    "noteSystem": "Система",
+    "noteEdited": "изменено",
+    "notePinned": "Закреплена",
+    "notePin": "Закрепить",
+    "noteRestore": "Вернуть",
+    "noteDeleted": "Заметка удалена",
+    "followUpTitle": "Связь с клиентом",
+    "nextContact": "Связаться до",
+    "contactDueNow": "Пора связаться",
+    "recommendation": "Рекомендация клиенту",
+    "recommendationHint": "Что посоветовать клиенту",
+    "internalNotes": "Внутренние примечания",
+    "internalNotesHint": "Видно только сотрудникам, в документы не попадает",
+    "contactDueCard": "Связаться"
   },
   "plans": {
     "calendar": "Календарь",

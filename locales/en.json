@@ -1723,7 +1723,8 @@
         "title": "Custom fields",
         "description": "Additional fields for the client card."
       }
-    }
+    },
+    "clear": "Clear"
   },
   "landing": {
     "getStarted": "Get started",
@@ -2793,7 +2794,31 @@
     "stageSlaHint": "If an order stays longer than this in the status it becomes Overdue.",
     "slaNone": "No limit",
     "stageUrgentFlag": "Every order in this status counts as urgent",
-    "stageOverdueFlag": "Every order in this status counts as overdue"
+    "stageOverdueFlag": "Every order in this status counts as overdue",
+    "orderCallsTitle": "Order calls",
+    "orderCallsPull": "Pull the client's calls",
+    "orderCallsEmpty": "No calls on this order yet",
+    "orderCallsDetach": "Detach from the order",
+    "notesTitle": "Notes",
+    "notePlaceholder": "A note on the order (you can paste a screenshot)",
+    "noteAddPhoto": "Photo",
+    "noteImportant": "Important",
+    "noteSend": "Add",
+    "notesEmpty": "No notes yet",
+    "noteSystem": "System",
+    "noteEdited": "edited",
+    "notePinned": "Pinned",
+    "notePin": "Pin",
+    "noteRestore": "Restore",
+    "noteDeleted": "Note deleted",
+    "followUpTitle": "Follow-up",
+    "nextContact": "Contact by",
+    "contactDueNow": "Time to get in touch",
+    "recommendation": "Recommendation for the customer",
+    "recommendationHint": "What to advise the customer",
+    "internalNotes": "Internal notes",
+    "internalNotesHint": "Staff only, never printed on documents",
+    "contactDueCard": "To contact"
   },
   "goods": {
     "register": "Register",
