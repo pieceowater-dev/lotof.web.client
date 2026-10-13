@@ -375,10 +375,50 @@ async function loadTasks(opts: { silent?: boolean } = {}) {
   }
 }
 
+// Quick views over the loaded tasks (client-side, no extra requests).
+type QuickView = '' | 'overdue' | 'noDue' | 'problem';
+const quickView = ref<QuickView>('');
+const QUICK_VIEWS: { key: QuickView; label: string; icon: string }[] = [
+  { key: 'overdue', label: 'tasks.viewOverdue', icon: 'lucide:alarm-clock' },
+  { key: 'noDue', label: 'tasks.viewNoDue', icon: 'lucide:infinity' },
+  { key: 'problem', label: 'tasks.viewProblem', icon: 'lucide:triangle-alert' },
+];
+function matchesQuickView(task: TaskItem): boolean {
+  if (!quickView.value) return true;
+  const terminal = !!boardStatuses.value.find((s) => s.key === task.status)?.isTerminal;
+  if (quickView.value === 'problem') return !!task.problemReportedAt && !terminal;
+  if (terminal) return false;
+  if (quickView.value === 'noDue') return !task.dueAt;
+  return (!!task.dueAt && new Date(task.dueAt).getTime() < Date.now()) || isTaskOverdue(task);
+}
+const visibleTasks = computed(() => tasks.value.filter(matchesQuickView));
+
+async function exportTasks() {
+  const XLSX = await import('xlsx');
+  const statusName = (key: string) => boardStatuses.value.find((s) => s.key === key)?.label || key;
+  const typeName = (id: string) => taskTypes.value.find((tt) => tt.id === id)?.name || '';
+  const who = (id?: string | null) => (id ? memberOptions.value.find((m) => m.value === id)?.label || '' : '');
+  const fmt = (d?: string | null) => (d ? new Date(d).toLocaleString() : '');
+  const data = visibleTasks.value.map((tk) => ({
+    '#': tk.taskNumber,
+    [t('tasks.title') || 'Title']: tk.title,
+    [t('tasks.status') || 'Status']: statusName(tk.status),
+    [t('tasks.type') || 'Type']: typeName(tk.taskTypeId),
+    [t('tasks.assignee') || 'Assignee']: who(tk.assigneeUserId),
+    [t('tasks.dueAt') || 'Due']: fmt(tk.dueAt),
+    [t('tasks.created') || 'Created']: fmt(tk.createdAt),
+    [t('tasks.closed') || 'Closed']: fmt(tk.closedAt),
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'tasks');
+  XLSX.writeFile(wb, `tasks-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 const tasksByColumn = computed(() => {
   const map: Record<string, TaskItem[]> = {};
   for (const s of boardStatuses.value) map[s.key] = [];
-  for (const task of tasks.value) {
+  for (const task of visibleTasks.value) {
     if (!map[task.status]) map[task.status] = [];
     map[task.status].push(task);
   }
@@ -793,6 +833,15 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       >
         {{ t('tasks.myTasks') || 'My tasks' }}
       </UButton>
+    </div>
+
+    <div class="mb-3 flex-shrink-0 flex flex-wrap items-center gap-1.5">
+      <button v-for="v in QUICK_VIEWS" :key="v.key" type="button" class="pill-filter" :class="quickView === v.key ? 'pill-filter--active' : ''" @click="quickView = quickView === v.key ? '' : v.key">
+        <Icon :name="v.icon" class="w-3.5 h-3.5" />{{ t(v.label) }}
+      </button>
+      <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1 ml-auto hidden sm:inline-flex" :disabled="!visibleTasks.length" @click="exportTasks">
+        <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />Excel
+      </button>
     </div>
 
     <div v-if="cyclesEnabled" class="mb-3 flex-shrink-0 flex flex-wrap items-center gap-2">

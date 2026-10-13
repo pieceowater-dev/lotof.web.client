@@ -3484,6 +3484,11 @@
     "linkToContactsUnlink": "Отвязать"
   },
   "tasks": {
+    "viewOverdue": "Просроченные",
+    "viewNoDue": "Без срока",
+    "viewProblem": "С проблемой",
+    "created": "Создана",
+    "closed": "Закрыта",
     "activity": "Активность",
     "activityAssign": "Изменён исполнитель",
     "activityComment": "Комментарий",

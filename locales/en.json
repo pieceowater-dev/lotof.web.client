@@ -3233,6 +3233,11 @@
     "linkToContactsUnlink": "Unlink"
   },
   "tasks": {
+    "viewOverdue": "Overdue",
+    "viewNoDue": "No deadline",
+    "viewProblem": "With a problem",
+    "created": "Created",
+    "closed": "Closed",
     "activity": "Activity",
     "activityAssign": "Assignee changed",
     "activityComment": "Comment",
