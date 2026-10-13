@@ -140,7 +140,7 @@ const headline = computed(() => (props.cards.length > 1 ? `${t('contacts.liveCal
         <div
           v-for="ev in cards"
           :key="ev.call.id"
-          class="rounded-2xl bg-white/60 dark:bg-white/5 px-3 py-3"
+          class="rounded-2xl bg-white/35 dark:bg-white/5 px-3 py-3 ring-1 ring-white/40 dark:ring-white/10"
         >
           <div class="flex items-center gap-3">
             <div
