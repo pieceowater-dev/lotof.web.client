@@ -10,6 +10,7 @@ import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
+import GoodHistoryModal from '@/components/goods/GoodHistoryModal.vue';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsStock } from '@/api/goods/stock';
@@ -158,6 +159,11 @@ async function exportStock() {
 
 // --- Edit good (shared GoodFormModal) -- adding a new good lives on the
 // Catalog page, not here; the dashboard only edits what's already in stock. ---
+const historyGoodId = ref<string | null>(null);
+const showHistory = ref(false);
+const historyName = computed(() => (historyGoodId.value ? goodById.value.get(historyGoodId.value)?.name || '' : ''));
+function openHistory(goodId: string) { historyGoodId.value = goodId; showHistory.value = true; }
+
 const showGoodModal = ref(false);
 const savingGood = ref(false);
 const editingGood = ref<GoodsGood | null>(null);
@@ -273,10 +279,12 @@ onMounted(async () => {
           <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(row.goodId)">
             {{ row.name }}
           </button>
+          <button type="button" class="ml-1.5 align-middle text-gray-400 hover:text-primary-600" :title="t('goods.history')" :aria-label="t('goods.history')" @click="openHistory(row.goodId)"><Icon name="lucide:history" class="h-3.5 w-3.5" /></button>
         </template>
       </AppTable>
     </div>
 
+    <GoodHistoryModal v-model="showHistory" :good-id="historyGoodId" :good-name="historyName" :warehouse-id="activeWarehouseId || undefined" :ns-slug="nsSlug" :get-token="getToken" />
     <GoodFormModal v-model="showGoodModal" :good="editingGood" :units="units" :saving="savingGood" :ns-slug="nsSlug" @submit="submitGoodForm" />
   </div>
 </template>
