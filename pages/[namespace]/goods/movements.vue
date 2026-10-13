@@ -22,6 +22,7 @@ import type { MovementExtraField, MovementDraftItem } from '@/components/goods/M
 import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/purchaseorder';
 import type { GoodsReceipt } from '@/api/goods/goodsreceipt';
 import type { GoodsSupplierReturn } from '@/api/goods/supplierreturn';
+import { printHtmlDocument } from '@/utils/printWindow';
 import { useConfirm } from '@/composables/useConfirm';
 import { formatDateTime, formatDateOnly } from '@/utils/formatDate';
 import type { GoodsStockTransfer, GoodsStockTransferStatus } from '@/api/goods/stocktransfer';
@@ -195,6 +196,20 @@ const detailDoc = computed(() => {
     default: return null;
   }
 });
+
+const escHtml = (v: unknown) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Printable form of any document: header, lines, signature spots.
+function printDocument() {
+  const row = detailRow.value;
+  const doc = detailDoc.value as any;
+  if (!row || !doc) return;
+  const lines = (doc.items || []).map((it: any, i: number) => `<tr><td>${i + 1}</td><td>${escHtml(goodName(it.goodId))}</td><td style="text-align:right">${escHtml(it.quantity)} ${escHtml(unitSymbol(it.unitId))}</td><td style="text-align:right">${it.costPriceCents != null ? (it.costPriceCents / 100).toFixed(2) : it.priceCents != null ? (it.priceCents / 100).toFixed(2) : ''}</td></tr>`).join('');
+  const html = `<h2>${escHtml(row.number)}</h2><p>${escHtml(row.summary)} · ${escHtml(formatDateTime(row.date, locale.value))}</p>
+    <table style="width:100%;border-collapse:collapse" border="1" cellpadding="6"><thead><tr><th>#</th><th>${escHtml(t('goods.good'))}</th><th>${escHtml(t('goods.quantity'))}</th><th>${escHtml(t('goods.price'))}</th></tr></thead><tbody>${lines}</tbody></table>
+    <p style="margin-top:40px">${escHtml(t('goods.signatureGave'))}: ____________ &nbsp;&nbsp; ${escHtml(t('goods.signatureTook'))}: ____________</p>`;
+  printHtmlDocument(row.number || 'document', html);
+}
 
 function openDetail(row: MovementRow) {
   detailRow.value = row;
@@ -597,6 +612,8 @@ onMounted(loadAll);
               @update:model-value="updatePoStatus"
             />
           </div>
+
+          <UButton size="sm" color="gray" variant="soft" icon="lucide:printer" @click="printDocument">{{ t('goods.printDoc') }}</UButton>
 
           <!-- Posted documents are cancelled, never deleted: the stock goes back and the document stays in the history -->
           <div v-if="detailRow && CANCELLABLE.includes(detailRow.kind)" class="flex items-center gap-2">
