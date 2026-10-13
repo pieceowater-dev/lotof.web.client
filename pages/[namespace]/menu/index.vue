@@ -954,15 +954,15 @@ async function handleCreateOrder(payload: any) {
         </UButton>
         <UButton
           v-if="isOwnerOrManager"
-          icon="lucide:users"
+          icon="lucide:bar-chart-3"
           size="xs"
           color="primary"
           variant="soft"
           class="whitespace-nowrap gap-2"
           :ui="{ rounded: 'rounded-xl' }"
-          :to="`/${nsSlug}/menu/executors`"
+          :to="`/${nsSlug}/menu/reports`"
         >
-          {{ t('menu.executorsOpen') }}
+          {{ t('menu.reportsOpen') }}
         </UButton>
         <UButton
           v-if="isOwnerOrManager"

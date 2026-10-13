@@ -2871,7 +2871,18 @@
     "stageAutoTaskBadge": "Task",
     "priceWholeShort": "flat",
     "priceWholeToggle": "Flat price, not per unit",
-    "priceWholeHint": "For the next line you add: the price counts once, the quantity is just informational."
+    "priceWholeHint": "For the next line you add: the price counts once, the quantity is just informational.",
+    "reportsOpen": "Reports",
+    "reportTab_executors": "Executors",
+    "reportTab_times": "Time in status",
+    "reportTab_field": "By field",
+    "reportTab_journal": "Journal",
+    "reportTimesHint": "How long orders created in the period sit in each status on average, so you can see where queues build up.",
+    "reportField": "Field",
+    "reportFieldHint": "Closed orders of the period split by a field's value: done, cancelled, average check.",
+    "reportBlank": "Not filled",
+    "reportDone": "Done",
+    "reportCancelled": "Cancelled"
   },
   "goods": {
     "register": "Register",

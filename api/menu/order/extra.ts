@@ -154,3 +154,22 @@ export async function menuExecutorReport(token: string, ns: string, closedFrom?:
   const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo) { executorId lines orders revenue pay } }`, { closedFrom, closedTo });
   return r.executorReport;
 }
+
+export type StatusTimeRow = { status: string; stageId?: string | null; visits: number; avgMinutes: number; maxMinutes: number };
+export type FieldValueRow = { value: string; completed: number; cancelled: number; avgCheck: number; revenue: number };
+export type OrderEvent = { id: string; orderId: string; number: number; displayNumber: string; previousStatus: string; newStatus: string; stageId?: string | null; userId?: string | null; comment?: string | null; createdAt: string };
+
+export async function menuStatusTimesReport(token: string, ns: string, createdFrom?: string, createdTo?: string): Promise<StatusTimeRow[]> {
+  const r = await call<{ statusTimesReport: StatusTimeRow[] }>(token, ns, `query StatusTimes($createdFrom: String, $createdTo: String) { statusTimesReport(createdFrom: $createdFrom, createdTo: $createdTo) { status stageId visits avgMinutes maxMinutes } }`, { createdFrom, createdTo });
+  return r.statusTimesReport;
+}
+
+export async function menuFieldValueReport(token: string, ns: string, fieldId: string, closedFrom?: string, closedTo?: string): Promise<FieldValueRow[]> {
+  const r = await call<{ fieldValueReport: FieldValueRow[] }>(token, ns, `query FieldValues($fieldId: String!, $closedFrom: String, $closedTo: String) { fieldValueReport(fieldId: $fieldId, closedFrom: $closedFrom, closedTo: $closedTo) { value completed cancelled avgCheck revenue } }`, { fieldId, closedFrom, closedTo });
+  return r.fieldValueReport;
+}
+
+export async function menuOrderEvents(token: string, ns: string, p: { userId?: string; from?: string; to?: string; page?: number }): Promise<{ rows: OrderEvent[]; count: number }> {
+  const r = await call<{ orderEvents: { rows: OrderEvent[]; info: { count: number } } }>(token, ns, `query Events($userId: String, $from: String, $to: String, $filter: DefaultFilterInput) { orderEvents(userId: $userId, from: $from, to: $to, filter: $filter) { rows { id orderId number displayNumber previousStatus newStatus stageId userId comment createdAt } info { count } } }`, { userId: p.userId, from: p.from, to: p.to, filter: { pagination: { page: p.page || 1, length: 'FIFTY' } } });
+  return { rows: r.orderEvents.rows, count: r.orderEvents.info.count };
+}

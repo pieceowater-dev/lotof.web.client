@@ -2490,7 +2490,18 @@
     "stageAutoTaskBadge": "Тапсырма",
     "priceWholeShort": "тұтас",
     "priceWholeToggle": "Бағасы бірлікке емес, тұтасына",
-    "priceWholeHint": "Келесі қосылатын жол үшін: баға бір рет есептеледі, саны тек анықтама."
+    "priceWholeHint": "Келесі қосылатын жол үшін: баға бір рет есептеледі, саны тек анықтама.",
+    "reportsOpen": "Есептер",
+    "reportTab_executors": "Орындаушылар",
+    "reportTab_times": "Мәртебедегі уақыт",
+    "reportTab_field": "Өріс бойынша",
+    "reportTab_journal": "Журнал",
+    "reportTimesHint": "Кезеңде құрылған тапсырыстар әр мәртебеде орта есеппен қанша тұрады — кезек қайда жиналады.",
+    "reportField": "Өріс",
+    "reportFieldHint": "Кезеңдегі жабылған тапсырыстар өріс мәні бойынша: орындалған, бас тартылған, орташа чек.",
+    "reportBlank": "Толтырылмаған",
+    "reportDone": "Орындалған",
+    "reportCancelled": "Бас тартылған"
   },
   "goods": {
     "register": "Касса",
