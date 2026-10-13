@@ -2814,6 +2814,8 @@
     "docVarDiscount": "Discount",
     "docVarPaidAmount": "Amount paid",
     "docVarAmountDue": "Amount due",
+    "docVarOrderTotalPlain": "Order total (00.00)",
+    "docVarAmountDuePlain": "Amount due (00.00)",
     "docVarOrderItems": "Products list",
     "docVarClientName": "Client name",
     "docVarClientPhone": "Client phone",

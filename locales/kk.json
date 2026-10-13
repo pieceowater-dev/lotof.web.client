@@ -2526,6 +2526,8 @@
     "docVarDiscount": "Жеңілдік",
     "docVarPaidAmount": "Төленген сома",
     "docVarAmountDue": "Төленуге тиіс сома",
+    "docVarOrderTotalPlain": "Тапсырыс сомасы (00.00)",
+    "docVarAmountDuePlain": "Төленуге тиіс сома (00.00)",
     "docVarOrderItems": "Тауарлар тізімі",
     "docVarClientName": "Клиенттің аты",
     "docVarClientPhone": "Клиенттің телефоны",

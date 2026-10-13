@@ -30,6 +30,11 @@ function formatMoney(n: number): string {
   return n.toLocaleString('ru-RU', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
+// Plain money for forms that need digits only: 1234.50, no spaces or locale separators.
+function plainMoney(n: number): string {
+  return n.toFixed(2);
+}
+
 function itemUnitPrice(i: MenuOrderItem): number {
   return i.priceAtPurchase + (i.modifiers || []).reduce((sum, m) => sum + m.priceAtPurchase, 0);
 }
@@ -152,6 +157,8 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
     DISCOUNT_AMOUNT: formatMoney(order.discountAmount),
     PAID_AMOUNT: formatMoney(order.paidAmount),
     AMOUNT_DUE: formatMoney(amountDue),
+    ORDER_TOTAL_AMOUNT_PLAIN: plainMoney(order.totalAmount),
+    AMOUNT_DUE_PLAIN: plainMoney(amountDue),
     ORDER_ITEMS: buildItemsTable(items, noneLabel, itemsTableHeaders),
     ORDER_WORKS: buildItemsTable(labour.works, noneLabel, itemsTableHeaders),
     ORDER_MATERIALS: buildItemsTable(labour.materials, noneLabel, itemsTableHeaders),

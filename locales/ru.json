@@ -2819,6 +2819,8 @@
     "docVarDiscount": "Скидка",
     "docVarPaidAmount": "Сумма оплачено",
     "docVarAmountDue": "Сумма к оплате",
+    "docVarOrderTotalPlain": "Сумма заказа (00.00)",
+    "docVarAmountDuePlain": "Сумма к оплате (00.00)",
     "docVarOrderItems": "Список товаров",
     "docVarClientName": "Имя клиента",
     "docVarClientPhone": "Телефон клиента",

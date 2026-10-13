@@ -15,6 +15,8 @@ export type MenuDocVariableKey =
   | 'DISCOUNT_AMOUNT'
   | 'PAID_AMOUNT'
   | 'AMOUNT_DUE'
+  | 'ORDER_TOTAL_AMOUNT_PLAIN'
+  | 'AMOUNT_DUE_PLAIN'
   | 'ORDER_ITEMS'
   | 'CUSTOM_FIELDS'
   | 'ORDER_WARRANTY'
@@ -70,6 +72,14 @@ export const MENU_DOC_VARIABLES: MenuDocVariableInfo[] = [
   {
     key: 'AMOUNT_DUE', labelKey: 'menu.docVarAmountDue', fallback: 'Amount due', group: 'order',
     localTokens: { en: 'AMOUNT_DUE', ru: 'ЗАКАЗ_К_ОПЛАТЕ', kk: 'ТАПСЫРЫС_ТӨЛЕУГЕ' },
+  },
+  {
+    key: 'ORDER_TOTAL_AMOUNT_PLAIN', labelKey: 'menu.docVarOrderTotalPlain', fallback: 'Order total (00.00)', group: 'order',
+    localTokens: { en: 'ORDER_TOTAL_AMOUNT_PLAIN', ru: 'ЗАКАЗ_СУММА_00', kk: 'ТАПСЫРЫС_СОМА_00' },
+  },
+  {
+    key: 'AMOUNT_DUE_PLAIN', labelKey: 'menu.docVarAmountDuePlain', fallback: 'Amount due (00.00)', group: 'order',
+    localTokens: { en: 'AMOUNT_DUE_PLAIN', ru: 'ЗАКАЗ_К_ОПЛАТЕ_00', kk: 'ТАПСЫРЫС_ТӨЛЕУГЕ_00' },
   },
   {
     key: 'ORDER_ITEMS', labelKey: 'menu.docVarOrderItems', fallback: 'Products list', group: 'order',
