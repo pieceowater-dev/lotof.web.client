@@ -45,7 +45,15 @@ const isSegmentsModalOpen = ref(false);
 const isIdentitiesModalOpen = ref(false);
 const selectedClientId = ref<string | null>(null);
 const selectedClientIdForTagsModal = ref<string | null>(null);
-const searchQuery = ref((route.query.s as string) || '');
+// The search survives leaving the list and coming back (kept per namespace for the browser tab).
+const searchMemoryKey = `contacts-search:${route.params.namespace}`;
+const rememberedSearch = (): string => {
+  try { return process.client ? sessionStorage.getItem(searchMemoryKey) || '' : ''; } catch { return ''; }
+};
+const searchQuery = ref((route.query.s as string) || rememberedSearch());
+watch(searchQuery, (v) => {
+  try { if (process.client) { if (v) sessionStorage.setItem(searchMemoryKey, v); else sessionStorage.removeItem(searchMemoryKey); } } catch { /* storage may be blocked */ }
+});
 const selectedTags = ref<Array<{ id: string; name: string }>>([]);
 const isInitializingFromUrl = ref(false);
 const useMockData = ref(false);
