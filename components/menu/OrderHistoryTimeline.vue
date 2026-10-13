@@ -6,6 +6,28 @@ import { maskProfanity } from '@/utils/profanityFilter';
 
 const { t } = useI18n();
 
+// The server writes service events (price stage, urgency, payments, stage moves)
+// as short markers in the history comment; show them as readable sentences.
+function friendly(comment: string): string {
+  const c = comment.trim();
+  const map: Record<string, string> = {
+    '[price] quoted': 'menu.histPriceQuoted',
+    '[price] approved': 'menu.histPriceApproved',
+    '[price] reset': 'menu.histPriceReset',
+    '[price] reset (order changed)': 'menu.histPriceAutoReset',
+    '[urgent] on': 'menu.histUrgentOn',
+    '[urgent] off': 'menu.histUrgentOff',
+  };
+  if (map[c]) return t(map[c]);
+  const pay = c.match(/^\[(payment|refund|payment removed)\] ([\d.]+) (\w+)$/);
+  if (pay) {
+    const key = pay[1] === 'payment' ? 'menu.histPayment' : pay[1] === 'refund' ? 'menu.histRefund' : 'menu.histPaymentRemoved';
+    return `${t(key)}: ${pay[2]} · ${t('menu.pay' + pay[3].charAt(0) + pay[3].slice(1).toLowerCase())}`;
+  }
+  if (c.startsWith('Stage: ')) return c.slice(7);
+  return maskProfanity(c);
+}
+
 defineProps<{
   history: MenuOrderHistoryEntry[];
   statusLabel: (s: string) => string;
@@ -27,7 +49,7 @@ defineProps<{
           <div class="text-sm font-medium">{{ statusLabel(h.newStatus) }}</div>
           <div class="text-xs text-gray-400">{{ formatDate(h.createdAt) }}</div>
           <div v-if="h.userId" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ memberDisplayName(h.userId) }}</div>
-          <div v-if="h.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ maskProfanity(h.comment) }}</div>
+          <div v-if="h.comment" class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ friendly(h.comment) }}</div>
         </div>
       </li>
     </ol>

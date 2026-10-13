@@ -19,6 +19,9 @@ import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
 import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
 import { parseTableTag } from '@/utils/tableTag';
 import OrderHistoryTimeline from '@/components/menu/OrderHistoryTimeline.vue';
+import OrderStatusPicker from '@/components/menu/OrderStatusPicker.vue';
+import OrderFlowPanel from '@/components/menu/OrderFlowPanel.vue';
+import { useOrderStages } from '@/composables/useOrderStages';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';
 import type { MenuOrderHistoryEntry } from '@/api/menu/order/history';
@@ -87,6 +90,11 @@ const brandSettings = ref<MenuBrandSettings | null>(null);
 const customStatusLabels = computed<StatusLabels>(() => parseStatusLabels(brandSettings.value?.statusLabels));
 // The business's own status names (Settings -> Statuses) win over the defaults.
 const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t);
+// Opt-in features of the tenant (Settings → Statuses): all off by default.
+const priceStageEnabled = computed(() => {
+  try { return !!JSON.parse(brandSettings.value?.orderRules || '{}').priceStage; } catch { return false; }
+});
+const { load: loadStages } = useOrderStages();
 
 const roleLabel = (r: string) => ({
   OWNER: t('menu.roleOwner') || 'Owner',
@@ -204,6 +212,7 @@ async function loadDetails() {
   try {
     const menuToken = await getToken();
     const { menuOrderDetailsBundle } = await import('@/api/menu/order/detailsBundle');
+    await loadStages(menuToken, nsSlug.value);
     const bundle = await menuOrderDetailsBundle(menuToken, nsSlug.value, props.order!.id);
     items.value = bundle.items;
     history.value = bundle.history.slice().sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -442,13 +451,13 @@ watch(() => [props.modelValue, props.order?.id], ([open]) => {
   }
 });
 
-async function changeStatus(status: string) {
-  if (!props.order || props.order.status === status) return;
+async function changeStatus(status: string, stageId?: string) {
+  if (!props.order || (props.order.status === status && !stageId)) return;
   updatingStatus.value = true;
   try {
     const menuToken = await getToken();
     const { menuUpdateOrderStatus } = await import('@/api/menu/order/updateStatus');
-    const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, props.order.id, status);
+    const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, props.order.id, status, stageId);
     emit('statusChanged', updated);
     await loadDetails();
   } catch (e) {
@@ -1132,24 +1141,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               <div class="font-mono font-bold text-lg leading-tight">{{ smartOrderNumber(order) }}</div>
               <div class="text-xs text-gray-400">{{ formatDate(order.createdAt) }}</div>
             </div>
-            <UDropdown :items="[nextStatuses(order!.status, order!.type).map((s) => ({ label: statusLabel(s), status: s, click: () => changeStatus(s) }))]">
-              <button type="button" class="inline-flex items-center gap-1.5 rounded-full disabled:opacity-50" :disabled="updatingStatus || !nextStatuses(order.status, order.type).length">
-                <span
-                  class="inline-flex items-center gap-1.5 rounded-full pl-1.5 pr-2.5 py-1 text-white text-xs font-semibold ring-4"
-                  :style="{ backgroundColor: statusBadgeStyle(order.status).bg, '--tw-ring-color': statusBadgeStyle(order.status).ring }"
-                >
-                  <Icon :name="statusBadgeStyle(order.status).icon" class="w-3.5 h-3.5" />
-                  {{ statusLabel(order.status) }}
-                </span>
-                <Icon v-if="nextStatuses(order.status, order.type).length" :name="updatingStatus ? 'lucide:loader-2' : 'lucide:chevron-down'" class="w-3.5 h-3.5 text-gray-400" :class="{ 'animate-spin': updatingStatus }" />
-              </button>
-              <template #item="{ item }">
-                <span class="flex items-center gap-2 w-full">
-                  <span class="h-2 w-2 rounded-full flex-shrink-0" :style="{ backgroundColor: statusBadgeStyle(item.status).bg }" />
-                  <span class="truncate">{{ item.label }}</span>
-                </span>
-              </template>
-            </UDropdown>
+            <OrderStatusPicker :order="order!" :status-label="statusLabel" :updating="updatingStatus" @pick="changeStatus" />
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <UTooltip :text="t('menu.statusHistory') || 'Status history'" class="lg:hidden">
@@ -1181,6 +1173,17 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 
         <!-- Main content: scrolls independently of the side rail -->
         <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 space-y-5 pb-8">
+          <OrderFlowPanel
+            :order="order"
+            :ns-slug="nsSlug"
+            :get-token="getToken"
+            :price-stage-enabled="priceStageEnabled"
+            :currency="brandSettings?.currencyCode"
+            :format-date="formatDate"
+            :member-display-name="memberDisplayName"
+            @updated="(o) => emit('statusChanged', o)"
+          />
+
           <!-- Contact card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">

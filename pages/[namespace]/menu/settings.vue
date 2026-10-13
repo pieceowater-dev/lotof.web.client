@@ -12,6 +12,7 @@ import TableQrSection from '@/components/menu/settings/TableQrSection.vue';
 import DocumentTemplatesSection from '@/components/menu/settings/DocumentTemplatesSection.vue';
 import OrderFieldsSection from '@/components/menu/settings/OrderFieldsSection.vue';
 import StatusLabelsSection from '@/components/menu/settings/StatusLabelsSection.vue';
+import OrderStagesSection from '@/components/menu/settings/OrderStagesSection.vue';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -118,7 +119,10 @@ watch(activeTab, (tab) => {
       <PromoBannersSection v-else-if="activeTab === 'promobanners'" />
       <ShareLinkSection v-else-if="activeTab === 'share'" />
       <TableQrSection v-else-if="activeTab === 'tableqr'" />
-      <StatusLabelsSection v-else-if="activeTab === 'statuses'" />
+      <div v-else-if="activeTab === 'statuses'" class="space-y-8">
+        <OrderStagesSection />
+        <StatusLabelsSection />
+      </div>
       <OrderFieldsSection v-else-if="activeTab === 'fields'" />
       <DocumentTemplatesSection v-else-if="activeTab === 'documents'" />
     </div>

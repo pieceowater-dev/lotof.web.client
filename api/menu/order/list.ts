@@ -27,6 +27,14 @@ export type MenuOrder = {
   customFields?: string;
   // Set when this order is a warranty case for an earlier order.
   warrantyOfOrderId?: string | null;
+  readyAt?: string | null;
+  priceQuotedAt?: string | null;
+  priceQuotedBy?: string | null;
+  priceApprovedAt?: string | null;
+  // The tenant's own status (stage) inside the lifecycle group; null = the group's default stage.
+  stageId?: string | null;
+  statusChangedAt?: string | null;
+  isUrgent?: boolean;
 };
 
 export type OrdersFilter = {
@@ -40,6 +48,11 @@ export type OrdersFilter = {
   closedFrom?: string;
   closedTo?: string;
   participantUserId?: string;
+  // quick filters
+  urgent?: boolean;
+  overdue?: boolean;
+  readyOnly?: boolean;
+  stageIds?: string[];
   page?: number;
   length?: string;
 };
@@ -55,10 +68,10 @@ const ORDER_FILTER_ARGS = `
 `;
 
 const OrdersDocument = /* GraphQL */ `
-  query Orders($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
-    orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
+  query Orders($filter: DefaultFilterInput, $extra: OrderExtraFilterInput, ${ORDER_FILTER_VARS}) {
+    orders(filter: $filter, extra: $extra, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent
       }
       info { count }
     }
@@ -87,6 +100,9 @@ export async function menuOrdersList(menuToken: string, namespaceSlug: string, p
       OrdersDocument,
       {
         filter: { pagination: { page: params.page || 1, length: params.length || 'FIFTY' } },
+        extra: params.urgent || params.overdue || params.readyOnly || params.stageIds?.length
+          ? { urgent: params.urgent || undefined, overdue: params.overdue || undefined, readyOnly: params.readyOnly || undefined, stageIds: params.stageIds?.length ? params.stageIds : undefined }
+          : undefined,
         ...filterVars(params),
       },
       { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }
@@ -163,7 +179,7 @@ const OrdersBundleDocument = /* GraphQL */ `
   query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent
       }
       info { count }
     }

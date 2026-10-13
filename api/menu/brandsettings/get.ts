@@ -19,12 +19,14 @@ export type MenuBrandSettings = {
   listedInCatalog: boolean;
   // JSON object {"<STATUS>": "<name>"}; see utils/orderStatusLabels.ts.
   statusLabels?: string;
+  // JSON object of opt-in order features, e.g. {"priceStage":true}
+  orderRules?: string;
 };
 
 const BrandSettingsDocument = /* GraphQL */ `
   query BrandSettings {
     brandSettings {
-      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog statusLabels
+      id name logoUrl primaryColor secondaryColor welcomeMessage currencyCode socialLinks logoAlt seoTitle seoDescription autoAcceptOrders showcaseViewOnly listedInCatalog statusLabels orderRules
     }
   }
 `;

@@ -16,6 +16,7 @@ import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
+import { useOrderStages, isOverdue as orderIsOverdue } from '@/composables/useOrderStages';
 import { orderTypeLabelInfo } from '@/utils/orderType';
 import { parseTableTag } from '@/utils/tableTag';
 import type { MenuOrder, OrdersSummary } from '@/api/menu/order/list';
@@ -173,6 +174,13 @@ const createdTo = ref('');
 const closedFrom = ref('');
 const closedTo = ref('');
 const participantFilter = ref('');
+// Quick filters over the list: urgent, overdue (longer in a stage than its limit), ready.
+const quickFilter = ref<'' | 'urgent' | 'overdue' | 'ready'>('');
+const { load: loadOrderStages, byId: stageById } = useOrderStages();
+const quickCounts = ref({ urgent: 0, overdue: 0, ready: 0 });
+const stageColor = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.color || statusBadgeStyle(row.status).bg;
+const stageLabel = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.name || statusLabel(row.status);
+const rowOverdue = (row: any) => orderIsOverdue(row, stageById(row.stageId));
 const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '', participantUserId: '' });
 const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
 
@@ -303,6 +311,9 @@ const currentFilterParams = computed(() => ({
   closedFrom: dateInputToRfc3339(appliedFilterPanel.closedFrom),
   closedTo: dateInputToRfc3339(appliedFilterPanel.closedTo, true),
   participantUserId: appliedFilterPanel.participantUserId || undefined,
+  urgent: quickFilter.value === 'urgent' || undefined,
+  overdue: quickFilter.value === 'overdue' || undefined,
+  readyOnly: quickFilter.value === 'ready' || undefined,
 }));
 
 function applyFilterPanel() {
@@ -499,6 +510,10 @@ async function loadMyOrdersCount() {
       length: 'TEN',
     });
     myOrdersCount.value = res.count;
+    const { menuOrderQuickCounts } = await import('@/api/menu/order/extra');
+    const q = await menuOrderQuickCounts(menuToken, nsSlug.value, currentUser.value.id);
+    quickCounts.value = { urgent: q.urgent, overdue: q.overdue, ready: q.ready };
+    await loadOrderStages(menuToken, nsSlug.value);
   } catch (e) {
     logError('[menu/index] loadMyOrdersCount failed', e);
   }
@@ -508,6 +523,11 @@ async function loadMyOrdersCount() {
 // dropdown drives — "my orders" is just that filter pinned to yourself, so
 // picking a colleague there correctly turns this card off, and vice versa.
 const myOrdersFilterActive = computed(() => !!currentUser.value?.id && appliedFilterPanel.participantUserId === currentUser.value.id);
+function toggleQuick(k: 'urgent' | 'overdue' | 'ready') {
+  quickFilter.value = quickFilter.value === k ? '' : k;
+  resetPageAndReload();
+}
+
 function toggleMyOrdersFilter() {
   const next = myOrdersFilterActive.value ? '' : (currentUser.value?.id || '');
   participantFilter.value = next;
@@ -985,6 +1005,25 @@ async function handleCreateOrder(payload: any) {
         </span>
       </button>
       <button
+        v-for="q in ([
+          { k: 'urgent', icon: 'lucide:flame', label: t('menu.urgent'), n: quickCounts.urgent, on: 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30' },
+          { k: 'overdue', icon: 'lucide:alarm-clock', label: t('menu.overdue'), n: quickCounts.overdue, on: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30' },
+          { k: 'ready', icon: 'lucide:package-check', label: t('menu.readyCard'), n: quickCounts.ready, on: 'border-teal-300 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30' },
+        ] as const)"
+        :key="q.k"
+        class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
+        :class="quickFilter === q.k ? q.on + ' shadow-sm' : CARD_INACTIVE"
+        @click="toggleQuick(q.k)"
+      >
+        <span class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors" :class="quickFilter === q.k ? 'bg-white/70 dark:bg-white/10' : CARD_INACTIVE_ICON_BG">
+          <Icon :name="q.icon" class="h-4 w-4" :class="quickFilter === q.k ? '' : CARD_INACTIVE_ICON_COLOR" />
+        </span>
+        <span>
+          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ q.label }}</span>
+          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ q.n }}</span>
+        </span>
+      </button>
+      <button
         v-for="s in STATUSES"
         :key="s"
         class="group relative flex-shrink-0 flex items-center gap-2.5 rounded-2xl border py-2.5 text-left transition-all duration-200"
@@ -1134,11 +1173,13 @@ async function handleCreateOrder(payload: any) {
             >
               <span
                 class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
-                :style="{ backgroundColor: statusBadgeStyle(row.status).bg }"
+                :style="{ backgroundColor: stageColor(row) }"
               >
                 <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
-                {{ statusLabel(row.status) }}
+                {{ stageLabel(row) }}
               </span>
+              <Icon v-if="row.isUrgent" name="lucide:flame" class="w-3.5 h-3.5 text-rose-500" />
+              <Icon v-if="rowOverdue(row)" name="lucide:alarm-clock" class="w-3.5 h-3.5 text-amber-500" />
               <Icon
                 :name="updatingStatusId === row.id ? 'lucide:loader-2' : 'lucide:chevron-down'"
                 class="w-3 h-3 text-gray-400"
@@ -1156,10 +1197,10 @@ async function handleCreateOrder(payload: any) {
           <span
             v-else
             class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
-            :style="{ backgroundColor: statusBadgeStyle(row.status).bg }"
+            :style="{ backgroundColor: stageColor(row) }"
           >
             <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
-            {{ statusLabel(row.status) }}
+            {{ stageLabel(row) }}
           </span>
         </template>
         <template #totalAmount-data="{ row }">
