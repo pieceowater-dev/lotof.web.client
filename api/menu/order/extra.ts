@@ -31,7 +31,7 @@ export type OrderPayment = {
 
 export type OrderQuickCounts = { urgent: number; overdue: number; ready: number; mine: number; contactDue: number };
 
-const ORDER_FIELDS = `id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes`;
+const ORDER_FIELDS = `id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber`;
 const STAGE_FIELDS = 'id status name color sortOrder slaMinutes isUrgent isOverdue';
 const PAYMENT_FIELDS = 'id orderId amount method kind paidAt userId comment externalRef';
 
@@ -97,7 +97,7 @@ export async function menuOrderQuickCounts(token: string, ns: string, participan
   return r.orderQuickCounts;
 }
 
-export async function menuUpdateOrderRules(token: string, ns: string, rules: Record<string, boolean>): Promise<string> {
+export async function menuUpdateOrderRules(token: string, ns: string, rules: Record<string, boolean | string>): Promise<string> {
   const r = await call<{ updateOrderRules: { orderRules: string } }>(token, ns, `mutation Rules($rules: String!) { updateOrderRules(rules: $rules) { orderRules } }`, { rules: JSON.stringify(rules) });
   return r.updateOrderRules.orderRules;
 }

@@ -2436,7 +2436,13 @@
     "recommendationHint": "Клиентке не кеңес беру керек",
     "internalNotes": "Ішкі жазбалар",
     "internalNotesHint": "Тек қызметкерлерге көрінеді, құжатқа шықпайды",
-    "contactDueCard": "Байланысу"
+    "contactDueCard": "Байланысу",
+    "numberingTitle": "Тапсырыс нөмірлеу",
+    "numberingHint": "Күндік — әр күн 1-ден басталады (кафе). Үздіксіз — филиал бойынша бір ұдайы санау (сервис орталығы).",
+    "numberingDaily": "Күндік",
+    "numberingContinuous": "Үздіксіз",
+    "numberPrefixPlaceholder": "Префикс, мыс. A",
+    "numberPreview": "Мысал"
   },
   "goods": {
     "register": "Касса",

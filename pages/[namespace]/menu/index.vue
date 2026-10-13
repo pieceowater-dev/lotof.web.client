@@ -14,7 +14,7 @@ import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
-import { smartOrderNumber } from '@/utils/orderNumber';
+import { smartOrderNumber, displayOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
 import { useOrderStages, isOverdue as orderIsOverdue } from '@/composables/useOrderStages';
 import { orderTypeLabelInfo } from '@/utils/orderType';
@@ -1140,7 +1140,7 @@ async function handleCreateOrder(payload: any) {
         @select="openDetail"
       >
         <template #number-data="{ row }">
-          <span class="font-mono font-semibold tabular-nums">{{ smartOrderNumber(row) }}</span>
+          <span class="font-mono font-semibold tabular-nums">{{ displayOrderNumber(row) }}</span>
         </template>
         <template #customerName-data="{ row }">
           <div class="flex items-center gap-2 min-w-0">

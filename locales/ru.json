@@ -2861,7 +2861,13 @@
     "recommendationHint": "Что посоветовать клиенту",
     "internalNotes": "Внутренние примечания",
     "internalNotesHint": "Видно только сотрудникам, в документы не попадает",
-    "contactDueCard": "Связаться"
+    "contactDueCard": "Связаться",
+    "numberingTitle": "Нумерация заказов",
+    "numberingHint": "Дневная — номер каждый день с единицы (кафе). Сквозная — один непрерывный счёт по точке (сервисный центр).",
+    "numberingDaily": "Дневная",
+    "numberingContinuous": "Сквозная",
+    "numberPrefixPlaceholder": "Префикс, напр. A",
+    "numberPreview": "Пример"
   },
   "plans": {
     "calendar": "Календарь",

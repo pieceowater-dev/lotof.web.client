@@ -6,7 +6,7 @@ import type { MenuOrder } from '@/api/menu/order/list';
 const UpdateOrderStatusDocument = /* GraphQL */ `
   mutation UpdateOrderStatus($input: UpdateOrderStatusInput!) {
     updateOrderStatus(input: $input) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber
     }
   }
 `;

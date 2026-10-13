@@ -54,3 +54,10 @@ export function parseOrderStatusKey(raw: string): { number: number; phone: strin
 
   return { ...smart, phone };
 }
+
+// What staff and printed documents show: the tenant's own number ("A105",
+// "A105/2" for a warranty order) when numbering is set up, else the dated
+// form. Links and the public tracking key keep using smartOrderNumber().
+export function displayOrderNumber(order: { number: number; createdAt: string; displayNumber?: string | null }): string {
+  return order.displayNumber || smartOrderNumber(order);
+}

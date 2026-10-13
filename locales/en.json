@@ -2818,7 +2818,13 @@
     "recommendationHint": "What to advise the customer",
     "internalNotes": "Internal notes",
     "internalNotesHint": "Staff only, never printed on documents",
-    "contactDueCard": "To contact"
+    "contactDueCard": "To contact",
+    "numberingTitle": "Order numbering",
+    "numberingHint": "Daily restarts from 1 each day (cafés). Continuous is one running count per branch (service centres).",
+    "numberingDaily": "Daily",
+    "numberingContinuous": "Continuous",
+    "numberPrefixPlaceholder": "Prefix, e.g. A",
+    "numberPreview": "Example"
   },
   "goods": {
     "register": "Register",

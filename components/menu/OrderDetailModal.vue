@@ -14,7 +14,7 @@ import { formatDisplayPhoneUniversal, normalizePhoneForStorage, sanitizePhoneInp
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import { telHref, whatsappHref, phoneDigitsForLink } from '@/utils/phoneLinks';
 import { twoGisSearchHref } from '@/utils/geo';
-import { smartOrderNumber } from '@/utils/orderNumber';
+import { smartOrderNumber, displayOrderNumber } from '@/utils/orderNumber';
 import { statusBadgeStyle, nextStatuses } from '@/utils/orderStatus';
 import { orderTypeIcon, orderTypeLabelInfo } from '@/utils/orderType';
 import { parseTableTag } from '@/utils/tableTag';
@@ -832,7 +832,7 @@ function startWarrantyCase() {
   const tableTag = parseTableTag(props.order.sourceTag);
   emit('createWarranty', {
     warrantyOfOrderId: props.order.id,
-    warrantyOrderLabel: smartOrderNumber(props.order),
+    warrantyOrderLabel: displayOrderNumber(props.order),
     type: props.order.type === 'pickup' || props.order.type === 'table' ? props.order.type : 'delivery',
     phone: props.order.phone,
     customerName: props.order.customerName,
@@ -883,7 +883,7 @@ function openTaskModal() {
   if (!props.order) return;
   const o = props.order;
   const who = o.customerName || formatDisplayPhoneUniversal(o.phone || '');
-  taskForm.title = `${smartOrderNumber(o)}${who ? ' — ' + who : ''}`;
+  taskForm.title = `${displayOrderNumber(o)}${who ? ' — ' + who : ''}`;
   const lines: string[] = items.value.map((i) => `• ${i.name} × ${i.quantity}`);
   const extra = visibleOrderFields.value
     .map((f) => ({ f, text: formatCustomFieldValue(f, customValues.value[f.id], yesNoLabels.value) }))
@@ -1130,7 +1130,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   // filename when the print dialog is used to "Save as PDF" -- without the
   // order number, printing the same template for different orders produces
   // a pile of identically-named files.
-  printHtmlDocument(`${template.name}-${smartOrderNumber(props.order)}`, html);
+  printHtmlDocument(`${template.name}-${displayOrderNumber(props.order)}`, html);
 }
 </script>
 
@@ -1141,7 +1141,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         <div class="flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
             <div>
-              <div class="font-mono font-bold text-lg leading-tight">{{ smartOrderNumber(order) }}</div>
+              <div class="font-mono font-bold text-lg leading-tight">{{ displayOrderNumber(order) }}</div>
               <div class="text-xs text-gray-400">{{ formatDate(order.createdAt) }}</div>
             </div>
             <OrderStatusPicker :order="order!" :status-label="statusLabel" :updating="updatingStatus" @pick="changeStatus" />
@@ -1346,7 +1346,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             <span class="inline-flex items-center gap-2 min-w-0">
               <Icon name="lucide:shield-check" class="h-4 w-4 flex-shrink-0" />
               <span class="truncate">
-                {{ t('menu.warrantyCaseFor', { order: warrantyOrigin ? smartOrderNumber(warrantyOrigin) : '…' }) || 'Warranty case' }}
+                {{ t('menu.warrantyCaseFor', { order: warrantyOrigin ? displayOrderNumber(warrantyOrigin) : '…' }) || 'Warranty case' }}
               </span>
             </span>
             <button type="button" class="flex-shrink-0 text-xs font-medium underline underline-offset-2" @click="emit('openOrder', order.warrantyOfOrderId!)">
@@ -1682,7 +1682,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                     class="font-mono tabular-nums text-gray-700 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:underline transition-colors"
                     @click="emit('openOrder', co.id)"
                   >
-                    {{ smartOrderNumber(co) }}
+                    {{ displayOrderNumber(co) }}
                   </button>
                   <span
                     class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-[10px] font-semibold flex-shrink-0"

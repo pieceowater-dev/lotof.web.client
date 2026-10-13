@@ -3,7 +3,7 @@ import type { MenuOrderItem } from '@/api/menu/order/items';
 import type { MenuOrderMember } from '@/api/menu/order/members';
 import type { MenuBrandSettings } from '@/api/menu/brandsettings/get';
 import type { MenuBranch } from '@/api/menu/branch/list';
-import { smartOrderNumber } from '@/utils/orderNumber';
+import { displayOrderNumber } from '@/utils/orderNumber';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import { MENU_DOC_VARIABLES } from '@/utils/menuDocVariables';
 import { parseSocialLinks, socialLabel } from '@/utils/social';
@@ -145,7 +145,7 @@ export function buildMenuDocVariables(input: BuildMenuDocVariablesInput): Record
 
   return {
     TODAY_DATE: new Date().toLocaleDateString('ru-RU'),
-    ORDER_NUMBER: smartOrderNumber(order),
+    ORDER_NUMBER: displayOrderNumber(order),
     ORDER_TOTAL_AMOUNT: formatMoney(order.totalAmount),
     DISCOUNT_AMOUNT: formatMoney(order.discountAmount),
     PAID_AMOUNT: formatMoney(order.paidAmount),

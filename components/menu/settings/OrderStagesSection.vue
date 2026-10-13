@@ -26,7 +26,8 @@ const { stages, load: loadStages } = useOrderStages();
 
 const loading = ref(true);
 const labels = ref<Record<string, string | undefined>>({});
-const rules = ref<Record<string, boolean>>({});
+const rules = ref<Record<string, any>>({});
+const prefixDraft = ref('');
 const modalOpen = ref(false);
 const editing = ref<OrderStage | null>(null);
 const confirmDeleteId = ref<string | null>(null);
@@ -64,7 +65,7 @@ async function load() {
     const { menuGetBrandSettings } = await import('@/api/menu/brandsettings/get');
     const brand = await menuGetBrandSettings(token(), nsSlug.value);
     labels.value = parseStatusLabels(brand?.statusLabels);
-    try { rules.value = JSON.parse(brand?.orderRules || '{}'); } catch { rules.value = {}; }
+    try { rules.value = JSON.parse(brand?.orderRules || '{}'); prefixDraft.value = rules.value.numberPrefix || ''; } catch { rules.value = {}; }
   } catch (e) {
     logError('[menu/settings/stages] load failed', e);
     toast.add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
@@ -124,7 +125,7 @@ async function applyPreset(key: string) {
   } catch (e) { fail(e); } finally { busy.value = false; }
 }
 
-async function toggleRule(key: string, value: boolean) {
+async function toggleRule(key: string, value: boolean | string) {
   const next = { ...rules.value, [key]: value };
   try {
     await menuUpdateOrderRules(token(), nsSlug.value, next);
@@ -158,6 +159,23 @@ async function toggleRule(key: string, value: boolean) {
       <div>
         <div class="text-sm font-semibold">{{ t('menu.ruleItemPriceStage') }}</div>
         <div class="at-hint !mt-0.5">{{ t('menu.ruleItemPriceStageHint') }}</div>
+      </div>
+    </div>
+
+    <!-- numbering -->
+    <div class="at-panel !p-4 space-y-3">
+      <div>
+        <div class="text-sm font-semibold">{{ t('menu.numberingTitle') }}</div>
+        <div class="at-hint !mt-0.5">{{ t('menu.numberingHint') }}</div>
+      </div>
+      <div class="at-seg">
+        <button type="button" class="at-seg__btn" :class="(rules.numbering || 'daily') === 'daily' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'daily')">{{ t('menu.numberingDaily') }}</button>
+        <button type="button" class="at-seg__btn" :class="rules.numbering === 'continuous' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'continuous')">{{ t('menu.numberingContinuous') }}</button>
+      </div>
+      <div class="flex items-center gap-2">
+        <UInput v-model="prefixDraft" maxlength="5" :placeholder="t('menu.numberPrefixPlaceholder')" class="w-40" />
+        <button type="button" class="at-btn at-btn--blue !px-3 !py-1.5" :disabled="prefixDraft === (rules.numberPrefix || '')" @click="toggleRule('numberPrefix', prefixDraft.trim())">{{ t('common.save') }}</button>
+        <span class="at-hint">{{ t('menu.numberPreview') }}: <b>{{ (rules.numberPrefix || '') + '105' }}</b></span>
       </div>
     </div>
 

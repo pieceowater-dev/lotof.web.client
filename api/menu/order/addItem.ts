@@ -18,7 +18,7 @@ export type AddOrderItemInput = {
 const AddOrderItemDocument = /* GraphQL */ `
   mutation AddOrderItem($input: AddOrderItemInput!) {
     addOrderItem(input: $input) {
-      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes
+      id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber
     }
   }
 `;

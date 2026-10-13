@@ -38,6 +38,7 @@ export type MenuOrder = {
   nextContactAt?: string | null;
   recommendation?: string;
   internalNotes?: string;
+  displayNumber?: string;
 };
 
 export type OrdersFilter = {
@@ -75,7 +76,7 @@ const OrdersDocument = /* GraphQL */ `
   query Orders($filter: DefaultFilterInput, $extra: OrderExtraFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, extra: $extra, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber
       }
       info { count }
     }
@@ -183,7 +184,7 @@ const OrdersBundleDocument = /* GraphQL */ `
   query OrdersBundle($filter: DefaultFilterInput, ${ORDER_FILTER_VARS}) {
     orders(filter: $filter, ${ORDER_FILTER_ARGS}) {
       rows {
-        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes
+        id number branchId clientId type status phone customerName deliveryAddress deliveryAt comment sourceTag totalAmount createdAt closedAt discountAmount discountType discountValue discountItemId paidAmount customFields warrantyOfOrderId readyAt priceQuotedAt priceQuotedBy priceApprovedAt stageId statusChangedAt isUrgent nextContactAt recommendation internalNotes displayNumber
       }
       info { count }
     }
