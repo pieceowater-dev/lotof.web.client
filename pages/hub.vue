@@ -836,7 +836,7 @@ watch(user, (u) => {
                   <div v-if="canSeeConsoleCard">
                     <button type="button" class="app-tile group" @click="openConsole">
                       <span class="app-icon-wrap"><span class="app-icon" :style="appIconStyle('console')"><UIcon name="lucide:terminal-square" class="app-glyph" /></span></span>
-                      <span class="app-label">Console</span>
+                      <span class="app-label">{{ t('app.console') || 'Console' }}</span>
                     </button>
                   </div>
 

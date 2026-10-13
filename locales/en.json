@@ -1053,7 +1053,8 @@
     "limitLocations": "Locations",
     "limitMasters": "Staff",
     "limitServices": "Services",
-    "limitBookingsPerMonth": "Bookings per month"
+    "limitBookingsPerMonth": "Bookings per month",
+    "console": "Console"
   },
   "billing": {
     "contactUsTitle": "Contact the lota team",

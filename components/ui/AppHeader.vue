@@ -600,7 +600,7 @@ const goHome = () => {
                 name="lucide:terminal-square"
                 class="h-4 w-4"
               />
-              <span class="truncate">Console</span>
+              <span class="truncate">{{ t('app.console') || 'Console' }}</span>
             </button>
 
             <button
@@ -693,7 +693,7 @@ const goHome = () => {
               name="lucide:terminal-square"
               class="h-4 w-4"
             />
-            <span>Console</span>
+            <span>{{ t('app.console') || 'Console' }}</span>
           </button>
 
           <button
@@ -779,7 +779,7 @@ const goHome = () => {
           @click="handleConsoleClick"
         >
           <span class="mm-ico mm-ico--app" :style="appIconStyle('console')"><UIcon name="lucide:terminal-square" class="h-[18px] w-[18px]" /></span>
-          <span class="flex-1 truncate text-left">Console</span>
+          <span class="flex-1 truncate text-left">{{ t('app.console') || 'Console' }}</span>
         </button>
 
         <button

@@ -1046,7 +1046,8 @@
     "limitMasters": "Шеберлер",
     "limitServices": "Қызметтер",
     "limitBookingsPerMonth": "Айдағы жазылулар",
-    "tariffsSectionTitle": "Тарифтер"
+    "tariffsSectionTitle": "Тарифтер",
+    "console": "Консоль"
   },
   "billing": {
     "subscriptionExpired": "Жазылым мерзімі аяқталды!",
