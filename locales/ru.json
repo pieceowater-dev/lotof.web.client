@@ -2907,7 +2907,11 @@
     "orderFieldDefault": "Значение по умолчанию",
     "orderFieldPlaceholder": "Подсказка в поле",
     "orderFieldHint": "Пояснение под полем",
-    "orderFieldCopyWarranty": "Переносить в гарантийный заказ"
+    "orderFieldCopyWarranty": "Переносить в гарантийный заказ",
+    "stageAutoTask": "Задача в Issues",
+    "stageAutoTaskPlaceholder": "Напр.: Озвучить цену клиенту",
+    "stageAutoTaskHint": "Когда заказ впервые попадает в этот статус, в Issues создаётся задача с этим названием. Пусто — без задачи.",
+    "stageAutoTaskBadge": "Задача"
   },
   "plans": {
     "calendar": "Календарь",

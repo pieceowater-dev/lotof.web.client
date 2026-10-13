@@ -2483,7 +2483,11 @@
     "orderFieldDefault": "Әдепкі мән",
     "orderFieldPlaceholder": "Өрістегі кеңес",
     "orderFieldHint": "Өрістің астындағы түсініктеме",
-    "orderFieldCopyWarranty": "Кепілдік тапсырысқа көшіру"
+    "orderFieldCopyWarranty": "Кепілдік тапсырысқа көшіру",
+    "stageAutoTask": "Issues-тегі тапсырма",
+    "stageAutoTaskPlaceholder": "Мыс.: Клиентке бағаны айту",
+    "stageAutoTaskHint": "Тапсырыс бұл мәртебеге алғаш түскенде Issues-те осы атаумен тапсырма жасалады. Бос болса — тапсырма жоқ.",
+    "stageAutoTaskBadge": "Тапсырма"
   },
   "goods": {
     "register": "Касса",

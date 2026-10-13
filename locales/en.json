@@ -2864,7 +2864,11 @@
     "orderFieldDefault": "Default value",
     "orderFieldPlaceholder": "Placeholder",
     "orderFieldHint": "Help text",
-    "orderFieldCopyWarranty": "Carry into a warranty order"
+    "orderFieldCopyWarranty": "Carry into a warranty order",
+    "stageAutoTask": "Task in Issues",
+    "stageAutoTaskPlaceholder": "E.g.: Quote the price to the customer",
+    "stageAutoTaskHint": "The first time an order enters this status, a task with this title is created in Issues. Empty means no task.",
+    "stageAutoTaskBadge": "Task"
   },
   "goods": {
     "register": "Register",

@@ -34,7 +34,7 @@ const confirmDeleteId = ref<string | null>(null);
 const busy = ref(false);
 const palette = BRAND_COLORS.filter(c => c.toLowerCase() !== '#111827'); // never a black accent
 
-const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false });
+const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '' });
 
 const PRESETS: Array<{ key: string; icon: string; label: string }> = [
   { key: 'service', icon: 'lucide:wrench', label: 'menu.stagePresetService' },
@@ -82,13 +82,13 @@ function fail(e: unknown) {
 
 function openNew(group: string) {
   editing.value = null;
-  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false });
+  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '' });
   modalOpen.value = true;
 }
 
 function openEdit(s: OrderStage) {
   editing.value = s;
-  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue });
+  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue, autoTaskTitle: s.autoTaskTitle || '' });
   modalOpen.value = true;
 }
 
@@ -97,9 +97,9 @@ async function save() {
   busy.value = true;
   try {
     if (editing.value) {
-      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue });
+      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim() });
     } else {
-      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue });
+      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim() });
     }
     modalOpen.value = false;
     await loadStages(token(), nsSlug.value, true);
@@ -196,6 +196,7 @@ async function toggleRule(key: string, value: boolean | string) {
             <div class="mt-0.5 flex flex-wrap gap-1">
               <span v-if="s.slaMinutes" class="at-chip !text-[11px]"><Icon name="lucide:timer" class="w-3 h-3" />{{ slaText(s.slaMinutes) }}</span>
               <span v-if="s.isUrgent" class="at-chip !text-[11px]"><Icon name="lucide:flame" class="w-3 h-3" />{{ t('menu.urgent') }}</span>
+              <span v-if="s.autoTaskTitle" class="at-chip !text-[11px]" :title="s.autoTaskTitle"><Icon name="lucide:list-checks" class="w-3 h-3" />{{ t('menu.stageAutoTaskBadge') }}</span>
               <span v-if="s.isOverdue" class="at-chip !text-[11px]"><Icon name="lucide:alarm-clock" class="w-3 h-3" />{{ t('menu.overdue') }}</span>
             </div>
           </div>
@@ -236,6 +237,11 @@ async function toggleRule(key: string, value: boolean | string) {
         </div>
         <div class="at-switch"><UToggle v-model="form.isUrgent" /><div class="text-sm font-semibold">{{ t('menu.stageUrgentFlag') }}</div></div>
         <div class="at-switch"><UToggle v-model="form.isOverdue" /><div class="text-sm font-semibold">{{ t('menu.stageOverdueFlag') }}</div></div>
+        <div class="space-y-1.5">
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageAutoTask') }}</div>
+          <UInput v-model="form.autoTaskTitle" maxlength="160" :placeholder="t('menu.stageAutoTaskPlaceholder')" :ui="{ rounded: 'rounded-xl' }" />
+          <p class="at-hint">{{ t('menu.stageAutoTaskHint') }}</p>
+        </div>
         <div class="flex justify-end gap-2">
           <button type="button" class="at-btn" @click="modalOpen = false">{{ t('common.cancel') }}</button>
           <button type="button" class="at-btn at-btn--primary" :disabled="busy || !form.name.trim()" @click="save">{{ t('common.save') }}</button>
