@@ -8,7 +8,7 @@
 // stored in the DB, not re-translated on read — same approach as the
 // server-side task-type presets in lotof.issues.msvc.core/tasktype/preset).
 
-export type BoardTemplateId = 'basic' | 'sales_funnel' | 'repairs';
+export type BoardTemplateId = 'basic' | 'sales_funnel' | 'repairs' | 'delivery';
 
 type Locale = 'ru' | 'kk' | 'en';
 
@@ -23,6 +23,8 @@ interface TemplateColumn {
   // extra key in statuses_json; the backend round-trips it untouched.
   outcome?: 'won' | 'lost';
   color?: '' | 'blue' | 'green' | 'red' | 'yellow';
+  // Ask for a (skippable) reason when a card moves into this column.
+  ask_reason?: boolean;
 }
 
 export interface BoardTemplate {
@@ -33,6 +35,8 @@ export interface BoardTemplate {
   /** businessType passed to CreateBoard (seeds task types); '' = generic default. */
   businessType: string;
   integrationFlags?: Record<string, boolean>;
+  featureFlags?: Record<string, boolean>;
+  deliveryConfirmationMode?: 'none' | 'photo';
   columns: TemplateColumn[] | null; // null = let the server assign its default columns
 }
 
@@ -57,7 +61,18 @@ const REPAIRS_COLUMNS: TemplateColumn[] = [
   { key: 'repair', label: { ru: 'В ремонте', kk: 'Жөндеуде', en: 'In repair' }, color: 'blue' },
   { key: 'ready', label: { ru: 'Готов к выдаче', kk: 'Берілуге дайын', en: 'Ready for pickup' }, color: 'green' },
   { key: 'handed_over', label: { ru: 'Выдан', kk: 'Берілді', en: 'Handed over' }, is_terminal: true, color: 'green' },
-  { key: 'cancelled', label: { ru: 'Отказ клиента', kk: 'Клиенттің бас тартуы', en: 'Cancelled by customer' }, is_terminal: true, color: 'red' },
+  { key: 'cancelled', label: { ru: 'Отказ клиента', kk: 'Клиенттің бас тартуы', en: 'Cancelled by customer' }, is_terminal: true, color: 'red', ask_reason: true },
+];
+
+// A delivery / on-site visit board: assigned to a courier or technician, on
+// the road, postponed or cancelled with a reason, delivered with a photo.
+const DELIVERY_COLUMNS: TemplateColumn[] = [
+  { key: 'new', label: { ru: 'Новая', kk: 'Жаңа', en: 'New' }, color: '' },
+  { key: 'assigned', label: { ru: 'Назначена', kk: 'Тағайындалды', en: 'Assigned' }, color: 'blue' },
+  { key: 'on_the_way', label: { ru: 'В пути', kk: 'Жолда', en: 'On the way' }, color: 'blue' },
+  { key: 'postponed', label: { ru: 'Отложена', kk: 'Кейінге қалдырылды', en: 'Postponed' }, color: 'yellow', ask_reason: true },
+  { key: 'delivered', label: { ru: 'Доставлена', kk: 'Жеткізілді', en: 'Delivered' }, is_terminal: true, color: 'green' },
+  { key: 'cancelled', label: { ru: 'Отменена', kk: 'Бас тартылды', en: 'Cancelled' }, is_terminal: true, color: 'red', ask_reason: true },
 ];
 
 export const BOARD_TEMPLATES: BoardTemplate[] = [
@@ -87,6 +102,17 @@ export const BOARD_TEMPLATES: BoardTemplate[] = [
     integrationFlags: { menu: true, contacts: true },
     columns: REPAIRS_COLUMNS,
   },
+  {
+    id: 'delivery',
+    icon: 'lucide:truck',
+    titleKey: 'tasks.templateDelivery',
+    descKey: 'tasks.templateDeliveryDesc',
+    businessType: 'delivery_logistics',
+    integrationFlags: { menu: true, contacts: true },
+    featureFlags: { geo_map: true, zen_mode: true },
+    deliveryConfirmationMode: 'photo',
+    columns: DELIVERY_COLUMNS,
+  },
 ];
 
 /** Name of the board the service-center onboarding creates, per locale. */
@@ -104,12 +130,12 @@ function normalizeLocale(locale: string | undefined): Locale {
 export function boardTemplatePayload(
   templateId: BoardTemplateId,
   locale: string | undefined,
-): { statuses?: string; integrationFlags?: string; businessType?: string; locale?: string } {
+): { statuses?: string; integrationFlags?: string; featureFlags?: string; deliveryConfirmationMode?: string; businessType?: string; locale?: string } {
   const tpl = BOARD_TEMPLATES.find((t) => t.id === templateId);
   if (!tpl || tpl.id === 'basic') return {};
 
   const loc = normalizeLocale(locale);
-  const payload: { statuses?: string; integrationFlags?: string; businessType?: string; locale?: string } = {};
+  const payload: { statuses?: string; integrationFlags?: string; featureFlags?: string; deliveryConfirmationMode?: string; businessType?: string; locale?: string } = {};
 
   if (tpl.columns) {
     payload.statuses = JSON.stringify(
@@ -121,10 +147,13 @@ export function boardTemplatePayload(
         maps_to: c.maps_to || '',
         outcome: c.outcome || '',
         color: c.color || '',
+        ask_reason: !!c.ask_reason,
       })),
     );
   }
   if (tpl.integrationFlags) payload.integrationFlags = JSON.stringify(tpl.integrationFlags);
+  if (tpl.featureFlags) payload.featureFlags = JSON.stringify(tpl.featureFlags);
+  if (tpl.deliveryConfirmationMode) payload.deliveryConfirmationMode = tpl.deliveryConfirmationMode;
   if (tpl.businessType) {
     payload.businessType = tpl.businessType;
     payload.locale = loc;

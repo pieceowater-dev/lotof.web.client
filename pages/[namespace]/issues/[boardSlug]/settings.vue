@@ -17,7 +17,7 @@ import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vu
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string; outcome: string }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string; outcome: string; askReason: boolean }
 
 // Menu's actual order-status enum (order.ent.go orderStatusLabels) -- a
 // status here must match one of these exactly, or UpdateOrderStatus rejects
@@ -192,6 +192,7 @@ const form = reactive({
   isActive: true,
   geoMap: false,
   zenMode: false,
+  handoffAccept: false,
   menuIntegration: false,
   contactsIntegration: false,
   cycles: false,
@@ -268,7 +269,7 @@ function parseStatuses(json?: string): StatusRow[] {
       // broken automation target sitting in old boards.
       let mapsTo = String(s.maps_to || '');
       if (mapsTo === 'delivered') mapsTo = 'COMPLETED';
-      return { key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), mapsTo, outcome: String(s.outcome || '') };
+      return { key: String(s.key || ''), label: String(s.label || s.key || ''), isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), mapsTo, outcome: String(s.outcome || ''), askReason: !!s.ask_reason };
     });
   } catch {
     return [];
@@ -281,6 +282,7 @@ function populateForm(b: TaskBoard) {
   const flags = parseFlags(b.featureFlags);
   form.geoMap = !!flags.geo_map;
   form.zenMode = !!flags.zen_mode;
+  form.handoffAccept = !!(flags as any).handoff_accept;
   form.cycles = !!flags.cycles;
   form.cycleCarryOver = (flags as any).cycle_carry_over === 'next' ? 'next' : 'backlog';
   const integrations = parseFlags(b.integrationFlags);
@@ -316,11 +318,11 @@ async function load() {
 }
 
 function addStatus() {
-  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '' }];
+  statuses.value = [...statuses.value, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '', askReason: false }];
 }
 function insertStatusAfter(idx: number) {
   const arr = [...statuses.value];
-  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '' });
+  arr.splice(idx + 1, 0, { key: '', label: '', isTerminal: false, isRequired: false, color: '', mapsTo: '', outcome: '', askReason: false });
   statuses.value = arr;
 }
 async function removeStatus(idx: number) {
@@ -360,7 +362,7 @@ async function handleSave() {
     let key = s.key.trim() || slugifyKey(s.label);
     while (usedKeys.has(key)) key += '_2';
     usedKeys.add(key);
-    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.mapsTo || '', outcome: (s.isTerminal && s.outcome) ? s.outcome : '', color: s.color || '' };
+    return { key, label: s.label.trim(), is_terminal: s.isTerminal, required: s.isRequired, maps_to: s.mapsTo || '', outcome: (s.isTerminal && s.outcome) ? s.outcome : '', color: s.color || '', ask_reason: s.askReason };
   });
   saving.value = true;
   try {
@@ -375,7 +377,7 @@ async function handleSave() {
       // -- always send "none" since the column is unconditionally
       // overwritten on every board update regardless of what's passed.
       deliveryConfirmationMode: 'none',
-      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
+      featureFlags: JSON.stringify({ geo_map: form.geoMap, zen_mode: form.zenMode, handoff_accept: form.handoffAccept, cycles: form.cycles, cycle_carry_over: form.cycleCarryOver }),
       integrationFlags: JSON.stringify({
         menu: form.menuIntegration && menuAppInstalled.value,
         contacts: form.contactsIntegration && contactsAppInstalled.value,
@@ -516,6 +518,16 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
 
             <UCard :ui="panelUi">
               <label class="flex items-start gap-3 cursor-pointer">
+                <UToggle v-model="form.handoffAccept" size="sm" class="mt-0.5" />
+                <span>
+                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:forward" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagHandoffAccept') }}</span>
+                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagHandoffAcceptDesc') }}</span>
+                </span>
+              </label>
+            </UCard>
+
+            <UCard :ui="panelUi">
+              <label class="flex items-start gap-3 cursor-pointer">
                 <UToggle v-model="form.cycles" size="sm" class="mt-0.5" />
                 <span>
                   <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:repeat" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCycles') || 'Sprints' }}</span>
@@ -553,6 +565,10 @@ const panelUi = { ...atCardUi, body: { padding: 'p-5' } };
                 <label class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer">
                   <UCheckbox v-model="s.isTerminal" />
                   {{ t('tasks.statusTerminal') || 'Terminal' }}
+                </label>
+                <label class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer" :title="t('tasks.statusAskReason')">
+                  <UCheckbox v-model="s.askReason" />
+                  <span class="hidden sm:inline">{{ t('tasks.statusAskReasonShort') }}</span>
                 </label>
                 <label v-if="!s.isTerminal" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer" :title="t('tasks.statusRequiredHint') || 'Issues must pass through this column before they can be closed'">
                   <UCheckbox v-model="s.isRequired" />

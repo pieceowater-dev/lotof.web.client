@@ -11,6 +11,7 @@ const TASK_FIELDS = `
   textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
   orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
   escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+        dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
 `;
 
 const UpdateTaskDocument = /* GraphQL */ `
@@ -52,6 +53,7 @@ export interface UpdateTaskInput {
   clientNameSnapshot?: string;
   clientPhoneSnapshot?: string;
   dueAt?: string;
+  dueFrom?: string;
   estimateValue?: number;
   dealAmount?: number;
   dealCurrency?: string;
@@ -84,7 +86,7 @@ export async function tasksUpdateTaskStatus(
 
 export async function tasksAssignTask(
   tasksToken: string, namespaceSlug: string,
-  input: { taskId: string; assigneeUserId?: string | null },
+  input: { taskId: string; assigneeUserId?: string | null; comment?: string; requireAccept?: boolean },
 ) {
   const devHeaders = await getDeviceHeaders();
   return tasksRequestWithRefresh(async () => {

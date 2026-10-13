@@ -11,13 +11,15 @@ import { maskProfanity } from '@/utils/profanityFilter';
 import { taskShortCode, priorityIcon, priorityColorClass, columnColorClass, blockingRequiredStatuses } from '@/utils/taskDisplay';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import TaskClientLink from '@/components/tasks/TaskClientLink.vue';
+import TaskComments from '@/components/tasks/TaskComments.vue';
+import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskMember } from '@/api/tasks/task/members';
 import type { TaskActivity } from '@/api/tasks/activity/list';
 import type { Cycle } from '@/api/tasks/cycle/list';
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired?: boolean; color?: string | null }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired?: boolean; color?: string | null; askReason?: boolean }
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -38,6 +40,10 @@ const props = defineProps<{
   contactsIntegrationEnabled?: boolean;
   // Board is funnel-shaped (has a won/lost column) -- show the deal-value field.
   dealFieldsEnabled?: boolean;
+  // Board option: a hand-over to someone else waits until the receiver accepts it.
+  requireHandoffAccept?: boolean;
+  // The signed-in user, to show the hand-over banner to its receiver.
+  currentUserId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -95,6 +101,7 @@ async function saveField(patch: Record<string, any>) {
       clientNameSnapshot: props.task.clientNameSnapshot || undefined,
       clientPhoneSnapshot: props.task.clientPhoneSnapshot || undefined,
       dueAt: props.task.dueAt || undefined,
+      dueFrom: props.task.dueFrom || undefined,
       estimateValue: props.task.estimateValue ?? undefined,
       dealAmount: props.task.dealAmount ?? undefined,
       dealCurrency: props.task.dealCurrency ?? undefined,
@@ -156,6 +163,13 @@ function handleTaskTypeChange(id: string) {
 }
 
 // --- Due date ---
+const dueFromDraft = ref('');
+watch(() => props.task?.dueFrom, (v) => { dueFromDraft.value = v ? v.slice(0, 16) : ''; }, { immediate: true });
+function commitDueFrom() {
+  const iso = dueFromDraft.value ? new Date(dueFromDraft.value).toISOString() : undefined;
+  if (iso === (props.task?.dueFrom || undefined)) return;
+  saveField({ dueFrom: iso });
+}
 const dueAtDraft = ref('');
 watch(() => props.task?.dueAt, (v) => { dueAtDraft.value = v ? v.slice(0, 16) : ''; }, { immediate: true });
 function commitDueAt() {
@@ -259,6 +273,53 @@ async function updateLocationPin(lat: number, lng: number) {
 
 const updatingStatus = ref(false);
 const isStatusPickerOpen = ref(false);
+// Reason dialog shared by status moves (columns with "ask for a reason") and hand-overs.
+const reasonOpen = ref(false);
+const reasonBusy = ref(false);
+const reasonKind = ref<'status' | 'handoff' | 'problem'>('status');
+const reasonTarget = ref<StatusRow | null>(null);
+const reasonAssignee = ref('');
+const reasonTitle = computed(() => {
+  if (reasonKind.value === 'handoff') return t('tasks.reasonHandoffTitle');
+  if (reasonKind.value === 'problem') return t('tasks.problemTitle');
+  return reasonTarget.value?.isTerminal ? t('tasks.reasonCancelTitle') : t('tasks.reasonStatusTitle');
+});
+const PROBLEM_REASONS = computed(() => [
+  { code: 'CLIENT_NO_ANSWER', label: t('tasks.problemNoAnswer') },
+  { code: 'ADDRESS_NOT_FOUND', label: t('tasks.problemNoAddress') },
+  { code: 'NO_GOODS', label: t('tasks.problemNoGoods') },
+  { code: 'OTHER', label: t('tasks.problemOther') },
+]);
+const reasonQuick = computed(() => {
+  if (reasonKind.value === 'problem') return PROBLEM_REASONS.value.map((r) => r.label);
+  if (reasonKind.value === 'status') return [t('tasks.commentTpl1'), t('tasks.commentTpl2'), t('tasks.commentTpl3')];
+  return [];
+});
+
+async function applyStatus(s: StatusRow, comment?: string, dueAt?: string) {
+  if (!props.task) return;
+  updatingStatus.value = true;
+  try {
+    const token = await getToken();
+    const { tasksUpdateTaskStatus, tasksUpdateTask } = await import('@/api/tasks/task/update');
+    let updated = await tasksUpdateTaskStatus(token, props.nsSlug, { taskId: props.task.id, status: s.key, isTerminal: s.isTerminal, comment: comment || undefined });
+    if (dueAt) {
+      updated = await tasksUpdateTask(token, props.nsSlug, {
+        id: updated.id, taskTypeId: updated.taskTypeId, title: updated.title, description: updated.description || undefined,
+        priority: updated.priority, clientNameSnapshot: updated.clientNameSnapshot || undefined, clientPhoneSnapshot: updated.clientPhoneSnapshot || undefined,
+        dueAt, dueFrom: updated.dueFrom || undefined, estimateValue: updated.estimateValue ?? undefined,
+        dealAmount: updated.dealAmount ?? undefined, dealCurrency: updated.dealCurrency ?? undefined,
+      });
+    }
+    emit('changed', updated);
+  } catch (e) {
+    logError('[TaskDetailSlideover] status change failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update status', color: 'red' });
+  } finally {
+    updatingStatus.value = false;
+  }
+}
+
 async function handleStatusChange(s: StatusRow) {
   if (!props.task) return;
   isStatusPickerOpen.value = false;
@@ -271,23 +332,76 @@ async function handleStatusChange(s: StatusRow) {
     });
     return;
   }
-  updatingStatus.value = true;
+  if (s.askReason) {
+    reasonKind.value = 'status';
+    reasonTarget.value = s;
+    reasonOpen.value = true;
+    return;
+  }
+  await applyStatus(s);
+}
+
+async function onReasonConfirm(v: { text: string; dueAt?: string }) {
+  reasonBusy.value = true;
   try {
-    const token = await getToken();
-    const { tasksUpdateTaskStatus } = await import('@/api/tasks/task/update');
-    const updated = await tasksUpdateTaskStatus(token, props.nsSlug, { taskId: props.task.id, status: s.key, isTerminal: s.isTerminal });
-    emit('changed', updated);
+    if (reasonKind.value === 'status' && reasonTarget.value) {
+      await applyStatus(reasonTarget.value, v.text, reasonTarget.value.isTerminal ? undefined : v.dueAt);
+    } else if (reasonKind.value === 'handoff' && props.task) {
+      const token = await getToken();
+      const { tasksAssignTask } = await import('@/api/tasks/task/update');
+      emit('changed', await tasksAssignTask(token, props.nsSlug, { taskId: props.task.id, assigneeUserId: reasonAssignee.value || null, comment: v.text || undefined, requireAccept: !!props.requireHandoffAccept }));
+    } else if (reasonKind.value === 'problem' && props.task) {
+      const token = await getToken();
+      const { tasksReportProblem } = await import('@/api/tasks/task/extra');
+      const picked = PROBLEM_REASONS.value.find((r) => v.text.includes(r.label));
+      emit('changed', await tasksReportProblem(token, props.nsSlug, { taskId: props.task.id, reasonCode: picked?.code || 'OTHER', text: v.text || undefined }));
+    }
+    reasonOpen.value = false;
   } catch (e) {
-    logError('[TaskDetailSlideover] status change failed', e);
-    useToast().add({ title: getErrorMessage(e, t) || 'Failed to update status', color: 'red' });
+    logError('[TaskDetailSlideover] reason action failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
   } finally {
-    updatingStatus.value = false;
+    reasonBusy.value = false;
+  }
+}
+
+function openProblem() {
+  reasonKind.value = 'problem';
+  reasonTarget.value = null;
+  reasonOpen.value = true;
+}
+
+async function clearProblem() {
+  if (!props.task) return;
+  try {
+    const { tasksClearProblem } = await import('@/api/tasks/task/extra');
+    emit('changed', await tasksClearProblem(await getToken(), props.nsSlug, props.task.id));
+  } catch (e) {
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
+  }
+}
+
+const handoffForMe = computed(() => !!props.task?.pendingAssigneeUserId && props.task.pendingAssigneeUserId === props.currentUserId);
+async function resolveHandoff(accept: boolean) {
+  if (!props.task) return;
+  try {
+    const { tasksResolveHandoff } = await import('@/api/tasks/task/extra');
+    emit('changed', await tasksResolveHandoff(await getToken(), props.nsSlug, props.task.id, accept));
+  } catch (e) {
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
   }
 }
 
 const updatingAssignee = ref(false);
 async function handleAssigneeChange(userId: string) {
   if (!props.task) return;
+  if (props.task.assigneeUserId && userId && userId !== props.task.assigneeUserId) {
+    // A hand-over between people: offer a reason (and acceptance, when the board asks for it).
+    reasonKind.value = 'handoff';
+    reasonAssignee.value = userId;
+    reasonOpen.value = true;
+    return;
+  }
   updatingAssignee.value = true;
   try {
     const token = await getToken();
@@ -597,6 +711,7 @@ async function handleDelete() {
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <UIcon v-if="saving" name="lucide:loader-2" class="w-3.5 h-3.5 animate-spin text-gray-400" />
+            <UButton v-if="!task.problemReportedAt" icon="lucide:alert-triangle" size="2xs" color="amber" variant="ghost" :title="t('tasks.problemTitle')" @click="openProblem" />
             <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete" />
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
           </div>
@@ -604,6 +719,21 @@ async function handleDelete() {
       </template>
 
       <div class="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6">
+      <div v-if="task.problemReportedAt" class="flex items-center justify-between gap-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-3 py-2 text-xs text-rose-800 dark:text-rose-300 mb-4">
+        <span class="flex items-center gap-1.5 min-w-0"><UIcon name="lucide:alert-triangle" class="w-3.5 h-3.5 flex-shrink-0" /><b>{{ t('tasks.problemBanner') }}:</b> <span class="truncate">{{ task.problemReason }}</span></span>
+        <UButton size="2xs" color="red" variant="soft" @click="clearProblem">{{ t('tasks.problemClear') }}</UButton>
+      </div>
+      <div v-if="handoffForMe" class="flex items-center justify-between gap-2 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 px-3 py-2 text-xs text-sky-800 dark:text-sky-300 mb-4">
+        <span class="flex items-center gap-1.5"><UIcon name="lucide:forward" class="w-3.5 h-3.5" />{{ t('tasks.handoffBanner') }}</span>
+        <span class="flex gap-1.5">
+          <UButton size="2xs" color="primary" variant="solid" @click="resolveHandoff(true)">{{ t('tasks.handoffAccept') }}</UButton>
+          <UButton size="2xs" color="gray" variant="soft" @click="resolveHandoff(false)">{{ t('tasks.handoffDecline') }}</UButton>
+        </span>
+      </div>
+      <div v-else-if="task.pendingAssigneeUserId" class="flex items-center gap-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 px-3 py-2 text-xs text-sky-800 dark:text-sky-300 mb-4">
+        <UIcon name="lucide:hourglass" class="w-3.5 h-3.5" />{{ t('tasks.handoffWaiting') }}: {{ memberLabel(task.pendingAssigneeUserId) }}
+      </div>
+
       <div v-if="hasPendingUpdate" class="flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-800 dark:text-amber-300 mb-4">
         <span class="flex items-center gap-1.5"><UIcon name="lucide:refresh-cw" class="w-3.5 h-3.5" />{{ t('tasks.updatedElsewhere') || 'Someone updated this task' }}</span>
         <UButton size="2xs" color="amber" variant="solid" @click="emit('apply-pending-update')">{{ t('tasks.refreshTask') || 'Update' }}</UButton>
@@ -637,6 +767,15 @@ async function handleDelete() {
         <p v-else class="text-sm text-gray-400 italic cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 py-0.5" role="button" tabindex="0" @click="startDescriptionEdit" @keydown.enter="startDescriptionEdit">
           {{ t('tasks.addDescription') || 'Add a description...' }}
         </p>
+      </div>
+      <div class="py-4">
+        <TaskComments
+          :task-id="task.id"
+          :ns-slug="nsSlug"
+          :get-token="getToken"
+          :format-date="formatDate"
+          :member-display-name="(id: string) => memberLabel(id)"
+        />
       </div>
 
       <div class="py-4">
@@ -686,7 +825,11 @@ async function handleDelete() {
           <div :class="estimateLabel ? 'grid grid-cols-2 gap-3' : ''">
             <div>
               <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dueAt') || 'Due date' }}</div>
-              <UInput v-model="dueAtDraft" type="datetime-local" @blur="commitDueAt" />
+              <div class="flex items-center gap-2">
+                <UInput v-model="dueFromDraft" type="datetime-local" class="flex-1" :title="t('tasks.dueFromLabel')" @blur="commitDueFrom" />
+                <span class="text-xs text-gray-400">→</span>
+                <UInput v-model="dueAtDraft" type="datetime-local" class="flex-1" @blur="commitDueAt" />
+              </div>
             </div>
             <div v-if="estimateLabel">
               <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.estimateValue') || 'Estimate' }} ({{ estimateLabel }})</div>
@@ -842,6 +985,8 @@ async function handleDelete() {
       </div>
       </div>
       </div>
+
+      <ReasonModal v-model="reasonOpen" :title="reasonTitle" :quick="reasonQuick" :ask-due="reasonKind === 'status' && !reasonTarget?.isTerminal" :busy="reasonBusy" @confirm="onReasonConfirm" />
 
       <!-- Activity lives in its own persistent side panel on wide screens
            (rather than one more card at the bottom of a long scroll) so it's

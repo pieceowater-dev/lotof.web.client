@@ -10,6 +10,7 @@ const CreateTaskDocument = /* GraphQL */ `
       textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
       orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
       escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+        dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
     }
   }
 `;
@@ -32,6 +33,7 @@ export interface CreateTaskInput {
   // installed and reachable (plan §6.3).
   clientId?: string;
   dueAt?: string;
+  dueFrom?: string;
   // Omit to leave the task in the backlog (no cycle).
   cycleId?: string;
   estimateValue?: number;

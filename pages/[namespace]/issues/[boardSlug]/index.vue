@@ -18,6 +18,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 import { issuesTour } from '@/config/tours';
 import TaskModal from '@/components/tasks/TaskModal.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
+import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
 import CycleModal from '@/components/tasks/CycleModal.vue';
 import CloseCycleModal from '@/components/tasks/CloseCycleModal.vue';
@@ -27,7 +28,7 @@ import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { Cycle } from '@/api/tasks/cycle/list';
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; askReason: boolean }
 
 const { t } = useI18n();
 const route = useRoute();
@@ -56,7 +57,7 @@ const boardId = computed(() => board.value?.id || '');
 const boardStatuses = computed<StatusRow[]>(() => {
   try {
     const arr = board.value?.statuses ? JSON.parse(board.value.statuses) : [];
-    return Array.isArray(arr) ? arr.map((s: any) => ({ key: s.key, label: s.label || s.key, isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || '') })) : [];
+    return Array.isArray(arr) ? arr.map((s: any) => ({ key: s.key, label: s.label || s.key, isTerminal: !!s.is_terminal, isRequired: !!s.required, color: String(s.color || ''), askReason: !!s.ask_reason })) : [];
   } catch {
     return [];
   }
@@ -76,6 +77,14 @@ const zenModeEnabled = computed(() => {
     return false;
   }
 });
+const requireHandoffAccept = computed(() => {
+  try {
+    return !!(board.value?.featureFlags ? JSON.parse(board.value.featureFlags).handoff_accept : false);
+  } catch {
+    return false;
+  }
+});
+
 const cyclesEnabled = computed(() => {
   try {
     return !!(board.value?.featureFlags ? JSON.parse(board.value.featureFlags).cycles : false);
@@ -618,8 +627,30 @@ function handleDragEnd() {
   dragOverColumnKey.value = null;
 }
 
-async function applyDrop(task: TaskItem, col: StatusRow, sortOrder: number) {
+// A column that asks for a reason: park the drop, ask, then finish it.
+const dropReasonOpen = ref(false);
+const dropReasonBusy = ref(false);
+const pendingDrop = ref<{ task: TaskItem; col: StatusRow; sortOrder: number } | null>(null);
+async function confirmDropReason(v: { text: string }) {
+  const d = pendingDrop.value;
+  if (!d) return;
+  dropReasonBusy.value = true;
+  try {
+    await applyDrop(d.task, d.col, d.sortOrder, v.text);
+  } finally {
+    dropReasonBusy.value = false;
+    dropReasonOpen.value = false;
+    pendingDrop.value = null;
+  }
+}
+
+async function applyDrop(task: TaskItem, col: StatusRow, sortOrder: number, reason?: string) {
   const statusChanged = task.status !== col.key;
+  if (statusChanged && col.askReason && reason === undefined) {
+    pendingDrop.value = { task, col, sortOrder };
+    dropReasonOpen.value = true;
+    return;
+  }
   if (statusChanged) {
     const missing = blockingRequiredStatuses(col, boardStatuses.value, task.visitedStatuses);
     if (missing.length) {
@@ -638,7 +669,7 @@ async function applyDrop(task: TaskItem, col: StatusRow, sortOrder: number) {
     const token = await getToken();
     if (statusChanged) {
       const { tasksUpdateTaskStatus } = await import('@/api/tasks/task/update');
-      await tasksUpdateTaskStatus(token, nsSlug.value, { taskId: task.id, status: col.key, isTerminal: col.isTerminal });
+      await tasksUpdateTaskStatus(token, nsSlug.value, { taskId: task.id, status: col.key, isTerminal: col.isTerminal, comment: reason || undefined });
     }
     const { tasksUpdateTaskOrder } = await import('@/api/tasks/task/update');
     const updated = await tasksUpdateTaskOrder(token, nsSlug.value, task.id, sortOrder);
@@ -697,6 +728,9 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         </UButton>
         <UButton v-if="zenModeEnabled" icon="lucide:smartphone" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/zen`" target="_blank" @click="handleOpenZenClick">
           {{ t('tasks.openZenMode') || 'Zen Mode' }}
+        </UButton>
+        <UButton v-if="isOwnerOrManager" icon="lucide:clipboard-list" size="xs" color="gray" variant="soft" class="hidden sm:inline-flex" :to="`/${nsSlug}/issues/${boardSlug}/report`">
+          {{ t('tasks.reportOpen') }}
         </UButton>
         <UButton v-if="isOwnerOrManager" icon="lucide:chart-no-axes-column" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/analytics`">
           {{ t('tasks.funnelAnalyticsBtn') || 'Analytics' }}
@@ -841,7 +875,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
                 <span class="font-mono">{{ taskShortCode(boardSlug, task.taskNumber) }}</span>
               </div>
               <div class="flex items-start justify-between gap-2">
-                <span class="text-sm font-medium leading-snug line-clamp-2">{{ maskProfanity(task.title) }}</span>
+                <span class="text-sm font-medium leading-snug line-clamp-2"><UIcon v-if="task.problemReportedAt" name="lucide:alert-triangle" class="w-3.5 h-3.5 text-rose-500 inline -mt-0.5 mr-1" :title="task.problemReason || ''" />{{ maskProfanity(task.title) }}</span>
                 <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4 flex-shrink-0 mt-0.5', priorityColorClass(task.priority)]" />
               </div>
               <p v-if="firstLine(task.description)" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ firstLine(task.description) }}</p>
@@ -934,9 +968,18 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       :cycles="cycles"
       :contacts-integration-enabled="contactsIntegrationEnabled"
       :deal-fields-enabled="funnelEnabled"
+      :require-handoff-accept="requireHandoffAccept"
+      :current-user-id="currentUser?.id"
       @changed="handleTaskChanged"
       @deleted="handleTaskDeleted"
       @apply-pending-update="applyPendingTaskUpdate"
+    />
+    <ReasonModal
+      v-model="dropReasonOpen"
+      :title="pendingDrop?.col.isTerminal ? t('tasks.reasonCancelTitle') : t('tasks.reasonStatusTitle')"
+      :quick="[t('tasks.commentTpl1'), t('tasks.commentTpl2'), t('tasks.commentTpl3')]"
+      :busy="dropReasonBusy"
+      @confirm="confirmDropReason"
     />
     <CycleModal
       v-model="isCycleModalOpen"

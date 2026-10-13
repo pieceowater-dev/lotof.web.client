@@ -32,6 +32,11 @@ export interface TaskItem {
   visitedStatuses?: string[];
   dealAmount?: number | null;
   dealCurrency?: string | null;
+  dueFrom?: string | null;
+  problemReportedAt?: string | null;
+  problemReason?: string | null;
+  pendingAssigneeUserId?: string | null;
+  pendingFromUserId?: string | null;
 }
 
 export interface TasksFilter {
@@ -60,6 +65,7 @@ const TasksBundleDocument = /* GraphQL */ `
         textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
         orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId
         escalatedAt estimateValue visitedStatuses dealAmount dealCurrency
+        dueFrom problemReportedAt problemReason pendingAssigneeUserId pendingFromUserId
       }
       info { count }
     }

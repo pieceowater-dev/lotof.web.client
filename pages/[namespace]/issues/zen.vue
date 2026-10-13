@@ -10,6 +10,7 @@ import { renderMarkdownSafe } from '@/utils/renderMarkdown';
 import { maskProfanity } from '@/utils/profanityFilter';
 import PwaInstallModal from '@/components/tasks/PwaInstallModal.vue';
 import NavigateSheet from '@/components/tasks/NavigateSheet.vue';
+import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskBoard } from '@/api/tasks/board/list';
 
@@ -18,7 +19,7 @@ definePageMeta({ layout: false });
 const { isStandalone } = usePwaInstall();
 const isPwaModalOpen = ref(false);
 
-interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean }
+interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; askReason?: boolean }
 
 const { t } = useI18n();
 const route = useRoute();
@@ -40,7 +41,7 @@ const boardStatuses = computed<Record<string, StatusRow[]>>(() => {
   for (const b of boards.value) {
     try {
       const arr = JSON.parse(b.statuses || '[]');
-      map[b.id] = Array.isArray(arr) ? arr.map((s: any) => ({ key: s.key, label: s.label || s.key, isTerminal: !!s.is_terminal, isRequired: !!s.required })) : [];
+      map[b.id] = Array.isArray(arr) ? arr.map((s: any) => ({ key: s.key, label: s.label || s.key, isTerminal: !!s.is_terminal, isRequired: !!s.required, askReason: !!s.ask_reason })) : [];
     } catch {
       map[b.id] = [];
     }
@@ -122,7 +123,7 @@ async function load(opts: { manual?: boolean; silent?: boolean } = {}) {
 // with zero IndexedDB precedent — a second persistence mechanism for a
 // handful of small JSON objects isn't worth the extra code.
 const QUEUE_KEY = computed(() => `tasks:zenQueue:${nsSlug.value}`);
-interface QueuedAction { id: string; taskId: string; status: string; isTerminal: boolean }
+interface QueuedAction { id: string; taskId: string; status: string; isTerminal: boolean; comment?: string }
 
 function readQueue(): QueuedAction[] {
   try {
@@ -141,7 +142,7 @@ async function sendStatusUpdate(action: QueuedAction): Promise<boolean> {
   try {
     const token = await getToken();
     const { tasksUpdateTaskStatus } = await import('@/api/tasks/task/update');
-    const updated = await tasksUpdateTaskStatus(token, nsSlug.value, { taskId: action.taskId, status: action.status, isTerminal: action.isTerminal });
+    const updated = await tasksUpdateTaskStatus(token, nsSlug.value, { taskId: action.taskId, status: action.status, isTerminal: action.isTerminal, comment: action.comment });
     const idx = tasks.value.findIndex((tsk) => tsk.id === updated.id);
     if (idx !== -1) tasks.value[idx] = updated;
     return true;
@@ -173,11 +174,60 @@ function handleAdvanceClick(task: TaskItem, target: StatusRow) {
     });
     return;
   }
+  if (target.askReason) {
+    reasonMode.value = 'status';
+    reasonTask.value = task;
+    reasonTarget.value = target;
+    reasonOpen.value = true;
+    return;
+  }
   advanceStatus(task, target);
 }
 
-async function advanceStatus(task: TaskItem, target: StatusRow) {
-  const action: QueuedAction = { id: `${task.id}:${Date.now()}`, taskId: task.id, status: target.key, isTerminal: target.isTerminal };
+// Reason dialog (a column that asks why, or a reported problem). The reason
+// rides along in the offline queue like the status itself.
+const reasonOpen = ref(false);
+const reasonBusy = ref(false);
+const reasonMode = ref<'status' | 'problem'>('status');
+const reasonTask = ref<TaskItem | null>(null);
+const reasonTarget = ref<StatusRow | null>(null);
+const PROBLEMS = computed(() => [
+  { code: 'CLIENT_NO_ANSWER', label: t('tasks.problemNoAnswer') },
+  { code: 'ADDRESS_NOT_FOUND', label: t('tasks.problemNoAddress') },
+  { code: 'NO_GOODS', label: t('tasks.problemNoGoods') },
+  { code: 'OTHER', label: t('tasks.problemOther') },
+]);
+const reasonQuick = computed(() => (reasonMode.value === 'problem' ? PROBLEMS.value.map((p) => p.label) : [t('tasks.commentTpl1'), t('tasks.commentTpl2'), t('tasks.commentTpl3')]));
+function openProblem(task: TaskItem) {
+  reasonMode.value = 'problem';
+  reasonTask.value = task;
+  reasonOpen.value = true;
+}
+async function onReasonConfirm(v: { text: string }) {
+  const task = reasonTask.value;
+  if (!task) return;
+  reasonBusy.value = true;
+  try {
+    if (reasonMode.value === 'problem') {
+      const { tasksReportProblem } = await import('@/api/tasks/task/extra');
+      const picked = PROBLEMS.value.find((p) => v.text.includes(p.label));
+      const updated = await tasksReportProblem(await getToken(), nsSlug.value, { taskId: task.id, reasonCode: picked?.code || 'OTHER', text: v.text || undefined });
+      const idx = tasks.value.findIndex((tsk) => tsk.id === updated.id);
+      if (idx !== -1) tasks.value[idx] = updated;
+    } else if (reasonTarget.value) {
+      await advanceStatus(task, reasonTarget.value, v.text);
+    }
+    reasonOpen.value = false;
+  } catch (e) {
+    logError('[tasks/zen] reason action failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
+  } finally {
+    reasonBusy.value = false;
+  }
+}
+
+async function advanceStatus(task: TaskItem, target: StatusRow, comment?: string) {
+  const action: QueuedAction = { id: `${task.id}:${Date.now()}`, taskId: task.id, status: target.key, isTerminal: target.isTerminal, comment: comment || undefined };
   // Optimistic local update so the card moves immediately regardless of
   // network state — matches the plan's "optimistic UI + offline queue".
   const idx = tasks.value.findIndex((tsk) => tsk.id === task.id);
@@ -394,7 +444,10 @@ onBeforeUnmount(() => {
           </span>
           <span class="flex items-center gap-1 flex-shrink-0">
             <UIcon :name="priorityIcon(task.priority)" :class="['w-3.5 h-3.5', priorityColorClass(task.priority)]" />
-            <span v-if="task.dueAt" class="text-[11px] text-gray-400">{{ new Date(task.dueAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}</span>
+            <span v-if="task.dueAt" class="text-[11px] text-gray-400">
+              <template v-if="task.dueFrom">{{ new Date(task.dueFrom).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}–</template>{{ new Date(task.dueAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}<template v-if="task.dueFrom">, {{ new Date(task.dueAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}</template>
+            </span>
+            <UIcon v-if="task.problemReportedAt" name="lucide:alert-triangle" class="w-3.5 h-3.5 text-rose-500" :title="task.problemReason || ''" />
           </span>
         </div>
         <h2 class="text-base font-semibold leading-snug mb-1 text-gray-900">{{ maskProfanity(task.title) }}</h2>
@@ -444,6 +497,15 @@ onBeforeUnmount(() => {
                that remap and reads as a distinct "final" action next to the
                blue "next status" button above. -->
           <button
+            v-if="!task.problemReportedAt"
+            type="button"
+            class="at-btn flex-shrink-0"
+            :aria-label="t('tasks.problemTitle')"
+            @click="openProblem(task)"
+          >
+            <UIcon name="lucide:alert-triangle" class="w-4 h-4 text-amber-500" /><span class="hidden min-[380px]:inline">{{ t('tasks.problemButton') }}</span>
+          </button>
+          <button
             v-if="terminalStatus(task) && terminalStatus(task)!.key !== nextStatus(task)?.key"
             type="button"
             class="at-btn flex-1 min-w-[120px] !py-2.5 !bg-indigo-600 !text-white hover:!bg-indigo-700"
@@ -455,6 +517,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <ReasonModal v-model="reasonOpen" :title="reasonMode === 'problem' ? t('tasks.problemTitle') : (reasonTarget?.isTerminal ? t('tasks.reasonCancelTitle') : t('tasks.reasonStatusTitle'))" :quick="reasonQuick" :busy="reasonBusy" @confirm="onReasonConfirm" />
     <NavigateSheet v-model="isNavigateSheetOpen" :task="navigateTask" :current-position="currentPosition" />
   </div>
 </template>
