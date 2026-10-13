@@ -20,6 +20,7 @@ import MovementItemBuilder from '@/components/goods/MovementItemBuilder.vue';
 import type { MovementExtraField, MovementDraftItem } from '@/components/goods/MovementItemBuilder.vue';
 import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/purchaseorder';
 import type { GoodsReceipt } from '@/api/goods/goodsreceipt';
+import type { GoodsSupplierReturn } from '@/api/goods/supplierreturn';
 import type { GoodsStockTransfer, GoodsStockTransferStatus } from '@/api/goods/stocktransfer';
 import type { GoodsWriteOff, GoodsWriteOffReason } from '@/api/goods/writeoff';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
@@ -41,13 +42,14 @@ async function getToken(): Promise<string> {
   return getGoodsTokenRaw(nsSlug.value);
 }
 
-type MovementKind = 'purchase' | 'receipt' | 'transfer' | 'writeoff';
+type MovementKind = 'purchase' | 'receipt' | 'transfer' | 'writeoff' | 'supplierReturn';
 
 const loading = ref(true);
 const orders = ref<GoodsPurchaseOrder[]>([]);
 const receipts = ref<GoodsReceipt[]>([]);
 const transfers = ref<GoodsStockTransfer[]>([]);
 const writeOffs = ref<GoodsWriteOff[]>([]);
+const supplierReturns = ref<GoodsSupplierReturn[]>([]);
 const warehouses = ref<GoodsWarehouse[]>([]);
 const suppliers = ref<GoodsSupplier[]>([]);
 const goods = ref<GoodsGood[]>([]);
@@ -96,7 +98,7 @@ async function loadAll() {
   loading.value = true;
   try {
     const token = await getToken();
-    const [{ purchaseOrders }, { receipts: r }, { transfers: tr }, { writeOffs: wo }, { warehouses: w }, { suppliers: s }, { goods: g }, { units: u }] = await Promise.all([
+    const [{ purchaseOrders }, { receipts: r }, { transfers: tr }, { writeOffs: wo }, { warehouses: w }, { suppliers: s }, { goods: g }, { units: u }, { returns: sr }] = await Promise.all([
       (await import('@/api/goods/purchaseorder')).goodsListPurchaseOrders(token, nsSlug.value),
       (await import('@/api/goods/goodsreceipt')).goodsListReceipts(token, nsSlug.value),
       (await import('@/api/goods/stocktransfer')).goodsListStockTransfers(token, nsSlug.value),
@@ -105,11 +107,13 @@ async function loadAll() {
       (await import('@/api/goods/supplier')).goodsListSuppliers(token, nsSlug.value),
       (await import('@/api/goods/good')).goodsListGoods(token, nsSlug.value),
       (await import('@/api/goods/unit')).goodsListUnits(token, nsSlug.value),
+      (await import('@/api/goods/supplierreturn')).goodsListSupplierReturns(token, nsSlug.value),
     ]);
     orders.value = purchaseOrders;
     receipts.value = r;
     transfers.value = tr;
     writeOffs.value = wo;
+    supplierReturns.value = sr;
     warehouses.value = w;
     suppliers.value = s;
     goods.value = g;
@@ -129,6 +133,7 @@ const TYPE_TABS: { key: MovementKind | 'all'; labelKey: string; icon: string }[]
   { key: 'receipt', labelKey: 'goods.receiving', icon: 'lucide:package-check' },
   { key: 'transfer', labelKey: 'goods.transfers', icon: 'lucide:arrow-left-right' },
   { key: 'writeoff', labelKey: 'goods.writeoffs', icon: 'lucide:trash-2' },
+  { key: 'supplierReturn', labelKey: 'goods.supplierReturns', icon: 'lucide:undo-2' },
 ];
 const activeType = ref<MovementKind | 'all'>('all');
 
@@ -147,6 +152,7 @@ const allRows = computed<MovementRow[]>(() => {
     ...orders.value.map((o) => ({ kind: 'purchase' as const, id: o.id, number: o.number, summary: supplierName(o.supplierId), status: o.status, date: o.expectedDate || o.createdAt, itemsCount: o.items.length })),
     ...receipts.value.map((r) => ({ kind: 'receipt' as const, id: r.id, number: r.number, summary: supplierName(r.supplierId), status: null, date: r.createdAt, itemsCount: r.items.length })),
     ...transfers.value.map((tr) => ({ kind: 'transfer' as const, id: tr.id, number: tr.number, summary: `${warehouseName(tr.fromWarehouseId)} → ${warehouseName(tr.toWarehouseId)}`, status: tr.status, date: tr.createdAt, itemsCount: tr.items.length })),
+    ...supplierReturns.value.map((sr) => ({ kind: 'supplierReturn' as const, id: sr.id, number: sr.number, summary: supplierName(sr.supplierId), status: null, date: sr.createdAt, itemsCount: sr.items.length })),
     ...writeOffs.value.map((wo) => ({ kind: 'writeoff' as const, id: wo.id, number: wo.number, summary: REASON_LABELS[wo.reason], status: null, date: wo.createdAt, itemsCount: wo.items.length })),
   ];
   return rows.sort((a, b) => (a.date < b.date ? 1 : -1));
@@ -181,6 +187,7 @@ const detailDoc = computed(() => {
     case 'receipt': return receipts.value.find((r) => r.id === detailRow.value!.id) || null;
     case 'transfer': return transfers.value.find((tr) => tr.id === detailRow.value!.id) || null;
     case 'writeoff': return writeOffs.value.find((wo) => wo.id === detailRow.value!.id) || null;
+    case 'supplierReturn': return supplierReturns.value.find((sr) => sr.id === detailRow.value!.id) || null;
     default: return null;
   }
 });
@@ -237,10 +244,23 @@ const CREATE_TABS: { key: MovementKind; labelKey: string; icon: string }[] = [
   { key: 'receipt', labelKey: 'goods.receiving', icon: 'lucide:package-check' },
   { key: 'transfer', labelKey: 'goods.transfers', icon: 'lucide:arrow-left-right' },
   { key: 'writeoff', labelKey: 'goods.writeoffs', icon: 'lucide:trash-2' },
+  { key: 'supplierReturn', labelKey: 'goods.supplierReturns', icon: 'lucide:undo-2' },
 ];
 
 const form = reactive({ warehouseId: '', toWarehouseId: '', supplierId: '', expectedDate: '', reason: 'OTHER' as GoodsWriteOffReason });
 const draftItems = ref<MovementDraftItem[]>([]);
+
+// A return goes back against one receipt: pick it, then say how much of each
+// line returns. The server refuses more than the receipt brought in minus what
+// already went back.
+const returnReceiptId = ref('');
+const returnComment = ref('');
+const returnQty = reactive<Record<string, number>>({});
+const returnableReceipts = computed(() => receipts.value.filter((r) => !form.warehouseId || r.warehouseId === form.warehouseId));
+const returnReceipt = computed(() => receipts.value.find((r) => r.id === returnReceiptId.value) || null);
+const returnLines = computed(() => (returnReceipt.value?.items || []).map((i) => ({ goodId: i.goodId, unitId: i.unitId, received: i.quantity, qty: Number(returnQty[i.goodId] || 0) })));
+watch(returnReceiptId, () => { for (const k of Object.keys(returnQty)) delete returnQty[k]; });
+const receiptOptions = computed(() => returnableReceipts.value.map((r) => ({ label: `${r.number || r.id.slice(0, 8)} · ${supplierName(r.supplierId)} · ${r.createdAt.slice(0, 10)}`, value: r.id })));
 
 function resetCreateForm() {
   // Defaults to the first warehouse instead of forcing an empty selection --
@@ -255,7 +275,7 @@ function resetCreateForm() {
   draftItems.value = [];
 }
 watch(showCreate, (open) => { if (open) resetCreateForm(); });
-watch(createType, () => { draftItems.value = []; });
+watch(createType, () => { draftItems.value = []; returnReceiptId.value = ''; returnComment.value = ''; });
 
 // --- Quick supplier create (rescue path from the movement modal when the
 // namespace has zero suppliers yet -- the full Suppliers page form is a
@@ -299,9 +319,11 @@ const extraFieldsByType: Record<MovementKind, MovementExtraField[]> = {
   ],
   transfer: [],
   writeoff: [],
+  supplierReturn: [],
 };
 
 const isFormValid = computed(() => {
+  if (createType.value === 'supplierReturn') return !!returnReceiptId.value && returnLines.value.some((l) => l.qty > 0 && l.qty <= l.received);
   if (!draftItems.value.length) return false;
   switch (createType.value) {
     case 'purchase': return !!form.warehouseId && !!form.supplierId;
@@ -342,6 +364,14 @@ async function submitCreate() {
         await goodsCreateStockTransfer(token, nsSlug.value, {
           fromWarehouseId: form.warehouseId, toWarehouseId: form.toWarehouseId,
           items: draftItems.value.map((i) => ({ goodId: i.goodId, unitId: i.unitId, quantity: i.quantity })),
+        });
+        break;
+      }
+      case 'supplierReturn': {
+        const { goodsCreateSupplierReturn } = await import('@/api/goods/supplierreturn');
+        await goodsCreateSupplierReturn(token, nsSlug.value, {
+          goodsReceiptId: returnReceiptId.value, comment: returnComment.value.trim() || undefined,
+          items: returnLines.value.filter((l) => l.qty > 0).map((l) => ({ goodId: l.goodId, quantity: l.qty })),
         });
         break;
       }
@@ -491,7 +521,7 @@ onMounted(loadAll);
         <template #header><h3 class="text-lg font-semibold">{{ t('goods.createMovement') }}</h3></template>
         <div class="space-y-4">
           <UFormGroup :label="t('goods.movementType')">
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
               <button
                 v-for="tab in CREATE_TABS"
                 :key="tab.key"
@@ -510,7 +540,7 @@ onMounted(loadAll);
 
           <div class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ t('goods.documentDetails') }}</div>
           <div class="grid grid-cols-2 gap-3">
-            <UFormGroup :label="createType === 'transfer' ? t('goods.fromWarehouse') : t('goods.selectWarehouse')" required>
+            <UFormGroup v-if="createType !== 'supplierReturn'" :label="createType === 'transfer' ? t('goods.fromWarehouse') : t('goods.selectWarehouse')" required>
               <USelectMenu v-model="form.warehouseId" :options="warehouses.map((w) => ({ label: w.name, value: w.id }))" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
             </UFormGroup>
 
@@ -540,7 +570,25 @@ onMounted(loadAll);
             </UFormGroup>
           </div>
 
-          <MovementItemBuilder v-model="draftItems" :goods="goods" :units="units" :extra-fields="extraFieldsByType[createType]">
+          <div v-if="createType === 'supplierReturn'" class="space-y-3">
+            <UFormGroup :label="t('goods.returnReceipt')" required>
+              <USelectMenu v-model="returnReceiptId" :options="receiptOptions" value-attribute="value" option-attribute="label" searchable :popper="{ strategy: 'fixed' }" />
+            </UFormGroup>
+            <div v-if="returnReceipt" class="rounded-xl border border-gray-200 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+              <div v-for="line in returnLines" :key="line.goodId" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                <div class="min-w-0">
+                  <div class="font-medium text-gray-900 dark:text-white truncate">{{ goodName(line.goodId) }}</div>
+                  <div class="text-xs text-gray-400">{{ t('goods.returnReceived') }}: {{ line.received }} {{ unitSymbol(line.unitId) }}</div>
+                </div>
+                <UInput v-model.number="returnQty[line.goodId]" type="number" min="0" :max="line.received" step="any" size="sm" class="w-28" :placeholder="t('goods.returnQty')" />
+              </div>
+            </div>
+            <UFormGroup :label="t('goods.returnComment')">
+              <UInput v-model="returnComment" maxlength="500" />
+            </UFormGroup>
+          </div>
+
+          <MovementItemBuilder v-else v-model="draftItems" :goods="goods" :units="units" :extra-fields="extraFieldsByType[createType]">
             <template #item-summary="{ item }">
               {{ item.quantity }} {{ unitSymbol(item.unitId as string) }}
               <template v-if="item.priceCents"> · {{ Number(item.priceCents).toFixed(2) }}</template>
