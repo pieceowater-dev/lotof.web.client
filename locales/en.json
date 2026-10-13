@@ -3718,5 +3718,15 @@
     "cookieNotice": "Only essential cookies and anonymised analytics to improve lota.",
     "cookieAccept": "Got it",
     "cookieMore": "Learn more"
+  },
+  "profile": {
+    "telegramTitle": "Telegram",
+    "telegramHint": "Get lota notifications (new tasks, hand-overs) in Telegram",
+    "telegramOn": "Connected",
+    "telegramConnect": "Connect",
+    "telegramDisconnect": "Disconnect",
+    "telegramWaiting": "Waiting…",
+    "telegramPressStart": "Telegram opens the bot — press Start. This confirms by itself.",
+    "telegramLinked": "Telegram connected"
   }
 }

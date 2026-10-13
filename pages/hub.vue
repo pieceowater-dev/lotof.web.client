@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import TelegramConnect from '@/components/ui/TelegramConnect.vue';
 import HubSkeleton from '@/components/ui/HubSkeleton.vue';
 import { appIconStyle } from '@/config/apps';
 import HomePostsFeed from '@/components/ui/HomePostsFeed.vue';
@@ -1166,6 +1167,7 @@ watch(user, (u) => {
               {{ t('admin.phonePrivacyHint') || 'Мы не передаём ваш номер третьим лицам' }}
             </p>
           </UFormGroup>
+          <TelegramConnect v-if="token" :token="token" />
         </div>
 
         <template #footer>

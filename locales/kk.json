@@ -2959,5 +2959,15 @@
     "cookieNotice": "Тек қажетті cookie және lota-ны жақсартуға арналған иесіздендірілген аналитика.",
     "cookieAccept": "Жақсы",
     "cookieMore": "Толығырақ"
+  },
+  "profile": {
+    "telegramTitle": "Telegram",
+    "telegramHint": "lota хабарламаларын (жаңа тапсырмалар, тапсыру) Telegram-да алыңыз",
+    "telegramOn": "Қосылған",
+    "telegramConnect": "Қосу",
+    "telegramDisconnect": "Ажырату",
+    "telegramWaiting": "Күтілуде…",
+    "telegramPressStart": "Telegram-да бот ашылады — Start басыңыз. Мұнда өзі расталады.",
+    "telegramLinked": "Telegram қосылды"
   }
 }

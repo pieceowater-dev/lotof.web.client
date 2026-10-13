@@ -3968,5 +3968,15 @@
     "cookieNotice": "Только необходимые cookie и обезличенная аналитика, чтобы улучшать lota.",
     "cookieAccept": "Хорошо",
     "cookieMore": "Подробнее"
+  },
+  "profile": {
+    "telegramTitle": "Telegram",
+    "telegramHint": "Получайте уведомления lota (новые задачи, передачи) в Telegram",
+    "telegramOn": "Подключён",
+    "telegramConnect": "Подключить",
+    "telegramDisconnect": "Отключить",
+    "telegramWaiting": "Ждём…",
+    "telegramPressStart": "В Telegram откроется бот — нажмите «Запустить» (Start). Здесь всё подтвердится само.",
+    "telegramLinked": "Telegram подключён"
   }
 }
