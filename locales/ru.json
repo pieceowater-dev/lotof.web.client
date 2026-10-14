@@ -3306,6 +3306,7 @@
     "addGood": "Добавить товар",
     "quickNewGood": "Новый товар",
     "toBuy": "Нужно закупить",
+    "orderPaymentsJournal": "Платежи заказов (наличные из Menu)",
     "scanUnknown": "Товар не найден по штрихкоду",
     "scanUnaccounted": "Добавлен в подсчёт вне листа: {name}",
     "correctDocument": "Исправить",

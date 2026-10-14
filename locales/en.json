@@ -3101,6 +3101,7 @@
     "addGood": "Add good",
     "quickNewGood": "New good",
     "toBuy": "To buy",
+    "orderPaymentsJournal": "Order payments (cash from Menu)",
     "scanUnknown": "No good with this barcode",
     "scanUnaccounted": "Added to the count outside the sheet: {name}",
     "correctDocument": "Correct",

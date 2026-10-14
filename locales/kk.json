@@ -2814,6 +2814,7 @@
     "addGood": "Тауар қосу",
     "quickNewGood": "Жаңа тауар",
     "toBuy": "Сатып алу керек",
+    "orderPaymentsJournal": "Тапсырыс төлемдері (Menu қолма-қол ақша)",
     "scanUnknown": "Бұл штрихкод бойынша тауар жоқ",
     "scanUnaccounted": "Парақтан тыс санауға қосылды: {name}",
     "correctDocument": "Түзету",

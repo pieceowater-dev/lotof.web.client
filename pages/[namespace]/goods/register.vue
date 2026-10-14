@@ -569,6 +569,9 @@ const SALE_STATUS_COLORS: Record<GoodsSaleStatus, any> = {
 
 // --- History: recent sales (cancel-paid-sale) + returns ---
 const showHistory = ref(false);
+const orderPayments = ref<GoodsCashMovement[]>([]);
+// "A-105 [op:abc:PAYMENT]" -> label "A-105"
+const orderPaymentLabel = (reason: string) => reason.replace(/\s*\[op:[^\]]*\]\s*/, '').trim() || '—';
 const loadingHistory = ref(false);
 const recentSales = ref<GoodsSale[]>([]);
 const cancelingSaleId = ref<string | null>(null);
@@ -591,6 +594,11 @@ async function openHistory() {
     const { goodsListSales } = await import('@/api/goods/sale');
     const { sales } = await goodsListSales(goodsToken, nsSlug.value, { shiftId: currentShift.value.id });
     recentSales.value = sales;
+    // Cash that came from Menu orders is a separate journal: entries are tagged "[op:<payment id>:<kind>]".
+    const { goodsListCashMovements } = await import('@/api/goods/sale');
+    orderPayments.value = (await goodsListCashMovements(goodsToken, nsSlug.value, currentShift.value.id))
+      .filter((m) => m.reason.includes('[op:'))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   } catch (e) {
     logError('[goods/register] openHistory failed', e);
   } finally {
@@ -1069,8 +1077,21 @@ onMounted(async () => {
       <UCard :ui="atCardUiFit">
         <template #header><h3 class="font-semibold">{{ t('goods.history') }}</h3></template>
         <div v-if="loadingHistory" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
-        <div v-else-if="!recentSales.length" class="text-center py-6 text-sm text-gray-400">—</div>
-        <div v-else class="divide-y divide-gray-100 dark:divide-gray-800">
+        <template v-else>
+        <div v-if="orderPayments.length" class="mb-4 rounded-xl border border-gray-200 dark:border-gray-800">
+          <div class="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-gray-400">{{ t('goods.orderPaymentsJournal') }}</div>
+          <div class="divide-y divide-gray-100 dark:divide-gray-800">
+            <div v-for="m in orderPayments" :key="m.id" class="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+              <div class="min-w-0">
+                <div class="truncate font-medium">{{ orderPaymentLabel(m.reason) }}</div>
+                <div class="text-xs text-gray-400">{{ new Date(m.createdAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}</div>
+              </div>
+              <span class="flex-shrink-0 font-semibold tabular-nums" :class="m.type === 'CASH_IN' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'">{{ m.type === 'CASH_IN' ? '+' : '−' }} {{ formatCents(m.amountCents) }}</span>
+            </div>
+          </div>
+        </div>
+        <div v-if="!recentSales.length && !orderPayments.length" class="text-center py-6 text-sm text-gray-400">—</div>
+        <div v-if="recentSales.length" class="divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="s in recentSales" :key="s.id" class="py-2.5 space-y-1.5">
             <div class="flex items-center justify-between text-sm">
               <div>
@@ -1092,6 +1113,7 @@ onMounted(async () => {
             </div>
           </div>
         </div>
+        </template>
         <template #footer>
           <div class="flex justify-end"><UButton color="gray" variant="ghost" @click="showHistory = false">{{ t('common.close') }}</UButton></div>
         </template>
