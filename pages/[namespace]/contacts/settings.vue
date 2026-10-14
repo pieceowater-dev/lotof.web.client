@@ -12,6 +12,7 @@ import BonusPinManager from '@/components/contacts/BonusPinManager.vue';
 import ImportModal from '@/components/contacts/ImportModal.vue';
 import PlanLimitsBanner from '@/components/contacts/settings/PlanLimitsBanner.vue';
 import StampCardsPanel from '@/components/contacts/settings/StampCardsPanel.vue';
+import LoyaltyExtrasPanel from '@/components/contacts/settings/LoyaltyExtrasPanel.vue';
 import DynamicFieldsPanel from '@/components/contacts/settings/DynamicFieldsPanel.vue';
 import MembersRolesPanel from '@/components/contacts/settings/MembersRolesPanel.vue';
 import IntegrationsPanel from '@/components/contacts/settings/IntegrationsPanel.vue';
@@ -185,6 +186,7 @@ onMounted(async () => {
               @error="(msg) => toast.add({ title: msg, color: 'red' })"
             />
           </div>
+          <LoyaltyExtrasPanel class="lg:col-span-2" />
         </div>
 
         <!-- Client fields -->
