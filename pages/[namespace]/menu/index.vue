@@ -769,7 +769,42 @@ let pollTimer: ReturnType<typeof setInterval> | null = null;
 let disposeOrderSubscription: (() => void) | null = null;
 let orderChangedDebounce: ReturnType<typeof setTimeout> | null = null;
 
+// While an order card is open it is never refreshed behind the user's back; instead a toast offers to
+// reload it (e.g. the customer just agreed to the price from their link).
+let changeToastShown = false;
+// Our own clicks cause events too; only changes that arrive well after the last interaction are "someone else's".
+let lastInteractionAt = 0;
+const markInteraction = () => { lastInteractionAt = Date.now(); };
+if (process.client) {
+  window.addEventListener('pointerdown', markInteraction, true);
+  window.addEventListener('keydown', markInteraction, true);
+}
+onBeforeUnmount(() => {
+  window.removeEventListener('pointerdown', markInteraction, true);
+  window.removeEventListener('keydown', markInteraction, true);
+});
+async function reloadOpenOrder() {
+  changeToastShown = false;
+  const id = selectedOrder.value?.id;
+  if (!id) return;
+  await loadOrdersBundle({ silent: true });
+  const fresh = orders.value.find((o) => o.id === id);
+  isDetailOpen.value = false;
+  await nextTick();
+  if (fresh) { selectedOrder.value = fresh; isDetailOpen.value = true; }
+}
+function offerReload() {
+  if (changeToastShown || Date.now() - lastInteractionAt < 6000) return;
+  changeToastShown = true;
+  useToast().add({
+    title: t('menu.orderChangedTitle'), description: t('menu.orderChangedHint'), color: 'amber', timeout: 12000,
+    actions: [{ label: t('menu.orderChangedReload'), click: () => { void reloadOpenOrder(); } }],
+    callback: () => { changeToastShown = false; },
+  } as any);
+}
+
 function onOrderChangedEvent() {
+  if (isDetailOpen.value && selectedOrder.value) { offerReload(); return; }
   if (orderChangedDebounce) clearTimeout(orderChangedDebounce);
   // Collapse bursts (e.g. several statuses updated back to back) into one refetch.
   orderChangedDebounce = setTimeout(() => { pollTick(); }, 300);
