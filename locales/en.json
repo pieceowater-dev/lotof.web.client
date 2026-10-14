@@ -3498,6 +3498,8 @@
     "subtaskDone": "Mark as done",
     "subtaskReopen": "Reopen",
     "logisticsTitle": "Logistics",
+    "logisticsList": "List",
+    "logisticsMap": "Map",
     "logisticsHint": "Tasks for the chosen day by assignee, in the order you set on the board",
     "logisticsEmpty": "No tasks for this day",
     "courier": "Assignee",

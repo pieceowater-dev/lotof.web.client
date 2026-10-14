@@ -10,6 +10,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { taskShortCode } from '@/utils/taskDisplay';
 import { groupByCourier, courierCounters, timeWindowText, type StatusInfo } from '@/utils/logistics';
+import LogisticsMap from '@/components/tasks/LogisticsMap.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
@@ -57,6 +58,11 @@ const statusLabel = (key: string) => statuses.value.find((s) => s.key === key)?.
 const nameOf = (id?: string | null) => (id ? memberOptions.value.find((m) => m.value === id)?.label || t('tasks.unknownMember') : t('tasks.unassigned'));
 
 const groups = computed(() => groupByCourier(tasks.value, statuses.value));
+const viewMode = ref<'list' | 'map'>('list');
+const mapGroups = computed(() => groups.value.map((g) => ({ assigneeId: g.assigneeId, tasks: g.tasks })));
+const hasLocated = computed(() => tasks.value.some((tk) => tk.lat != null && tk.lng != null));
+const mapRef = ref<{ colorFor: (id: string | null, idx: number) => string } | null>(null);
+const dotColor = (id: string | null, idx: number) => mapRef.value?.colorFor(id, idx) || '#9ca3af';
 const counters = computed(() => courierCounters(tasks.value, statuses.value));
 
 async function load() {
@@ -134,12 +140,17 @@ async function exportXlsx() {
         <button type="button" class="at-btn !px-2.5 !py-1.5" :aria-label="t('tasks.prevDay')" @click="shiftDay(-1)"><Icon name="lucide:chevron-left" class="h-4 w-4" /></button>
         <UInput v-model="day" type="date" size="sm" class="w-40" />
         <button type="button" class="at-btn !px-2.5 !py-1.5" :aria-label="t('tasks.nextDay')" @click="shiftDay(1)"><Icon name="lucide:chevron-right" class="h-4 w-4" /></button>
+        <div v-if="hasLocated" class="flex rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-gray-800 lg:hidden">
+          <button type="button" class="rounded-md px-2.5 py-1 font-medium" :class="viewMode === 'list' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'list'">{{ t('tasks.logisticsList') }}</button>
+          <button type="button" class="rounded-md px-2.5 py-1 font-medium" :class="viewMode === 'map' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'map'">{{ t('tasks.logisticsMap') }}</button>
+        </div>
         <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" @click="printPage"><Icon name="lucide:printer" class="h-4 w-4" />{{ t('tasks.print') }}</button>
         <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!tasks.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
       </div>
     </div>
 
-    <div class="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto">
+    <div class="mt-4 min-h-0 flex-1 lg:grid lg:gap-4" :class="hasLocated ? 'lg:grid-cols-2' : ''">
+    <div class="min-h-0 space-y-4 overflow-y-auto lg:h-full" :class="viewMode === 'map' && hasLocated ? 'hidden lg:block' : 'h-full'">
       <AppSkeleton v-if="loading" variant="list" :rows="4" />
       <div v-else-if="!groups.length" class="at-panel !p-6 text-center">
         <Icon name="lucide:route" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
@@ -148,7 +159,9 @@ async function exportXlsx() {
 
       <section v-for="g in groups" :key="g.assigneeId || 'none'" class="at-panel !p-4 break-inside-avoid">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="text-base font-semibold">{{ nameOf(g.assigneeId) }}</h2>
+          <h2 class="flex items-center gap-2 text-base font-semibold">
+            <span v-if="hasLocated" class="h-3 w-3 flex-shrink-0 rounded-full" :style="{ background: dotColor(g.assigneeId, groups.indexOf(g)) }" />{{ nameOf(g.assigneeId) }}
+          </h2>
           <div class="flex flex-wrap gap-1.5 text-xs">
             <span class="at-chip">{{ t('tasks.cntWaiting') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.waiting || 0 }}</b></span>
             <span class="at-chip">{{ t('tasks.cntActive') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.active || 0 }}</b></span>
@@ -171,6 +184,10 @@ async function exportXlsx() {
           </li>
         </ol>
       </section>
+    </div>
+    <div v-if="hasLocated && !loading" class="min-h-[320px] lg:h-full print:hidden" :class="viewMode === 'list' ? 'hidden lg:block' : 'h-full'">
+      <LogisticsMap ref="mapRef" :groups="mapGroups" :selected-id="selected?.id" @select="open" />
+    </div>
     </div>
 
     <TaskDetailSlideover v-model="detailOpen" :task="selected" :board-statuses="statuses.map((s) => ({ ...s, isRequired: false }))" :task-types="taskTypes" :member-options="memberOptions" :ns-slug="nsSlug" :board-slug="boardSlug" @changed="loadTasks" @deleted="loadTasks" />

@@ -3703,6 +3703,8 @@
     "subtaskDone": "Отметить выполненной",
     "subtaskReopen": "Вернуть в работу",
     "logisticsTitle": "Логистика",
+    "logisticsList": "Список",
+    "logisticsMap": "Карта",
     "logisticsHint": "Задачи на выбранный день по исполнителям, в порядке, который вы задали на доске",
     "logisticsEmpty": "На этот день задач нет",
     "courier": "Исполнитель",
