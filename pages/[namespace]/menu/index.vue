@@ -1249,7 +1249,7 @@ async function handleCreateOrder(payload: any) {
         :ui="{ rounded: 'rounded-xl' }"
         @click="isFilterPanelOpen = true"
       >
-        <span class="hidden sm:inline">{{ t('menu.moreFilters') || 'More filters' }}</span>
+        <span>{{ t('menu.moreFilters') || 'More filters' }}</span>
         <span v-if="hasActiveFilterPanel" class="w-1.5 h-1.5 rounded-full bg-primary-500" />
       </UButton>
       <UButton

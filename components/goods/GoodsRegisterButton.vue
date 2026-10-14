@@ -18,6 +18,6 @@ const nsSlug = computed(() => route.params.namespace as string);
     :aria-label="t('goods.openRegister')"
     class="flex-shrink-0 !border-0 !text-white !bg-gradient-to-r !from-blue-600 !to-emerald-500 hover:!from-blue-700 hover:!to-emerald-600 shadow-sm"
   >
-    <span class="hidden sm:inline">{{ t('goods.openRegister') }}</span>
+    <span>{{ t("goods.openRegister") }}</span>
   </UButton>
 </template>

@@ -155,7 +155,15 @@ useHead(() => ({
   title: pageTitle.value,
 }));
 
+// /contacts/all, /contacts/individual, /contacts/legal are the list's own addresses: send them to the
+// list instead of treating the word as a client's short id (which ended in a "could not load" toast).
+const LIST_KEYWORDS = ['all', 'individual', 'legal'];
+if (LIST_KEYWORDS.includes(String(route.params.id).toLowerCase())) {
+  await navigateTo(`/${route.params.namespace}/contacts/${String(route.params.id).toLowerCase()}/1-20`, { replace: true });
+}
+
 onMounted(async () => {
+  if (LIST_KEYWORDS.includes(String(route.params.id).toLowerCase())) return;
   await loadClient();
   await initClientSubscription();
 });

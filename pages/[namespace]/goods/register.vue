@@ -694,15 +694,15 @@ onMounted(async () => {
           <p v-if="activeRegister" class="text-xs text-gray-400 truncate">{{ activeRegister.name }}</p>
         </div>
       </div>
-      <div class="flex items-center gap-1.5 flex-wrap">
-        <UButton color="gray" variant="soft" icon="lucide:warehouse" size="sm" :to="`/${nsSlug}/goods`">
+      <div class="-mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+        <UButton class="flex-shrink-0" color="gray" variant="soft" icon="lucide:warehouse" size="sm" :to="`/${nsSlug}/goods`">
           {{ t('goods.warehouse') }}
         </UButton>
         <template v-if="currentShift">
           <!-- Real flex box (not display:contents) so the tour can measure it
                -- a `contents` element has a zero-size rect and the highlight
                lands in the top-left corner. -->
-          <div data-tour="goods-register-shift-actions" class="flex items-center gap-1.5 flex-wrap">
+          <div data-tour="goods-register-shift-actions" class="flex flex-shrink-0 items-center gap-1.5 sm:flex-wrap">
             <UButton color="gray" variant="soft" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
             <UButton color="gray" variant="soft" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
             <UButton color="gray" variant="soft" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
@@ -749,7 +749,7 @@ onMounted(async () => {
     <div
       v-else
       data-tour="goods-register-pos"
-      class="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] lg:grid-rows-1 lg:grid-cols-3 gap-4"
+      class="flex-1 min-h-0 grid grid-cols-1 grid-rows-[minmax(0,1fr)_auto] lg:grid-rows-1 lg:grid-cols-3 gap-4"
     >
       <!-- Product picker: 2/3 -->
       <div class="lg:col-span-2 flex flex-col min-h-0 gap-3">
@@ -866,8 +866,8 @@ onMounted(async () => {
           class="mx-3 mt-3 flex-shrink-0"
         />
 
-        <div class="flex-1 overflow-y-auto min-h-0">
-          <div v-if="!activeSale?.items?.length" class="h-full flex flex-col items-center justify-center px-6 text-center text-sm text-gray-400">
+        <div class="flex-1 overflow-y-auto min-h-0 max-h-[38vh] lg:max-h-none">
+          <div v-if="!activeSale?.items?.length" class="h-full flex flex-col items-center justify-center px-6 py-4 text-center text-sm text-gray-400">
             <Icon name="lucide:shopping-cart" class="w-10 h-10 mb-3 text-gray-200 dark:text-gray-800" />
             {{ t('goods.emptyCart') }}
           </div>

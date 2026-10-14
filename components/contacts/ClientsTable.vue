@@ -546,7 +546,37 @@ function addTagToFilter(tagId: string, tagName: string) {
       ref="tableBodyRef"
       class="keep-scroll overflow-x-auto overflow-y-auto flex-1 min-h-0 relative"
     >
-      <table class="w-full border-collapse min-w-[1200px]">
+      <!-- Phones: one card per client instead of a 1200px-wide table -->
+      <div class="divide-y divide-gray-100 dark:divide-gray-800 sm:hidden">
+        <div v-if="loading && !paginatedClients.length" class="px-4 py-6 text-center text-sm text-gray-400">{{ t('common.loading') }}</div>
+        <div v-else-if="!paginatedClients.length" class="px-4 py-10 text-center text-sm text-gray-400">{{ t('contacts.noClients') }}</div>
+        <div
+          v-for="client in paginatedClients"
+          :key="client.client.id"
+          class="flex items-start gap-3 px-4 py-3 active:bg-gray-50 dark:active:bg-white/5"
+          role="button"
+          tabindex="0"
+          @click="emit('rowClick', client)"
+          @keydown.enter="emit('rowClick', client)"
+        >
+          <button type="button" class="mt-0.5 flex-shrink-0" :aria-label="t('common.select')" @click.stop="toggleRow(client)">
+            <UIcon :name="selectedRows[client.client.id] ? 'lucide:check-square' : 'lucide:square'" class="h-5 w-5" :class="selectedRows[client.client.id] ? 'text-accent-600' : 'text-gray-400'" />
+          </button>
+          <div class="min-w-0 flex-1 space-y-1">
+            <div class="flex items-center gap-2">
+              <UIcon :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user' : 'lucide:building-2'" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <span class="truncate font-semibold text-gray-900 dark:text-white">{{ getClientName(client) }}</span>
+              <span class="ml-auto flex-shrink-0 !px-2 !py-0.5 !text-[11px]" :class="getStatusBadgeClass(client.client.status)">{{ getStatusLabel(client.client.status) }}</span>
+            </div>
+            <a v-if="getPrimaryPhone(client)" :href="`tel:${getPrimaryPhone(client)?.value}`" class="block text-sm text-accent-700 dark:text-blue-300" @click.stop>{{ getPrimaryPhoneDisplay(client) }}</a>
+            <div v-if="getClientTags(client).length" class="flex flex-wrap gap-1">
+              <span v-for="tg in getClientTags(client)" :key="tg.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ tg.name }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table class="hidden w-full min-w-[1200px] border-collapse sm:table">
         <!-- Header -->
         <thead class="sticky top-0 z-10">
           <tr>
