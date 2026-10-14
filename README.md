@@ -14,7 +14,7 @@ gateway + one or more microservices per product, plus this client). See
 - **Nuxt 3** (Vue 3, SSR via Nitro), **@nuxt/ui** for the component kit.
 - **GraphQL** over `graphql-request` (queries as inline strings today;
   `graphql-codegen` is configured but currently only wired up for the hub
-  service — see `FRONTEND_AUDIT.md` D1).
+  service).
 - **TypeScript**, checked with `vue-tsc` (`npm run typecheck`).
 - No global state library (Pinia etc.) — auth/token/namespace state lives in
   Nuxt's `useState`, see [Auth & per-service tokens](#auth--per-service-tokens)
@@ -53,9 +53,8 @@ codegen` instead.
 
 ```
 pages/          File-based routes — see Routing below.
-layouts/        Just default.vue today; layout choice is currently decided
-                by path-regex inside it (QUIET_FOOTER / WORKSPACE_PAGE /
-                PRICING_PAGE), not definePageMeta({ layout }).
+layouts/        full / quiet / workspace, chosen per page with
+                definePageMeta({ layout }) — see DESIGN.md §E2.
 components/     ui/ = design-system primitives; the rest are feature-scoped
                 folders (atrace/, menu/, contacts/, ...) or App*.vue (global
                 chrome: AppHeader, AppFooter, ...).
@@ -74,12 +73,11 @@ middleware/     Global route guards: auth.global.ts (session bootstrap),
                 gates for /console), performance.global.ts.
 plugins/        App-wide client/universal plugins (amplitude, leaflet setup,
                 accessibility, web-vitals, chunk-reload recovery, ...).
-server/         Nitro-side code — see docs/server.md.
+server/         Nitro-side code — see DESIGN.md §E7.
 locales/        ru.json / en.json / kk.json for the hand-rolled useI18n()
-                composable (not @nuxtjs/i18n). ru is the most complete
-                locale; en/kk currently lag behind it (see
-                FRONTEND_AUDIT.md I1/I2) and t() returns '' on a miss, so a
-                gap shows up as blank UI text rather than an error.
+                composable (not @nuxtjs/i18n). A key missing from one locale
+                silently renders another locale's text, so add every key to
+                ru/en/kk and run `npm run locales:check` (DESIGN.md §E4).
 config/         Static app/product registries (config/apps.ts is the single
                 source of truth for what products exist, their routes,
                 icons, bundle codes), business types, board/tour presets.
@@ -108,7 +106,7 @@ mock/           A few files of static mock data genuinely used at runtime
 - `[namespace]/bundles.vue` and the various `plans.vue`/`memberships.vue`
   pages are per-app billing surfaces; some of that is already consolidated
   behind `useAppPlansPage`/`AppPlansPage.vue`, more is still duplicated per
-  product (`FRONTEND_AUDIT.md` C3).
+  product.
 
 ## Auth & per-service tokens
 
@@ -132,9 +130,7 @@ via that service's `getAppToken` mutation. `api/clients.ts` centralizes:
 Patron (B2C) auth is a separate, namespace-less identity handled by
 `composables/usePatronAuth.ts`.
 
-## Known issues / roadmap
+## Design, UX and engineering rules
 
-`FRONTEND_AUDIT.md` at the repo root is a standing technical audit (data
-fetching architecture, type safety, testing, a11y, security, etc.) with a
-prioritized fix plan — check it before assuming something odd in the code is
-undocumented or unknown.
+`DESIGN.md` is the single reference: visual system (Part I), UX guidelines (Part II), roles and data access (Part III),
+engineering conventions and past decisions (Part IV). The standing list of UX gaps lives in `docs/UX_AUDIT.md`.
