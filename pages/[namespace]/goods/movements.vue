@@ -17,6 +17,8 @@ import AppTable from '@/components/ui/AppTable.vue';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
+import DocAttachments from '@/components/goods/DocAttachments.vue';
+import type { GoodsDocDraft, GoodsDocType } from '@/api/goods/docextras';
 import MovementItemBuilder from '@/components/goods/MovementItemBuilder.vue';
 import type { MovementExtraField, MovementDraftItem } from '@/components/goods/MovementItemBuilder.vue';
 import type { GoodsPurchaseOrder, GoodsPurchaseOrderStatus } from '@/api/goods/purchaseorder';
@@ -383,7 +385,7 @@ function resetCreateForm() {
   form.supplierId = ''; form.expectedDate = ''; form.reason = 'OTHER';
   draftItems.value = [];
 }
-watch(showCreate, (open) => { if (open) { resetCreateForm(); payFromRegister.value = false; refundToRegister.value = false; loadOpenShifts(); } });
+watch(showCreate, (open) => { if (open) { resetCreateForm(); payFromRegister.value = false; refundToRegister.value = false; loadOpenShifts(); } else { activeDraftId.value = ''; } });
 watch(createType, () => { draftItems.value = []; returnReceiptId.value = ''; returnComment.value = ''; });
 
 // --- Quick supplier create (rescue path from the movement modal when the
@@ -463,6 +465,87 @@ const isFormValid = computed(() => {
   }
 });
 
+// --- Drafts: an unfinished receipt / supplier return, saved without touching stock ---
+const DRAFT_KINDS: MovementKind[] = ['receipt', 'supplierReturn'];
+const DOC_TYPE: Record<MovementKind, GoodsDocType> = {
+  purchase: 'PURCHASE_ORDER', receipt: 'GOODS_RECEIPT', transfer: 'STOCK_TRANSFER', writeoff: 'WRITE_OFF', supplierReturn: 'SUPPLIER_RETURN',
+};
+const drafts = ref<GoodsDocDraft[]>([]);
+const activeDraftId = ref('');
+const savingDraft = ref(false);
+const canSaveDraft = computed(() => DRAFT_KINDS.includes(createType.value) && (createType.value === 'receipt' ? !!form.warehouseId && (draftItems.value.length > 0 || !!form.supplierId) : !!returnReceiptId.value));
+
+async function loadDrafts() {
+  try {
+    const { goodsListDocDrafts } = await import('@/api/goods/docextras');
+    drafts.value = await goodsListDocDrafts(await getToken(), nsSlug.value);
+  } catch (e) {
+    logError('[goods/movements] loadDrafts failed', e);
+  }
+}
+function draftTitle(): string {
+  if (createType.value === 'supplierReturn') {
+    const r = returnReceipt.value;
+    return r ? `${t('goods.supplierReturns')}: ${r.number || r.id.slice(0, 8)}` : t('goods.supplierReturns');
+  }
+  return `${form.supplierId ? supplierName(form.supplierId) : t('goods.draftNoSupplier')} · ${draftItems.value.length}`;
+}
+async function saveDraft() {
+  if (!canSaveDraft.value) return;
+  savingDraft.value = true;
+  try {
+    const { goodsSaveDocDraft } = await import('@/api/goods/docextras');
+    const saved = await goodsSaveDocDraft(await getToken(), nsSlug.value, {
+      id: activeDraftId.value || undefined,
+      docType: createType.value === 'receipt' ? 'GOODS_RECEIPT' : 'SUPPLIER_RETURN',
+      title: draftTitle(),
+      warehouseId: form.warehouseId || undefined,
+      payloadJson: JSON.stringify({
+        type: createType.value, warehouseId: form.warehouseId, supplierId: form.supplierId, items: draftItems.value,
+        returnReceiptId: returnReceiptId.value, returnComment: returnComment.value, returnQty: { ...returnQty },
+      }),
+    });
+    activeDraftId.value = saved.id;
+    showCreate.value = false;
+    await loadDrafts();
+    useToast().add({ title: t('goods.draftSaved'), color: 'primary' });
+  } catch (e) {
+    logError('[goods/movements] saveDraft failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('goods.draftFailed'), color: 'red' });
+  } finally {
+    savingDraft.value = false;
+  }
+}
+async function openDraft(d: GoodsDocDraft) {
+  let p: any;
+  try { p = JSON.parse(d.payloadJson); } catch { p = null; }
+  if (!p) return;
+  // The create form resets itself when it opens and when the type changes: set the type, let those
+  // watchers run, then fill the form, then (return lines reset on receipt change) the quantities.
+  createType.value = d.docType === 'GOODS_RECEIPT' ? 'receipt' : 'supplierReturn';
+  showCreate.value = true;
+  await nextTick();
+  form.warehouseId = p.warehouseId || form.warehouseId;
+  form.supplierId = p.supplierId || '';
+  draftItems.value = Array.isArray(p.items) ? p.items : [];
+  returnReceiptId.value = p.returnReceiptId || '';
+  returnComment.value = p.returnComment || '';
+  await nextTick();
+  Object.assign(returnQty, p.returnQty || {});
+  activeDraftId.value = d.id;
+}
+async function removeDraft(d: GoodsDocDraft) {
+  if (!(await confirm({ message: t('goods.draftDeleteConfirm'), confirmLabel: t('common.delete'), icon: 'lucide:trash-2' }))) return;
+  try {
+    const { goodsDeleteDocDraft } = await import('@/api/goods/docextras');
+    await goodsDeleteDocDraft(await getToken(), nsSlug.value, d.id);
+    drafts.value = drafts.value.filter((x) => x.id !== d.id);
+  } catch (e) {
+    logError('[goods/movements] removeDraft failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('goods.draftFailed'), color: 'red' });
+  }
+}
+
 async function submitCreate() {
   if (!isFormValid.value) return;
   saving.value = true;
@@ -537,8 +620,12 @@ async function submitCreate() {
         break;
       }
     }
+    if (activeDraftId.value) {
+      const used = activeDraftId.value;
+      await (await import('@/api/goods/docextras')).goodsDeleteDocDraft(token, nsSlug.value, used).catch((e) => logError('[goods/movements] dropping the posted draft failed', e));
+    }
     showCreate.value = false;
-    await loadAll();
+    await Promise.all([loadAll(), loadDrafts()]);
   } catch (e) {
     logError('[goods/movements] submitCreate failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to save', color: 'red' });
@@ -547,7 +634,7 @@ async function submitCreate() {
   }
 }
 
-onMounted(loadAll);
+onMounted(() => { loadAll(); loadDrafts(); });
 </script>
 
 <template>
@@ -589,6 +676,18 @@ onMounted(loadAll);
           <UButton color="primary" icon="lucide:plus" @click="showCreate = true">{{ t('goods.createMovement') }}</UButton>
         </template>
       </GoodsNavTabs>
+    </div>
+
+    <div v-if="drafts.length" class="mt-3 flex flex-shrink-0 flex-wrap items-center gap-2">
+      <span class="text-xs font-semibold uppercase tracking-wide text-gray-400">{{ t('goods.drafts') }}</span>
+      <div v-for="d in drafts" :key="d.id" class="inline-flex items-center overflow-hidden rounded-full border border-gray-200 bg-white text-sm dark:border-gray-800 dark:bg-gray-900">
+        <button type="button" class="flex items-center gap-1.5 py-1 pl-3 pr-2 hover:text-primary-600" @click="openDraft(d)">
+          <UIcon :name="d.docType === 'GOODS_RECEIPT' ? 'lucide:package-check' : 'lucide:undo-2'" class="h-3.5 w-3.5 text-gray-400" />
+          <span class="max-w-[14rem] truncate">{{ d.title }}</span>
+          <span class="text-xs text-gray-400">{{ formatDateOnly(d.updatedAt, locale) }}</span>
+        </button>
+        <button type="button" class="py-1 pl-1 pr-2.5 text-gray-400 hover:text-red-500" :aria-label="t('common.delete')" @click="removeDraft(d)"><UIcon name="lucide:x" class="h-3.5 w-3.5" /></button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 mt-3">
@@ -676,6 +775,8 @@ onMounted(loadAll);
               </div>
             </div>
           </div>
+
+          <DocAttachments :key="detailRow.id" :doc-type="DOC_TYPE[detailRow.kind]" :doc-id="detailRow.id" :ns-slug="nsSlug" />
         </div>
       </UCard>
     </USlideover>
@@ -791,6 +892,7 @@ onMounted(loadAll);
         <template #footer>
           <div class="flex justify-end gap-2">
             <UButton color="gray" variant="ghost" @click="showCreate = false">{{ t('common.cancel') }}</UButton>
+            <UButton v-if="DRAFT_KINDS.includes(createType)" color="gray" variant="soft" icon="lucide:file-clock" :loading="savingDraft" :disabled="!canSaveDraft || savingDraft || saving" @click="saveDraft">{{ t('goods.saveDraft') }}</UButton>
             <UButton color="primary" :loading="saving" :disabled="!isFormValid || saving" @click="submitCreate">{{ t('common.save') }}</UButton>
           </div>
         </template>
