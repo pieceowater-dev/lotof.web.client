@@ -96,11 +96,25 @@ const warehouseTypeLabel = (type: GoodsWarehouseType) => t(WAREHOUSE_TYPE_LABEL_
 const showWarehouseModal = ref(false);
 const savingWarehouse = ref(false);
 const editingWarehouseId = ref<string | null>(null);
-const warehouseForm = reactive({ name: '', address: '', type: 'BOTH' as GoodsWarehouseType, isActive: true });
+const warehouseForm = reactive({ name: '', address: '', type: 'BOTH' as GoodsWarehouseType, isActive: true, menuBranchId: '' });
+
+// Menu branches (точки) a warehouse can supply; empty when Menu is not available to this user.
+const menuBranches = ref<Array<{ label: string; value: string }>>([]);
+async function loadMenuBranches() {
+  try {
+    const menuToken = useMenuToken().current();
+    if (!menuToken) return;
+    const { menuBranchesList } = await import('@/api/menu/branch/list');
+    menuBranches.value = [{ label: t('goods.branchNone'), value: '' }, ...(await menuBranchesList(menuToken, nsSlug.value)).branches.filter((b) => b.isActive).map((b) => ({ label: b.name, value: b.id }))];
+  } catch {
+    menuBranches.value = [];
+  }
+}
+onMounted(loadMenuBranches);
 
 function openAddWarehouse() {
   editingWarehouseId.value = null;
-  warehouseForm.name = ''; warehouseForm.address = ''; warehouseForm.type = 'BOTH'; warehouseForm.isActive = true;
+  warehouseForm.name = ''; warehouseForm.address = ''; warehouseForm.type = 'BOTH'; warehouseForm.isActive = true; warehouseForm.menuBranchId = '';
   showWarehouseModal.value = true;
 }
 
@@ -110,6 +124,7 @@ function openEditWarehouse(w: GoodsWarehouse) {
   warehouseForm.address = w.address;
   warehouseForm.type = w.type;
   warehouseForm.isActive = w.isActive;
+  warehouseForm.menuBranchId = w.menuBranchId || '';
   showWarehouseModal.value = true;
 }
 
@@ -122,12 +137,12 @@ async function submitWarehouse() {
       const { goodsUpdateWarehouse } = await import('@/api/goods/warehouse');
       await goodsUpdateWarehouse(goodsToken, nsSlug.value, {
         id: editingWarehouseId.value, name: warehouseForm.name.trim(), address: warehouseForm.address.trim(),
-        type: warehouseForm.type, isActive: warehouseForm.isActive,
+        type: warehouseForm.type, isActive: warehouseForm.isActive, menuBranchId: warehouseForm.menuBranchId || null,
       });
     } else {
       const { goodsCreateWarehouse } = await import('@/api/goods/warehouse');
       await goodsCreateWarehouse(goodsToken, nsSlug.value, {
-        name: warehouseForm.name.trim(), address: warehouseForm.address.trim(), type: warehouseForm.type,
+        name: warehouseForm.name.trim(), address: warehouseForm.address.trim(), type: warehouseForm.type, menuBranchId: warehouseForm.menuBranchId || null,
       });
     }
     showWarehouseModal.value = false;
@@ -640,6 +655,13 @@ onMounted(() => {
           </div>
           <UToggle v-model="settings.orderPaymentsToRegister" />
         </div>
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <div class="text-sm text-gray-900 dark:text-white">{{ t('goods.reserveForOrders') }}</div>
+            <p class="text-xs text-gray-400 mt-0.5">{{ t('goods.reserveForOrdersHint') }}</p>
+          </div>
+          <UToggle v-model="settings.reserveForOrders" />
+        </div>
       </div>
 
       <UButton color="primary" :loading="savingSettings" @click="saveSettings">{{ t('common.save') }}</UButton>
@@ -759,6 +781,9 @@ onMounted(() => {
               option-attribute="label"
               :popper="{ strategy: 'fixed' }"
             />
+          </UFormGroup>
+          <UFormGroup v-if="menuBranches.length > 1" :label="t('goods.warehouseBranch')" :hint="t('goods.warehouseBranchHint')">
+            <USelectMenu v-model="warehouseForm.menuBranchId" :options="menuBranches" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
           </UFormGroup>
           <UFormGroup v-if="editingWarehouseId" :label="t('common.status')">
             <UToggle v-model="warehouseForm.isActive" />

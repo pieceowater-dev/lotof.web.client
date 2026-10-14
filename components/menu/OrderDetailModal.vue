@@ -513,6 +513,24 @@ async function setExecutor(item: MenuOrderItem, userId: string) {
   }
 }
 
+async function setItemFlags(item: MenuOrderItem, flags: { cashReceived?: number; hideInDocuments?: boolean }) {
+  const prev = { cashReceived: item.cashReceived, hideInDocuments: item.hideInDocuments };
+  if (flags.cashReceived !== undefined) item.cashReceived = flags.cashReceived;
+  if (flags.hideInDocuments !== undefined) item.hideInDocuments = flags.hideInDocuments;
+  try {
+    const { menuSetItemFlags } = await import('@/api/menu/order/extra');
+    await menuSetItemFlags(await getToken(), nsSlug.value, item.id, flags);
+  } catch (e) {
+    Object.assign(item, prev);
+    logError('[OrderDetailModal] setItemFlags failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
+  }
+}
+function onCashInput(item: MenuOrderItem, ev: Event) {
+  const v = Number((ev.target as HTMLInputElement).value);
+  if (Number.isFinite(v) && v >= 0 && v !== (item.cashReceived || 0)) setItemFlags(item, { cashReceived: v });
+}
+
 const memberOptions = computed(() => {
   const taken = new Set(members.value.map((m) => m.userId));
   const eligible = hubMembers.value.filter((m) => !taken.has(m.userId) && staffRoleByUserId.value[m.userId]);
@@ -1524,6 +1542,15 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                           :popper="{ strategy: 'fixed' }"
                           @update:model-value="(v: string) => setExecutor(i, v)"
                         />
+                      </div>
+                      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+                        <label v-if="i.itemKind === 'WORK'" class="flex items-center gap-1.5" :title="t('menu.cashReceivedHint')">
+                          <UIcon name="lucide:banknote" class="h-3.5 w-3.5" />{{ t('menu.cashReceived') }}
+                          <input type="number" min="0" step="any" :value="i.cashReceived || ''" class="w-20 rounded-md border border-gray-200 bg-transparent px-1.5 py-0.5 text-right tabular-nums dark:border-gray-700" @change="onCashInput(i, $event)">
+                        </label>
+                        <button type="button" class="flex items-center gap-1 hover:text-primary-600" :class="i.hideInDocuments ? 'text-amber-600 dark:text-amber-400' : ''" :title="t('menu.hideInDocumentsHint')" @click="setItemFlags(i, { hideInDocuments: !i.hideInDocuments })">
+                          <UIcon :name="i.hideInDocuments ? 'lucide:eye-off' : 'lucide:eye'" class="h-3.5 w-3.5" />{{ i.hideInDocuments ? t('menu.hiddenInDocuments') : t('menu.shownInDocuments') }}
+                        </button>
                       </div>
                       <div v-if="i.modifiers?.length" class="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5">
                         <span

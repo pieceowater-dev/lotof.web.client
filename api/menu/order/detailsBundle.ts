@@ -13,7 +13,7 @@ const OrderDetailsBundleDocument = /* GraphQL */ `
   query OrderDetailsBundle($orderId: String!) {
     orderItems(orderId: $orderId) {
       rows {
-        id orderId menuItemId name priceAtPurchase quantity warrantyDays itemKind costPriceAtPurchase workPayPercent executorId priceMode
+        id orderId menuItemId name priceAtPurchase quantity warrantyDays itemKind costPriceAtPurchase workPayPercent executorId priceMode cashReceived hideInDocuments
         modifiers { id orderItemId modifierOptionId name priceAtPurchase }
       }
     }

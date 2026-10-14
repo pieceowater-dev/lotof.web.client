@@ -10,12 +10,14 @@ export type GoodsWarehouse = {
   address: string;
   type: GoodsWarehouseType;
   isActive: boolean;
+  /** Menu branch (точка) whose orders draw stock from this warehouse. */
+  menuBranchId?: string | null;
 };
 
 const WarehousesDocument = /* GraphQL */ `
   query Warehouses($filter: DefaultFilterInput) {
     warehouses(filter: $filter) {
-      rows { id name address type isActive }
+      rows { id name address type isActive menuBranchId }
       info { count }
     }
   }
@@ -35,14 +37,14 @@ export async function goodsListWarehouses(goodsToken: string, namespaceSlug: str
 
 const CreateWarehouseDocument = /* GraphQL */ `
   mutation CreateWarehouse($input: CreateWarehouseInput!) {
-    createWarehouse(input: $input) { id name address type isActive }
+    createWarehouse(input: $input) { id name address type isActive menuBranchId }
   }
 `;
 
 export async function goodsCreateWarehouse(
   goodsToken: string,
   namespaceSlug: string,
-  input: { name: string; address: string; type: GoodsWarehouseType },
+  input: { name: string; address: string; type: GoodsWarehouseType; menuBranchId?: string | null },
 ): Promise<GoodsWarehouse> {
   const devHeaders = await getDeviceHeaders();
   return goodsRequestWithRefresh(async () => {
@@ -57,14 +59,14 @@ export async function goodsCreateWarehouse(
 
 const UpdateWarehouseDocument = /* GraphQL */ `
   mutation UpdateWarehouse($input: UpdateWarehouseInput!) {
-    updateWarehouse(input: $input) { id name address type isActive }
+    updateWarehouse(input: $input) { id name address type isActive menuBranchId }
   }
 `;
 
 export async function goodsUpdateWarehouse(
   goodsToken: string,
   namespaceSlug: string,
-  input: { id: string; name: string; address: string; type: GoodsWarehouseType; isActive: boolean },
+  input: { id: string; name: string; address: string; type: GoodsWarehouseType; isActive: boolean; menuBranchId?: string | null },
 ): Promise<GoodsWarehouse> {
   const devHeaders = await getDeviceHeaders();
   return goodsRequestWithRefresh(async () => {

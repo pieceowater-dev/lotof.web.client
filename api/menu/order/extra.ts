@@ -146,14 +146,18 @@ export async function menuUpdateOrderExtras(token: string, ns: string, input: { 
   return r.updateOrderExtras;
 }
 
-export type ExecutorReportRow = { executorId?: string | null; lines: number; orders: number; revenue: number; pay: number };
+export type ExecutorReportRow = { executorId?: string | null; lines: number; orders: number; revenue: number; pay: number; cashReceived?: number };
+
+export async function menuSetItemFlags(token: string, ns: string, itemId: string, flags: { cashReceived?: number; hideInDocuments?: boolean }) {
+  await call(token, ns, `mutation Flags($itemId: ID!, $cashReceived: Float, $hideInDocuments: Boolean) { updateOrderItemFlags(itemId: $itemId, cashReceived: $cashReceived, hideInDocuments: $hideInDocuments) { id cashReceived hideInDocuments } }`, { itemId, ...flags });
+}
 
 export async function menuSetItemExecutor(token: string, ns: string, itemId: string, executorId: string | null) {
   await call(token, ns, `mutation Executor($itemId: ID!, $executorId: String) { updateOrderItemExecutor(itemId: $itemId, executorId: $executorId) { id executorId } }`, { itemId, executorId });
 }
 
 export async function menuExecutorReport(token: string, ns: string, closedFrom?: string, closedTo?: string): Promise<ExecutorReportRow[]> {
-  const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo) { executorId lines orders revenue pay } }`, { closedFrom, closedTo });
+  const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo) { executorId lines orders revenue pay cashReceived } }`, { closedFrom, closedTo });
   return r.executorReport;
 }
 

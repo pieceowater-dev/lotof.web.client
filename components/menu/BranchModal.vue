@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import BranchWarehouseField from '@/components/menu/BranchWarehouseField.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
@@ -7,6 +8,9 @@ import { DAY_KEYS, defaultWorkingHours, parseWorkingHours, serializeWorkingHours
 import { sanitizePhoneInput, isPhoneInputValid, normalizePhoneForStorage } from '@/utils/phone';
 
 const { t } = useI18n();
+
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
 
 const props = defineProps<{
   modelValue: boolean;
@@ -153,6 +157,7 @@ function handleSubmit() {
             </div>
           </div>
         </UFormGroup>
+        <BranchWarehouseField v-if="branch" :branch-id="branch.id" :ns-slug="nsSlug" />
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
             <UToggle v-model="form.isPrimary" />

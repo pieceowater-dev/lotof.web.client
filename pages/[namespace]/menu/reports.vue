@@ -134,7 +134,7 @@ async function exportXlsx() {
   const XLSX = await import('xlsx');
   let data: Record<string, unknown>[] = [];
   if (tab.value === 'executors') {
-    data = sortedRows.value.map((r) => ({ [t('menu.reportTab_executors')]: nameOf(r.executorId), [t('menu.executorsLines')]: r.lines, [t('menu.executorsOrders')]: r.orders, [t('menu.executorsRevenue')]: r.revenue, [t('menu.executorsPay')]: r.pay }));
+    data = sortedRows.value.map((r) => ({ [t('menu.reportTab_executors')]: nameOf(r.executorId), [t('menu.executorsLines')]: r.lines, [t('menu.executorsOrders')]: r.orders, [t('menu.executorsRevenue')]: r.revenue, [t('menu.executorsPay')]: r.pay, [t('menu.cashReceived')]: r.cashReceived || 0 }));
   } else if (tab.value === 'times') {
     data = sortedTimes.value.map((r) => ({ [t('menu.reportStatus')]: stageName(r.stageId) || statusText(r.status), [t('menu.reportAvg')]: Math.round(r.avgMinutes), [t('menu.reportMax')]: Math.round(r.maxMinutes), [t('menu.reportVisits')]: r.visits }));
   } else if (tab.value === 'field') {
@@ -228,6 +228,7 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
                 <div class="flex-shrink-0 text-right text-sm tabular-nums">
                   <div class="font-medium">{{ money(r.revenue) }}</div>
                   <div class="text-xs font-semibold text-accent-700 dark:text-blue-300">{{ t('menu.executorsPay') }}: {{ money(r.pay) }}</div>
+                  <div v-if="r.cashReceived" class="text-xs text-slate-500">{{ t('menu.cashReceived') }}: {{ money(r.cashReceived) }}</div>
                 </div>
               </div>
               <div class="h-1.5 rounded-full bg-slate-100 dark:bg-white/10"><div class="h-1.5 rounded-full bg-accent-500" :style="{ width: Math.max(2, (r.revenue / maxRevenue) * 100) + '%' }" /></div>

@@ -31,10 +31,12 @@ export async function renderOrderDocument(i: RenderOrderDocumentInput): Promise<
   const noneLabel = t('menu.docVarNoneLabel') || '—';
   const yesNo = { yes: t('menu.yes') || 'Yes', no: t('menu.no') || 'No' };
   const digits = phoneDigitsForLink(order.phone);
+  // Service lines marked "hide in documents" stay out of every printed table.
+  const visibleItems = i.items.filter((x) => !x.hideInDocuments);
   const variables = buildMenuDocVariables({
     orderLink: digits ? `${i.origin}/to/${i.nsSlug}/menu/${smartOrderNumber(order)}-${digits}` : '',
     order,
-    items: i.items,
+    items: visibleItems,
     members: i.members,
     memberDisplayName: i.memberDisplayName,
     guestLabel: t('menu.guestCustomer') || 'Guest',
@@ -48,7 +50,7 @@ export async function renderOrderDocument(i: RenderOrderDocumentInput): Promise<
     brand: i.brand,
     branch: i.branch,
     customFieldsBlock: buildCustomFieldsTable(i.orderFields, order.customFields, noneLabel, yesNo),
-    warrantyBlock: buildWarrantyTable(i.items, order, noneLabel, {
+    warrantyBlock: buildWarrantyTable(visibleItems, order, noneLabel, {
       item: t('menu.name') || 'Name',
       until: t('menu.warrantyUntil') || 'Warranty until',
       days: t('menu.warrantyDaysShort') || 'days',
