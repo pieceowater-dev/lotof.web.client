@@ -1217,7 +1217,8 @@
     "saved": "Сақталды",
     "next": "Әрі қарай",
     "later": "Кейінірек",
-    "invalidPhone": "Телефон нөмірін тексеріңіз"
+    "invalidPhone": "Телефон нөмірін тексеріңіз",
+    "inactive": "Белсенді емес"
   },
   "contacts": {
     "columnsTitle": "Бағандар",
@@ -2796,7 +2797,8 @@
     "columnsTitle": "Бағандар",
     "customerName": "Аты",
     "myOrdersOnPhone": "Телефонда",
-    "errRequiredFields": "Алдымен осы мәртебенің міндетті өрістерін толтырыңыз"
+    "errRequiredFields": "Алдымен осы мәртебенің міндетті өрістерін толтырыңыз",
+    "quantity": "Саны"
   },
   "goods": {
     "register": "Касса",

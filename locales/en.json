@@ -1820,7 +1820,8 @@
     "currentPin": "Current PIN",
     "newPin": "New PIN",
     "confirmPin": "Confirm PIN",
-    "invalidPhone": "Check the phone number"
+    "invalidPhone": "Check the phone number",
+    "inactive": "Inactive"
   },
   "landing": {
     "getStarted": "Get started",
@@ -3083,7 +3084,8 @@
     "cardSave": "Save filter",
     "columnsTitle": "Columns",
     "myOrdersOnPhone": "On your phone",
-    "errRequiredFields": "Fill in this status’s required fields first"
+    "errRequiredFields": "Fill in this status’s required fields first",
+    "quantity": "Quantity"
   },
   "goods": {
     "register": "Register",
