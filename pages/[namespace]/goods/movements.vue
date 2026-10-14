@@ -253,6 +253,37 @@ async function transferAction(fn: (token: string, ns: string, id: string) => Pro
 const { confirm } = useConfirm();
 const CANCELLABLE: MovementKind[] = ['receipt', 'writeoff', 'supplierReturn'];
 const detailCancelledAt = computed(() => (detailDoc.value as any)?.cancelledAt as string | null | undefined);
+// "Correct": a posted document is never edited in place -- it is cancelled (the stock goes back) and the
+// create form opens with the same lines so the corrected one can be posted straight away.
+async function correctDocument() {
+  if (!detailRow.value || !CANCELLABLE.includes(detailRow.value.kind) || detailRow.value.kind === 'supplierReturn') return;
+  if (!(await confirm({ message: t('goods.correctDocConfirm'), confirmLabel: t('goods.correctDocument'), icon: 'lucide:pencil' }))) return;
+  const { id, kind } = detailRow.value;
+  const doc = detailDoc.value as any;
+  busyAction.value = true;
+  try {
+    const token = await getToken();
+    if (kind === 'receipt') await (await import('@/api/goods/goodsreceipt')).goodsCancelReceipt(token, nsSlug.value, id);
+    else await (await import('@/api/goods/writeoff')).goodsCancelWriteOff(token, nsSlug.value, id);
+    await loadAll();
+    createType.value = kind;
+    form.warehouseId = doc.warehouseId || '';
+    form.supplierId = doc.supplierId || '';
+    form.reason = doc.reason || 'OTHER';
+    draftItems.value = (doc.items || []).map((it: any) => ({
+      goodId: it.goodId, unitId: it.unitId, quantity: it.quantity,
+      ...(kind === 'receipt' ? { costPriceCents: (it.costPriceCents || 0) / 100, batchNumber: it.batchNumber || '', expiryDate: it.expiryDate || '' } : {}),
+    }));
+    showDetail.value = false;
+    showCreate.value = true;
+  } catch (e) {
+    logError('[goods/movements] correctDocument failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || 'Failed', color: 'red' });
+  } finally {
+    busyAction.value = false;
+  }
+}
+
 async function cancelDocument() {
   if (!detailRow.value || !CANCELLABLE.includes(detailRow.value.kind)) return;
   if (!(await confirm({ message: t('goods.cancelDocConfirm'), confirmLabel: t('goods.cancelDocument'), icon: 'lucide:undo-2' }))) return;
@@ -618,7 +649,10 @@ onMounted(loadAll);
           <!-- Posted documents are cancelled, never deleted: the stock goes back and the document stays in the history -->
           <div v-if="detailRow && CANCELLABLE.includes(detailRow.kind)" class="flex items-center gap-2">
             <UBadge v-if="detailCancelledAt" color="red" variant="soft" size="xs">{{ t('goods.cancelledBadge') }} · {{ formatDateOnly(detailCancelledAt, locale) }}</UBadge>
-            <UButton v-else size="sm" color="red" variant="soft" icon="lucide:undo-2" :loading="busyAction" @click="cancelDocument">{{ t('goods.cancelDocument') }}</UButton>
+            <template v-else>
+              <UButton v-if="detailRow.kind !== 'supplierReturn'" size="sm" color="gray" variant="soft" icon="lucide:pencil" :loading="busyAction" @click="correctDocument">{{ t('goods.correctDocument') }}</UButton>
+              <UButton size="sm" color="red" variant="soft" icon="lucide:undo-2" :loading="busyAction" @click="cancelDocument">{{ t('goods.cancelDocument') }}</UButton>
+            </template>
           </div>
 
           <!-- Transfer workflow actions -->
