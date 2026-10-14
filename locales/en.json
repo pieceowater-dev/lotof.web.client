@@ -1100,6 +1100,8 @@
     }
   },
   "common": {
+    "columns": "Columns",
+    "resetColumns": "Show all",
     "errorRetry": "Something went wrong. Please try again.",
     "ok": "OK",
     "title": "Title",

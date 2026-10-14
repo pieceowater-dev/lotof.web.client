@@ -7,6 +7,8 @@ import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import ColumnPicker from '@/components/ui/ColumnPicker.vue';
+import { visibleColumns } from '@/utils/columnPrefs';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import GoodFormModal from '@/components/goods/GoodFormModal.vue';
@@ -140,7 +142,7 @@ const rows = computed(() => {
   return list;
 });
 
-const columns = computed(() => [
+const allColumns = computed(() => [
   { key: 'name', label: t('goods.goodName') },
   { key: 'sku', label: t('goods.goodSku') },
   { key: 'quantity', label: t('goods.quantity') },
@@ -149,6 +151,10 @@ const columns = computed(() => [
   { key: 'costCents', label: t('goods.costPrice') },
   { key: 'valueCents', label: t('goods.stockValue') },
 ]);
+
+// The name is always shown; every other column can be switched off (remembered in this browser).
+const hiddenCols = ref<string[]>([]);
+const columns = computed(() => visibleColumns(allColumns.value, hiddenCols.value, ['name']));
 
 // Ticked rows: their own totals and their own Excel.
 const selectedRows = ref<any[]>([]);
@@ -273,6 +279,7 @@ onMounted(async () => {
       <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
         <button v-for="f in STOCK_FILTERS" :key="f.key" type="button" class="pill-filter whitespace-nowrap" :class="statFilter === f.key ? 'pill-filter--active' : ''" @click="statFilter = f.key">{{ t(f.label) }}</button>
       </div>
+      <ColumnPicker v-model:hidden="hiddenCols" class="hidden flex-shrink-0 sm:block" storage-key="goods:stockColumns" :columns="allColumns" :locked="['name']" />
       <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex flex-shrink-0" :disabled="!rows.length" @click="exportStock">
         <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ t('goods.exportExcel') }}
       </button>
