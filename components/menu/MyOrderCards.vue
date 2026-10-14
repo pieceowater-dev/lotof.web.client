@@ -16,8 +16,10 @@ const props = defineProps<{
   branchIds?: string[];
   current: CardFilter; // what the list is filtered by right now
   refreshKey?: number;
+  // 'cards' draws the saved counters in the tiles strip; 'save' draws only the save control (for the filter toolbar).
+  mode?: 'cards' | 'save';
 }>();
-const emit = defineEmits<{ (e: 'apply', f: CardFilter): void }>();
+const emit = defineEmits<{ (e: 'apply', f: CardFilter): void; (e: 'saved'): void }>();
 
 const { t } = useI18n();
 const toast = useToast();
@@ -58,7 +60,7 @@ async function load() {
   try {
     const defs = await menuMyOrderCards(await props.getToken(), props.nsSlug);
     cards.value = defs.map((d) => ({ ...d, parsed: parse(d.filter), count: null }));
-    await Promise.all(cards.value.map(async (c) => { c.count = await countFor(c.parsed); }));
+    if (props.mode !== 'save') await Promise.all(cards.value.map(async (c) => { c.count = await countFor(c.parsed); }));
   } catch (e) {
     // Menu gateway without cards yet, or no access: just show nothing.
     logError('[MyOrderCards] load failed', e);
@@ -76,6 +78,7 @@ async function save() {
     await menuCreateOrderCard(await props.getToken(), props.nsSlug, n, filter);
     naming.value = false; name.value = '';
     await load();
+    emit('saved');
   } catch (e) {
     toast.add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
   } finally { saving.value = false; }
@@ -92,6 +95,7 @@ async function remove(c: OrderCardDef) {
 </script>
 
 <template>
+  <template v-if="mode !== 'save'">
   <button
     v-for="c in cards"
     :key="c.id"
@@ -115,12 +119,15 @@ async function remove(c: OrderCardDef) {
     ><Icon name="lucide:x" class="h-3 w-3" /></span>
   </button>
 
-  <div v-if="canSave" class="flex-shrink-0 flex items-center">
-    <div v-if="naming" class="flex items-center gap-1.5 rounded-2xl border border-violet-200 bg-white px-2 py-1.5 dark:border-violet-800 dark:bg-gray-900">
-      <UInput v-model="name" size="xs" maxlength="60" :placeholder="t('menu.cardName')" class="w-32" @keydown.enter="save" />
+  </template>
+
+  <!-- Save the current filter as a counter card: a compact control for the filter toolbar -->
+  <div v-else-if="canSave" class="flex flex-shrink-0 items-center">
+    <div v-if="naming" class="flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-2 py-1 dark:border-gray-800 dark:bg-gray-900">
+      <UInput v-model="name" size="xs" maxlength="60" autofocus :placeholder="t('menu.cardName')" class="w-36" @keydown.enter="save" @keydown.esc="naming = false" />
       <button type="button" class="cp-icon" :disabled="saving || !name.trim()" :aria-label="t('common.save')" @click="save"><Icon name="lucide:check" class="w-4 h-4" /></button>
       <button type="button" class="cp-icon" :aria-label="t('common.cancel')" @click="naming = false"><Icon name="lucide:x" class="w-4 h-4" /></button>
     </div>
-    <button v-else type="button" class="pill-outline whitespace-nowrap" @click="naming = true"><Icon name="lucide:bookmark-plus" class="w-3.5 h-3.5" />{{ t('menu.cardSave') }}</button>
+    <button v-else type="button" class="at-btn !px-3 !py-2 whitespace-nowrap" :title="t('menu.cardSave')" @click="naming = true"><Icon name="lucide:bookmark-plus" class="w-4 h-4" /><span class="hidden lg:inline">{{ t('menu.cardSave') }}</span></button>
   </div>
 </template>

@@ -913,6 +913,7 @@ onBeforeUnmount(() => {
 const isCreateOrderOpen = ref(false);
 // Set when the create form is opened from a completed order's "warranty case" action.
 const createOrderPrefill = ref<CreateOrderPrefill | null>(null);
+const cardsRefreshKey = ref(0);
 const creatingOrder = ref(false);
 const updatingStatusId = ref<string | null>(null);
 
@@ -1162,6 +1163,7 @@ async function handleCreateOrder(payload: any) {
         :user-id="currentUser?.id"
         :branch-ids="selectedBranchIds"
         :current="currentCardFilter"
+        :refresh-key="cardsRefreshKey"
         @apply="applyCard"
       />
       <button
@@ -1218,20 +1220,27 @@ async function handleCreateOrder(payload: any) {
         class="w-full sm:flex-1"
         :ui="{ rounded: 'rounded-xl' }"
       />
-      <div class="flex rounded-xl border border-gray-200 dark:border-gray-800 overflow-x-auto max-w-full flex-shrink-0">
+      <div class="flex max-w-full flex-shrink-0 items-center gap-1.5 overflow-x-auto">
         <button
           v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }, { value: 'table', label: t('menu.tableService') || 'Table' }]"
           :key="opt.value"
           type="button"
-          class="px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors"
-          :class="selectedType === opt.value
-            ? 'bg-primary-500 text-white'
-            : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'"
+          class="pill-filter whitespace-nowrap"
+          :class="selectedType === opt.value ? 'pill-filter--active' : ''"
           @click="selectedType = opt.value as typeof selectedType"
         >
           {{ opt.label }}
         </button>
       </div>
+      <MyOrderCards
+        mode="save"
+        :ns-slug="nsSlug"
+        :get-token="getToken"
+        :user-id="currentUser?.id"
+        :branch-ids="selectedBranchIds"
+        :current="currentCardFilter"
+        @saved="cardsRefreshKey++"
+      />
       <UButton
         icon="lucide:sliders-horizontal"
         color="gray"
