@@ -3648,6 +3648,8 @@
     "coProgress": "Соисполнители: {done} из {total} сделали свою часть",
     "coDone": "Моя часть готова",
     "coDoneTitle": "Что сделано?",
+    "flagGroupWork": "Ход выполнения",
+    "flagGroupDelivery": "Доставка и выезд",
     "collectAmount": "Принять от клиента",
     "courierFee": "Оплата курьеру",
     "courierSelf": "Мастер сам",

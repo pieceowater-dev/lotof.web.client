@@ -3446,6 +3446,8 @@
     "coProgress": "Co-assignees: {done} of {total} finished their part",
     "coDone": "My part is done",
     "coDoneTitle": "What was done?",
+    "flagGroupWork": "Work flow",
+    "flagGroupDelivery": "Delivery and field work",
     "collectAmount": "Take from client",
     "courierFee": "Courier pay",
     "courierSelf": "Master himself",

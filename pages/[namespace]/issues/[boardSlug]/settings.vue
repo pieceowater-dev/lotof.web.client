@@ -515,86 +515,77 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
               </div>
             </UCard>
 
-            <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 pt-1">
-              <UIcon name="lucide:puzzle" class="w-3.5 h-3.5" />
-              {{ t('tasks.featureFlags') || 'Modules' }}
+            <h4 class="mt-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <UIcon name="lucide:list-checks" class="w-3.5 h-3.5" />
+              {{ t('tasks.flagGroupWork') }}
             </h4>
-
             <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.geoMap" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:map-pin" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagGeoMap') || 'Map & location' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagGeoMapDesc') || 'Shows an address and map-pin field when creating an issue, so its location is captured up front.' }}</span>
-                </span>
-              </label>
+              <div class="space-y-4 divide-y divide-gray-100 dark:divide-gray-800 [&>*:not(:first-child)]:pt-4">
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.handoffAccept" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:forward" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagHandoffAccept') }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagHandoffAcceptDesc') }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.closeWhenAllDone" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:users-round" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCloseAllDone') }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCloseAllDoneDesc') }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.cycles" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:repeat" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCycles') || 'Sprints' }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCyclesDesc') || 'Group issues into time-boxed sprints on the board, with a backlog for unassigned issues.' }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.rolloverOverdue" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:calendar-clock" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagRollover') }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagRolloverDesc') }}</span>
+                  </span>
+                </label>
+              </div>
             </UCard>
-
+            <h4 class="mt-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <UIcon name="lucide:truck" class="w-3.5 h-3.5" />
+              {{ t('tasks.flagGroupDelivery') }}
+            </h4>
             <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.zenMode" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:smartphone" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagZenMode') || 'Zen Mode (courier PWA)' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagZenModeDesc') || 'Includes this board\'s issues in the installable "My issues" mobile view for whoever is assigned to them.' }}</span>
-                </span>
-              </label>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.handoffAccept" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:forward" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagHandoffAccept') }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagHandoffAcceptDesc') }}</span>
-                </span>
-              </label>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.rolloverOverdue" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:calendar-clock" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagRollover') }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagRolloverDesc') }}</span>
-                </span>
-              </label>
-            </UCard>
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.onePerOrder" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:link-2" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagOnePerOrder') }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagOnePerOrderDesc') }}</span>
-                </span>
-              </label>
-            </UCard>
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.deliveryMoney" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:banknote" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagDeliveryMoney') }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagDeliveryMoneyDesc') }}</span>
-                </span>
-              </label>
-            </UCard>
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.closeWhenAllDone" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:users-round" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCloseAllDone') }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCloseAllDoneDesc') }}</span>
-                </span>
-              </label>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer">
-                <UToggle v-model="form.cycles" size="sm" class="mt-0.5" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:repeat" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCycles') || 'Sprints' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCyclesDesc') || 'Group issues into time-boxed sprints on the board, with a backlog for unassigned issues.' }}</span>
-                </span>
-              </label>
+              <div class="space-y-4 divide-y divide-gray-100 dark:divide-gray-800 [&>*:not(:first-child)]:pt-4">
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.geoMap" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:map-pin" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagGeoMap') || 'Map & location' }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagGeoMapDesc') || 'Shows an address and map-pin field when creating an issue, so its location is captured up front.' }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.zenMode" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:smartphone" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagZenMode') || 'Zen Mode (courier PWA)' }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagZenModeDesc') || 'Includes this board\'s issues in the installable "My issues" mobile view for whoever is assigned to them.' }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.onePerOrder" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:link-2" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagOnePerOrder') }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagOnePerOrderDesc') }}</span>
+                  </span>
+                </label>
+                <label class="flex items-start gap-3 cursor-pointer">
+                  <UToggle v-model="form.deliveryMoney" size="sm" class="mt-0.5" />
+                  <span>
+                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:banknote" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagDeliveryMoney') }}</span>
+                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagDeliveryMoneyDesc') }}</span>
+                  </span>
+                </label>
+              </div>
             </UCard>
           </template>
 

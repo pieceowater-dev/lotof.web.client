@@ -3524,6 +3524,8 @@
     "coProgress": "Бірлесіп орындаушылар: {total} ішінен {done} өз бөлігін аяқтады",
     "coDone": "Менің бөлігім дайын",
     "coDoneTitle": "Не орындалды?",
+    "flagGroupWork": "Орындау барысы",
+    "flagGroupDelivery": "Жеткізу және шығу",
     "collectAmount": "Клиенттен алу",
     "courierFee": "Курьерге төлем",
     "courierSelf": "Шебер өзі",
