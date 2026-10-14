@@ -157,27 +157,23 @@ async function loadGuidePreview() {
 }
 onMounted(() => { loadGuidePreview(); });
 
-// Parallax on the app icons: the icon tilts toward the pointer while its glyph slides the other way
-// (depth), with a soft highlight under the cursor. Mouse/pen only; off for reduced motion.
+// Parallax on the whole app tile (icon + label): it tilts toward the pointer, and the layers inside
+// (icon, glyph, label) shift by different amounts for depth. Mouse/pen only; off for reduced motion.
 function tileParallax(ev: PointerEvent) {
   if (ev.pointerType === 'touch') return;
   const tile = (ev.target as HTMLElement | null)?.closest?.('.app-tile') as HTMLElement | null;
   if (!tile) return;
-  const wrap = tile.querySelector('.app-icon-wrap') as HTMLElement | null;
-  if (!wrap) return;
-  const r = wrap.getBoundingClientRect();
+  const r = tile.getBoundingClientRect();
   const px = Math.max(-1, Math.min(1, ((ev.clientX - r.left) / r.width - 0.5) * 2));
   const py = Math.max(-1, Math.min(1, ((ev.clientY - r.top) / r.height - 0.5) * 2));
-  wrap.style.setProperty('--px', px.toFixed(3));
-  wrap.style.setProperty('--py', py.toFixed(3));
-  wrap.style.setProperty('--gx', `${((px + 1) / 2) * 100}%`);
-  wrap.style.setProperty('--gy', `${((py + 1) / 2) * 100}%`);
+  tile.style.setProperty('--px', px.toFixed(3));
+  tile.style.setProperty('--py', py.toFixed(3));
 }
 function tileParallaxReset(ev: PointerEvent) {
   const tile = (ev.target as HTMLElement | null)?.closest?.('.app-tile') as HTMLElement | null;
-  const wrap = tile?.querySelector('.app-icon-wrap') as HTMLElement | null;
-  if (!wrap) return;
-  for (const v of ['--px', '--py', '--gx', '--gy']) wrap.style.removeProperty(v);
+  if (!tile) return;
+  tile.style.removeProperty('--px');
+  tile.style.removeProperty('--py');
 }
 const namespaceAccordionOpen = ref(false);
 const settingsAccordionOpen = ref(false);
@@ -1370,7 +1366,11 @@ a.icon-btn--sm { display: inline-flex; }
   gap: 0.6rem;
   text-align: center;
   outline-offset: 6px;
+  transform-style: preserve-3d;
+  transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
+.app-tile:hover { transform: perspective(520px) rotateX(calc(var(--py, 0) * -9deg)) rotateY(calc(var(--px, 0) * 9deg)); }
+.app-tile:hover .app-label { transform: translate(calc(var(--px, 0) * 2px), calc(var(--py, 0) * 2px)); }
 .app-icon-wrap {
   position: relative;
   display: block;
@@ -1379,7 +1379,7 @@ a.icon-btn--sm { display: inline-flex; }
   filter: drop-shadow(0 8px 14px rgba(15, 23, 42, 0.18));
   transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), filter 0.25s cubic-bezier(0.32, 0.72, 0, 1);
 }
-.app-tile:hover .app-icon-wrap { transform: perspective(420px) translateY(-3px) scale(1.07) rotateX(calc(var(--py, 0) * -14deg)) rotateY(calc(var(--px, 0) * 14deg)); filter: drop-shadow(0 14px 20px rgba(15, 23, 42, 0.24)); }
+.app-tile:hover .app-icon-wrap { transform: translate(calc(var(--px, 0) * 4px), calc(var(--py, 0) * 4px)) scale(1.05); filter: drop-shadow(0 14px 20px rgba(15, 23, 42, 0.24)); }
 .app-tile:active .app-icon-wrap { transform: scale(0.95); }
 .app-icon {
   display: flex;
@@ -1393,23 +1393,11 @@ a.icon-btn--sm { display: inline-flex; }
 }
 .app-glyph { width: 42%; height: 42%; filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.18)); transition: transform 0.2s ease-out; }
 .app-tile:hover .app-glyph { transform: translate(calc(var(--px, 0) * -5px), calc(var(--py, 0) * -5px)) scale(1.08); }
-/* soft highlight following the pointer */
-.app-icon { position: relative; }
-.app-icon::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.38), transparent 60%);
-  transition: opacity 0.2s ease-out;
-}
-.app-tile:hover .app-icon::after { opacity: 1; }
 @media (prefers-reduced-motion: reduce) {
-  .app-tile:hover .app-icon-wrap { transform: none; }
-  .app-tile:hover .app-glyph { transform: none; }
+  .app-tile:hover { transform: none; }
+  .app-tile:hover .app-icon-wrap, .app-tile:hover .app-glyph, .app-tile:hover .app-label { transform: none; }
 }
-.app-label { max-width: 100%; font-size: 0.8125rem; font-weight: 600; line-height: 1.2; color: #1e293b; word-break: break-word; }
+.app-label { transition: transform 0.2s ease-out; max-width: 100%; font-size: 0.8125rem; font-weight: 600; line-height: 1.2; color: #1e293b; word-break: break-word; }
 .dark .app-label { color: #e2e8f0; }
 .app-tile--off .app-icon-wrap { opacity: 0.55; filter: grayscale(0.35) drop-shadow(0 6px 10px rgba(15, 23, 42, 0.12)); }
 .app-tile--off:hover .app-icon-wrap { opacity: 0.9; filter: none; }

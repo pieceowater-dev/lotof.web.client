@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const form = reactive({ name: '', sku: '', salePriceCents: 0, unitId: '', categoryId: '', isActive: true, imageUrl: '' });
+const form = reactive({ name: '', sku: '', salePriceCents: 0, unitId: '', categoryId: '', isActive: true, imageUrl: '', trackStock: true, isWeighted: false });
 
 function defaultUnitId(): string {
   return props.units.find((u) => u.symbol === 'шт')?.id || props.units[0]?.id || '';
@@ -48,6 +48,8 @@ watch(
       form.categoryId = props.good.categoryId || '';
       form.isActive = props.good.isActive;
       form.imageUrl = props.good.imageUrl || '';
+      form.trackStock = props.good.trackStock;
+      form.isWeighted = props.good.isWeighted;
     } else {
       form.name = '';
       form.sku = '';
@@ -56,6 +58,8 @@ watch(
       form.categoryId = '';
       form.isActive = true;
       form.imageUrl = '';
+      form.trackStock = true;
+      form.isWeighted = false;
     }
   },
 );
@@ -70,8 +74,8 @@ function submit() {
     baseUnitId: form.unitId,
     categoryId: form.categoryId || undefined,
     salePriceCents: Math.round(form.salePriceCents * 100),
-    trackStock: true,
-    isWeighted: false,
+    trackStock: form.trackStock,
+    isWeighted: form.isWeighted,
     imageUrl: form.imageUrl,
   };
   if (props.good) {
@@ -134,6 +138,15 @@ function submit() {
           <UFormGroup :label="t('goods.salePrice')" required>
             <UInput v-model.number="form.salePriceCents" type="number" min="0" step="0.01" size="lg" @keyup.enter="submit" />
           </UFormGroup>
+        </div>
+
+        <!-- Stock tracking: off for a service or anything sold without counting -->
+        <div class="pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-4">
+          <div class="min-w-0">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t('goods.goodTrackStock') }}</div>
+            <p class="text-xs text-gray-400 mt-0.5">{{ t('goods.goodTrackStockHint') }}</p>
+          </div>
+          <UToggle v-model="form.trackStock" class="flex-shrink-0" />
         </div>
 
         <!-- Status: editing an existing good only -- a new good is always active -->

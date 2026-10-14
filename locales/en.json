@@ -3460,7 +3460,9 @@
     "errReturnExceeds": "You cannot return more than is left of this receipt",
     "errNotInReceipt": "This good is not in the chosen receipt",
     "errWarehouseNotEmpty": "The warehouse still holds goods: move or write them off first",
-    "errAlreadyCancelled": "The document is already cancelled"
+    "errAlreadyCancelled": "The document is already cancelled",
+    "goodTrackStock": "Track stock",
+    "goodTrackStockHint": "Turn off for services or items sold without counting: they can be sold with no stock"
   },
   "tasks": {
     "watcher": "Watcher",
