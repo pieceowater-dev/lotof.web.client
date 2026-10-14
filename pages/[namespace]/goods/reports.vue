@@ -34,6 +34,8 @@ const TABS = [
   { key: 'abc', labelKey: 'goods.abcAnalysis', icon: 'lucide:layers' },
   { key: 'margin', labelKey: 'goods.marginReport', icon: 'lucide:percent' },
   { key: 'turnover', labelKey: 'goods.turnoverReport', icon: 'lucide:arrow-left-right' },
+  { key: 'documents', labelKey: 'goods.docsReport', icon: 'lucide:files' },
+  { key: 'suppliers', labelKey: 'goods.suppliersReport', icon: 'lucide:truck' },
   { key: 'alerts', labelKey: 'goods.lowStockAlerts', icon: 'lucide:bell' },
 ] as const;
 const activeTab = ref<(typeof TABS)[number]['key']>('top');
@@ -85,6 +87,43 @@ async function exportToBuy() {
 }
 const expiringBatches = ref<GoodsBatch[]>([]);
 
+// Documents and suppliers reports are computed from the document lists for the chosen period.
+type DocRow = { kind: string; count: number; cancelled: number; sumCents: number };
+type SupplierRow = { id: string; name: string; receipts: number; receivedCents: number; returns: number; returnedCents: number };
+const docRows = ref<DocRow[]>([]);
+const supplierRows = ref<SupplierRow[]>([]);
+async function loadDocsAndSuppliers() {
+  const token = await getToken();
+  const [{ goodsListReceipts }, { goodsListWriteOffs }, { goodsListStockTransfers }, { goodsListSupplierReturns }, { goodsListSuppliers }] = await Promise.all([
+    import('@/api/goods/goodsreceipt'), import('@/api/goods/writeoff'), import('@/api/goods/stocktransfer'), import('@/api/goods/supplierreturn'), import('@/api/goods/supplier'),
+  ]);
+  const [rc, wo, tr, sr, su] = await Promise.all([
+    goodsListReceipts(token, nsSlug.value), goodsListWriteOffs(token, nsSlug.value), goodsListStockTransfers(token, nsSlug.value),
+    goodsListSupplierReturns(token, nsSlug.value), goodsListSuppliers(token, nsSlug.value),
+  ]);
+  const fromMs = new Date(from.value).getTime();
+  const toMs = new Date(to.value + 'T23:59:59').getTime();
+  const inRange = (iso: string) => { const ms = new Date(iso).getTime(); return ms >= fromMs && ms <= toMs; };
+  const receipts = rc.receipts.filter((r) => inRange(r.createdAt));
+  const returns = sr.returns.filter((r) => inRange(r.createdAt));
+  const receiptSum = (r: (typeof receipts)[number]) => r.items.reduce((a, i) => a + Math.round((i.costPriceCents || 0) * i.quantity), 0);
+  docRows.value = [
+    { kind: 'goods.receiving', count: receipts.length, cancelled: receipts.filter((r) => r.cancelledAt).length, sumCents: receipts.filter((r) => !r.cancelledAt).reduce((a, r) => a + receiptSum(r), 0) },
+    { kind: 'goods.supplierReturns', count: returns.length, cancelled: returns.filter((r) => r.cancelledAt).length, sumCents: returns.filter((r) => !r.cancelledAt).reduce((a, r) => a + r.totalCents, 0) },
+    { kind: 'goods.writeoffs', count: wo.writeOffs.filter((r) => inRange(r.createdAt)).length, cancelled: wo.writeOffs.filter((r) => inRange(r.createdAt) && r.cancelledAt).length, sumCents: 0 },
+    { kind: 'goods.transfers', count: tr.transfers.filter((r) => inRange(r.createdAt)).length, cancelled: 0, sumCents: 0 },
+  ];
+  const names = new Map(su.suppliers.map((x) => [x.id, x.name]));
+  const bySupplier = new Map<string, SupplierRow>();
+  const row = (id: string) => {
+    if (!bySupplier.has(id)) bySupplier.set(id, { id, name: id ? names.get(id) || t('goods.unknownSupplier') : t('goods.noSupplier'), receipts: 0, receivedCents: 0, returns: 0, returnedCents: 0 });
+    return bySupplier.get(id)!;
+  };
+  for (const r of receipts.filter((x) => !x.cancelledAt)) { const x = row(r.supplierId || ''); x.receipts += 1; x.receivedCents += receiptSum(r); }
+  for (const r of returns.filter((x) => !x.cancelledAt)) { const x = row(r.supplierId || ''); x.returns += 1; x.returnedCents += r.totalCents; }
+  supplierRows.value = [...bySupplier.values()].sort((a, b) => b.receivedCents - a.receivedCents);
+}
+
 // Lightweight bar visualization without pulling in a charting dependency --
 // each row's bar is sized relative to the largest value in the list.
 const maxRevenue = computed(() => Math.max(1, ...topGoods.value.map((e) => e.revenueCents)));
@@ -110,6 +149,8 @@ async function loadReport() {
     } else if (activeTab.value === 'margin') {
       const { goodsMarginReport } = await import('@/api/goods/analytics');
       marginReport.value = await goodsMarginReport(token, nsSlug.value, f, tt);
+    } else if (activeTab.value === 'documents' || activeTab.value === 'suppliers') {
+      await loadDocsAndSuppliers();
     } else {
       const { goodsListStock } = await import('@/api/goods/stock');
       const { goodsListExpiringBatches } = await import('@/api/goods/goodbatch');
@@ -286,6 +327,28 @@ onMounted(async () => {
           </table>
           <EmptyState v-if="!turnover.length" icon="lucide:arrow-left-right" :title="t('goods.noReportData')" />
         </div>
+      </div>
+
+      <div v-else-if="activeTab === 'documents'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-for="d in docRows" :key="d.kind" class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+          <span class="font-medium">{{ t(d.kind) }}</span>
+          <span class="flex items-center gap-3 text-gray-500">
+            <span>{{ t('goods.docsCount') }}: <b class="tabular-nums text-gray-900 dark:text-white">{{ d.count }}</b></span>
+            <span v-if="d.cancelled">{{ t('goods.cancelledBadge') }}: <b class="tabular-nums">{{ d.cancelled }}</b></span>
+            <span v-if="d.sumCents" class="tabular-nums text-gray-900 dark:text-white">{{ money(d.sumCents) }}</span>
+          </span>
+        </div>
+      </div>
+
+      <div v-else-if="activeTab === 'suppliers'" class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+        <div v-for="x in supplierRows" :key="x.id || 'none'" class="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+          <span class="min-w-0 truncate font-medium">{{ x.name }}</span>
+          <span class="flex flex-shrink-0 items-center gap-3 text-gray-500">
+            <span>{{ t('goods.receiving') }}: <b class="tabular-nums text-gray-900 dark:text-white">{{ x.receipts }}</b> · {{ money(x.receivedCents) }}</span>
+            <span v-if="x.returns">{{ t('goods.supplierReturns') }}: <b class="tabular-nums">{{ x.returns }}</b> · {{ money(x.returnedCents) }}</span>
+          </span>
+        </div>
+        <EmptyState v-if="!supplierRows.length" icon="lucide:truck" :title="t('goods.noReportData')" />
       </div>
 
       <div v-else-if="activeTab === 'alerts'" class="space-y-4">
