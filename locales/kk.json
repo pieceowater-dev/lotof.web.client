@@ -3825,6 +3825,7 @@
     "clientLinkedToast": "Клиент байланды",
     "clientUnlinkedToast": "Клиент ажыратылды",
     "clientCreatedToast": "Клиент жасалды",
+    "fromLeadTag": "Өтінімнен",
     "outcomeWon": "Табыс",
     "outcomeLost": "Бас тарту",
     "statusOutcome": "Нәтиже",

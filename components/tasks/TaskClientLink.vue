@@ -184,6 +184,21 @@ function splitName(name: string): { firstName: string; lastName: string } {
   return { firstName: parts[0], lastName: parts.slice(1).join(' ') };
 }
 
+// Marks a client created from a lead task with a reusable «from lead» tag.
+// Best-effort: a tagging failure must not block the client creation.
+async function markFromLead(cToken: string, clientId: string) {
+  try {
+    const { listTags, createTag, addTagToClient } = await import('@/api/contacts/tags');
+    const name = t('tasks.fromLeadTag') || 'From lead';
+    const found = await listTags(cToken, props.nsSlug, name);
+    let tag = found.tags?.rows?.find((x) => x.name.toLowerCase() === name.toLowerCase());
+    if (!tag) tag = (await createTag(cToken, props.nsSlug, name)).createTag;
+    await addTagToClient(cToken, props.nsSlug, clientId, tag.id);
+  } catch (e) {
+    logError('[TaskClientLink] markFromLead failed', e);
+  }
+}
+
 async function createFromTask() {
   busy.value = true;
   try {
@@ -201,6 +216,7 @@ async function createFromTask() {
       const { createIdentity } = await import('@/api/contacts/identities');
       await createIdentity(cToken, props.nsSlug, created.client.id, 'phone', normalizePhoneForStorage(phone), true);
     }
+    await markFromLead(cToken, created.client.id);
     await persistLink(created.client.id);
     linkedClient.value = created;
     dropdownOpen.value = false;

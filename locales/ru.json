@@ -3949,6 +3949,7 @@
     "clientLinkedToast": "Клиент привязан",
     "clientUnlinkedToast": "Клиент отвязан",
     "clientCreatedToast": "Клиент создан",
+    "fromLeadTag": "Из заявки",
     "outcomeWon": "Успех",
     "outcomeLost": "Отказ",
     "statusOutcome": "Исход",

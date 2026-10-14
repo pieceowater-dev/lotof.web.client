@@ -3744,6 +3744,7 @@
     "clientLinkedToast": "Client linked",
     "clientUnlinkedToast": "Client unlinked",
     "clientCreatedToast": "Client created",
+    "fromLeadTag": "From lead",
     "outcomeWon": "Won",
     "outcomeLost": "Lost",
     "statusOutcome": "Outcome",
