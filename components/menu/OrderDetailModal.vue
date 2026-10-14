@@ -1222,7 +1222,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
              as its own overlay instead — see isMobileTimelineOpen below. -->
         <aside class="hidden lg:block lg:w-72 lg:flex-shrink-0 lg:h-full lg:overflow-y-auto border-l border-gray-100 dark:border-gray-800 p-5 bg-gray-50/60 dark:bg-gray-900/40">
           <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-3">{{ t('menu.statusHistory') || 'Status history' }}</div>
-          <OrderHistoryTimeline :history="history" :tasks="orderTasks" :status-label="statusLabel" :member-display-name="memberDisplayName" :format-date="formatDate" />
+          <OrderHistoryTimeline :history="history" :tasks="orderTasks" :order-id="order?.id" :ns-slug="nsSlug" :get-token="getToken" :status-label="statusLabel" :member-display-name="memberDisplayName" :format-date="formatDate" />
         </aside>
 
         <!-- Main content: scrolls independently of the side rail -->
@@ -1785,7 +1785,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isMobileTimelineOpen = false" />
         </div>
       </template>
-      <OrderHistoryTimeline :history="history" :tasks="orderTasks" :status-label="statusLabel" :member-display-name="memberDisplayName" :format-date="formatDate" />
+      <OrderHistoryTimeline :history="history" :tasks="orderTasks" :order-id="order?.id" :ns-slug="nsSlug" :get-token="getToken" :status-label="statusLabel" :member-display-name="memberDisplayName" :format-date="formatDate" />
     </UCard>
   </USlideover>
 

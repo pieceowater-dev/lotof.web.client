@@ -2583,6 +2583,8 @@
     "histUrgentOff": "Шұғылдық алынды",
     "histPayment": "Төлем",
     "histTaskCreated": "Тапсырма құрылды",
+    "timelineCommentPlaceholder": "Пікір жазыңыз… (Ctrl+Enter — жіберу)",
+    "timelineAttach": "Файл",
     "reportTitle_executors": "Орындаушылар бойынша есеп",
     "reportTitle_times": "Мәртебелердегі уақыт",
     "reportTitle_field": "Өріс мәні бойынша есеп",

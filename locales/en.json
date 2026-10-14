@@ -2871,6 +2871,8 @@
     "histUrgentOff": "Urgency removed",
     "histPayment": "Payment",
     "histTaskCreated": "Task created",
+    "timelineCommentPlaceholder": "Write a comment… (Ctrl+Enter to send)",
+    "timelineAttach": "File",
     "reportTitle_executors": "Report by executors",
     "reportTitle_times": "Time in statuses",
     "reportTitle_field": "Report by field value",

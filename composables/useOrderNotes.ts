@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue';
 import { compressImageForUpload } from '@/utils/imageCompression';
-import { menuUploadImage } from '@/api/menu/media/upload';
+import { menuUploadOrderAttachment } from '@/api/menu/media/uploadAttachment';
 import { menuOrderNotes, menuCreateOrderNote, type OrderNote } from '@/api/menu/order/extra';
 
 // One shared list of notes per order: the order card's notes section and the
@@ -24,9 +24,10 @@ export type NewNoteInput = { body: string; important?: boolean; files: File[]; t
 export async function addOrderNote(token: string, ns: string, orderId: string, input: NewNoteInput): Promise<OrderNote> {
   const attachments = [];
   for (const f of input.files) {
-    const small = await compressImageForUpload(f, { t: input.t });
-    const up = await menuUploadImage(token, ns, small);
-    attachments.push({ url: up.url, name: f.name, mime: up.contentType, sizeBytes: up.size, kind: 'PHOTO' });
+    const isImage = f.type.startsWith('image/');
+    const ready = isImage ? await compressImageForUpload(f, { t: input.t }) : f;
+    const up = await menuUploadOrderAttachment(token, ns, ready);
+    attachments.push({ url: up.url, name: f.name, mime: up.contentType, sizeBytes: up.size, kind: isImage ? 'PHOTO' : 'DOCUMENT' });
   }
   const n = await menuCreateOrderNote(token, ns, { orderId, body: input.body.trim(), important: !!input.important, attachments });
   orderNotesStore(orderId).value.unshift(n);

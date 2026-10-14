@@ -2876,6 +2876,8 @@
     "histUrgentOff": "Срочность снята",
     "histPayment": "Оплата",
     "histTaskCreated": "Задача создана",
+    "timelineCommentPlaceholder": "Напишите комментарий… (Ctrl+Enter — отправить)",
+    "timelineAttach": "Файл",
     "reportTitle_executors": "Отчёт по исполнителям",
     "reportTitle_times": "Время в статусах",
     "reportTitle_field": "Отчёт по значению поля",

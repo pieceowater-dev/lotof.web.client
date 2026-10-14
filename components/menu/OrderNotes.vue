@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { compressImageForUpload } from '@/utils/imageCompression';
 import { absoluteMediaUrl } from '@/utils/mediaUrl';
 import { menuUploadImage } from '@/api/menu/media/upload';
+import { orderNotesStore, loadOrderNotes } from '@/composables/useOrderNotes';
 import {
   menuOrderNotes, menuCreateOrderNote, menuUpdateOrderNote, menuDeleteOrderNote, type OrderNote,
 } from '@/api/menu/order/extra';
@@ -23,7 +24,7 @@ const props = defineProps<{
 const { t } = useI18n();
 const toast = useToast();
 
-const notes = ref<OrderNote[]>([]);
+const notes = computed(() => orderNotesStore(props.orderId).value);
 const body = ref('');
 const important = ref(false);
 const files = ref<File[]>([]);
@@ -65,7 +66,7 @@ const visible = computed(() => notes.value.slice().sort((a, b) => {
 
 async function load() {
   try {
-    notes.value = await menuOrderNotes(await props.getToken(), props.nsSlug, props.orderId);
+    await loadOrderNotes(await props.getToken(), props.nsSlug, props.orderId);
   } catch (e) {
     logError('[OrderNotes] load failed', e);
   }
@@ -209,9 +210,14 @@ async function remove(n: OrderNote, restore = false) {
         </div>
         <p v-else-if="n.body" class="text-sm whitespace-pre-wrap break-words text-slate-800 dark:text-slate-100">{{ n.body }}</p>
         <div v-if="n.attachments.length" class="flex gap-2 flex-wrap">
-          <button v-for="a in n.attachments" :key="a.url" type="button" @click="lightbox = absoluteMediaUrl(a.url)">
-            <img :src="absoluteMediaUrl(a.url)" :alt="a.name" loading="lazy" class="h-20 w-20 rounded-xl object-cover ring-1 ring-black/5">
-          </button>
+          <template v-for="a in n.attachments" :key="a.url">
+            <button v-if="a.kind === 'PHOTO'" type="button" @click="lightbox = absoluteMediaUrl(a.url)">
+              <img :src="absoluteMediaUrl(a.url)" :alt="a.name" loading="lazy" class="h-20 w-20 rounded-xl object-cover ring-1 ring-black/5">
+            </button>
+            <a v-else :href="absoluteMediaUrl(a.url)" target="_blank" rel="noopener" download class="flex max-w-[14rem] items-center gap-2 rounded-xl bg-slate-100 px-3 py-2 text-xs hover:bg-slate-200 dark:bg-white/10">
+              <Icon name="lucide:file-text" class="h-4 w-4 flex-shrink-0" /><span class="truncate font-medium">{{ a.name }}</span>
+            </a>
+          </template>
         </div>
       </template>
     </div>
