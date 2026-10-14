@@ -625,15 +625,15 @@ async function handleRefreshFromRemote() {
           >
             {{ t('contacts.tags') }}
           </UButton>
-          <!-- <UButton 
-            icon="lucide:boxes" 
+          <UButton
+            icon="lucide:boxes"
             size="xs"
-            color="primary" 
+            color="primary"
             variant="soft"
             @click="isSegmentsModalOpen = true"
           >
             {{ t('contacts.segments') }}
-          </UButton> -->
+          </UButton>
           <UButton
             icon="lucide:phone-call"
             size="xs"
