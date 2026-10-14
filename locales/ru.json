@@ -2877,6 +2877,8 @@
     "histUrgentOff": "Срочность снята",
     "histPayment": "Оплата",
     "histTaskCreated": "Задача создана",
+    "inStockN": "В наличии: {n}",
+    "outOfStock": "Нет в наличии",
     "timelineCommentPlaceholder": "Напишите комментарий… (Ctrl+Enter — отправить)",
     "timelineAttach": "Файл",
     "reportTitle_executors": "Отчёт по исполнителям",

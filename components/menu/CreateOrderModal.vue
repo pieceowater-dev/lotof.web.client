@@ -129,11 +129,23 @@ async function loadItems() {
   }
 }
 
+// Stock per item, fetched lazily for what is on screen (first 30 matches) and remembered while the form is open.
+const stockById = reactive<Record<string, { tracked: boolean; available: number }>>({});
+async function loadStock(list: MenuItem[]) {
+  const { current } = useMenuToken();
+  const token = current();
+  if (!token) return;
+  const { menuItemStock } = await import('@/api/menu/order/stock');
+  await Promise.all(list.filter((i) => !(i.id in stockById)).slice(0, 30).map(async (i) => { stockById[i.id] = await menuItemStock(token, props.nsSlug, i.id); }));
+}
 const filteredItems = computed(() => {
   const q = itemSearch.value.trim().toLowerCase();
   if (!q) return items.value;
   return items.value.filter((i) => i.name.toLowerCase().includes(q));
 });
+
+watch(filteredItems, (list) => { if (props.modelValue) void loadStock(list); });
+watch(() => props.modelValue, (open) => { if (open) { for (const k of Object.keys(stockById)) delete stockById[k]; void loadStock(filteredItems.value); } });
 
 function addToCart(item: MenuItem) {
   const existing = cart.value.find((l) => l.menuItemId === item.id);
@@ -447,6 +459,7 @@ function handleSubmit() {
               >
                 <span class="text-sm min-w-0 truncate">{{ item.name }}</span>
                 <span class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
+                  <span v-if="stockById[item.id]?.tracked" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="stockById[item.id].available > 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'">{{ stockById[item.id].available > 0 ? t('menu.inStockN', { n: stockById[item.id].available }) : t('menu.outOfStock') }}</span>
                   {{ item.price }}
                   <Icon name="lucide:plus-circle" class="h-4 w-4 text-primary-500" />
                 </span>
