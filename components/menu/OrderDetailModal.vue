@@ -1144,9 +1144,20 @@ const printableTemplates = computed(() =>
   documentTemplates.value.filter((tpl) => !tpl.branchId || tpl.branchId === props.order?.branchId)
 );
 
-const printMenuItems = computed(() => [
-  printableTemplates.value.map((tpl) => ({ label: tpl.name, click: () => printWithTemplate(tpl) })),
-]);
+// Templates with a category are grouped under a heading; uncategorised ones come first.
+const printMenuItems = computed(() => {
+  const groups = new Map<string, MenuDocumentTemplate[]>();
+  for (const tpl of printableTemplates.value) {
+    const key = (tpl.category || '').trim();
+    groups.set(key, [...(groups.get(key) || []), tpl]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === '' ? -1 : b === '' ? 1 : a.localeCompare(b)))
+    .map(([cat, list]) => [
+      ...(cat ? [{ label: cat, disabled: true }] : []),
+      ...list.map((tpl) => ({ label: tpl.name, click: () => printWithTemplate(tpl) })),
+    ]);
+});
 
 async function printWithTemplate(template: MenuDocumentTemplate) {
   if (!props.order) return;

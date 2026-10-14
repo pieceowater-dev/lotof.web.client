@@ -5,7 +5,7 @@ import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 
 const UpdateDocumentTemplateDocument = /* GraphQL */ `
   mutation UpdateDocumentTemplate($input: UpdateDocumentTemplateInput!) {
-    updateDocumentTemplate(input: $input) { id name content isActive branchId }
+    updateDocumentTemplate(input: $input) { id name content isActive branchId category }
   }
 `;
 
@@ -13,7 +13,7 @@ export async function menuUpdateDocumentTemplate(
   menuToken: string,
   namespaceSlug: string,
   id: string,
-  fields: { name?: string; content?: string; isActive?: boolean; branchId?: string | null }
+  fields: { name?: string; content?: string; isActive?: boolean; branchId?: string | null; category?: string }
 ): Promise<MenuDocumentTemplate> {
   const devHeaders = await getDeviceHeaders();
   return menuRequestWithRefresh(async () => {

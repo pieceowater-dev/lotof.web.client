@@ -77,16 +77,18 @@ const formName = ref('');
 const formContent = ref('');
 const formIsActive = ref(true);
 const formBranchId = ref<string | undefined>(undefined);
+const formCategory = ref('');
 const saving = ref(false);
 
 // Snapshot taken when the editor opens, so closeEditor() can tell a genuine
 // edit apart from "opened and immediately closed" without asking every time.
-const initialSnapshot = ref({ name: '', content: '', isActive: true, branchId: undefined as string | undefined });
+const initialSnapshot = ref({ name: '', content: '', isActive: true, branchId: undefined as string | undefined, category: '' });
 const isDirty = computed(() =>
   formName.value !== initialSnapshot.value.name ||
   formContent.value !== initialSnapshot.value.content ||
   formIsActive.value !== initialSnapshot.value.isActive ||
-  formBranchId.value !== initialSnapshot.value.branchId
+  formBranchId.value !== initialSnapshot.value.branchId ||
+  formCategory.value !== initialSnapshot.value.category
 );
 
 function openCreate() {
@@ -95,7 +97,8 @@ function openCreate() {
   formContent.value = '';
   formIsActive.value = true;
   formBranchId.value = undefined;
-  initialSnapshot.value = { name: '', content: '', isActive: true, branchId: undefined };
+  formCategory.value = '';
+  initialSnapshot.value = { name: '', content: '', isActive: true, branchId: undefined, category: '' };
   isEditorOpen.value = true;
 }
 
@@ -105,7 +108,8 @@ function openEdit(row: MenuDocumentTemplate) {
   formContent.value = row.content;
   formIsActive.value = row.isActive;
   formBranchId.value = row.branchId || undefined;
-  initialSnapshot.value = { name: row.name, content: row.content, isActive: row.isActive, branchId: row.branchId || undefined };
+  formCategory.value = row.category || '';
+  initialSnapshot.value = { name: row.name, content: row.content, isActive: row.isActive, branchId: row.branchId || undefined, category: row.category || '' };
   isEditorOpen.value = true;
 }
 
@@ -132,13 +136,14 @@ async function handleSave() {
         content: formContent.value,
         isActive: formIsActive.value,
         branchId: formBranchId.value,
+        category: formCategory.value.trim(),
       });
       const idx = templates.value.findIndex((tpl) => tpl.id === updated.id);
       if (idx !== -1) templates.value[idx] = updated;
       useToast().add({ title: t('menu.docTemplateUpdated') || 'Template updated', color: 'primary' });
     } else {
       const { menuCreateDocumentTemplate } = await import('@/api/menu/documenttemplate/create');
-      const created = await menuCreateDocumentTemplate(menuToken, nsSlug.value, formName.value.trim(), formContent.value, formBranchId.value);
+      const created = await menuCreateDocumentTemplate(menuToken, nsSlug.value, formName.value.trim(), formContent.value, formBranchId.value, formCategory.value.trim());
       templates.value = [...templates.value, created];
       useToast().add({ title: t('menu.docTemplateCreated') || 'Template created', color: 'primary' });
     }
@@ -238,6 +243,9 @@ onMounted(() => {
           <div class="flex items-center gap-3 flex-shrink-0">
             <UFormGroup :label="t('menu.docTemplateName') || 'Name'" required class="flex-1">
               <UInput v-model="formName" size="sm" :placeholder="t('menu.docTemplateNamePlaceholder') || 'e.g. Act of completed work'" />
+            </UFormGroup>
+            <UFormGroup :label="t('menu.docTemplateCategory')" class="w-40">
+              <UInput v-model="formCategory" size="sm" maxlength="64" :placeholder="t('menu.docTemplateCategoryPlaceholder')" />
             </UFormGroup>
             <UFormGroup :label="t('menu.docTemplateBranch') || 'Branch'" class="w-56">
               <USelectMenu

@@ -35,7 +35,7 @@ const confirmDeleteId = ref<string | null>(null);
 const busy = ref(false);
 const palette = BRAND_COLORS.filter(c => c.toLowerCase() !== '#111827'); // never a black accent
 
-const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', requiredFieldIds: [] as string[] });
+const form = reactive({ status: 'NEW', name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', moveOnPriceStage: '', requiredFieldIds: [] as string[] });
 const orderFieldList = ref<MenuOrderField[]>([]);
 const requirableFields = computed(() => orderFieldList.value.filter((f) => f.isActive && f.dataType !== 'HEADING'));
 function toggleRequired(id: string) {
@@ -94,13 +94,13 @@ function fail(e: unknown) {
 
 function openNew(group: string) {
   editing.value = null;
-  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', requiredFieldIds: [] });
+  Object.assign(form, { status: group, name: '', color: '#2563eb', slaMinutes: 0, isUrgent: false, isOverdue: false, autoTaskTitle: '', moveOnPriceStage: '', requiredFieldIds: [] });
   modalOpen.value = true;
 }
 
 function openEdit(s: OrderStage) {
   editing.value = s;
-  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue, autoTaskTitle: s.autoTaskTitle || '', requiredFieldIds: [...(s.requiredFieldIds || [])] });
+  Object.assign(form, { status: s.status, name: s.name, color: s.color || '#2563eb', slaMinutes: s.slaMinutes, isUrgent: s.isUrgent, isOverdue: s.isOverdue, autoTaskTitle: s.autoTaskTitle || '', moveOnPriceStage: s.moveOnPriceStage || '', requiredFieldIds: [...(s.requiredFieldIds || [])] });
   modalOpen.value = true;
 }
 
@@ -109,9 +109,9 @@ async function save() {
   busy.value = true;
   try {
     if (editing.value) {
-      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), requiredFieldIds: [...form.requiredFieldIds] });
+      await menuUpdateOrderStage(token(), nsSlug.value, { id: editing.value.id, name: form.name.trim(), color: form.color, sortOrder: editing.value.sortOrder, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), moveOnPriceStage: form.moveOnPriceStage, requiredFieldIds: [...form.requiredFieldIds] });
     } else {
-      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), requiredFieldIds: [...form.requiredFieldIds] });
+      await menuCreateOrderStage(token(), nsSlug.value, { status: form.status, name: form.name.trim(), color: form.color, slaMinutes: form.slaMinutes, isUrgent: form.isUrgent, isOverdue: form.isOverdue, autoTaskTitle: form.autoTaskTitle.trim(), moveOnPriceStage: form.moveOnPriceStage, requiredFieldIds: [...form.requiredFieldIds] });
     }
     modalOpen.value = false;
     await loadStages(token(), nsSlug.value, true);
@@ -254,6 +254,13 @@ async function toggleRule(key: string, value: boolean | string) {
           <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageAutoTask') }}</div>
           <UInput v-model="form.autoTaskTitle" maxlength="160" :placeholder="t('menu.stageAutoTaskPlaceholder')" :ui="{ rounded: 'rounded-xl' }" />
           <p class="at-hint">{{ t('menu.stageAutoTaskHint') }}</p>
+        </div>
+        <div class="space-y-1.5">
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageMoveOnPrice') }}</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="o in [{ v: '', l: 'menu.stageMoveNever' }, { v: 'QUOTED', l: 'menu.stageMoveQuoted' }, { v: 'APPROVED', l: 'menu.stageMoveApproved' }]" :key="o.v" type="button" class="pill-filter" :class="form.moveOnPriceStage === o.v ? 'pill-filter--active' : ''" @click="form.moveOnPriceStage = o.v">{{ t(o.l) }}</button>
+          </div>
+          <p class="at-hint">{{ t('menu.stageMoveOnPriceHint') }}</p>
         </div>
         <div v-if="requirableFields.length" class="space-y-1.5">
           <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">{{ t('menu.stageRequiredFields') }}</div>

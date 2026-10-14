@@ -5,7 +5,7 @@ import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 
 const CreateDocumentTemplateDocument = /* GraphQL */ `
   mutation CreateDocumentTemplate($input: CreateDocumentTemplateInput!) {
-    createDocumentTemplate(input: $input) { id name content isActive branchId }
+    createDocumentTemplate(input: $input) { id name content isActive branchId category }
   }
 `;
 
@@ -14,13 +14,14 @@ export async function menuCreateDocumentTemplate(
   namespaceSlug: string,
   name: string,
   content: string,
-  branchId?: string | null
+  branchId?: string | null,
+  category?: string
 ): Promise<MenuDocumentTemplate> {
   const devHeaders = await getDeviceHeaders();
   return menuRequestWithRefresh(async () => {
     const res = await menuClient.request<{ createDocumentTemplate: MenuDocumentTemplate }>(
       CreateDocumentTemplateDocument,
-      { input: { name, content, branchId: branchId || null } },
+      { input: { name, content, branchId: branchId || null, category: category || '' } },
       { headers: { MenuAuthorization: `Bearer ${menuToken}`, Namespace: namespaceSlug, ...devHeaders } }
     );
     return res.createDocumentTemplate;
