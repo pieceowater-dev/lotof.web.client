@@ -14,6 +14,7 @@ import { menuOrderFieldsList, type MenuOrderField } from '@/api/menu/orderfield/
 import { useOrderStages } from '@/composables/useOrderStages';
 import { defaultStatusLabel } from '@/utils/orderStatusLabels';
 import { formatDateTime } from '@/utils/formatDate';
+import { presetRange, presetOf, isoDay as iso, type PeriodPreset } from '@/utils/reportPeriods';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 
@@ -28,7 +29,6 @@ const nsSlug = computed(() => route.params.namespace as string);
 
 const today = new Date();
 const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const from = ref(iso(monthStart));
 const to = ref(iso(today));
 type TabKey = 'executors' | 'times' | 'field' | 'journal';
@@ -62,25 +62,12 @@ const PRESETS = [
   { key: 'prevMonth', label: 'menu.periodPrevMonth' },
   { key: 'all', label: 'menu.periodAll' },
 ] as const;
-function applyPreset(key: (typeof PRESETS)[number]['key']) {
-  const now = new Date();
-  if (key === 'today') { from.value = iso(now); to.value = iso(now); }
-  else if (key === 'week') { from.value = iso(new Date(now.getTime() - 6 * 86400000)); to.value = iso(now); }
-  else if (key === 'month') { from.value = iso(new Date(now.getFullYear(), now.getMonth(), 1)); to.value = iso(now); }
-  else if (key === 'prevMonth') { from.value = iso(new Date(now.getFullYear(), now.getMonth() - 1, 1)); to.value = iso(new Date(now.getFullYear(), now.getMonth(), 0)); }
-  else { from.value = '2020-01-01'; to.value = iso(now); }
+function applyPreset(key: PeriodPreset) {
+  const r = presetRange(key, new Date());
+  from.value = r.from;
+  to.value = r.to;
 }
-const activePreset = computed(() => {
-  const now = new Date();
-  const cand: Record<string, [string, string]> = {
-    today: [iso(now), iso(now)],
-    week: [iso(new Date(now.getTime() - 6 * 86400000)), iso(now)],
-    month: [iso(new Date(now.getFullYear(), now.getMonth(), 1)), iso(now)],
-    prevMonth: [iso(new Date(now.getFullYear(), now.getMonth() - 1, 1)), iso(new Date(now.getFullYear(), now.getMonth(), 0))],
-    all: ['2020-01-01', iso(now)],
-  };
-  return Object.keys(cand).find((k) => cand[k][0] === from.value && cand[k][1] === to.value) || '';
-});
+const activePreset = computed(() => presetOf(from.value, to.value, new Date()));
 
 const totals = computed(() => rows.value.reduce((a, r) => ({ lines: a.lines + r.lines, revenue: a.revenue + r.revenue, pay: a.pay + r.pay }), { lines: 0, revenue: 0, pay: 0 }));
 const sortedRows = computed(() => [...rows.value].sort((a, b) => b.revenue - a.revenue));
