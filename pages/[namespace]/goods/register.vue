@@ -13,7 +13,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsRegister, GoodsCashShift } from '@/api/goods/register';
-import type { GoodsSale, GoodsSaleStatus, GoodsPaymentMethod, GoodsCashMovementType } from '@/api/goods/sale';
+import type { GoodsSale, GoodsSaleStatus, GoodsPaymentMethod, GoodsCashMovementType, GoodsCashMovement } from '@/api/goods/sale';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsStock } from '@/api/goods/stock';
