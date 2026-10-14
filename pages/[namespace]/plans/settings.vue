@@ -75,7 +75,7 @@ async function loadAll() {
     socialLinksList.value = parseSocialLinks(s?.socialLinks);
   } catch (e) {
     logError('[plans/settings] load', e);
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   }
 }
 
@@ -116,7 +116,7 @@ async function saveMst() {
     }
     if (id) await plansApi.setMasterServices(nsSlug.value, id, mstServiceIds.value.map(serviceId => ({ serviceId })));
     mstModal.value = false; await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { mstSaving.value = false; }
 }
 async function toggleMstActive(m: PlansMaster) {
@@ -127,12 +127,12 @@ async function toggleMstActive(m: PlansMaster) {
       isActive: !m.isActive,
     });
     await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 async function delMst(m: PlansMaster) {
   if (!await confirm({ message: t('plans.confirmDeleteMaster') || `Удалить профиль мастера «${m.name}»?`, color: 'red' })) return;
   try { await plansApi.deleteMaster(nsSlug.value, m.id); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 
 // --- staff: namespace members × plans role ---
@@ -227,7 +227,7 @@ async function setMemberRole(userId: string, role: string) {
     else if (!CAN_ALSO_BE_MASTER.includes(role)) await ensureMasterProfile(userId, false);
     await Promise.all([loadStaff(), loadAll()]);
     toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { roleSaving.value = null; }
 }
 
@@ -237,7 +237,7 @@ async function setMemberIsMaster(userId: string, on: boolean) {
     await ensureMasterProfile(userId, on);
     await Promise.all([loadStaff(), loadAll()]);
     toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { roleSaving.value = null; }
 }
 
@@ -250,7 +250,7 @@ async function sendInvite() {
     await hubCreateInvite(hubToken.value || '', { namespaceSlug: nsSlug.value, email, actions: JSON.stringify({ version: 1 }) });
     inviteEmail.value = '';
     toast.add({ title: t('plans.inviteSent') || 'Приглашение отправлено', description: email, color: 'emerald' });
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { inviting.value = false; }
 }
 
@@ -268,7 +268,7 @@ async function saveSettings() {
       reminderFirstHoursBefore: s.reminderFirstHoursBefore, reminderSecondHoursBefore: s.reminderSecondHoursBefore ?? null,
     });
     toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { saving.value = false; }
 }
 
@@ -314,7 +314,7 @@ async function saveLoc() {
     }
     if (id) await plansApi.setLocationWorkingHours(nsSlug.value, id, locHours.value);
     locModal.value = false; await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { locSaving.value = false; }
 }
 
@@ -344,7 +344,7 @@ async function saveMasterSchedule() {
     await plansApi.setMasterWorkingHours(nsSlug.value, mstSchedMaster.value.id, mstHours.value);
     toast.add({ title: t('common.saved') || 'Сохранено', color: 'emerald' });
     mstSchedOpen.value = false;
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { mstSchedSaving.value = false; }
 }
 
@@ -353,11 +353,11 @@ const newLinkLabel = ref('');
 async function addLink() {
   if (!newLinkLabel.value.trim()) return;
   try { await plansApi.createShareLink(nsSlug.value, { label: newLinkLabel.value.trim() }); newLinkLabel.value = ''; await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 async function delLink(id: string) {
   try { await plansApi.deleteShareLink(nsSlug.value, id); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 function copy(text: string) {
   try { navigator.clipboard.writeText(text); toast.add({ title: t('common.copied') || 'Скопировано', color: 'emerald' }); } catch {}
@@ -371,7 +371,7 @@ onMounted(async () => {
     const m = route.query.master as string;
     if (m) await openMasterSchedule(m);
   } catch (e) {
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally { booting.value = false; }
 });
 watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaff(); });

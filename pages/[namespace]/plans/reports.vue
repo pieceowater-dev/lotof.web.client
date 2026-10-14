@@ -50,7 +50,7 @@ async function loadAll() {
     summary.value = s; load.value = l.slice().sort((a, b) => b.bookedMinutes - a.bookedMinutes); masters.value = m;
   } catch (e) {
     logError('[plans/reports] load', e);
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally { loading.value = false; }
 }
 function pct(l: PlansMasterLoad) {
@@ -59,7 +59,7 @@ function pct(l: PlansMasterLoad) {
 
 onMounted(async () => {
   try { await getToken(nsSlug.value); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { booting.value = false; }
 });
 watch(rangeDays, loadAll);

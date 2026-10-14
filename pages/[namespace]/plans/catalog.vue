@@ -52,7 +52,7 @@ async function loadAll() {
     categories.value = c; services.value = s; masters.value = m; locations.value = l;
   } catch (e) {
     logError('[plans/catalog] load', e);
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   }
 }
 
@@ -63,12 +63,12 @@ async function addCat() {
   try {
     await plansApi.createCategory(nsSlug.value, { name: newCat.value.trim(), sortOrder: categories.value.length });
     newCat.value = ''; await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 async function delCat(c: ServiceCategory) {
   if (!await confirm({ message: t('plans.confirmDeleteCategory') || `Удалить категорию «${c.name}»?`, color: 'red' })) return;
   try { await plansApi.deleteCategory(nsSlug.value, c.id); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 
 // --- service modal ---
@@ -111,7 +111,7 @@ async function saveSvc() {
       await plansApi.setServiceMasters(nsSlug.value, serviceId, svcMasterIds.value.map(masterId => ({ masterId })));
     }
     svcModal.value = false; await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { svcSaving.value = false; }
 }
 async function toggleSvcActive(s: PlansService) {
@@ -123,12 +123,12 @@ async function toggleSvcActive(s: PlansService) {
       isActive: !s.isActive,
     });
     await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 async function delSvc(s: PlansService) {
   if (!await confirm({ message: t('plans.confirmDeleteService') || `Удалить услугу «${s.name}»?`, color: 'red' })) return;
   try { await plansApi.deleteService(nsSlug.value, s.id); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 
 // --- master modal ---
@@ -165,7 +165,7 @@ async function saveMst() {
     }
     if (id) await plansApi.setMasterServices(nsSlug.value, id, mstServiceIds.value.map(serviceId => ({ serviceId })));
     mstModal.value = false; await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { mstSaving.value = false; }
 }
 async function toggleMstActive(m: PlansMaster) {
@@ -176,17 +176,17 @@ async function toggleMstActive(m: PlansMaster) {
       isActive: !m.isActive,
     });
     await loadAll();
-  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  } catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 async function delMst(m: PlansMaster) {
   if (!await confirm({ message: t('plans.confirmDeleteMaster') || `Удалить мастера «${m.name}»?`, color: 'red' })) return;
   try { await plansApi.deleteMaster(nsSlug.value, m.id); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
 }
 
 onMounted(async () => {
   try { await getToken(nsSlug.value); await loadAll(); }
-  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' }); }
+  catch (e) { toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' }); }
   finally { booting.value = false; }
 });
 </script>

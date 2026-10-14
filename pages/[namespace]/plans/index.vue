@@ -162,7 +162,7 @@ async function loadBookings(silent = false) {
     }
   } catch (e) {
     logError('[plans/index] loadBookings', e);
-    if (!silent) toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    if (!silent) toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally {
     if (!silent) loading.value = false;
   }
@@ -185,7 +185,7 @@ async function submitCreate(payload: any) {
     toast.add({ title: t('common.success'), description: t('plans.bookingCreated') || 'Запись создана', color: 'emerald' });
     await loadBookings(true);
   } catch (e) {
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally {
     creating.value = false;
   }
@@ -205,7 +205,7 @@ async function onReschedule(p: { booking: PlansBooking; startAt: string; masterI
     await loadBookings(true);
   } catch (e) {
     bookings.value = prev;
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   }
 }
 
@@ -259,7 +259,7 @@ onMounted(async () => {
     if (await loadRefs()) { await loadLocationHours(); await loadBookings(); }
   } catch (e) {
     logError('[plans/index] boot', e);
-    toast.add({ title: t('common.error'), description: getErrorMessage(e, t), color: 'red' });
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally {
     booting.value = false;
     startLive();
@@ -358,7 +358,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           <span class="relative inline-flex h-2 w-2 rounded-full" :class="liveConnected ? 'bg-emerald-500' : 'bg-amber-500'" />
         </span>
         <UIcon v-else name="lucide:wifi-off" class="w-3.5 h-3.5" />
-        <span class="hidden md:inline">{{ t('plans.live') || 'Онлайн' }}</span>
+        <span>{{ t('plans.live') || 'Онлайн' }}</span>
       </button>
 
       <USelectMenu

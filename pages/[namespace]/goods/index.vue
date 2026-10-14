@@ -234,10 +234,8 @@ onMounted(async () => {
             v-for="w in warehouses"
             :key="w.id"
             type="button"
-            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
-            :class="activeWarehouseId === w.id
-              ? 'bg-primary-500 border-primary-500 text-white'
-              : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:border-primary-300 dark:hover:border-primary-700 hover:text-primary-600 dark:hover:text-primary-400'"
+            class="pill-filter inline-flex items-center gap-1.5"
+            :class="activeWarehouseId === w.id ? 'pill-filter--active' : ''"
             @click="activeWarehouseId = w.id"
           >
             <Icon name="lucide:warehouse" class="w-3.5 h-3.5 flex-shrink-0" />

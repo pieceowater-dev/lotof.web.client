@@ -1100,6 +1100,7 @@
     }
   },
   "common": {
+    "errorRetry": "Something went wrong. Please try again.",
     "ok": "OK",
     "title": "Title",
     "status": "Status",
