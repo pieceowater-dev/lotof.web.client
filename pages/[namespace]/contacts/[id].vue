@@ -157,6 +157,10 @@ useHead(() => ({
 
 // /contacts/all, /contacts/individual, /contacts/legal are the list's own addresses: send them to the
 // list instead of treating the word as a client's short id (which ended in a "could not load" toast).
+function jumpTo(id: string) {
+  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
 const LIST_KEYWORDS = ['all', 'individual', 'legal'];
 if (LIST_KEYWORDS.includes(String(route.params.id).toLowerCase())) {
   await navigateTo(`/${route.params.namespace}/contacts/${String(route.params.id).toLowerCase()}/1-20`, { replace: true });
@@ -242,6 +246,11 @@ function onCopyToClipboard(text: string) {
         </div>
       </div>
 
+      <!-- Phone: jump between the card's long sections -->
+      <nav class="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 py-1 lg:hidden">
+        <button v-for="a in [{ id: 'c-info', l: 'contacts.anchorInfo' }, { id: 'c-addr', l: 'contacts.anchorAddresses' }, { id: 'c-notes', l: 'contacts.anchorNotes' }, { id: 'c-calls', l: 'contacts.anchorCalls' }, { id: 'c-feed', l: 'contacts.anchorFeed' }]" :key="a.id" type="button" class="pill-filter whitespace-nowrap" @click="jumpTo(a.id)">{{ t(a.l) }}</button>
+      </nav>
+
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
@@ -259,6 +268,7 @@ function onCopyToClipboard(text: string) {
           />
 
           <!-- Personal Info Section -->
+          <div id="c-info" class="scroll-mt-32" />
           <ContactPersonalInfo
             :client="client"
             :edit-mode="personalInfoEditMode"
@@ -313,13 +323,16 @@ function onCopyToClipboard(text: string) {
             @navigate-related-client="openRelatedClient"
           />
 
+          <div id="c-addr" class="scroll-mt-32" />
           <ContactAddresses
             :client-id="client?.client.id"
             @changed="(list) => clientAddresses = list"
           />
 
+          <div id="c-notes" class="scroll-mt-32" />
           <ContactNotes :client-id="client?.client.id" />
 
+          <div id="c-calls" class="scroll-mt-32" />
           <ContactCalls :client-id="client?.client.id" @loaded="(c) => clientCalls = c" />
 
           <!-- Loyalty Section -->
@@ -356,7 +369,7 @@ function onCopyToClipboard(text: string) {
         </div>
 
         <!-- Right Column - Timeline -->
-        <div class="lg:col-span-1">
+        <div id="c-feed" class="scroll-mt-32 lg:col-span-1">
           <ContactTimeline
             :events="events"
             :tag-name-by-id="tagNameById"
