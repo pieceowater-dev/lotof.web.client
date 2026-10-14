@@ -162,9 +162,17 @@ async function scanSubmit() {
     const { goodsFindByBarcode } = await import('@/api/goods/good');
     const found = await goodsFindByBarcode(token, nsSlug.value, code);
     const goodId = found?.good?.id;
+    if (!goodId) {
+      useToast().add({ title: t('goods.scanUnknown'), color: 'amber' });
+      return;
+    }
     const item = activeCount.value.items.find((i) => i.goodId === goodId);
-    if (!goodId || !item) {
-      useToast().add({ title: t('goods.scanNotInCount'), color: 'amber' });
+    if (!item) {
+      // Not on the sheet: an "unaccounted" find -- it joins the count with what the books say (usually 0).
+      const added = await (await import('@/api/goods/inventorycount')).goodsSubmitInventoryCount(token, nsSlug.value, activeCount.value.id, goodId, 1);
+      activeCount.value.items.push(added);
+      countedInputs[goodId] = 1;
+      useToast().add({ title: t('goods.scanUnaccounted', { name: goodName(goodId) }), color: 'primary' });
       return;
     }
     countedInputs[goodId] = (countedInputs[goodId] ?? 0) + 1;

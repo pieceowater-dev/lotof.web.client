@@ -3089,6 +3089,8 @@
     "addGood": "Add good",
     "quickNewGood": "New good",
     "toBuy": "To buy",
+    "scanUnknown": "No good with this barcode",
+    "scanUnaccounted": "Added to the count outside the sheet: {name}",
     "correctDocument": "Correct",
     "correctDocConfirm": "The document will be cancelled (stock goes back) and a form with the same lines opens — fix it and post again.",
     "tabMoves": "Movements",
