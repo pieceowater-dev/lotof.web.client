@@ -374,6 +374,14 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
 
     <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
+    <!-- First steps: nothing can be booked until there is at least one service. -->
+    <div v-else-if="!notSetUp && !services.length" class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-gray-300 p-8 text-center dark:border-gray-700">
+      <UIcon name="lucide:sparkles" class="h-9 w-9 text-primary-500" />
+      <div class="text-base font-semibold">{{ t('plans.firstStepsTitle') }}</div>
+      <p class="max-w-md text-sm text-gray-500 dark:text-gray-400">{{ t('plans.firstStepsHint') }}</p>
+      <NuxtLink :to="`/${nsSlug}/plans/catalog`" class="at-btn at-btn--primary"><UIcon name="lucide:plus" class="h-4 w-4" />{{ t('plans.firstStepsAction') }}</NuxtLink>
+    </div>
+
     <div v-else-if="notSetUp"
          class="flex-1 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-center text-gray-500 dark:text-gray-400 p-8">
       <UIcon name="lucide:calendar-clock" class="w-9 h-9 mb-2 opacity-60" />

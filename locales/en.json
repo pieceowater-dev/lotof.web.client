@@ -4062,6 +4062,9 @@
     "reauthConfirm": "Confirm with Google"
   },
   "plans": {
+    "firstStepsTitle": "Add your first service",
+    "firstStepsHint": "Services and masters let clients book online. It takes a couple of minutes.",
+    "firstStepsAction": "Go to the catalog",
     "calendar": "Calendar",
     "catalog": "Catalog",
     "reports": "Reports",
