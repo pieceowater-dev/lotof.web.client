@@ -3,6 +3,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import UserAvatar from '@/components/ui/UserAvatar.vue';
 import { useI18n } from '@/composables/useI18n';
+import { formatDateTime } from '@/utils/formatDate';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -50,7 +51,7 @@ import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { type DiscountType, discountTypeLabelInfo, isItemScopedDiscount, isPercentDiscount } from '@/utils/discountType';
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const { confirm } = useConfirm();
 const route = useRoute();
 const router = useRouter();
@@ -1027,11 +1028,23 @@ async function copyShareLink() {
   }
 }
 
+// In the interface language (not the browser's), e.g. «1 сент. 2026 г., 14:47».
 function formatDate(iso: string) {
+  return formatDateTime(iso, locale.value);
+}
+
+const togglingUrgent = ref(false);
+async function toggleUrgent() {
+  if (!props.order || togglingUrgent.value) return;
+  togglingUrgent.value = true;
   try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
+    const { menuUpdateOrderUrgent } = await import('@/api/menu/order/extra');
+    emit('statusChanged', await menuUpdateOrderUrgent(await getToken(), nsSlug.value, props.order.id, !props.order.isUrgent));
+  } catch (e) {
+    logError('[OrderDetailModal] toggleUrgent failed', e);
+    useToast().add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
+  } finally {
+    togglingUrgent.value = false;
   }
 }
 
@@ -1224,6 +1237,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             <OrderStatusPicker :order="order!" :status-label="statusLabel" :updating="updatingStatus" @pick="changeStatus" />
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
+            <UTooltip :text="t('menu.urgent')">
+              <UButton icon="lucide:flame" size="sm" :color="order.isUrgent ? 'rose' : 'gray'" :variant="order.isUrgent ? 'soft' : 'ghost'" :loading="togglingUrgent" :aria-label="t('menu.urgent')" :aria-pressed="!!order.isUrgent" @click="toggleUrgent" />
+            </UTooltip>
             <UTooltip :text="t('menu.statusHistory') || 'Status history'" class="lg:hidden">
               <UButton icon="lucide:history" size="sm" color="gray" variant="ghost" class="lg:hidden" @click="isMobileTimelineOpen = true" />
             </UTooltip>
@@ -1265,7 +1281,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         </aside>
 
         <!-- Main content: scrolls independently of the side rail -->
-        <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 flex flex-col gap-5 pb-8">
+        <div v-scroll-fade.y class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 flex flex-col gap-5 pb-[calc(2rem+env(safe-area-inset-bottom))]">
           <!-- Tabs: one screen = one job. The order itself, the money, the talking, and the rest. -->
           <div v-scroll-fade class="order-[0] -mx-1 flex-shrink-0 overflow-x-auto px-1 no-scrollbar">
             <div class="at-seg">

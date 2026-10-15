@@ -5,7 +5,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { useOrderStages, minutesInStatus, isOverdue, formatDuration } from '@/composables/useOrderStages';
 import {
-  menuOrderPayments, menuCreateOrderPayment, menuDeleteOrderPayment, menuUpdateOrderPriceStage, menuUpdateOrderUrgent,
+  menuOrderPayments, menuCreateOrderPayment, menuDeleteOrderPayment, menuUpdateOrderPriceStage,
   type OrderPayment,
 } from '@/api/menu/order/extra';
 import type { MenuOrder } from '@/api/menu/order/list';
@@ -58,13 +58,6 @@ function fail(e: unknown) {
   toast.add({ title: getErrorMessage(e, t) || t('common.error'), color: 'red' });
 }
 
-async function toggleUrgent() {
-  busy.value = true;
-  try {
-    emit('updated', await menuUpdateOrderUrgent(await props.getToken(), props.nsSlug, props.order.id, !props.order.isUrgent));
-  } catch (e) { fail(e); } finally { busy.value = false; }
-}
-
 async function priceStage(stage: 'QUOTED' | 'APPROVED' | 'RESET') {
   busy.value = true;
   try {
@@ -114,15 +107,12 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
        column (chips under the header, price stage beside the items, payments
        after the totals) instead of sitting together at the top. -->
   <div class="contents">
-    <!-- timing + urgency -->
-    <div v-show="!tab || tab === 'main'" class="order-1 flex items-center gap-1.5 flex-wrap">
+    <!-- timing (urgency is a flame toggle in the card header) -->
+    <div v-show="!tab || tab === 'main'" class="order-1 flex items-center gap-1.5 flex-wrap empty:hidden">
       <span v-if="inStatus !== null && !order.closedAt" class="at-chip !text-xs" :class="overdue ? '!bg-rose-500/10 !text-rose-600' : ''">
         <Icon name="lucide:timer" class="w-3.5 h-3.5" />{{ t('menu.inStatusFor') }} {{ formatDuration(inStatus) }}<template v-if="overdue"> · {{ t('menu.overdue') }}</template>
       </span>
       <span v-if="order.readyAt" class="at-chip !text-xs"><Icon name="lucide:package-check" class="w-3.5 h-3.5" />{{ t('menu.readySince') }} {{ formatDate(order.readyAt) }}</span>
-      <button type="button" class="pill-filter" :class="order.isUrgent ? 'pill-filter--rose' : ''" :disabled="busy" @click="toggleUrgent">
-        <Icon name="lucide:flame" class="w-3.5 h-3.5" />{{ t('menu.urgent') }}
-      </button>
     </div>
 
     <!-- price stage -->
