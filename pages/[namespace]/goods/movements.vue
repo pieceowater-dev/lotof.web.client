@@ -642,7 +642,7 @@ onMounted(() => { loadAll(); loadDrafts(); });
     <div class="flex items-center justify-between gap-3 flex-shrink-0">
       <div class="min-w-0">
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.movements') }}</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.movementsSubtitle') }}</p>
+        <p class="hidden sm:block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.movementsSubtitle') }}</p>
       </div>
       <GoodsRegisterButton />
     </div>
@@ -704,6 +704,20 @@ onMounted(() => { loadAll(); loadDrafts(); });
           </button>
         </template>
         <template #date-data="{ row }"><span class="whitespace-nowrap text-gray-500 dark:text-gray-400">{{ formatDateTime(row.date, locale) }}</span></template>
+        <template #mobile-card="{ row }">
+          <div class="flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="flex min-w-0 items-center gap-1.5"><UIcon :name="typeIcon(row.kind)" class="h-4 w-4 flex-shrink-0" /><span class="truncate">{{ typeLabel(row.kind) }}</span></span>
+            <span class="whitespace-nowrap tabular-nums">{{ formatDateTime(row.date, locale) }}</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-2">
+            <span v-if="row.number" class="flex-shrink-0 font-semibold text-gray-900 dark:text-white">{{ row.number }}</span>
+            <span v-if="row.summary && row.summary !== '—'" class="min-w-0 truncate text-sm text-gray-600 dark:text-gray-300">{{ row.summary }}</span>
+          </div>
+          <div class="mt-1.5 flex items-center justify-between gap-2">
+            <span class="text-xs text-gray-400">{{ row.itemsCount }} {{ t('goods.positionsShort') }}</span>
+            <UBadge v-if="row.status" :color="rowStatusColor(row)" variant="soft" size="xs">{{ rowStatusLabel(row) }}</UBadge>
+          </div>
+        </template>
         <template #status-data="{ row }">
           <UBadge v-if="row.status" :color="rowStatusColor(row)" variant="soft" size="xs">{{ rowStatusLabel(row) }}</UBadge>
           <span v-else class="text-gray-300 dark:text-gray-700">—</span>

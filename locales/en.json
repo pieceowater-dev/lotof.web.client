@@ -1444,6 +1444,7 @@
       "callComment": "Call comment",
       "callRating": "Rating",
       "callFavourites": "Favourites",
+      "callsFilters": "Filters",
       "callMin": "min",
       "callAvg": "avg",
       "callMax": "max",
@@ -3077,6 +3078,7 @@
   "goods": {
     "register": "Register",
     "openRegister": "Open Register",
+    "positionsShort": "items",
     "warehouse": "Warehouse",
     "warehouseSubtitle": "Live stock levels for the selected warehouse",
     "settings": "Settings",

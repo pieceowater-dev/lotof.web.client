@@ -57,6 +57,16 @@ const detailCols = computed(() => props.columns.filter((c) => c !== titleCol.val
 const actionCols = computed(() => props.columns.filter((c) => c.key === 'actions'))
 
 // Use provided total or fall back to rows.length
+// A phone card lists only what a row actually has: empty cells ("", "—", null)
+// are skipped instead of printing a label with nothing next to it. Columns with
+// their own slot render themselves, so they are always shown.
+const slots = useSlots()
+function isBlankCell(row: Record<string, any>, key: string): boolean {
+  if (slots[`${key}-data`]) return false
+  const v = row[key]
+  return v == null || v === '' || v === '—' || v === '-' || v === '#'
+}
+
 const effectiveTotal = computed(() => props.total ?? props.rows.length)
 const pageFrom = computed(() => hasPaging.value ? ((pageModel.value - 1) * pageCountModel.value) + 1 : 0)
 const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageCountModel.value, effectiveTotal.value) : 0)
@@ -91,10 +101,12 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           </div>
           <dl class="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
             <template v-for="col in detailCols" :key="col.key">
-              <dt class="text-gray-400">{{ col.label }}</dt>
-              <dd class="min-w-0 text-right text-gray-700 dark:text-gray-200">
-                <slot :name="`${col.key}-data`" :row="row" :column="col">{{ row[col.key] }}</slot>
-              </dd>
+              <template v-if="!isBlankCell(row, col.key)">
+                <dt class="text-gray-400">{{ col.label }}</dt>
+                <dd class="min-w-0 text-right text-gray-700 dark:text-gray-200">
+                  <slot :name="`${col.key}-data`" :row="row" :column="col">{{ row[col.key] }}</slot>
+                </dd>
+              </template>
             </template>
           </dl>
           <div v-if="actionCols.length" class="flex justify-end" @click.stop>

@@ -230,7 +230,7 @@ onMounted(async () => {
     <div class="flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
       <div>
         <h1 data-tour="goods-warehouse-title" class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.warehouse') }}</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
+        <p class="hidden sm:block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.warehouseSubtitle') }}</p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <!-- Current warehouse as pills, not a dropdown -- which one is active
@@ -262,15 +262,15 @@ onMounted(async () => {
 
     <div v-if="!loading" class="grid grid-cols-3 gap-3 flex-shrink-0 mt-3">
       <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'all' ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = 'all'">
-        <div class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ goods.length }}</div>
+        <div class="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ goods.length }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.catalog') }}</div>
       </button>
       <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-        <div class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ money(stockValueCents) }}</div>
+        <div class="text-sm min-[400px]:text-base sm:text-2xl font-bold text-gray-900 dark:text-white tabular-nums truncate">{{ money(stockValueCents) }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.stockValue') }} · {{ stockedItemsCount }} {{ t('goods.stockPositions') }}</div>
       </div>
       <button type="button" class="text-left rounded-2xl border p-4 transition-colors" :class="statFilter === 'lowStock' ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40' : 'border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900'" @click="statFilter = statFilter === 'lowStock' ? 'all' : 'lowStock'">
-        <div class="text-xl sm:text-2xl font-bold tabular-nums truncate" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
+        <div class="text-lg sm:text-2xl font-bold tabular-nums truncate" :class="lowStockCount ? 'text-amber-600 dark:text-amber-400' : 'text-gray-900 dark:text-white'">{{ lowStockCount }}</div>
         <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.lowStock') }}</div>
       </button>
     </div>
@@ -301,6 +301,24 @@ onMounted(async () => {
             {{ row.name }}
           </button>
           <button type="button" class="ml-1.5 align-middle text-gray-400 hover:text-primary-600" :title="t('goods.history')" :aria-label="t('goods.history')" @click="openHistory(row.goodId)"><Icon name="lucide:history" class="h-3.5 w-3.5" /></button>
+        </template>
+        <template #mobile-card="{ row }">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ row.name }}</div>
+              <div v-if="row.sku" class="truncate text-xs text-gray-400">{{ row.sku }}</div>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <div class="text-base font-bold tabular-nums" :class="row.available <= 0 ? 'text-rose-600' : row.available <= 5 ? 'text-amber-600' : 'text-gray-900 dark:text-white'">{{ row.available }}</div>
+              <div class="text-[11px] text-gray-400">{{ t('goods.available') }}</div>
+            </div>
+          </div>
+          <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <span v-if="row.reservedQuantity">{{ t('goods.reserved') }} {{ row.reservedQuantity }}</span>
+            <span class="tabular-nums">{{ t('goods.costPrice') }} {{ money(row.costCents) }}</span>
+            <span class="ml-auto font-semibold tabular-nums text-gray-700 dark:text-gray-200">{{ money(row.valueCents) }}</span>
+          </div>
+          <button type="button" class="sr-only" @click.stop="openHistory(row.goodId)">{{ t('goods.history') }}</button>
         </template>
       </AppTable>
     </div>

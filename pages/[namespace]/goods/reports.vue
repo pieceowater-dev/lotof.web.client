@@ -190,7 +190,7 @@ onMounted(async () => {
     <div class="flex items-center justify-between gap-3 flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.reports') }}</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.reportsSubtitle') }}</p>
+        <p class="hidden sm:block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.reportsSubtitle') }}</p>
       </div>
       <GoodsRegisterButton />
     </div>

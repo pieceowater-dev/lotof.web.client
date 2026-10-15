@@ -41,6 +41,9 @@ const STATUS_GROUPS: Record<Exclude<StatusGroup, ''>, CallStatus[]> = {
   OTHER: ['BUSY', 'CANCELLED', 'NOT_AVAILABLE', 'NOT_ALLOWED', 'NOT_FOUND'],
 };
 const favouritesOnly = ref(false);
+// Phones: direction / status / favourites fold behind one "Filters · N" button.
+const showMoreFilters = ref(false);
+const moreFilterCount = computed(() => (direction.value ? 1 : 0) + (statusGroup.value ? 1 : 0) + (favouritesOnly.value ? 1 : 0));
 const period = ref<'today' | '7d' | '30d' | 'all'>('7d');
 const page = ref(1);
 const templates = ref<CallCommentTemplate[]>([]);
@@ -251,8 +254,11 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
                 {{ t(p === 'today' ? 'contacts.periodToday' : p === '7d' ? 'contacts.period7d' : p === '30d' ? 'contacts.period30d' : 'contacts.periodAll') }}
               </button>
             </div>
+            <button type="button" class="pill-filter sm:!hidden" :class="moreFilterCount ? 'pill-filter--active' : ''" :aria-expanded="showMoreFilters" @click="showMoreFilters = !showMoreFilters">
+              <Icon name="lucide:sliders-horizontal" class="w-3.5 h-3.5" />{{ t('contacts.callsFilters') }}<template v-if="moreFilterCount"> · {{ moreFilterCount }}</template>
+            </button>
           </div>
-          <div class="flex items-center gap-1.5 flex-wrap">
+          <div class="items-center gap-1.5 flex-wrap" :class="showMoreFilters ? 'flex' : 'hidden sm:flex'">
             <button type="button" class="pill-filter" :class="direction === '' ? 'pill-filter--active' : ''" @click="direction = ''">{{ t('contacts.callsAll') }}</button>
             <button type="button" class="pill-filter" :class="direction === 'IN' ? 'pill-filter--active' : ''" @click="direction = 'IN'"><Icon name="lucide:phone-incoming" class="w-3.5 h-3.5" />{{ t('contacts.callIn') }}</button>
             <button type="button" class="pill-filter" :class="direction === 'OUT' ? 'pill-filter--active' : ''" @click="direction = 'OUT'"><Icon name="lucide:phone-outgoing" class="w-3.5 h-3.5" />{{ t('contacts.callOut') }}</button>
@@ -268,9 +274,9 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
           </div>
           <div v-if="list && list.info.count" class="flex items-center gap-1.5 flex-wrap text-xs">
             <span class="at-chip">{{ list.info.count }} {{ t('contacts.callsCountSuffix') }}</span>
-            <span class="at-chip">{{ t('contacts.callMin') }} {{ mmss(list.minDurationSec) }}</span>
-            <span class="at-chip">{{ t('contacts.callAvg') }} {{ mmss(list.avgDurationSec) }}</span>
-            <span class="at-chip">{{ t('contacts.callMax') }} {{ mmss(list.maxDurationSec) }}</span>
+            <span class="at-chip hidden sm:inline-flex">{{ t('contacts.callMin') }} {{ mmss(list.minDurationSec) }}</span>
+            <span class="at-chip hidden sm:inline-flex">{{ t('contacts.callAvg') }} {{ mmss(list.avgDurationSec) }}</span>
+            <span class="at-chip hidden sm:inline-flex">{{ t('contacts.callMax') }} {{ mmss(list.maxDurationSec) }}</span>
           </div>
         </div>
 

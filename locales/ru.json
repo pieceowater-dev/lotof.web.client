@@ -1499,6 +1499,7 @@
     "callComment": "Комментарий к звонку",
     "callRating": "Оценка",
     "callFavourites": "Избранные",
+    "callsFilters": "Фильтры",
     "callMin": "мин",
     "callAvg": "средн.",
     "callMax": "макс",
@@ -3300,6 +3301,7 @@
   "goods": {
     "register": "Касса",
     "openRegister": "Открыть Кассу",
+    "positionsShort": "поз.",
     "warehouse": "Склад",
     "warehouseSubtitle": "Остатки товаров на выбранном складе в реальном времени",
     "settings": "Настройки",

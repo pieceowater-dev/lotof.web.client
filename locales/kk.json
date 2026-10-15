@@ -1499,6 +1499,7 @@
     "callComment": "Қоңырауға пікір",
     "callRating": "Баға",
     "callFavourites": "Таңдаулылар",
+    "callsFilters": "Сүзгілер",
     "callMin": "мин",
     "callAvg": "орт.",
     "callMax": "макс",
@@ -2808,6 +2809,7 @@
   "goods": {
     "register": "Касса",
     "openRegister": "Кассаны ашу",
+    "positionsShort": "поз.",
     "warehouse": "Қойма",
     "warehouseSubtitle": "Таңдалған қоймадағы тауар қалдықтары нақты уақытта",
     "settings": "Баптаулар",

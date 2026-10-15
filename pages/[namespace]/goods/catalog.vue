@@ -269,7 +269,7 @@ onMounted(loadAll);
     <div class="flex items-center justify-between gap-3 flex-shrink-0">
       <div>
         <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.catalog') }}</h1>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.catalogSubtitle') }}</p>
+        <p class="hidden sm:block text-sm text-gray-600 dark:text-gray-400 mt-0.5">{{ t('goods.catalogSubtitle') }}</p>
       </div>
       <GoodsRegisterButton />
     </div>
@@ -318,7 +318,7 @@ onMounted(loadAll);
 
     <div v-if="activeTab === 'goods'" class="flex-1 min-h-0 flex flex-col mt-3 gap-3">
       <div class="flex-1 min-h-0">
-        <AppTable soft :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package">
+        <AppTable soft :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package" @select="(r: any) => openEditGood(goodById.get(r.id)!)">
           <template #name-data="{ row }">
             <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
               {{ maskProfanity(row.name) }}
@@ -326,6 +326,21 @@ onMounted(loadAll);
           </template>
           <template #isActive-data="{ row }">
             <UBadge :color="row.isActive ? 'green' : 'gray'" variant="soft">{{ row.isActive ? t('goods.goodActive') : t('goods.goodInactive') }}</UBadge>
+          </template>
+          <template #mobile-card="{ row }">
+            <div class="flex items-start justify-between gap-3">
+              <div class="min-w-0">
+                <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ maskProfanity(row.name) }}</div>
+                <div v-if="row.sku" class="truncate text-xs text-gray-400">{{ row.sku }}</div>
+              </div>
+              <div class="flex-shrink-0 text-right">
+                <div class="text-base font-bold tabular-nums text-gray-900 dark:text-white">{{ row.salePriceCents }}</div>
+                <div class="text-[11px]" :class="row.isActive ? 'text-emerald-600' : 'text-gray-400'">{{ row.isActive ? t('goods.goodActive') : t('goods.goodInactive') }}</div>
+              </div>
+            </div>
+            <div class="mt-1 flex justify-end" @click.stop>
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :aria-label="t('common.delete')" :loading="deletingGoodId === row.id" @click="deleteGood(goodById.get(row.id)!)" />
+            </div>
           </template>
           <template #actions-data="{ row }">
             <div class="flex justify-end">
