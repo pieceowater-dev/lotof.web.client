@@ -5,6 +5,7 @@ import { ref, computed, watch } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '#imports';
+import { useConfirm } from '@/composables/useConfirm';
 import { maskProfanity } from '@/utils/profanityFilter';
 import type { Segment, SegmentRule } from '@/api/contacts/segments';
 import { 
@@ -19,6 +20,7 @@ import {
 
 const { t } = useI18n();
 const toast = useToast();
+const { confirm } = useConfirm();
 const { token } = useAuth();
 
 const props = defineProps<{
@@ -46,7 +48,7 @@ async function loadSegments() {
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to load segments',
+      description: t('contacts.segmentsLoadFailed'),
       color: 'red',
     });
   } finally {
@@ -62,7 +64,7 @@ async function loadSegmentRules(segmentId: string) {
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to load segment rules',
+      description: t('contacts.segmentRulesLoadFailed'),
       color: 'red',
     });
   }
@@ -79,13 +81,13 @@ async function handleCreateSegment() {
     emit('segmentCreated', newSegment.createSegment);
     toast.add({
       title: t('common.success'),
-      description: 'Segment created successfully',
+      description: t('contacts.segmentCreated'),
       color: 'emerald',
     });
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to create segment',
+      description: t('contacts.segmentCreateFailed'),
       color: 'red',
     });
   } finally {
@@ -95,6 +97,8 @@ async function handleCreateSegment() {
 
 async function handleDeleteSegment(id: string) {
   if (!token.value) return;
+  const name = segments.value.find((x) => x.id === id)?.name || '';
+  if (!(await confirm({ message: t('contacts.segmentDeleteConfirm', { name }), confirmLabel: t('common.delete') }))) return;
   try {
     await deleteSegment(token.value, id);
     segments.value = segments.value.filter(s => s.id !== id);
@@ -104,15 +108,25 @@ async function handleDeleteSegment(id: string) {
     }
     toast.add({
       title: t('common.success'),
-      description: 'Segment deleted successfully',
+      description: t('contacts.segmentDeleted'),
       color: 'emerald',
     });
   } catch (error) {
     toast.add({
       title: t('common.error'),
-      description: 'Failed to delete segment',
+      description: t('contacts.segmentDeleteFailed'),
       color: 'red',
     });
+  }
+}
+
+async function handleDeleteRule(ruleId: string) {
+  if (!token.value || !selectedSegment.value) return;
+  try {
+    await deleteSegmentRule(token.value, ruleId);
+    await loadSegmentRules(selectedSegment.value.id);
+  } catch (error) {
+    toast.add({ title: t('common.error'), description: t('contacts.segmentDeleteFailed'), color: 'red' });
   }
 }
 
@@ -133,7 +147,7 @@ watch(() => props.isOpen, (newVal) => {
       class="at-modal"
       :ui="atModalUi"
     :model-value="isOpen"
-    title="Manage Segments"
+    :title="t('contacts.segmentsManage')"
     @update:model-value="$emit('close')"
   >
     <div class="p-7 sm:p-8 max-h-[88vh] overflow-y-auto space-y-4">
@@ -141,7 +155,7 @@ watch(() => props.isOpen, (newVal) => {
       <div class="flex gap-2">
         <UInput
           v-model="newSegmentName"
-          placeholder="New segment name..."
+          :placeholder="t('contacts.segmentNamePlaceholder')"
           size="sm"
           @keyup.enter="handleCreateSegment"
         />
@@ -158,7 +172,7 @@ watch(() => props.isOpen, (newVal) => {
         <!-- Segments list -->
         <div class="space-y-2">
           <h3 class="text-sm font-semibold">
-            Segments
+            {{ t('contacts.segments') }}
           </h3>
           <div v-if="loading" class="py-4"><AppSkeleton variant="list" :rows="4" /></div>
           <div
@@ -186,6 +200,7 @@ watch(() => props.isOpen, (newVal) => {
                   color="red"
                   variant="ghost"
                   icon="lucide:trash-2"
+                  :aria-label="t('common.delete')"
                   @click.stop="handleDeleteSegment(segment.id)"
                 />
               </div>
@@ -195,7 +210,7 @@ watch(() => props.isOpen, (newVal) => {
               v-if="!loading && segments.length === 0"
               class="text-center py-8 text-gray-500 text-sm"
             >
-              No segments yet
+              {{ t('contacts.noSegments') }}
             </div>
           </div>
         </div>
@@ -203,7 +218,7 @@ watch(() => props.isOpen, (newVal) => {
         <!-- Segment rules -->
         <div class="space-y-2">
           <h3 class="text-sm font-semibold">
-            Rules
+            {{ t('contacts.segmentRules') }}
           </h3>
           <div
             v-if="selectedSegment"
@@ -228,7 +243,8 @@ watch(() => props.isOpen, (newVal) => {
                   color="red"
                   variant="ghost"
                   icon="lucide:trash-2"
-                  @click="token && deleteSegmentRule(token, rule.id)"
+                  :aria-label="t('common.delete')"
+                  @click="handleDeleteRule(rule.id)"
                 />
               </div>
             </div>
@@ -237,14 +253,14 @@ watch(() => props.isOpen, (newVal) => {
               v-if="segmentRules.length === 0"
               class="text-center py-8 text-gray-500 text-sm"
             >
-              No rules for this segment
+              {{ t('contacts.noSegmentRules') }}
             </div>
           </div>
           <div
             v-else
             class="text-center py-8 text-gray-500 text-sm"
           >
-            Select a segment to view rules
+            {{ t('contacts.selectSegmentHint') }}
           </div>
         </div>
       </div>

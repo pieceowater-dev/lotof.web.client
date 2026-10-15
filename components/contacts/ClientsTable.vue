@@ -27,6 +27,7 @@ const emit = defineEmits<{
   (e: 'rowClick', client: ClientRow): void;
   (e: 'update:searchQuery', value: string): void;
   (e: 'update:selectedTags', value: Array<{ id: string; name: string }>): void;
+  (e: 'update:selection', value: ClientRow[]): void;
   (e: 'update:page', value: number): void;
   (e: 'update:pageSize', value: number): void;
   (e: 'update:sort', value: { field: string; direction: 'asc' | 'desc' }): void;
@@ -292,6 +293,8 @@ function getClientName(client: ClientRow): string {
 // Row selection (kept across pages by id) + Excel of the selected clients.
 const selectedRows = ref<Record<string, ClientRow>>({});
 const selectedCount = computed(() => Object.keys(selectedRows.value).length);
+// The page owns the single export button, so it needs to know what is selected.
+watch(selectedRows, (rows) => emit('update:selection', Object.values(rows)));
 const pageAllSelected = computed(() => paginatedClients.value.length > 0 && paginatedClients.value.every((c) => !!selectedRows.value[c.client.id]));
 function toggleRow(c: ClientRow) {
   const next = { ...selectedRows.value };
@@ -304,23 +307,6 @@ function togglePage() {
   else paginatedClients.value.forEach((c) => { next[c.client.id] = c; });
   selectedRows.value = next;
 }
-async function exportSelected() {
-  const XLSX = await import('xlsx');
-  const data = Object.values(selectedRows.value).map((c) => ({
-    [t('contacts.name') || 'Name']: getClientName(c),
-    [t('contacts.type') || 'Type']: c.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity'),
-    [t('contacts.contacts') || 'Contacts']: (c.contacts || []).map((x) => x.value).join(', '),
-    [t('contacts.identifier') || 'BIN/IIN']: c.legalEntity?.binIin || '',
-    [t('contacts.additionalInfo') || 'Info']: c.additionalInfo || '',
-    [t('contacts.status') || 'Status']: c.client.status,
-    [t('contacts.tags') || 'Tags']: (c.tags || []).map((x) => x.name).join(', '),
-    [t('contacts.createdAt') || 'Created']: new Date(c.client.createdAt).toLocaleString(),
-  }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), 'clients');
-  XLSX.writeFile(wb, `clients-${new Date().toISOString().slice(0, 10)}.xlsx`);
-}
-
 function getClientIdentifier(client: ClientRow): string {
   if (client.client.clientType === 'LEGAL' && client.legalEntity?.binIin) {
     return client.legalEntity.binIin;
@@ -514,10 +500,8 @@ function addTagToFilter(tagId: string, tagName: string) {
             @update:search-query="(query) => emit('update:searchQuery', query)"
           />
         </div>
-        <button v-if="selectedCount" type="button" class="at-btn !px-3 !py-1.5 flex-shrink-0" @click="exportSelected">
-          <UIcon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel · {{ selectedCount }}
-        </button>
-        <button v-if="selectedCount" type="button" class="at-btn !px-2 !py-1.5 flex-shrink-0" :title="t('common.clear') || 'Clear'" @click="selectedRows = {}">
+        <button v-if="selectedCount" type="button" class="at-btn !px-3 !py-1.5 flex-shrink-0" :title="t('common.clear') || 'Clear'" @click="selectedRows = {}">
+          <span class="tabular-nums">{{ t('contacts.selectedCount', { n: selectedCount }) }}</span>
           <UIcon name="lucide:x" class="h-4 w-4" />
         </button>
         <div class="relative hidden flex-shrink-0 sm:block">
@@ -562,15 +546,31 @@ function addTagToFilter(tagId: string, tagName: string) {
           <button type="button" class="mt-0.5 flex-shrink-0" :aria-label="t('common.select')" @click.stop="toggleRow(client)">
             <UIcon :name="selectedRows[client.client.id] ? 'lucide:check-square' : 'lucide:square'" class="h-5 w-5" :class="selectedRows[client.client.id] ? 'text-accent-600' : 'text-gray-400'" />
           </button>
-          <div class="min-w-0 flex-1 space-y-1">
+          <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <UIcon :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user' : 'lucide:building-2'" class="h-4 w-4 flex-shrink-0 text-gray-400" />
-              <span class="truncate font-semibold text-gray-900 dark:text-white">{{ getClientName(client) }}</span>
-              <span class="ml-auto flex-shrink-0 !px-2 !py-0.5 !text-[11px]" :class="getStatusBadgeClass(client.client.status)">{{ getStatusLabel(client.client.status) }}</span>
+              <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-blue-300">
+                <UIcon :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user-round' : 'lucide:building-2'" class="h-4 w-4" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class="truncate font-semibold text-gray-900 dark:text-white">{{ getClientName(client) }}</span>
+                  <span v-if="client.client.status !== 'ACTIVE'" class="flex-shrink-0 !px-2 !py-0.5 !text-[11px]" :class="getStatusBadgeClass(client.client.status)">{{ getStatusLabel(client.client.status) }}</span>
+                </div>
+                <div v-if="client.legalEntity?.binIin || client.additionalInfo" class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  <template v-if="client.legalEntity?.binIin">{{ client.legalEntity.binIin }}</template><template v-if="client.legalEntity?.binIin && client.additionalInfo"> · </template>{{ client.additionalInfo }}
+                </div>
+              </div>
             </div>
-            <a v-if="getPrimaryPhone(client)" :href="`tel:${getPrimaryPhone(client)?.value}`" class="block text-sm text-accent-700 dark:text-blue-300" @click.stop>{{ getPrimaryPhoneDisplay(client) }}</a>
-            <div v-if="getClientTags(client).length" class="flex flex-wrap gap-1">
-              <span v-for="tg in getClientTags(client)" :key="tg.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ tg.name }}</span>
+            <div class="mt-2 flex items-center gap-2">
+              <a v-if="getPrimaryPhone(client)" :href="`tel:${getPrimaryPhone(client)?.value}`" class="at-btn !px-3 !py-1.5" @click.stop>
+                <UIcon name="lucide:phone" class="h-4 w-4" /><span class="text-sm tabular-nums">{{ getPrimaryPhoneDisplay(client) }}</span>
+              </a>
+              <span v-else class="text-xs italic text-gray-400">{{ t('contacts.noPhone') || 'No phone' }}</span>
+              <span class="ml-auto flex-shrink-0 text-[11px] text-gray-400">{{ new Date(client.client.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}</span>
+            </div>
+            <div v-if="getClientTags(client).length" class="mt-2 flex flex-wrap gap-1">
+              <span v-for="tg in getClientTags(client).slice(0, 3)" :key="tg.id" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">{{ tg.name }}</span>
+              <span v-if="getClientTags(client).length > 3" class="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] text-gray-500 dark:bg-gray-800">+{{ getClientTags(client).length - 3 }}</span>
             </div>
           </div>
         </div>

@@ -77,12 +77,15 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
         <div
           v-for="(row, i) in rows"
           :key="row.id ?? i"
-          class="space-y-2 px-4 py-3 active:bg-gray-50 dark:active:bg-white/5"
+          class="px-4 py-3 active:bg-gray-50 dark:active:bg-white/5" :class="$slots['mobile-card'] ? '' : 'space-y-2'"
           role="button"
           tabindex="0"
           @click="emit('select', row)"
           @keydown.enter="emit('select', row)"
         >
+          <!-- A page may draw its own, denser phone card (identity + the deciding facts + the next action). -->
+          <slot v-if="$slots['mobile-card']" name="mobile-card" :row="row" />
+          <template v-else>
           <div v-if="titleCol" class="min-w-0 text-sm font-semibold">
             <slot :name="`${titleCol.key}-data`" :row="row" :column="titleCol">{{ row[titleCol.key] }}</slot>
           </div>
@@ -97,6 +100,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           <div v-if="actionCols.length" class="flex justify-end" @click.stop>
             <slot v-for="col in actionCols" :key="col.key" :name="`${col.key}-data`" :row="row" :column="col" />
           </div>
+          </template>
         </div>
       </div>
 

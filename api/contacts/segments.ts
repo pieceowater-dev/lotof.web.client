@@ -19,9 +19,7 @@ export interface SegmentListResponse {
   segments: {
     rows: Segment[];
     info: {
-      total: number;
-      limit: number;
-      offset: number;
+      count: number;
     };
   };
 }
@@ -30,9 +28,7 @@ export interface SegmentRulesResponse {
   segmentRules: {
     rows: SegmentRule[];
     info: {
-      total: number;
-      limit: number;
-      offset: number;
+      count: number;
     };
   };
 }
@@ -46,9 +42,7 @@ const LIST_SEGMENTS_QUERY = gql`
         createdBy
       }
       info {
-        total
-        limit
-        offset
+        count
       }
     }
   }
@@ -65,9 +59,7 @@ const SEGMENT_RULES_QUERY = gql`
         value
       }
       info {
-        total
-        limit
-        offset
+        count
       }
     }
   }

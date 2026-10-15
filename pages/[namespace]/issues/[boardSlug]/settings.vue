@@ -14,6 +14,8 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { getApiBasePath } from '@/utils/api-base';
 import { COLUMN_COLOR_PRESETS } from '@/utils/taskDisplay';
+import SettingsSection from '@/components/ui/SettingsSection.vue';
+import SettingsRow from '@/components/ui/SettingsRow.vue';
 import TaskTypeModal from '@/components/tasks/TaskTypeModal.vue';
 import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
@@ -436,9 +438,6 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
         <UButton icon="lucide:arrow-left" size="xs" color="gray" variant="soft" @click="goBack">
           {{ t('app.back') || 'Back' }}
         </UButton>
-        <UButton color="primary" size="xs" icon="lucide:check" :loading="saving" :disabled="!isFormValid || saving" @click="handleSave">
-          {{ t('app.save') || 'Save' }}
-        </UButton>
       </div>
     </div>
 
@@ -461,302 +460,223 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
         </div>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto">
-        <div class="max-w-2xl w-full space-y-4 pb-8">
-          <template v-if="activeTab === 'general'">
-            <UCard :ui="panelUi">
-              <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
-                <UIcon name="lucide:layout-panel-top" class="w-3.5 h-3.5" />
-                {{ t('tasks.sectionGeneral') || 'General' }}
-              </h4>
-              <div class="space-y-3">
-                <UFormGroup :label="t('tasks.boardName') || 'Name'" required>
-                  <UInput v-model="form.name" size="lg" :placeholder="t('tasks.boardNamePlaceholder') || 'Delivery, Marketing, IT...'" />
-                </UFormGroup>
-                <label class="flex items-center gap-2 text-sm w-fit cursor-pointer">
-                  <UToggle v-model="form.isActive" />
-                  {{ t('tasks.isActive') || 'Active' }}
-                </label>
-              </div>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <div class="flex items-start justify-between gap-3 mb-1">
-                <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                  <UIcon name="lucide:tags" class="w-3.5 h-3.5" />
-                  {{ t('tasks.taskTypes') || 'Issue types' }}
-                </h4>
-                <UButton icon="lucide:plus" size="2xs" color="gray" variant="soft" @click="openCreateTaskType">
-                  {{ t('tasks.addTaskType') || 'Add issue type' }}
-                </UButton>
-              </div>
-              <p class="text-xs text-gray-400 mb-3">{{ t('tasks.taskTypesHint') || 'Categories for issues on this board, each with its own icon, color and optional SLA.' }}</p>
-
-              <p v-if="!taskTypes.length" class="text-sm text-gray-400 text-center py-6">{{ t('tasks.noTaskTypes') || 'No issue types yet' }}</p>
-              <div v-else class="space-y-2">
-                <div
-                  v-for="tt in taskTypes"
-                  :key="tt.id"
-                  class="flex items-center gap-3 rounded-lg border border-gray-200 dark:border-gray-800 p-2.5"
-                >
-                  <span class="flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0" :style="{ backgroundColor: tt.color || '#9ca3af' }">
-                    <UIcon :name="tt.icon || 'lucide:shapes'" class="w-4 h-4 text-white" />
-                  </span>
-                  <div class="min-w-0 flex-1">
-                    <div class="font-medium text-sm truncate">{{ tt.name }}</div>
-                    <div class="text-xs text-gray-400 flex items-center gap-2">
-                      <span v-if="tt.requiresLocation" class="inline-flex items-center gap-1"><UIcon name="lucide:map-pin" class="w-3 h-3" />{{ t('tasks.requiresLocationShort') || 'Location' }}</span>
-                      <span v-if="tt.slaMinutes" class="inline-flex items-center gap-1"><UIcon name="lucide:timer" class="w-3 h-3" />{{ tt.slaMinutes }} {{ t('tasks.minutesShort') || 'min' }}</span>
-                    </div>
+      <div class="flex-1 min-h-0 overflow-y-auto -mx-1 px-1">
+        <div class="w-full max-w-6xl pb-4">
+          <!-- General -->
+          <div v-if="activeTab === 'general'" class="grid items-start gap-4 lg:grid-cols-2">
+            <div class="space-y-4">
+              <SettingsSection icon="lucide:layout-panel-top" :title="t('tasks.sectionGeneral') || 'General'">
+                <div class="space-y-4">
+                  <UFormGroup :label="t('tasks.boardName') || 'Name'" required>
+                    <UInput v-model="form.name" size="lg" :placeholder="t('tasks.boardNamePlaceholder') || 'Delivery, Marketing, IT...'" />
+                  </UFormGroup>
+                  <div class="border-t border-gray-100 pt-4 dark:border-white/10">
+                    <SettingsRow v-model="form.isActive" :title="t('tasks.isActive') || 'Active'" />
                   </div>
-                  <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEditTaskType(tt)" />
-                  <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" :disabled="taskTypes.length <= 1" :title="taskTypes.length <= 1 ? (t('tasks.cannotDeleteLastTaskType') || 'A board needs at least one issue type') : undefined" @click="handleDeleteTaskType(tt)" />
                 </div>
-              </div>
-            </UCard>
+              </SettingsSection>
 
-            <h4 class="mt-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              <UIcon name="lucide:list-checks" class="w-3.5 h-3.5" />
-              {{ t('tasks.flagGroupWork') }}
-            </h4>
-            <UCard :ui="panelUi">
-              <div class="space-y-4 divide-y divide-gray-100 dark:divide-gray-800 [&>*:not(:first-child)]:pt-4">
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.handoffAccept" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:forward" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagHandoffAccept') }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagHandoffAcceptDesc') }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.closeWhenAllDone" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:users-round" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCloseAllDone') }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCloseAllDoneDesc') }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.cycles" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:repeat" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagCycles') || 'Sprints' }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagCyclesDesc') || 'Group issues into time-boxed sprints on the board, with a backlog for unassigned issues.' }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.rolloverOverdue" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:calendar-clock" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagRollover') }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagRolloverDesc') }}</span>
-                  </span>
-                </label>
-              </div>
-            </UCard>
-            <h4 class="mt-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400">
-              <UIcon name="lucide:truck" class="w-3.5 h-3.5" />
-              {{ t('tasks.flagGroupDelivery') }}
-            </h4>
-            <UCard :ui="panelUi">
-              <div class="space-y-4 divide-y divide-gray-100 dark:divide-gray-800 [&>*:not(:first-child)]:pt-4">
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.geoMap" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:map-pin" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagGeoMap') || 'Map & location' }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagGeoMapDesc') || 'Shows an address and map-pin field when creating an issue, so its location is captured up front.' }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.zenMode" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:smartphone" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagZenMode') || 'Zen Mode (courier PWA)' }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagZenModeDesc') || 'Includes this board\'s issues in the installable "My issues" mobile view for whoever is assigned to them.' }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.onePerOrder" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:link-2" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagOnePerOrder') }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagOnePerOrderDesc') }}</span>
-                  </span>
-                </label>
-                <label class="flex items-start gap-3 cursor-pointer">
-                  <UToggle v-model="form.deliveryMoney" size="sm" class="mt-0.5" />
-                  <span>
-                    <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:banknote" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagDeliveryMoney') }}</span>
-                    <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagDeliveryMoneyDesc') }}</span>
-                  </span>
-                </label>
-              </div>
-            </UCard>
-          </template>
-
-          <template v-else-if="activeTab === 'columns'">
-          <UCard :ui="panelUi">
-            <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-              <UIcon name="lucide:columns-3" class="w-3.5 h-3.5" />
-              {{ t('tasks.statuses') || 'Kanban columns' }}
-            </h4>
-            <p class="text-xs text-gray-400 mb-3">{{ t('tasks.statusesHint') || 'Mark the final column as terminal so closed issues are tracked correctly' }}</p>
-            <div class="space-y-2">
-              <div v-for="(s, idx) in statuses" :key="idx" class="flex items-center gap-2 rounded-lg border border-gray-100 dark:border-gray-800 p-2 overflow-x-auto">
-                <div class="flex flex-col flex-shrink-0">
-                  <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="idx === 0" :title="t('tasks.moveColumnUp') || 'Move left'" @click="moveStatus(idx, -1)" />
-                  <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="idx === statuses.length - 1" :title="t('tasks.moveColumnDown') || 'Move right'" @click="moveStatus(idx, 1)" />
+              <SettingsSection
+                icon="lucide:tags"
+                :title="t('tasks.taskTypes') || 'Issue types'"
+                :description="t('tasks.taskTypesHint') || 'Categories for issues on this board, each with its own icon, color and optional SLA.'"
+              >
+                <template #actions>
+                  <button type="button" class="at-btn !px-3 !py-1.5" @click="openCreateTaskType">
+                    <Icon name="lucide:plus" class="h-4 w-4" />{{ t('tasks.addTaskType') || 'Add issue type' }}
+                  </button>
+                </template>
+                <p v-if="!taskTypes.length" class="py-6 text-center text-sm text-gray-400">{{ t('tasks.noTaskTypes') || 'No issue types yet' }}</p>
+                <div v-else class="space-y-2">
+                  <div v-for="tt in taskTypes" :key="tt.id" class="at-row flex items-center gap-3">
+                    <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full" :style="{ backgroundColor: tt.color || '#9ca3af' }">
+                      <UIcon :name="tt.icon || 'lucide:shapes'" class="h-4 w-4 text-white" />
+                    </span>
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-sm font-semibold">{{ tt.name }}</div>
+                      <div v-if="tt.requiresLocation || tt.slaMinutes" class="flex items-center gap-2 text-xs text-gray-400">
+                        <span v-if="tt.requiresLocation" class="inline-flex items-center gap-1"><UIcon name="lucide:map-pin" class="h-3 w-3" />{{ t('tasks.requiresLocationShort') || 'Location' }}</span>
+                        <span v-if="tt.slaMinutes" class="inline-flex items-center gap-1"><UIcon name="lucide:timer" class="h-3 w-3" />{{ tt.slaMinutes }} {{ t('tasks.minutesShort') || 'min' }}</span>
+                      </div>
+                    </div>
+                    <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" :aria-label="t('app.edit') || 'Edit'" @click="openEditTaskType(tt)" />
+                    <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" :aria-label="t('common.delete') || 'Delete'" :disabled="taskTypes.length <= 1" :title="taskTypes.length <= 1 ? (t('tasks.cannotDeleteLastTaskType') || 'A board needs at least one issue type') : undefined" @click="handleDeleteTaskType(tt)" />
+                  </div>
                 </div>
-                <div class="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    v-for="preset in COLUMN_COLOR_PRESETS"
-                    :key="preset.name"
-                    type="button"
-                    class="h-5 w-5 rounded-full flex-shrink-0 ring-offset-1 ring-offset-white dark:ring-offset-gray-900"
-                    :class="[preset.dotClass, s.color === preset.value && 'ring-2 ring-primary-500']"
-                    :title="preset.name"
-                    @click="s.color = preset.value"
-                  />
-                </div>
-                <UInput v-model="s.label" size="sm" class="flex-1 min-w-[140px]" :placeholder="t('tasks.statusLabelPlaceholder') || 'Column name'" />
-                <label class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer">
-                  <UCheckbox v-model="s.isTerminal" />
-                  {{ t('tasks.statusTerminal') || 'Terminal' }}
-                </label>
-                <label class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer" :title="t('tasks.statusAskReason')">
-                  <UCheckbox v-model="s.askReason" />
-                  <span class="hidden sm:inline">{{ t('tasks.statusAskReasonShort') }}</span>
-                </label>
-                <label v-if="!s.isTerminal" class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 flex-shrink-0 select-none cursor-pointer" :title="t('tasks.statusRequiredHint') || 'Issues must pass through this column before they can be closed'">
-                  <UCheckbox v-model="s.isRequired" />
-                  {{ t('tasks.statusRequired') || 'Required' }}
-                </label>
-                <USelectMenu
-                  v-if="s.isTerminal"
-                  v-model="s.outcome"
-                  :options="OUTCOME_OPTIONS"
-                  value-attribute="value"
-                  option-attribute="label"
-                  size="sm"
-                  class="w-32 flex-shrink-0"
-                  :popper="{ strategy: 'fixed' }"
-                  :title="t('tasks.statusOutcomeHint') || 'Funnel analytics splits closed deals into won vs lost by this'"
-                >
-                  <template #label>
-                    <span class="truncate">{{ OUTCOME_OPTIONS.find((o) => o.value === s.outcome)?.label || (t('tasks.statusOutcome') || 'Outcome') }}</span>
-                  </template>
-                </USelectMenu>
-                <USelectMenu
-                  v-if="menuIntegrationEnabled"
-                  v-model="s.mapsTo"
-                  :options="ORDER_STATUS_OPTIONS"
-                  value-attribute="value"
-                  option-attribute="label"
-                  size="sm"
-                  class="w-36 flex-shrink-0"
-                  :popper="{ strategy: 'fixed' }"
-                  :title="t('tasks.statusMapsToHint') || 'When an issue enters this column, set the linked Menu order to this status'"
-                >
-                  <template #label>
-                    <span class="truncate">{{ ORDER_STATUS_OPTIONS.find((o) => o.value === s.mapsTo)?.label || (t('tasks.statusMapsTo') || 'Order status') }}</span>
-                  </template>
-                </USelectMenu>
-                <UButton icon="lucide:plus" size="2xs" color="gray" variant="ghost" class="flex-shrink-0" :title="t('tasks.insertColumnAfter') || 'Insert column here'" @click="insertStatusAfter(idx)" />
-                <UButton icon="lucide:x" size="2xs" color="gray" variant="ghost" class="flex-shrink-0" :disabled="statuses.length <= 1" @click="removeStatus(idx)" />
-              </div>
-              <UButton icon="lucide:plus" size="xs" color="gray" variant="soft" @click="addStatus">
-                {{ t('tasks.addStatus') || 'Add column' }}
-              </UButton>
+              </SettingsSection>
             </div>
-          </UCard>
 
-          <UCard v-if="menuIntegrationEnabled" :ui="panelUi">
-            <div class="flex items-start justify-between gap-3">
-              <span>
-                <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:zap" class="w-4 h-4 text-gray-400" />{{ t('tasks.automations') || 'Automations' }}</span>
-                <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue enters a mapped column.' }}</span>
-              </span>
-              <UButton icon="lucide:zap" size="2xs" color="gray" variant="soft" class="flex-shrink-0" @click="isAutomationsOpen = true">
-                {{ t('tasks.manageAutomations') || 'Manage' }}
-              </UButton>
+            <div class="space-y-4">
+              <SettingsSection icon="lucide:list-checks" :title="t('tasks.flagGroupWork')">
+                <div class="divide-y divide-gray-100 dark:divide-white/10">
+                  <SettingsRow v-model="form.handoffAccept" icon="lucide:forward" :title="t('tasks.flagHandoffAccept')" :description="t('tasks.flagHandoffAcceptDesc')" />
+                  <SettingsRow v-model="form.closeWhenAllDone" icon="lucide:users-round" :title="t('tasks.flagCloseAllDone')" :description="t('tasks.flagCloseAllDoneDesc')" />
+                  <SettingsRow v-model="form.cycles" icon="lucide:repeat" :title="t('tasks.flagCycles') || 'Sprints'" :description="t('tasks.flagCyclesDesc') || 'Group issues into time-boxed sprints on the board, with a backlog for unassigned issues.'" />
+                  <SettingsRow v-model="form.rolloverOverdue" icon="lucide:calendar-clock" :title="t('tasks.flagRollover')" :description="t('tasks.flagRolloverDesc')" />
+                </div>
+              </SettingsSection>
+
+              <SettingsSection icon="lucide:truck" :title="t('tasks.flagGroupDelivery')">
+                <div class="divide-y divide-gray-100 dark:divide-white/10">
+                  <SettingsRow v-model="form.geoMap" icon="lucide:map-pin" :title="t('tasks.flagGeoMap') || 'Map & location'" :description="t('tasks.flagGeoMapDesc') || 'Shows an address and map-pin field when creating an issue, so its location is captured up front.'" />
+                  <SettingsRow v-model="form.zenMode" icon="lucide:smartphone" :title="t('tasks.flagZenMode') || 'Zen Mode (courier PWA)'" :description="t('tasks.flagZenModeDesc') || 'Includes this board\'s issues in the installable &quot;My issues&quot; mobile view for whoever is assigned to them.'" />
+                  <SettingsRow v-model="form.onePerOrder" icon="lucide:link-2" :title="t('tasks.flagOnePerOrder')" :description="t('tasks.flagOnePerOrderDesc')" />
+                  <SettingsRow v-model="form.deliveryMoney" icon="lucide:banknote" :title="t('tasks.flagDeliveryMoney')" :description="t('tasks.flagDeliveryMoneyDesc')" />
+                </div>
+              </SettingsSection>
             </div>
-          </UCard>
-          </template>
+          </div>
 
-          <template v-else-if="activeTab === 'integrations'">
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer" :class="!menuAppInstalled && 'opacity-50'">
-                <UToggle v-model="form.menuIntegration" size="sm" class="mt-0.5" :disabled="!menuAppInstalled" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:shopping-cart" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagMenuIntegrationTitle') || 'Orders integration' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagMenuIntegration') || 'Create an issue automatically from ready Menu orders' }}</span>
-                </span>
-              </label>
-              <p v-if="!menuAppInstalled" class="text-xs text-gray-400 mt-2">
-                {{ t('tasks.menuNotInstalled') || 'lota Orders is not installed in this namespace' }}
-              </p>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <label class="flex items-start gap-3 cursor-pointer" :class="!contactsAppInstalled && 'opacity-50'">
-                <UToggle v-model="form.contactsIntegration" size="sm" class="mt-0.5" :disabled="!contactsAppInstalled" />
-                <span>
-                  <span class="flex items-center gap-1.5 text-sm font-medium"><UIcon name="lucide:contact" class="w-4 h-4 text-gray-400" />{{ t('tasks.flagContactsIntegrationTitle') || 'Contacts integration' }}</span>
-                  <span class="block text-xs text-gray-400 mt-0.5">{{ t('tasks.flagContactsIntegration') || 'Link a lota Contacts client to any issue on this board' }}</span>
-                </span>
-              </label>
-              <p v-if="!contactsAppInstalled" class="text-xs text-gray-400 mt-2">
-                {{ t('tasks.contactsNotInstalled') || 'lota Contacts is not installed in this namespace' }}
-              </p>
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                <UIcon name="lucide:webhook" class="w-3.5 h-3.5" />
-                {{ t('tasks.webhookApi') || 'Webhook API' }}
-              </h4>
-              <p class="text-xs text-gray-400 mb-3">{{ t('tasks.webhookApiHint') || 'Create issues on this board from external systems using an HMAC-signed request' }}</p>
+          <!-- Kanban columns -->
+          <div v-else-if="activeTab === 'columns'" class="max-w-4xl space-y-4">
+            <SettingsSection
+              icon="lucide:columns-3"
+              :title="t('tasks.statuses') || 'Kanban columns'"
+              :description="t('tasks.statusesHint') || 'Mark the final column as terminal so closed issues are tracked correctly'"
+            >
               <div class="space-y-2">
-                <div class="flex items-center gap-2">
-                  <UInput :model-value="webhookUrl" readonly size="sm" class="flex-1 font-mono text-xs" />
-                  <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" @click="copyToClipboard(webhookUrl, 'tasks.webhookCopied', 'Copied to clipboard')" />
-                </div>
-                <div class="flex items-center gap-2">
-                  <UInput :model-value="webhookSecret" readonly size="sm" type="password" class="flex-1 font-mono text-xs" />
-                  <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" @click="copyToClipboard(webhookSecret, 'tasks.webhookCopied', 'Copied to clipboard')" />
-                  <UButton
-                    icon="lucide:refresh-cw"
-                    size="2xs"
-                    color="gray"
-                    variant="soft"
-                    :loading="regeneratingWebhook"
-                    @click="regenerateWebhookSecret"
+                <div v-for="(s, idx) in statuses" :key="idx" class="at-row flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <div class="flex flex-shrink-0 flex-col">
+                    <UButton icon="lucide:chevron-up" size="2xs" color="gray" variant="ghost" :disabled="idx === 0" :aria-label="t('tasks.moveColumnUp') || 'Move left'" :title="t('tasks.moveColumnUp') || 'Move left'" @click="moveStatus(idx, -1)" />
+                    <UButton icon="lucide:chevron-down" size="2xs" color="gray" variant="ghost" :disabled="idx === statuses.length - 1" :aria-label="t('tasks.moveColumnDown') || 'Move right'" :title="t('tasks.moveColumnDown') || 'Move right'" @click="moveStatus(idx, 1)" />
+                  </div>
+                  <div class="flex flex-shrink-0 items-center gap-1">
+                    <button
+                      v-for="preset in COLUMN_COLOR_PRESETS"
+                      :key="preset.name"
+                      type="button"
+                      class="h-5 w-5 flex-shrink-0 rounded-full ring-offset-1 ring-offset-white dark:ring-offset-gray-900"
+                      :class="[preset.dotClass, s.color === preset.value && 'ring-2 ring-primary-500']"
+                      :title="preset.name"
+                      :aria-label="preset.name"
+                      @click="s.color = preset.value"
+                    />
+                  </div>
+                  <UInput v-model="s.label" size="sm" class="min-w-[10rem] flex-1" :placeholder="t('tasks.statusLabelPlaceholder') || 'Column name'" />
+                  <div class="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                    <label class="flex flex-shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                      <UCheckbox v-model="s.isTerminal" />
+                      {{ t('tasks.statusTerminal') || 'Terminal' }}
+                    </label>
+                    <label class="flex flex-shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400" :title="t('tasks.statusAskReason')">
+                      <UCheckbox v-model="s.askReason" />
+                      <span>{{ t('tasks.statusAskReasonShort') }}</span>
+                    </label>
+                    <label v-if="!s.isTerminal" class="flex flex-shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400" :title="t('tasks.statusRequiredHint') || 'Issues must pass through this column before they can be closed'">
+                      <UCheckbox v-model="s.isRequired" />
+                      {{ t('tasks.statusRequired') || 'Required' }}
+                    </label>
+                  </div>
+                  <USelectMenu
+                    v-if="s.isTerminal"
+                    v-model="s.outcome"
+                    :options="OUTCOME_OPTIONS"
+                    value-attribute="value"
+                    option-attribute="label"
+                    size="sm"
+                    class="w-36 flex-shrink-0"
+                    :popper="{ strategy: 'fixed' }"
+                    :title="t('tasks.statusOutcomeHint') || 'Funnel analytics splits closed deals into won vs lost by this'"
                   >
-                    {{ t('tasks.webhookRegenerate') || 'Regenerate' }}
-                  </UButton>
+                    <template #label>
+                      <span class="truncate">{{ OUTCOME_OPTIONS.find((o) => o.value === s.outcome)?.label || (t('tasks.statusOutcome') || 'Outcome') }}</span>
+                    </template>
+                  </USelectMenu>
+                  <USelectMenu
+                    v-if="menuIntegrationEnabled"
+                    v-model="s.mapsTo"
+                    :options="ORDER_STATUS_OPTIONS"
+                    value-attribute="value"
+                    option-attribute="label"
+                    size="sm"
+                    class="w-40 flex-shrink-0"
+                    :popper="{ strategy: 'fixed' }"
+                    :title="t('tasks.statusMapsToHint') || 'When an issue enters this column, set the linked Menu order to this status'"
+                  >
+                    <template #label>
+                      <span class="truncate">{{ ORDER_STATUS_OPTIONS.find((o) => o.value === s.mapsTo)?.label || (t('tasks.statusMapsTo') || 'Order status') }}</span>
+                    </template>
+                  </USelectMenu>
+                  <div class="ml-auto flex flex-shrink-0 items-center">
+                    <UButton icon="lucide:plus" size="2xs" color="gray" variant="ghost" :aria-label="t('tasks.insertColumnAfter') || 'Insert column here'" :title="t('tasks.insertColumnAfter') || 'Insert column here'" @click="insertStatusAfter(idx)" />
+                    <UButton icon="lucide:x" size="2xs" color="gray" variant="ghost" :aria-label="t('common.delete') || 'Delete'" :disabled="statuses.length <= 1" @click="removeStatus(idx)" />
+                  </div>
                 </div>
-              </div>
-            </UCard>
-
-            <UCard v-if="board" :ui="panelUi">
-              <TaskTemplatesCard :board="board" :task-types="taskTypes" :ns-slug="nsSlug" :get-token="getToken" @saved="(b: TaskBoard) => { board = b }" />
-            </UCard>
-
-            <UCard :ui="panelUi">
-              <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
-                <UIcon name="lucide:globe" class="w-3.5 h-3.5" />
-                {{ t('tasks.leadForm') }}
-              </h4>
-              <p class="text-xs text-gray-400 mb-3">{{ t('tasks.leadFormHint') }}</p>
-              <div v-if="leadUrl" class="space-y-2">
-                <div class="flex items-center gap-2">
-                  <UInput :model-value="leadUrl" readonly size="sm" class="flex-1 font-mono text-xs" />
-                  <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" @click="copyToClipboard(leadUrl, 'tasks.webhookCopied', 'Copied to clipboard')" />
-                </div>
-                <UTextarea :model-value="leadSnippet" readonly :rows="6" class="font-mono text-xs" />
-                <button type="button" class="at-btn !px-3 !py-1.5" @click="copyToClipboard(leadSnippet, 'tasks.webhookCopied', 'Copied to clipboard')">
-                  <Icon name="lucide:copy" class="w-4 h-4" />{{ t('tasks.leadCopyForm') }}
+                <button type="button" class="at-btn !px-3 !py-1.5" @click="addStatus">
+                  <Icon name="lucide:plus" class="h-4 w-4" />{{ t('tasks.addStatus') || 'Add column' }}
                 </button>
-                <p class="at-hint">{{ t('tasks.leadFormNote') }}</p>
               </div>
-              <p v-else class="text-xs text-gray-400">{{ t('tasks.leadFormNoSecret') }}</p>
-            </UCard>
-          </template>
+            </SettingsSection>
+
+            <SettingsSection
+              v-if="menuIntegrationEnabled"
+              icon="lucide:zap"
+              :title="t('tasks.automations') || 'Automations'"
+              :description="t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue enters a mapped column.'"
+            >
+              <template #actions>
+                <button type="button" class="at-btn !px-3 !py-1.5" @click="isAutomationsOpen = true">
+                  <Icon name="lucide:zap" class="h-4 w-4" />{{ t('tasks.manageAutomations') || 'Manage' }}
+                </button>
+              </template>
+            </SettingsSection>
+          </div>
+
+          <!-- Integrations -->
+          <div v-else-if="activeTab === 'integrations'" class="grid items-start gap-4 lg:grid-cols-2">
+            <div class="space-y-4">
+              <SettingsSection icon="lucide:plug-zap" :title="t('tasks.integrations') || 'Integrations'">
+                <div class="divide-y divide-gray-100 dark:divide-white/10">
+                  <SettingsRow v-model="form.menuIntegration" icon="lucide:shopping-cart" :disabled="!menuAppInstalled" :title="t('tasks.flagMenuIntegrationTitle') || 'Orders integration'" :description="menuAppInstalled ? (t('tasks.flagMenuIntegration') || 'Create an issue automatically from ready Menu orders') : (t('tasks.menuNotInstalled') || 'lota Orders is not installed in this namespace')" />
+                  <SettingsRow v-model="form.contactsIntegration" icon="lucide:contact" :disabled="!contactsAppInstalled" :title="t('tasks.flagContactsIntegrationTitle') || 'Contacts integration'" :description="contactsAppInstalled ? (t('tasks.flagContactsIntegration') || 'Link a lota Contacts client to any issue on this board') : (t('tasks.contactsNotInstalled') || 'lota Contacts is not installed in this namespace')" />
+                </div>
+              </SettingsSection>
+
+              <SettingsSection icon="lucide:webhook" :title="t('tasks.webhookApi') || 'Webhook API'" :description="t('tasks.webhookApiHint') || 'Create issues on this board from external systems using an HMAC-signed request'">
+                <div class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <UInput :model-value="webhookUrl" readonly size="sm" class="flex-1 font-mono text-xs" />
+                    <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" :aria-label="t('tasks.leadCopyForm') || 'Copy'" @click="copyToClipboard(webhookUrl, 'tasks.webhookCopied', 'Copied to clipboard')" />
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <UInput :model-value="webhookSecret" readonly size="sm" type="password" class="flex-1 font-mono text-xs" />
+                    <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" :aria-label="t('tasks.leadCopyForm') || 'Copy'" @click="copyToClipboard(webhookSecret, 'tasks.webhookCopied', 'Copied to clipboard')" />
+                    <button type="button" class="at-btn !px-3 !py-1.5" :disabled="regeneratingWebhook" @click="regenerateWebhookSecret">
+                      <Icon :name="regeneratingWebhook ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="h-4 w-4" :class="{ 'animate-spin': regeneratingWebhook }" />{{ t('tasks.webhookRegenerate') || 'Regenerate' }}
+                    </button>
+                  </div>
+                </div>
+              </SettingsSection>
+            </div>
+
+            <div class="space-y-4">
+              <section v-if="board" class="at-panel">
+                <TaskTemplatesCard :board="board" :task-types="taskTypes" :ns-slug="nsSlug" :get-token="getToken" @saved="(b: TaskBoard) => { board = b }" />
+              </section>
+
+              <SettingsSection icon="lucide:globe" :title="t('tasks.leadForm')" :description="t('tasks.leadFormHint')">
+                <div v-if="leadUrl" class="space-y-2">
+                  <div class="flex items-center gap-2">
+                    <UInput :model-value="leadUrl" readonly size="sm" class="flex-1 font-mono text-xs" />
+                    <UButton icon="lucide:copy" size="2xs" color="gray" variant="ghost" :aria-label="t('tasks.leadCopyForm') || 'Copy'" @click="copyToClipboard(leadUrl, 'tasks.webhookCopied', 'Copied to clipboard')" />
+                  </div>
+                  <UTextarea :model-value="leadSnippet" readonly :rows="6" class="font-mono text-xs" />
+                  <button type="button" class="at-btn !px-3 !py-1.5" @click="copyToClipboard(leadSnippet, 'tasks.webhookCopied', 'Copied to clipboard')">
+                    <Icon name="lucide:copy" class="h-4 w-4" />{{ t('tasks.leadCopyForm') }}
+                  </button>
+                  <p class="at-hint">{{ t('tasks.leadFormNote') }}</p>
+                </div>
+                <p v-else class="text-xs text-gray-400">{{ t('tasks.leadFormNoSecret') }}</p>
+              </SettingsSection>
+            </div>
+          </div>
+        </div>
+
+        <!-- The one primary action of the page stays in reach while scrolling. -->
+        <div class="sticky bottom-0 z-10 -mx-1 mt-2 flex items-center justify-end gap-2 bg-gradient-to-t from-white via-white/95 to-transparent px-1 pb-1 pt-4 dark:from-gray-900 dark:via-gray-900/95">
+          <button type="button" class="at-btn at-btn--primary" :disabled="!isFormValid || saving" @click="handleSave">
+            <Icon :name="saving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="{ 'animate-spin': saving }" />{{ t('app.save') || 'Save' }}
+          </button>
         </div>
       </div>
     </template>

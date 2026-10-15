@@ -100,19 +100,17 @@ async function remove(c: OrderCardDef) {
     v-for="c in cards"
     :key="c.id"
     type="button"
-    class="group relative flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
-    :class="sameAsCurrent(c.parsed) ? 'border-violet-300 bg-violet-50 shadow-sm dark:border-violet-700 dark:bg-violet-950/30' : 'border-gray-200 bg-white hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700'"
+    class="pill-filter group relative inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap"
+    :class="sameAsCurrent(c.parsed) ? 'pill-filter--active' : ''"
     @click="emit('apply', c.parsed)"
   >
-    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-900/40"><Icon name="lucide:bookmark" class="h-4 w-4 text-violet-600 dark:text-violet-300" /></span>
-    <span>
-      <span class="block max-w-[110px] truncate text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ c.name }}</span>
-      <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ c.count ?? '–' }}</span>
-    </span>
+    <Icon name="lucide:bookmark" class="h-3.5 w-3.5" />
+    <span class="max-w-[9rem] truncate">{{ c.name }}</span>
+    <span class="tabular-nums opacity-70">{{ c.count ?? '–' }}</span>
     <span
       role="button"
       tabindex="0"
-      class="absolute right-1.5 top-1.5 rounded-full p-0.5 text-gray-400 hover:text-rose-500 sm:opacity-0 sm:group-hover:opacity-100 focus:opacity-100"
+      class="-mr-1 rounded-full p-0.5 opacity-60 hover:text-rose-500 hover:opacity-100 focus:opacity-100"
       :aria-label="t('common.delete')"
       @click.stop="remove(c)"
       @keydown.enter.stop="remove(c)"

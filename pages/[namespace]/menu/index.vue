@@ -9,6 +9,7 @@ import { logError } from '@/utils/logger';
 import { memberDisplayNameWithFallback } from '@/utils/memberDisplayName';
 import { getErrorMessage, isPermissionError } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
@@ -72,82 +73,6 @@ const customStatusLabels = ref<StatusLabels>({});
 // The business's own status names (Settings -> Statuses) win over the defaults.
 const statusLabel = (s: string) => statusLabelFor(s, customStatusLabels.value, t);
 
-const statusColor = (s: string): any => ({
-  NEW: 'blue',
-  ACCEPTED: 'primary',
-  IN_PREPARATION: 'amber',
-  READY: 'teal',
-  DELIVERING: 'violet',
-  COMPLETED: 'emerald',
-  CANCELLED: 'red',
-}[s] || 'gray');
-
-const CARD_STYLE: Record<string, { icon: string; active: string; iconBg: string; iconColor: string; checkColor: string }> = {
-  NEW: {
-    icon: 'lucide:inbox',
-    active: 'border-blue-300 bg-blue-50 shadow-sm dark:border-blue-700 dark:bg-blue-950/30',
-    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
-    iconColor: 'text-blue-600 dark:text-blue-300',
-    checkColor: 'text-blue-300 dark:text-blue-700',
-  },
-  ACCEPTED: {
-    icon: 'lucide:check',
-    active: 'border-primary-300 bg-primary-50 shadow-sm dark:border-primary-700 dark:bg-primary-950/30',
-    iconBg: 'bg-primary-100 dark:bg-primary-900/40',
-    iconColor: 'text-primary-600 dark:text-primary-300',
-    checkColor: 'text-primary-300 dark:text-primary-700',
-  },
-  IN_PREPARATION: {
-    icon: 'lucide:hourglass',
-    active: 'border-amber-300 bg-amber-50 shadow-sm dark:border-amber-700 dark:bg-amber-950/30',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
-    iconColor: 'text-amber-600 dark:text-amber-300',
-    checkColor: 'text-amber-300 dark:text-amber-700',
-  },
-  READY: {
-    icon: 'lucide:package-check',
-    active: 'border-teal-300 bg-teal-50 shadow-sm dark:border-teal-700 dark:bg-teal-950/30',
-    iconBg: 'bg-teal-100 dark:bg-teal-900/40',
-    iconColor: 'text-teal-600 dark:text-teal-300',
-    checkColor: 'text-teal-300 dark:text-teal-700',
-  },
-  DELIVERING: {
-    icon: 'lucide:truck',
-    active: 'border-violet-300 bg-violet-50 shadow-sm dark:border-violet-700 dark:bg-violet-950/30',
-    iconBg: 'bg-violet-100 dark:bg-violet-900/40',
-    iconColor: 'text-violet-600 dark:text-violet-300',
-    checkColor: 'text-violet-300 dark:text-violet-700',
-  },
-  COMPLETED: {
-    icon: 'lucide:check-check',
-    active: 'border-emerald-300 bg-emerald-50 shadow-sm dark:border-emerald-700 dark:bg-emerald-950/30',
-    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-    iconColor: 'text-emerald-600 dark:text-emerald-300',
-    checkColor: 'text-emerald-300 dark:text-emerald-700',
-  },
-  CANCELLED: {
-    icon: 'lucide:x',
-    active: 'border-red-300 bg-red-50 shadow-sm dark:border-red-700 dark:bg-red-950/30',
-    iconBg: 'bg-red-100 dark:bg-red-900/40',
-    iconColor: 'text-red-600 dark:text-red-300',
-    checkColor: 'text-red-300 dark:text-red-700',
-  },
-};
-const ALL_CARD_STYLE = {
-  icon: 'lucide:layout-grid',
-  active: 'border-primary-300 bg-primary-50 shadow-sm dark:border-primary-700 dark:bg-primary-950/30',
-  iconBg: 'bg-primary-100 dark:bg-primary-900/40',
-  iconColor: 'text-primary-600 dark:text-primary-300',
-  checkColor: 'text-primary-300 dark:text-primary-700',
-};
-const CARD_INACTIVE = 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:hover:border-gray-700';
-const CARD_INACTIVE_ICON_BG = 'bg-gray-100 dark:bg-gray-800';
-const CARD_INACTIVE_ICON_COLOR = 'text-gray-500 dark:text-gray-400';
-
-function cardStyle(s: string) {
-  return CARD_STYLE[s] || ALL_CARD_STYLE;
-}
-
 const orders = ref<MenuOrder[]>([]);
 const totalCount = ref(0);
 const loading = ref(false);
@@ -187,7 +112,6 @@ const stageColor = (row: { status: string; stageId?: string | null }) => stageBy
 const stageLabel = (row: { status: string; stageId?: string | null }) => stageById(row.stageId)?.name || statusLabel(row.status);
 const rowOverdue = (row: any) => orderIsOverdue(row, stageById(row.stageId));
 const appliedFilterPanel = reactive({ sourceTag: '', createdFrom: '', createdTo: '', closedFrom: '', closedTo: '', participantUserId: '', visitedStageId: '' });
-const hasActiveFilterPanel = computed(() => Object.values(appliedFilterPanel).some((v) => v));
 
 // Staff eligible to be picked as a "participant" filter — same "has an
 // actual role" rule as the order detail's own participant picker (see
@@ -626,6 +550,35 @@ function clearStatuses() {
   resetPageAndReload();
 }
 
+// ---- Header + filter bar: one primary action, chips instead of tiles (DESIGN.md §U3.1, §U18) ----
+const headerMenu = computed(() => {
+  const group: { label: string; icon: string; to: string; target?: string; external?: boolean }[] = [
+    { label: t('menu.storefront') || 'Storefront', icon: 'lucide:store', to: `/to/${nsSlug.value}/menu`, target: '_blank', external: true },
+  ];
+  if (isOwnerOrManager.value) group.push({ label: t('menu.reportsOpen'), icon: 'lucide:bar-chart-3', to: `/${nsSlug.value}/menu/reports` });
+  group.push({ label: t('menu.myOrdersTitle'), icon: 'lucide:smartphone', to: `/${nsSlug.value}/menu/mine` });
+  return [group];
+});
+// "Smart" views only appear when there is something in them (or while one is switched on).
+const smartViews = computed(() => [
+  { key: 'mine', icon: 'lucide:user', label: t('menu.myOrdersCard') || 'My orders', n: myOrdersCount.value, active: myOrdersFilterActive.value, toggle: toggleMyOrdersFilter },
+  { key: 'urgent', icon: 'lucide:flame', label: t('menu.urgent'), n: quickCounts.value.urgent, active: quickFilter.value === 'urgent', toggle: () => toggleQuick('urgent') },
+  { key: 'overdue', icon: 'lucide:alarm-clock', label: t('menu.overdue'), n: quickCounts.value.overdue, active: quickFilter.value === 'overdue', toggle: () => toggleQuick('overdue') },
+  { key: 'contact', icon: 'lucide:phone-forwarded', label: t('menu.contactDueCard'), n: quickCounts.value.contactDue, active: quickFilter.value === 'contact', toggle: () => toggleQuick('contact') },
+  { key: 'ready', icon: 'lucide:package-check', label: t('menu.readyCard'), n: quickCounts.value.ready, active: quickFilter.value === 'ready', toggle: () => toggleQuick('ready') },
+].filter((v) => v.n > 0 || v.active));
+const TYPE_OPTIONS = computed(() => [
+  { value: '', label: t('menu.any') || 'Any' },
+  { value: 'delivery', label: t('menu.delivery') || 'Delivery' },
+  { value: 'pickup', label: t('menu.pickup') || 'Pickup' },
+  { value: 'table', label: t('menu.tableService') || 'Table' },
+]);
+// Number on the "Filters" button: everything that narrows the list and is not already a visible chip.
+const activeFilterCount = computed(() =>
+  (selectedBranchIds.value.length ? 1 : 0)
+  + (selectedType.value ? 1 : 0)
+  + Object.entries(appliedFilterPanel).filter(([k, v]) => v && !(k === 'participantUserId' && myOrdersFilterActive.value)).length);
+
 watch(selectedBranchIds, () => {
   resetPageAndReload();
 });
@@ -1059,139 +1012,36 @@ async function handleCreateOrder(payload: any) {
 
 <template>
   <div class="at-scope ct-scope min-h-full md:h-full flex flex-col p-4 pb-safe-or-4 md:min-h-0">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-      <div class="text-left" data-tour="menu-title">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          {{ t('menu.title') || 'Orders' }}
-        </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('menu.subtitle') || 'Every order from your storefronts, in one place' }}</span>
-      </div>
-      <div class="flex flex-wrap items-center gap-2 self-start">
-        <UButton
-          icon="lucide:store"
-          size="xs"
-          color="emerald"
-          variant="soft"
-          class="whitespace-nowrap gap-2"
-          :ui="{ rounded: 'rounded-xl' }"
-          :to="`/to/${nsSlug}/menu`"
-          target="_blank"
-        >
-          {{ t('menu.storefront') || 'Storefront' }}
-        </UButton>
-        <UButton
-          icon="lucide:monitor"
-          size="xs"
-          color="violet"
-          variant="soft"
-          class="whitespace-nowrap gap-2"
-          :ui="{ rounded: 'rounded-xl' }"
-          :to="`/to/${nsSlug}/menu/board`"
-          target="_blank"
-          data-tour="menu-kitchen-board-btn"
-        >
-          {{ t('menu.kitchenBoard') || 'Kitchen board' }}
-        </UButton>
-        <UButton
-          v-if="isOwnerOrManager"
-          icon="lucide:bar-chart-3"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="whitespace-nowrap gap-2"
-          :ui="{ rounded: 'rounded-xl' }"
-          :to="`/${nsSlug}/menu/reports`"
-        >
-          {{ t('menu.reportsOpen') }}
-        </UButton>
-        <UButton
-          v-if="isOwnerOrManager"
-          icon="lucide:settings"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="whitespace-nowrap gap-2"
-          :ui="{ rounded: 'rounded-xl' }"
-          :to="`/${nsSlug}/menu/settings`"
-          data-tour="menu-settings-btn"
-        >
-          {{ t('menu.settings') || 'Settings' }}
-        </UButton>
-      </div>
-    </div>
+    <PageHeader :title="t('menu.title') || 'Orders'" :subtitle="t('menu.subtitle') || 'Every order from your storefronts, in one place'" tour-title="menu-title" :menu="headerMenu">
+      <template #primary>
+        <button type="button" class="at-btn at-btn--primary" data-tour="menu-create-btn" @click="createOrderPrefill = null; isCreateOrderOpen = true">
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span class="hidden min-[440px]:inline">{{ t('menu.createOrder') || 'Create order' }}</span>
+          <span class="sr-only min-[440px]:hidden">{{ t('menu.createOrder') || 'Create order' }}</span>
+        </button>
+      </template>
+      <template #actions>
+        <NuxtLink :to="`/to/${nsSlug}/menu/board`" target="_blank" class="at-btn !px-2.5 xl:!px-3.5" data-tour="menu-kitchen-board-btn" :aria-label="t('menu.kitchenBoard') || 'Kitchen board'" :title="t('menu.kitchenBoard') || 'Kitchen board'">
+          <Icon name="lucide:monitor" class="h-4 w-4" />
+          <span class="hidden xl:inline">{{ t('menu.kitchenBoard') || 'Kitchen board' }}</span>
+        </NuxtLink>
+        <NuxtLink v-if="isOwnerOrManager" :to="`/${nsSlug}/menu/settings`" class="at-btn !px-2.5" data-tour="menu-settings-btn" :aria-label="t('menu.settings') || 'Settings'" :title="t('menu.settings') || 'Settings'">
+          <Icon name="lucide:settings" class="h-4 w-4" />
+        </NuxtLink>
+      </template>
+    </PageHeader>
 
-    <!-- Quick status filter cards (multi-select) -->
-    <div class="flex gap-2.5 overflow-x-auto pb-2 mb-3 flex-shrink-0">
-      <button
-        class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
-        :class="selectedStatuses.length === 0 ? cardStyle('').active : CARD_INACTIVE"
-        @click="clearStatuses"
-      >
-        <span
-          class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
-          :class="selectedStatuses.length === 0 ? cardStyle('').iconBg : CARD_INACTIVE_ICON_BG"
-        >
-          <Icon
-            :name="cardStyle('').icon"
-            class="h-4 w-4"
-            :class="selectedStatuses.length === 0 ? cardStyle('').iconColor : CARD_INACTIVE_ICON_COLOR"
-          />
-        </span>
-        <span>
-          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.all') || 'All' }}</span>
-          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ totalCount }}</span>
-        </span>
+    <!-- Views and statuses: one compact scrollable row of chips (no tiles, no wrapping). -->
+    <div class="-mx-1 mb-2 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+      <button type="button" class="pill-filter inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap" :class="selectedStatuses.length === 0 ? 'pill-filter--active' : ''" :aria-pressed="selectedStatuses.length === 0" @click="clearStatuses">
+        {{ t('menu.all') || 'All' }}<span class="tabular-nums opacity-70">{{ totalCount }}</span>
       </button>
-      <NuxtLink :to="`/${nsSlug}/menu/mine`" class="sm:hidden group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border border-indigo-200 bg-indigo-50/60 px-3.5 py-2.5 text-left dark:border-indigo-800 dark:bg-indigo-950/20">
-        <Icon name="lucide:smartphone" class="h-5 w-5 text-indigo-600 dark:text-indigo-300" />
-        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t('menu.myOrdersTitle') }}</span>
-      </NuxtLink>
-      <!-- A different filter dimension from the status cards (who's on the
-           order, not what state it's in) — orders where the current staff
-           member is a participant (see order_members / Participants on the
-           order detail). Distinct color so it doesn't read as another status. -->
-      <button
-        class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
-        :class="myOrdersFilterActive
-          ? 'border-indigo-300 bg-indigo-50 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/30'
-          : CARD_INACTIVE"
-        @click="toggleMyOrdersFilter"
-      >
-        <span
-          class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
-          :class="myOrdersFilterActive ? 'bg-indigo-100 dark:bg-indigo-900/40' : CARD_INACTIVE_ICON_BG"
-        >
-          <Icon
-            name="lucide:user"
-            class="h-4 w-4"
-            :class="myOrdersFilterActive ? 'text-indigo-600 dark:text-indigo-300' : CARD_INACTIVE_ICON_COLOR"
-          />
-        </span>
-        <span>
-          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.myOrdersCard') || 'My orders' }}</span>
-          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ myOrdersCount }}</span>
-        </span>
-      </button>
-      <button
-        v-for="q in ([
-          { k: 'urgent', icon: 'lucide:flame', label: t('menu.urgent'), n: quickCounts.urgent, on: 'border-rose-300 bg-rose-50 dark:border-rose-800 dark:bg-rose-950/30' },
-          { k: 'overdue', icon: 'lucide:alarm-clock', label: t('menu.overdue'), n: quickCounts.overdue, on: 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30' },
-          { k: 'contact', icon: 'lucide:phone-forwarded', label: t('menu.contactDueCard'), n: quickCounts.contactDue, on: 'border-sky-300 bg-sky-50 dark:border-sky-800 dark:bg-sky-950/30' },
-          { k: 'ready', icon: 'lucide:package-check', label: t('menu.readyCard'), n: quickCounts.ready, on: 'border-teal-300 bg-teal-50 dark:border-teal-800 dark:bg-teal-950/30' },
-        ] as const)"
-        :key="q.k"
-        class="group flex-shrink-0 flex items-center gap-2.5 rounded-2xl border px-3.5 py-2.5 min-w-[116px] text-left transition-all duration-200"
-        :class="quickFilter === q.k ? q.on + ' shadow-sm' : CARD_INACTIVE"
-        @click="toggleQuick(q.k)"
-      >
-        <span class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors" :class="quickFilter === q.k ? 'bg-white/70 dark:bg-white/10' : CARD_INACTIVE_ICON_BG">
-          <Icon :name="q.icon" class="h-4 w-4" :class="quickFilter === q.k ? '' : CARD_INACTIVE_ICON_COLOR" />
-        </span>
-        <span>
-          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ q.label }}</span>
-          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ q.n }}</span>
-        </span>
-      </button>
+      <template v-if="smartViews.length">
+        <span class="h-5 w-px flex-shrink-0 bg-gray-200 dark:bg-white/10" aria-hidden="true" />
+        <button v-for="v in smartViews" :key="v.key" type="button" class="pill-filter inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap" :class="v.active ? 'pill-filter--active' : ''" :aria-pressed="v.active" @click="v.toggle()">
+          <Icon :name="v.icon" class="h-3.5 w-3.5" />{{ v.label }}<span class="tabular-nums opacity-70">{{ v.n }}</span>
+        </button>
+      </template>
       <MyOrderCards
         :ns-slug="nsSlug"
         :get-token="getToken"
@@ -1201,46 +1051,30 @@ async function handleCreateOrder(payload: any) {
         :refresh-key="cardsRefreshKey"
         @apply="applyCard"
       />
-      <button
-        v-for="s in STATUSES"
-        :key="s"
-        class="group relative flex-shrink-0 flex items-center gap-2.5 rounded-2xl border py-2.5 text-left transition-all duration-200"
-        :class="[selectedStatuses.includes(s) ? cardStyle(s).active : CARD_INACTIVE, selectedStatuses.includes(s) ? 'pl-3.5 pr-7' : 'px-3.5']"
-        @click="toggleStatus(s)"
-      >
-        <Icon
-          v-if="selectedStatuses.includes(s)"
-          name="lucide:check-circle-2"
-          class="absolute top-1.5 right-1.5 h-4 w-4"
-          :class="cardStyle(s).checkColor"
-        />
-        <span
-          class="flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
-          :class="selectedStatuses.includes(s) ? cardStyle(s).iconBg : CARD_INACTIVE_ICON_BG"
-        >
-          <Icon
-            :name="cardStyle(s).icon"
-            class="h-4 w-4"
-            :class="selectedStatuses.includes(s) ? cardStyle(s).iconColor : CARD_INACTIVE_ICON_COLOR"
-          />
-        </span>
-        <span>
-          <span class="block text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ statusLabel(s) }}</span>
-          <span class="block text-lg font-bold leading-tight tabular-nums text-gray-900 dark:text-gray-100">{{ statusCounts[s] ?? 0 }}</span>
-        </span>
+      <span class="h-5 w-px flex-shrink-0 bg-gray-200 dark:bg-white/10" aria-hidden="true" />
+      <button v-for="s in STATUSES" :key="s" type="button" class="pill-filter inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap" :class="[selectedStatuses.includes(s) ? 'pill-filter--active' : '', !selectedStatuses.includes(s) && !(statusCounts[s]) ? 'opacity-60' : '']" :aria-pressed="selectedStatuses.includes(s)" @click="toggleStatus(s)">
+        <span class="h-2 w-2 flex-shrink-0 rounded-full" :style="{ backgroundColor: statusBadgeStyle(s).bg }" />{{ statusLabel(s) }}<span class="tabular-nums opacity-70">{{ statusCounts[s] ?? 0 }}</span>
       </button>
     </div>
 
-    <!-- Branch filter (multi-select) + search -->
-    <div class="flex flex-col sm:flex-row gap-2 mb-3 flex-shrink-0">
+    <!-- Search + filters: one row. Branch and order type sit in the row on desktop and in the filter sheet on phones. -->
+    <div class="mb-3 flex flex-shrink-0 items-center gap-2">
+      <UInput
+        v-model="search"
+        icon="lucide:search"
+        :placeholder="t('menu.searchOrders') || 'Search by phone, name or order #'"
+        class="min-w-0 flex-1"
+        :ui="{ rounded: 'rounded-xl' }"
+      />
       <USelectMenu
+        v-if="branchOptions.length > 1"
         v-model="selectedBranchIds"
         multiple
         icon="lucide:map-pin"
         :options="branchOptions"
         value-attribute="value"
         option-attribute="label"
-        class="w-full sm:w-56"
+        class="hidden w-52 flex-shrink-0 md:block"
         :ui="{ rounded: 'rounded-xl' }"
         :popper="{ strategy: 'fixed' }"
       >
@@ -1248,56 +1082,14 @@ async function handleCreateOrder(payload: any) {
           <span class="truncate">{{ branchSelectLabel }}</span>
         </template>
       </USelectMenu>
-      <UInput
-        v-model="search"
-        icon="lucide:search"
-        :placeholder="t('menu.searchOrders') || 'Search by phone, name or order #'"
-        class="w-full sm:flex-1"
-        :ui="{ rounded: 'rounded-xl' }"
-      />
-      <div class="flex max-w-full flex-shrink-0 items-center gap-1.5 overflow-x-auto">
-        <button
-          v-for="opt in [{ value: '', label: t('menu.any') || 'Any' }, { value: 'delivery', label: t('menu.delivery') || 'Delivery' }, { value: 'pickup', label: t('menu.pickup') || 'Pickup' }, { value: 'table', label: t('menu.tableService') || 'Table' }]"
-          :key="opt.value"
-          type="button"
-          class="pill-filter whitespace-nowrap"
-          :class="selectedType === opt.value ? 'pill-filter--active' : ''"
-          @click="selectedType = opt.value as typeof selectedType"
-        >
-          {{ opt.label }}
-        </button>
+      <div class="hidden flex-shrink-0 items-center gap-1.5 lg:flex">
+        <button v-for="opt in TYPE_OPTIONS" :key="opt.value" type="button" class="pill-filter whitespace-nowrap" :class="selectedType === opt.value ? 'pill-filter--active' : ''" @click="selectedType = opt.value as typeof selectedType">{{ opt.label }}</button>
       </div>
-      <MyOrderCards
-        mode="save"
-        :ns-slug="nsSlug"
-        :get-token="getToken"
-        :user-id="currentUser?.id"
-        :branch-ids="selectedBranchIds"
-        :current="currentCardFilter"
-        @saved="cardsRefreshKey++"
-      />
-      <UButton
-        icon="lucide:sliders-horizontal"
-        color="gray"
-        variant="soft"
-        class="flex-shrink-0"
-        :ui="{ rounded: 'rounded-xl' }"
-        @click="isFilterPanelOpen = true"
-      >
-        <span>{{ t('menu.moreFilters') || 'More filters' }}</span>
-        <span v-if="hasActiveFilterPanel" class="w-1.5 h-1.5 rounded-full bg-primary-500" />
-      </UButton>
-      <UButton
-        icon="lucide:plus"
-        color="primary"
-        variant="soft"
-        class="w-full sm:w-auto justify-center flex-shrink-0"
-        :ui="{ rounded: 'rounded-xl' }"
-        data-tour="menu-create-btn"
-        @click="createOrderPrefill = null; isCreateOrderOpen = true"
-      >
-        {{ t('menu.createOrder') || 'Create order' }}
-      </UButton>
+      <button type="button" class="at-btn flex-shrink-0" :aria-label="t('tasks.filters') || 'Filters'" @click="isFilterPanelOpen = true">
+        <Icon name="lucide:sliders-horizontal" class="h-4 w-4" />
+        <span class="hidden sm:inline">{{ t('tasks.filters') || 'Filters' }}</span>
+        <span v-if="activeFilterCount" class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold leading-none text-white">{{ activeFilterCount }}</span>
+      </button>
     </div>
 
     <div
@@ -1322,12 +1114,58 @@ async function handleCreateOrder(payload: any) {
         empty-icon="lucide:receipt-text"
         @select="openDetail"
       >
+        <template #mobile-card="{ row }">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono text-[0.95rem] font-bold tabular-nums">{{ displayOrderNumber(row) }}</span>
+                <Icon v-if="row.isUrgent" name="lucide:flame" class="h-3.5 w-3.5 text-rose-500" />
+                <Icon v-if="rowOverdue(row)" name="lucide:alarm-clock" class="h-3.5 w-3.5 text-amber-500" />
+              </div>
+              <div class="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">
+                <UserAvatar :name="row.customerName || (t('menu.guestCustomer') || 'Guest')" size="xs" />
+                <span class="truncate">{{ row.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
+              </div>
+            </div>
+            <div class="flex-shrink-0 text-right">
+              <div class="font-semibold tabular-nums">{{ orderNetAmount(row).toLocaleString() }}</div>
+              <div v-if="orderNetAmount(row) > 0" class="text-xs" :class="row.paidAmount >= orderNetAmount(row) ? 'font-medium text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'">
+                {{ row.paidAmount >= orderNetAmount(row) ? (t('menu.paidInFull') || 'Paid') : `${t('menu.remaining') || 'Due'} ${(orderNetAmount(row) - (row.paidAmount || 0)).toLocaleString()}` }}
+              </div>
+            </div>
+          </div>
+          <div class="mt-2.5 flex items-center gap-2" @click.stop>
+            <span v-if="nextStatuses(row.status, row.type).length" class="min-w-0">
+              <UDropdown :items="statusMenuItems(row)" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
+                <button type="button" class="inline-flex items-center gap-1 rounded-full py-1 pl-2 pr-2.5 text-xs font-semibold text-white disabled:opacity-50" :style="{ backgroundColor: stageColor(row) }" :disabled="updatingStatusId === row.id">
+                  <Icon :name="updatingStatusId === row.id ? 'lucide:loader-2' : statusBadgeStyle(row.status).icon" class="h-3 w-3" :class="{ 'animate-spin': updatingStatusId === row.id }" />
+                  <span class="truncate">{{ stageLabel(row) }}</span>
+                  <Icon name="lucide:chevron-down" class="h-3 w-3 opacity-80" />
+                </button>
+                <template #item="{ item }">
+                  <span class="flex w-full items-center gap-2">
+                    <span class="h-2 w-2 flex-shrink-0 rounded-full" :style="{ backgroundColor: statusBadgeStyle(item.status).bg }" />
+                    <span class="truncate">{{ item.label }}</span>
+                  </span>
+                </template>
+              </UDropdown>
+            </span>
+            <span v-else class="inline-flex min-w-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold text-white" :style="{ backgroundColor: stageColor(row) }"><span class="truncate">{{ stageLabel(row) }}</span></span>
+            <span class="flex-1" />
+            <a v-if="row.phone" :href="`tel:${row.phone}`" class="at-btn !px-3 !py-1.5 flex-shrink-0" :aria-label="formatDisplayPhoneUniversal(row.phone)"><Icon name="lucide:phone" class="h-4 w-4" /><span class="text-xs tabular-nums">{{ formatDisplayPhoneUniversal(row.phone) }}</span></a>
+          </div>
+          <div class="mt-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
+            <template v-if="parseTableTag(row.sourceTag)">{{ t('menu.tableNumber', { number: parseTableTag(row.sourceTag) || '' }) || `Table ${parseTableTag(row.sourceTag)}` }}</template>
+            <template v-else>{{ t(orderTypeLabelInfo(row.type).key) || orderTypeLabelInfo(row.type).fallback }}</template>
+            · {{ formatDate(row.createdAt) }}
+          </div>
+        </template>
         <template #number-data="{ row }">
           <span class="font-mono font-semibold tabular-nums">{{ displayOrderNumber(row) }}</span>
         </template>
         <template #customerName-data="{ row }">
           <div class="flex items-center gap-2 min-w-0">
-            <UserAvatar :name="row.customerName || row.phone" size="sm" />
+            <UserAvatar :name="row.customerName || (t('menu.guestCustomer') || 'Guest')" size="sm" />
             <span class="truncate">{{ row.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
           </div>
         </template>
@@ -1509,14 +1347,25 @@ async function handleCreateOrder(payload: any) {
               <Icon name="lucide:sliders-horizontal" class="h-4 w-4 text-primary-600 dark:text-primary-300" />
             </span>
             <div class="min-w-0">
-              <h3 class="text-base font-semibold leading-tight">{{ t('menu.moreFilters') || 'More filters' }}</h3>
-              <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ t('menu.moreFiltersHint') || 'For building a report over a period' }}</p>
+              <h3 class="text-base font-semibold leading-tight">{{ t('tasks.filters') || 'Filters' }}</h3>
             </div>
             <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" class="ml-auto flex-shrink-0" @click="isFilterPanelOpen = false" />
           </div>
         </template>
 
         <div class="space-y-4">
+          <div v-if="branchOptions.length > 1" class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 md:hidden dark:border-gray-800 dark:bg-gray-900">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"><Icon name="lucide:map-pin" class="h-3.5 w-3.5" />{{ t('menu.branch') || 'Branch' }}</div>
+            <USelectMenu v-model="selectedBranchIds" multiple icon="lucide:map-pin" :options="branchOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }">
+              <template #label><span class="truncate">{{ branchSelectLabel }}</span></template>
+            </USelectMenu>
+          </div>
+          <div class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 lg:hidden dark:border-gray-800 dark:bg-gray-900">
+            <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"><Icon name="lucide:shapes" class="h-3.5 w-3.5" />{{ t('menu.type') || 'Type' }}</div>
+            <div class="flex flex-wrap gap-1.5">
+              <button v-for="opt in TYPE_OPTIONS" :key="opt.value" type="button" class="pill-filter whitespace-nowrap" :class="selectedType === opt.value ? 'pill-filter--active' : ''" @click="selectedType = opt.value as typeof selectedType">{{ opt.label }}</button>
+            </div>
+          </div>
           <div class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 space-y-3">
             <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
               <Icon name="lucide:link" class="h-3.5 w-3.5" />
@@ -1600,13 +1449,24 @@ async function handleCreateOrder(payload: any) {
         </div>
 
         <template #footer>
-          <div class="flex justify-end gap-2">
+          <div class="flex items-center justify-between gap-2">
+            <MyOrderCards
+              mode="save"
+              :ns-slug="nsSlug"
+              :get-token="getToken"
+              :user-id="currentUser?.id"
+              :branch-ids="selectedBranchIds"
+              :current="currentCardFilter"
+              @saved="cardsRefreshKey++"
+            />
+            <div class="ml-auto flex gap-2">
             <UButton color="gray" variant="ghost" @click="clearFilterPanel">
               {{ t('app.clear') || 'Clear' }}
             </UButton>
             <UButton color="primary" icon="lucide:check" @click="applyFilterPanel">
               {{ t('menu.applyFilters') || 'Apply' }}
             </UButton>
+            </div>
           </div>
         </template>
       </UCard>

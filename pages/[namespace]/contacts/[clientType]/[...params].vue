@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import PageHeader from '@/components/ui/PageHeader.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue';
@@ -183,13 +184,62 @@ async function loadCapabilities(contactsToken: string | null) {
     logError('[contacts] capabilities failed', e);
   }
 }
-function exportClients() {
-  if (!clients.value.length) return;
-  exportClientsToXlsx(clients.value, {
-    type: t('contacts.exportType'), name: t('contacts.exportName'), phones: t('contacts.exportPhones'), emails: t('contacts.exportEmails'),
-    tags: t('contacts.exportTags'), status: t('contacts.exportStatus'), created: t('contacts.exportCreated'), notes: t('contacts.exportNotes'),
-    individual: t('contacts.individual'), legal: t('contacts.legalEntity'), sheet: t('contacts.exportSheet'),
-  });
+const selectedClients = ref<ClientRow[]>([]);
+const exporting = ref(false);
+const exportLabels = () => ({
+  type: t('contacts.exportType'), name: t('contacts.exportName'), phones: t('contacts.exportPhones'), emails: t('contacts.exportEmails'),
+  tags: t('contacts.exportTags'), status: t('contacts.exportStatus'), created: t('contacts.exportCreated'), notes: t('contacts.exportNotes'),
+  individual: t('contacts.individual'), legal: t('contacts.legalEntity'), sheet: t('contacts.exportSheet'),
+});
+// Every client matching the current filters, not just the visible page: walks the pages of the list.
+async function fetchAllClientsForExport(): Promise<ClientRow[]> {
+  if (!token.value || !selectedNS.value) return [];
+  const { ensure } = useContactsToken();
+  const contactsToken = await ensure(selectedNS.value, token.value);
+  if (!contactsToken) return [];
+  const base = buildClientFilter();
+  const rows: ClientRow[] = [];
+  const LIMIT = 20000;
+  for (let pg = 1; rows.length < LIMIT; pg++) {
+    const data = await contactsListClients(contactsToken, selectedNS.value, {
+      ...base,
+      pagination: { page: pg, length: 'ONE_HUNDRED' },
+      sort: { field: sortField.value, by: sortDirection.value },
+    });
+    rows.push(...data.rows);
+    if (data.rows.length < 100 || rows.length >= (data.info?.count ?? 0)) break;
+  }
+  return rows;
+}
+// One export button: with rows ticked it exports those, otherwise everything the filters match.
+// Secondary tools behind one menu (DESIGN.md §U3.1): list tools first, neighbouring sections after.
+const headerMenu = computed(() => [
+  [
+    { label: t('contacts.tags'), icon: 'lucide:tag', click: () => { isTagsModalOpen.value = true; } },
+    { label: t('contacts.segments'), icon: 'lucide:boxes', click: () => { isSegmentsModalOpen.value = true; } },
+  ],
+  [
+    { label: t('contacts.callsTitle'), icon: 'lucide:phone-call', to: `/${nsSlug.value}/contacts/calls` },
+    { label: t('membership.nav') || 'Абонементы', icon: 'lucide:ticket', to: `/${nsSlug.value}/contacts/memberships` },
+  ],
+]);
+
+async function exportClients() {
+  if (exporting.value) return;
+  if (selectedClients.value.length) {
+    exportClientsToXlsx(selectedClients.value, exportLabels());
+    return;
+  }
+  exporting.value = true;
+  try {
+    const rows = await fetchAllClientsForExport();
+    if (rows.length) exportClientsToXlsx(rows, exportLabels());
+  } catch (e) {
+    logError('[contacts] export failed', e);
+    toast.add({ title: t('common.error'), description: t('contacts.exportFailed'), color: 'red' });
+  } finally {
+    exporting.value = false;
+  }
 }
 
 onMounted(async () => {
@@ -379,6 +429,32 @@ async function applyTagsPreset(businessType: BusinessType) {
   await applyContactTagsPreset(contactsToken, selectedNS.value, businessType, locale.value);
 }
 
+// The filters the list is showing right now (search, type, mark, tags), without paging/sorting --
+// shared by the table load and by "export everything".
+function buildClientFilter(): Record<string, unknown> {
+  const filter: Record<string, unknown> = {};
+  // Add search if present
+  const normalizedSearch = searchQuery.value.trim();
+  if (normalizedSearch.length >= 2) {
+    filter.search = normalizedSearch;
+  }
+  
+  // Add client type filter (pass to backend)
+  if (clientTypeFilter.value !== 'ALL') {
+    filter.clientType = clientTypeFilter.value;
+  }
+  
+  if (markFilter.value) {
+    filter.mark = markFilter.value;
+  }
+
+  // Add tag filter if tags are selected
+  if (selectedTags.value && selectedTags.value.length > 0) {
+    filter.tagIds = selectedTags.value.map(t => t.id);
+  }
+  return filter;
+}
+
 async function loadClients() {
   if (useMockData.value) {
     clients.value = mockClients;
@@ -393,28 +469,8 @@ async function loadClients() {
   
   try {
     loading.value = true;
-    const filter: any = {};
-    
-    // Add search if present
-    const normalizedSearch = searchQuery.value.trim();
-    if (normalizedSearch.length >= 2) {
-      filter.search = normalizedSearch;
-    }
-    
-    // Add client type filter (pass to backend)
-    if (clientTypeFilter.value !== 'ALL') {
-      filter.clientType = clientTypeFilter.value;
-    }
-    
-    if (markFilter.value) {
-      filter.mark = markFilter.value;
-    }
+    const filter: any = buildClientFilter();
 
-    // Add tag filter if tags are selected
-    if (selectedTags.value && selectedTags.value.length > 0) {
-      filter.tagIds = selectedTags.value.map(t => t.id);
-    }
-    
     // Add pagination
     filter.pagination = {
       page: page.value,
@@ -604,66 +660,21 @@ async function handleRefreshFromRemote() {
 
 <template>
   <div class="at-scope ct-scope h-full overflow-y-auto flex flex-col">
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4 mt-4 px-4 flex-shrink-0">
-      <div
-        class="text-left min-w-0"
-        data-tour="contacts-title"
-      >
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          {{ t('app.contacts') }}
-        </h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('app.contactsSubtitle') }}</span>
-      </div>
-      <div class="min-w-0">
-        <div class="flex flex-wrap gap-2">
-          <UButton 
-            icon="lucide:tag" 
-            size="xs"
-            color="primary" 
-            variant="soft"
-            @click="isTagsModalOpen = true"
-          >
-            {{ t('contacts.tags') }}
-          </UButton>
-          <UButton
-            icon="lucide:boxes"
-            size="xs"
-            color="primary"
-            variant="soft"
-            @click="isSegmentsModalOpen = true"
-          >
-            {{ t('contacts.segments') }}
-          </UButton>
-          <UButton
-            icon="lucide:phone-call"
-            size="xs"
-            color="primary"
-            variant="soft"
-            :to="`/${nsSlug}/contacts/calls`"
-          >
-            {{ t('contacts.callsTitle') }}
-          </UButton>
-          <UButton
-            icon="lucide:ticket"
-            size="xs"
-            color="primary"
-            variant="soft"
-            :to="`/${nsSlug}/contacts/memberships`"
-          >
-            {{ t('membership.nav') || 'Абонементы' }}
-          </UButton>
-          <UButton
-            icon="lucide:settings"
-            size="xs"
-            color="primary"
-            variant="soft"
-            data-tour="contacts-settings-btn"
-            :to="`/${nsSlug}/contacts/settings`"
-          >
-            {{ t('common.settings.title') }}
-          </UButton>
-        </div>
-      </div>
+    <div class="px-4 pt-4 flex-shrink-0">
+      <PageHeader :title="t('app.contacts')" :subtitle="t('app.contactsSubtitle')" tour-title="contacts-title" :menu="headerMenu">
+        <template #primary>
+          <NuxtLink :to="`/${nsSlug}/contacts/new`" class="at-btn at-btn--primary" data-tour="contacts-create-btn">
+            <Icon name="lucide:plus" class="h-4 w-4" />
+            <span class="hidden min-[440px]:inline">{{ t('contacts.createClient') }}</span>
+            <span class="sr-only min-[440px]:hidden">{{ t('contacts.createClient') }}</span>
+          </NuxtLink>
+        </template>
+        <template #actions>
+          <NuxtLink :to="`/${nsSlug}/contacts/settings`" class="at-btn !px-2.5" data-tour="contacts-settings-btn" :aria-label="t('common.settings.title')" :title="t('common.settings.title')">
+            <Icon name="lucide:settings" class="h-4 w-4" />
+          </NuxtLink>
+        </template>
+      </PageHeader>
     </div>
 
     <!-- Filters and Create Button -->
@@ -717,20 +728,12 @@ async function handleRefreshFromRemote() {
             color="gray"
             variant="soft"
             class="hidden sm:inline-flex"
+            :loading="exporting"
             :disabled="!clients.length"
+            :title="selectedClients.length ? t('contacts.exportSelectedHint') : t('contacts.exportAllHint')"
             @click="exportClients"
           >
-            {{ t('contacts.exportExcel') }}
-          </UButton>
-          <UButton
-            icon="lucide:plus"
-            size="sm"
-            color="primary"
-            variant="solid"
-            data-tour="contacts-create-btn"
-            :to="`/${nsSlug}/contacts/new`"
-          >
-            {{ t('contacts.createClient') }}
+            {{ t('contacts.exportExcel') }}<span v-if="selectedClients.length" class="tabular-nums"> · {{ selectedClients.length }}</span>
           </UButton>
         </div>
       </div>
@@ -810,6 +813,7 @@ async function handleRefreshFromRemote() {
         :sort-direction="sortDirection === 'ASC' ? 'asc' : 'desc'"
         :ns-slug="nsSlug"
         :resolved-names="resolvedNames"
+        @update:selection="(rows) => (selectedClients = rows)"
         @update:page="(newPage) => updateRoute(newPage, pageSize)"
         @update:page-size="(newPageSize) => updateRoute(1, newPageSize)"
         @update:sort="handleSortUpdate"

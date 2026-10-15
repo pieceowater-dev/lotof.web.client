@@ -3130,6 +3130,7 @@
     "orderPaymentsToRegister": "Order cash goes to the till",
     "orderPaymentsToRegisterHint": "Cash paid on a Menu order is added to the open cash shift automatically (a refund is a cash-out). Works while a shift is open.",
     "selectedCount": "Selected",
+    "noPhone": "No phone",
     "printDoc": "Print",
     "signatureGave": "Handed over",
     "signatureTook": "Received",
@@ -4388,5 +4389,26 @@
     "pstatus_PAUSED": "Paused",
     "pstatus_EXPIRED": "Ended",
     "pstatus_ARCHIVED": "Archived"
+  },
+  "contacts": {
+    "segmentsManage": "Manage segments",
+    "segmentNamePlaceholder": "New segment name…",
+    "segmentRules": "Rules",
+    "noSegments": "No segments yet",
+    "noSegmentRules": "This segment has no rules",
+    "selectSegmentHint": "Select a segment to see its rules",
+    "segmentsLoadFailed": "Could not load segments",
+    "segmentRulesLoadFailed": "Could not load segment rules",
+    "segmentCreated": "Segment created",
+    "segmentCreateFailed": "Could not create the segment",
+    "segmentDeleted": "Segment deleted",
+    "segmentDeleteFailed": "Could not delete",
+    "segmentDeleteConfirm": "Delete the segment “{name}”? Clients stay, only the segment is removed.",
+    "segments": "Segments",
+    "exportAllHint": "Export every client matching the current filters",
+    "exportSelectedHint": "Export only the ticked clients",
+    "exportFailed": "Could not prepare the export",
+    "selectedCount": "Selected: {n}",
+    "noPhone": "No phone"
   }
 }
