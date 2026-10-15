@@ -10,6 +10,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import { taskShortCode } from '@/utils/taskDisplay';
 import { groupByCourier, courierCounters, timeWindowText, type StatusInfo } from '@/utils/logistics';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import LogisticsMap from '@/components/tasks/LogisticsMap.vue';
 import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
@@ -108,6 +109,11 @@ function shiftDay(delta: number) {
 }
 
 function printPage() { window.print(); }
+// Print and export sit behind the "more" menu: the day switcher and Back are what the page is for.
+const headerMenu = computed(() => [[
+  { label: t('tasks.print'), icon: 'lucide:printer', click: printPage },
+  ...(isOwnerOrManager.value ? [{ label: t('common.export'), icon: 'lucide:download', disabled: !tasks.value.length, click: exportXlsx }] : []),
+]]);
 function open(task: TaskItem) { selected.value = task; detailOpen.value = true; }
 
 async function exportXlsx() {
@@ -129,65 +135,68 @@ async function exportXlsx() {
 </script>
 
 <template>
-  <div class="at-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
-    <div class="flex flex-shrink-0 flex-wrap items-center justify-between gap-3">
-      <div class="min-w-0">
-        <NuxtLink :to="`/${nsSlug}/issues/${boardSlug}`" class="text-xs text-accent-700 dark:text-blue-300">← {{ board?.name }}</NuxtLink>
-        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('tasks.logisticsTitle') }}</h1>
-        <p class="at-hint !mt-0.5">{{ t('tasks.logisticsHint') }}</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2 print:hidden">
-        <button type="button" class="at-btn !px-2.5 !py-1.5" :aria-label="t('tasks.prevDay')" @click="shiftDay(-1)"><Icon name="lucide:chevron-left" class="h-4 w-4" /></button>
-        <UInput v-model="day" type="date" size="sm" class="w-40" />
-        <button type="button" class="at-btn !px-2.5 !py-1.5" :aria-label="t('tasks.nextDay')" @click="shiftDay(1)"><Icon name="lucide:chevron-right" class="h-4 w-4" /></button>
-        <div v-if="hasLocated" class="flex rounded-lg bg-gray-100 p-0.5 text-sm dark:bg-gray-800 lg:hidden">
-          <button type="button" class="rounded-md px-2.5 py-1 font-medium" :class="viewMode === 'list' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'list'">{{ t('tasks.logisticsList') }}</button>
-          <button type="button" class="rounded-md px-2.5 py-1 font-medium" :class="viewMode === 'map' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'map'">{{ t('tasks.logisticsMap') }}</button>
+  <div class="at-scope ct-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
+    <PageHeader :title="t('tasks.logisticsTitle')" :subtitle="t('tasks.logisticsHint')" :menu="headerMenu">
+      <template #primary>
+        <div class="print:hidden flex items-center gap-1.5">
+          <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.prevDay')" @click="shiftDay(-1)"><Icon name="lucide:chevron-left" class="h-4 w-4" /></button>
+          <UInput v-model="day" type="date" size="sm" class="w-36" />
+          <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.nextDay')" @click="shiftDay(1)"><Icon name="lucide:chevron-right" class="h-4 w-4" /></button>
         </div>
-        <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" @click="printPage"><Icon name="lucide:printer" class="h-4 w-4" />{{ t('tasks.print') }}</button>
-        <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!tasks.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />{{ t('common.export') }}</button>
-      </div>
+      </template>
+      <template #actions>
+        <NuxtLink :to="`/${nsSlug}/issues/${boardSlug}`" class="at-btn print:hidden">
+          <Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('app.back') || 'Back' }}</span>
+        </NuxtLink>
+      </template>
+    </PageHeader>
+
+    <!-- Phones switch between the list and the map; from lg both are always on screen (map on the right,
+         the day's tasks by courier in a sidebar on the left), also when the day is empty. -->
+    <div class="mb-2 flex flex-shrink-0 rounded-xl bg-gray-100 p-0.5 text-sm dark:bg-gray-800 lg:hidden print:hidden">
+      <button type="button" class="flex-1 rounded-lg px-2.5 py-1.5 font-medium" :class="viewMode === 'list' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'list'">{{ t('tasks.logisticsList') }}</button>
+      <button type="button" class="flex-1 rounded-lg px-2.5 py-1.5 font-medium" :class="viewMode === 'map' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'map'">{{ t('tasks.logisticsMap') }}</button>
     </div>
 
-    <div class="mt-4 min-h-0 flex-1 lg:grid lg:gap-4" :class="hasLocated ? 'lg:grid-cols-2' : ''">
-    <div class="min-h-0 space-y-4 overflow-y-auto lg:h-full" :class="viewMode === 'map' && hasLocated ? 'hidden lg:block' : 'h-full'">
-      <AppSkeleton v-if="loading" variant="list" :rows="4" />
-      <div v-else-if="!groups.length" class="at-panel !p-6 text-center">
-        <Icon name="lucide:route" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
-        <div class="text-sm font-medium">{{ t('tasks.logisticsEmpty') }}</div>
-      </div>
+    <div class="min-h-0 flex-1 lg:grid lg:grid-cols-[minmax(22rem,26rem)_minmax(0,1fr)] lg:gap-4">
+      <div class="min-h-0 space-y-3 overflow-y-auto lg:h-full" :class="viewMode === 'map' ? 'hidden lg:block' : 'h-full'">
+        <AppSkeleton v-if="loading" variant="list" :rows="4" />
+        <div v-else-if="!groups.length" class="at-panel !p-6 text-center">
+          <Icon name="lucide:route" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
+          <div class="text-sm font-medium">{{ t('tasks.logisticsEmpty') }}</div>
+        </div>
 
-      <section v-for="g in groups" :key="g.assigneeId || 'none'" class="at-panel !p-4 break-inside-avoid">
-        <div class="flex flex-wrap items-center justify-between gap-2">
-          <h2 class="flex items-center gap-2 text-base font-semibold">
-            <span v-if="hasLocated" class="h-3 w-3 flex-shrink-0 rounded-full" :style="{ background: dotColor(g.assigneeId, groups.indexOf(g)) }" />{{ nameOf(g.assigneeId) }}
-          </h2>
-          <div class="flex flex-wrap gap-1.5 text-xs">
-            <span class="at-chip">{{ t('tasks.cntWaiting') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.waiting || 0 }}</b></span>
-            <span class="at-chip">{{ t('tasks.cntActive') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.active || 0 }}</b></span>
-            <span class="at-chip">{{ t('tasks.cntDone') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.done || 0 }}</b></span>
+        <section v-for="g in groups" :key="g.assigneeId || 'none'" class="at-panel !p-4 break-inside-avoid">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <h2 class="flex min-w-0 items-center gap-2 text-base font-semibold">
+              <span v-if="hasLocated" class="h-3 w-3 flex-shrink-0 rounded-full" :style="{ background: dotColor(g.assigneeId, groups.indexOf(g)) }" /><span class="truncate">{{ nameOf(g.assigneeId) }}</span>
+            </h2>
+            <div class="flex flex-wrap gap-1.5 text-xs">
+              <span class="at-chip" :title="t('tasks.cntWaiting')">{{ t('tasks.cntWaiting') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.waiting || 0 }}</b></span>
+              <span class="at-chip" :title="t('tasks.cntActive')">{{ t('tasks.cntActive') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.active || 0 }}</b></span>
+              <span class="at-chip" :title="t('tasks.cntDone')">{{ t('tasks.cntDone') }}: <b class="tabular-nums">{{ counters[g.assigneeId || '']?.done || 0 }}</b></span>
+            </div>
           </div>
-        </div>
-        <ol class="mt-3 divide-y divide-gray-100 dark:divide-gray-800">
-          <li v-for="(tk, i) in g.tasks" :key="tk.id">
-            <button type="button" class="flex w-full items-start gap-3 py-2.5 text-left" @click="open(tk)">
-              <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold tabular-nums dark:bg-gray-800">{{ i + 1 }}</span>
-              <span class="min-w-0 flex-1">
-                <span class="flex items-center justify-between gap-2">
-                  <span class="truncate text-sm font-medium">{{ tk.title }} <span class="text-xs text-gray-400">{{ taskShortCode(boardSlug, tk.taskNumber) }}</span></span>
-                  <span class="flex-shrink-0 text-xs text-gray-500">{{ timeWindowText(tk) }}</span>
+          <ol class="mt-3 divide-y divide-gray-100 dark:divide-gray-800">
+            <li v-for="(tk, i) in g.tasks" :key="tk.id">
+              <button type="button" class="flex w-full items-start gap-3 py-2.5 text-left" @click="open(tk)">
+                <span class="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold tabular-nums dark:bg-gray-800">{{ i + 1 }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="flex items-center justify-between gap-2">
+                    <span class="truncate text-sm font-medium">{{ tk.title }} <span class="text-xs text-gray-400">{{ taskShortCode(boardSlug, tk.taskNumber) }}</span></span>
+                    <span class="flex-shrink-0 text-xs text-gray-500">{{ timeWindowText(tk) }}</span>
+                  </span>
+                  <span v-if="tk.textAddress" class="block truncate text-sm text-gray-500">{{ tk.textAddress }}</span>
+                  <span class="block truncate text-xs text-gray-400">{{ statusLabel(tk.status) }}<template v-if="tk.clientNameSnapshot"> · {{ tk.clientNameSnapshot }}</template></span>
                 </span>
-                <span v-if="tk.textAddress" class="block truncate text-sm text-gray-500">{{ tk.textAddress }}</span>
-                <span class="block text-xs text-gray-400">{{ statusLabel(tk.status) }}<template v-if="tk.clientNameSnapshot"> · {{ tk.clientNameSnapshot }}</template></span>
-              </span>
-            </button>
-          </li>
-        </ol>
-      </section>
-    </div>
-    <div v-if="hasLocated && !loading" class="min-h-[320px] lg:h-full print:hidden" :class="viewMode === 'list' ? 'hidden lg:block' : 'h-full'">
-      <LogisticsMap ref="mapRef" :groups="mapGroups" :selected-id="selected?.id" @select="open" />
-    </div>
+              </button>
+            </li>
+          </ol>
+        </section>
+      </div>
+      <div class="min-h-[320px] lg:h-full print:hidden" :class="viewMode === 'list' ? 'hidden lg:block' : 'h-full'">
+        <LogisticsMap ref="mapRef" :groups="mapGroups" :selected-id="selected?.id" @select="open" />
+      </div>
     </div>
 
     <TaskDetailSlideover v-model="detailOpen" :task="selected" :board-statuses="statuses.map((s) => ({ ...s, isRequired: false }))" :task-types="taskTypes" :member-options="memberOptions" :ns-slug="nsSlug" :board-slug="boardSlug" @changed="loadTasks" @deleted="loadTasks" />

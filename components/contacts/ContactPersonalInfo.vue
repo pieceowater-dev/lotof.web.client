@@ -111,6 +111,7 @@ function formatGender(gender?: boolean | null): string {
       <!-- View Mode -->
       <template v-if="!editMode">
         <div v-if="client.individual">
+          <p v-if="!client.individual.lastName && !client.individual.firstName && !client.individual.middleName && !client.individual.birthDate && !client.individual.gender" class="text-sm text-gray-400">{{ t('contacts.noPersonalData') || 'Нет данных — нажмите ✎, чтобы заполнить' }}</p>
           <div class="flex items-center gap-2 mb-3">
             <UIcon
               name="i-heroicons-user"
@@ -121,7 +122,7 @@ function formatGender(gender?: boolean | null): string {
             </h3>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div>
+            <div v-if="client.individual.lastName">
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                 {{ t('contacts.lastName') }}
               </p>
@@ -129,7 +130,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ maskProfanity(client.individual.lastName) }}
               </p>
             </div>
-            <div>
+            <div v-if="client.individual.firstName">
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                 {{ t('contacts.firstName') }}
               </p>
@@ -153,7 +154,7 @@ function formatGender(gender?: boolean | null): string {
                 {{ new Date(client.individual.birthDate).toLocaleDateString('ru-RU') }}
               </p>
             </div>
-            <div>
+            <div v-if="client.individual.gender && formatGender(client.individual.gender) !== '--'">
               <p class="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">
                 {{ t('contacts.gender') }}
               </p>

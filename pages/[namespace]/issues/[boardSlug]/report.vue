@@ -5,6 +5,8 @@ import { ref, computed, onMounted } from 'vue';
 import * as XLSX from 'xlsx';
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { TaskBoard } from '@/api/tasks/board/list';
@@ -90,43 +92,58 @@ function exportXlsx() {
 }
 
 onMounted(load);
+
+function shiftDay(delta: number) {
+  const d = new Date(`${day.value}T12:00:00`);
+  d.setDate(d.getDate() + delta);
+  day.value = iso(d);
+  load();
+}
+const headerMenu = computed(() => [[
+  { label: t('common.refresh'), icon: 'lucide:refresh-cw', click: load },
+  { label: t('common.export'), icon: 'lucide:download', disabled: !rows.value.length, click: exportXlsx },
+]]);
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-4xl space-y-4 p-4">
-    <div class="flex items-center gap-2">
-      <NuxtLink :to="`/${nsSlug}/issues/${boardSlug}`" class="cp-icon" :aria-label="t('common.back')"><Icon name="lucide:arrow-left" class="w-4 h-4" /></NuxtLink>
-      <div class="min-w-0 flex-1">
-        <h1 class="at-h2 truncate">{{ t('tasks.reportTitle') }}<span v-if="board"> · {{ board.name }}</span></h1>
-        <p class="at-hint">{{ t('tasks.reportHint') }}</p>
+  <div class="at-scope ct-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
+    <PageHeader :title="`${t('tasks.reportTitle')}${board ? ' · ' + board.name : ''}`" :subtitle="t('tasks.reportHint')" :menu="headerMenu">
+      <template #primary>
+        <div class="flex items-center gap-1.5">
+          <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.prevDay')" @click="shiftDay(-1)"><Icon name="lucide:chevron-left" class="h-4 w-4" /></button>
+          <UInput v-model="day" type="date" size="sm" class="w-36" @change="load" />
+          <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.nextDay')" @click="shiftDay(1)"><Icon name="lucide:chevron-right" class="h-4 w-4" /></button>
+        </div>
+      </template>
+      <template #actions>
+        <NuxtLink :to="`/${nsSlug}/issues/${boardSlug}`" class="at-btn">
+          <Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('common.back') }}</span>
+        </NuxtLink>
+      </template>
+    </PageHeader>
+
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto">
+      <div v-if="rows.length" class="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportAssigned') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.assigned }}</div></div>
+        <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportDone') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.done }}</div></div>
+        <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportPostponed') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.postponed }}</div></div>
+        <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportCancelled') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.cancelled }}</div></div>
+        <div class="at-stat col-span-2 sm:col-span-1"><div class="text-xs text-slate-500">{{ t('tasks.reportOverdue') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.overdue }}</div></div>
       </div>
-      <button type="button" class="at-btn hidden sm:inline-flex" :disabled="!rows.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ t('common.export') }}</button>
-    </div>
 
-    <div class="at-panel !p-4 flex items-end gap-3 flex-wrap">
-      <div class="space-y-1"><label class="text-xs font-medium text-slate-500">{{ t('tasks.reportDay') }}</label><UInput v-model="day" type="date" @change="load" /></div>
-      <button type="button" class="at-btn at-btn--blue" :disabled="loading" @click="load"><Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="w-4 h-4" :class="{ 'animate-spin': loading }" />{{ t('common.refresh') }}</button>
-    </div>
-
-    <div v-if="rows.length" class="grid grid-cols-2 sm:grid-cols-5 gap-3">
-      <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportAssigned') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.assigned }}</div></div>
-      <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportDone') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.done }}</div></div>
-      <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportPostponed') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.postponed }}</div></div>
-      <div class="at-stat"><div class="text-xs text-slate-500">{{ t('tasks.reportCancelled') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.cancelled }}</div></div>
-      <div class="at-stat col-span-2 sm:col-span-1"><div class="text-xs text-slate-500">{{ t('tasks.reportOverdue') }}</div><div class="text-xl font-bold tabular-nums">{{ totals.overdue }}</div></div>
-    </div>
-
-    <div class="at-panel !p-2">
-      <div v-if="!loading && !rows.length" class="at-empty-box">{{ t('tasks.reportEmpty') }}</div>
-      <div v-for="r in rows" :key="r.assigneeUserId || 'none'" class="at-row !py-3 flex items-center gap-3 flex-wrap">
-        <div class="min-w-0 flex-1 basis-40 font-semibold truncate" :class="r.assigneeUserId ? '' : 'text-slate-500'">{{ nameOf(r.assigneeUserId) }}</div>
-        <div class="flex items-center gap-1.5 flex-wrap text-xs">
-          <span class="at-chip">{{ t('tasks.reportAssigned') }} {{ r.assigned }}</span>
-          <span class="at-chip">{{ t('tasks.reportDone') }} {{ r.done }}</span>
-          <span v-if="r.postponed" class="at-chip !bg-amber-500/10 !text-amber-700 dark:!text-amber-300">{{ t('tasks.reportPostponed') }} {{ r.postponed }}</span>
-          <span v-if="r.cancelled" class="at-chip !bg-rose-500/10 !text-rose-600">{{ t('tasks.reportCancelled') }} {{ r.cancelled }}</span>
-          <span v-if="r.overdue" class="at-chip !bg-rose-500/10 !text-rose-600">{{ t('tasks.reportOverdue') }} {{ r.overdue }}</span>
-          <span class="text-slate-500 tabular-nums">⌀ {{ minutes(r.avgDoneMinutes) }}</span>
+      <div class="at-panel !p-2">
+        <div v-if="loading" class="px-4 py-6"><AppSkeleton variant="list" :rows="3" /></div>
+        <div v-else-if="!rows.length" class="at-empty-box">{{ t('tasks.reportEmpty') }}</div>
+        <div v-for="r in rows" :key="r.assigneeUserId || 'none'" class="at-row !py-3 flex flex-wrap items-center gap-3">
+          <div class="min-w-0 flex-1 basis-40 truncate font-semibold" :class="r.assigneeUserId ? '' : 'text-slate-500'">{{ nameOf(r.assigneeUserId) }}</div>
+          <div class="flex flex-wrap items-center gap-1.5 text-xs">
+            <span class="at-chip">{{ t('tasks.reportAssigned') }} {{ r.assigned }}</span>
+            <span class="at-chip">{{ t('tasks.reportDone') }} {{ r.done }}</span>
+            <span v-if="r.postponed" class="at-chip !bg-amber-500/10 !text-amber-700 dark:!text-amber-300">{{ t('tasks.reportPostponed') }} {{ r.postponed }}</span>
+            <span v-if="r.cancelled" class="at-chip !bg-rose-500/10 !text-rose-600">{{ t('tasks.reportCancelled') }} {{ r.cancelled }}</span>
+            <span v-if="r.overdue" class="at-chip !bg-rose-500/10 !text-rose-600">{{ t('tasks.reportOverdue') }} {{ r.overdue }}</span>
+            <span class="tabular-nums text-slate-500">⌀ {{ minutes(r.avgDoneMinutes) }}</span>
+          </div>
         </div>
       </div>
     </div>

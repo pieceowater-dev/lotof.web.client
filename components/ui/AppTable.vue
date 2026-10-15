@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import PageNav from '@/components/ui/PageNav.vue';
 import { useI18n } from '@/composables/useI18n'
 
 const props = withDefaults(defineProps<{
@@ -202,24 +203,7 @@ const pageTo = computed(() => hasPaging.value ? Math.min(pageModel.value * pageC
           </span>
         </div>
 
-        <div class="flex gap-x-2 items-center">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs leading-5 text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</span>
-            <USelect
-              v-model="pageCountModel"
-              :options="options"
-              class="w-16"
-              size="xs"
-            />
-          </div>
-          <UPagination
-            v-model="pageModel"
-            :page-count="pageCountModel || 10"
-            :total="effectiveTotal"
-            size="xs"
-            :ui="{ wrapper: 'flex items-center gap-0.5', rounded: 'min-w-[28px] justify-center text-xs', default: { activeButton: { variant: 'outline' } } }"
-          />
-        </div>
+        <PageNav v-model:page="pageModel" v-model:page-size="pageCountModel" :total="effectiveTotal" :size-options="options" />
       </div>
     </template>
   </div>

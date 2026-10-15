@@ -622,7 +622,6 @@ const moreMenuItems = computed(() => {
   const views: DropdownItem[] = [];
   if (geoMapEnabled.value) views.push({ label: t('tasks.mapView') || 'Map view', icon: 'lucide:map', to: `${base}/map` });
   if (isOwnerOrManager.value) {
-    views.push({ label: t('tasks.logisticsTitle'), icon: 'lucide:route', to: `${base}/logistics` });
     views.push({ label: t('tasks.reportOpen'), icon: 'lucide:clipboard-list', to: `${base}/report` });
     views.push({ label: t('tasks.funnelAnalyticsBtn') || 'Analytics', icon: 'lucide:chart-no-axes-column', to: `${base}/analytics` });
   }
@@ -881,6 +880,17 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
           <span class="hidden min-[440px]:inline sm:hidden">{{ t('app.create') || 'Create' }}</span>
           <span class="sr-only min-[440px]:hidden sm:sr-only">{{ t('tasks.createTask') || 'Create issue' }}</span>
         </button>
+        <!-- Logistics is a daily dispatcher tool, so it is a visible button, not a menu entry. -->
+        <NuxtLink
+          v-if="isOwnerOrManager"
+          :to="`/${nsSlug}/issues/${boardSlug}/logistics`"
+          class="at-btn !px-2.5 xl:!px-3.5"
+          :aria-label="t('tasks.logisticsTitle')"
+          :title="t('tasks.logisticsTitle')"
+        >
+          <Icon name="lucide:route" class="w-4 h-4" />
+          <span class="hidden xl:inline">{{ t('tasks.logisticsTitle') }}</span>
+        </NuxtLink>
         <NuxtLink
           v-if="isOwnerOrManager"
           :to="`/${nsSlug}/issues/${boardSlug}/settings`"

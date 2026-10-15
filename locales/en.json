@@ -1085,6 +1085,12 @@
     }
   },
   "common": {
+    "perPage": "/ page",
+    "firstPage": "First page",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "page": "Page",
     "export": "Export",
     "columns": "Columns",
     "resetColumns": "Show all",
@@ -1267,6 +1273,7 @@
       "removeEmail": "Remove email",
       "contactInformation": "Contact information",
       "personalInformation": "Personal information",
+      "noPersonalData": "No details yet — press ✎ to fill them in",
       "companyInformation": "Company information",
       "additionalInformation": "Additional information",
       "required": "Required",

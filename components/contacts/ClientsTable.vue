@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PageNav from '@/components/ui/PageNav.vue';
 import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import type { ClientRow } from '@/api/contacts/listClients';
@@ -974,32 +975,7 @@ function addTagToFilter(tagId: string, tagName: string) {
         </div>
 
         <!-- Right: Pagination controls -->
-        <div class="flex items-center gap-3">
-          <!-- Page size selector -->
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-600 dark:text-gray-400">{{ t('common.rowsPerPage') }}</span>
-            <USelect 
-              :model-value="localPageSize" 
-              :options="pageSizeOptions"
-              option-attribute="label" 
-              value-attribute="value"
-              size="xs"
-              class="w-24"
-              @update:model-value="(val) => localPageSize = typeof val === 'number' ? val : parseInt(String(val), 10)"
-            />
-          </div>
-
-          <!-- Pagination -->
-          <UPagination
-            v-model="localPage"
-            :total="totalItems"
-            :page-count="pageSize"
-            size="xs"
-            :show-last="true"
-            :show-first="true"
-            :max="7"
-          />
-        </div>
+        <PageNav v-model:page="localPage" v-model:page-size="localPageSize" :total="totalItems" :size-options="pageSizeOptions.map((o: any) => o.value ?? o)" />
       </div>
     </div>
   </div>

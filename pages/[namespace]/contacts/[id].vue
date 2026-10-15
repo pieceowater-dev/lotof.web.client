@@ -217,8 +217,16 @@ function onCopyToClipboard(text: string) {
     />
 
     <!-- Loading State -->
-    <div v-if="loading" class="px-4 py-6">
-      <AppSkeleton variant="panel" :rows="3" />
+    <!-- The skeleton has the same two-column frame as the page, so nothing jumps when data arrives. -->
+    <div v-if="loading" class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div class="space-y-6 lg:col-span-2">
+          <AppSkeleton variant="panel" :rows="2" />
+          <AppSkeleton variant="panel" :rows="3" />
+          <AppSkeleton variant="panel" :rows="3" />
+        </div>
+        <div class="lg:col-span-1"><AppSkeleton variant="panel" :rows="6" /></div>
+      </div>
     </div>
 
     <!-- Main Content -->
@@ -254,18 +262,20 @@ function onCopyToClipboard(text: string) {
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left Column -->
         <div class="lg:col-span-2 space-y-6">
-          <ContactQuickActions
-            :client-id="client?.client.id"
-            :display-name="displayName"
-            :identities="identities"
-            :addresses="clientAddresses"
-          />
+          <div class="space-y-2">
+            <ContactQuickActions
+              :client-id="client?.client.id"
+              :display-name="displayName"
+              :identities="identities"
+              :addresses="clientAddresses"
+            />
 
-          <ContactMarks
-            :client-id="client?.client.id"
-            :marks="client?.client || {}"
-            @changed="(m) => client && Object.assign(client.client, m)"
-          />
+            <ContactMarks
+              :client-id="client?.client.id"
+              :marks="client?.client || {}"
+              @changed="(m) => client && Object.assign(client.client, m)"
+            />
+          </div>
 
           <!-- Identities Section -->
           <ContactIdentities
@@ -360,16 +370,16 @@ function onCopyToClipboard(text: string) {
             @bonus-earned="loadClient"
           />
 
-          <div id="c-notes" class="scroll-mt-32" />
-          <ContactNotes :client-id="client?.client.id" />
-
           <div id="c-calls" class="scroll-mt-32" />
           <ContactCalls :client-id="client?.client.id" @loaded="(c) => clientCalls = c" />
 
         </div>
 
         <!-- Right Column - Timeline -->
-        <div id="c-feed" class="scroll-mt-32 lg:col-span-1">
+        <div id="c-feed" class="scroll-mt-32 space-y-6 lg:col-span-1">
+          <!-- Notes sit above the history: the composer is where the newest note lands. -->
+          <div id="c-notes" class="scroll-mt-32" />
+          <ContactNotes :client-id="client?.client.id" />
           <ContactTimeline
             :events="events"
             :tag-name-by-id="tagNameById"

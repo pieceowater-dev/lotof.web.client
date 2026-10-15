@@ -2,6 +2,7 @@
 definePageMeta({ layout: 'workspace' });
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useAuth } from '@/composables/useAuth';
 import { useMenuToken } from '@/composables/useMenuToken';
@@ -167,25 +168,23 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-5xl space-y-4 p-4 pb-safe-or-4">
+  <div class="at-scope ct-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
     <!-- header: the title and hint follow the open report -->
-    <div class="flex items-start gap-3">
-      <NuxtLink :to="`/${nsSlug}/menu`" class="cp-icon mt-1 flex-shrink-0" :aria-label="t('common.back')"><Icon name="lucide:arrow-left" class="w-4 h-4" /></NuxtLink>
-      <div class="min-w-0 flex-1">
-        <h1 class="at-h2">{{ t('menu.reportTitle_' + tab) }}</h1>
-        <p class="at-hint">{{ t('menu.reportHint_' + tab) }}</p>
-      </div>
-      <button type="button" class="at-btn flex-shrink-0" :disabled="!hasData" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" /><span class="hidden sm:inline">{{ t('common.export') }}</span></button>
-    </div>
+    <PageHeader :title="t('menu.reportTitle_' + tab)" :subtitle="t('menu.reportHint_' + tab)">
+      <template #actions>
+        <button type="button" class="at-btn" :disabled="!hasData" @click="exportXlsx"><Icon name="lucide:download" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('common.export') }}</span></button>
+        <NuxtLink :to="`/${nsSlug}/menu`" class="at-btn"><Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('common.back') }}</span></NuxtLink>
+      </template>
+    </PageHeader>
 
-    <div class="overflow-x-auto -mx-1 px-1"><div class="at-seg">
+    <div class="-mx-1 mb-3 flex-shrink-0 overflow-x-auto px-1"><div class="at-seg">
       <button v-for="k in TAB_KEYS" :key="k" type="button" class="at-seg__btn inline-flex items-center gap-1.5 whitespace-nowrap" :class="tab === k ? 'at-seg__btn--on' : ''" @click="setTab(k)">
         <Icon :name="TAB_ICONS[k]" class="w-4 h-4" />{{ t('menu.reportTab_' + k) }}
       </button>
     </div></div>
 
     <!-- period: presets + exact dates; changes reload the report by themselves -->
-    <div class="at-panel !p-4 space-y-3">
+    <div class="at-panel mb-3 flex-shrink-0 !p-4 space-y-3">
       <div class="flex flex-wrap gap-1.5">
         <button v-for="p in PRESETS" :key="p.key" type="button" class="pill-filter" :class="activePreset === p.key ? 'pill-filter--active' : ''" @click="applyPreset(p.key)">{{ t(p.label) }}</button>
       </div>
@@ -194,12 +193,14 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
         <div class="space-y-1"><label class="text-xs font-medium text-slate-500">{{ t('menu.executorsTo') }}</label><UInput v-model="to" type="date" :min="from" /></div>
         <div v-if="tab === 'field' && fieldOptions.length" class="min-w-[14rem] flex-1 space-y-1 sm:max-w-xs">
           <label class="text-xs font-medium text-slate-500">{{ t('menu.reportField') }}</label>
-          <USelectMenu v-model="fieldId" :options="fieldOptions" value-attribute="value" option-attribute="label" :ui="{ rounded: 'rounded-xl' }" :popper="{ strategy: 'fixed' }" />
+          <USelectMenu v-model="fieldId" :options="fieldOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
         </div>
         <button type="button" class="at-btn ml-auto" :disabled="loading" :aria-label="t('common.refresh')" @click="load"><Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="w-4 h-4" :class="{ 'animate-spin': loading }" /></button>
       </div>
     </div>
 
+    <!-- Only the report scrolls: the header, tabs and period stay put, so switching tabs never moves them. -->
+    <div class="min-h-0 flex-1 space-y-4 overflow-y-auto">
     <!-- state: error / first load / content -->
     <div v-if="loadError" class="at-panel">
       <EmptyState icon="lucide:triangle-alert" :title="t('menu.reportLoadFailed')" :description="loadError">
@@ -304,5 +305,6 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
         <div v-else class="at-panel"><EmptyState icon="lucide:scroll-text" :title="t('menu.reportNoEvents')" :description="t('menu.reportEmptyHint')" /></div>
       </template>
     </template>
+    </div>
   </div>
 </template>

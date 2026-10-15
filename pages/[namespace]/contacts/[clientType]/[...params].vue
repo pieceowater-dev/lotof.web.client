@@ -219,7 +219,6 @@ const headerMenu = computed(() => [
     { label: t('contacts.segments'), icon: 'lucide:boxes', click: () => { isSegmentsModalOpen.value = true; } },
   ],
   [
-    { label: t('contacts.callsTitle'), icon: 'lucide:phone-call', to: `/${nsSlug.value}/contacts/calls` },
     { label: t('membership.nav') || 'Абонементы', icon: 'lucide:ticket', to: `/${nsSlug.value}/contacts/memberships` },
   ],
 ]);
@@ -670,6 +669,11 @@ async function handleRefreshFromRemote() {
           </NuxtLink>
         </template>
         <template #actions>
+          <!-- Calls are used all day, so they are a visible button, not a menu entry. -->
+          <NuxtLink :to="`/${nsSlug}/contacts/calls`" class="at-btn !px-2.5 xl:!px-3.5" :aria-label="t('contacts.callsTitle')" :title="t('contacts.callsTitle')">
+            <Icon name="lucide:phone-call" class="h-4 w-4" />
+            <span class="hidden xl:inline">{{ t('contacts.callsTitle') }}</span>
+          </NuxtLink>
           <NuxtLink :to="`/${nsSlug}/contacts/settings`" class="at-btn !px-2.5" data-tour="contacts-settings-btn" :aria-label="t('common.settings.title')" :title="t('common.settings.title')">
             <Icon name="lucide:settings" class="h-4 w-4" />
           </NuxtLink>

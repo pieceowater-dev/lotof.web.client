@@ -1078,6 +1078,12 @@
     }
   },
   "common": {
+    "perPage": "/ бет",
+    "firstPage": "Бірінші бет",
+    "prevPage": "Алдыңғы бет",
+    "nextPage": "Келесі бет",
+    "lastPage": "Соңғы бет",
+    "page": "Бет",
     "export": "Экспорт",
     "columns": "Бағандар",
     "resetColumns": "Барлығын көрсету",
@@ -1322,6 +1328,7 @@
     "removeEmail": "Email-ды жою",
     "contactInformation": "Байланыс ақпараты",
     "personalInformation": "Жеке деректер",
+    "noPersonalData": "Деректер жоқ — толтыру үшін ✎ басыңыз",
     "companyInformation": "Компания туралы ақпарат",
     "additionalInformation": "Қосымша",
     "required": "Міндетті",

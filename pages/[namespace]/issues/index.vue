@@ -197,7 +197,8 @@ onMounted(() => {
       </UButton>
     </div>
 
-    <div v-else class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start">
+    <!-- px/pt/pb: room for the card's hover lift and shadow, which the scroll container would otherwise clip -->
+    <div v-else class="flex-1 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 content-start px-1.5 pb-3 pt-2">
       <NuxtLink
         v-for="board in boards"
         :key="board.id"

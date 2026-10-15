@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 definePageMeta({ layout: 'workspace' });
 
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useAuth } from '@/composables/useAuth';
@@ -95,17 +96,13 @@ function onChanged(updated: MenuOrder) {
 </script>
 
 <template>
-  <div class="at-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
-    <div class="flex flex-shrink-0 items-center justify-between gap-3">
-      <div class="min-w-0">
-        <h1 class="text-xl font-semibold text-gray-900 dark:text-white">{{ t('menu.myOrdersTitle') }}</h1>
-        <p class="at-hint !mt-0.5">{{ t('menu.myOrdersHint') }}</p>
-      </div>
-      <div class="flex flex-shrink-0 items-center gap-2">
-        <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" @click="phoneOpen = true"><Icon name="lucide:smartphone" class="h-4 w-4" />{{ t('menu.myOrdersOnPhone') }}</button>
-        <button type="button" class="at-btn !px-3 !py-1.5" :aria-label="t('common.refresh')" @click="load"><Icon name="lucide:refresh-cw" class="h-4 w-4" /></button>
-      </div>
-    </div>
+  <div class="at-scope ct-scope flex h-full min-h-0 flex-col p-4 pb-safe-or-4">
+    <PageHeader :title="t('menu.myOrdersTitle')" :subtitle="t('menu.myOrdersHint')">
+      <template #actions>
+        <button type="button" class="at-btn hidden sm:inline-flex" @click="phoneOpen = true"><Icon name="lucide:smartphone" class="h-4 w-4" />{{ t('menu.myOrdersOnPhone') }}</button>
+        <button type="button" class="at-btn !px-2.5" :aria-label="t('common.refresh')" :title="t('common.refresh')" @click="load"><Icon name="lucide:refresh-cw" class="h-4 w-4" /></button>
+      </template>
+    </PageHeader>
 
     <div class="mt-3 flex flex-shrink-0 items-center gap-1.5">
       <button type="button" class="pill-filter" :class="!showClosed ? 'pill-filter--active' : ''" @click="showClosed = false">{{ t('menu.myOrdersOpen') }}</button>
@@ -113,14 +110,15 @@ function onChanged(updated: MenuOrder) {
       <NuxtLink :to="`/${nsSlug}/menu`" class="ml-auto text-sm text-accent-700 dark:text-blue-300">{{ t('menu.myOrdersAllOrders') }}</NuxtLink>
     </div>
 
-    <div class="mt-3 min-h-0 flex-1 space-y-3 overflow-y-auto">
-      <AppSkeleton v-if="loading" variant="list" :rows="4" />
-      <div v-else-if="!visible.length" class="at-panel !p-6 text-center">
+    <!-- Phones: one column; wider screens: a grid of cards instead of one stretched row per order. -->
+    <div class="mt-3 grid min-h-0 flex-1 content-start gap-3 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
+      <AppSkeleton v-if="loading" variant="list" :rows="4" class="col-span-full" />
+      <div v-else-if="!visible.length" class="at-panel col-span-full !p-6 text-center">
         <Icon name="lucide:inbox" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
         <div class="text-sm font-medium">{{ t('menu.myOrdersEmpty') }}</div>
       </div>
 
-      <div v-for="o in visible" :key="o.id" class="at-panel !p-4">
+      <div v-for="o in visible" :key="o.id" class="at-panel flex flex-col !p-4">
         <button type="button" class="block w-full text-left" @click="open(o)">
           <div class="flex items-start justify-between gap-3">
             <div class="min-w-0">
@@ -137,7 +135,7 @@ function onChanged(updated: MenuOrder) {
           </div>
         </button>
 
-        <div class="mt-3 flex flex-wrap items-center gap-2">
+        <div class="mt-auto flex flex-wrap items-center gap-2 pt-3">
           <a v-if="o.phone" :href="`tel:${o.phone}`" class="at-btn !px-3.5 !py-2" :aria-label="formatDisplayPhoneUniversal(o.phone)">
             <Icon name="lucide:phone" class="h-4 w-4" />{{ t('menu.myOrdersCall') }}
           </a>

@@ -90,11 +90,12 @@ async function runSearch() {
     const res = await contactsListClients(props.token, props.namespace, {
       search: q,
       clientType: props.primary?.client.clientType,
-      pagination: { length: 10, page: 1 },
+      pagination: { length: 'TEN', page: 1 }, // the API takes the page size as an enum, not a number
     });
     results.value = res.rows.filter(eligible);
   } catch (e) {
     logError('Client search failed:', e);
+    toast.add({ title: t('common.error'), description: t('common.errorRetry'), color: 'red' });
   } finally {
     searching.value = false;
   }
@@ -179,6 +180,7 @@ async function doMerge() {
       <div class="space-y-2">
         <UInput v-model="search" size="sm" icon="lucide:search" :placeholder="t('contacts.mergeSearch')" />
         <div v-if="searching" class="text-xs text-gray-500">{{ t('common.loading') }}</div>
+        <div v-else-if="search.trim() && !results.length" class="py-2 text-center text-sm text-gray-400">{{ t('app.noSearchResults') || 'Ничего не найдено' }}</div>
         <button
           v-for="c in results"
           :key="c.client.id"

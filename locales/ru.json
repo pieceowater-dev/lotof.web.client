@@ -1078,6 +1078,12 @@
     }
   },
   "common": {
+    "perPage": "/ стр.",
+    "firstPage": "Первая страница",
+    "prevPage": "Предыдущая страница",
+    "nextPage": "Следующая страница",
+    "lastPage": "Последняя страница",
+    "page": "Страница",
     "export": "Экспорт",
     "columns": "Колонки",
     "resetColumns": "Показать все",
@@ -1322,6 +1328,7 @@
     "removeEmail": "Удалить email",
     "contactInformation": "Контактная информация",
     "personalInformation": "Личные данные",
+    "noPersonalData": "Нет данных — нажмите ✎, чтобы заполнить",
     "companyInformation": "Информация о компании",
     "additionalInformation": "Дополнительные данные",
     "required": "Обязательно",

@@ -435,6 +435,10 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
         <span class="text-sm text-gray-600 dark:text-gray-400 truncate">{{ board?.name }}</span>
       </div>
       <div class="flex items-center gap-2 self-start flex-shrink-0">
+        <!-- The page's one primary action lives in the header, next to Back. -->
+        <button v-if="!loading" type="button" class="at-btn at-btn--primary" :disabled="!isFormValid || saving" @click="handleSave">
+          <Icon :name="saving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="{ 'animate-spin': saving }" />{{ t('app.save') || 'Save' }}
+        </button>
         <UButton icon="lucide:arrow-left" size="xs" color="gray" variant="soft" @click="goBack">
           {{ t('app.back') || 'Back' }}
         </UButton>
@@ -670,13 +674,6 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
               </SettingsSection>
             </div>
           </div>
-        </div>
-
-        <!-- The one primary action of the page stays in reach while scrolling. -->
-        <div class="sticky bottom-0 z-10 -mx-1 mt-2 flex items-center justify-end gap-2 bg-gradient-to-t from-white via-white/95 to-transparent px-1 pb-1 pt-4 dark:from-gray-900 dark:via-gray-900/95">
-          <button type="button" class="at-btn at-btn--primary" :disabled="!isFormValid || saving" @click="handleSave">
-            <Icon :name="saving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="{ 'animate-spin': saving }" />{{ t('app.save') || 'Save' }}
-          </button>
         </div>
       </div>
     </template>
