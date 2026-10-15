@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { presetRange, presetOf, type PeriodPreset } from '@/utils/reportPeriods';
 import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
@@ -48,6 +49,20 @@ const today = new Date();
 const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
 const from = ref(monthAgo.toISOString().slice(0, 10));
 const to = ref(today.toISOString().slice(0, 10));
+
+const PRESETS = [
+  { key: 'today', label: 'menu.periodToday' },
+  { key: 'week', label: 'menu.period7' },
+  { key: 'month', label: 'menu.periodMonth' },
+  { key: 'prevMonth', label: 'menu.periodPrevMonth' },
+  { key: 'all', label: 'menu.periodAll' },
+] as const;
+function applyPreset(key: PeriodPreset) {
+  const r = presetRange(key, new Date());
+  from.value = r.from;
+  to.value = r.to;
+}
+const activePreset = computed(() => presetOf(from.value, to.value, new Date()));
 
 const topGoods = ref<GoodsTopGoodsEntry[]>([]);
 const abcEntries = ref<GoodsAbcEntry[]>([]);
@@ -222,12 +237,17 @@ onMounted(async () => {
       </GoodsNavTabs>
     </div>
 
-    <div v-if="activeTab !== 'alerts'" class="flex items-center gap-2 flex-shrink-0 mt-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 py-2">
-      <UIcon name="lucide:calendar" class="w-4 h-4 text-gray-400 flex-shrink-0" />
-      <UInput v-model="from" type="date" size="sm" class="w-auto" />
-      <span class="text-gray-300 dark:text-gray-600 flex-shrink-0">—</span>
-      <UInput v-model="to" type="date" size="sm" class="w-auto" />
-      <button type="button" class="at-btn ml-auto flex-shrink-0 !px-2.5" :disabled="loading" :aria-label="t('common.refresh')" :title="t('common.refresh')" @click="loadReport"><Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="h-4 w-4" :class="{ 'animate-spin': loading }" /></button>
+    <!-- period: presets + exact dates; the dates wrap on phones instead of running off the edge -->
+    <div v-if="activeTab !== 'alerts'" class="mt-3 flex-shrink-0 space-y-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900">
+      <div class="flex flex-wrap gap-1.5">
+        <button v-for="p in PRESETS" :key="p.key" type="button" class="pill-filter" :class="activePreset === p.key ? 'pill-filter--active' : ''" @click="applyPreset(p.key)">{{ t(p.label) }}</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <UInput v-model="from" type="date" size="sm" class="min-w-[9.5rem] flex-1" :max="to" />
+        <span class="hidden flex-shrink-0 text-gray-300 sm:inline dark:text-gray-600">—</span>
+        <UInput v-model="to" type="date" size="sm" class="min-w-[9.5rem] flex-1" :min="from" />
+        <button type="button" class="at-btn flex-shrink-0 !px-2.5" :disabled="loading" :aria-label="t('common.refresh')" :title="t('common.refresh')" @click="loadReport"><Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="h-4 w-4" :class="{ 'animate-spin': loading }" /></button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto mt-3">
