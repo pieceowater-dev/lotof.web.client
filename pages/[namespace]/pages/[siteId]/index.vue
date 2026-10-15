@@ -1,0 +1,576 @@
+<script lang="ts" setup>
+definePageMeta({ layout: 'workspace' });
+
+import PageHeader from '@/components/ui/PageHeader.vue';
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import EmptyState from '@/components/ui/EmptyState.vue';
+import ThemeDesigner from '@/components/pages/ThemeDesigner.vue';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
+import { useI18n } from '@/composables/useI18n';
+import { usePagesAuth } from '@/composables/usePagesAuth';
+import { usePageTitle } from '@/composables/usePageTitle';
+import { useConfirm } from '@/composables/useConfirm';
+import {
+  pagesApi, type PagesSite, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult,
+} from '@/api/pages/ops';
+import { siteOrigin, slugifyText } from '@/utils/pagesSite';
+import { getErrorMessage } from '@/utils/types/errors';
+import { logError } from '@/utils/logger';
+
+const { t, locale } = useI18n();
+const route = useRoute();
+const nsSlug = computed(() => route.params.namespace as string);
+const siteId = computed(() => route.params.siteId as string);
+const toast = useToast();
+const { getToken } = usePagesAuth();
+const { confirm } = useConfirm();
+
+const booting = ref(true);
+const site = ref<PagesSite | null>(null);
+const pages = ref<SitePage[]>([]);
+const versions = ref<SiteVersion[]>([]);
+const redirects = ref<SiteRedirect[]>([]);
+const preflight = ref<PreflightResult | null>(null);
+
+usePageTitle('pages', { subject: () => site.value?.name });
+
+type TabKey = 'pages' | 'design' | 'publish' | 'redirects' | 'settings';
+const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
+  { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
+  { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
+  { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
+  { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
+  { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
+]);
+const activeTab = ref<TabKey>((TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
+watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { replace: true }));
+
+function fail(e: unknown, key = 'common.error') {
+  logError('[pages/site]', e);
+  const raw = (e as any)?.response?.errors?.[0]?.message;
+  toast.add({ title: t(key), description: raw || getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
+}
+
+async function loadAll() {
+  try {
+    await getToken(nsSlug.value);
+    const [s, p, v, r] = await Promise.all([
+      pagesApi.site(nsSlug.value, siteId.value),
+      pagesApi.pages(nsSlug.value, siteId.value),
+      pagesApi.versions(nsSlug.value, siteId.value),
+      pagesApi.redirects(nsSlug.value, siteId.value),
+    ]);
+    if (!s) { await navigateTo(`/${nsSlug.value}/pages`); return; }
+    site.value = s; pages.value = p; versions.value = v; redirects.value = r;
+    fillSettings(s);
+  } catch (e) {
+    fail(e);
+  } finally {
+    booting.value = false;
+  }
+}
+onMounted(loadAll);
+
+const origin = computed(() => (site.value ? siteOrigin(site.value.host) : ''));
+const isLive = computed(() => !!site.value?.publishedVersion && site.value.status !== 'SITE_SUSPENDED');
+const readyCount = computed(() => pages.value.filter(p => p.status === 'PAGE_READY').length);
+
+// ───────── pages tab ─────────
+const sortedPages = computed(() => [...pages.value].sort((a, b) => a.path.localeCompare(b.path)));
+const hasHome = computed(() => pages.value.some(p => p.path === '/'));
+const depth = (p: SitePage) => (p.path === '/' ? 0 : p.path.split('/').length - 2);
+
+const pageModal = ref(false);
+const pageSaving = ref(false);
+const pageForm = reactive({ title: '', slug: '', parentId: '' as string, home: false });
+const pageSlugTouched = ref(false);
+const pageError = ref('');
+const parentOptions = computed(() => [
+  { label: t('pages.pages.topLevel'), value: '' },
+  ...sortedPages.value.filter(p => p.path !== '/').map(p => ({ label: `${p.title} (${p.path})`, value: p.id })),
+]);
+const parentPath = computed(() => pages.value.find(p => p.id === pageForm.parentId)?.path || '');
+watch(() => pageForm.title, (v) => { if (!pageSlugTouched.value) pageForm.slug = slugifyText(v, 60); });
+
+function openCreatePage(opts: { parentId?: string; home?: boolean } = {}) {
+  pageForm.title = opts.home ? t('pages.pages.homeTitle') : '';
+  pageForm.slug = '';
+  pageForm.parentId = opts.parentId || '';
+  pageForm.home = !!opts.home;
+  pageSlugTouched.value = false;
+  pageError.value = '';
+  pageModal.value = true;
+}
+
+async function createPage() {
+  pageError.value = '';
+  if (!pageForm.title.trim()) { pageError.value = t('pages.pages.needTitle'); return; }
+  if (!pageForm.home && !pageForm.slug) { pageError.value = t('pages.pages.needSlug'); return; }
+  pageSaving.value = true;
+  try {
+    const created = await pagesApi.createPage(nsSlug.value, {
+      siteId: siteId.value, parentId: pageForm.home ? null : (pageForm.parentId || null),
+      slug: pageForm.home ? '' : pageForm.slug, title: pageForm.title.trim(),
+    });
+    pageModal.value = false;
+    await navigateTo(`/${nsSlug.value}/pages/${siteId.value}/edit/${created.id}`);
+  } catch (e: any) {
+    const msg = String(e?.response?.errors?.[0]?.message || '');
+    if (msg.includes('already exists')) pageError.value = t('pages.pages.pathTaken');
+    else if (msg.includes('lowercase')) pageError.value = t('pages.pages.slugInvalid');
+    else fail(e);
+  } finally {
+    pageSaving.value = false;
+  }
+}
+
+async function deletePage(p: SitePage) {
+  const ok = await confirm({
+    title: t('pages.pages.deleteTitle'), message: t('pages.pages.deleteText', { name: p.title }),
+    confirmLabel: t('common.delete'), cancelLabel: t('common.cancel'),
+  });
+  if (!ok) return;
+  try {
+    await pagesApi.deletePage(nsSlug.value, p.id);
+    pages.value = pages.value.filter(x => x.id !== p.id);
+    toast.add({ title: t('pages.pages.deleted'), color: 'green' });
+  } catch (e: any) {
+    const msg = String(e?.response?.errors?.[0]?.message || '');
+    if (msg.includes('child pages')) toast.add({ title: t('pages.pages.hasChildren'), color: 'amber' });
+    else fail(e);
+  }
+}
+
+async function toggleReady(p: SitePage) {
+  try {
+    const full = await pagesApi.page(nsSlug.value, p.id);
+    if (!full) return;
+    const next = p.status === 'PAGE_READY' ? 'PAGE_DRAFT' : 'PAGE_READY';
+    await pagesApi.updatePage(nsSlug.value, {
+      id: full.id, slug: full.slug, title: full.title, status: next, lang: full.lang,
+      seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+    });
+    p.status = next;
+  } catch (e) { fail(e); }
+}
+
+// ───────── publish tab ─────────
+const checking = ref(false);
+const publishing = ref(false);
+const publishNote = ref('');
+const errorIssues = computed(() => (preflight.value?.issues || []).filter(i => i.severity === 'error'));
+const warnIssues = computed(() => (preflight.value?.issues || []).filter(i => i.severity !== 'error'));
+
+async function runPreflight() {
+  checking.value = true;
+  try { preflight.value = await pagesApi.preflight(nsSlug.value, siteId.value); } catch (e) { fail(e); } finally { checking.value = false; }
+}
+
+async function publish() {
+  publishing.value = true;
+  try {
+    await runPreflight();
+    if (preflight.value && !preflight.value.ok) { activeTab.value = 'publish'; return; }
+    const v = await pagesApi.publish(nsSlug.value, siteId.value, publishNote.value.trim());
+    publishNote.value = '';
+    toast.add({ title: t('pages.publish.done', { v: v.version }), color: 'green' });
+    const [s, vs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.versions(nsSlug.value, siteId.value)]);
+    if (s) site.value = s;
+    versions.value = vs;
+  } catch (e) { fail(e); } finally { publishing.value = false; }
+}
+
+async function rollback(v: SiteVersion) {
+  const ok = await confirm({
+    title: t('pages.publish.rollbackTitle', { v: v.version }), message: t('pages.publish.rollbackText'),
+    confirmLabel: t('pages.publish.rollback'), cancelLabel: t('common.cancel'), color: 'amber', icon: 'lucide:undo-2',
+  });
+  if (!ok) return;
+  try {
+    await pagesApi.rollback(nsSlug.value, siteId.value, v.version);
+    const [s, vs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.versions(nsSlug.value, siteId.value)]);
+    if (s) site.value = s;
+    versions.value = vs;
+    toast.add({ title: t('pages.publish.rolledBack', { v: v.version }), color: 'green' });
+  } catch (e) { fail(e); }
+}
+
+const fmt = (unix: number) => new Date(unix * 1000).toLocaleString(locale.value === 'kk' ? 'kk-KZ' : locale.value, { dateStyle: 'medium', timeStyle: 'short' });
+const fmtBytes = (n: number) => (n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`);
+
+// ───────── redirects tab ─────────
+const redirectForm = reactive({ from: '', to: '' });
+const redirectSaving = ref(false);
+const csvOpen = ref(false);
+const csvText = ref('');
+const csvBusy = ref(false);
+
+async function addRedirect() {
+  if (!redirectForm.from.trim() || !redirectForm.to.trim()) return;
+  redirectSaving.value = true;
+  try {
+    await pagesApi.upsertRedirect(nsSlug.value, { siteId: siteId.value, fromPath: redirectForm.from.trim(), toPath: redirectForm.to.trim() });
+    redirectForm.from = ''; redirectForm.to = '';
+    redirects.value = await pagesApi.redirects(nsSlug.value, siteId.value);
+    toast.add({ title: t('pages.redirects.added'), description: t('pages.redirects.needsPublish'), color: 'green' });
+  } catch (e) { fail(e); } finally { redirectSaving.value = false; }
+}
+
+async function removeRedirect(r: SiteRedirect) {
+  try {
+    await pagesApi.deleteRedirect(nsSlug.value, r.id);
+    redirects.value = redirects.value.filter(x => x.id !== r.id);
+  } catch (e) { fail(e); }
+}
+
+async function importCsv() {
+  if (!csvText.value.trim()) return;
+  csvBusy.value = true;
+  try {
+    const res = await pagesApi.importRedirects(nsSlug.value, siteId.value, csvText.value);
+    redirects.value = await pagesApi.redirects(nsSlug.value, siteId.value);
+    toast.add({
+      title: t('pages.redirects.imported', { n: res.imported }),
+      description: res.errors.length ? res.errors.slice(0, 3).join('; ') : undefined,
+      color: res.errors.length ? 'amber' : 'green',
+    });
+    if (!res.errors.length) { csvOpen.value = false; csvText.value = ''; }
+  } catch (e) { fail(e); } finally { csvBusy.value = false; }
+}
+
+// ───────── settings tab ─────────
+const settingsForm = reactive({ name: '', defaultLang: 'ru', googleSiteVerification: '', robotsTxt: '' });
+const settingsSaving = ref(false);
+
+function fillSettings(s: PagesSite) {
+  settingsForm.name = s.name;
+  settingsForm.defaultLang = s.settings.defaultLang || 'ru';
+  settingsForm.googleSiteVerification = s.settings.googleSiteVerification || '';
+  settingsForm.robotsTxt = s.settings.robotsTxt || '';
+}
+
+async function saveSettings() {
+  if (!site.value || !settingsForm.name.trim()) return;
+  settingsSaving.value = true;
+  try {
+    const s = site.value.settings;
+    site.value = await pagesApi.updateSite(nsSlug.value, {
+      id: site.value.id, name: settingsForm.name.trim(),
+      settings: {
+        defaultLang: settingsForm.defaultLang, langs: s.langs, faviconUrl: s.faviconUrl, ogImageUrl: s.ogImageUrl,
+        googleSiteVerification: settingsForm.googleSiteVerification.trim(), robotsTxt: settingsForm.robotsTxt,
+        headHtml: s.headHtml, themeId: s.themeId, themeVarsJson: s.themeVarsJson, navJson: s.navJson,
+        logoUrl: s.logoUrl, footerText: s.footerText,
+      },
+    });
+    toast.add({ title: t('pages.settings.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
+  } catch (e) { fail(e); } finally { settingsSaving.value = false; }
+}
+
+const designSaving = ref(false);
+async function saveDesign(p: { themeId: string; themeVarsJson: string; logoUrl: string; footerText: string }) {
+  if (!site.value) return;
+  designSaving.value = true;
+  try {
+    const s = site.value.settings;
+    site.value = await pagesApi.updateSite(nsSlug.value, {
+      id: site.value.id, name: site.value.name,
+      settings: {
+        defaultLang: s.defaultLang, langs: s.langs, faviconUrl: s.faviconUrl, ogImageUrl: s.ogImageUrl,
+        googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, headHtml: s.headHtml, navJson: s.navJson,
+        themeId: p.themeId, themeVarsJson: p.themeVarsJson, logoUrl: p.logoUrl, footerText: p.footerText,
+      },
+    });
+    toast.add({ title: t('pages.design.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
+  } catch (e) { fail(e); } finally { designSaving.value = false; }
+}
+
+async function toggleSuspend() {
+  if (!site.value) return;
+  const suspend = site.value.status !== 'SITE_SUSPENDED';
+  if (suspend) {
+    const ok = await confirm({
+      title: t('pages.settings.suspendTitle'), message: t('pages.settings.suspendText'),
+      confirmLabel: t('pages.settings.suspend'), cancelLabel: t('common.cancel'), color: 'amber', icon: 'lucide:pause',
+    });
+    if (!ok) return;
+  }
+  try { site.value = await pagesApi.setSuspended(nsSlug.value, site.value.id, suspend); } catch (e) { fail(e); }
+}
+
+async function removeSite() {
+  if (!site.value) return;
+  const ok = await confirm({
+    title: t('pages.settings.deleteTitle'), message: t('pages.settings.deleteText', { host: site.value.host }),
+    confirmLabel: t('common.delete'), cancelLabel: t('common.cancel'),
+  });
+  if (!ok) return;
+  try {
+    await pagesApi.deleteSite(nsSlug.value, site.value.id);
+    await navigateTo(`/${nsSlug.value}/pages`);
+  } catch (e) { fail(e); }
+}
+
+const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' }, { v: 'en', l: 'English' }];
+</script>
+
+<template>
+  <div class="at-scope ct-scope p-4 pb-safe-or-4 flex flex-col gap-4">
+    <NuxtLink :to="`/${nsSlug}/pages`" class="at-btn self-start !px-3">
+      <Icon name="lucide:arrow-left" class="h-4 w-4" />{{ t('pages.title') }}
+    </NuxtLink>
+
+    <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="3" /></div>
+
+    <template v-else-if="site">
+      <PageHeader :title="site.name" :subtitle="site.host">
+        <template #primary>
+          <button type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
+            <UIcon :name="publishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="publishing && 'animate-spin'" />
+            <span class="hidden min-[440px]:inline">{{ t('pages.publish.action') }}</span>
+            <span class="sr-only min-[440px]:hidden">{{ t('pages.publish.action') }}</span>
+          </button>
+        </template>
+        <template #actions>
+          <a v-if="isLive" :href="origin" target="_blank" rel="noopener noreferrer" class="at-btn !px-2.5 xl:!px-3.5" :title="t('pages.openSite')" :aria-label="t('pages.openSite')">
+            <Icon name="lucide:external-link" class="h-4 w-4" /><span class="hidden xl:inline">{{ t('pages.openSite') }}</span>
+          </a>
+        </template>
+      </PageHeader>
+
+      <div v-if="site.status === 'SITE_SUSPENDED'" class="at-banner">
+        <div class="flex items-center gap-2 text-sm font-medium text-rose-700 dark:text-rose-300">
+          <Icon name="lucide:pause-circle" class="h-4 w-4" />{{ t('pages.suspendedBanner') }}
+        </div>
+        <button type="button" class="at-btn at-btn--blue" @click="toggleSuspend">{{ t('pages.settings.resume') }}</button>
+      </div>
+
+      <div class="overflow-x-auto no-scrollbar">
+        <div class="at-seg">
+          <button v-for="tab in TABS" :key="tab.key" type="button" class="at-seg__btn" :class="activeTab === tab.key && 'at-seg__btn--on'" @click="activeTab = tab.key">
+            <Icon :name="tab.icon" class="h-4 w-4" />{{ tab.label }}
+          </button>
+        </div>
+      </div>
+
+      <!-- ═════════ PAGES ═════════ -->
+      <template v-if="activeTab === 'pages'">
+        <div class="flex items-center justify-between gap-2">
+          <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('pages.pages.summary', { total: pages.length, ready: readyCount }) }}</p>
+          <button v-if="pages.length" type="button" class="at-btn at-btn--blue" @click="openCreatePage()">
+            <Icon name="lucide:plus" class="h-4 w-4" />{{ t('pages.pages.new') }}
+          </button>
+        </div>
+
+        <EmptyState v-if="!pages.length" icon="lucide:file-plus-2" size="lg" :title="t('pages.pages.emptyTitle')" :description="t('pages.pages.emptyText')">
+          <button type="button" class="at-btn at-btn--primary mt-2" @click="openCreatePage({ home: true })">
+            <Icon name="lucide:house" class="h-4 w-4" />{{ t('pages.pages.createHome') }}
+          </button>
+        </EmptyState>
+
+        <div v-else class="flex flex-col gap-2">
+          <div v-if="!hasHome" class="at-banner">
+            <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('pages.pages.noHome') }}</span>
+            <button type="button" class="at-btn at-btn--blue" @click="openCreatePage({ home: true })">{{ t('pages.pages.createHome') }}</button>
+          </div>
+          <div
+            v-for="p in sortedPages" :key="p.id"
+            class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10"
+            :style="{ marginLeft: `${depth(p) * 1.25}rem` }"
+          >
+            <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon :name="p.path === '/' ? 'lucide:house' : 'lucide:file-text'" class="h-4 w-4" /></span>
+            <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="min-w-0 flex-1 no-underline">
+              <div class="truncate font-medium text-gray-900 dark:text-white">{{ p.title }}</div>
+              <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ p.path }}</div>
+            </NuxtLink>
+            <button
+              type="button"
+              class="hidden flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-block"
+              :class="p.status === 'PAGE_READY' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'"
+              :title="t('pages.pages.toggleStatus')"
+              @click="toggleReady(p)"
+            >{{ p.status === 'PAGE_READY' ? t('pages.status.ready') : t('pages.status.draft') }}</button>
+            <div class="flex flex-shrink-0 items-center gap-1">
+              <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="at-btn !px-2.5" :aria-label="t('pages.pages.edit')" :title="t('pages.pages.edit')"><Icon name="lucide:pencil" class="h-4 w-4" /></NuxtLink>
+              <button v-if="p.path !== '/'" type="button" class="at-btn !px-2.5" :aria-label="t('pages.pages.addChild')" :title="t('pages.pages.addChild')" @click="openCreatePage({ parentId: p.id })"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></button>
+              <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" :title="t('common.delete')" @click="deletePage(p)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ═════════ DESIGN ═════════ -->
+      <ThemeDesigner v-else-if="activeTab === 'design'" :site="site" :ns-slug="nsSlug" :saving="designSaving" @save="saveDesign" />
+
+      <!-- ═════════ PUBLISH ═════════ -->
+      <template v-else-if="activeTab === 'publish'">
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.publish.liveTitle') }}</div>
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                <template v-if="site.publishedVersion">{{ t('pages.publish.liveVersion', { v: site.publishedVersion }) }} · <a :href="origin" target="_blank" rel="noopener noreferrer" class="text-primary-600 dark:text-primary-400">{{ site.host }}</a></template>
+                <template v-else>{{ t('pages.publish.neverPublished') }}</template>
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button type="button" class="at-btn" :disabled="checking" @click="runPreflight">
+                <UIcon :name="checking ? 'lucide:loader-2' : 'lucide:list-checks'" class="h-4 w-4" :class="checking && 'animate-spin'" />{{ t('pages.publish.check') }}
+              </button>
+              <button type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
+                <UIcon :name="publishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="publishing && 'animate-spin'" />{{ t('pages.publish.action') }}
+              </button>
+            </div>
+          </div>
+          <UInput v-model="publishNote" class="mt-3" :placeholder="t('pages.publish.notePlaceholder')" maxlength="120" />
+          <p class="mt-2 text-xs text-gray-400 dark:text-gray-500">{{ t('pages.publish.hint', { n: readyCount }) }}</p>
+          <p v-if="origin.includes('localhost') || site.host.endsWith('.lota.tools')" class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('pages.publish.noindexHint') }}</p>
+        </div>
+
+        <div v-if="preflight" class="flex flex-col gap-2">
+          <div v-if="preflight.ok && !warnIssues.length" class="flex items-center gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <Icon name="lucide:circle-check" class="h-4 w-4" />{{ t('pages.publish.allGood') }}
+          </div>
+          <div v-for="(i, idx) in errorIssues" :key="`e${idx}`" class="flex items-start gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">
+            <Icon name="lucide:circle-x" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ i.message }}</span>
+          </div>
+          <div v-for="(i, idx) in warnIssues" :key="`w${idx}`" class="flex items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+            <Icon name="lucide:triangle-alert" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ i.message }}</span>
+          </div>
+        </div>
+
+        <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.publish.history') }}</div>
+        <p v-if="!versions.length" class="text-sm text-gray-500 dark:text-gray-400">{{ t('pages.publish.noVersions') }}</p>
+        <div v-else class="flex flex-col gap-2">
+          <div v-for="v in versions" :key="v.id" class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+            <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon name="lucide:package" class="h-4 w-4" /></span>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2 font-medium text-gray-900 dark:text-white">
+                {{ v.version }}
+                <span v-if="v.live" class="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{{ t('pages.publish.live') }}</span>
+              </div>
+              <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ fmt(v.createdAtUnix) }} · {{ t('pages.sites.pageCount', { n: v.pageCount }) }} · {{ fmtBytes(v.bytes) }}<template v-if="v.note"> · {{ v.note }}</template></div>
+            </div>
+            <button v-if="!v.live" type="button" class="at-btn" @click="rollback(v)"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('pages.publish.rollback') }}</button>
+          </div>
+        </div>
+      </template>
+
+      <!-- ═════════ REDIRECTS ═════════ -->
+      <template v-else-if="activeTab === 'redirects'">
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+          <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <UInput v-model="redirectForm.from" placeholder="/old-page" @keyup.enter="addRedirect" />
+            <UInput v-model="redirectForm.to" placeholder="/new-page" @keyup.enter="addRedirect" />
+            <button type="button" class="at-btn at-btn--blue justify-center" :disabled="redirectSaving" @click="addRedirect"><Icon name="lucide:plus" class="h-4 w-4" />{{ t('common.add') }}</button>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <span>{{ t('pages.redirects.hint') }}</span>
+            <button type="button" class="font-medium text-primary-600 dark:text-primary-400" @click="csvOpen = true">{{ t('pages.redirects.import') }}</button>
+          </div>
+        </div>
+        <EmptyState v-if="!redirects.length" icon="lucide:arrow-right-left" :title="t('pages.redirects.empty')" :description="t('pages.redirects.emptyText')" />
+        <div v-else class="flex flex-col gap-2">
+          <div v-for="r in redirects" :key="r.id" class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+            <div class="min-w-0 flex-1 text-sm">
+              <span class="font-medium text-gray-900 dark:text-white">{{ r.fromPath }}</span>
+              <Icon name="lucide:arrow-right" class="mx-1.5 inline h-3.5 w-3.5 text-gray-400" />
+              <span class="break-all text-gray-600 dark:text-gray-300">{{ r.toPath }}</span>
+            </div>
+            <span class="hidden rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 sm:inline dark:bg-white/10 dark:text-gray-400">{{ t(`pages.redirects.source.${r.source}`) }}</span>
+            <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" @click="removeRedirect(r)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
+          </div>
+        </div>
+      </template>
+
+      <!-- ═════════ SETTINGS ═════════ -->
+      <template v-else>
+        <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
+          <UFormGroup :label="t('pages.sites.name')" required><UInput v-model="settingsForm.name" /></UFormGroup>
+          <UFormGroup :label="t('pages.settings.language')">
+            <div class="at-seg !min-w-0 self-start">
+              <button v-for="l in LANGS" :key="l.v" type="button" class="at-seg__btn" :class="settingsForm.defaultLang === l.v && 'at-seg__btn--on'" @click="settingsForm.defaultLang = l.v">{{ l.l }}</button>
+            </div>
+          </UFormGroup>
+          <UFormGroup :label="t('pages.settings.gsv')" :help="t('pages.settings.gsvHint')"><UInput v-model="settingsForm.googleSiteVerification" placeholder="abc123…" /></UFormGroup>
+          <UFormGroup :label="t('pages.settings.robots')" :help="t('pages.settings.robotsHint')">
+            <UTextarea v-model="settingsForm.robotsTxt" :rows="4" placeholder="User-agent: *&#10;Allow: /" />
+          </UFormGroup>
+          <div class="flex justify-end">
+            <button type="button" class="at-btn at-btn--primary" :disabled="settingsSaving" @click="saveSettings">
+              <UIcon v-if="settingsSaving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('common.save') }}
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.suspendHint') }}</div>
+            </div>
+            <button type="button" class="at-btn at-btn--amber" @click="toggleSuspend">
+              <Icon :name="site.status === 'SITE_SUSPENDED' ? 'lucide:play' : 'lucide:pause'" class="h-4 w-4" />{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}
+            </button>
+          </div>
+          <div class="h-px bg-black/5 dark:bg-white/10" />
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.settings.deleteTitle') }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.deleteHint') }}</div>
+            </div>
+            <button type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="removeSite"><Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('common.delete') }}</button>
+          </div>
+        </div>
+      </template>
+    </template>
+
+    <!-- create page -->
+    <UModal v-model="pageModal" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
+      <UCard :ui="atCardUiFit">
+        <template #header><h3 class="text-base font-semibold">{{ pageForm.home ? t('pages.pages.createHome') : t('pages.pages.new') }}</h3></template>
+        <div class="space-y-3.5">
+          <UFormGroup :label="t('pages.pages.title')" required><UInput v-model="pageForm.title" autofocus @keyup.enter="createPage" /></UFormGroup>
+          <template v-if="!pageForm.home">
+            <UFormGroup :label="t('pages.pages.parent')">
+              <USelectMenu v-model="pageForm.parentId" :options="parentOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+            </UFormGroup>
+            <UFormGroup :label="t('pages.pages.slug')" :error="pageError || undefined" :help="pageError ? undefined : t('pages.pages.slugHint')">
+              <UInput v-model="pageForm.slug" @update:model-value="pageSlugTouched = true" @keyup.enter="createPage" />
+            </UFormGroup>
+            <div class="rounded-2xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300">
+              <span class="break-all font-medium">{{ site?.host }}{{ parentPath }}/{{ pageForm.slug || '…' }}</span>
+            </div>
+          </template>
+          <p v-else-if="pageError" class="text-xs text-red-600 dark:text-red-400">{{ pageError }}</p>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <button type="button" class="at-btn" @click="pageModal = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="at-btn at-btn--primary" :disabled="pageSaving" @click="createPage">
+              <UIcon v-if="pageSaving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('pages.pages.createAndEdit') }}
+            </button>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- CSV import -->
+    <UModal v-model="csvOpen" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
+      <UCard :ui="atCardUiFit">
+        <template #header><h3 class="text-base font-semibold">{{ t('pages.redirects.import') }}</h3></template>
+        <UFormGroup :help="t('pages.redirects.csvHint')">
+          <UTextarea v-model="csvText" :rows="8" placeholder="/old,/new&#10;/promo,https://example.com/sale,302" />
+        </UFormGroup>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <button type="button" class="at-btn" @click="csvOpen = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="at-btn at-btn--primary" :disabled="csvBusy || !csvText.trim()" @click="importCsv">
+              <UIcon v-if="csvBusy" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('pages.redirects.importAction') }}
+            </button>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+  </div>
+</template>

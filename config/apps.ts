@@ -8,6 +8,22 @@ export type AppConfig = {
   canAdd: boolean;       // false if still under development (coming soon)
 };
 
+// lota Pages (site builder) is not released yet: its bundle is not registered in Hub/Capital billing and the
+// backend is not deployed. It is visible only in local development, or in a build made with
+// VITE_PAGES_ENABLED=true (e.g. a staging environment). Everywhere else the app does not exist for users:
+// no header tab, no hub tile, and its routes redirect home (see middleware/pages-gate.global.ts).
+export const PAGES_ENABLED = import.meta.dev || import.meta.env.VITE_PAGES_ENABLED === 'true';
+
+const PAGES_APP: AppConfig = {
+  name: 'lota Pages',
+  bundle: 'pieceowater.pages',
+  address: 'pages',
+  icon: 'lucide:panels-top-left',
+  titleKey: 'app.pages',
+  descriptionKey: 'app.pagesDesc',
+  canAdd: false,
+};
+
 // Order here drives both the header nav buttons and the home dashboard tiles
 // (see AppHeader.vue's navApps and pages/index.vue's dashboardApps) -- keep
 // it as the single source of truth for app ordering across the frontend.
@@ -105,6 +121,8 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.plansDesc',
     canAdd: true,
   },
+  // lota Pages is hidden everywhere (header, hub tiles, routes) unless PAGES_ENABLED (see above).
+  ...(PAGES_ENABLED ? [PAGES_APP] : []),
 ];
 
 // Brand gradient per app (hub tiles and the mobile burger menu share it).
@@ -116,6 +134,7 @@ export const APP_GRADIENTS: Record<string, [string, string]> = {
   atrace: ['#22d3ee', '#2563eb'],
   goods: ['#34d399', '#0d9488'],
   plans: ['#fb7185', '#f43f5e'],
+  pages: ['#38bdf8', '#10b981'],
 };
 
 export function appIconStyle(key: string) {

@@ -14,7 +14,7 @@ import { rewriteLegacyMediaHosts } from '@/utils/legacyMedia';
 // Backoff for transient gateway errors (see ApiClient.request): ~10s total covers a pod restart.
 const TRANSIENT_RETRY_DELAYS_MS = [800, 1800, 3500, 5000];
 
-type ServiceKey = 'hub' | 'atrace' | 'contacts' | 'menu' | 'tasks' | 'goods' | 'plans';
+type ServiceKey = 'hub' | 'atrace' | 'contacts' | 'menu' | 'tasks' | 'goods' | 'plans' | 'pages';
 
 // useState() is already request-scoped by Nuxt (keyed off the current
 // nuxtApp's payload.state), so the fix is simply to never cache the Ref it
@@ -27,6 +27,7 @@ const TOKEN_STATE_KEY: Record<ServiceKey, string> = {
   tasks: 'tasks_app_token',
   goods: 'goods_app_token',
   plans: 'plans_app_token',
+  pages: 'pages_app_token',
 };
 
 function tokenRef(service: ServiceKey) {
@@ -59,6 +60,10 @@ export function setGoodsAppToken(token: string | null) {
 
 export function setPlansAppToken(token: string | null) {
   tokenRef('plans').value = token;
+}
+
+export function setPagesAppToken(token: string | null) {
+  tokenRef('pages').value = token;
 }
 
 // "Unauthorized" callbacks are plain functions, not serializable state, so
@@ -110,8 +115,12 @@ export function setPlansUnauthorizedHandler(fn: UnauthorizedHandler | null) {
   handlerBag().plans = fn ?? undefined;
 }
 
+export function setPagesUnauthorizedHandler(fn: UnauthorizedHandler | null) {
+  handlerBag().pages = fn ?? undefined;
+}
+
 type ApiClientOptions = {
-  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization' | 'PlansAuthorization';
+  authHeader?: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization' | 'PlansAuthorization' | 'PagesAuthorization';
 };
 
 function notifyRateLimit() {
@@ -141,7 +150,7 @@ function notifyRateLimit() {
 export class ApiClient {
   private client: GraphQLClient;
   private baseURL: string;
-  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization' | 'PlansAuthorization';
+  private authHeader: 'Authorization' | 'AtraceAuthorization' | 'ContactsAuthorization' | 'CapitalAuthorization' | 'MenuAuthorization' | 'IssuesAuthorization' | 'GoodsAuthorization' | 'PlansAuthorization' | 'PagesAuthorization';
 
   constructor(baseURL: string, options?: ApiClientOptions) {
     this.baseURL = baseURL;
@@ -218,6 +227,9 @@ export class ApiClient {
     } else if (this.authHeader === 'PlansAuthorization') {
       const pt = tokenRef('plans').value;
       if (pt) headers['PlansAuthorization'] = `Bearer ${pt}`;
+    } else if (this.authHeader === 'PagesAuthorization') {
+      const pgt = tokenRef('pages').value;
+      if (pgt) headers['PagesAuthorization'] = `Bearer ${pgt}`;
     } else if (this.authHeader === 'GoodsAuthorization') {
       const gt = tokenRef('goods').value;
       if (gt) headers[this.authHeader] = `Bearer ${gt}`;
@@ -248,6 +260,7 @@ export class ApiClient {
       const isTasksUnauthorized = this.authHeader === 'IssuesAuthorization' && this.isAuthError(status, messages, 'issuesauthorization token is invalid');
       const isGoodsUnauthorized = this.authHeader === 'GoodsAuthorization' && this.isAuthError(status, messages, 'goodsauthorization token is invalid');
       const isPlansUnauthorized = this.authHeader === 'PlansAuthorization' && this.isAuthError(status, messages, 'plansauthorization token is invalid');
+      const isPagesUnauthorized = this.authHeader === 'PagesAuthorization' && this.isAuthError(status, messages, 'pagesauthorization token is invalid');
       const isCapitalUnauthorized = this.authHeader === 'CapitalAuthorization' && this.isAuthError(status, messages);
       const isHubUnauthorized = this.authHeader === 'Authorization' && this.isAuthError(status, messages);
 
@@ -312,6 +325,13 @@ export class ApiClient {
           await handlerBag().plans?.();
         } catch (e) {
           logError('plans unauthorized handler failed', e);
+        }
+      } else if (isPagesUnauthorized) {
+        logWarn('Pages unauthorized detected, invoking pages handler');
+        try {
+          await handlerBag().pages?.();
+        } catch (e) {
+          logError('pages unauthorized handler failed', e);
         }
       } else if (isGoodsUnauthorized) {
         logWarn('Goods unauthorized detected, invoking goods handler');
@@ -378,3 +398,4 @@ export const menuClient = new ApiClient(getApiBaseUrl('menu'), { authHeader: 'Me
 export const tasksClient = new ApiClient(getApiBaseUrl('tasks'), { authHeader: 'IssuesAuthorization' });
 export const goodsClient = new ApiClient(getApiBaseUrl('goods'), { authHeader: 'GoodsAuthorization' });
 export const plansClient = new ApiClient(getApiBaseUrl('plans'), { authHeader: 'PlansAuthorization' });
+export const pagesClient = new ApiClient(getApiBaseUrl('pages'), { authHeader: 'PagesAuthorization' });
