@@ -394,7 +394,7 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
     <template v-else>
       <StorageUsageCard class="mt-4" app="plans" :ns-slug="nsSlug" :get-token="() => getToken(nsSlug)" />
       <!-- pill tabs -->
-      <div class="mt-4 flex-shrink-0 overflow-x-auto no-scrollbar"><div class="at-seg">
+      <div v-scroll-fade class="mt-4 flex-shrink-0 overflow-x-auto no-scrollbar"><div class="at-seg">
         <button
           v-for="tb in TABS" :key="tb.key" type="button"
           class="at-seg__btn"

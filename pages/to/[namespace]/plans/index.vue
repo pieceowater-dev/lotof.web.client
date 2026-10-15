@@ -383,7 +383,7 @@ function fmtDateTime(iso: string) {
                 </button>
                 <h2 class="text-xl font-extrabold tracking-tight text-gray-900 dark:text-white">{{ t('plans.chooseTime') || 'Выберите время' }}</h2>
 
-                <div class="sf-no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:-mx-7 sm:px-7">
+                <div v-scroll-fade class="sf-no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 pb-1 sm:-mx-7 sm:px-7">
                   <button
                     v-for="d in dayStrip"
                     :key="d"

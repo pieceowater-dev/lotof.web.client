@@ -269,7 +269,7 @@ onMounted(async () => {
         <p class="sf-label mb-2 px-1">
           {{ t('app.currentNamespace') || 'Выбранное пространство' }}
         </p>
-        <div class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div v-scroll-fade class="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <button
             v-for="slug in allNamespaces"
             :key="slug"

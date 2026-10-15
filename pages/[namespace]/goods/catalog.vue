@@ -284,7 +284,7 @@ onMounted(loadAll);
                not the URL. -->
           <div class="flex items-center gap-2 min-w-0">
             <UInput v-if="activeTab === 'goods'" v-model="goodSearchQuery" icon="lucide:search" size="sm" class="max-w-xs flex-shrink-0" :placeholder="t('common.search')" />
-            <div class="flex items-center gap-2 overflow-x-auto pb-0.5 min-w-0">
+            <div v-scroll-fade class="flex items-center gap-2 overflow-x-auto pb-0.5 min-w-0">
               <button
                 v-for="tab in TABS"
                 :key="tab.key"

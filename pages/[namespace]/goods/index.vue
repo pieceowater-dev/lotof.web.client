@@ -275,7 +275,7 @@ onMounted(async () => {
     </div>
 
     <div v-if="!loading" class="flex items-center justify-between gap-2 flex-shrink-0 mt-3">
-      <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
+      <div v-scroll-fade class="flex items-center gap-1.5 overflow-x-auto pb-0.5">
         <button v-for="f in STOCK_FILTERS" :key="f.key" type="button" class="pill-filter whitespace-nowrap" :class="statFilter === f.key ? 'pill-filter--active' : ''" @click="statFilter = f.key">{{ t(f.label) }}</button>
       </div>
       <ColumnPicker v-model:hidden="hiddenCols" class="hidden flex-shrink-0 sm:block" storage-key="goods:stockColumns" :columns="allColumns" :locked="['name']" />

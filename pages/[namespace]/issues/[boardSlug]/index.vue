@@ -934,7 +934,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
     </div>
 
     <!-- Quick views (+ sprint switcher): one scrollable row, never wraps. -->
-    <div class="mb-3 flex-shrink-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+    <div v-scroll-fade class="mb-3 flex-shrink-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
       <template v-if="cyclesEnabled">
         <UDropdown :items="sprintMenuItems" :popper="{ placement: 'bottom-start', strategy: 'fixed' }" class="flex-shrink-0">
           <button type="button" class="pill-filter inline-flex items-center gap-1.5 whitespace-nowrap" :class="selectedCycle ? 'pill-filter--active' : ''">

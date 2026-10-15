@@ -218,7 +218,7 @@ onMounted(async () => {
           <!-- Report-type pill switcher shares this row now -- deliberately
                NOT styled like the real route tabs below, since this
                switches local component state, not the URL. -->
-          <div class="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <div v-scroll-fade class="flex items-center gap-2 overflow-x-auto pb-0.5">
             <button
               v-for="tab in TABS"
               :key="tab.key"

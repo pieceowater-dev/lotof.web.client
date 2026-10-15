@@ -868,3 +868,23 @@ button[role="switch"]:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(
 .dark .cp-range { background: linear-gradient(90deg, #2563eb, #10b981) 0 / var(--p, 0%) 100% no-repeat, rgba(255, 255, 255, 0.16); }
 .cp-range::-webkit-slider-thumb { -webkit-appearance: none; height: 0.95rem; width: 0.95rem; border-radius: 9999px; background: #fff; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35); }
 .cp-range::-moz-range-thumb { height: 0.95rem; width: 0.95rem; border: 0; border-radius: 9999px; background: #fff; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.35); }
+
+/* Scroll haze: a strip that scrolls past its edge fades out there instead of
+   being cut off hard (see plugins/scrollFade.ts, `v-scroll-fade`). */
+.scroll-fade {
+  --fade-size: 2rem;
+  --fade-l: 0px;
+  --fade-r: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+}
+.scroll-fade.fade-l { --fade-l: var(--fade-size); }
+.scroll-fade.fade-r { --fade-r: var(--fade-size); }
+.scroll-fade--y {
+  --fade-t: 0px;
+  --fade-b: 0px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 var(--fade-t), #000 calc(100% - var(--fade-b)), transparent 100%);
+}
+.scroll-fade--y.fade-t { --fade-t: var(--fade-size); }
+.scroll-fade--y.fade-b { --fade-b: var(--fade-size); }

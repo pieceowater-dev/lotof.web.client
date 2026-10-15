@@ -200,7 +200,7 @@ function userName(id: string) {
 
       <!-- Step 2 / edit -->
       <template v-else>
-        <div v-if="current" class="overflow-x-auto no-scrollbar">
+        <div v-scroll-fade v-if="current" class="overflow-x-auto no-scrollbar">
           <div class="at-seg" role="tablist">
             <button type="button" role="tab" class="at-seg__btn" :class="tab === 'connection' ? 'at-seg__btn--on' : ''" @click="tab = 'connection'">
               <Icon name="lucide:plug" class="w-4 h-4" /><span>{{ t('contacts.integrationTabConnection') }}</span>

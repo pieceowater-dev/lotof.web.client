@@ -1057,7 +1057,7 @@ async function handleCreateOrder(payload: any) {
     </PageHeader>
 
     <!-- Views and statuses: one compact scrollable row of chips (no tiles, no wrapping). -->
-    <div class="-mx-1 mb-2 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
+    <div v-scroll-fade class="-mx-1 mb-2 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto px-1 pb-1 no-scrollbar">
       <button type="button" class="pill-filter inline-flex flex-shrink-0 items-center gap-1.5 whitespace-nowrap" :class="selectedStatuses.length === 0 ? 'pill-filter--active' : ''" :aria-pressed="selectedStatuses.length === 0" @click="clearStatuses">
         {{ t('menu.all') || 'All' }}<span class="tabular-nums opacity-70">{{ totalCount }}</span>
       </button>

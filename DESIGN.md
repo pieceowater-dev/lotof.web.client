@@ -59,6 +59,12 @@ hardware with a glass plate sitting in a tray, not flat boxes with 1px grey bord
 - **Match Tailwind tokens with `[class~="…"]`, not `[class*="…"]`** (`*=` also hits `bg-primary-500` when you meant `bg-primary-50`).
 - **Never apply a blanket `padding-left` to inputs**: leading-icon inputs (`ps-9`) lose their icon gutter. Exclude `[class*="ps-"]`/`[class*="pl-"]`.
 - **Overlays dim with neutral black** (`rgba(0,0,0,.6)`), never a slate/navy tint: in the dark theme a tinted dim is lighter than the page.
+- **A strip that scrolls must never end in a hard cut.** A row of tabs/chips/cards that scrolls sideways (or a list that scrolls
+  vertically inside a fixed box) and ends mid-element looks broken — people think the content was clipped by a bug. Give the
+  scrolling edge a soft haze that dissolves into the background, and only on the side that still has hidden content: add
+  `v-scroll-fade` (`.y` for vertical) to the scroll container (`plugins/scrollFade.ts`, `.scroll-fade` in `surface.css`). It
+  needs no extra markup and does not hide anything when everything fits. Use it with `no-scrollbar` rows (`.at-seg` tab strips,
+  `.pill-filter` rows, card scrollers). Data tables keep their real scrollbar instead.
 - **Dashed "empty slot" tiles** are rewritten globally to a soft ring tile inside `.at-scope`/`.at-modal`; don't add new ones.
 - **Don't rely on Tailwind classes inside server-rendered HTML strings** (`server/api/publications/*`,
   `api/publications.ts`): they are not scanned. Use inline `style` there.
@@ -154,6 +160,7 @@ Inner radius = outer radius − padding (concentric curves). A row inside a `p-1
 | `.pill-filter` `--active` `--rose` | Filter chip. Active = brand gradient (never black). Rose = favourites. | |
 | `.catalog-panel` | Rounded panel wrapper for catalog pages. | |
 | `.no-scrollbar` | Hides scrollbars on horizontal chip rows. | |
+| `v-scroll-fade` / `.scroll-fade` | Soft haze on the scrolling edge of a strip (only where content is hidden), so it never ends in a hard cut. Required on every `no-scrollbar` scroller. | `plugins/scrollFade.ts` |
 | `.sec-head` `.sec-title` `.sec-link` | Section header: icon tile + title on the left, soft-blue pill link ("Все новости →") on the right. | Used on home/hub news + feed. |
 | `.hdr-*` | App header (floating glass pill): `hdr-shell`, `hdr-item(--on/--off)`, `hdr-lang-group`/`hdr-lang`, `hdr-cta`, `hdr-chip`, `hdr-avatar`, `hdr-icon-btn(--solid)`. | See §6. |
 | `.mm-*` | Mobile burger sheet: `mm-list`, `mm-row(--on/--off)`, `mm-ico`. | Teleported → must stay global. |
@@ -210,6 +217,7 @@ blue icon on `rgba(37,99,235,.09)`).
 
 ### Filters, chips, toggles
 - Filter chips: `.pill-filter`; active = brand gradient with white text.
+- Any chip/tab row wider than its box scrolls sideways **with `v-scroll-fade`** — a faded edge says "there is more"; a hard cut says "broken".
 - Segmented toggle (Month/Year, language): pill group on a soft fill; selected segment = white pill
   with tiny shadow (dark: `white/14%`).
 

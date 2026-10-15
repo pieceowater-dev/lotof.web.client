@@ -140,7 +140,7 @@ onMounted(async () => {
       class="flex-1 flex flex-col min-h-0 gap-4"
     >
       <!-- Tabs: the same segmented pill group as Goods / A-Trace settings (DESIGN.md §10a) -->
-      <div class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
+      <div v-scroll-fade class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
         <div class="at-seg" role="tablist">
           <button
             v-for="tb in tabs"

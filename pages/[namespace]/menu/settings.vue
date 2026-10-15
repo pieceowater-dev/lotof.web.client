@@ -99,7 +99,7 @@ watch(activeTab, (tab) => {
       </div>
     </div>
 
-    <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+    <div v-scroll-fade class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
       <div class="at-seg">
         <button
           v-for="tab in tabs"

@@ -273,7 +273,7 @@ onMounted(load);
             />
           </UFormGroup>
           <UFormGroup v-if="isList(form.dataType)" :label="t('menu.orderFieldSource')">
-            <div class="overflow-x-auto"><div class="at-seg">
+            <div v-scroll-fade class="overflow-x-auto"><div class="at-seg">
               <button v-for="o in sourceOptions" :key="o.value" type="button" class="at-seg__btn" :class="form.source === o.value ? 'at-seg__btn--on' : ''" @click="form.source = o.value">{{ o.label }}</button>
             </div></div>
           </UFormGroup>

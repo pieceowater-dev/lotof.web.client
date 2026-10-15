@@ -558,7 +558,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="mt-3 mb-1 flex-shrink-0 overflow-x-auto no-scrollbar">
+    <div v-scroll-fade class="mt-3 mb-1 flex-shrink-0 overflow-x-auto no-scrollbar">
       <div class="at-seg">
         <button
           v-for="tab in TABS"

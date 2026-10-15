@@ -180,7 +180,7 @@ async function toggleRule(key: string, value: boolean | string) {
         <div class="text-sm font-semibold">{{ t('menu.numberingTitle') }}</div>
         <div class="at-hint !mt-0.5">{{ t('menu.numberingHint') }}</div>
       </div>
-      <div class="overflow-x-auto"><div class="at-seg">
+      <div v-scroll-fade class="overflow-x-auto"><div class="at-seg">
         <button type="button" class="at-seg__btn" :class="(rules.numbering || 'daily') === 'daily' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'daily')">{{ t('menu.numberingDaily') }}</button>
         <button type="button" class="at-seg__btn" :class="rules.numbering === 'continuous' ? 'at-seg__btn--on' : ''" @click="toggleRule('numbering', 'continuous')">{{ t('menu.numberingContinuous') }}</button>
       </div></div>

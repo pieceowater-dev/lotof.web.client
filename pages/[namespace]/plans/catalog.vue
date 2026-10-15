@@ -204,7 +204,7 @@ onMounted(async () => {
     </PageHeader>
     <PlansNavTabs />
 
-    <div class="overflow-x-auto no-scrollbar">
+    <div v-scroll-fade class="overflow-x-auto no-scrollbar">
       <div class="at-seg">
         <button type="button" class="at-seg__btn at-seg__btn--on" @click="tab = 'services'">{{ t('plans.services') || 'Услуги' }}</button>
         <NuxtLink :to="`/${nsSlug}/plans/settings?tab=staff`" class="at-seg__btn">

@@ -1267,7 +1267,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         <!-- Main content: scrolls independently of the side rail -->
         <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 flex flex-col gap-5 pb-8">
           <!-- Tabs: one screen = one job. The order itself, the money, the talking, and the rest. -->
-          <div class="order-[0] -mx-1 flex-shrink-0 overflow-x-auto px-1 no-scrollbar">
+          <div v-scroll-fade class="order-[0] -mx-1 flex-shrink-0 overflow-x-auto px-1 no-scrollbar">
             <div class="at-seg">
               <button v-for="tb in ORDER_TABS" :key="tb.key" type="button" class="at-seg__btn" :class="tab === tb.key ? 'at-seg__btn--on' : ''" @click="tab = tb.key">
                 <Icon :name="tb.icon" class="h-4 w-4 flex-shrink-0" /><span>{{ t(tb.label) }}</span>

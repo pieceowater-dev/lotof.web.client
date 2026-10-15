@@ -202,7 +202,7 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
       </template>
     </PageHeader>
 
-    <div class="-mx-1 mb-3 flex-shrink-0 overflow-x-auto px-1"><div class="at-seg">
+    <div v-scroll-fade class="-mx-1 mb-3 flex-shrink-0 overflow-x-auto px-1"><div class="at-seg">
       <button v-for="k in TAB_KEYS" :key="k" type="button" class="at-seg__btn inline-flex items-center gap-1.5 whitespace-nowrap" :class="tab === k ? 'at-seg__btn--on' : ''" @click="setTab(k)">
         <Icon :name="TAB_ICONS[k]" class="w-4 h-4" />{{ t('menu.reportTab_' + k) }}
       </button>

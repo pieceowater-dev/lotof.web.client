@@ -228,7 +228,7 @@ const goBack = () => router.push(`/${nsSlug.value}/contacts/all/1-20`);
     </div>
 
     <!-- tabs -->
-    <div class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
+    <div v-scroll-fade class="overflow-x-auto no-scrollbar flex-shrink-0 pb-1">
       <div class="at-seg" role="tablist">
         <button type="button" role="tab" class="at-seg__btn" :class="tab === 'journal' ? 'at-seg__btn--on' : ''" @click="tab = 'journal'">
           <Icon name="lucide:phone-call" class="w-4 h-4" /><span>{{ t('contacts.callsJournal') }}</span>

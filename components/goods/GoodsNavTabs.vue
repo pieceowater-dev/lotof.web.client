@@ -64,7 +64,7 @@ function isActive(address: string) {
     </div>
 
     <!-- The section tabs come first (where am I / where to go), the page toolbar after. -->
-    <div class="order-first overflow-x-auto no-scrollbar flex-shrink-0">
+    <div v-scroll-fade class="order-first overflow-x-auto no-scrollbar flex-shrink-0">
       <div class="at-seg">
         <NuxtLink
           v-for="tab in TABS"

@@ -182,7 +182,7 @@ useSeoMeta({
         <!-- Categories: real per-tenant Menu category names, actually
              filters the grid below. "Избранное" is a separate quick filter
              (client-side, narrows to favorited businesses). -->
-        <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+        <div v-scroll-fade class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
           <div class="flex gap-2">
             <button
               type="button"

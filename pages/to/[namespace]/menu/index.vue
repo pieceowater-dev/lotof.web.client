@@ -1024,7 +1024,7 @@ useHead(() => {
       </div>
 
       <!-- Promo banners -->
-      <div v-if="data.storefront.promoBanners.length" class="max-w-3xl mx-auto px-4 pt-5 flex gap-3 overflow-x-auto sf-no-scrollbar">
+      <div v-scroll-fade v-if="data.storefront.promoBanners.length" class="max-w-3xl mx-auto px-4 pt-5 flex gap-3 overflow-x-auto sf-no-scrollbar">
         <button
           v-for="b in data.storefront.promoBanners"
           :key="b.id"
@@ -1116,7 +1116,7 @@ useHead(() => {
             </div>
           </div>
 
-          <div v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto sf-no-scrollbar">
+          <div v-scroll-fade v-if="!isSearching" class="max-w-3xl mx-auto px-4 pb-3 flex gap-2 overflow-x-auto sf-no-scrollbar">
             <button
               v-for="c in visibleCategories"
               :key="c.id"

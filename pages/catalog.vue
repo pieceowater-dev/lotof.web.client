@@ -356,7 +356,7 @@ useSeoMeta({
           </div>
         </div>
 
-        <div class="hidden sm:block overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+        <div v-scroll-fade class="hidden sm:block overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
           <div class="flex gap-4">
             <div
               v-for="banner in promoBanners"
@@ -413,7 +413,7 @@ useSeoMeta({
           <h3 class="mb-3 text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
             {{ t('home.categoriesHeading') || 'Категории' }}
           </h3>
-          <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+          <div v-scroll-fade class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
             <div class="flex gap-2">
               <button
                 type="button"
@@ -484,7 +484,7 @@ useSeoMeta({
             >
               {{ t('home.noSearchResults') || 'Ничего не найдено' }}
             </p>
-            <div class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
+            <div v-scroll-fade class="overflow-x-auto -mx-4 px-4 pb-1 no-scrollbar">
               <div class="flex gap-3 snap-x">
                 <div
                   v-for="biz in section.items"

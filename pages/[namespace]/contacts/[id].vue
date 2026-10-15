@@ -256,7 +256,7 @@ function onCopyToClipboard(text: string) {
       </div>
 
       <!-- Phone: jump between the card's long sections -->
-      <nav class="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 py-1 lg:hidden">
+      <nav v-scroll-fade class="-mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1 py-1 lg:hidden">
         <button v-for="a in [{ id: 'c-info', l: 'contacts.anchorInfo' }, { id: 'c-addr', l: 'contacts.anchorAddresses' }, { id: 'c-notes', l: 'contacts.anchorNotes' }, { id: 'c-calls', l: 'contacts.anchorCalls' }, { id: 'c-feed', l: 'contacts.anchorFeed' }]" :key="a.id" type="button" class="pill-filter whitespace-nowrap" @click="jumpTo(a.id)">{{ t(a.l) }}</button>
       </nav>
 

@@ -708,7 +708,7 @@ const shiftMenuItems = computed(() => [[
           <p v-if="activeRegister" class="text-xs text-gray-400 truncate">{{ activeRegister.name }}</p>
         </div>
       </div>
-      <div class="-mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+      <div v-scroll-fade class="-mx-1 flex max-w-full items-center gap-1.5 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
         <UButton class="flex-shrink-0" color="gray" variant="soft" icon="lucide:warehouse" size="sm" :to="`/${nsSlug}/goods`">
           {{ t('goods.warehouse') }}
         </UButton>
@@ -781,7 +781,7 @@ const shiftMenuItems = computed(() => [[
         />
 
         <!-- Category tabs -->
-        <div v-if="categories.length" class="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 flex-shrink-0">
+        <div v-scroll-fade v-if="categories.length" class="flex items-center gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 flex-shrink-0">
           <button
             type="button"
             class="flex-shrink-0 px-3.5 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"

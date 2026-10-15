@@ -280,7 +280,7 @@ function planSummary(p: MembershipPlan) {
       </UButton>
     </div>
 
-    <div class="flex gap-2 mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+    <div v-scroll-fade class="flex gap-2 mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
       <button
         v-for="tt in (['plans', 'requests', 'brand'] as const)"
         :key="tt"

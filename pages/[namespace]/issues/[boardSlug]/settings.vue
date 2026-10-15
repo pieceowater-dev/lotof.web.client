@@ -445,7 +445,7 @@ const panelUi = { ...atCardUiFit, body: { padding: 'p-5' } };
     <div v-if="loading" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
-      <div class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
+      <div v-scroll-fade class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
         <div class="at-seg">
           <button
             v-for="tab in tabs"
