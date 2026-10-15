@@ -33,6 +33,7 @@ const amount = ref<number | null>(null);
 const method = ref<'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'>('CASH');
 const comment = ref('');
 const refundMode = ref(false);
+const showCustom = ref(false);
 
 const stage = computed(() => byId(props.order.stageId));
 const inStatus = computed(() => minutesInStatus(props.order.statusChangedAt));
@@ -108,9 +109,12 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
 </script>
 
 <template>
-  <div class="space-y-4">
+  <!-- display:contents: the three sections take part in the modal's ordered flex
+       column (chips under the header, price stage beside the items, payments
+       after the totals) instead of sitting together at the top. -->
+  <div class="contents">
     <!-- timing + urgency -->
-    <div class="flex items-center gap-1.5 flex-wrap">
+    <div class="order-1 flex items-center gap-1.5 flex-wrap">
       <span v-if="inStatus !== null && !order.closedAt" class="at-chip !text-xs" :class="overdue ? '!bg-rose-500/10 !text-rose-600' : ''">
         <Icon name="lucide:timer" class="w-3.5 h-3.5" />{{ t('menu.inStatusFor') }} {{ formatDuration(inStatus) }}<template v-if="overdue"> · {{ t('menu.overdue') }}</template>
       </span>
@@ -121,7 +125,7 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
     </div>
 
     <!-- price stage -->
-    <div v-if="priceStageEnabled" class="at-panel !p-4 space-y-3">
+    <div v-if="priceStageEnabled" class="order-[7] at-panel !p-4 space-y-3">
       <div class="flex items-center gap-2">
         <div class="at-h2 flex-1">{{ t('menu.priceStageTitle') }}</div>
         <span v-if="order.priceApprovedAt" class="rounded-full bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-700 dark:bg-accent-500/20 dark:text-blue-300">{{ t('menu.priceApproved') }}</span>
@@ -140,7 +144,7 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
     </div>
 
     <!-- payments journal -->
-    <div class="at-panel !p-4 space-y-3">
+    <div class="order-[10] at-panel !p-4 space-y-3">
       <div class="flex items-center gap-2 flex-wrap">
         <div class="at-h2 flex-1">{{ t('menu.paymentsTitle') }}</div>
         <span class="at-chip !text-xs">{{ t('menu.paidOf') }} {{ money(order.paidAmount) }} / {{ money(net) }}</span>
@@ -159,23 +163,40 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
         </div>
       </div>
 
-      <div class="space-y-2">
-        <div class="flex gap-1.5 flex-wrap">
-          <button type="button" class="pill-filter" :class="!refundMode ? 'pill-filter--active' : ''" @click="refundMode = false">{{ t('menu.payAccept') }}</button>
-          <button type="button" class="pill-filter" :class="refundMode ? 'pill-filter--rose' : ''" @click="refundMode = true">{{ t('menu.payRefund') }}</button>
-          <span class="mx-1 h-5 w-px bg-slate-200 dark:bg-white/10" />
-          <button v-for="m in methods" :key="m.key" type="button" class="pill-filter" :class="method === m.key ? 'pill-filter--active' : ''" @click="method = m.key">
-            <Icon :name="m.icon" class="w-3.5 h-3.5" />{{ t(m.label) }}
+      <!-- Hot path first: pick how they paid, one tap takes the whole remainder.
+           Custom amount, comment and refunds sit behind one link. -->
+      <div class="space-y-2.5">
+        <div class="grid grid-cols-4 gap-1.5">
+          <button
+            v-for="m in methods" :key="m.key" type="button"
+            class="pill-filter !px-1 flex-col !gap-0.5 !py-2 text-[11px] leading-tight justify-center items-center"
+            :class="method === m.key ? 'pill-filter--active' : ''"
+            @click="method = m.key"
+          >
+            <Icon :name="m.icon" class="w-4 h-4" /><span class="truncate max-w-full">{{ t(m.label) }}</span>
           </button>
         </div>
-        <div class="flex gap-2 flex-wrap items-center">
-          <UInput :model-value="amount ?? ''" type="number" min="0" class="w-40" @update:model-value="(v: any) => (amount = v === '' || v == null ? null : Number(v))" :placeholder="t('menu.payAmount')" @keyup.enter="addPayment()" />
-          <UInput v-model="comment" class="flex-1 min-w-40" :placeholder="t('menu.payComment')" />
-          <button type="button" class="at-btn at-btn--primary" :disabled="busy || !(amount && amount > 0)" @click="addPayment()">
+
+        <button
+          v-if="remaining > 0 && !showCustom"
+          type="button" class="at-btn at-btn--primary w-full justify-center !py-3" :disabled="busy" @click="addPayment(remaining)"
+        >
+          <Icon :name="busy ? 'lucide:loader-2' : 'lucide:badge-check'" class="w-4 h-4" :class="{ 'animate-spin': busy }" />{{ t('menu.payAccept') }} {{ money(remaining) }}
+        </button>
+
+        <button type="button" class="text-sm font-semibold text-accent-600 dark:text-blue-300 hover:underline" @click="showCustom = !showCustom">
+          {{ showCustom ? t('menu.payCustomHide') : t('menu.payCustom') }}
+        </button>
+
+        <div v-if="showCustom" class="space-y-2">
+          <div class="flex gap-1.5">
+            <button type="button" class="pill-filter" :class="!refundMode ? 'pill-filter--active' : ''" @click="refundMode = false">{{ t('menu.payAccept') }}</button>
+            <button type="button" class="pill-filter" :class="refundMode ? 'pill-filter--rose' : ''" @click="refundMode = true">{{ t('menu.payRefund') }}</button>
+          </div>
+          <UInput :model-value="amount ?? ''" type="number" min="0" class="w-full" @update:model-value="(v: any) => (amount = v === '' || v == null ? null : Number(v))" :placeholder="t('menu.payAmount')" @keyup.enter="addPayment()" />
+          <UInput v-model="comment" class="w-full" :placeholder="t('menu.payComment')" />
+          <button type="button" class="at-btn at-btn--primary w-full justify-center" :disabled="busy || !(amount && amount > 0)" @click="addPayment()">
             <Icon :name="busy ? 'lucide:loader-2' : 'lucide:plus'" class="w-4 h-4" :class="{ 'animate-spin': busy }" />{{ refundMode ? t('menu.payRefund') : t('menu.payAccept') }}
-          </button>
-          <button v-if="!refundMode && remaining > 0" type="button" class="at-btn at-btn--blue" :disabled="busy" @click="addPayment(remaining)">
-            <Icon name="lucide:badge-check" class="w-4 h-4" />{{ t('menu.payFull') }} {{ money(remaining) }}
           </button>
         </div>
       </div>

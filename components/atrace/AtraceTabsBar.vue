@@ -45,11 +45,13 @@ const activeTabModel = computed({
       <button
         v-if="canCreateRoute"
         type="button"
-        class="pill-outline"
+        class="pill-outline flex-shrink-0"
+        :aria-label="t('app.route.add') || 'Добавить маршрут'"
+        :title="t('app.route.add') || 'Добавить маршрут'"
         @click="emit('add-route')"
       >
         <UIcon name="lucide:plus" class="h-4 w-4" />
-        {{ t('app.route.add') || 'Добавить маршрут' }}
+        <span class="hidden md:inline">{{ t('app.route.add') || 'Добавить маршрут' }}</span>
       </button>
       <span
         v-if="routesLoading"

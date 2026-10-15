@@ -64,6 +64,16 @@ const openTasks = computed(() => {
     .sort((a, b) => b.priority - a.priority || (a.dueAt || '').localeCompare(b.dueAt || ''));
 });
 
+// Only the current stop is expanded by default; a tap opens another one (and
+// folds the previous), so a long route stays a scannable list of stops.
+const expandedId = ref<string | null>(null);
+function isExpanded(task: TaskItem, idx: number) {
+  return expandedId.value ? expandedId.value === task.id : idx === 0;
+}
+function toggleExpanded(task: TaskItem, idx: number) {
+  expandedId.value = isExpanded(task, idx) ? '__none__' : task.id;
+}
+
 function nextStatus(task: TaskItem): StatusRow | null {
   const statuses = boardStatuses.value[task.boardId] || [];
   const idx = statuses.findIndex((s) => s.key === task.status);
@@ -430,88 +440,92 @@ onBeforeUnmount(() => {
       <div
         v-for="(task, idx) in openTasks"
         :key="task.id"
-        class="rounded-[1.75rem] bg-white p-5"
-        :class="idx === 0 ? 'shadow-[inset_0_0_0_2px_rgba(37,99,235,0.45),0_22px_36px_-24px_rgba(37,99,235,0.55)]' : 'shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08),0_14px_28px_-22px_rgba(15,23,42,0.3)]'"
+        class="rounded-[1.75rem] bg-white"
+        :class="[
+          idx === 0 ? 'shadow-[inset_0_0_0_2px_rgba(37,99,235,0.45),0_22px_36px_-24px_rgba(37,99,235,0.55)]' : 'shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08),0_14px_28px_-22px_rgba(15,23,42,0.3)]',
+        ]"
       >
-        <div v-if="idx === 0" class="flex items-center gap-1.5 text-[11px] font-bold text-primary-600 uppercase tracking-wide mb-2">
-          <UIcon name="lucide:navigation-2" class="w-3.5 h-3.5" />
-          {{ t('tasks.zenNextStop') || 'Next stop' }}
-        </div>
-        <div class="flex items-start justify-between gap-2 mb-1.5">
-          <span class="flex items-center gap-1.5 min-w-0 text-[11px] text-gray-400 font-medium">
-            <span class="font-mono flex-shrink-0">{{ taskCode(task) }}</span>
-            <span class="truncate">· {{ taskTypeBoard(task) }}</span>
-          </span>
-          <span class="flex items-center gap-1 flex-shrink-0">
-            <UIcon :name="priorityIcon(task.priority)" :class="['w-3.5 h-3.5', priorityColorClass(task.priority)]" />
-            <span v-if="task.dueAt" class="text-[11px] text-gray-400">
-              <template v-if="task.dueFrom">{{ new Date(task.dueFrom).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}–</template>{{ new Date(task.dueAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}<template v-if="task.dueFrom">, {{ new Date(task.dueAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}</template>
+        <!-- Header: always visible. On the collapsed (later) stops this is the
+             whole card -- when, where, what -- and a tap expands it. -->
+        <button type="button" class="w-full text-left p-5 pb-3" :aria-expanded="isExpanded(task, idx)" @click="toggleExpanded(task, idx)">
+          <div v-if="idx === 0" class="flex items-center gap-1.5 text-[11px] font-bold text-primary-600 uppercase tracking-wide mb-2">
+            <UIcon name="lucide:navigation-2" class="w-3.5 h-3.5" />
+            {{ t('tasks.zenNextStop') || 'Next stop' }}
+          </div>
+          <div class="flex items-start justify-between gap-2 mb-1.5">
+            <span class="flex items-center gap-1.5 min-w-0 text-[11px] text-gray-400 font-medium">
+              <span class="font-mono flex-shrink-0">{{ taskCode(task) }}</span>
+              <span class="truncate">· {{ taskTypeBoard(task) }}</span>
             </span>
-            <UIcon v-if="task.problemReportedAt" name="lucide:alert-triangle" class="w-3.5 h-3.5 text-rose-500" :title="task.problemReason || ''" />
-          </span>
-        </div>
-        <h2 class="text-base font-semibold leading-snug mb-1 text-gray-900">{{ maskProfanity(task.title) }}</h2>
-        <div v-if="task.description" class="zen-md text-sm text-gray-500 mb-2 line-clamp-3" v-html="renderMarkdownSafe(maskProfanity(task.description))" />
-        <p v-if="task.textAddress" class="text-sm text-gray-600 flex items-center gap-1.5 mb-1">
-          <UIcon name="lucide:map-pin" class="w-4 h-4 flex-shrink-0 text-gray-400" />{{ task.textAddress }}
-        </p>
-        <p v-if="task.clientNameSnapshot" class="text-sm text-gray-600 mb-2">{{ task.clientNameSnapshot }}</p>
+            <span class="flex items-center gap-1.5 flex-shrink-0">
+              <UIcon :name="priorityIcon(task.priority)" :class="['w-3.5 h-3.5', priorityColorClass(task.priority)]" />
+              <span v-if="task.dueAt" class="text-xs font-semibold text-gray-600 tabular-nums">
+                <template v-if="task.dueFrom">{{ new Date(task.dueFrom).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}–</template>{{ new Date(task.dueAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) }}
+              </span>
+              <UIcon :name="isExpanded(task, idx) ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="w-4 h-4 text-gray-400" />
+            </span>
+          </div>
+          <h2 class="text-base font-semibold leading-snug text-gray-900">{{ maskProfanity(task.title) }}</h2>
+          <p v-if="task.textAddress" class="mt-1 text-sm text-gray-600 flex items-start gap-1.5">
+            <UIcon name="lucide:map-pin" class="w-4 h-4 flex-shrink-0 mt-0.5 text-gray-400" /><span>{{ task.textAddress }}</span>
+          </p>
+          <p v-if="task.problemReportedAt" class="mt-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+            <UIcon name="lucide:life-buoy" class="w-3.5 h-3.5" />{{ t('tasks.problemBanner') }}<template v-if="task.problemReason"> · {{ task.problemReason }}</template>
+          </p>
+        </button>
 
-        <div class="flex items-center gap-2 mt-3 flex-wrap">
-          <a
-            v-if="task.clientPhoneSnapshot"
-            :href="`tel:${task.clientPhoneSnapshot}`"
-            class="at-btn flex-shrink-0"
-          >
-            <UIcon name="lucide:phone" class="w-4 h-4" />{{ t('tasks.zenCall') || 'Call' }}
-          </a>
-          <button
-            v-if="task.lat && task.lng"
-            type="button"
-            class="at-btn flex-shrink-0"
-            @click="openNavigateSheet(task)"
-          >
-            <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
-          </button>
-          <a
-            v-else-if="textAddressUrl(task)"
-            :href="textAddressUrl(task)!"
-            target="_blank"
-            class="at-btn flex-shrink-0"
-          >
-            <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
-          </a>
+        <div v-if="isExpanded(task, idx)" class="px-5 pb-5 space-y-3">
+          <div v-if="task.description" class="zen-md text-sm text-gray-500 line-clamp-4" v-html="renderMarkdownSafe(maskProfanity(task.description))" />
+          <p v-if="task.clientNameSnapshot" class="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+            <UIcon name="lucide:user-round" class="w-4 h-4 flex-shrink-0 text-gray-400" />{{ task.clientNameSnapshot }}
+          </p>
+
+          <!-- 1. Getting there / reaching the client: two big equal buttons. -->
+          <div v-if="(task.lat && task.lng) || textAddressUrl(task) || task.clientPhoneSnapshot" class="grid grid-cols-2 gap-2">
+            <button
+              v-if="task.lat && task.lng"
+              type="button" class="at-btn !py-3 justify-center" @click="openNavigateSheet(task)"
+            >
+              <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
+            </button>
+            <a v-else-if="textAddressUrl(task)" :href="textAddressUrl(task)!" target="_blank" class="at-btn !py-3 justify-center">
+              <UIcon name="lucide:navigation" class="w-4 h-4" />{{ t('tasks.zenNavigate') || 'Navigate' }}
+            </a>
+            <a v-if="task.clientPhoneSnapshot" :href="`tel:${task.clientPhoneSnapshot}`" class="at-btn !py-3 justify-center">
+              <UIcon name="lucide:phone" class="w-4 h-4" />{{ t('tasks.zenCall') || 'Call' }}
+            </a>
+          </div>
+
+          <!-- 2. The step forward: one full-width thumb target. -->
           <button
             v-if="nextStatus(task)"
-            type="button"
-            class="at-btn at-btn--primary flex-1 min-w-[120px] !py-2.5"
+            type="button" class="at-btn at-btn--primary w-full justify-center !py-3.5 text-base"
             @click="handleAdvanceClick(task, nextStatus(task)!)"
           >
-            <UIcon name="lucide:arrow-right" class="w-4 h-4 flex-shrink-0" /><span class="truncate">{{ nextStatus(task)!.label }}</span>
+            <span class="truncate">{{ nextStatus(task)!.label }}</span><UIcon name="lucide:arrow-right" class="w-4 h-4 flex-shrink-0" />
           </button>
           <!-- Deliberately NOT emerald/green: a global CSS rule silently
                rewrites any bg-emerald-*/bg-green-* into a soft near-white
                gradient (meant for light badge surfaces), which made this
                button unreadable regardless of which shade was tried. Also
                deliberately not black/near-black. Indigo is unaffected by
-               that remap and reads as a distinct "final" action next to the
-               blue "next status" button above. -->
-          <button
-            v-if="!task.problemReportedAt"
-            type="button"
-            class="at-btn flex-shrink-0"
-            :aria-label="t('tasks.problemTitle')"
-            @click="openProblem(task)"
-          >
-            <UIcon name="lucide:alert-triangle" class="w-4 h-4 text-amber-500" /><span class="hidden min-[380px]:inline">{{ t('tasks.problemButton') }}</span>
-          </button>
+               that remap and reads as a distinct "final" action. -->
           <button
             v-if="terminalStatus(task) && terminalStatus(task)!.key !== nextStatus(task)?.key"
-            type="button"
-            class="at-btn flex-1 min-w-[120px] !py-2.5 !bg-indigo-600 !text-white hover:!bg-indigo-700"
+            type="button" class="at-btn w-full justify-center !py-3 !bg-indigo-600 !text-white hover:!bg-indigo-700"
             @click="handleAdvanceClick(task, terminalStatus(task)!)"
           >
             <UIcon name="lucide:check-circle-2" class="w-4 h-4 flex-shrink-0" /><span class="truncate">{{ terminalStatus(task)!.label }}</span>
+          </button>
+
+          <!-- 3. Escape hatch, deliberately quiet: not a competing button. -->
+          <button
+            v-if="!task.problemReportedAt"
+            type="button"
+            class="mx-auto flex items-center gap-1.5 py-1 text-sm font-medium text-gray-500 hover:text-gray-700"
+            @click="openProblem(task)"
+          >
+            <UIcon name="lucide:life-buoy" class="w-4 h-4" />{{ t('tasks.problemButton') }}
           </button>
         </div>
       </div>

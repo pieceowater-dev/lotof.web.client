@@ -1204,24 +1204,34 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
   <USlideover class="at-modal" v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-3xl lg:max-w-5xl' }">
     <UCard v-if="order" class="flex flex-col h-full" :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800', body: { base: 'flex-1 overflow-hidden p-0' }, rounded: 'rounded-none' }">
       <template #header>
-        <div class="flex items-center justify-between gap-3">
-          <div class="flex items-center gap-3 min-w-0">
-            <div>
-              <div class="font-mono font-bold text-lg leading-tight">{{ displayOrderNumber(order) }}</div>
-              <div class="text-xs text-gray-400">{{ formatDate(order.createdAt) }}</div>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <div class="min-w-0">
+            <div class="font-mono font-bold text-lg leading-tight whitespace-nowrap">{{ displayOrderNumber(order) }}</div>
+            <div class="text-xs text-gray-400 whitespace-nowrap">{{ formatDate(order.createdAt) }}</div>
+          </div>
+          <div class="order-last sm:order-none w-full sm:w-auto sm:flex-1 min-w-0">
             <OrderStatusPicker :order="order!" :status-label="statusLabel" :updating="updatingStatus" @pick="changeStatus" />
           </div>
           <div class="flex items-center gap-1 flex-shrink-0">
             <UTooltip :text="t('menu.statusHistory') || 'Status history'" class="lg:hidden">
               <UButton icon="lucide:history" size="sm" color="gray" variant="ghost" class="lg:hidden" @click="isMobileTimelineOpen = true" />
             </UTooltip>
-            <UTooltip :text="t('menu.copySummary')">
+            <UTooltip :text="t('menu.copySummary')" class="hidden sm:inline-flex">
               <UButton icon="lucide:clipboard-copy" size="sm" color="gray" variant="ghost" @click="copySummary" />
             </UTooltip>
-            <UTooltip :text="t('menu.copyLink') || 'Copy share link'">
+            <UTooltip :text="t('menu.copyLink') || 'Copy share link'" class="hidden sm:inline-flex">
               <UButton icon="lucide:link" size="sm" color="gray" variant="ghost" @click="copyShareLink" />
             </UTooltip>
+            <UDropdown
+              :items="[[
+                { label: t('menu.copySummary'), icon: 'lucide:clipboard-copy', click: copySummary },
+                { label: t('menu.copyLink') || 'Copy share link', icon: 'lucide:link', click: copyShareLink },
+              ]]"
+              :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
+              class="sm:hidden"
+            >
+              <UButton icon="lucide:ellipsis" size="sm" color="gray" variant="ghost" />
+            </UDropdown>
             <UDropdown v-if="printableTemplates.length" :items="printMenuItems" :popper="{ placement: 'bottom-end' }">
               <UTooltip :text="t('menu.printOrder') || 'Print'">
                 <UButton icon="lucide:printer" size="sm" color="primary" variant="soft" class="rounded-full" />
@@ -1244,7 +1254,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
         </aside>
 
         <!-- Main content: scrolls independently of the side rail -->
-        <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 space-y-5 pb-8">
+        <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 flex flex-col gap-5 pb-8">
           <OrderFlowPanel
             :order="order"
             :ns-slug="nsSlug"
@@ -1256,12 +1266,13 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             @updated="(o) => emit('statusChanged', o)"
           />
 
-          <OrderCalls :order-id="order.id" :client-id="order.clientId" />
+          <OrderCalls class="order-[11]" :order-id="order.id" :client-id="order.clientId" />
 
-          <OrderNotes :order-id="order.id" :ns-slug="nsSlug" :get-token="getToken" :format-date="formatDate" :member-display-name="memberDisplayName" />
+          <OrderNotes class="order-[12]" :order-id="order.id" :ns-slug="nsSlug" :get-token="getToken" :format-date="formatDate" :member-display-name="memberDisplayName" />
 
-          <OrderExtras :order="order" :ns-slug="nsSlug" :get-token="getToken" @updated="(o) => emit('statusChanged', o)" />
+          <OrderExtras class="order-[13]" :order="order" :ns-slug="nsSlug" :get-token="getToken" @updated="(o) => emit('statusChanged', o)" />
 
+          <div class="order-[3] empty:hidden">
           <!-- Contact card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -1315,7 +1326,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </UFormGroup>
             </div>
           </div>
+          </div>
 
+          <div class="order-[4] empty:hidden">
           <!-- lota Contacts integration: link an existing match found by
                phone, or create one from this order. Once a client is
                already linked, the name in Contact Details above is the
@@ -1352,7 +1365,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               {{ t('menu.createClientFromOrder') || 'Create client from this order' }}
             </UButton>
           </div>
+          </div>
 
+          <div class="order-[5] empty:hidden">
           <!-- Delivery / pickup card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-2.5">
             <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -1406,7 +1421,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </div>
             </div>
           </div>
+          </div>
 
+          <div class="order-[2] empty:hidden">
           <!-- Warranty case banner -->
           <div
             v-if="order.warrantyOfOrderId"
@@ -1422,7 +1439,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               {{ t('menu.openOriginalOrder') || 'Open original order' }}
             </button>
           </div>
+          </div>
 
+          <div class="order-[6] empty:hidden">
           <!-- Custom order fields -->
           <div v-if="visibleOrderFields.length" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -1464,7 +1483,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </div>
             </div>
           </div>
+          </div>
 
+          <div class="order-[8] empty:hidden">
           <!-- Products -->
           <div>
             <div class="flex items-center justify-between mb-2">
@@ -1633,7 +1654,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </table>
             </div>
           </div>
+          </div>
 
+          <div class="order-[15] empty:hidden">
           <!-- Warranty -->
           <div v-if="warrantyLines.length || order.status === 'COMPLETED'" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -1666,7 +1689,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </li>
             </ul>
           </div>
+          </div>
 
+          <div class="order-[14] empty:hidden">
           <!-- Linked tasks (lota Issues) -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -1693,7 +1718,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </li>
             </ul>
           </div>
+          </div>
 
+          <div class="order-[9] empty:hidden">
           <!-- Discount configurator: split out of the items table footer since
                it needs a type selector (+ a product picker for item-scoped
                types), not just a bare number field. -->
@@ -1729,7 +1756,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               :popper="{ strategy: 'fixed' }"
             />
           </div>
+          </div>
 
+          <div class="order-[16] empty:hidden">
           <!-- Participants -->
           <div>
             <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{{ t('menu.participants') || 'Participants' }}</div>
@@ -1764,7 +1793,9 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
               </div>
             </div>
           </div>
+          </div>
 
+          <div class="order-[17] empty:hidden">
           <!-- Customer order history: other orders from this same phone —
                click a number to switch this modal to that order. -->
           <div v-if="!isEditingOrder && customerOrders.length">
@@ -1795,6 +1826,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
                 </div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </div>

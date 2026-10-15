@@ -635,7 +635,7 @@ const ACTIVITY_ICONS: Record<string, string> = {
   ASSIGN: 'lucide:user',
   LOCATION_SET: 'lucide:map-pin',
   COMMENT: 'lucide:message-square',
-  PROBLEM_REPORTED: 'lucide:alert-triangle',
+  PROBLEM_REPORTED: 'lucide:life-buoy',
   CREATE: 'lucide:sparkles',
   UPDATE: 'lucide:pencil',
   CLIENT_SNAPSHOT_UPDATED: 'lucide:refresh-cw',
@@ -865,9 +865,9 @@ async function handleDelete() {
       </template>
 
       <div class="flex-1 min-w-0 lg:overflow-y-auto p-4 sm:p-6">
-      <div v-if="task.problemReportedAt" class="flex items-center justify-between gap-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-3 py-2 text-xs text-rose-800 dark:text-rose-300 mb-4">
-        <span class="flex items-center gap-1.5 min-w-0"><UIcon name="lucide:alert-triangle" class="w-3.5 h-3.5 flex-shrink-0" /><b>{{ t('tasks.problemBanner') }}:</b> <span class="truncate">{{ task.problemReason }}</span></span>
-        <UButton size="2xs" color="red" variant="soft" @click="clearProblem">{{ t('tasks.problemClear') }}</UButton>
+      <div v-if="task.problemReportedAt" class="flex items-center justify-between gap-2 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-800 dark:text-amber-300 mb-4">
+        <span class="flex items-center gap-1.5 min-w-0"><UIcon name="lucide:life-buoy" class="w-3.5 h-3.5 flex-shrink-0" /><b>{{ t('tasks.problemBanner') }}:</b> <span class="truncate">{{ task.problemReason }}</span></span>
+        <UButton size="2xs" color="amber" variant="soft" @click="clearProblem">{{ t('tasks.problemClear') }}</UButton>
       </div>
       <div v-if="handoffForMe" class="flex items-center justify-between gap-2 rounded-lg bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 px-3 py-2 text-xs text-sky-800 dark:text-sky-300 mb-4">
         <span class="flex items-center gap-1.5"><UIcon name="lucide:forward" class="w-3.5 h-3.5" />{{ t('tasks.handoffBanner') }}</span>

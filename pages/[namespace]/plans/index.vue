@@ -61,8 +61,6 @@ const mastersForLocation = computed(() =>
   masters.value.filter(m => m.isActive && m.locationId === selectedLocationId.value).sort((a, b) => a.sortOrder - b.sortOrder));
 const mastersById = computed(() => Object.fromEntries(masters.value.map(m => [m.id, m])));
 const scopedBookings = computed(() => bookings.value.filter(b => b.locationId === selectedLocationId.value));
-const dayBookings = computed(() =>
-  scopedBookings.value.filter(b => b.status !== 'CANCELLED' && b.startAt.slice(0, 10) === selectedDate.value));
 
 function mondayOf(dateStr: string) {
   const d = new Date(dateStr + 'T00:00:00');
@@ -113,6 +111,26 @@ function shift(dir: number) {
   selectedDate.value = ymd(dt);
 }
 function goToday() { selectedDate.value = ymd(new Date()); }
+// Phone agenda: every booking of the visible period (day / week / month),
+// grouped by day. It used to show only the selected day whatever the view
+// switch said, so "Неделя" looked empty on a phone.
+const agendaGroups = computed(() => {
+  const sorted = scopedBookings.value
+    .filter(b => b.status !== 'CANCELLED')
+    .sort((a, b) => a.startAt.localeCompare(b.startAt));
+  const map = new Map<string, typeof sorted>();
+  for (const b of sorted) {
+    const d = b.startAt.slice(0, 10);
+    if (view.value === 'day' && d !== selectedDate.value) continue;
+    if (!map.has(d)) map.set(d, []);
+    map.get(d)!.push(b);
+  }
+  return [...map.entries()].map(([date, items]) => ({ date, items }));
+});
+function fmtDayHead(d: string) {
+  return new Date(`${d}T12:00:00`).toLocaleDateString('ru', { weekday: 'short', day: 'numeric', month: 'long' });
+}
+
 function fmtTime(iso: string) { return new Date(iso).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' }); }
 
 const dateInput = ref<HTMLInputElement | null>(null);
@@ -341,7 +359,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         >{{ v.label }}</button>
       </div>
 
-      <span class="flex-1" />
+      <span class="hidden sm:block flex-1" />
 
       <button
         type="button"
@@ -358,7 +376,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           <span class="relative inline-flex h-2 w-2 rounded-full" :class="liveConnected ? 'bg-emerald-500' : 'bg-amber-500'" />
         </span>
         <UIcon v-else name="lucide:wifi-off" class="w-3.5 h-3.5" />
-        <span>{{ t('plans.live') || 'Онлайн' }}</span>
+        <span class="hidden sm:inline">{{ t('plans.live') || 'Онлайн' }}</span>
       </button>
 
       <USelectMenu
@@ -413,26 +431,31 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         <!-- mobile: agenda for the selected day -->
         <div class="sm:hidden flex-1 min-h-0 overflow-y-auto flex flex-col gap-2">
           <div v-if="loading && !bookings.length" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
-          <div v-else-if="!dayBookings.length" class="py-14 text-center text-gray-500 dark:text-gray-400">
+          <div v-else-if="!agendaGroups.length" class="py-14 text-center text-gray-500 dark:text-gray-400">
             <UIcon name="lucide:calendar-x" class="w-9 h-9 mx-auto mb-2 opacity-60" />
             {{ t('plans.noBookingsForDay') || 'На этот день записей нет' }}
           </div>
-          <button
-            v-for="b in dayBookings" :key="b.id" type="button"
-            class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 flex items-center gap-3 text-left"
-            @click="openDetail(b)"
-          >
-            <div class="font-mono text-sm font-semibold w-14 flex-shrink-0">{{ fmtTime(b.startAt) }}</div>
-            <div class="flex-1 min-w-0">
-              <div class="font-medium text-gray-900 dark:text-white truncate">{{ b.clientName }}</div>
-              <div class="text-xs text-gray-500 truncate">
-                {{ serviceNames[b.id] || '' }}<span v-if="b.masterId"> · {{ mastersById[b.masterId]?.name }}</span>
-              </div>
+          <template v-for="g in agendaGroups" :key="g.date">
+            <div v-if="view !== 'day'" class="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-500 first:pt-0">
+              {{ fmtDayHead(g.date) }}
             </div>
-            <UBadge :color="({ NEW:'blue', CONFIRMED:'primary', COMPLETED:'emerald', NO_SHOW:'amber' } as any)[b.status] || 'gray'" variant="subtle" size="xs">
-              {{ ({ NEW:'Новая', CONFIRMED:'Подтв.', COMPLETED:'Готово', NO_SHOW:'Не пришёл' } as any)[b.status] || b.status }}
-            </UBadge>
-          </button>
+            <button
+              v-for="b in g.items" :key="b.id" type="button"
+              class="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 flex items-center gap-3 text-left"
+              @click="openDetail(b)"
+            >
+              <div class="font-mono text-sm font-semibold w-14 flex-shrink-0">{{ fmtTime(b.startAt) }}</div>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium text-gray-900 dark:text-white truncate">{{ b.clientName }}</div>
+                <div class="text-xs text-gray-500 truncate">
+                  {{ serviceNames[b.id] || '' }}<span v-if="b.masterId"> · {{ mastersById[b.masterId]?.name }}</span>
+                </div>
+              </div>
+              <UBadge :color="({ NEW:'blue', CONFIRMED:'primary', COMPLETED:'emerald', NO_SHOW:'amber' } as any)[b.status] || 'gray'" variant="subtle" size="xs">
+                {{ ({ NEW:'Новая', CONFIRMED:'Подтв.', COMPLETED:'Готово', NO_SHOW:'Не пришёл' } as any)[b.status] || b.status }}
+              </UBadge>
+            </button>
+          </template>
         </div>
     </template>
 

@@ -6,9 +6,11 @@ type RevealEl = HTMLElement & { __revealIO?: IntersectionObserver };
 export default defineNuxtPlugin((nuxtApp) => {
   nuxtApp.vueApp.directive('reveal', {
     mounted(el: RevealEl, binding: { value?: number }) {
-      // Pages that opt out (`data-reveal-off-mobile`, e.g. /hub) show everything at once on phones:
-      // hidden-until-scrolled blocks made visitors forget the content was there.
-      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches && el.closest('[data-reveal-off-mobile]')) return;
+      // Phones show everything at once. Content hidden until scrolled to made
+      // visitors think a page ended after the first card (guide, catalog, hub)
+      // -- nothing hinted that more was below. The fade-up stays on desktop,
+      // where the whole page is visible anyway.
+      if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) return;
       el.classList.add('reveal');
       if (binding.value) el.style.transitionDelay = `${binding.value / 2}ms`; // 2x faster motion
       if (typeof IntersectionObserver === 'undefined') {
@@ -22,7 +24,10 @@ export default defineNuxtPlugin((nuxtApp) => {
             io.disconnect();
           }
         },
-        { threshold: 0.12, rootMargin: '0px 0px -8% 0px' },
+        // A fraction of the element's own height can never be on screen for a
+        // block taller than ~8 viewports (a long legal document), which left it
+        // invisible forever. Ask for at most half a viewport's worth instead.
+        { threshold: Math.min(0.12, (window.innerHeight * 0.5) / Math.max(el.offsetHeight, 1)), rootMargin: '0px 0px -8% 0px' },
       );
       io.observe(el);
       el.__revealIO = io;

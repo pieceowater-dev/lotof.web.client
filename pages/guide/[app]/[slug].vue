@@ -29,7 +29,7 @@
           </p>
         </header>
 
-        <article v-reveal="80" class="bezel">
+        <article class="bezel">
           <div class="bezel-core p-6 sm:p-10">
             <div class="guide-prose" v-html="localeContentHtml" />
           </div>

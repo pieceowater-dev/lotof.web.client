@@ -998,7 +998,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
                 <span class="font-mono">{{ taskShortCode(boardSlug, task.taskNumber) }}</span>
               </div>
               <div class="flex items-start justify-between gap-2">
-                <span class="text-sm font-medium leading-snug line-clamp-2"><UIcon v-if="task.problemReportedAt" name="lucide:alert-triangle" class="w-3.5 h-3.5 text-rose-500 inline -mt-0.5 mr-1" :title="task.problemReason || ''" />{{ maskProfanity(task.title) }}</span>
+                <span class="text-sm font-medium leading-snug line-clamp-2"><UIcon v-if="task.problemReportedAt" name="lucide:life-buoy" class="w-3.5 h-3.5 text-amber-500 inline -mt-0.5 mr-1" :title="task.problemReason || ''" />{{ maskProfanity(task.title) }}</span>
                 <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4 flex-shrink-0 mt-0.5', priorityColorClass(task.priority)]" />
               </div>
               <p v-if="firstLine(task.description)" class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">{{ firstLine(task.description) }}</p>

@@ -729,6 +729,21 @@ function formatNumber(val: number, fractionDigits = 0) {
   }
 }
 
+
+const phoneActionItems = computed(() => {
+  const items: Array<{ label: string; icon: string; click: () => void }> = [];
+  if (canManageAttendance.value) {
+    items.push(
+      { label: t('app.exportToExcel') || 'Export', icon: 'lucide:download', click: () => { void exportToExcel(); } },
+      { label: t('app.configureTime'), icon: 'lucide:settings', click: () => { openSettings(); } },
+    );
+  }
+  items.push(
+    { label: t('app.requestCoverage') || 'Запросить подмену', icon: 'lucide:repeat', click: () => { showCoverageModal.value = true; } },
+    { label: t('app.requestLeave') || 'Запросить отгул/отпуск', icon: 'lucide:calendar-off', click: () => { showLeaveModal.value = true; } },
+  );
+  return items;
+});
 </script>
 
 <template>
@@ -736,6 +751,7 @@ function formatNumber(val: number, fractionDigits = 0) {
     <!-- Period Filter, Legend & Settings -->
     <div class="mb-2 flex flex-col gap-2 md:flex-row md:flex-wrap md:items-center md:gap-3">
       <!-- Period Filter Buttons -->
+      <div class="flex items-center gap-1.5">
       <div class="flex flex-wrap gap-1.5">
         <button
           type="button"
@@ -770,9 +786,21 @@ function formatNumber(val: number, fractionDigits = 0) {
           {{ t('app.customPeriod') }}
         </button>
       </div>
+      <!-- Phones: the four secondary actions live in one menu instead of a
+           wrapped row of text buttons ahead of the table. -->
+      <UDropdown
+        :items="[phoneActionItems]"
+        :popper="{ placement: 'bottom-end', strategy: 'fixed' }"
+        class="md:hidden ml-auto flex-shrink-0"
+      >
+        <button type="button" class="at-btn !px-3" :aria-label="t('common.more') || 'Ещё'">
+          <UIcon name="lucide:ellipsis" class="h-4 w-4" />
+        </button>
+      </UDropdown>
+      </div>
 
       <!-- Export and Settings Buttons -->
-      <div class="flex flex-wrap gap-x-1 gap-y-1.5 md:items-center">
+      <div class="hidden md:flex flex-wrap gap-x-1 gap-y-1.5 md:items-center">
         <UButton
           v-if="canManageAttendance"
           size="xs"

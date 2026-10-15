@@ -318,22 +318,23 @@ onBeforeUnmount(() => {
   }
 });
 
-// Blur layer clipped to "whole screen minus the spotlight" (even-odd rounded
-// rect). The black dim alone vanishes on the dark theme (dark cards on a dark
-// page), so the surroundings are also softly blurred to read as out of focus.
-const blurClip = computed(() => {
+// Dim + blur drawn as four plain panels around the spotlight. A 9999px
+// box-shadow or an even-odd clip-path both fail to paint on iOS Safari, which
+// left the page undimmed on phones; ordinary rectangles render everywhere.
+const dimPanels = computed(() => {
   const r = highlightRect.value;
-  if (!r) return undefined;
+  if (!r) return [];
   const { width: vw, height: vh } = viewportSize.value;
-  const x = r.left - r.padding;
-  const y = r.top - r.padding;
-  const w = r.width + r.padding * 2;
-  const h = r.height + r.padding * 2;
-  const rad = Math.min(17.6, w / 2, h / 2);
-  const hole = `M${x + rad} ${y}H${x + w - rad}A${rad} ${rad} 0 0 1 ${x + w} ${y + rad}V${y + h - rad}`
-    + `A${rad} ${rad} 0 0 1 ${x + w - rad} ${y + h}H${x + rad}A${rad} ${rad} 0 0 1 ${x} ${y + h - rad}`
-    + `V${y + rad}A${rad} ${rad} 0 0 1 ${x + rad} ${y}Z`;
-  return `path(evenodd, 'M0 0H${vw}V${vh}H0Z${hole}')`;
+  const x = Math.max(0, r.left - r.padding);
+  const y = Math.max(0, r.top - r.padding);
+  const x2 = Math.min(vw, r.left + r.width + r.padding);
+  const y2 = Math.min(vh, r.top + r.height + r.padding);
+  return [
+    { top: 0, left: 0, width: vw, height: y },
+    { top: y2, left: 0, width: vw, height: Math.max(0, vh - y2) },
+    { top: y, left: 0, width: x, height: y2 - y },
+    { top: y, left: x2, width: Math.max(0, vw - x2), height: y2 - y },
+  ].map((p) => ({ top: `${p.top}px`, left: `${p.left}px`, width: `${p.width}px`, height: `${p.height}px` }));
 });
 
 const progress = computed(() => {
@@ -375,17 +376,10 @@ const stepContent = computed(() => {
       />
       <template v-else>
         <div
-          class="fixed inset-0 z-[9998] pointer-events-none tour-blur"
-          :style="{ clipPath: blurClip }"
-        />
-        <div
-          class="fixed z-[9998] pointer-events-none tour-spotlight-hole"
-          :style="{
-            top: `${highlightRect.top - highlightRect.padding}px`,
-            left: `${highlightRect.left - highlightRect.padding}px`,
-            width: `${highlightRect.width + highlightRect.padding * 2}px`,
-            height: `${highlightRect.height + highlightRect.padding * 2}px`,
-          }"
+          v-for="(panel, i) in dimPanels"
+          :key="i"
+          class="fixed z-[9998] pointer-events-none tour-dim"
+          :style="panel"
         />
       </template>
 
@@ -468,17 +462,13 @@ const stepContent = computed(() => {
   z-index: 9998;
 }
 
-.tour-spotlight-hole {
-  border-radius: 1.1rem;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.62);
-}
-
-.tour-blur {
+.tour-dim {
+  background: rgba(0, 0, 0, 0.6);
   -webkit-backdrop-filter: blur(2.5px);
   backdrop-filter: blur(2.5px);
 }
 
-:global(.dark) .tour-spotlight-hole {
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.78);
+:global(.dark) .tour-dim {
+  background: rgba(0, 0, 0, 0.78);
 }
 </style>
