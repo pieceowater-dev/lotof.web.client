@@ -267,29 +267,6 @@ function onCopyToClipboard(text: string) {
             @changed="(m) => client && Object.assign(client.client, m)"
           />
 
-          <!-- Personal Info Section -->
-          <div id="c-info" class="scroll-mt-32" />
-          <ContactPersonalInfo
-            :client="client"
-            :edit-mode="personalInfoEditMode"
-            :editing-first-name="editingFirstName"
-            :editing-last-name="editingLastName"
-            :editing-middle-name="editingMiddleName"
-            :editing-birth-date="editingBirthDate"
-            :editing-gender="editingGender"
-            :editing-legal-name="editingLegalName"
-            :editing-brand-name="editingBrandName"
-            :editing-bin-iin="editingBinIin"
-            :editing-registration-country="editingRegistrationCountry"
-            :editing-registration-date="editingRegistrationDate"
-            :additional-info="getAdditionalInfoValue()"
-            :editing-additional-info="editingAdditionalInfo"
-            @start-edit="startEditPersonalInfo"
-            @save-edit="savePersonalInfo"
-            @cancel-edit="cancelEditPersonalInfo"
-            @update-field="updatePersonalInfoField"
-          />
-
           <!-- Identities Section -->
           <ContactIdentities
             :identities="identities"
@@ -323,28 +300,33 @@ function onCopyToClipboard(text: string) {
             @navigate-related-client="openRelatedClient"
           />
 
+          <!-- Personal Info Section -->
+          <div id="c-info" class="scroll-mt-32" />
+          <ContactPersonalInfo
+            :client="client"
+            :edit-mode="personalInfoEditMode"
+            :editing-first-name="editingFirstName"
+            :editing-last-name="editingLastName"
+            :editing-middle-name="editingMiddleName"
+            :editing-birth-date="editingBirthDate"
+            :editing-gender="editingGender"
+            :editing-legal-name="editingLegalName"
+            :editing-brand-name="editingBrandName"
+            :editing-bin-iin="editingBinIin"
+            :editing-registration-country="editingRegistrationCountry"
+            :editing-registration-date="editingRegistrationDate"
+            :additional-info="getAdditionalInfoValue()"
+            :editing-additional-info="editingAdditionalInfo"
+            @start-edit="startEditPersonalInfo"
+            @save-edit="savePersonalInfo"
+            @cancel-edit="cancelEditPersonalInfo"
+            @update-field="updatePersonalInfoField"
+          />
+
           <div id="c-addr" class="scroll-mt-32" />
           <ContactAddresses
             :client-id="client?.client.id"
             @changed="(list) => clientAddresses = list"
-          />
-
-          <div id="c-notes" class="scroll-mt-32" />
-          <ContactNotes :client-id="client?.client.id" />
-
-          <div id="c-calls" class="scroll-mt-32" />
-          <ContactCalls :client-id="client?.client.id" @loaded="(c) => clientCalls = c" />
-
-          <!-- Loyalty Section -->
-          <ContactLoyalty
-            :bonus-balance="bonusBalance"
-            :stamp-cards="stampCards"
-            :stamp-progress="stampProgress"
-            :contacts-token="contactsAppToken"
-            :client-id="client?.client.id"
-            :namespace="selectedNS || nsSlug"
-            :created-by="createdByUserId"
-            @bonus-earned="loadClient"
           />
 
           <!-- Tags Section -->
@@ -366,6 +348,24 @@ function onCopyToClipboard(text: string) {
             @save-all="saveDynamicFields"
             @update-draft="(fieldId, value) => dynamicFieldDrafts[fieldId] = value"
           />
+          <!-- Loyalty Section -->
+          <ContactLoyalty
+            :bonus-balance="bonusBalance"
+            :stamp-cards="stampCards"
+            :stamp-progress="stampProgress"
+            :contacts-token="contactsAppToken"
+            :client-id="client?.client.id"
+            :namespace="selectedNS || nsSlug"
+            :created-by="createdByUserId"
+            @bonus-earned="loadClient"
+          />
+
+          <div id="c-notes" class="scroll-mt-32" />
+          <ContactNotes :client-id="client?.client.id" />
+
+          <div id="c-calls" class="scroll-mt-32" />
+          <ContactCalls :client-id="client?.client.id" @loaded="(c) => clientCalls = c" />
+
         </div>
 
         <!-- Right Column - Timeline -->

@@ -99,28 +99,6 @@ const lightbox = ref<string | null>(null);
 
 <template>
   <div>
-    <!-- composer: a comment with photos / documents goes straight into the timeline -->
-    <div v-if="orderId && getToken" class="mb-4 space-y-2 rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900" @dragover.prevent @drop.prevent="addFiles($event.dataTransfer?.files || null)">
-      <UTextarea v-model="body" :rows="2" autoresize :placeholder="t('menu.timelineCommentPlaceholder')" @paste="onPaste" @keydown.ctrl.enter="sendNote" @keydown.meta.enter="sendNote" />
-      <div v-if="files.length" class="flex flex-wrap gap-2">
-        <div v-for="(f, i) in files" :key="f.name + i" class="relative">
-          <img v-if="f.type.startsWith('image/')" :src="previewUrl(f)" alt="" class="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5">
-          <div v-else class="flex h-14 max-w-[9rem] items-center gap-1.5 rounded-xl bg-gray-100 px-2.5 text-xs dark:bg-gray-800"><Icon name="lucide:file-text" class="h-4 w-4 flex-shrink-0" /><span class="truncate">{{ f.name }}</span></div>
-          <button type="button" class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/80 text-white" :aria-label="t('common.delete')" @click="files.splice(i, 1)"><Icon name="lucide:x" class="h-3 w-3" /></button>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <label class="at-btn cursor-pointer !px-3 !py-1.5" :title="t('menu.timelineAttach')">
-          <Icon name="lucide:paperclip" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('menu.timelineAttach') }}</span>
-          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" class="hidden" @change="(e) => { addFiles((e.target as HTMLInputElement).files); (e.target as HTMLInputElement).value = ''; }">
-        </label>
-        <div class="flex-1" />
-        <button type="button" class="at-btn at-btn--primary !px-3 !py-1.5" :disabled="!canSend" @click="sendNote">
-          <Icon :name="sending ? 'lucide:loader-2' : 'lucide:send'" class="h-4 w-4" :class="{ 'animate-spin': sending }" />{{ t('menu.noteSend') }}
-        </button>
-      </div>
-    </div>
-
     <div v-if="!rows.length" class="text-sm text-gray-400">{{ t('menu.noHistory') || 'No history yet' }}</div>
     <ol v-else class="relative">
       <li v-for="(r, idx) in rows" :key="r.id" class="relative pl-8" :class="idx !== rows.length - 1 ? 'pb-6' : ''">
@@ -164,6 +142,28 @@ const lightbox = ref<string | null>(null);
         </template>
       </li>
     </ol>
+    <!-- composer: sits under the list because the newest entry appears at the bottom, right where the comment lands (sticky so it stays reachable in a long timeline) -->
+    <div v-if="orderId && getToken" class="sticky bottom-0 z-10 mt-4 space-y-2 rounded-2xl border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900" @dragover.prevent @drop.prevent="addFiles($event.dataTransfer?.files || null)">
+      <UTextarea v-model="body" :rows="2" autoresize :placeholder="t('menu.timelineCommentPlaceholder')" @paste="onPaste" @keydown.ctrl.enter="sendNote" @keydown.meta.enter="sendNote" />
+      <div v-if="files.length" class="flex flex-wrap gap-2">
+        <div v-for="(f, i) in files" :key="f.name + i" class="relative">
+          <img v-if="f.type.startsWith('image/')" :src="previewUrl(f)" alt="" class="h-14 w-14 rounded-xl object-cover ring-1 ring-black/5">
+          <div v-else class="flex h-14 max-w-[9rem] items-center gap-1.5 rounded-xl bg-gray-100 px-2.5 text-xs dark:bg-gray-800"><Icon name="lucide:file-text" class="h-4 w-4 flex-shrink-0" /><span class="truncate">{{ f.name }}</span></div>
+          <button type="button" class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-slate-900/80 text-white" :aria-label="t('common.delete')" @click="files.splice(i, 1)"><Icon name="lucide:x" class="h-3 w-3" /></button>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <label class="at-btn cursor-pointer !px-3 !py-1.5" :title="t('menu.timelineAttach')">
+          <Icon name="lucide:paperclip" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('menu.timelineAttach') }}</span>
+          <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" class="hidden" @change="(e) => { addFiles((e.target as HTMLInputElement).files); (e.target as HTMLInputElement).value = ''; }">
+        </label>
+        <div class="flex-1" />
+        <button type="button" class="at-btn at-btn--primary !px-3 !py-1.5" :disabled="!canSend" @click="sendNote">
+          <Icon :name="sending ? 'lucide:loader-2' : 'lucide:send'" class="h-4 w-4" :class="{ 'animate-spin': sending }" />{{ t('menu.noteSend') }}
+        </button>
+      </div>
+    </div>
+
     <Teleport to="body">
       <div v-if="lightbox" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" @click="lightbox = null">
         <img :src="lightbox" alt="" class="max-h-full max-w-full rounded-2xl object-contain">

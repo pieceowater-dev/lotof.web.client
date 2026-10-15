@@ -1,5 +1,10 @@
 export default defineAppConfig({
     ui: {
+      // A label that does not fit must never wrap into a taller button: it stays on one
+      // line and is clipped at the button's edge (use a short label where space is tight).
+      button: {
+        base: 'whitespace-nowrap max-w-full'
+      },
       modal: {
         // Center all modals on mobile instead of bottom sheet
         container: 'items-center'

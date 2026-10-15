@@ -48,10 +48,10 @@ const chips: Array<{ key: 'isSupplier' | 'isProblematic' | 'isVip'; label: strin
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center gap-4 flex-wrap">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-3 sm:px-5 sm:py-4 space-y-2.5">
     <div class="flex items-center gap-1" :title="t('contacts.markRating')">
-      <button v-for="n in 5" :key="n" :disabled="saving" @click="setRating(n)">
-        <UIcon name="lucide:star" class="w-5 h-5" :class="n <= state.rating ? 'text-amber-500 fill-amber-400' : 'text-gray-300 dark:text-gray-600'" />
+      <button v-for="n in 5" :key="n" type="button" class="p-0.5" :disabled="saving" :aria-label="`${n}`" @click="setRating(n)">
+        <UIcon name="lucide:star" class="w-6 h-6" :class="n <= state.rating ? 'text-amber-500 fill-amber-400' : 'text-gray-300 dark:text-gray-600'" />
       </button>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
@@ -67,6 +67,6 @@ const chips: Array<{ key: 'isSupplier' | 'isProblematic' | 'isVip'; label: strin
         <Icon :name="c.icon" class="w-3.5 h-3.5" />{{ t(`contacts.${c.label}`) }}
       </button>
     </div>
-    <span class="text-[11px] text-gray-400">{{ t('contacts.marksHint') }}</span>
+    <p class="text-[11px] text-gray-400">{{ t('contacts.marksHint') }}</p>
   </div>
 </template>

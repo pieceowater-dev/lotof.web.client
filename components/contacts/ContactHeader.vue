@@ -65,19 +65,21 @@ useHead(() => ({
 
 <template>
   <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div class="flex items-center justify-between">
-        <!-- Name & Type -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+      <div class="flex items-start justify-between gap-3">
+        <!-- Name & Type: the name wraps (two lines max, long unbroken strings break)
+             instead of running under the action buttons. -->
         <div class="flex-1 min-w-0">
           <h1
             v-if="displayName"
-            class="text-2xl font-bold text-gray-900 dark:text-white"
+            class="text-xl sm:text-2xl font-bold leading-tight text-gray-900 dark:text-white break-words line-clamp-2"
+            :title="displayName"
           >
             {{ displayName }}
           </h1>
           <div
             v-if="client"
-            class="mt-1 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400"
+            class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400"
           >
             <span>{{ client.client.clientType === 'INDIVIDUAL' ? t('contacts.individual') : t('contacts.legalEntity') }}</span>
             <span>•</span>
@@ -86,28 +88,31 @@ useHead(() => ({
             </span>
           </div>
         </div>
-        <UButton
-          v-if="client && client.client.status !== 'ARCHIVED'"
-          icon="lucide:git-merge"
-          size="xs"
-          color="gray"
-          variant="soft"
-          class="min-w-fit gap-2 mr-2"
-          @click="emit('merge')"
-        >
-          <span class="hidden sm:inline">{{ t('contacts.mergeAction') }}</span>
-        </UButton>
-        <!-- Back Button -->
-        <UButton
-          icon="i-heroicons-arrow-left"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="min-w-fit gap-2"
-          @click="emit('back')"
-        >
-          <span class="hidden sm:inline">{{ t('app.back') || t('common.back') }}</span>
-        </UButton>
+        <div class="flex flex-shrink-0 items-center gap-1.5">
+          <UButton
+            v-if="client && client.client.status !== 'ARCHIVED'"
+            icon="lucide:git-merge"
+            size="xs"
+            color="gray"
+            variant="soft"
+            :aria-label="t('contacts.mergeAction')"
+            :title="t('contacts.mergeAction')"
+            @click="emit('merge')"
+          >
+            <span class="hidden sm:inline">{{ t('contacts.mergeAction') }}</span>
+          </UButton>
+          <!-- Back Button -->
+          <UButton
+            icon="i-heroicons-arrow-left"
+            size="xs"
+            color="primary"
+            variant="soft"
+            :aria-label="t('app.back') || t('common.back')"
+            @click="emit('back')"
+          >
+            <span class="hidden sm:inline">{{ t('app.back') || t('common.back') }}</span>
+          </UButton>
+        </div>
       </div>
     </div>
   </div>

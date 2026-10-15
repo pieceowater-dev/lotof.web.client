@@ -6,9 +6,10 @@ import { useI18n } from '@/composables/useI18n';
 import { useCrmAuth } from '@/composables/useCrmAuth';
 import { metaFor, timeAgo } from '@/config/telephonyProviders';
 import { logError } from '@/utils/logger';
+import { isReauthRequired } from '@/utils/reauth';
 import IntegrationModal from '@/components/contacts/integrations/IntegrationModal.vue';
 import {
-  getTelephonySettings, saveTelephonyProvider, listCommentTemplates, createCommentTemplate, deleteCommentTemplate,
+  getTelephonySettings, getTelephonyIntegrations, saveTelephonyProvider, listCommentTemplates, createCommentTemplate, deleteCommentTemplate,
   type TelephonyAdapter, type TelephonyProviderConfig, type CallCommentTemplate,
 } from '@/api/contacts/telephony';
 
@@ -32,7 +33,7 @@ async function load() {
   const c = await ctx();
   if (!c) { loading.value = false; error.value = true; return; }
   try {
-    const [settings, tpls] = await Promise.all([getTelephonySettings(c.token, c.ns), listCommentTemplates(c.token, c.ns)]);
+    const [settings, tpls] = await Promise.all([getTelephonyIntegrations(c.token, c.ns), listCommentTemplates(c.token, c.ns)]);
     adapters.value = settings.adapters;
     integrations.value = settings.configs;
     templates.value = tpls;
@@ -44,16 +45,58 @@ async function load() {
   }
 }
 
-onMounted(load);
+// Opening the tab only needs the secret-free list. The connect/edit form shows
+// the webhook URL, so that is the moment a fresh Google sign-in is asked for.
+// If it is, the intent is remembered, so after Google the form opens by itself
+// instead of leaving the person on a dead page.
+const INTENT_KEY = 'lota:integration-form-intent';
+const INTENT_TTL_MS = 10 * 60 * 1000;
+const opening = ref(false);
+
+async function openForm(target: TelephonyProviderConfig | null) {
+  if (opening.value) return;
+  const c = await ctx();
+  if (!c) return;
+  opening.value = true;
+  try {
+    const full = await getTelephonySettings(c.token, c.ns);
+    integrations.value = full.configs;
+    editing.value = target ? (full.configs.find(x => x.id === target.id) || target) : null;
+    modalOpen.value = true;
+  } catch (e) {
+    if (isReauthRequired(e)) {
+      try { sessionStorage.setItem(INTENT_KEY, JSON.stringify({ id: target?.id ?? null, at: Date.now() })); } catch {}
+    } else {
+      logError('Failed to open integration form:', e);
+      toast.add({ title: t('common.error'), description: t('contacts.telephonySaveError'), color: 'red' });
+    }
+  } finally {
+    opening.value = false;
+  }
+}
+
+async function resumeIntent() {
+  let intent: { id: string | null; at: number } | null = null;
+  try {
+    const raw = sessionStorage.getItem(INTENT_KEY);
+    sessionStorage.removeItem(INTENT_KEY);
+    intent = raw ? JSON.parse(raw) : null;
+  } catch {}
+  if (!intent || Date.now() - intent.at > INTENT_TTL_MS) return;
+  await openForm(intent.id ? integrations.value.find(x => x.id === intent!.id) || null : null);
+}
+
+onMounted(async () => {
+  await load();
+  if (!error.value) await resumeIntent();
+});
 
 function connect() {
-  editing.value = null;
-  modalOpen.value = true;
+  openForm(null);
 }
 
 function edit(i: TelephonyProviderConfig) {
-  editing.value = i;
-  modalOpen.value = true;
+  openForm(i);
 }
 
 function onSaved(cfg: TelephonyProviderConfig) {
@@ -110,7 +153,7 @@ async function removeTemplate(id: string) {
   <div class="space-y-4">
     <div class="flex flex-wrap items-center justify-between gap-3">
       <h3 class="font-semibold text-gray-900 dark:text-gray-100">{{ t('contacts.integrationsTitle') }}</h3>
-      <button type="button" class="at-btn at-btn--primary" :disabled="loading || error" @click="connect"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.integrationConnect') }}</button>
+      <button type="button" class="at-btn at-btn--primary" :disabled="loading || error || opening" @click="connect"><Icon name="lucide:plus" class="w-4 h-4" />{{ t('contacts.integrationConnect') }}</button>
     </div>
 
     <div v-if="loading"><AppSkeleton variant="panel" :rows="2" /></div>

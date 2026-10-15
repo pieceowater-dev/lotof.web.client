@@ -83,36 +83,38 @@ const lastCallText = computed(() => {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 px-5 py-4 flex items-center gap-2 flex-wrap">
-    <UButton
-      v-if="primaryPhone"
-      size="sm"
-      color="primary" variant="soft"
-      icon="lucide:phone"
-      :loading="calling"
-      @click="call(primaryPhone.value)"
-    >
-      {{ t('contacts.quickCall') }} {{ primaryPhone.value }}
-    </UButton>
-    <UButton
-      v-for="p in phones.filter(x => x.id !== primaryPhone?.id)"
-      :key="p.id"
-      size="sm"
-      color="gray"
-      variant="soft"
-      icon="lucide:phone"
-      @click="call(p.value)"
-    >
-      {{ p.value }}
-    </UButton>
-    <UButton v-if="primaryPhone" size="sm" color="gray" variant="soft" icon="lucide:copy" @click="copy(primaryPhone.value)">
-      {{ t('contacts.quickCopyPhone') }}
-    </UButton>
-    <UButton size="sm" color="gray" variant="soft" icon="lucide:clipboard-list" @click="copy(summary())">
-      {{ t('contacts.quickCopySummary') }}
-    </UButton>
-    <span v-if="lastCallText" class="text-xs text-gray-500 dark:text-gray-400 ml-auto">
+  <div v-if="primaryPhone || phones.length" class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 p-3 sm:px-5 sm:py-4 space-y-2">
+    <!-- Hot path: one big call button; copy actions are quiet icon buttons beside it. -->
+    <div class="flex items-center gap-2">
+      <UButton
+        v-if="primaryPhone"
+        size="md"
+        color="primary" variant="soft"
+        icon="lucide:phone"
+        :loading="calling"
+        class="min-w-0 flex-1 justify-center"
+        @click="call(primaryPhone.value)"
+      >
+        <span class="truncate">{{ t('contacts.quickCall') }} {{ primaryPhone.value }}</span>
+      </UButton>
+      <UButton v-if="primaryPhone" size="md" color="gray" variant="soft" icon="lucide:copy" class="flex-shrink-0" :aria-label="t('contacts.quickCopyPhone')" :title="t('contacts.quickCopyPhone')" @click="copy(primaryPhone.value)" />
+      <UButton size="md" color="gray" variant="soft" icon="lucide:clipboard-list" class="flex-shrink-0" :aria-label="t('contacts.quickCopySummary')" :title="t('contacts.quickCopySummary')" @click="copy(summary())" />
+    </div>
+    <div v-if="phones.length > 1" class="flex flex-wrap items-center gap-2">
+      <UButton
+        v-for="p in phones.filter(x => x.id !== primaryPhone?.id)"
+        :key="p.id"
+        size="sm"
+        color="gray"
+        variant="soft"
+        icon="lucide:phone"
+        @click="call(p.value)"
+      >
+        {{ p.value }}
+      </UButton>
+    </div>
+    <p v-if="lastCallText" class="text-xs text-gray-500 dark:text-gray-400">
       {{ t('contacts.quickLastCall') }}: {{ lastCallText }}
-    </span>
+    </p>
   </div>
 </template>

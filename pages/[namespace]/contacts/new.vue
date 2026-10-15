@@ -909,7 +909,7 @@ useHead(() => ({
               <label
                 v-for="option in clientTypeOptions"
                 :key="option.value"
-                class="relative flex cursor-pointer items-center gap-3 rounded-full border px-4 py-3 text-sm transition focus-within:ring-2 focus-within:ring-emerald-500"
+                class="relative flex min-w-0 cursor-pointer items-center gap-2 rounded-full border px-3 py-3 text-sm sm:gap-3 sm:px-4 transition focus-within:ring-2 focus-within:ring-emerald-500"
                 :class="clientType === option.value
                   ? 'border-emerald-500 bg-emerald-50/70 text-gray-900 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-white'
                   : 'border-gray-200 bg-white text-gray-700 hover:border-emerald-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:border-emerald-700'"
@@ -923,13 +923,13 @@ useHead(() => ({
                 <span class="flex h-5 w-5 items-center justify-center rounded-full border-2 border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900 peer-checked:border-blue-500 peer-checked:bg-blue-500 transition-colors">
                   <span class="h-2.5 w-2.5 rounded-full bg-white" />
                 </span>
-                <span class="flex-1 font-medium">
+                <span class="min-w-0 flex-1 truncate whitespace-nowrap font-medium">
                   <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
                   <span class="sm:hidden">{{ t(option.shortKey) }}</span>
                 </span>
                 <UIcon
                   :name="option.icon"
-                  class="w-4 h-4 text-gray-400 peer-checked:text-emerald-600"
+                  class="hidden h-4 w-4 flex-shrink-0 text-gray-400 peer-checked:text-emerald-600 min-[400px]:block"
                 />
               </label>
             </div>

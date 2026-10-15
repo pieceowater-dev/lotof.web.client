@@ -290,7 +290,7 @@ function handleKeyDown(event: KeyboardEvent) {
               <span class="flex h-4 w-4 items-center justify-center rounded-full border-2 border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-900 peer-checked:border-blue-500 peer-checked:bg-blue-500 transition-colors">
                 <span class="h-2 w-2 rounded-full bg-white" />
               </span>
-              <span class="flex-1 font-medium">
+              <span class="min-w-0 flex-1 truncate whitespace-nowrap font-medium">
                 <span class="hidden sm:inline">{{ t(option.labelKey) }}</span>
                 <span class="sm:hidden">{{ t(option.shortKey) }}</span>
               </span>

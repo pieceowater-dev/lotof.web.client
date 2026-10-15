@@ -211,6 +211,20 @@ export async function getTelephonySettings(token: string, ns: string) {
   return data.telephonySettings;
 }
 
+/** The integrations list without secrets (no webhook token): readable without a fresh sign-in. */
+export async function getTelephonyIntegrations(token: string, ns: string) {
+  const data = await crmRequest<{ telephonyIntegrations: { adapters: TelephonyAdapter[]; configs: TelephonyProviderConfig[] } }>(
+    token, ns,
+    `query TelephonyIntegrations {
+      telephonyIntegrations {
+        adapters { code title canMakeCall canProvideRecording canAnswerContactQuery }
+        configs { id name provider enabled hasApiKey apiKeyHint hasApiSecret apiSecretHint baseUrl extraJson updatedAt lastEventAt }
+      }
+    }`,
+  );
+  return data.telephonyIntegrations;
+}
+
 export async function saveTelephonyProvider(
   token: string, ns: string,
   input: { id?: string; name?: string; provider: string; enabled: boolean; apiKey?: string; apiSecret?: string; baseUrl?: string; extraJson?: string; rotateToken?: boolean },

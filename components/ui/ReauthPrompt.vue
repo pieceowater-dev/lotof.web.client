@@ -13,6 +13,12 @@ const open = ref(false);
 function show() { open.value = true; }
 function confirm() {
   open.value = false;
+  // App tokens are cached for hours; the cached one still carries the old sign-in
+  // time, so after Google the server would ask again and nothing could proceed.
+  // Dropping their timestamps makes every app token get exchanged anew on return.
+  try {
+    Object.keys(localStorage).filter((k) => k.endsWith('-token-ts')).forEach((k) => localStorage.removeItem(k));
+  } catch {}
   login(window.location.pathname + window.location.search, { reauth: true });
 }
 
