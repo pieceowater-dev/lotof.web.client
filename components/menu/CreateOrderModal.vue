@@ -212,6 +212,29 @@ async function submitQuickAdd() {
   }
 }
 
+// A call-centre operator enters dozens of orders in a row: the last fulfilment type
+// and point are pre-selected, and a lone point is selected for them.
+const LAST_CHOICE_KEY = 'menu:createOrder:last';
+const route = useRoute();
+const { branchIds: activeBranchIds } = useActiveBranch(computed(() => String(route.params.namespace || '')));
+function readLastChoice(): { type?: 'pickup' | 'delivery' | 'table'; branchId?: string } {
+  let type: 'pickup' | 'delivery' | 'table' | undefined;
+  try { type = JSON.parse(localStorage.getItem(LAST_CHOICE_KEY) || '{}').type; } catch {}
+  // The point comes from the global working point, shared with every other selector.
+  return { type, branchId: activeBranchIds.value.length === 1 ? activeBranchIds.value[0] : undefined };
+}
+function rememberChoice() {
+  try { localStorage.setItem(LAST_CHOICE_KEY, JSON.stringify({ type: form.type })); } catch {}
+  if (form.branchId) activeBranchIds.value = [form.branchId];
+}
+// Enter in the search adds the first match and clears the box: type, Enter, next item.
+function addFirstMatch() {
+  const first = filteredItems.value[0];
+  if (!first) return;
+  addToCart(first);
+  itemSearch.value = '';
+}
+
 watch(() => props.modelValue, (open) => {
   if (!open) return;
   loadItems();
@@ -219,8 +242,12 @@ watch(() => props.modelValue, (open) => {
   for (const k of Object.keys(customValues)) delete customValues[k];
   Object.assign(customValues, parseCustomFields(props.prefill?.customFields));
   const pre = props.prefill;
-  form.type = pre?.type ?? 'table';
-  form.branchId = pre?.branchId ?? '';
+  const last = readLastChoice();
+  form.type = pre?.type ?? last.type ?? 'table';
+  form.branchId = pre?.branchId
+    ?? (last.branchId && props.branches.some((b) => b.id === last.branchId) ? last.branchId : '')
+    ?? '';
+  if (!form.branchId && props.branches.length === 1) form.branchId = props.branches[0].id;
   form.phone = pre?.phone ?? '';
   form.customerName = pre?.customerName ?? '';
   form.deliveryAddress = pre?.deliveryAddress ?? '';
@@ -245,6 +272,7 @@ function handleClose() {
 }
 
 function handleSubmit() {
+  rememberChoice();
   if (!isFormValid.value) return;
   emit('submit', {
     branchId: form.branchId || undefined,
@@ -272,7 +300,7 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-3xl' }" @close="handleClose">
+  <UModal class="at-modal" v-model="isOpen" :ui="{ ...atModalUi, width: 'sm:max-w-4xl' }" @close="handleClose">
     <UCard :ui="atCardUiFit">
       <template #header>
         <div class="flex items-center gap-2.5">
@@ -286,95 +314,70 @@ function handleSubmit() {
       </template>
 
       <!-- Fixed height: the modal is vertically centred, so a content-driven height made it jump
-           whenever a hint line appeared or the fulfilment type added/removed a field. -->
-      <div class="h-[min(72vh,38rem)] overflow-y-auto px-5 py-5">
-        <div class="grid gap-6 md:grid-cols-2">
-          <!-- Left: how the order is fulfilled + who it is for -->
-          <div class="space-y-5 min-w-0">
-            <div
-              v-if="isWarrantyCase"
-              class="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+           whenever a hint line appeared or the fulfilment type added/removed a field.
+           Order of work for a call-centre operator: phone, name, [address], point, items,
+           comment, and only then the (remembered) fulfilment type. -->
+      <div class="h-[min(74vh,40rem)] overflow-y-auto px-5 py-4">
+        <div
+          v-if="isWarrantyCase"
+          class="mb-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200"
+        >
+          <Icon name="lucide:shield-check" class="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <div class="min-w-0 space-y-1.5">
+            <div class="font-medium">{{ t('menu.warrantyCaseFor', { order: prefill?.warrantyOrderLabel ?? '' }) || ('Warranty case for order ' + prefill?.warrantyOrderLabel) }}</div>
+            <label class="flex items-center gap-2 text-xs">
+              <UToggle v-model="freeOfCharge" size="xs" />
+              {{ t('menu.warrantyFreeOfCharge') || 'Free of charge' }}
+            </label>
+          </div>
+        </div>
+
+        <div class="grid gap-6 md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+          <!-- Left: who it is for -->
+          <div class="min-w-0 space-y-3.5">
+            <UFormGroup
+              :label="t('menu.phone') || 'Phone'"
+              required
+              :help="!isPhoneValid && form.phone ? (t('contacts.invalidPhone') || 'Invalid phone format') : ''"
+              :error="!!(form.phone && !isPhoneValid)"
             >
-              <Icon name="lucide:shield-check" class="mt-0.5 h-4 w-4 flex-shrink-0" />
-              <div class="min-w-0 space-y-1.5">
-                <div class="font-medium">{{ t('menu.warrantyCaseFor', { order: prefill?.warrantyOrderLabel ?? '' }) || ('Warranty case for order ' + prefill?.warrantyOrderLabel) }}</div>
-                <label class="flex items-center gap-2 text-xs">
-                  <UToggle v-model="freeOfCharge" size="xs" />
-                  {{ t('menu.warrantyFreeOfCharge') || 'Free of charge' }}
-                </label>
-              </div>
-            </div>
+              <UInput
+                :model-value="form.phone"
+                type="tel"
+                inputmode="tel"
+                pattern="[0-9+()\s-]*"
+                icon="lucide:phone"
+                autofocus
+                :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
+                :ui="{ rounded: 'rounded-xl' }"
+                @update:model-value="updatePhoneValue"
+              />
+            </UFormGroup>
+            <UFormGroup :label="t('menu.customerName') || 'Name'">
+              <UInput v-model="form.customerName" icon="lucide:user" :ui="{ rounded: 'rounded-xl' }" />
+            </UFormGroup>
 
-            <!-- Fulfilment type: stacked icon + short label so nothing wraps -->
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                v-for="opt in typeOptions"
-                :key="opt.value"
-                type="button"
-                class="flex flex-col items-center justify-center gap-1.5 rounded-xl border px-2 py-3 text-xs font-medium transition-all duration-200"
-                :class="form.type === opt.value
-                  ? 'border-primary-300 bg-primary-50 text-primary-700 shadow-sm dark:border-primary-700 dark:bg-primary-950/30 dark:text-primary-300'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400'"
-                @click="form.type = opt.value"
-              >
-                <Icon :name="opt.icon" class="h-5 w-5" />
-                <span class="leading-tight text-center">{{ opt.label }}</span>
-              </button>
-            </div>
+            <UFormGroup v-if="form.type === 'delivery'" :label="t('menu.address') || 'Address'" required>
+              <UInput v-model="form.deliveryAddress" icon="lucide:home" :ui="{ rounded: 'rounded-xl' }" />
+            </UFormGroup>
+            <UFormGroup v-if="form.type === 'table'" :label="t('menu.tableNumberLabel') || 'Spot number'">
+              <UInput v-model="form.tableNumber" icon="lucide:hash" type="number" min="0" max="999" :ui="{ rounded: 'rounded-xl' }" />
+            </UFormGroup>
 
-            <div class="space-y-3.5">
-              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                <Icon name="lucide:user-round" class="h-3.5 w-3.5" />
-                {{ t('menu.contactInfo') || 'Contact details' }}
-              </div>
-
-              <UFormGroup
-                :label="t('menu.phone') || 'Phone'"
-                required
-                :help="!isPhoneValid && form.phone ? (t('contacts.invalidPhone') || 'Invalid phone format') : ''"
-                :error="!!(form.phone && !isPhoneValid)"
-              >
-                <UInput
-                  :model-value="form.phone"
-                  type="tel"
-                  inputmode="tel"
-                  pattern="[0-9+()\s-]*"
-                  icon="lucide:phone"
-                  :placeholder="t('contacts.enterPhone') || '+7 700 123 45 67'"
-                  :ui="{ rounded: 'rounded-xl' }"
-                  @update:model-value="updatePhoneValue"
-                />
-              </UFormGroup>
-              <UFormGroup :label="t('menu.customerName') || 'Name'">
-                <UInput v-model="form.customerName" icon="lucide:user" :ui="{ rounded: 'rounded-xl' }" />
-              </UFormGroup>
-
-              <UFormGroup v-if="form.type === 'delivery'" :label="t('menu.address') || 'Address'" required>
-                <UInput v-model="form.deliveryAddress" icon="lucide:home" :ui="{ rounded: 'rounded-xl' }" />
-              </UFormGroup>
-              <UFormGroup v-if="form.type === 'table'" :label="t('menu.tableNumberLabel') || 'Spot number'">
-                <UInput v-model="form.tableNumber" icon="lucide:hash" type="number" min="0" max="999" :ui="{ rounded: 'rounded-xl' }" />
-              </UFormGroup>
-
-              <UFormGroup :label="t('menu.branch') || 'Branch'" :required="form.type === 'pickup' || form.type === 'table'">
-                <USelectMenu
-                  v-model="form.branchId"
-                  icon="lucide:map-pin"
-                  :options="branchOptions"
-                  value-attribute="value"
-                  option-attribute="label"
-                  :placeholder="t('menu.chooseBranch') || 'Choose a branch'"
-                  :ui="{ rounded: 'rounded-xl' }"
-                  :popper="{ strategy: 'fixed' }"
-                />
-              </UFormGroup>
-            </div>
+            <UFormGroup v-if="branchOptions.length !== 1" :label="t('menu.branch') || 'Branch'" :required="form.type === 'pickup' || form.type === 'table'">
+              <USelectMenu
+                v-model="form.branchId"
+                icon="lucide:map-pin"
+                :options="branchOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :placeholder="t('menu.chooseBranch') || 'Choose a branch'"
+                :ui="{ rounded: 'rounded-xl' }"
+                :popper="{ strategy: 'fixed' }"
+              />
+            </UFormGroup>
 
             <div v-if="orderFields.length" class="space-y-3.5">
-              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                <Icon name="lucide:list-plus" class="h-3.5 w-3.5" />
-                {{ t('menu.customFields') || 'Details' }}
-              </div>
               <template v-for="f in orderFields" :key="f.id">
                 <OrderFieldInput v-if="f.dataType === 'HEADING'" :field="f" model-value="" />
                 <UFormGroup v-else :label="f.label" :required="f.isRequired" :help="f.hint || undefined">
@@ -384,17 +387,34 @@ function handleSubmit() {
             </div>
 
             <UFormGroup :label="t('menu.comment') || 'Comment'">
-              <UTextarea v-model="form.comment" :rows="3" :ui="{ rounded: 'rounded-xl' }" />
+              <UTextarea v-model="form.comment" :rows="2" autoresize :ui="{ rounded: 'rounded-xl' }" />
             </UFormGroup>
+
+            <!-- Fulfilment type: last, compact -- it is the same as last time for most orders. -->
+            <div class="space-y-1.5 pt-1">
+              <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ t('menu.type') || 'Type' }}</div>
+              <div class="at-seg w-full">
+                <button
+                  v-for="opt in typeOptions"
+                  :key="opt.value"
+                  type="button"
+                  class="at-seg__btn min-w-0 flex-1 justify-center"
+                  :class="form.type === opt.value ? 'at-seg__btn--on' : ''"
+                  @click="form.type = opt.value"
+                >
+                  <Icon :name="opt.icon" class="h-4 w-4 flex-shrink-0" />
+                  <span class="truncate">{{ opt.label }}</span>
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- Right: what is in the order -->
-          <div class="space-y-3 min-w-0">
+          <div class="min-w-0 space-y-3">
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 <Icon name="lucide:shopping-bag" class="h-3.5 w-3.5" />
                 {{ t('menu.menuItems') || 'Items' }}
-                <span v-if="cartCount" class="text-primary-600 dark:text-primary-300 normal-case font-semibold">({{ cartCount }})</span>
               </div>
               <button
                 type="button"
@@ -442,8 +462,9 @@ function handleSubmit() {
               icon="lucide:search"
               :placeholder="t('menu.searchItems') || 'Search items'"
               :ui="{ rounded: 'rounded-xl' }"
+              @keyup.enter="addFirstMatch"
             />
-            <div class="max-h-60 overflow-y-auto rounded-xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
+            <div class="max-h-52 overflow-y-auto rounded-xl border border-gray-100 dark:border-gray-800 divide-y divide-gray-100 dark:divide-gray-800">
               <div v-if="itemsLoading" class="px-3 py-6 text-center text-sm text-gray-400">
                 {{ t('app.loading') || 'Loading...' }}
               </div>
@@ -454,34 +475,42 @@ function handleSubmit() {
                 v-for="item in filteredItems"
                 :key="item.id"
                 type="button"
-                class="w-full flex items-center justify-between gap-3 px-3 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
+                class="w-full flex items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
                 @click="addToCart(item)"
               >
                 <span class="text-sm min-w-0 truncate">{{ item.name }}</span>
                 <span class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 tabular-nums flex-shrink-0">
-                  <span v-if="stockById[item.id]?.tracked" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="stockById[item.id].available > 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300'">{{ stockById[item.id].available > 0 ? t('menu.inStockN', { n: stockById[item.id].available }) : t('menu.outOfStock') }}</span>
+                  <span v-if="stockById[item.id]?.tracked" class="rounded-full px-1.5 py-0.5 text-[11px] font-medium" :class="stockById[item.id].available > 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'">{{ stockById[item.id].available }}</span>
                   {{ item.price }}
                   <Icon name="lucide:plus-circle" class="h-4 w-4 text-primary-500" />
                 </span>
               </button>
             </div>
 
-            <div v-if="cart.length" class="rounded-xl bg-gray-50 dark:bg-gray-800/40 divide-y divide-gray-200/70 dark:divide-gray-700/50">
-              <div
-                v-for="line in cart"
-                :key="line.menuItemId"
-                class="flex items-center justify-between gap-2 px-3 py-2"
-              >
-                <span class="text-sm flex-1 truncate">
-                  <Icon v-if="line.itemKind === 'WORK'" name="lucide:wrench" class="mr-1 inline h-3.5 w-3.5 text-gray-400" />{{ line.name }}
-                </span>
-                <div class="flex items-center gap-1.5">
-                  <UButton icon="lucide:minus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, -1)" />
-                  <span class="w-5 text-center text-sm tabular-nums">{{ line.quantity }}</span>
-                  <UButton icon="lucide:plus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, 1)" />
-                </div>
-                <span class="text-sm w-16 text-right tabular-nums font-medium">{{ linePrice(line) * line.quantity }}</span>
+            <!-- The order so far: always visible under the list, with steppers. -->
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                {{ t('menu.inOrder') || 'In the order' }}
+                <span v-if="cartCount" class="text-primary-600 dark:text-primary-300 normal-case font-semibold">({{ cartCount }})</span>
               </div>
+              <div v-if="cart.length" class="rounded-xl bg-gray-50 dark:bg-gray-800/40 divide-y divide-gray-200/70 dark:divide-gray-700/50">
+                <div
+                  v-for="line in cart"
+                  :key="line.menuItemId"
+                  class="flex items-center justify-between gap-2 px-3 py-2"
+                >
+                  <span class="text-sm flex-1 truncate">
+                    <Icon v-if="line.itemKind === 'WORK'" name="lucide:wrench" class="mr-1 inline h-3.5 w-3.5 text-gray-400" />{{ line.name }}
+                  </span>
+                  <div class="flex items-center gap-1.5">
+                    <UButton icon="lucide:minus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, -1)" />
+                    <span class="w-5 text-center text-sm tabular-nums">{{ line.quantity }}</span>
+                    <UButton icon="lucide:plus" size="2xs" color="gray" variant="soft" square class="rounded-lg" @click="changeQuantity(line, 1)" />
+                  </div>
+                  <span class="text-sm w-16 text-right tabular-nums font-medium">{{ linePrice(line) * line.quantity }}</span>
+                </div>
+              </div>
+              <p v-else class="rounded-xl border border-dashed border-gray-200 px-3 py-4 text-center text-sm text-gray-400 dark:border-gray-700">{{ t('menu.cartEmptyHint') || 'Tap an item above to add it' }}</p>
             </div>
           </div>
         </div>

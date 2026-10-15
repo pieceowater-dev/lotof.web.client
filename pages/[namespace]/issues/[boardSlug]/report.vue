@@ -100,7 +100,7 @@ onMounted(load);
         <h1 class="at-h2 truncate">{{ t('tasks.reportTitle') }}<span v-if="board"> · {{ board.name }}</span></h1>
         <p class="at-hint">{{ t('tasks.reportHint') }}</p>
       </div>
-      <button type="button" class="at-btn hidden sm:inline-flex" :disabled="!rows.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" />Excel</button>
+      <button type="button" class="at-btn hidden sm:inline-flex" :disabled="!rows.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" />{{ t('common.export') }}</button>
     </div>
 
     <div class="at-panel !p-4 flex items-end gap-3 flex-wrap">

@@ -85,6 +85,9 @@ const error = ref<string | null>(null);
 
 const branches = ref<MenuBranch[]>([]);
 const brandName = ref('');
+// The working point is global (shared with the create-order form and other selectors):
+// the list starts on it and any change here updates it.
+const { branchIds: activeBranchIds, validated: validActiveBranchIds } = useActiveBranch(nsSlug);
 const selectedBranchIds = ref<string[]>([]);
 const selectedStatuses = ref<string[]>([]);
 const search = ref('');
@@ -101,7 +104,18 @@ const createdFrom = ref('');
 const createdTo = ref('');
 const closedFrom = ref('');
 const closedTo = ref('');
+// Comma-separated user ids ('' = anyone): the API takes the list in one string.
 const participantFilter = ref('');
+const participantSelection = computed<string[]>({
+  get: () => (participantFilter.value ? participantFilter.value.split(',').filter(Boolean) : []),
+  set: (v) => { participantFilter.value = v.join(','); },
+});
+const participantSelectLabel = computed(() => {
+  const ids = participantSelection.value;
+  if (!ids.length) return t('menu.any') || 'Any';
+  const names = ids.map((id) => participantOptions.value.find((o) => o.value === id)?.label).filter(Boolean) as string[];
+  return ids.length <= 2 ? names.join(', ') : `${names[0]} +${ids.length - 1}`;
+});
 const visitedStageFilter = ref('');
 const visitedStageOptions = computed(() => [{ label: t('menu.any') || 'Any', value: '' }, ...allOrderStages.value.map((s) => ({ label: s.name, value: s.id }))]);
 // Quick filters over the list: urgent, overdue (longer in a stage than its limit), ready.
@@ -260,12 +274,12 @@ let restoringFilters = false;
 function restoreQuickFilters() {
   if (!process.client) return;
   try {
+    restoringFilters = true;
+    selectedBranchIds.value = [...activeBranchIds.value];
     const raw = localStorage.getItem(FILTERS_STORAGE_KEY.value);
     if (!raw) return;
     const saved = JSON.parse(raw);
-    restoringFilters = true;
     if (Array.isArray(saved.selectedStatuses)) selectedStatuses.value = saved.selectedStatuses;
-    if (Array.isArray(saved.selectedBranchIds)) selectedBranchIds.value = saved.selectedBranchIds;
     if (saved.selectedType === '' || saved.selectedType === 'delivery' || saved.selectedType === 'pickup' || saved.selectedType === 'table') {
       selectedType.value = saved.selectedType;
     }
@@ -277,9 +291,9 @@ function restoreQuickFilters() {
 }
 function persistQuickFilters() {
   if (!process.client || restoringFilters) return;
+  activeBranchIds.value = [...selectedBranchIds.value];
   localStorage.setItem(FILTERS_STORAGE_KEY.value, JSON.stringify({
     selectedStatuses: selectedStatuses.value,
-    selectedBranchIds: selectedBranchIds.value,
     selectedType: selectedType.value,
   }));
 }
@@ -353,6 +367,9 @@ async function loadBranches() {
     const { menuBranchesList } = await import('@/api/menu/branch/list');
     const res = await menuBranchesList(menuToken, nsSlug.value);
     branches.value = res.branches;
+    // Drop a remembered point that no longer exists.
+    const still = validActiveBranchIds(res.branches.map((b) => b.id));
+    if (still.length !== selectedBranchIds.value.length) selectedBranchIds.value = still;
   } catch (e) {
     logError('[menu/index] loadBranches failed', e);
   }
@@ -554,9 +571,9 @@ function clearStatuses() {
 const headerMenu = computed(() => {
   const group: { label: string; icon: string; to: string; target?: string; external?: boolean }[] = [
     { label: t('menu.storefront') || 'Storefront', icon: 'lucide:store', to: `/to/${nsSlug.value}/menu`, target: '_blank', external: true },
+    { label: t('menu.kitchenBoard') || 'Kitchen board', icon: 'lucide:monitor', to: `/to/${nsSlug.value}/menu/board`, target: '_blank', external: true },
+    { label: 'Zen', icon: 'lucide:smartphone', to: `/${nsSlug.value}/menu/mine` },
   ];
-  if (isOwnerOrManager.value) group.push({ label: t('menu.reportsOpen'), icon: 'lucide:bar-chart-3', to: `/${nsSlug.value}/menu/reports` });
-  group.push({ label: t('menu.myOrdersTitle'), icon: 'lucide:smartphone', to: `/${nsSlug.value}/menu/mine` });
   return [group];
 });
 // "Smart" views only appear when there is something in them (or while one is switched on).
@@ -774,7 +791,7 @@ async function startOrderSubscription() {
   }
 }
 
-const liveUpdatesEnabled = ref(true);
+const liveUpdatesEnabled = ref(false); // off until the person turns it on (their choice is remembered per namespace)
 const LIVE_UPDATES_STORAGE_KEY = computed(() => `menu:liveUpdates:${nsSlug.value}`);
 function restoreLiveUpdatesPref() {
   if (!process.client) return;
@@ -1021,9 +1038,9 @@ async function handleCreateOrder(payload: any) {
         </button>
       </template>
       <template #actions>
-        <NuxtLink :to="`/to/${nsSlug}/menu/board`" target="_blank" class="at-btn !px-2.5 xl:!px-3.5" data-tour="menu-kitchen-board-btn" :aria-label="t('menu.kitchenBoard') || 'Kitchen board'" :title="t('menu.kitchenBoard') || 'Kitchen board'">
-          <Icon name="lucide:monitor" class="h-4 w-4" />
-          <span class="hidden xl:inline">{{ t('menu.kitchenBoard') || 'Kitchen board' }}</span>
+        <NuxtLink v-if="isOwnerOrManager" :to="`/${nsSlug}/menu/reports`" class="at-btn !px-2.5 xl:!px-3.5" :aria-label="t('menu.reportsOpen')" :title="t('menu.reportsOpen')">
+          <Icon name="lucide:bar-chart-3" class="h-4 w-4" />
+          <span class="hidden xl:inline">{{ t('menu.reportsOpen') }}</span>
         </NuxtLink>
         <NuxtLink v-if="isOwnerOrManager" :to="`/${nsSlug}/menu/settings`" class="at-btn !px-2.5" data-tour="menu-settings-btn" :aria-label="t('menu.settings') || 'Settings'" :title="t('menu.settings') || 'Settings'">
           <Icon name="lucide:settings" class="h-4 w-4" />
@@ -1082,7 +1099,7 @@ async function handleCreateOrder(payload: any) {
           <span class="truncate">{{ branchSelectLabel }}</span>
         </template>
       </USelectMenu>
-      <div class="hidden flex-shrink-0 items-center gap-1.5 lg:flex">
+      <div v-if="false" class="hidden flex-shrink-0 items-center gap-1.5 lg:flex">
         <button v-for="opt in TYPE_OPTIONS" :key="opt.value" type="button" class="pill-filter whitespace-nowrap" :class="selectedType === opt.value ? 'pill-filter--active' : ''" @click="selectedType = opt.value as typeof selectedType">{{ opt.label }}</button>
       </div>
       <button type="button" class="at-btn flex-shrink-0" :aria-label="t('tasks.filters') || 'Filters'" @click="isFilterPanelOpen = true">
@@ -1360,7 +1377,7 @@ async function handleCreateOrder(payload: any) {
               <template #label><span class="truncate">{{ branchSelectLabel }}</span></template>
             </USelectMenu>
           </div>
-          <div class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 lg:hidden dark:border-gray-800 dark:bg-gray-900">
+          <div class="space-y-3 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400"><Icon name="lucide:shapes" class="h-3.5 w-3.5" />{{ t('menu.type') || 'Type' }}</div>
             <div class="flex flex-wrap gap-1.5">
               <button v-for="opt in TYPE_OPTIONS" :key="opt.value" type="button" class="pill-filter whitespace-nowrap" :class="selectedType === opt.value ? 'pill-filter--active' : ''" @click="selectedType = opt.value as typeof selectedType">{{ opt.label }}</button>
@@ -1388,14 +1405,17 @@ async function handleCreateOrder(payload: any) {
               {{ t('menu.participantFilterLabel') || 'Participant' }}
             </div>
             <USelectMenu
-              v-model="participantFilter"
-              :options="[{ label: t('menu.any') || 'Any', value: '' }, ...participantOptions]"
+              v-model="participantSelection"
+              multiple
+              :options="participantOptions"
               value-attribute="value"
               option-attribute="label"
               searchable
               icon="lucide:user"
               :popper="{ strategy: 'fixed' }"
-            />
+            >
+              <template #label><span class="truncate">{{ participantSelectLabel }}</span></template>
+            </USelectMenu>
             <p class="text-xs text-gray-400">{{ t('menu.participantFilterHint') || 'Orders this staff member is assigned to' }}</p>
           </div>
 

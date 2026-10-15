@@ -1078,6 +1078,7 @@
     }
   },
   "common": {
+    "export": "Экспорт",
     "columns": "Бағандар",
     "resetColumns": "Барлығын көрсету",
     "errorRetry": "Бірдеңе дұрыс болмады. Қайталап көріңіз.",
@@ -2050,6 +2051,8 @@
     "catalog": "Каталог",
     "categories": "Санаттар",
     "menuItems": "Позициялар",
+    "inOrder": "Тапсырыста",
+    "cartEmptyHint": "Қосу үшін жоғарыдағы позицияны басыңыз",
     "stopList": "Тоқтату тізімі",
     "stopListPickBranch": "Тоқтату тізімі: филиалды таңдаңыз",
     "stopListPickBranchHint": "Басқару үшін филиалды таңдаңыз",
@@ -3048,7 +3051,7 @@
     "stockFilterOut": "Қолда жоқ",
     "stockFilterReserved": "Резервте",
     "stockPositions": "позиция",
-    "exportExcel": "Excel",
+    "exportExcel": "Экспорт",
     "returnReceipt": "Қайтарылатын кіріс",
     "returnReceived": "Қабылданды",
     "returnQty": "Қайтару",

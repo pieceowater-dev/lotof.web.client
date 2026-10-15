@@ -1085,6 +1085,7 @@
     }
   },
   "common": {
+    "export": "Export",
     "columns": "Columns",
     "resetColumns": "Show all",
     "errorRetry": "Something went wrong. Please try again.",
@@ -2319,6 +2320,8 @@
     "catalog": "Catalog",
     "categories": "Categories",
     "menuItems": "Items",
+    "inOrder": "In the order",
+    "cartEmptyHint": "Tap an item above to add it",
     "stopList": "Stop list",
     "stopListPickBranch": "Stop list: pick a branch",
     "stopListPickBranchHint": "Pick a branch to manage",
@@ -3318,7 +3321,7 @@
     "stockFilterOut": "Out of stock",
     "stockFilterReserved": "Reserved",
     "stockPositions": "items",
-    "exportExcel": "Excel",
+    "exportExcel": "Export",
     "returnReceipt": "Receipt to return against",
     "returnReceived": "Received",
     "returnQty": "Return",

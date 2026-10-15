@@ -145,7 +145,7 @@ async function exportXlsx() {
           <button type="button" class="rounded-md px-2.5 py-1 font-medium" :class="viewMode === 'map' ? 'bg-white shadow-sm dark:bg-gray-900' : 'text-gray-500'" @click="viewMode = 'map'">{{ t('tasks.logisticsMap') }}</button>
         </div>
         <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" @click="printPage"><Icon name="lucide:printer" class="h-4 w-4" />{{ t('tasks.print') }}</button>
-        <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!tasks.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
+        <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!tasks.length" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />{{ t('common.export') }}</button>
       </div>
     </div>
 

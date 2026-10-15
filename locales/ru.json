@@ -1078,6 +1078,7 @@
     }
   },
   "common": {
+    "export": "Экспорт",
     "columns": "Колонки",
     "resetColumns": "Показать все",
     "errorRetry": "Что-то пошло не так. Попробуйте ещё раз.",
@@ -2342,6 +2343,8 @@
     "catalog": "Каталог",
     "categories": "Категории",
     "menuItems": "Позиции",
+    "inOrder": "В заказе",
+    "cartEmptyHint": "Нажмите на позицию выше, чтобы добавить",
     "stopList": "Стоп-лист",
     "stopListPickBranch": "Стоп-лист: выберите точку",
     "stopListPickBranchHint": "Выберите точку для управления",
@@ -3540,7 +3543,7 @@
     "stockFilterOut": "Нет в наличии",
     "stockFilterReserved": "В резерве",
     "stockPositions": "позиций",
-    "exportExcel": "Excel",
+    "exportExcel": "Экспорт",
     "returnReceipt": "Приход, по которому возвращаем",
     "returnReceived": "Принято",
     "returnQty": "Вернуть",

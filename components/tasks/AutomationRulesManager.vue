@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { atCardUiFit } from '@/utils/atraceUi';
+import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useConfirm } from '@/composables/useConfirm';
@@ -58,22 +58,31 @@ watch(() => [props.modelValue, props.boardId], () => {
   if (props.modelValue && props.boardId) load();
 });
 
-const isModalOpen = ref(false);
+// One overlay, two views: the list, and the form for a new / edited rule. (They
+// used to be two stacked overlays, and a click inside the form counted as an
+// "outside" click for the one beneath it, which closed it.)
+const view = ref<'list' | 'form'>('list');
 const editing = ref<AutomationRule | null>(null);
 const saving = ref(false);
+watch(isOpen, (v) => { if (v) view.value = 'list'; });
 
 function openCreate() {
   editing.value = null;
-  isModalOpen.value = true;
+  view.value = 'form';
 }
 function openEdit(rule: AutomationRule) {
   editing.value = rule;
-  isModalOpen.value = true;
+  view.value = 'form';
 }
 
+const ORDER_STATUS_LABEL: Record<string, string> = {
+  ACCEPTED: 'menu.statusAccepted', IN_PREPARATION: 'menu.statusInPreparation', READY: 'menu.statusReady',
+  DELIVERING: 'menu.statusDelivering', COMPLETED: 'menu.statusCompleted', CANCELLED: 'menu.statusCancelled',
+};
 function targetStatusOf(rule: AutomationRule): string {
   try {
-    return JSON.parse(rule.actionConfig || '{}').target_status || '';
+    const key = JSON.parse(rule.actionConfig || '{}').target_status || '';
+    return ORDER_STATUS_LABEL[key] ? t(ORDER_STATUS_LABEL[key]) : key;
   } catch {
     return '';
   }
@@ -100,7 +109,7 @@ async function handleSubmit(payload: Record<string, any>) {
       rules.value = [...rules.value, created];
       useToast().add({ title: t('tasks.automationCreated') || 'Automation created', color: 'primary' });
     }
-    isModalOpen.value = false;
+    view.value = 'list';
   } catch (e) {
     logError('[AutomationRulesManager] save failed', e);
     useToast().add({ title: getErrorMessage(e, t) || 'Failed to save automation', color: 'red' });
@@ -125,26 +134,34 @@ async function handleDelete(rule: AutomationRule) {
 </script>
 
 <template>
-  <USlideover class="at-modal" v-model="isOpen" :ui="{ background: 'bg-white dark:bg-[#1a1a1a]', rounded: 'sm:rounded-l-[2rem]', shadow: 'shadow-2xl' }">
-    <UCard :ui="{ ...atCardUiFit, rounded: 'rounded-none sm:rounded-l-[2rem]', body: { base: 'flex-1 overflow-y-auto', padding: 'px-6 py-5' } }" class="flex flex-col h-full">
+  <UModal v-model="isOpen" class="at-modal" :ui="atModalUi">
+    <UCard :ui="atCardUiFit">
       <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-extrabold tracking-tight">{{ t('tasks.automations') || 'Automations' }}</h3>
-          <button type="button" class="at-btn !p-2" aria-label="Close" @click="isOpen = false"><UIcon name="lucide:x" class="w-4 h-4" /></button>
+        <div class="flex items-center gap-2">
+          <button v-if="view === 'form'" type="button" class="at-btn !p-2" :aria-label="t('common.back')" @click="view = 'list'"><UIcon name="lucide:arrow-left" class="h-4 w-4" /></button>
+          <h3 class="flex-1 text-lg font-extrabold tracking-tight">
+            {{ view === 'form' ? (editing ? (t('tasks.editAutomationRule') || 'Edit automation') : (t('tasks.addAutomationRule') || 'Add automation')) : (t('tasks.automations') || 'Automations') }}
+          </h3>
+          <button type="button" class="at-btn !p-2" :aria-label="t('common.close')" @click="isOpen = false"><UIcon name="lucide:x" class="h-4 w-4" /></button>
         </div>
       </template>
 
-      <div class="space-y-2">
-        <p class="text-xs text-gray-400">
+      <AutomationRuleModal
+        v-if="view === 'form'"
+        :rule="editing"
+        :saving="saving"
+        :trigger-options="triggerOptions"
+        @cancel="view = 'list'"
+        @submit="handleSubmit"
+      />
+
+      <div v-else class="space-y-3">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
           {{ t('tasks.automationsHint') || 'Automatically update the linked Menu order when an issue reaches a final column.' }}
         </p>
 
-        <UButton icon="lucide:plus" size="sm" color="primary" variant="soft" block @click="openCreate">
-          {{ t('tasks.addAutomationRule') || 'Add automation' }}
-        </UButton>
-
-        <div v-if="loading" class="text-center py-6 text-sm text-gray-400">{{ t('app.loading') || 'Loading...' }}</div>
-        <div v-else-if="!rules.length" class="text-center py-6 text-sm text-gray-400">{{ t('tasks.noAutomationRules') || 'No automations yet' }}</div>
+        <div v-if="loading" class="py-6 text-center text-sm text-gray-400">{{ t('app.loading') || 'Loading...' }}</div>
+        <div v-else-if="!rules.length" class="py-6 text-center text-sm text-gray-400">{{ t('tasks.noAutomationRules') || 'No automations yet' }}</div>
 
         <div
           v-for="rule in rules"
@@ -152,25 +169,20 @@ async function handleDelete(rule: AutomationRule) {
           class="at-row flex items-center gap-3"
           :class="!rule.isActive && 'opacity-50'"
         >
-          <UIcon name="lucide:zap" class="w-4 h-4 flex-shrink-0 text-gray-400" />
+          <UIcon name="lucide:zap" class="h-4 w-4 flex-shrink-0 text-gray-400" />
           <div class="min-w-0 flex-1 text-sm">
-            <div class="truncate">
-              {{ triggerLabelOf(rule) }} → {{ t('tasks.automationOrderStatus') || 'order' }} {{ targetStatusOf(rule) }}
-            </div>
+            <div class="font-medium">{{ triggerLabelOf(rule) }}</div>
+            <div class="text-xs text-gray-500">→ {{ t('tasks.automationOrderStatus') || 'order' }}: {{ targetStatusOf(rule) }}</div>
             <div v-if="!rule.isActive" class="text-xs text-gray-400">{{ t('tasks.automationInactive') || 'Inactive' }}</div>
           </div>
-          <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEdit(rule)" />
-          <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete(rule)" />
+          <button type="button" class="cp-icon" :aria-label="t('common.edit')" @click="openEdit(rule)"><UIcon name="lucide:pencil" class="h-4 w-4" /></button>
+          <button type="button" class="cp-icon" :aria-label="t('common.delete')" @click="handleDelete(rule)"><UIcon name="lucide:trash-2" class="h-4 w-4 text-red-500" /></button>
         </div>
+
+        <button type="button" class="at-btn at-btn--primary w-full justify-center" @click="openCreate">
+          <UIcon name="lucide:plus" class="h-4 w-4" />{{ t('tasks.addAutomationRule') || 'Add automation' }}
+        </button>
       </div>
     </UCard>
-  </USlideover>
-
-  <AutomationRuleModal
-    v-model="isModalOpen"
-    :rule="editing"
-    :saving="saving"
-    :trigger-options="triggerOptions"
-    @submit="handleSubmit"
-  />
+  </UModal>
 </template>

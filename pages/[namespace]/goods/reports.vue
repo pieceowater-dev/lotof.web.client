@@ -300,7 +300,7 @@ onMounted(async () => {
             <span class="at-chip">{{ t('goods.turnIssued') }}: <b class="tabular-nums">{{ turnoverTotals.issued }}</b></span>
             <span class="at-chip">{{ t('goods.stockValue') }}: <b class="tabular-nums">{{ money(turnoverTotals.value) }}</b></span>
           </div>
-          <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!turnover.length" @click="exportTurnover"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
+          <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!turnover.length" @click="exportTurnover"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />{{ t('common.export') }}</button>
         </div>
         <div class="overflow-x-auto rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
           <table class="w-full text-sm">
@@ -355,7 +355,7 @@ onMounted(async () => {
         <div>
           <div class="mb-2 flex items-center justify-between">
             <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ t('goods.lowStockAlerts') }}</h3>
-            <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!lowStock.length" @click="exportToBuy"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />Excel</button>
+            <button type="button" class="at-btn !px-3 !py-1.5 hidden sm:inline-flex" :disabled="!lowStock.length" @click="exportToBuy"><Icon name="lucide:file-spreadsheet" class="h-4 w-4" />{{ t('common.export') }}</button>
           </div>
           <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
             <div v-for="s in lowStock" :key="`${s.warehouseId}-${s.goodId}`" class="flex items-center justify-between px-4 py-2.5 text-sm">

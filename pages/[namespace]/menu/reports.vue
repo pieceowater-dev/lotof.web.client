@@ -175,7 +175,7 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
         <h1 class="at-h2">{{ t('menu.reportTitle_' + tab) }}</h1>
         <p class="at-hint">{{ t('menu.reportHint_' + tab) }}</p>
       </div>
-      <button type="button" class="at-btn flex-shrink-0" :disabled="!hasData" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" /><span class="hidden sm:inline">Excel</span></button>
+      <button type="button" class="at-btn flex-shrink-0" :disabled="!hasData" @click="exportXlsx"><Icon name="lucide:file-spreadsheet" class="w-4 h-4" /><span class="hidden sm:inline">{{ t('common.export') }}</span></button>
     </div>
 
     <div class="overflow-x-auto -mx-1 px-1"><div class="at-seg">

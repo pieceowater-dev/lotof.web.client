@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import type { AutomationRule } from '@/api/tasks/automation/list';
 
@@ -8,23 +7,25 @@ const { t } = useI18n();
 interface TriggerOption { value: string; label: string }
 
 const props = defineProps<{
-  modelValue: boolean;
   rule?: AutomationRule | null;
   saving?: boolean;
   triggerOptions: TriggerOption[];
 }>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', v: boolean): void;
+  (e: 'cancel'): void;
   (e: 'submit', payload: Record<string, any>): void;
 }>();
 
-const isOpen = computed({
-  get: () => props.modelValue,
-  set: (v) => emit('update:modelValue', v),
-});
-
-const ORDER_STATUS_OPTIONS = ['ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'];
+// Order statuses a rule can set, shown with the same names the orders screens use.
+const ORDER_STATUS_OPTIONS = computed(() => [
+  { value: 'ACCEPTED', label: t('menu.statusAccepted') },
+  { value: 'IN_PREPARATION', label: t('menu.statusInPreparation') },
+  { value: 'READY', label: t('menu.statusReady') },
+  { value: 'DELIVERING', label: t('menu.statusDelivering') },
+  { value: 'COMPLETED', label: t('menu.statusCompleted') },
+  { value: 'CANCELLED', label: t('menu.statusCancelled') },
+]);
 
 // USelectMenu doesn't reliably show a selected option's label when the bound
 // value is an empty string, so "any final column" uses a non-empty sentinel
@@ -37,8 +38,7 @@ const form = reactive({
   isActive: true,
 });
 
-watch(() => [props.modelValue, props.rule], () => {
-  if (!props.modelValue) return;
+watch(() => props.rule, () => {
   const r = props.rule;
   form.triggerStatus = r?.triggerStatus || ANY_TERMINAL;
   form.isActive = r ? r.isActive : true;
@@ -49,10 +49,6 @@ watch(() => [props.modelValue, props.rule], () => {
     form.targetStatus = 'COMPLETED';
   }
 }, { immediate: true });
-
-function handleClose() {
-  isOpen.value = false;
-}
 
 function handleSubmit() {
   emit('submit', {
@@ -66,55 +62,37 @@ function handleSubmit() {
 </script>
 
 <template>
-  <UModal class="at-modal" v-model="isOpen" @close="handleClose" :ui="atModalUi">
-    <UCard :ui="atCardUiFit">
-      <template #header>
-        <h3 class="text-lg font-semibold">
-          {{ rule ? (t('tasks.editAutomationRule') || 'Edit automation') : (t('tasks.addAutomationRule') || 'Add automation') }}
-        </h3>
-      </template>
+  <form class="space-y-5" @submit.prevent="handleSubmit">
+    <UFormGroup :label="t('tasks.automationTrigger') || 'When an issue reaches'">
+      <USelectMenu
+        v-model="form.triggerStatus"
+        :options="[{ label: t('tasks.automationAnyTerminal') || 'Any final column', value: ANY_TERMINAL }, ...triggerOptions]"
+        value-attribute="value"
+        option-attribute="label"
+        :popper="{ strategy: 'fixed' }"
+      />
+    </UFormGroup>
 
-      <div class="space-y-4">
-        <UFormGroup :label="t('tasks.automationTrigger') || 'When an issue reaches'">
-          <USelectMenu
-            v-model="form.triggerStatus"
-            :options="[{ label: t('tasks.automationAnyTerminal') || 'Any final column', value: ANY_TERMINAL }, ...triggerOptions]"
-            value-attribute="value"
-            option-attribute="label"
-            :popper="{ strategy: 'fixed' }"
-          />
-        </UFormGroup>
+    <UFormGroup :label="t('tasks.automationUpdateMenuOrder') || 'Set the linked order status to'" :hint="t('tasks.automationActionHint') || 'Only this action is supported today'">
+      <USelectMenu
+        v-model="form.targetStatus"
+        :options="ORDER_STATUS_OPTIONS"
+        value-attribute="value"
+        option-attribute="label"
+        :popper="{ strategy: 'fixed' }"
+      />
+    </UFormGroup>
 
-        <UFormGroup :label="t('tasks.automationAction') || 'Then'" :hint="t('tasks.automationActionHint') || 'Only this action is supported today'">
-          <div class="flex items-center gap-2">
-            <span class="text-sm text-gray-500">{{ t('tasks.automationUpdateMenuOrder') || 'Update the linked Menu order status to' }}</span>
-            <USelectMenu
-              v-model="form.targetStatus"
-              :options="ORDER_STATUS_OPTIONS"
-              class="w-40"
-              :popper="{ strategy: 'fixed' }"
-            />
-          </div>
-        </UFormGroup>
+    <label class="flex cursor-pointer items-center gap-3">
+      <UToggle v-model="form.isActive" />
+      <span class="text-sm font-medium">{{ t('tasks.isActive') || 'Active' }}</span>
+    </label>
 
-        <div class="flex items-center gap-2">
-          <UToggle v-model="form.isActive" />
-          <span class="text-sm">{{ t('tasks.isActive') || 'Active' }}</span>
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UButton color="gray" variant="ghost" :label="t('app.cancel')" @click="handleClose" />
-          <UButton
-            color="primary"
-            :label="saving ? (t('app.loading') || 'Loading...') : (t('app.save') || 'Save')"
-            :loading="saving"
-            :disabled="saving"
-            @click="handleSubmit"
-          />
-        </div>
-      </template>
-    </UCard>
-  </UModal>
+    <div class="flex justify-end gap-2 pt-1">
+      <button type="button" class="at-btn" @click="emit('cancel')">{{ t('app.cancel') }}</button>
+      <button type="submit" class="at-btn at-btn--primary" :disabled="saving">
+        <Icon v-if="saving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('app.save') || 'Save' }}
+      </button>
+    </div>
+  </form>
 </template>

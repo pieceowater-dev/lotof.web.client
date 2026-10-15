@@ -629,7 +629,7 @@ const moreMenuItems = computed(() => {
   if (views.length) groups.push(views);
   const tools: DropdownItem[] = [];
   if (zenModeEnabled.value) tools.push({ label: t('tasks.openZenMode') || 'Zen Mode', icon: 'lucide:smartphone', click: openZen });
-  if (isOwnerOrManager.value) tools.push({ label: 'Excel', icon: 'lucide:file-spreadsheet', disabled: !visibleTasks.value.length, click: exportTasks });
+  if (isOwnerOrManager.value) tools.push({ label: t('common.export'), icon: 'lucide:file-spreadsheet', disabled: !visibleTasks.value.length, click: exportTasks });
   if (tools.length) groups.push(tools);
   if (taskTemplates.value.length) {
     groups.push([{ label: t('tasks.fromTemplate'), disabled: true, slot: 'heading' }, ...templateMenuItems.value[0]]);
