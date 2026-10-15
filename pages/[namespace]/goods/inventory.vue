@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { formatDateTime } from '@/utils/formatDate';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -21,7 +22,7 @@ import type { GoodsInventoryCount, GoodsInventoryCountItem, GoodsInventoryCountS
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
@@ -83,6 +84,7 @@ const rows = computed(() => {
     ...c,
     warehouseName: warehouses.value.find((w) => w.id === c.warehouseId)?.name || t('goods.unknownWarehouse'),
     progress: `${c.items.filter((i) => i.countedQty != null).length} / ${c.items.length}`,
+    startedAt: formatDateTime(c.startedAt, locale.value),
   }));
 });
 

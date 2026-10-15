@@ -2,6 +2,7 @@
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePlansAuth } from '@/composables/usePlansAuth';
 import { usePlansToken } from '@/composables/usePlansToken';
@@ -230,7 +231,7 @@ async function onReschedule(p: { booking: PlansBooking; startAt: string; masterI
 function onPickDay(d: string) { selectedDate.value = d; view.value = 'day'; }
 
 // --- live updates: WebSocket (bookingChanged) + a slow poll as safety net ---
-const autoRefresh = ref(true);
+const autoRefresh = ref(false); // live updates are opt-in; the choice is remembered
 const liveConnected = ref(false);
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let wsDispose: (() => void) | null = null;
@@ -303,28 +304,23 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 min-h-0 gap-3">
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center flex-shrink-0">
-      <div class="min-w-0">
-        <h1 data-tour="plans-title" class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('app.plans') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-          {{ t('plans.subtitle') || 'Онлайн-запись клиентов и расписание мастеров' }}
-        </p>
-      </div>
-      <div class="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
-        <UButton
-          data-tour="plans-public-link" icon="lucide:external-link" size="xs" color="gray" variant="soft"
-          :to="`/to/${nsSlug}/plans`" target="_blank"
-        >
-          {{ t('plans.openPublicPage') || 'Страница записи' }}
-        </UButton>
-        <UButton
-          v-if="isOwnerOrManager" data-tour="plans-settings-btn" icon="lucide:settings" size="xs" color="primary" variant="soft"
-          :to="`/${nsSlug}/plans/settings`"
-        >
-          {{ t('plans.settings') || 'Настройки' }}
-        </UButton>
-      </div>
-    </div>
+    <PageHeader :title="t('app.plans')" :subtitle="t('plans.subtitle') || 'Онлайн-запись клиентов и расписание мастеров'" tour-title="plans-title">
+      <template v-if="canManageCalendar" #primary>
+        <button type="button" class="at-btn at-btn--primary" data-tour="plans-new-btn" @click="openCreate()">
+          <Icon name="lucide:plus" class="h-4 w-4" />
+          <span class="hidden min-[440px]:inline">{{ t('plans.newBooking') || 'Новая запись' }}</span>
+          <span class="sr-only min-[440px]:hidden">{{ t('plans.newBooking') || 'Новая запись' }}</span>
+        </button>
+      </template>
+      <template #actions>
+        <NuxtLink data-tour="plans-public-link" :to="`/to/${nsSlug}/plans`" target="_blank" class="at-btn !px-2.5 xl:!px-3.5" :aria-label="t('plans.openPublicPage') || 'Страница записи'" :title="t('plans.openPublicPage') || 'Страница записи'">
+          <Icon name="lucide:external-link" class="h-4 w-4" /><span class="hidden xl:inline">{{ t('plans.openPublicPage') || 'Страница записи' }}</span>
+        </NuxtLink>
+        <NuxtLink v-if="isOwnerOrManager" data-tour="plans-settings-btn" :to="`/${nsSlug}/plans/settings`" class="at-btn !px-2.5" :aria-label="t('plans.settings') || 'Настройки'" :title="t('plans.settings') || 'Настройки'">
+          <Icon name="lucide:settings" class="h-4 w-4" />
+        </NuxtLink>
+      </template>
+    </PageHeader>
 
     <div class="flex-shrink-0"><PlansNavTabs /></div>
 
@@ -350,11 +346,11 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         {{ t('plans.today') || 'Сегодня' }}
       </UButton>
 
-      <div data-tour="plans-views" class="flex items-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-0.5">
+      <div data-tour="plans-views" class="at-seg">
         <button
           v-for="v in VIEWS" :key="v.key" type="button"
-          class="px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
-          :class="view === v.key ? 'bg-primary-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-200'"
+          class="at-seg__btn"
+          :class="view === v.key ? 'at-seg__btn--on' : ''"
           @click="view = v.key"
         >{{ v.label }}</button>
       </div>
@@ -385,9 +381,6 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
         :options="locationOptions" value-attribute="value" option-attribute="label"
         size="xs" icon="lucide:map-pin" class="min-w-[9rem]" :popper="{ strategy: 'fixed' }" />
 
-      <UButton v-if="canManageCalendar" data-tour="plans-new-btn" icon="lucide:plus" size="xs" @click="openCreate()">
-        {{ t('plans.newBooking') || 'Новая запись' }}
-      </UButton>
     </div>
 
     <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>

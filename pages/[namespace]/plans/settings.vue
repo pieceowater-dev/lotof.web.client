@@ -4,6 +4,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePlansAuth } from '@/composables/usePlansAuth';
 import { usePlansStaffRole } from '@/composables/usePlansStaffRole';
@@ -380,41 +381,28 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
     <!-- header -->
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center flex-shrink-0">
-      <div class="flex items-center gap-3 min-w-0">
-        <NuxtLink :to="`/${nsSlug}/plans`" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0">
-          <UIcon name="lucide:arrow-left" class="w-5 h-5" />
-        </NuxtLink>
-        <div class="min-w-0">
-          <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('plans.settings') }}</h1>
-          <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('plans.settingsSubtitle') || 'Оформление публичной страницы, точки и правила записи' }}</p>
-        </div>
-      </div>
-      <UButton
-        icon="lucide:credit-card" size="xs" color="amber" variant="soft"
-        class="self-start sm:self-auto whitespace-nowrap" :to="`/${nsSlug}/plans/plans?manage=1`"
-      >
-        {{ t('plans.managePlan') || 'Управление тарифом' }}
-      </UButton>
-    </div>
+    <PageHeader :title="t('plans.settings')" :subtitle="t('plans.settingsSubtitle') || 'Оформление публичной страницы, точки и правила записи'">
+      <template #actions>
+        <NuxtLink :to="`/${nsSlug}/plans/plans?manage=1`" class="at-btn at-btn--amber"><Icon name="lucide:credit-card" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('plans.managePlan') || 'Управление тарифом' }}</span></NuxtLink>
+        <NuxtLink :to="`/${nsSlug}/plans`" class="at-btn"><Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('common.back') }}</span></NuxtLink>
+      </template>
+    </PageHeader>
 
     <div v-if="booting" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 
     <template v-else>
       <StorageUsageCard class="mt-4" app="plans" :ns-slug="nsSlug" :get-token="() => getToken(nsSlug)" />
       <!-- pill tabs -->
-      <div class="mt-4 flex gap-1 overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900/60 p-1 flex-shrink-0">
+      <div class="mt-4 flex-shrink-0 overflow-x-auto no-scrollbar"><div class="at-seg">
         <button
           v-for="tb in TABS" :key="tb.key" type="button"
-          class="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-          :class="activeTab === tb.key
-            ? 'bg-white dark:bg-gray-800 text-primary-600 dark:text-primary-400 shadow-sm'
-            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'"
+          class="at-seg__btn"
+          :class="activeTab === tb.key ? 'at-seg__btn--on' : ''"
           @click="activeTab = tb.key"
         >
-          <UIcon :name="tb.icon" class="w-4 h-4" />{{ tb.label }}
+          <UIcon :name="tb.icon" class="w-4 h-4 flex-shrink-0" /><span>{{ tb.label }}</span>
         </button>
-      </div>
+      </div></div>
 
       <div class="flex-1 min-h-0 overflow-y-auto pt-4">
         <div class="max-w-3xl space-y-4">

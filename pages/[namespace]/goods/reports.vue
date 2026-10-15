@@ -173,6 +173,8 @@ async function loadReport() {
 }
 
 watch(activeTab, loadReport);
+// The period applies by itself (no Apply button): any change of a date reloads the report.
+watch([from, to], () => { if (from.value && to.value && from.value <= to.value) void loadReport(); });
 
 onMounted(async () => {
   try {
@@ -225,7 +227,7 @@ onMounted(async () => {
       <UInput v-model="from" type="date" size="sm" class="w-auto" />
       <span class="text-gray-300 dark:text-gray-600 flex-shrink-0">—</span>
       <UInput v-model="to" type="date" size="sm" class="w-auto" />
-      <UButton size="xs" color="primary" variant="soft" :loading="loading" class="ml-auto flex-shrink-0" @click="loadReport">{{ t('common.apply') }}</UButton>
+      <button type="button" class="at-btn ml-auto flex-shrink-0 !px-2.5" :disabled="loading" :aria-label="t('common.refresh')" :title="t('common.refresh')" @click="loadReport"><Icon :name="loading ? 'lucide:loader-2' : 'lucide:refresh-cw'" class="h-4 w-4" :class="{ 'animate-spin': loading }" /></button>
     </div>
 
     <div class="flex-1 min-h-0 overflow-y-auto mt-3">

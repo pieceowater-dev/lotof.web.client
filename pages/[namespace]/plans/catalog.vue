@@ -3,6 +3,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePlansAuth } from '@/composables/usePlansAuth';
 import { usePlansStaffRole } from '@/composables/usePlansStaffRole';
@@ -193,18 +194,13 @@ onMounted(async () => {
 
 <template>
   <div class="at-scope ct-scope p-4 pb-safe-or-4 flex flex-col gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-      <div class="min-w-0">
-        <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('plans.catalog') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ t('plans.catalogSubtitle') || 'Услуги, категории и мастера' }}</p>
-      </div>
-      <UButton
-        v-if="canManageCatalog" icon="lucide:settings" size="xs" color="primary" variant="soft"
-        class="self-start sm:self-auto" :to="`/${nsSlug}/plans/settings`"
-      >
-        {{ t('plans.settings') || 'Настройки' }}
-      </UButton>
-    </div>
+    <PageHeader :title="t('plans.catalog')" :subtitle="t('plans.catalogSubtitle') || 'Услуги, категории и мастера'">
+      <template v-if="canManageCatalog" #actions>
+        <NuxtLink :to="`/${nsSlug}/plans/settings`" class="at-btn !px-2.5" :aria-label="t('plans.settings') || 'Настройки'" :title="t('plans.settings') || 'Настройки'">
+          <Icon name="lucide:settings" class="h-4 w-4" />
+        </NuxtLink>
+      </template>
+    </PageHeader>
     <PlansNavTabs />
 
     <div class="overflow-x-auto no-scrollbar">

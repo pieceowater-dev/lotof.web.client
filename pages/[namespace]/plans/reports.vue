@@ -3,6 +3,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePlansAuth } from '@/composables/usePlansAuth';
 import { useNamespace } from '@/composables/useNamespace';
@@ -67,19 +68,14 @@ watch(rangeDays, loadAll);
 
 <template>
   <div class="at-scope ct-scope p-4 pb-safe-or-4 flex flex-col gap-4">
-    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-      <div class="min-w-0">
-        <h1 class="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">{{ t('plans.reports') }}</h1>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{{ t('plans.reportsSubtitle') || 'Записи, выручка и загрузка мастеров' }}</p>
-      </div>
-    </div>
+    <PageHeader :title="t('plans.reports')" :subtitle="t('plans.reportsSubtitle') || 'Записи, выручка и загрузка мастеров'" />
     <PlansNavTabs />
 
-    <div class="flex items-center rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 w-fit p-0.5">
+    <div class="flex flex-wrap gap-1.5">
       <button
-        v-for="d in [7, 30, 90]" :key="d"
-        class="px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
-        :class="rangeDays === d ? 'bg-primary-500 text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-200'"
+        v-for="d in [7, 30, 90]" :key="d" type="button"
+        class="pill-filter"
+        :class="rangeDays === d ? 'pill-filter--active' : ''"
         @click="rangeDays = d"
       >{{ d }} {{ t('plans.days') || 'дн' }}</button>
     </div>

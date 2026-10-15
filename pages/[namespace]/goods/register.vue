@@ -687,6 +687,13 @@ onMounted(async () => {
     }
   }
 });
+
+const shiftMenuItems = computed(() => [[
+  { label: t('goods.xReport'), icon: 'lucide:receipt', click: openXReport },
+  { label: t('goods.cashMovement'), icon: 'lucide:banknote', click: () => { showCashMovement.value = true; } },
+  { label: t('goods.history'), icon: 'lucide:history', click: openHistory },
+  { label: t('goods.freeReturn'), icon: 'lucide:undo-2', click: () => openReturn() },
+]]);
 </script>
 
 <template>
@@ -711,11 +718,10 @@ onMounted(async () => {
                -- a `contents` element has a zero-size rect and the highlight
                lands in the top-left corner. -->
           <div data-tour="goods-register-shift-actions" class="flex flex-shrink-0 items-center gap-1.5 sm:flex-wrap">
-            <UButton color="gray" variant="soft" icon="lucide:receipt" size="sm" @click="openXReport">{{ t('goods.xReport') }}</UButton>
-            <UButton color="gray" variant="soft" icon="lucide:banknote" size="sm" @click="showCashMovement = true">{{ t('goods.cashMovement') }}</UButton>
-            <UButton color="gray" variant="soft" icon="lucide:history" size="sm" @click="openHistory">{{ t('goods.history') }}</UButton>
-            <UButton color="gray" variant="soft" icon="lucide:undo-2" size="sm" @click="openReturn()">{{ t('goods.freeReturn') }}</UButton>
-            <span class="hidden sm:block w-px h-5 bg-gray-200 dark:bg-gray-800 mx-0.5" />
+            <!-- Shift tools live in one menu: the till screen is for selling, and "close shift" is the only other thing needed at hand. -->
+            <UDropdown :items="shiftMenuItems" :popper="{ placement: 'bottom-end', strategy: 'fixed' }">
+              <UButton color="gray" variant="soft" icon="lucide:ellipsis" size="sm" :aria-label="t('tasks.moreActions') || 'More'" :title="t('tasks.moreActions') || 'More'" />
+            </UDropdown>
             <UButton color="red" variant="soft" icon="lucide:log-out" size="sm" @click="showCloseShift = true">
               {{ t('goods.closeShift') }}
             </UButton>
