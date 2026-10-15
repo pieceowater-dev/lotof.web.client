@@ -10,8 +10,8 @@ const { t } = useI18n();
 
 const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
-const pageTitle = 'lota Orders — онлайн-меню и приём заказов по QR';
-const pageDescription = 'Меню, заказы и кухонный дисплей в реальном времени — lota Orders для кафе, ресторанов и доставки.';
+const pageTitle = computed(() => t('seo.menu.title'));
+const pageDescription = computed(() => t('seo.menu.description'));
 
 useSeoMeta({
   title: pageTitle,

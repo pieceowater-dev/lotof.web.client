@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -14,15 +15,15 @@ import type { GoodsGood } from '@/api/goods/good';
 import GoodsNavTabs from '@/components/goods/GoodsNavTabs.vue';
 import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.reports')} — ${titleBySlug(nsSlug.value)}` : t('goods.reports'),
-}));
+usePageTitle('goods', { section: 'reports' });
+const { money } = useGoodsMoney();
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
@@ -52,7 +53,6 @@ const topGoods = ref<GoodsTopGoodsEntry[]>([]);
 const abcEntries = ref<GoodsAbcEntry[]>([]);
 const marginReport = ref<GoodsMarginReport | null>(null);
 const turnover = ref<GoodsTurnoverEntry[]>([]);
-const money = (cents: number) => (cents / 100).toFixed(2);
 const turnoverTotals = computed(() => ({
   received: turnover.value.reduce((s, e) => s + e.received, 0),
   issued: turnover.value.reduce((s, e) => s + e.issued, 0),
@@ -239,7 +239,7 @@ onMounted(async () => {
           <div class="flex-1 min-w-0 space-y-1">
             <div class="flex items-center justify-between gap-2">
               <span class="font-medium truncate">{{ e.goodName }}</span>
-              <span class="tabular-nums text-gray-500 dark:text-gray-400 flex-shrink-0">{{ e.quantitySold }} · {{ (e.revenueCents / 100).toFixed(2) }}</span>
+              <span class="tabular-nums text-gray-500 dark:text-gray-400 flex-shrink-0">{{ e.quantitySold }} · {{ money(e.revenueCents) }}</span>
             </div>
             <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
               <div class="h-full rounded-full bg-primary-400 dark:bg-primary-600" :style="{ width: `${(e.revenueCents / maxRevenue) * 100}%` }" />
@@ -255,7 +255,7 @@ onMounted(async () => {
             <span class="font-medium">{{ e.goodName }}</span>
             <div class="flex items-center gap-2">
               <UBadge :color="e.class === 'A' ? 'green' : e.class === 'B' ? 'amber' : 'gray'" variant="soft" size="xs">{{ e.class }}</UBadge>
-              <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.revenueCents / 100).toFixed(2) }} ({{ e.revenueSharePercent.toFixed(1) }}%)</span>
+              <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ money(e.revenueCents) }} ({{ e.revenueSharePercent.toFixed(1) }}%)</span>
             </div>
           </div>
           <div class="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
@@ -272,16 +272,16 @@ onMounted(async () => {
       <div v-else-if="activeTab === 'margin' && marginReport" class="space-y-3">
         <div class="grid grid-cols-3 gap-3">
           <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ (marginReport.totalRevenueCents / 100).toFixed(2) }}</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ money(marginReport.totalRevenueCents) }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.total') }}</div>
           </div>
           <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ (marginReport.totalCostCents / 100).toFixed(2) }}</div>
+            <div class="text-2xl font-bold text-gray-900 dark:text-white tabular-nums">{{ money(marginReport.totalCostCents) }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.costPrice') }}</div>
           </div>
           <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
             <div class="text-2xl font-bold tabular-nums" :class="marginReport.totalMarginCents >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'">
-              {{ (marginReport.totalMarginCents / 100).toFixed(2) }}
+              {{ money(marginReport.totalMarginCents) }}
             </div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ t('goods.marginReport') }} ({{ marginReport.totalMarginPercent.toFixed(1) }}%)</div>
           </div>
@@ -289,7 +289,7 @@ onMounted(async () => {
         <div class="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
           <div v-for="e in marginReport.entries" :key="e.saleId" class="flex items-center justify-between px-4 py-2.5 text-sm">
             <span class="font-medium">{{ e.number }}</span>
-            <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ (e.marginCents / 100).toFixed(2) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
+            <span class="tabular-nums text-gray-500 dark:text-gray-400">{{ money(e.marginCents) }} ({{ e.marginPercent.toFixed(1) }}%)</span>
           </div>
           <EmptyState v-if="!marginReport.entries.length" icon="lucide:percent" :title="t('goods.noReportData')" />
         </div>

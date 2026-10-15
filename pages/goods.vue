@@ -10,8 +10,8 @@ const { t } = useI18n();
 
 const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
-const pageTitle = 'lota Goods — касса и складской учёт';
-const pageDescription = 'Продажи на кассе, приход и списание, инвентаризация, поставщики и отчёты по остаткам — lota Goods для розницы и общепита.';
+const pageTitle = computed(() => t('seo.goods.title'));
+const pageDescription = computed(() => t('seo.goods.description'));
 
 useSeoMeta({
   title: pageTitle,

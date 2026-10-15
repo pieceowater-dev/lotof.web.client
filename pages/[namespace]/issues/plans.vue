@@ -7,6 +7,8 @@ import { useTasksToken } from '@/composables/useTasksToken';
 import { tasksPlansList } from '@/api/tasks/plans/plans';
 import { tasksActiveSubscription } from '@/api/tasks/plans/getActiveSubscription';
 import { tasksSubscribePlan } from '@/api/tasks/plans/subscribe';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('issues', { section: 'plans' });
 
 const token = useTasksToken();
 

@@ -12,6 +12,7 @@ import { useDowngradeBlockedModal, parseDowngradeRegressions } from '@/composabl
 import { getErrorMessage } from '@/utils/types/errors';
 import { getPlansPlans, subscribeToPlansPlan, getActivePlansSubscription, type Plan, type Subscription } from '@/api/plans/billing';
 import LegalLinks from '@/components/ui/LegalLinks.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 interface PlanFeature { key: string; value: number | string; label: string; }
 
@@ -23,7 +24,7 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const toast = useToast();
 
-useHead({ title: 'Тарифы — Запись' });
+usePageTitle('plans', { section: 'plans' });
 
 const goBack = () => {
   if (process.client) { window.history.back(); return; }

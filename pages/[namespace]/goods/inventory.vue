@@ -21,15 +21,14 @@ import GoodsRegisterButton from '@/components/goods/GoodsRegisterButton.vue';
 import type { GoodsInventoryCount, GoodsInventoryCountItem, GoodsInventoryCountStatus } from '@/api/goods/inventorycount';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsGood } from '@/api/goods/good';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.inventory')} — ${titleBySlug(nsSlug.value)}` : t('goods.inventory'),
-}));
+usePageTitle('goods', { section: 'inventory' });
 
 const COUNT_STATUS_LABELS = computed<Record<GoodsInventoryCountStatus, string>>(() => ({
   DRAFT: t('goods.countStatusDraft'), IN_PROGRESS: t('goods.countStatusInProgress'), COMPLETED: t('goods.countStatusCompleted'),

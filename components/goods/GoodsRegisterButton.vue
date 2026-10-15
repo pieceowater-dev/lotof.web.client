@@ -11,14 +11,16 @@ const nsSlug = computed(() => route.params.namespace as string);
 </script>
 
 <template>
-  <UButton
+  <!-- A quiet secondary button: every Goods page already has its own primary
+       action (add, create a movement...), and two gradient buttons compete. -->
+  <NuxtLink
     data-tour="goods-register-btn"
     :to="`/${nsSlug}/goods/register`"
-    icon="lucide:calculator"
+    class="at-btn flex-shrink-0"
     :aria-label="t('goods.openRegister')"
-    class="flex-shrink-0 !border-0 !text-white !bg-gradient-to-r !from-blue-600 !to-emerald-500 hover:!from-blue-700 hover:!to-emerald-600 shadow-sm"
   >
+    <Icon name="lucide:calculator" class="h-4 w-4" />
     <span class="min-[420px]:hidden">{{ t("goods.register") }}</span>
     <span class="hidden min-[420px]:inline">{{ t("goods.openRegister") }}</span>
-  </UButton>
+  </NuxtLink>
 </template>

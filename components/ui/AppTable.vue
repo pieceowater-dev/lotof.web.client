@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import PageNav from '@/components/ui/PageNav.vue';
+import { useSlots } from 'vue';
 import { useI18n } from '@/composables/useI18n'
 
 const props = withDefaults(defineProps<{

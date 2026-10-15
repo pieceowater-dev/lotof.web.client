@@ -7,6 +7,8 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getPlans } from '@/api/atrace/plans/plans';
 import { getActiveSubscription } from '@/api/atrace/plans/getActiveSubscription';
 import { subscribeToPlan } from '@/api/atrace/plans/subscribe';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('atrace', { section: 'plans' });
 
 const APP_BUNDLE = 'pieceowater.atrace';
 const token = useAtraceToken();

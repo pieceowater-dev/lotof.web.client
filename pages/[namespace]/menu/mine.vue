@@ -15,6 +15,7 @@ import { formatDisplayPhoneUniversal } from '@/utils/phone';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
 import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
 import type { MenuOrder } from '@/api/menu/order/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 // "My orders": a phone-first list for someone working in the field. Only the
 // orders the signed-in person is assigned to, still open, newest activity first;
@@ -26,7 +27,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { user: currentUser, fetchUser } = useAuth();
 const { load: loadStages, byId: stageById } = useOrderStages();
 
-useHead(() => ({ title: t('menu.myOrdersTitle') }));
+usePageTitle('menu', { section: 'mine' });
 
 const orders = ref<MenuOrder[]>([]);
 const loading = ref(true);

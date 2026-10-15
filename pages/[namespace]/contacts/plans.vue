@@ -7,6 +7,8 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { getContactsPlans } from '@/api/contacts/plans/plans';
 import { getActiveContactsSubscription } from '@/api/contacts/plans/getActiveSubscription';
 import { subscribeToContactsPlan } from '@/api/contacts/plans/subscribe';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('contacts', { section: 'plans' });
 
 const APP_BUNDLE = 'pieceowater.contacts';
 const token = useContactsToken();

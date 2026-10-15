@@ -11,6 +11,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import PlansNavTabs from '@/components/plans/PlansNavTabs.vue';
 import { plansApi, type PlansBookingSummary, type PlansMasterLoad, type PlansMaster } from '@/api/plans/ops';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -19,7 +20,7 @@ const { titleBySlug } = useNamespace();
 const toast = useToast();
 const { getToken } = usePlansAuth();
 
-useHead(() => ({ title: `${t('plans.reports')} — ${titleBySlug(nsSlug.value) || t('app.plans')}` }));
+usePageTitle('plans', { section: 'reports' });
 
 const booting = ref(true);
 const loading = ref(false);

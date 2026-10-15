@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
@@ -20,6 +21,7 @@ import type { GoodsRecipe } from '@/api/goods/recipe';
 import type { GoodsGood } from '@/api/goods/good';
 import type { GoodsUnit } from '@/api/goods/unit';
 import type { GoodsDiscountRule, GoodsDiscountType, GoodsDiscountScope } from '@/api/goods/sale';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -28,9 +30,8 @@ const { titleBySlug } = useNamespace();
 const { role: staffRole, isOwnerOrManager } = useGoodsStaffRole();
 const { confirm } = useConfirm();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.settings')} — ${titleBySlug(nsSlug.value)}` : t('goods.settings'),
-}));
+usePageTitle('goods', { section: 'settings' });
+const { money } = useGoodsMoney();
 
 // Defense in depth: every mutation here is @goodsAuth(roles: [OWNER, MANAGER])
 // server-side already, so a non-owner/manager who lands here directly
@@ -724,7 +725,7 @@ onMounted(() => {
         <div v-for="gc in giftCertificates" :key="gc.id" class="flex items-center justify-between px-4 py-2.5 text-sm">
           <div>
             <div class="font-medium text-gray-900 dark:text-white font-mono">{{ gc.code }}</div>
-            <div class="text-xs text-gray-400">{{ t('goods.balance') }}: {{ (gc.balanceCents / 100).toFixed(2) }} / {{ (gc.initialBalanceCents / 100).toFixed(2) }}</div>
+            <div class="text-xs text-gray-400">{{ t('goods.balance') }}: {{ money(gc.balanceCents) }} / {{ money(gc.initialBalanceCents) }}</div>
           </div>
           <UBadge :color="gc.isActive ? 'green' : 'gray'" variant="soft">{{ gc.isActive ? t('goods.giftCertActive') : t('goods.giftCertInactive') }}</UBadge>
         </div>
@@ -807,7 +808,7 @@ onMounted(() => {
             <div v-for="item in activePriceList?.items || []" :key="item.id" class="flex items-center justify-between text-sm py-1.5">
               <span>{{ goodName(item.goodId) }}</span>
               <div class="flex items-center gap-2">
-                <span>{{ (item.priceCents / 100).toFixed(2) }}</span>
+                <span>{{ money(item.priceCents) }}</span>
                 <UButton size="2xs" color="red" variant="ghost" icon="lucide:x" @click="removePriceListItem(item.goodId)" />
               </div>
             </div>

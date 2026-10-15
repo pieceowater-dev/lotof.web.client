@@ -3083,7 +3083,9 @@
     "columnsTitle": "Columns",
     "myOrdersOnPhone": "On your phone",
     "errRequiredFields": "Fill in this status’s required fields first",
-    "quantity": "Quantity"
+    "quantity": "Quantity",
+    "ordersCount": "{n} order|{n} orders",
+    "linesCount": "{n} line|{n} lines"
   },
   "goods": {
     "register": "Register",
@@ -3946,7 +3948,9 @@
     "reportCancelled": "Cancelled",
     "reportOverdue": "Overdue",
     "reportAvg": "Avg time, min",
-    "reportEmpty": "No tasks for this day"
+    "reportEmpty": "No tasks for this day",
+    "zenGeoHow": "How to enable",
+    "zenGeoHelp": "Open the site settings in your browser (the lock icon next to the address), allow “Location” and tap the refresh-location button."
   },
   "guide": {
     "title": "Guide",
@@ -4424,5 +4428,72 @@
     "exportFailed": "Could not prepare the export",
     "selectedCount": "Selected: {n}",
     "noPhone": "No phone"
+  },
+  "pageTitle": {
+    "settings": "Settings",
+    "reports": "Reports",
+    "report": "Daily report",
+    "mine": "My orders",
+    "zen": "Zen",
+    "plans": "Plans and pricing",
+    "calls": "Calls",
+    "integrations": "Integrations",
+    "new": "New client",
+    "memberships": "Memberships",
+    "catalog": "Catalog",
+    "movements": "Stock movements",
+    "register": "Register",
+    "inventory": "Stock count",
+    "suppliers": "Suppliers",
+    "onboarding": "Getting started",
+    "analytics": "Analytics",
+    "map": "Map",
+    "logistics": "Logistics",
+    "qr": "QR check-in",
+    "me": "My attendance",
+    "recorded": "Check-in result",
+    "bundles": "Bundles",
+    "staff": "Staff",
+    "issuesStaff": "Staff",
+    "attendanceMe": "My attendance",
+    "checkinOk": "Check-in accepted",
+    "checkinFail": "Check-in failed",
+    "checkinPending": "Request sent"
+  },
+  "seo": {
+    "home": {
+      "title": "lota — business automation platform"
+    },
+    "menu": {
+      "title": "lota Orders — online menu and QR ordering",
+      "description": "Menu, orders and a kitchen display in real time — lota Orders for cafés, restaurants and delivery."
+    },
+    "atrace": {
+      "title": "lota Attendance — QR time tracking",
+      "description": "QR check-ins at the door, shift schedules and pay based on hours worked — lota Attendance instead of paper timesheets."
+    },
+    "plans": {
+      "title": "lota Plans — online booking and schedule",
+      "description": "An online booking page for your business: clients pick a service, a specialist and a free slot. Inside — a booking calendar, services, staff and schedule."
+    },
+    "issues": {
+      "title": "lota Issues — task tracker for field and office teams",
+      "description": "Kanban boards, sprints, SLA and a live courier map — lota Issues keeps work under control from creation to closing."
+    },
+    "goods": {
+      "title": "lota Goods — register and stock control",
+      "description": "Register sales, stock in and write-offs, stock counts, suppliers and stock reports — lota Goods for retail and catering."
+    },
+    "contacts": {
+      "title": "lota Contacts — CRM for your customer base",
+      "description": "One customer card, loyalty programmes and contact history — lota Contacts instead of scattered spreadsheets and notebooks."
+    },
+    "chekalka": {
+      "title": "Chekalka — QR time tracking. Start free",
+      "description": "QR-code time tracking for businesses in Kazakhstan. One price for the whole company, free for up to 5 employees. Sign in with Google, no card needed."
+    },
+    "guide": {
+      "title": "lota Guide"
+    }
   }
 }

@@ -3,6 +3,7 @@ import UserAvatar from '@/components/ui/UserAvatar.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
+import { useActiveBranch } from '@/composables/useActiveBranch';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useNamespace } from '@/composables/useNamespace';
 import { logError } from '@/utils/logger';
@@ -32,6 +33,7 @@ import { subscribeOrderChanged } from '@/api/menu/subscriptions';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { menuTour } from '@/config/tours';
 import { exportOrdersToXlsx } from '@/utils/exportOrders';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const { isOwnerOrManager } = useMenuStaffRole();
@@ -64,9 +66,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { user: currentUser, fetchUser, token: hubToken } = useAuth();
 const { titleBySlug } = useNamespace();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `Orders — ${titleBySlug(nsSlug.value)}` : 'Orders',
-}));
+usePageTitle('menu');
 
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
 

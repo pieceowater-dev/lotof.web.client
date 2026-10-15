@@ -301,7 +301,7 @@ useSeoMeta({
 });
 
 useHead({
-  title: 'lota — Платформа автоматизации бизнеса',
+  title: () => t('seo.home.title'),
   titleTemplate: (s) => s ?? 'lota',
 });
 

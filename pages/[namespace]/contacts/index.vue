@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('contacts');
 definePageMeta({ layout: 'workspace' });
 
 const route = useRoute();

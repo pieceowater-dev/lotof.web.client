@@ -8,6 +8,7 @@ import { CookieKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
 import { useAtraceToken } from '@/composables/useAtraceToken';
 import { getGeolocationOnce } from '@/utils/geolocation';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 definePageMeta({
   layout: false
@@ -19,7 +20,7 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
-useHead({ title: 'Отметка по QR — A-Trace' });
+usePageTitle('atrace', { section: 'qr' });
 
 const { isLoggedIn, token: hubToken, user, fetchUser, login } = useAuth();
 

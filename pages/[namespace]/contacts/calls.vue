@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { usePageTitle } from '@/composables/usePageTitle';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -23,7 +24,7 @@ const { titleBySlug } = useNamespace();
 
 const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
-useHead(() => ({ title: `${t('contacts.callsTitle')} — Contacts — ${nsTitle.value}` }));
+usePageTitle('contacts', { section: 'calls' });
 
 type Tab = 'journal' | 'missed' | 'stats';
 const tab = ref<Tab>('journal');

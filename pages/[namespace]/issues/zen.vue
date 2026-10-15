@@ -13,6 +13,7 @@ import NavigateSheet from '@/components/tasks/NavigateSheet.vue';
 import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskBoard } from '@/api/tasks/board/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 definePageMeta({ layout: false });
 
@@ -26,7 +27,7 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { user: currentUser } = useAuth();
 
-useHead({ title: 'Zen — Issues' });
+usePageTitle('issues', { section: 'zen' });
 
 async function getToken(): Promise<string> {
   const { current } = useTasksToken();
@@ -266,6 +267,7 @@ let watchId: number | null = null;
 let lastSentAt = 0;
 const GEO_SEND_INTERVAL_MS = 25000;
 const geoStatus = ref<'idle' | 'active' | 'denied' | 'unsupported'>('idle');
+const geoHelp = ref(false);
 const lastSentAgo = ref<string | null>(null);
 // Local-only, unthrottled -- unlike reportPosition's 25s-throttled server
 // write, this just drives the live "you are here" dot in the navigate sheet
@@ -390,6 +392,7 @@ onBeforeUnmount(() => {
           <UButton icon="lucide:menu" size="sm" color="gray" variant="ghost" />
         </UDropdown>
       </div>
+      <p v-if="geoStatus === 'denied' && geoHelp" class="mx-4 mb-2.5 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-snug text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">{{ t('tasks.zenGeoHelp') }}</p>
       <div class="px-4 pb-2.5 flex items-center justify-between gap-2">
         <p class="text-xs text-gray-500 flex items-center gap-1.5 min-w-0">
           <span
@@ -398,7 +401,10 @@ onBeforeUnmount(() => {
           />
           <span class="truncate">
             <template v-if="geoStatus === 'active'">{{ lastSentAgo ? `${t('tasks.zenLastSent') || 'Last sent'}: ${lastSentAgo}` : (t('tasks.zenLocatingLabel') || 'Locating...') }}</template>
-            <template v-else-if="geoStatus === 'denied'">{{ t('tasks.zenGeoDenied') || 'Location access denied' }}</template>
+            <template v-else-if="geoStatus === 'denied'">
+              {{ t('tasks.zenGeoDenied') || 'Location access denied' }}
+              <button type="button" class="ml-1 font-medium text-primary-600 underline dark:text-primary-300" @click="geoHelp = !geoHelp">{{ t('tasks.zenGeoHow') }}</button>
+            </template>
             <template v-else-if="geoStatus === 'unsupported'">{{ t('tasks.zenGeoUnsupported') || 'Geolocation not supported' }}</template>
             <template v-else>{{ t('tasks.zenGeoStarting') || 'Starting location...' }}</template>
           </span>

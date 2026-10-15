@@ -11,6 +11,7 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import { tasksDailyReport, type DailyReportRow } from '@/api/tasks/task/extra';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 // Daily report of a board: per assignee -- assigned, done, postponed, cancelled,
 // overdue and the average time to finish.
@@ -24,6 +25,7 @@ const boardSlug = computed(() => route.params.boardSlug as string);
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 const day = ref(iso(new Date()));
 const board = ref<TaskBoard | null>(null);
+usePageTitle('issues', { section: 'report', subject: () => board.value?.name });
 const rows = ref<DailyReportRow[]>([]);
 const names = ref<Record<string, string>>({});
 const loading = ref(true);

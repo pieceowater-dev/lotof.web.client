@@ -12,6 +12,7 @@ import type { AtraceAttendanceSummary } from '@/api/atrace/attendance/summary';
 import type { AtraceScheduleAssignment, AtraceShiftPattern } from '@/api/atrace/schedule/schedule';
 import type { AtraceSalaryCalculationResult, AtraceSalaryHistoryEntry } from '@/api/atrace/salary/payroll';
 import type { AtraceRecord } from '@/api/atrace/record/records';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -20,7 +21,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { user } = useAuth();
 const { ensure: ensureAtraceToken } = useAtraceToken();
 
-useHead({ title: 'Моя посещаемость — A-Trace' });
+usePageTitle('atrace', { section: 'me' });
 
 const goBack = () => {
   if (process.client) {

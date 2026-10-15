@@ -10,8 +10,8 @@ const { t } = useI18n();
 
 const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
-const pageTitle = 'lota Plans — онлайн-запись и расписание';
-const pageDescription = 'Приватная страница онлайн-записи для вашего бизнеса: клиент выбирает услугу, мастера и свободное время. Внутри — календарь записей, услуги, мастера и расписание.';
+const pageTitle = computed(() => t('seo.plans.title'));
+const pageDescription = computed(() => t('seo.plans.description'));
 
 useSeoMeta({
   title: pageTitle,

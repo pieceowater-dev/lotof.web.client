@@ -20,6 +20,7 @@ import TaskTypeModal from '@/components/tasks/TaskTypeModal.vue';
 import AutomationRulesManager from '@/components/tasks/AutomationRulesManager.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; mapsTo: string; outcome: string; askReason: boolean }
 
@@ -74,11 +75,7 @@ async function getToken(): Promise<string> {
 
 const { titleBySlug } = useNamespace();
 const board = ref<TaskBoard | null>(null);
-useHead(() => ({
-  title: board.value?.name
-    ? `Настройки — ${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
-    : 'Настройки — Issues',
-}));
+usePageTitle('issues', { section: 'settings', subject: () => board.value?.name });
 const loading = ref(false);
 const saving = ref(false);
 

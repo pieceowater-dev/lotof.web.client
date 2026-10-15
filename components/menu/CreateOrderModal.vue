@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
+import { useActiveBranch } from '@/composables/useActiveBranch';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';

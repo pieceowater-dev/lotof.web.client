@@ -14,6 +14,7 @@ import { dynamicLS } from '@/utils/storageKeys';
 import { maskProfanity } from '@/utils/profanityFilter';
 import BoardModal from '@/components/tasks/BoardModal.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -23,9 +24,7 @@ const { isOwnerOrManager } = useTasksStaffRole();
 const { titleBySlug, idBySlug } = useNamespace();
 const namespaceId = computed(() => idBySlug(nsSlug.value));
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `Issues — ${titleBySlug(nsSlug.value)}` : 'Issues',
-}));
+usePageTitle('issues');
 
 const boards = ref<TaskBoard[]>([]);
 const loading = ref(false);

@@ -19,6 +19,7 @@ import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsStock } from '@/api/goods/stock';
 import { formatMoney } from '@/utils/currency';
 import { playScannerBeep } from '@/utils/scannerBeep';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -26,9 +27,7 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 const { isOwnerOrManager } = useGoodsStaffRole();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.register')} — ${titleBySlug(nsSlug.value)}` : t('goods.register'),
-}));
+usePageTitle('goods', { section: 'register' });
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {

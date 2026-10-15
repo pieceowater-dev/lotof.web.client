@@ -64,18 +64,20 @@ const showSubscriptionModal = computed(() => Boolean(subscriptionError.value) &&
 
 const baseTitle = computed(() => t('app.title') || 'lota');
 
-function formatSegment(segment?: string) {
+// Route segment -> localized section name. A segment without a translation
+// (ids, slugs) is skipped rather than shown as raw English text.
+function segmentTitle(segment?: string) {
   if (!segment) return '';
-  return segment
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+  const key = `pageTitle.${segment}`;
+  const label = t(key);
+  return label && label !== key ? label : '';
 }
 
 const pageTitle = computed(() => {
   const path = route.path || '';
   const segments = path.split('/').filter(Boolean);
 
-  if (!segments.length) return 'Hub'; // Main page title
+  if (!segments.length) return baseTitle.value; // Main page title
 
   if (segments[0] === 'to') {
     const ns = segments[1];
@@ -92,13 +94,12 @@ const pageTitle = computed(() => {
   if (nsSlug && segments.length >= 2) {
     const appSegment = segments[1];
     const app = ALL_APPS.find((item) => item.address === appSegment);
-    const appTitle = app ? (t(app.titleKey) || app.name) : formatSegment(appSegment);
-    const extra = segments[2] ? formatSegment(segments[2]) : '';
-    if (extra) return `${appTitle} — ${nsTitle} — ${extra}`;
-    return nsTitle ? `${appTitle} — ${nsTitle}` : appTitle;
+    const appTitle = app ? (t(app.titleKey) || app.name) : segmentTitle(appSegment);
+    const extra = segmentTitle(segments[2]);
+    return [extra, appTitle, nsTitle].filter(Boolean).join(' — ');
   }
 
-  return `${baseTitle.value} — ${formatSegment(segments[0])}`;
+  return [segmentTitle(segments[0]), baseTitle.value].filter(Boolean).join(' — ');
 });
 
 useHead(() => ({

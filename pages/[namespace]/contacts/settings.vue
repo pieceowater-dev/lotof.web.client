@@ -16,6 +16,7 @@ import LoyaltyExtrasPanel from '@/components/contacts/settings/LoyaltyExtrasPane
 import DynamicFieldsPanel from '@/components/contacts/settings/DynamicFieldsPanel.vue';
 import MembersRolesPanel from '@/components/contacts/settings/MembersRolesPanel.vue';
 import IntegrationsPanel from '@/components/contacts/settings/IntegrationsPanel.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -28,9 +29,7 @@ const { titleBySlug } = useNamespace();
 const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
 
-useHead(() => ({
-  title: nsTitle.value ? `Настройки — Contacts — ${nsTitle.value}` : 'Настройки — Contacts',
-}));
+usePageTitle('contacts', { section: 'settings' });
 
 type SettingsTab = 'general' | 'loyalty' | 'fields' | 'access' | 'integrations';
 const tabs: Array<{ key: SettingsTab; label: string; icon: string }> = [

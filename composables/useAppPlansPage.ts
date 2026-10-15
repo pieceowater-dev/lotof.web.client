@@ -82,7 +82,6 @@ export function useAppPlansPage(config: AppPlansPageConfig) {
   const toast = useToast();
   const nsSlug = computed(() => route.params.namespace as string);
 
-  useHead({ title: config.title });
 
   const hubToken = () => useCookie<string | null>('token', { path: '/' }).value;
 

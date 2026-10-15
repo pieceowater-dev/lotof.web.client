@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { usePageTitle } from '@/composables/usePageTitle';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
@@ -37,7 +38,7 @@ const { titleBySlug } = useNamespace();
 
 const nsSlug = computed(() => route.params.namespace as string);
 const nsTitle = computed(() => titleBySlug(nsSlug.value) || nsSlug.value || '');
-useHead(() => ({ title: nsTitle.value ? `Абонементы — Contacts — ${nsTitle.value}` : 'Абонементы — Contacts' }));
+usePageTitle('contacts', { section: 'memberships' });
 
 const contactsToken = ref('');
 const loading = ref(true);

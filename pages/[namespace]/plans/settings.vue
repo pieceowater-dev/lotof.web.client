@@ -19,6 +19,7 @@ import PhoneInput from '@/components/ui/PhoneInput.vue';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { plansApi, type PlansLocation, type PlansSettings, type PlansShareLink, type PlansMaster, type PlansService } from '@/api/plans/ops';
 import { parseSocialLinks, serializeSocialLinks, SOCIAL_PLATFORMS, type SocialLink } from '@/utils/social';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -29,7 +30,7 @@ const { getToken } = usePlansAuth();
 const { isOwnerOrManager, canManageStaff, role } = usePlansStaffRole();
 const { confirm } = useConfirm();
 
-useHead(() => ({ title: `${t('plans.settings')} — ${titleBySlug(nsSlug.value) || t('app.plans')}` }));
+usePageTitle('plans', { section: 'settings' });
 watch(role, (r) => { if (r && !isOwnerOrManager.value) navigateTo(`/${nsSlug.value}/plans`); }, { immediate: true });
 
 const booting = ref(true);

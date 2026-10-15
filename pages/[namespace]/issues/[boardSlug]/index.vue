@@ -31,6 +31,7 @@ import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import { parseTaskTemplates, templateDueAt, type TaskTemplate } from '@/utils/taskTemplates';
 import type { Cycle } from '@/api/tasks/cycle/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean; color: string; askReason: boolean }
 
@@ -50,11 +51,7 @@ async function getToken(): Promise<string> {
 }
 
 const board = ref<TaskBoard | null>(null);
-useHead(() => ({
-  title: board.value?.name
-    ? `${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
-    : 'Issues',
-}));
+usePageTitle('issues', { subject: () => board.value?.name });
 // The real DB id -- every gRPC/GraphQL call downstream still identifies the
 // board by id, only the URL uses the human-friendly slug.
 const boardId = computed(() => board.value?.id || '');

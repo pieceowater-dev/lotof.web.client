@@ -3,6 +3,7 @@ import { useI18n } from '@/composables/useI18n';
 import { CookieKeys } from '@/utils/storageKeys';
 import { isSafeRelativePath } from '@/utils/safeRelativePath';
 import { logWarn } from '@/utils/logger';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 definePageMeta({
   layout: false
@@ -51,11 +52,11 @@ const failureReason = computed(() => {
   return key ? t(`app.${key}`) : '';
 });
 
-useHead(() => ({
-  title: isPendingOnboarding.value
-    ? 'Запрос отправлен — A-Trace'
-    : (ok.value ? 'Отметка принята — A-Trace' : 'Не удалось отметиться — A-Trace'),
-}));
+usePageTitle('atrace', {
+  subject: () => (isPendingOnboarding.value
+    ? t('pageTitle.checkinPending')
+    : (ok.value ? t('pageTitle.checkinOk') : t('pageTitle.checkinFail'))),
+});
 // qr.vue only ever encodes a same-origin relative path (e.g.
 // /{ns}/atrace/qr?pid=...) into `u`, but nothing stops a crafted link from
 // putting an absolute URL there instead -- isSafeRelativePath rejects

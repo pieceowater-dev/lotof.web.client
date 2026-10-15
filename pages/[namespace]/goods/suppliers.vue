@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
@@ -17,6 +18,7 @@ import ContactsClientLinkField from '@/components/goods/ContactsClientLinkField.
 import type { GoodsSupplier } from '@/api/goods/supplier';
 import type { GoodsGood } from '@/api/goods/good';
 import type { SupplierPriceHistoryEntry } from '@/api/goods/goodsreceipt';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -24,9 +26,8 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 const { confirm } = useConfirm();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.suppliers')} — ${titleBySlug(nsSlug.value)}` : t('goods.suppliers'),
-}));
+usePageTitle('goods', { section: 'suppliers' });
+const { money } = useGoodsMoney();
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
@@ -282,7 +283,7 @@ onMounted(loadAll);
               <div class="font-medium">{{ h.supplierName || t('goods.noSupplier') }}</div>
               <div class="text-xs text-gray-400">{{ new Date(h.receivedAt).toLocaleDateString() }}</div>
             </div>
-            <span class="tabular-nums">{{ (h.costPriceCents / 100).toFixed(2) }} × {{ h.quantity }}</span>
+            <span class="tabular-nums">{{ money(h.costPriceCents) }} × {{ h.quantity }}</span>
           </div>
         </div>
       </UCard>

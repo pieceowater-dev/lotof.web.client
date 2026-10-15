@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { usePageTitle } from '@/composables/usePageTitle';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -36,7 +37,7 @@ const toast = useToast();
 const { getToken } = usePlansAuth();
 const { canManageCalendar, canSetBookingStatus, isOwnerOrManager } = usePlansStaffRole();
 
-useHead(() => ({ title: titleBySlug(nsSlug.value) ? `${t('app.plans')} — ${titleBySlug(nsSlug.value)}` : t('app.plans') }));
+usePageTitle('plans');
 
 const booting = ref(true);
 const notSetUp = ref(false);

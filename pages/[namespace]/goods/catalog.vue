@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -18,6 +19,7 @@ import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/go
 import type { GoodsCategory } from '@/api/goods/category';
 import type { GoodsUnit } from '@/api/goods/unit';
 import type { GoodsWarehouse } from '@/api/goods/warehouse';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -25,9 +27,8 @@ const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 const { confirm } = useConfirm();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.catalog')} — ${titleBySlug(nsSlug.value)}` : t('goods.catalog'),
-}));
+usePageTitle('goods', { section: 'catalog' });
+const { money } = useGoodsMoney();
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
@@ -79,7 +80,7 @@ const goodSearchQuery = ref('');
 const goodRows = computed(() => {
   const q = goodSearchQuery.value.trim().toLowerCase();
   const list = q ? goods.value.filter((g) => g.name.toLowerCase().includes(q) || g.sku.toLowerCase().includes(q)) : goods.value;
-  return list.map((g) => ({ ...g, salePriceCents: (g.salePriceCents / 100).toFixed(2) }));
+  return list.map((g) => ({ ...g, salePriceCents: money(g.salePriceCents) }));
 });
 const goodById = computed(() => new Map(goods.value.map((g) => [g.id, g])));
 

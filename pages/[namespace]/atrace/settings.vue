@@ -20,6 +20,7 @@ import OnboardingRequestsSection from '@/components/atrace/settings/OnboardingRe
 import { useAtracePendingCoverageCount } from '@/composables/useAtracePendingCoverage';
 import { useAtracePendingLeaveCount } from '@/composables/useAtracePendingLeave';
 import { useAtracePendingOnboardingCount } from '@/composables/useAtracePendingOnboardingCount';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 
@@ -27,7 +28,7 @@ const router = useRouter();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
-useHead({ title: 'Настройки — A-Trace' });
+usePageTitle('atrace', { section: 'settings' });
 
 const goBack = () => {
     if (process.client) {

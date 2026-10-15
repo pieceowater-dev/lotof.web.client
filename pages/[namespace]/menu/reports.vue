@@ -4,6 +4,8 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute } from 'vue-router';
 import PageHeader from '@/components/ui/PageHeader.vue';
 import { useI18n } from '@/composables/useI18n';
+import { useActiveBranch } from '@/composables/useActiveBranch';
+import { plural } from '@/utils/plural';
 import { useAuth } from '@/composables/useAuth';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { logError } from '@/utils/logger';
@@ -18,6 +20,8 @@ import { formatDateTime } from '@/utils/formatDate';
 import { presetRange, presetOf, isoDay as iso, type PeriodPreset } from '@/utils/reportPeriods';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('menu', { section: 'reports' });
 
 // Pay-by-executor report: closed orders of a period, lines, revenue and the
 // executors' share of WORK lines.
@@ -251,7 +255,7 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
               <div class="flex items-center gap-3">
                 <div class="min-w-0 flex-1">
                   <div class="truncate font-semibold" :class="r.executorId ? '' : 'text-slate-500'">{{ nameOf(r.executorId) }}</div>
-                  <div class="text-xs text-slate-500">{{ r.orders }} {{ t('menu.executorsOrders').toLowerCase() }} · {{ r.lines }} {{ t('menu.executorsLines').toLowerCase() }}</div>
+                  <div class="text-xs text-slate-500">{{ plural(r.orders, t('menu.ordersCount'), locale) }} · {{ plural(r.lines, t('menu.linesCount'), locale) }}</div>
                 </div>
                 <div class="flex-shrink-0 text-right text-sm tabular-nums">
                   <div class="font-medium">{{ money(r.revenue) }}</div>

@@ -19,15 +19,14 @@ import type { GoodsStock } from '@/api/goods/stock';
 import type { GoodsUnit } from '@/api/goods/unit';
 import { useOnboarding } from '@/composables/useOnboarding';
 import { goodsTour } from '@/config/tours';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('app.goods')} — ${titleBySlug(nsSlug.value)}` : t('app.goods'),
-}));
+usePageTitle('goods');
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {

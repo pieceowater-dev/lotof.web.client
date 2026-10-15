@@ -15,6 +15,7 @@ import PlansNavTabs from '@/components/plans/PlansNavTabs.vue';
 import PhoneInput from '@/components/ui/PhoneInput.vue';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { plansApi, type PlansService, type PlansMaster, type ServiceCategory, type PlansLocation } from '@/api/plans/ops';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -25,7 +26,7 @@ const { confirm } = useConfirm();
 const { getToken } = usePlansAuth();
 const { canManageCatalog } = usePlansStaffRole();
 
-useHead(() => ({ title: `${t('plans.catalog')} — ${titleBySlug(nsSlug.value) || t('app.plans')}` }));
+usePageTitle('plans', { section: 'catalog' });
 
 const tab = ref<'services' | 'masters'>('services');
 const booting = ref(true);

@@ -11,6 +11,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import FunnelAnalytics from '@/components/tasks/FunnelAnalytics.vue';
 import type { FunnelStageDef } from '@/composables/useIssuesFunnelAnalytics';
 import type { TaskBoard } from '@/api/tasks/board/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -35,11 +36,7 @@ const board = ref<TaskBoard | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-useHead(() => ({
-  title: board.value?.name
-    ? `${t('tasks.funnelTitle') || 'Analytics'} — ${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
-    : `${t('tasks.funnelTitle') || 'Analytics'} — Issues`,
-}));
+usePageTitle('issues', { section: 'analytics', subject: () => board.value?.name });
 
 const stages = computed<FunnelStageDef[]>(() => {
   try {

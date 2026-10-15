@@ -116,9 +116,9 @@ const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 
 useSeoMeta({
-  title: 'lota Гид',
+  title: () => t('seo.guide.title'),
   description: () => t('guide.homeTagline') || 'Ответы на вопросы и инструкции по каждому продукту lota.',
-  ogTitle: 'lota Гид',
+  ogTitle: () => t('seo.guide.title'),
   ogDescription: () => t('guide.homeTagline') || 'Ответы на вопросы и инструкции по каждому продукту lota.',
   ogType: 'website',
   ogUrl: `${siteUrl}/guide`,

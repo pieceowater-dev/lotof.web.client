@@ -15,6 +15,7 @@ import StaffModal from '@/components/tasks/StaffModal.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import type { TasksStaff, TasksStaffRoleValue } from '@/api/tasks/staff/list';
 import { memberDisplayName } from '@/utils/memberDisplayName';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const { confirm } = useConfirm();
@@ -22,7 +23,7 @@ const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { token: hubToken } = useAuth();
 
-useHead({ title: 'Сотрудники — Issues' });
+usePageTitle('issues', { section: 'staff' });
 
 // Defense in depth: the Settings link itself is already hidden for
 // assignee/viewer, but a direct URL visit would otherwise land on a page

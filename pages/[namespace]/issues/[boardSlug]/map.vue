@@ -14,6 +14,7 @@ import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { GeoLocation } from '@/api/tasks/geotrack/location';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 interface StatusRow { key: string; label: string; isTerminal: boolean; isRequired: boolean }
 
@@ -32,11 +33,7 @@ async function getToken(): Promise<string> {
 }
 
 const board = ref<TaskBoard | null>(null);
-useHead(() => ({
-  title: board.value?.name
-    ? `Карта — ${board.value.name} — Issues${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`
-    : 'Карта — Issues',
-}));
+usePageTitle('issues', { section: 'map', subject: () => board.value?.name });
 const boardId = computed(() => board.value?.id || '');
 const boardStatuses = computed<StatusRow[]>(() => {
   try {

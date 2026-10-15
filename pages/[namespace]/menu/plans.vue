@@ -7,6 +7,8 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { getMenuPlans } from '@/api/menu/plans/plans';
 import { getActiveMenuSubscription } from '@/api/menu/plans/getActiveSubscription';
 import { subscribeToMenuPlan } from '@/api/menu/plans/subscribe';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('menu', { section: 'plans' });
 
 const APP_BUNDLE = 'pieceowater.menu';
 const token = useMenuToken();

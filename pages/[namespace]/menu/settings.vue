@@ -15,12 +15,13 @@ import DocumentTemplatesSection from '@/components/menu/settings/DocumentTemplat
 import OrderFieldsSection from '@/components/menu/settings/OrderFieldsSection.vue';
 import StatusLabelsSection from '@/components/menu/settings/StatusLabelsSection.vue';
 import OrderStagesSection from '@/components/menu/settings/OrderStagesSection.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 
-useHead({ title: 'Настройки — Orders' });
+usePageTitle('menu', { section: 'settings' });
 
 // Defense in depth: the Settings link itself is already hidden for
 // cook/operator/courier (see [namespace]/menu/index.vue), but a direct URL

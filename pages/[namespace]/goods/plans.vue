@@ -7,6 +7,8 @@ import { useGoodsToken } from '@/composables/useGoodsToken';
 import { getGoodsPlans } from '@/api/goods/plans/plans';
 import { getActiveGoodsSubscription } from '@/api/goods/plans/getActiveSubscription';
 import { subscribeToGoodsPlan } from '@/api/goods/plans/subscribe';
+import { usePageTitle } from '@/composables/usePageTitle';
+usePageTitle('goods', { section: 'plans' });
 
 const APP_BUNDLE = 'pieceowater.goods';
 const token = useGoodsToken();

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 definePageMeta({ layout: 'workspace' });
 
@@ -33,15 +34,15 @@ import type { GoodsWarehouse } from '@/api/goods/warehouse';
 import type { GoodsSupplier } from '@/api/goods/supplier';
 import type { GoodsGood, CreateGoodInput, UpdateGoodInput } from '@/api/goods/good';
 import type { GoodsUnit } from '@/api/goods/unit';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t, locale } = useI18n();
 const route = useRoute();
 const nsSlug = computed(() => route.params.namespace as string);
 const { titleBySlug } = useNamespace();
 
-useHead(() => ({
-  title: titleBySlug(nsSlug.value) ? `${t('goods.movements')} — ${titleBySlug(nsSlug.value)}` : t('goods.movements'),
-}));
+usePageTitle('goods', { section: 'movements' });
+const { money } = useGoodsMoney();
 
 const { getToken: getGoodsTokenRaw } = useGoodsAuth();
 async function getToken(): Promise<string> {
@@ -781,8 +782,8 @@ onMounted(() => { loadAll(); loadDrafts(); });
                 <div class="font-medium text-gray-900 dark:text-white">{{ goodName(item.goodId) }}</div>
                 <div class="text-xs text-gray-400">
                   {{ item.quantity }} {{ unitSymbol(item.unitId) }}
-                  <template v-if="item.priceCents != null"> · {{ (item.priceCents / 100).toFixed(2) }}</template>
-                  <template v-if="item.costPriceCents != null"> · {{ (item.costPriceCents / 100).toFixed(2) }}</template>
+                  <template v-if="item.priceCents != null"> · {{ money(item.priceCents) }}</template>
+                  <template v-if="item.costPriceCents != null"> · {{ money(item.costPriceCents) }}</template>
                   <template v-if="item.batchNumber"> · {{ item.batchNumber }}</template>
                   <template v-if="item.expiryDate"> · {{ item.expiryDate }}</template>
                 </div>
@@ -890,7 +891,7 @@ onMounted(() => { loadAll(); loadDrafts(); });
           <div v-if="createType === 'receipt' && openShifts.length && receiptTotalCents > 0" class="rounded-xl border border-gray-200 p-3 dark:border-gray-800">
             <label class="flex items-center gap-2 text-sm font-medium">
               <UToggle v-model="payFromRegister" size="sm" />
-              {{ t('goods.payFromRegister', { sum: (receiptTotalCents / 100).toFixed(2) }) }}
+              {{ t('goods.payFromRegister', { sum: money(receiptTotalCents) }) }}
             </label>
             <div v-if="payFromRegister && openShifts.length > 1" class="mt-2 flex flex-wrap gap-1.5">
               <button v-for="s in openShifts" :key="s.registerId" type="button" class="pill-filter" :class="registerId === s.registerId ? 'pill-filter--active' : ''" @click="registerId = s.registerId">{{ s.registerName }}</button>

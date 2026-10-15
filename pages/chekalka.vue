@@ -1,7 +1,8 @@
 <script lang="ts" setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useAuth } from '@/composables/useAuth';
 import { useAnalytics } from '@/composables/useAnalytics';
+import { useI18n } from '@/composables/useI18n';
 
 // Dedicated route for chekalka.kz-driven traffic (see the marketer brief
 // this page implements: /Users/pieceowater/Downloads/promt-lending-chekalka.md).
@@ -21,8 +22,9 @@ const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
 const siteHost = resolveSiteHost(config.public.siteUrl);
 
-const pageTitle = 'Чекалка — учёт рабочего времени по QR. Начать бесплатно';
-const pageDescription = 'Учёт рабочего времени по QR-коду для бизнеса в Казахстане. Цена за всю компанию, до 5 сотрудников бесплатно. Вход через Google, карта не нужна.';
+const { t } = useI18n();
+const pageTitle = computed(() => t('seo.chekalka.title'));
+const pageDescription = computed(() => t('seo.chekalka.description'));
 
 useSeoMeta({
   title: pageTitle,
@@ -57,7 +59,7 @@ useHead({
   // page's tab title must read "Чекалка", not "...| lota": the visitor
   // clicked a Чекалка-branded button and any second brand name in the tab
   // reads as "wrong site". Same pattern pages/index.vue already uses.
-  titleTemplate: (s) => s ?? pageTitle,
+  titleTemplate: (s) => s ?? pageTitle.value,
 });
 
 const { isLoggedIn, login } = useAuth();

@@ -16,6 +16,7 @@ import TaskDetailSlideover from '@/components/tasks/TaskDetailSlideover.vue';
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 // Route sheet for a day: the board's tasks due on the chosen date, grouped by
 // courier in the order the dispatcher arranged them on the board, with
@@ -43,9 +44,7 @@ const day = ref(new Date().toISOString().slice(0, 10));
 const selected = ref<TaskItem | null>(null);
 const detailOpen = ref(false);
 
-useHead(() => ({
-  title: `${t('tasks.logisticsTitle')}${board.value?.name ? ` — ${board.value.name}` : ''}${titleBySlug(nsSlug.value) ? ` — ${titleBySlug(nsSlug.value)}` : ''}`,
-}));
+usePageTitle('issues', { section: 'logistics', subject: () => board.value?.name });
 
 const statuses = computed<StatusInfo[]>(() => {
   try {

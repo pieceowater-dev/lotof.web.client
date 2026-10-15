@@ -13,8 +13,8 @@ const { t } = useI18n();
 
 const config = useRuntimeConfig();
 const siteUrl = String(config.public.siteUrl || DEFAULT_SITE_URL).replace(/\/$/, '');
-const pageTitle = 'lota A-Trace — учёт рабочего времени по QR';
-const pageDescription = 'QR-отметки на входе, графики смен и расчёт зарплаты по факту отработанного — lota A-Trace вместо бумажных табелей.';
+const pageTitle = computed(() => t('seo.atrace.title'));
+const pageDescription = computed(() => t('seo.atrace.description'));
 
 useSeoMeta({
   title: pageTitle,

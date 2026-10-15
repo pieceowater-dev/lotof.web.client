@@ -10,6 +10,7 @@ import { getErrorMessage } from '@/utils/types/errors';
 import { plansApi } from '@/api/plans/ops';
 import PlansImageUpload from '@/components/plans/PlansImageUpload.vue';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
+import { usePageTitle } from '@/composables/usePageTitle';
 
 const { t } = useI18n();
 const route = useRoute();
@@ -18,7 +19,7 @@ const { titleBySlug } = useNamespace();
 const toast = useToast();
 const { getToken } = usePlansAuth();
 
-useHead(() => ({ title: `${t('app.plans')} — ${titleBySlug(nsSlug.value) || ''}` }));
+usePageTitle('plans', { section: 'onboarding' });
 
 const TZ_OPTIONS = ['Asia/Almaty', 'Asia/Aqtobe', 'Asia/Aqtau', 'Asia/Oral', 'Europe/Moscow', 'Asia/Bishkek', 'Asia/Tashkent', 'Europe/Kyiv'];
 const tzGuess = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return 'Asia/Almaty'; } })();
