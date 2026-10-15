@@ -13,6 +13,7 @@ import BranchLocationPicker from '@/components/menu/BranchLocationPicker.vue';
 import TaskClientLink from '@/components/tasks/TaskClientLink.vue';
 import TaskComments from '@/components/tasks/TaskComments.vue';
 import TaskSubtasks from '@/components/tasks/TaskSubtasks.vue';
+import UserAvatar from '@/components/ui/UserAvatar.vue';
 import ReasonModal from '@/components/tasks/ReasonModal.vue';
 import type { TaskItem } from '@/api/tasks/task/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
@@ -56,6 +57,7 @@ const emit = defineEmits<{
   (e: 'changed', task: TaskItem): void;
   (e: 'deleted', id: string): void;
   (e: 'apply-pending-update'): void;
+  (e: 'open-task', task: TaskItem): void;
 }>();
 
 const isOpen = computed({
@@ -74,6 +76,26 @@ const shortCode = computed(() => taskShortCode(props.boardSlug, props.task?.task
 const statusInfo = (key?: string | null) => props.boardStatuses.find((s) => s.key === key);
 const memberLabel = (userId?: string | null) => props.memberOptions.find((m) => m.value === userId)?.label || userId || '';
 const currentTaskType = computed(() => props.taskTypes.find((tt) => tt.id === props.task?.taskTypeId));
+// A subtask shows which task it belongs to (and opens it): without this a subtask opened from a
+// link or notification is an orphan card with no context.
+const parentTask = ref<TaskItem | null>(null);
+watch(() => props.task?.parentId, async (id) => {
+  parentTask.value = null;
+  if (!id) return;
+  try {
+    const { tasksGetTask } = await import('@/api/tasks/task/get');
+    const found = await tasksGetTask(await getToken(), props.nsSlug, id);
+    if (found && props.task?.parentId === id) parentTask.value = found;
+  } catch (e) {
+    logError('[TaskDetailSlideover] parent load failed', e);
+  }
+}, { immediate: true });
+const parentCode = computed(() => (parentTask.value ? taskShortCode(props.boardSlug, parentTask.value.taskNumber) : ''));
+
+// Rare / destructive actions live behind "more" so a red trash can never sit next to the close button.
+const taskMenuItems = computed(() => [[
+  { label: t('common.delete') || 'Delete', icon: 'lucide:trash-2', class: 'text-red-600 dark:text-red-400', click: () => handleDelete() },
+]]);
 
 // A thin colored strip along the top of the card gives an at-a-glance read
 // on urgency before anyone reads a word of the title (same idea as Linear's
@@ -732,81 +754,117 @@ async function handleDelete() {
 
 <template>
   <USlideover class="at-modal" v-model="isOpen" :ui="{ width: 'w-screen max-w-full sm:max-w-2xl lg:max-w-4xl' }">
-    <UCard v-if="task" :ui="{ ring: '', divide: '', rounded: 'rounded-none', shadow: 'shadow-none', body: { base: 'flex-1 overflow-hidden flex flex-col lg:flex-row min-h-0', padding: 'p-0' }, header: { padding: 'px-0 py-0 sm:px-0 sm:py-0' } }" class="flex flex-col h-full overflow-hidden">
+    <UCard v-if="task" :ui="{ ring: '', divide: '', rounded: 'rounded-none', shadow: 'shadow-none', body: { base: 'flex-1 min-h-0 overflow-y-auto lg:overflow-hidden flex flex-col lg:flex-row', padding: 'p-0' }, header: { padding: 'px-0 py-0 sm:px-0 sm:py-0' } }" class="flex flex-col h-full overflow-hidden">
       <template #header>
         <div class="h-1" :class="priorityAccentClass" />
-        <div class="flex items-start justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-          <div class="flex items-start gap-3 min-w-0 flex-1">
-            <span
-              class="flex h-9 w-9 items-center justify-center rounded-full flex-shrink-0 mt-0.5"
-              :style="{ backgroundColor: currentTaskType?.color || '#9ca3af' }"
-            >
-              <UIcon :name="currentTaskType?.icon || 'lucide:shapes'" class="w-4 h-4 text-white" />
-            </span>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5 text-xs text-gray-400 mb-0.5">
-                <span class="font-mono">{{ shortCode }}</span>
-              </div>
-              <div class="flex items-center gap-1.5 group">
-                <input
-                  v-if="editingTitle"
-                  v-model="titleDraft"
-                  autofocus
-                  class="text-lg font-semibold bg-transparent border-b border-primary-400 focus:outline-none w-full"
-                  @blur="commitTitle"
-                  @keyup.enter="($event.target as HTMLInputElement).blur()"
-                  @keyup.esc="editingTitle = false"
-                />
-                <template v-else>
-                  <h3 class="text-lg font-semibold leading-snug cursor-text hover:bg-gray-50 dark:hover:bg-gray-800 rounded px-1 -mx-1 truncate" @click="startTitleEdit">{{ maskProfanity(task.title) }}</h3>
-                  <button type="button" class="text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 flex-shrink-0" :title="t('app.edit') || 'Edit'" @click="startTitleEdit">
-                    <UIcon name="lucide:pencil" class="w-3.5 h-3.5" />
-                  </button>
-                </template>
-              </div>
-              <div class="flex items-center gap-2 flex-wrap mt-1.5">
-                <UPopover v-model:open="isStatusPickerOpen" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
-                  <button
-                    type="button"
-                    class="flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors"
-                    :class="columnColorClass(statusInfo(task.status)?.color)"
-                    :disabled="updatingStatus"
-                  >
-                    <span class="truncate max-w-[120px]">{{ statusInfo(task.status)?.label || task.status }}</span>
-                    <UIcon :name="updatingStatus ? 'lucide:loader-2' : 'lucide:chevron-down'" :class="['w-3 h-3 flex-shrink-0', updatingStatus && 'animate-spin']" />
-                  </button>
-                  <template #panel>
-                    <div class="p-1 w-48">
-                      <button
-                        v-for="s in boardStatuses"
-                        :key="s.key"
-                        type="button"
-                        class="w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-medium transition-colors mb-0.5 last:mb-0"
-                        :class="[columnColorClass(s.color), s.key === task!.status && 'ring-1 ring-inset ring-gray-400 dark:ring-gray-500']"
-                        @click="handleStatusChange(s)"
-                      >
-                        <span class="truncate">{{ s.label }}</span>
-                        <UIcon v-if="s.key === task!.status" name="lucide:check" class="w-3.5 h-3.5 ml-auto flex-shrink-0" />
-                      </button>
-                    </div>
-                  </template>
-                </UPopover>
-                <span class="flex items-center gap-1 text-xs text-gray-400"><UIcon :name="priorityIcon(task.priority)" :class="['w-3.5 h-3.5', priorityColorClass(task.priority)]" /></span>
-                <span v-if="task.assigneeUserId" class="truncate max-w-[140px] text-xs text-gray-400">{{ memberLabel(task.assigneeUserId) }}</span>
-                <span v-else class="italic text-xs text-gray-400">{{ t('tasks.unassigned') || 'Unassigned' }}</span>
-              </div>
+        <div class="px-4 pb-3 pt-3 sm:px-6 sm:pt-4">
+          <!-- Row 1: what it is (key + type) and the only chrome actions: more / close. -->
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <span class="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-md" :style="{ backgroundColor: currentTaskType?.color || '#9ca3af' }">
+                <UIcon :name="currentTaskType?.icon || 'lucide:shapes'" class="h-3 w-3 text-white" />
+              </span>
+              <span class="font-mono">{{ shortCode }}</span>
+              <span v-if="currentTaskType" class="truncate">· {{ currentTaskType.name }}</span>
+            </div>
+            <div class="flex flex-shrink-0 items-center gap-1">
+              <UIcon v-if="saving" name="lucide:loader-2" class="mr-1 h-3.5 w-3.5 animate-spin text-gray-400" />
+              <UDropdown :items="taskMenuItems" :popper="{ placement: 'bottom-end', strategy: 'fixed' }">
+                <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.moreActions') || 'More'" :title="t('tasks.moreActions') || 'More'">
+                  <Icon name="lucide:ellipsis" class="h-4 w-4" />
+                </button>
+              </UDropdown>
+              <button type="button" class="at-btn !px-2.5" :aria-label="t('app.close') || 'Close'" @click="isOpen = false">
+                <Icon name="lucide:x" class="h-4 w-4" />
+              </button>
             </div>
           </div>
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <UIcon v-if="saving" name="lucide:loader-2" class="w-3.5 h-3.5 animate-spin text-gray-400" />
-            <UButton v-if="!task.problemReportedAt" icon="lucide:alert-triangle" size="2xs" color="amber" variant="ghost" :title="t('tasks.problemTitle')" @click="openProblem" />
-            <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete" />
-            <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" @click="isOpen = false" />
+
+          <button
+            v-if="task.parentId"
+            type="button"
+            class="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-default disabled:hover:bg-gray-100 dark:bg-white/10 dark:text-gray-200 dark:hover:bg-white/15"
+            :disabled="!parentTask"
+            :title="t('tasks.parentIssue') || 'Parent issue'"
+            @click="parentTask && emit('open-task', parentTask)"
+          >
+            <Icon name="lucide:corner-left-up" class="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+            <span class="flex-shrink-0 text-gray-500 dark:text-gray-400">{{ t('tasks.parentIssue') || 'Parent issue' }}</span>
+            <span v-if="parentTask" class="flex-shrink-0 font-mono">{{ parentCode }}</span>
+            <span v-if="parentTask" class="truncate">{{ maskProfanity(parentTask.title) }}</span>
+            <span v-else class="text-gray-400">…</span>
+          </button>
+
+          <!-- Row 2: the title, full width (wraps instead of being cut), click to edit. -->
+          <div class="mt-2 group">
+            <textarea
+              v-if="editingTitle"
+              v-model="titleDraft"
+              autofocus
+              rows="2"
+              class="w-full resize-none rounded-xl border border-primary-400 bg-transparent px-2 py-1 text-xl font-semibold leading-snug focus:outline-none"
+              @blur="commitTitle"
+              @keydown.enter.prevent="($event.target as HTMLTextAreaElement).blur()"
+              @keyup.esc="editingTitle = false"
+            />
+            <h3
+              v-else
+              class="-mx-2 cursor-text rounded-xl px-2 py-1 text-xl font-semibold leading-snug hover:bg-gray-50 dark:hover:bg-white/5"
+              role="button"
+              tabindex="0"
+              :title="t('app.edit') || 'Edit'"
+              @click="startTitleEdit"
+              @keydown.enter="startTitleEdit"
+            >{{ maskProfanity(task.title) }}</h3>
+          </div>
+
+          <!-- Row 3: state at a glance. Status is the one thing changed from here; the problem
+               report is a labelled action, not a corner icon that reads like an error. -->
+          <div class="mt-2.5 flex flex-wrap items-center gap-2">
+            <UPopover v-model:open="isStatusPickerOpen" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
+              <button
+                type="button"
+                class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors"
+                :class="columnColorClass(statusInfo(task.status)?.color)"
+                :disabled="updatingStatus"
+              >
+                <span class="max-w-[160px] truncate">{{ statusInfo(task.status)?.label || task.status }}</span>
+                <UIcon :name="updatingStatus ? 'lucide:loader-2' : 'lucide:chevron-down'" :class="['h-3.5 w-3.5 flex-shrink-0', updatingStatus && 'animate-spin']" />
+              </button>
+              <template #panel>
+                <div class="w-52 p-1">
+                  <button
+                    v-for="s in boardStatuses"
+                    :key="s.key"
+                    type="button"
+                    class="mb-0.5 flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors last:mb-0"
+                    :class="[columnColorClass(s.color), s.key === task!.status && 'ring-1 ring-inset ring-gray-400 dark:ring-gray-500']"
+                    @click="handleStatusChange(s)"
+                  >
+                    <span class="truncate">{{ s.label }}</span>
+                    <UIcon v-if="s.key === task!.status" name="lucide:check" class="ml-auto h-3.5 w-3.5 flex-shrink-0" />
+                  </button>
+                </div>
+              </template>
+            </UPopover>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-gray-200">
+              <UIcon :name="priorityIcon(task.priority)" :class="['h-3.5 w-3.5', priorityColorClass(task.priority)]" />
+              {{ priorityOptions.find((p) => p.value === task!.priority)?.label }}
+            </span>
+            <span class="inline-flex min-w-0 items-center gap-1.5 rounded-full bg-gray-100 px-2.5 py-1.5 text-xs font-medium text-gray-700 dark:bg-white/10 dark:text-gray-200">
+              <UserAvatar v-if="task.assigneeUserId" :name="memberLabel(task.assigneeUserId)" size="xs" />
+              <UIcon v-else name="lucide:user-round" class="h-3.5 w-3.5 text-gray-400" />
+              <span class="max-w-[140px] truncate" :class="task.assigneeUserId ? '' : 'italic text-gray-400'">{{ task.assigneeUserId ? memberLabel(task.assigneeUserId) : (t('tasks.unassigned') || 'Unassigned') }}</span>
+            </span>
+            <button v-if="!task.problemReportedAt" type="button" class="at-btn ml-auto !px-3 !py-1.5 !text-xs" @click="openProblem">
+              <Icon name="lucide:flag" class="h-3.5 w-3.5" />
+              {{ t('tasks.problemTitle') || 'Report a problem' }}
+            </button>
           </div>
         </div>
       </template>
 
-      <div class="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6">
+      <div class="flex-1 min-w-0 lg:overflow-y-auto p-4 sm:p-6">
       <div v-if="task.problemReportedAt" class="flex items-center justify-between gap-2 rounded-lg bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-800 px-3 py-2 text-xs text-rose-800 dark:text-rose-300 mb-4">
         <span class="flex items-center gap-1.5 min-w-0"><UIcon name="lucide:alert-triangle" class="w-3.5 h-3.5 flex-shrink-0" /><b>{{ t('tasks.problemBanner') }}:</b> <span class="truncate">{{ task.problemReason }}</span></span>
         <UButton size="2xs" color="red" variant="soft" @click="clearProblem">{{ t('tasks.problemClear') }}</UButton>
@@ -829,6 +887,127 @@ async function handleDelete() {
 
       <div class="divide-y divide-gray-100 dark:divide-gray-800">
       <div class="pb-4">
+        <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">
+          <UIcon name="lucide:list-checks" class="w-3.5 h-3.5" />
+          {{ t('tasks.sectionDetails') || 'Details' }}
+        </h4>
+        <div class="space-y-3">
+          <div class="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
+            <div class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.taskType') || 'Issue type' }}</div>
+              <USelectMenu
+                :model-value="task.taskTypeId"
+                :options="taskTypes.map((tt) => ({ label: tt.name, value: tt.id, icon: tt.icon }))"
+                value-attribute="value"
+                option-attribute="label"
+                :popper="{ strategy: 'fixed' }"
+                @update:model-value="handleTaskTypeChange"
+              >
+                <template #label>
+                  <UIcon :name="currentTaskType?.icon || 'lucide:shapes'" class="w-4 h-4" />
+                  <span class="truncate">{{ currentTaskType?.name }}</span>
+                </template>
+                <template #option="{ option }">
+                  <UIcon :name="option.icon || 'lucide:shapes'" class="w-4 h-4" />
+                  <span>{{ option.label }}</span>
+                </template>
+              </USelectMenu>
+            </div>
+            <div class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.priority') || 'Priority' }}</div>
+              <USelectMenu
+                :model-value="task.priority"
+                :options="priorityOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :popper="{ strategy: 'fixed' }"
+                @update:model-value="handlePriorityChange"
+              >
+                <template #label>
+                  <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4', priorityColorClass(task.priority)]" />
+                  <span class="truncate">{{ priorityOptions.find((p) => p.value === task!.priority)?.label }}</span>
+                </template>
+              </USelectMenu>
+            </div>
+          </div>
+
+          <!-- Start and deadline are two separate labelled fields (a datetime input needs ~220px:
+               squeezing both into half a column made them overlap the neighbouring field). -->
+          <div class="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
+            <div class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dueFromLabel') || 'From' }}</div>
+              <UInput v-model="dueFromDraft" type="datetime-local" class="w-full" @blur="commitDueFrom" />
+            </div>
+            <div class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dueAt') || 'Due date' }}</div>
+              <UInput v-model="dueAtDraft" type="datetime-local" class="w-full" @blur="commitDueAt" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 min-[460px]:grid-cols-2">
+            <div class="min-w-0" :class="(cyclesEnabled || estimateLabel) ? '' : 'min-[460px]:col-span-2'">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.assignee') || 'Assignee' }}</div>
+              <div class="flex items-center gap-1.5">
+                <USelectMenu
+                  :model-value="task.assigneeUserId || ''"
+                  :options="[{ label: t('tasks.unassigned') || 'Unassigned', value: '' }, ...memberOptions]"
+                  value-attribute="value"
+                  option-attribute="label"
+                  searchable
+                  class="min-w-0 flex-1"
+                  :popper="{ strategy: 'fixed' }"
+                  :loading="updatingAssignee"
+                  @update:model-value="handleAssigneeChange"
+                />
+                <UButton v-if="task.assigneeUserId" icon="lucide:x" size="2xs" color="gray" variant="ghost" class="flex-shrink-0" :title="t('tasks.unassigned') || 'Unassigned'" :aria-label="t('tasks.unassigned') || 'Unassigned'" @click="handleAssigneeChange('')" />
+              </div>
+            </div>
+            <div v-if="cyclesEnabled" class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.sprint') || 'Sprint' }}</div>
+              <USelectMenu
+                :model-value="task.cycleId || ''"
+                :options="cycleSelectOptions"
+                value-attribute="value"
+                option-attribute="label"
+                :popper="{ strategy: 'fixed' }"
+                :loading="updatingCycle"
+                @update:model-value="handleCycleChange"
+              />
+            </div>
+            <div v-if="estimateLabel" class="min-w-0">
+              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.estimateValue') || 'Estimate' }} ({{ estimateLabel }})</div>
+              <UInput v-model.number="estimateDraft" type="number" min="0" step="0.5" class="w-full" @blur="commitEstimate" />
+            </div>
+          </div>
+
+          <div v-if="deliveryMoneyEnabled" class="space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="min-w-0">
+                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.collectAmount') }}</div>
+                <UInput v-model.number="collectDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
+              </div>
+              <div class="min-w-0">
+                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.courierFee') }}</div>
+                <UInput v-model.number="feeDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
+              </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <button v-for="k in [{ v: 'self', l: 'tasks.courierSelf' }, { v: 'courier', l: 'tasks.courierHired' }]" :key="k.v" type="button" class="pill-filter" :class="(task.courierKind || 'self') === k.v ? 'pill-filter--active' : ''" @click="setCourierKind(k.v)">{{ t(k.l) }}</button>
+              <button v-if="task.assigneeUserId" type="button" class="at-btn !px-3 !py-1 ml-auto" @click="openRefuse"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('tasks.refuse') }}</button>
+            </div>
+            <p v-if="task.previousAssigneeUserId" class="text-xs text-gray-400">{{ t('tasks.previousExecutor') }}: {{ memberOptions.find((m) => m.value === task?.previousAssigneeUserId)?.label || '—' }}</p>
+          </div>
+          <div v-if="dealFieldsEnabled">
+            <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dealAmount') || 'Deal amount' }}</div>
+            <div class="flex gap-2">
+              <UInput v-model.number="dealAmountDraft" type="number" min="0" step="1" class="min-w-0 flex-1" :placeholder="t('tasks.dealAmountPlaceholder') || '0'" @blur="commitDeal" />
+              <UInput v-model="dealCurrencyDraft" class="w-24 flex-shrink-0" maxlength="8" placeholder="KZT" @blur="commitDeal" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="py-4">
         <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
           <UIcon name="lucide:align-left" class="w-3.5 h-3.5" />
           {{ t('tasks.description') || 'Description' }}
@@ -866,132 +1045,6 @@ async function handleDelete() {
           :terminal-keys="boardStatuses.filter((s) => s.isTerminal).map((s) => s.key)"
         />
       </div>
-      <div class="py-4">
-        <TaskComments
-          :task-id="task.id"
-          :ns-slug="nsSlug"
-          :get-token="getToken"
-          :format-date="formatDate"
-          :member-display-name="(id: string) => memberLabel(id)"
-        />
-      </div>
-
-      <div class="py-4">
-        <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
-          <UIcon name="lucide:list-checks" class="w-3.5 h-3.5" />
-          {{ t('tasks.sectionDetails') || 'Details' }}
-        </h4>
-        <div class="space-y-3">
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.taskType') || 'Issue type' }}</div>
-              <USelectMenu
-                :model-value="task.taskTypeId"
-                :options="taskTypes.map((tt) => ({ label: tt.name, value: tt.id, icon: tt.icon }))"
-                value-attribute="value"
-                option-attribute="label"
-                :popper="{ strategy: 'fixed' }"
-                @update:model-value="handleTaskTypeChange"
-              >
-                <template #label>
-                  <UIcon :name="currentTaskType?.icon || 'lucide:shapes'" class="w-4 h-4" />
-                  <span>{{ currentTaskType?.name }}</span>
-                </template>
-                <template #option="{ option }">
-                  <UIcon :name="option.icon || 'lucide:shapes'" class="w-4 h-4" />
-                  <span>{{ option.label }}</span>
-                </template>
-              </USelectMenu>
-            </div>
-            <div>
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.priority') || 'Priority' }}</div>
-              <USelectMenu
-                :model-value="task.priority"
-                :options="priorityOptions"
-                value-attribute="value"
-                option-attribute="label"
-                :popper="{ strategy: 'fixed' }"
-                @update:model-value="handlePriorityChange"
-              >
-                <template #label>
-                  <UIcon :name="priorityIcon(task.priority)" :class="['w-4 h-4', priorityColorClass(task.priority)]" />
-                  <span>{{ priorityOptions.find((p) => p.value === task!.priority)?.label }}</span>
-                </template>
-              </USelectMenu>
-            </div>
-          </div>
-          <div :class="estimateLabel ? 'grid grid-cols-2 gap-3' : ''">
-            <div>
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dueAt') || 'Due date' }}</div>
-              <div class="flex items-center gap-2">
-                <UInput v-model="dueFromDraft" type="datetime-local" class="flex-1" :title="t('tasks.dueFromLabel')" @blur="commitDueFrom" />
-                <span class="text-xs text-gray-400">→</span>
-                <UInput v-model="dueAtDraft" type="datetime-local" class="flex-1" @blur="commitDueAt" />
-              </div>
-            </div>
-            <div v-if="estimateLabel">
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.estimateValue') || 'Estimate' }} ({{ estimateLabel }})</div>
-              <UInput v-model.number="estimateDraft" type="number" min="0" step="0.5" @blur="commitEstimate" />
-            </div>
-          </div>
-          <div v-if="deliveryMoneyEnabled" class="space-y-2">
-            <div class="grid grid-cols-2 gap-2">
-              <div>
-                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.collectAmount') }}</div>
-                <UInput v-model.number="collectDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
-              </div>
-              <div>
-                <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.courierFee') }}</div>
-                <UInput v-model.number="feeDraft" type="number" min="0" step="1" placeholder="0" @blur="commitDeliveryMoney" />
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-1.5">
-              <button v-for="k in [{ v: 'self', l: 'tasks.courierSelf' }, { v: 'courier', l: 'tasks.courierHired' }]" :key="k.v" type="button" class="pill-filter" :class="(task.courierKind || 'self') === k.v ? 'pill-filter--active' : ''" @click="setCourierKind(k.v)">{{ t(k.l) }}</button>
-              <button v-if="task.assigneeUserId" type="button" class="at-btn !px-3 !py-1 ml-auto" @click="openRefuse"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('tasks.refuse') }}</button>
-            </div>
-            <p v-if="task.previousAssigneeUserId" class="text-xs text-gray-400">{{ t('tasks.previousExecutor') }}: {{ memberOptions.find((m) => m.value === task?.previousAssigneeUserId)?.label || '—' }}</p>
-          </div>
-          <div v-if="dealFieldsEnabled">
-            <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.dealAmount') || 'Deal amount' }}</div>
-            <div class="flex gap-2">
-              <UInput v-model.number="dealAmountDraft" type="number" min="0" step="1" class="flex-1" :placeholder="t('tasks.dealAmountPlaceholder') || '0'" @blur="commitDeal" />
-              <UInput v-model="dealCurrencyDraft" class="w-24" maxlength="8" placeholder="KZT" @blur="commitDeal" />
-            </div>
-          </div>
-          <div :class="cyclesEnabled ? 'grid grid-cols-2 gap-3' : ''">
-            <div>
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.assignee') || 'Assignee' }}</div>
-              <div class="flex items-center gap-1.5">
-                <USelectMenu
-                  :model-value="task.assigneeUserId || ''"
-                  :options="[{ label: t('tasks.unassigned') || 'Unassigned', value: '' }, ...memberOptions]"
-                  value-attribute="value"
-                  option-attribute="label"
-                  searchable
-                  class="flex-1"
-                  :popper="{ strategy: 'fixed' }"
-                  :loading="updatingAssignee"
-                  @update:model-value="handleAssigneeChange"
-                />
-                <UButton v-if="task.assigneeUserId" icon="lucide:x" size="2xs" color="gray" variant="ghost" :title="t('tasks.unassigned') || 'Unassigned'" @click="handleAssigneeChange('')" />
-              </div>
-            </div>
-            <div v-if="cyclesEnabled">
-              <div class="text-[11px] text-gray-400 mb-1">{{ t('tasks.sprint') || 'Sprint' }}</div>
-              <USelectMenu
-                :model-value="task.cycleId || ''"
-                :options="cycleSelectOptions"
-                value-attribute="value"
-                option-attribute="label"
-                :popper="{ strategy: 'fixed' }"
-                :loading="updatingCycle"
-                @update:model-value="handleCycleChange"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="py-4">
         <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
           <UIcon name="lucide:map-pin" class="w-3.5 h-3.5" />
@@ -1074,7 +1127,7 @@ async function handleDelete() {
         </a>
       </div>
 
-      <div class="pt-4">
+      <div class="py-4">
         <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
           <UIcon name="lucide:eye" class="w-3.5 h-3.5" />
           {{ t('tasks.members') || 'Watchers' }}
@@ -1112,6 +1165,16 @@ async function handleDelete() {
           </div>
         </div>
       </div>
+      <div class="pt-4">
+        <TaskComments
+          :task-id="task.id"
+          :ns-slug="nsSlug"
+          :get-token="getToken"
+          :format-date="formatDate"
+          :member-display-name="(id: string) => memberLabel(id)"
+        />
+      </div>
+
       </div>
       </div>
 
@@ -1121,7 +1184,7 @@ async function handleDelete() {
            (rather than one more card at the bottom of a long scroll) so it's
            always visible while working through the fields on the left --
            falls back to stacking below on narrow/mobile viewports. -->
-      <div class="lg:w-72 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 dark:border-gray-800 overflow-y-auto p-4 sm:p-6">
+      <div class="lg:w-72 flex-shrink-0 border-t lg:border-t-0 lg:border-l border-gray-100 dark:border-gray-800 lg:overflow-y-auto p-4 sm:p-6">
         <h4 class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">
           <UIcon name="lucide:history" class="w-3.5 h-3.5" />
           {{ t('tasks.activity') || 'Activity' }}

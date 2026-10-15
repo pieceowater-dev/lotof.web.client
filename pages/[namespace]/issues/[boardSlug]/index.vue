@@ -23,6 +23,9 @@ import OpenOnPhoneModal from '@/components/tasks/OpenOnPhoneModal.vue';
 import CycleModal from '@/components/tasks/CycleModal.vue';
 import CloseCycleModal from '@/components/tasks/CloseCycleModal.vue';
 import BurndownModal from '@/components/tasks/BurndownModal.vue';
+import BoardFilters from '@/components/tasks/BoardFilters.vue';
+// Shape of a @nuxt/ui dropdown entry (the module does not export a resolvable type path here).
+interface DropdownItem { label: string; icon?: string; to?: string; class?: string; disabled?: boolean; slot?: string; click?: (...args: any[]) => void }
 import type { TaskBoard } from '@/api/tasks/board/list';
 import type { TaskType } from '@/api/tasks/tasktype/list';
 import type { TaskItem } from '@/api/tasks/task/list';
@@ -179,10 +182,20 @@ async function loadCycles() {
     logError('[tasks/board] loadCycles failed', e);
   }
 }
-const sprintMenuItems = computed(() => [[
-  { label: t('tasks.backlog') || 'Backlog', click: () => { selectedCycleId.value = ''; } },
-  ...openCycles.value.map((c) => ({ label: c.name, click: () => { selectedCycleId.value = c.id; } })),
-]]);
+const sprintMenuItems = computed(() => {
+  const groups: DropdownItem[][] = [[
+    { label: t('tasks.backlog') || 'Backlog', click: () => { selectedCycleId.value = ''; } },
+    ...openCycles.value.map((c) => ({ label: c.name, click: () => { selectedCycleId.value = c.id; } })),
+  ]];
+  const manage: DropdownItem[] = [{ label: t('tasks.newSprint') || 'New sprint', icon: 'lucide:plus', click: openCreateCycle }];
+  if (selectedCycle.value) {
+    manage.push({ label: t('tasks.editSprint') || 'Edit sprint', icon: 'lucide:pencil', click: openEditCycle });
+    if (!selectedCycle.value.isClosed) manage.push({ label: t('tasks.closeSprint') || 'Close sprint', icon: 'lucide:flag-off', click: openCloseCycleDialog });
+    manage.push({ label: t('tasks.burndown') || 'Burndown', icon: 'lucide:trending-down', click: () => { isBurndownModalOpen.value = true; } });
+  }
+  groups.push(manage);
+  return groups;
+});
 
 const isCycleModalOpen = ref(false);
 const editingCycle = ref<Cycle | null>(null);
@@ -279,10 +292,11 @@ async function handleCloseCycleConfirm(carryOver: 'backlog' | 'next') {
 const { platform } = usePwaInstall();
 const isOpenZenQrModalOpen = ref(false);
 const zenModeUrl = computed(() => typeof window === 'undefined' ? '' : `${window.location.origin}/${nsSlug.value}/issues/zen`);
-function handleOpenZenClick(e: Event) {
+function openZen() {
   if (platform.value === 'desktop') {
-    e.preventDefault();
     isOpenZenQrModalOpen.value = true;
+  } else {
+    window.open(`/${nsSlug.value}/issues/zen`, '_blank');
   }
 }
 
@@ -410,7 +424,13 @@ function matchesQuickView(task: TaskItem): boolean {
   if (quickView.value === 'noDue') return !task.dueAt;
   return (!!task.dueAt && new Date(task.dueAt).getTime() < Date.now()) || isTaskOverdue(task);
 }
-const visibleTasks = computed(() => tasks.value.filter(matchesQuickView));
+// Subtasks live inside their parent's card, they are not board cards of their own.
+const visibleTasks = computed(() => tasks.value.filter((tk) => !tk.parentId && matchesQuickView(tk)));
+// The server's per-status counts include subtasks; take the loaded ones out so the column badge matches the cards.
+function columnCount(status: string): number {
+  const subtasks = tasks.value.filter((tk) => tk.parentId && tk.status === status).length;
+  return Math.max(0, (statusCounts.value[status] ?? 0) - subtasks);
+}
 // How many open tasks on this board are mine (assignee), shown on the "My tasks" button.
 const myOpenCount = computed(() => {
   const me = currentUser.value?.id;
@@ -593,6 +613,38 @@ function cancelQuickAdd() {
 // priority and deadline ---
 const taskTemplates = computed(() => parseTaskTemplates(board.value?.taskTemplates));
 const templateMenuItems = computed(() => [taskTemplates.value.map((tpl) => ({ label: tpl.name, icon: 'lucide:file-plus-2', click: () => createFromTemplate(tpl) }))]);
+
+// Secondary tools live behind one "more" menu so the header keeps a single primary action
+// (DESIGN.md §U3.1, §U18): board views, Zen mode, export and "create from template".
+const moreMenuItems = computed(() => {
+  const base = `/${nsSlug.value}/issues/${boardSlug.value}`;
+  const groups: DropdownItem[][] = [];
+  const views: DropdownItem[] = [];
+  if (geoMapEnabled.value) views.push({ label: t('tasks.mapView') || 'Map view', icon: 'lucide:map', to: `${base}/map` });
+  if (isOwnerOrManager.value) {
+    views.push({ label: t('tasks.logisticsTitle'), icon: 'lucide:route', to: `${base}/logistics` });
+    views.push({ label: t('tasks.reportOpen'), icon: 'lucide:clipboard-list', to: `${base}/report` });
+    views.push({ label: t('tasks.funnelAnalyticsBtn') || 'Analytics', icon: 'lucide:chart-no-axes-column', to: `${base}/analytics` });
+  }
+  if (views.length) groups.push(views);
+  const tools: DropdownItem[] = [];
+  if (zenModeEnabled.value) tools.push({ label: t('tasks.openZenMode') || 'Zen Mode', icon: 'lucide:smartphone', click: openZen });
+  if (isOwnerOrManager.value) tools.push({ label: 'Excel', icon: 'lucide:file-spreadsheet', disabled: !visibleTasks.value.length, click: exportTasks });
+  if (tools.length) groups.push(tools);
+  if (taskTemplates.value.length) {
+    groups.push([{ label: t('tasks.fromTemplate'), disabled: true, slot: 'heading' }, ...templateMenuItems.value[0]]);
+  }
+  return groups;
+});
+
+// Filters that are not already visible as chips; drives the "Filters · N" badge on phones.
+const filterCount = computed(() => (selectedTaskTypeIds.value.length ? 1 : 0) + (selectedAssignee.value ? 1 : 0) + (myTasksOnly.value ? 1 : 0));
+const isFiltersOpen = ref(false);
+function resetFilters() {
+  selectedTaskTypeIds.value = [];
+  selectedAssignee.value = '';
+  myTasksOnly.value = false;
+}
 async function createFromTemplate(tpl: TaskTemplate) {
   const taskTypeId = tpl.task_type_id || board.value?.defaultTaskTypeId || taskTypes.value[0]?.id;
   if (!taskTypeId) {
@@ -665,6 +717,13 @@ function openDetail(task: TaskItem) {
   selectedTask.value = task;
   pendingTaskUpdate.value = null;
   isDetailOpen.value = true;
+}
+// Jump from a subtask to its parent (or back) without closing the panel.
+function openRelatedTask(task: TaskItem) {
+  selectedTask.value = task;
+  pendingTaskUpdate.value = null;
+  isDetailOpen.value = true;
+  navigateTo({ query: { ...route.query, task: taskShortCode(boardSlug.value, task.taskNumber) } }, { replace: true });
 }
 function applyPendingTaskUpdate() {
   if (pendingTaskUpdate.value) selectedTask.value = pendingTaskUpdate.value;
@@ -806,124 +865,82 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
+    <!-- Header: where am I + the one primary action; everything else is behind the gear / "more" menu. -->
+    <div class="flex items-center justify-between gap-2 mb-3 flex-shrink-0">
       <div class="flex items-center gap-2 min-w-0">
-        <UButton icon="lucide:layout-grid" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues?pick=1`">
-          {{ t('tasks.boards') || 'Boards' }}
-        </UButton>
+        <NuxtLink :to="`/${nsSlug}/issues?pick=1`" class="at-btn flex-shrink-0 !px-3" :aria-label="t('tasks.boards') || 'Boards'">
+          <Icon name="lucide:layout-grid" class="w-4 h-4" />
+          <span class="hidden sm:inline">{{ t('tasks.boards') || 'Boards' }}</span>
+        </NuxtLink>
         <h1 class="text-xl sm:text-2xl font-semibold truncate" data-tour="issues-title">{{ board?.name || '...' }}</h1>
       </div>
-      <div class="flex items-center gap-2 self-start flex-wrap">
-        <UButton v-if="geoMapEnabled" icon="lucide:map" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/map`">
-          {{ t('tasks.mapView') || 'Map view' }}
-        </UButton>
-        <UButton v-if="zenModeEnabled" icon="lucide:smartphone" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/zen`" target="_blank" @click="handleOpenZenClick">
-          {{ t('tasks.openZenMode') || 'Zen Mode' }}
-        </UButton>
- <UButton v-if="isOwnerOrManager" icon="lucide:route" size="xs" color="gray" variant="soft" class="hidden sm:inline-flex" :to="`/${nsSlug}/issues/${boardSlug}/logistics`">
-          {{ t('tasks.logisticsTitle') }}
-        </UButton>
-        <UButton v-if="isOwnerOrManager" icon="lucide:clipboard-list" size="xs" color="gray" variant="soft" class="hidden sm:inline-flex" :to="`/${nsSlug}/issues/${boardSlug}/report`">
-          {{ t('tasks.reportOpen') }}
-        </UButton>
-        <UButton v-if="isOwnerOrManager" icon="lucide:chart-no-axes-column" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/analytics`">
-          {{ t('tasks.funnelAnalyticsBtn') || 'Analytics' }}
-        </UButton>
-        <UButton v-if="isOwnerOrManager" icon="lucide:settings" size="xs" color="gray" variant="soft" :to="`/${nsSlug}/issues/${boardSlug}/settings`" data-tour="issues-settings-btn">
-          {{ t('tasks.configure') || 'Configure' }}
-        </UButton>
-        <UDropdown v-if="taskTemplates.length" :items="templateMenuItems" :popper="{ placement: 'bottom-end' }">
-          <UButton icon="lucide:file-plus-2" size="xs" color="gray" variant="soft" trailing-icon="lucide:chevron-down">{{ t('tasks.fromTemplate') }}</UButton>
+      <div class="flex items-center gap-1.5 flex-shrink-0">
+        <button type="button" class="at-btn at-btn--primary" data-tour="issues-create-btn" @click="openCreateTask">
+          <Icon name="lucide:plus" class="w-4 h-4" />
+          <span class="hidden sm:inline">{{ t('tasks.createTask') || 'Create issue' }}</span>
+          <span class="hidden min-[440px]:inline sm:hidden">{{ t('app.create') || 'Create' }}</span>
+          <span class="sr-only min-[440px]:hidden sm:sr-only">{{ t('tasks.createTask') || 'Create issue' }}</span>
+        </button>
+        <NuxtLink
+          v-if="isOwnerOrManager"
+          :to="`/${nsSlug}/issues/${boardSlug}/settings`"
+          class="at-btn !px-2.5"
+          data-tour="issues-settings-btn"
+          :aria-label="t('tasks.configure') || 'Configure'"
+          :title="t('tasks.configure') || 'Configure'"
+        >
+          <Icon name="lucide:settings" class="w-4 h-4" />
+        </NuxtLink>
+        <UDropdown v-if="moreMenuItems.length" :items="moreMenuItems" :popper="{ placement: 'bottom-end', strategy: 'fixed' }">
+          <button type="button" class="at-btn !px-2.5" :aria-label="t('tasks.moreActions') || 'More'" :title="t('tasks.moreActions') || 'More'">
+            <Icon name="lucide:ellipsis" class="w-4 h-4" />
+          </button>
+          <template #item="{ item }">
+            <span v-if="item.slot === 'heading'" class="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ item.label }}</span>
+            <template v-else>
+              <UIcon v-if="item.icon" :name="item.icon" class="w-4 h-4 flex-shrink-0 text-gray-400" />
+              <span class="truncate">{{ item.label }}</span>
+            </template>
+          </template>
         </UDropdown>
-        <UButton icon="lucide:plus" size="xs" color="primary" variant="soft" data-tour="issues-create-btn" @click="openCreateTask">
-          {{ t('tasks.createTask') || 'Create issue' }}
-        </UButton>
       </div>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-2 mb-3 flex-shrink-0">
-      <UInput v-model="search" icon="lucide:search" :placeholder="t('tasks.searchTasks') || 'Search by title or description'" class="w-full sm:flex-1" />
-      <USelectMenu
-        v-model="selectedTaskTypeIds"
-        multiple
-        :options="taskTypes.map((tt) => ({ label: tt.name, value: tt.id, icon: tt.icon }))"
-        value-attribute="value"
-        option-attribute="label"
-        class="w-full sm:w-36 flex-shrink-0"
-        :popper="{ strategy: 'fixed' }"
-      >
-        <template #label>
-          <UIcon name="lucide:tags" class="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span class="truncate">{{ selectedTaskTypeIds.length ? selectedTaskTypeIds.length : (t('tasks.type') || 'Type') }}</span>
-        </template>
-        <template #option="{ option }">
-          <UIcon :name="option.icon || 'lucide:shapes'" class="w-4 h-4 flex-shrink-0" />
-          <span class="truncate">{{ option.label }}</span>
-        </template>
-      </USelectMenu>
-      <USelectMenu
-        v-model="selectedAssignee"
-        :options="[{ label: t('tasks.anyAssignee') || 'Any assignee', value: '' }, ...memberOptions]"
-        value-attribute="value"
-        option-attribute="label"
-        searchable
-        class="w-full sm:w-56"
-        :popper="{ strategy: 'fixed' }"
-      >
-        <template #label>
-          <UIcon name="lucide:user" class="w-4 h-4 text-gray-400 flex-shrink-0" />
-          <span class="truncate">{{ memberOptions.find((m) => m.value === selectedAssignee)?.label || (t('tasks.anyAssignee') || 'Any assignee') }}</span>
-        </template>
-        <template #option="{ option }">
-          <UserAvatar v-if="option.value" :name="option.label" size="xs" />
-          <UIcon v-else name="lucide:users" class="w-4 h-4 flex-shrink-0" />
-          <span class="truncate">{{ option.label }}</span>
-        </template>
-      </USelectMenu>
-      <UButton
-        icon="lucide:user-check"
-        size="xs"
-        :color="myTasksOnly ? 'primary' : 'gray'"
-        variant="soft"
-        class="flex-shrink-0"
-        @click="myTasksOnly = !myTasksOnly"
-      >
-        {{ t('tasks.myTasks') || 'My tasks' }}<span v-if="myOpenCount" class="ml-1 tabular-nums opacity-70">· {{ myOpenCount }}</span>
-      </UButton>
+    <!-- Search + filters: one row. On phones the type / assignee / "mine" controls move into the filter sheet. -->
+    <div class="flex items-center gap-2 mb-2 flex-shrink-0">
+      <UInput v-model="search" icon="lucide:search" :placeholder="t('tasks.searchTasks') || 'Search by title or description'" class="flex-1 min-w-0" />
+      <BoardFilters
+        v-model:task-type-ids="selectedTaskTypeIds"
+        v-model:assignee="selectedAssignee"
+        v-model:my-tasks-only="myTasksOnly"
+        :task-types="taskTypes"
+        :member-options="memberOptions"
+        :my-open-count="myOpenCount"
+        class="hidden md:flex"
+      />
+      <div class="md:hidden flex-shrink-0">
+        <button type="button" class="at-btn" :aria-label="t('tasks.filters') || 'Filters'" @click="isFiltersOpen = true">
+          <Icon name="lucide:sliders-horizontal" class="w-4 h-4" />
+          <span v-if="filterCount" class="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-blue-600 px-1 text-[11px] font-bold leading-none text-white">{{ filterCount }}</span>
+        </button>
+      </div>
     </div>
 
-    <div class="mb-3 flex-shrink-0 flex flex-wrap items-center gap-1.5">
-      <button v-for="v in QUICK_VIEWS" :key="v.key" type="button" class="pill-filter" :class="quickView === v.key ? 'pill-filter--active' : ''" @click="quickView = quickView === v.key ? '' : v.key">
+    <!-- Quick views (+ sprint switcher): one scrollable row, never wraps. -->
+    <div class="mb-3 flex-shrink-0 flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 pb-1">
+      <template v-if="cyclesEnabled">
+        <UDropdown :items="sprintMenuItems" :popper="{ placement: 'bottom-start', strategy: 'fixed' }" class="flex-shrink-0">
+          <button type="button" class="pill-filter inline-flex items-center gap-1.5 whitespace-nowrap" :class="selectedCycle ? 'pill-filter--active' : ''">
+            <Icon name="lucide:flag" class="w-3.5 h-3.5" />
+            <span class="max-w-[10rem] truncate">{{ selectedCycle ? selectedCycle.name : (t('tasks.backlog') || 'Backlog') }}</span>
+            <Icon name="lucide:chevron-down" class="w-3.5 h-3.5 opacity-70" />
+          </button>
+        </UDropdown>
+        <span class="h-5 w-px flex-shrink-0 bg-gray-200 dark:bg-white/10" aria-hidden="true" />
+      </template>
+      <button v-for="v in QUICK_VIEWS" :key="v.key" type="button" class="pill-filter whitespace-nowrap flex-shrink-0" :class="quickView === v.key ? 'pill-filter--active' : ''" :aria-pressed="quickView === v.key" @click="quickView = quickView === v.key ? '' : v.key">
         <Icon :name="v.icon" class="w-3.5 h-3.5" />{{ t(v.label) }}
       </button>
-      <button v-if="isOwnerOrManager" type="button" class="at-btn !px-3 !py-1 ml-auto hidden sm:inline-flex" :disabled="!visibleTasks.length" @click="exportTasks">
-        <Icon name="lucide:file-spreadsheet" class="w-4 h-4" />Excel
-      </button>
-    </div>
-
-    <div v-if="cyclesEnabled" class="mb-3 flex-shrink-0 flex flex-wrap items-center gap-2">
-      <UDropdown :items="sprintMenuItems" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
-        <button
-          type="button"
-          class="flex items-center gap-2 rounded-full border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 pl-3 pr-2.5 py-1.5 text-sm font-medium hover:border-primary-300 dark:hover:border-primary-700 transition-colors"
-        >
-          <UIcon name="lucide:flag" class="w-4 h-4 text-primary-500 flex-shrink-0" />
-          <span class="truncate max-w-[180px]">{{ selectedCycle ? selectedCycle.name : (t('tasks.backlog') || 'Backlog') }}</span>
-          <UIcon name="lucide:chevron-down" class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-        </button>
-      </UDropdown>
-      <UButton icon="lucide:plus" size="xs" color="gray" variant="soft" @click="openCreateCycle">
-        {{ t('tasks.newSprint') || 'New sprint' }}
-      </UButton>
-      <template v-if="selectedCycle">
-        <UButton icon="lucide:pencil" size="xs" color="gray" variant="ghost" @click="openEditCycle" />
-        <UButton v-if="!selectedCycle.isClosed" icon="lucide:flag-off" size="xs" color="gray" variant="ghost" @click="openCloseCycleDialog">
-          {{ t('tasks.closeSprint') || 'Close sprint' }}
-        </UButton>
-      </template>
-      <UButton v-if="selectedCycle" icon="lucide:trending-down" size="xs" color="gray" variant="soft" class="ml-auto" @click="isBurndownModalOpen = true">
-        {{ t('tasks.burndown') || 'Burndown' }}
-      </UButton>
     </div>
 
     <div v-if="error" class="mb-3 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm px-3 py-2">
@@ -953,7 +970,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
         >
           <div class="is-col__head flex items-center justify-between px-4 py-3 flex-shrink-0">
             <span class="font-medium text-sm truncate">{{ col.label }}</span>
-            <UBadge color="gray" variant="subtle" size="xs">{{ statusCounts[col.key] ?? 0 }}</UBadge>
+            <UBadge color="gray" variant="subtle" size="xs">{{ columnCount(col.key) }}</UBadge>
           </div>
           <div class="flex-1 overflow-y-auto p-2 space-y-2">
             <button
@@ -1051,6 +1068,35 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       </div>
     </div>
 
+    <!-- Phone filter sheet: the same filters as the desktop row, applied instantly. -->
+    <USlideover
+      v-model="isFiltersOpen"
+      side="bottom"
+      class="at-modal"
+      :ui="{ height: 'h-auto max-h-[85vh]', rounded: 'rounded-t-[2rem]', background: 'bg-white dark:bg-[#1a1a1a]', ring: 'ring-1 ring-black/5 dark:ring-white/10', shadow: 'shadow-2xl' }"
+    >
+      <div class="flex flex-col gap-4 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3">
+        <span class="mx-auto h-1 w-10 flex-shrink-0 rounded-full bg-gray-300 dark:bg-white/20" aria-hidden="true" />
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-base font-semibold">{{ t('tasks.filters') || 'Filters' }}</h3>
+          <button type="button" class="at-btn !px-3" :aria-label="t('app.close') || 'Close'" @click="isFiltersOpen = false"><Icon name="lucide:x" class="w-4 h-4" /></button>
+        </div>
+        <BoardFilters
+          v-model:task-type-ids="selectedTaskTypeIds"
+          v-model:assignee="selectedAssignee"
+          v-model:my-tasks-only="myTasksOnly"
+          :task-types="taskTypes"
+          :member-options="memberOptions"
+          :my-open-count="myOpenCount"
+          stacked
+        />
+        <div class="flex items-center justify-end gap-2">
+          <button type="button" class="at-btn" :disabled="!filterCount" @click="resetFilters">{{ t('app.clear') || 'Clear' }}</button>
+          <button type="button" class="at-btn at-btn--primary" @click="isFiltersOpen = false">{{ t('app.done') || 'Done' }}</button>
+        </div>
+      </div>
+    </USlideover>
+
     <OpenOnPhoneModal v-model="isOpenZenQrModalOpen" :url="zenModeUrl" />
     <TaskModal
       v-model="isTaskModalOpen"
@@ -1081,6 +1127,7 @@ async function handleCardDrop(col: StatusRow, targetTask: TaskItem) {
       @changed="handleTaskChanged"
       @deleted="handleTaskDeleted"
       @apply-pending-update="applyPendingTaskUpdate"
+      @open-task="openRelatedTask"
     />
     <ReasonModal
       v-model="dropReasonOpen"

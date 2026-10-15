@@ -8,7 +8,7 @@ const TaskDocument = /* GraphQL */ `
     task(id: $id) {
       id boardId taskTypeId title description status assigneeUserId priority
       textAddress lat lng clientNameSnapshot clientPhoneSnapshot dueAt createdAt closedAt
-      orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl
+      orderId clientId clientIsVipSnapshot shortId deliveryPhotoUrl taskNumber sortOrder cycleId parentId
     }
   }
 `;
