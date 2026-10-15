@@ -227,6 +227,13 @@ onMounted(loadAll);
               <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :loading="deletingId === row.id" @click="deleteSupplier(supplierById.get(row.id)!)" />
             </div>
           </template>
+          <template #mobile-card="{ row }">
+            <div class="flex items-center justify-between gap-2">
+              <button type="button" class="min-w-0 truncate text-left font-medium text-gray-900 dark:text-white" @click="openEdit(supplierById.get(row.id)!)">{{ maskProfanity(row.name) }}</button>
+              <UButton size="2xs" color="red" variant="ghost" icon="lucide:trash-2" :loading="deletingId === row.id" @click.stop="deleteSupplier(supplierById.get(row.id)!)" />
+            </div>
+            <div v-if="row.phone || row.contactPerson" class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">{{ [row.contactPerson, row.phone].filter(Boolean).join(' · ') }}</div>
+          </template>
         </AppTable>
       </div>
 

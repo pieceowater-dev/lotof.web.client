@@ -156,8 +156,8 @@ export async function menuSetItemExecutor(token: string, ns: string, itemId: str
   await call(token, ns, `mutation Executor($itemId: ID!, $executorId: String) { updateOrderItemExecutor(itemId: $itemId, executorId: $executorId) { id executorId } }`, { itemId, executorId });
 }
 
-export async function menuExecutorReport(token: string, ns: string, closedFrom?: string, closedTo?: string): Promise<ExecutorReportRow[]> {
-  const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo) { executorId lines orders revenue pay cashReceived } }`, { closedFrom, closedTo });
+export async function menuExecutorReport(token: string, ns: string, closedFrom?: string, closedTo?: string, branchIds?: string[]): Promise<ExecutorReportRow[]> {
+  const r = await call<{ executorReport: ExecutorReportRow[] }>(token, ns, `query ExecutorReport($closedFrom: String, $closedTo: String, $branchIds: [String!]) { executorReport(closedFrom: $closedFrom, closedTo: $closedTo, branchIds: $branchIds) { executorId lines orders revenue pay cashReceived } }`, { closedFrom, closedTo, branchIds: branchIds?.length ? branchIds : undefined });
   return r.executorReport;
 }
 
@@ -165,18 +165,18 @@ export type StatusTimeRow = { status: string; stageId?: string | null; visits: n
 export type FieldValueRow = { value: string; completed: number; cancelled: number; avgCheck: number; revenue: number };
 export type OrderEvent = { id: string; orderId: string; number: number; displayNumber: string; previousStatus: string; newStatus: string; stageId?: string | null; userId?: string | null; comment?: string | null; createdAt: string };
 
-export async function menuStatusTimesReport(token: string, ns: string, createdFrom?: string, createdTo?: string): Promise<StatusTimeRow[]> {
-  const r = await call<{ statusTimesReport: StatusTimeRow[] }>(token, ns, `query StatusTimes($createdFrom: String, $createdTo: String) { statusTimesReport(createdFrom: $createdFrom, createdTo: $createdTo) { status stageId visits avgMinutes maxMinutes } }`, { createdFrom, createdTo });
+export async function menuStatusTimesReport(token: string, ns: string, createdFrom?: string, createdTo?: string, branchIds?: string[]): Promise<StatusTimeRow[]> {
+  const r = await call<{ statusTimesReport: StatusTimeRow[] }>(token, ns, `query StatusTimes($createdFrom: String, $createdTo: String, $branchIds: [String!]) { statusTimesReport(createdFrom: $createdFrom, createdTo: $createdTo, branchIds: $branchIds) { status stageId visits avgMinutes maxMinutes } }`, { createdFrom, createdTo, branchIds: branchIds?.length ? branchIds : undefined });
   return r.statusTimesReport;
 }
 
-export async function menuFieldValueReport(token: string, ns: string, fieldId: string, closedFrom?: string, closedTo?: string): Promise<FieldValueRow[]> {
-  const r = await call<{ fieldValueReport: FieldValueRow[] }>(token, ns, `query FieldValues($fieldId: String!, $closedFrom: String, $closedTo: String) { fieldValueReport(fieldId: $fieldId, closedFrom: $closedFrom, closedTo: $closedTo) { value completed cancelled avgCheck revenue } }`, { fieldId, closedFrom, closedTo });
+export async function menuFieldValueReport(token: string, ns: string, fieldId: string, closedFrom?: string, closedTo?: string, branchIds?: string[]): Promise<FieldValueRow[]> {
+  const r = await call<{ fieldValueReport: FieldValueRow[] }>(token, ns, `query FieldValues($fieldId: String!, $closedFrom: String, $closedTo: String, $branchIds: [String!]) { fieldValueReport(fieldId: $fieldId, closedFrom: $closedFrom, closedTo: $closedTo, branchIds: $branchIds) { value completed cancelled avgCheck revenue } }`, { fieldId, closedFrom, closedTo, branchIds: branchIds?.length ? branchIds : undefined });
   return r.fieldValueReport;
 }
 
-export async function menuOrderEvents(token: string, ns: string, p: { userId?: string; from?: string; to?: string; page?: number }): Promise<{ rows: OrderEvent[]; count: number }> {
-  const r = await call<{ orderEvents: { rows: OrderEvent[]; info: { count: number } } }>(token, ns, `query Events($userId: String, $from: String, $to: String, $filter: DefaultFilterInput) { orderEvents(userId: $userId, from: $from, to: $to, filter: $filter) { rows { id orderId number displayNumber previousStatus newStatus stageId userId comment createdAt } info { count } } }`, { userId: p.userId, from: p.from, to: p.to, filter: { pagination: { page: p.page || 1, length: 'FIFTY' } } });
+export async function menuOrderEvents(token: string, ns: string, p: { userId?: string; from?: string; to?: string; page?: number; branchIds?: string[] }): Promise<{ rows: OrderEvent[]; count: number }> {
+  const r = await call<{ orderEvents: { rows: OrderEvent[]; info: { count: number } } }>(token, ns, `query Events($userId: String, $from: String, $to: String, $branchIds: [String!], $filter: DefaultFilterInput) { orderEvents(userId: $userId, from: $from, to: $to, branchIds: $branchIds, filter: $filter) { rows { id orderId number displayNumber previousStatus newStatus stageId userId comment createdAt } info { count } } }`, { userId: p.userId, from: p.from, to: p.to, branchIds: p.branchIds?.length ? p.branchIds : undefined, filter: { pagination: { page: p.page || 1, length: 'FIFTY' } } });
   return { rows: r.orderEvents.rows, count: r.orderEvents.info.count };
 }
 

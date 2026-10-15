@@ -105,6 +105,24 @@ async function loadNames() {
   } catch (e) { logError('[menu/executors] names failed', e); }
 }
 
+// Working point(s): the same global choice as the orders list; changing it here changes it everywhere.
+const { branchIds } = useActiveBranch(nsSlug);
+const branches = ref<{ id: string; name: string }[]>([]);
+const branchOptions = computed(() => branches.value.map((b) => ({ label: b.name, value: b.id })));
+const branchLabel = computed(() => {
+  if (!branchIds.value.length) return t('menu.allBranches');
+  if (branchIds.value.length === 1) return branches.value.find((b) => b.id === branchIds.value[0])?.name || t('menu.allBranches');
+  return `${branchIds.value.length} ${t('menu.branchesSelected')}`;
+});
+async function loadBranches() {
+  try {
+    const tk = useMenuToken().current();
+    if (!tk) return;
+    const { menuBranchesList } = await import('@/api/menu/branch/list');
+    branches.value = (await menuBranchesList(tk, nsSlug.value)).branches;
+  } catch (e) { logError('[menu/reports] branches failed', e); }
+}
+
 async function load() {
   loading.value = true;
   loadError.value = '';
@@ -113,16 +131,16 @@ async function load() {
     if (!tk) throw new Error('No menu token');
     const closedFrom = new Date(`${from.value}T00:00:00`).toISOString();
     const closedTo = new Date(`${to.value}T23:59:59`).toISOString();
-    if (tab.value === 'executors') rows.value = await menuExecutorReport(tk, nsSlug.value, closedFrom, closedTo);
+    if (tab.value === 'executors') rows.value = await menuExecutorReport(tk, nsSlug.value, closedFrom, closedTo, branchIds.value);
     else if (tab.value === 'times') {
       await loadStages(tk, nsSlug.value);
-      times.value = await menuStatusTimesReport(tk, nsSlug.value, closedFrom, closedTo);
+      times.value = await menuStatusTimesReport(tk, nsSlug.value, closedFrom, closedTo, branchIds.value);
     } else if (tab.value === 'field') {
       if (!fields.value.length) fields.value = (await menuOrderFieldsList(tk, nsSlug.value)).fields;
       if (!fieldId.value && listFields.value.length) fieldId.value = listFields.value[0].id;
-      fieldRows.value = fieldId.value ? await menuFieldValueReport(tk, nsSlug.value, fieldId.value, closedFrom, closedTo) : [];
+      fieldRows.value = fieldId.value ? await menuFieldValueReport(tk, nsSlug.value, fieldId.value, closedFrom, closedTo, branchIds.value) : [];
     } else {
-      const r = await menuOrderEvents(tk, nsSlug.value, { from: closedFrom, to: closedTo, page: eventsPage.value });
+      const r = await menuOrderEvents(tk, nsSlug.value, { from: closedFrom, to: closedTo, page: eventsPage.value, branchIds: branchIds.value });
       events.value = r.rows; eventsTotal.value = r.count;
     }
   } catch (e) {
@@ -151,7 +169,7 @@ async function exportXlsx() {
 function setTab(k: TabKey) { tab.value = k; eventsPage.value = 1; }
 // Everything that changes the report reloads it by itself (no separate "refresh" step), and the tab goes to the URL.
 let reloadTimer: ReturnType<typeof setTimeout> | null = null;
-watch([tab, from, to, fieldId], () => {
+watch([tab, from, to, fieldId, branchIds], () => {
   if (reloadTimer) clearTimeout(reloadTimer);
   reloadTimer = setTimeout(() => { void load(); }, 250);
 });
@@ -163,7 +181,10 @@ const eventLabel = (e: OrderEvent) => {
   const stage = stageName(e.stageId);
   return `${statusText(e.previousStatus)} → ${stage || statusText(e.newStatus)}`;
 };
-onMounted(async () => { await Promise.all([loadNames(), load()]); });
+onMounted(async () => {
+  void loadBranches();
+  await Promise.all([loadNames(), load()]);
+});
 onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
 </script>
 
@@ -191,6 +212,12 @@ onBeforeUnmount(() => { if (reloadTimer) clearTimeout(reloadTimer); });
       <div class="flex flex-wrap items-end gap-3">
         <div class="space-y-1"><label class="text-xs font-medium text-slate-500">{{ t('menu.executorsFrom') }}</label><UInput v-model="from" type="date" :max="to" /></div>
         <div class="space-y-1"><label class="text-xs font-medium text-slate-500">{{ t('menu.executorsTo') }}</label><UInput v-model="to" type="date" :min="from" /></div>
+        <div v-if="branchOptions.length > 1" class="min-w-[12rem] space-y-1 sm:w-56">
+          <label class="text-xs font-medium text-slate-500">{{ t('menu.branch') }}</label>
+          <USelectMenu v-model="branchIds" multiple icon="lucide:map-pin" :options="branchOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }">
+            <template #label><span class="truncate">{{ branchLabel }}</span></template>
+          </USelectMenu>
+        </div>
         <div v-if="tab === 'field' && fieldOptions.length" class="min-w-[14rem] flex-1 space-y-1 sm:max-w-xs">
           <label class="text-xs font-medium text-slate-500">{{ t('menu.reportField') }}</label>
           <USelectMenu v-model="fieldId" :options="fieldOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />

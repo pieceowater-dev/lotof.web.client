@@ -249,6 +249,16 @@ onMounted(loadAll);
         <template #status-data="{ row }">
           <UBadge :color="COUNT_STATUS_COLORS[row.status as GoodsInventoryCountStatus]" variant="soft" size="xs">{{ COUNT_STATUS_LABELS[row.status as GoodsInventoryCountStatus] || row.status }}</UBadge>
         </template>
+        <template #mobile-card="{ row }">
+          <div class="flex items-center justify-between gap-2">
+            <span class="min-w-0 truncate font-medium text-gray-900 dark:text-white">{{ row.warehouseName }}</span>
+            <UBadge :color="COUNT_STATUS_COLORS[row.status as GoodsInventoryCountStatus]" variant="soft" size="xs">{{ COUNT_STATUS_LABELS[row.status as GoodsInventoryCountStatus] || row.status }}</UBadge>
+          </div>
+          <div class="mt-1 flex items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
+            <span class="tabular-nums">{{ t('goods.countedQty') }}: {{ row.progress }}</span>
+            <span class="whitespace-nowrap">{{ row.startedAt }}</span>
+          </div>
+        </template>
       </AppTable>
     </div>
 

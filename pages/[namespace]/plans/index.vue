@@ -445,7 +445,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
                 </div>
               </div>
               <UBadge :color="({ NEW:'blue', CONFIRMED:'primary', COMPLETED:'emerald', NO_SHOW:'amber' } as any)[b.status] || 'gray'" variant="subtle" size="xs">
-                {{ ({ NEW:'Новая', CONFIRMED:'Подтв.', COMPLETED:'Готово', NO_SHOW:'Не пришёл' } as any)[b.status] || b.status }}
+                {{ ({ NEW: t('plans.statusNew'), CONFIRMED: t('plans.statusConfirmed'), COMPLETED: t('plans.statusCompleted'), CANCELLED: t('plans.statusCancelled'), NO_SHOW: t('plans.statusNoShow') } as any)[b.status] || b.status }}
               </UBadge>
             </button>
           </template>
