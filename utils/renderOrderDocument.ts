@@ -2,7 +2,6 @@ import { buildCustomFieldsTable, buildMenuDocVariables, buildWarrantyTable, buil
 import { MENU_DOC_VARIABLES_BY_KEY } from '@/utils/menuDocVariables';
 import { smartOrderNumber } from '@/utils/orderNumber';
 import { phoneDigitsForLink } from '@/utils/phoneLinks';
-import { applyCustomDocVariables, parseCustomDocVariables } from '@/utils/customDocVariables';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';
 import type { MenuOrderMember } from '@/api/menu/order/members';
@@ -64,5 +63,5 @@ export async function renderOrderDocument(i: RenderOrderDocumentInput): Promise<
   }
   const linkTokens = new Set(Object.values(MENU_DOC_VARIABLES_BY_KEY.ORDER_LINK.localTokens));
   const content = await expandQrTokens(template.content, (name) => (linkTokens.has(name) ? variables.ORDER_LINK : undefined));
-  return applyCustomDocVariables(substituteMenuDocVariables(content, variables), parseCustomDocVariables(i.brand?.orderRules));
+  return substituteMenuDocVariables(content, variables);
 }

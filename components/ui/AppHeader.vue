@@ -625,17 +625,18 @@ const goHome = () => {
             </button>
           </nav>
 
-          <UButton
+          <!-- The same round icon button as in the compact header: no square tinted hover box. -->
+          <button
             v-if="showHelpButton"
+            type="button"
             data-tour="help-button"
-            variant="ghost"
-            size="sm"
+            class="hdr-icon-btn"
             :aria-label="t('guide.openGuide') || 'Open lota Гид'"
             :title="t('guide.openGuide') || 'Open lota Гид'"
             @click="handleHelpClick"
           >
-            <UIcon name="i-lucide-life-buoy" />
-          </UButton>
+            <UIcon name="i-lucide-life-buoy" class="h-[18px] w-[18px]" />
+          </button>
         </div>
 
         <div

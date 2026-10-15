@@ -6,7 +6,6 @@ import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
 import AppTable from '@/components/ui/AppTable.vue';
 import DocumentTemplateEditor from '@/components/menu/DocumentTemplateEditor.vue';
-import CustomDocVariablesCard from '@/components/menu/settings/CustomDocVariablesCard.vue';
 import type { MenuDocumentTemplate } from '@/api/menu/documenttemplate/list';
 import type { MenuBranch } from '@/api/menu/branch/list';
 
@@ -191,8 +190,6 @@ onMounted(() => {
       {{ error }}
     </div>
 
-    <CustomDocVariablesCard class="mb-3 flex-shrink-0" />
-
     <div class="flex-1 min-h-0">
       <AppTable soft :rows="templates" :columns="columns" :loading="loading" empty-icon="lucide:file-text">
         <template #name-data="{ row }">
@@ -220,50 +217,32 @@ onMounted(() => {
     <!-- Full-screen takeover, not a UModal -- see closeEditor()'s comment for
          why: an in-progress template is too easy to lose to a stray
          backdrop click or Esc press otherwise. -->
-    <div v-if="isEditorOpen" class="fixed inset-0 z-50 bg-white dark:bg-gray-900 flex flex-col">
-      <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-        <h3 class="text-lg font-semibold truncate">
+    <div v-if="isEditorOpen" class="fixed inset-0 z-50 flex flex-col bg-white dark:bg-gray-900">
+      <div class="flex flex-shrink-0 items-center gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+        <button type="button" class="at-btn" :disabled="saving" @click="closeEditor"><Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('common.back') }}</span></button>
+        <h3 class="min-w-0 flex-1 truncate text-lg font-semibold">
           {{ editingTemplate ? (t('menu.docTemplateEdit') || 'Edit template') : (t('menu.docTemplateNew') || 'New template') }}
         </h3>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <UButton color="gray" variant="ghost" :label="t('app.cancel')" :disabled="saving" @click="closeEditor" />
-          <UButton
-            color="primary"
-            :label="saving ? (t('app.loading') || 'Loading...') : (t('app.save') || 'Save')"
-            :loading="saving"
-            :disabled="!formName.trim() || saving"
-            @click="handleSave"
-          />
-          <UButton icon="lucide:x" size="sm" color="gray" variant="ghost" :disabled="saving" @click="closeEditor" />
-        </div>
+        <button type="button" class="at-btn at-btn--primary" :disabled="!formName.trim() || saving" @click="handleSave">
+          <Icon :name="saving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="{ 'animate-spin': saving }" />{{ t('app.save') || 'Save' }}
+        </button>
       </div>
 
-      <div class="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-        <div class="max-w-4xl mx-auto h-full flex flex-col space-y-3">
-          <div class="flex items-center gap-3 flex-shrink-0">
-            <UFormGroup :label="t('menu.docTemplateName') || 'Name'" required class="flex-1">
-              <UInput v-model="formName" size="sm" :placeholder="t('menu.docTemplateNamePlaceholder') || 'e.g. Act of completed work'" />
-            </UFormGroup>
-            <UFormGroup :label="t('menu.docTemplateCategory')" class="w-40">
-              <UInput v-model="formCategory" size="sm" maxlength="64" :placeholder="t('menu.docTemplateCategoryPlaceholder')" />
-            </UFormGroup>
-            <UFormGroup :label="t('menu.docTemplateBranch') || 'Branch'" class="w-56">
-              <USelectMenu
-                v-model="formBranchId"
-                :options="branchOptions"
-                value-attribute="value"
-                option-attribute="label"
-                size="sm"
-                :popper="{ strategy: 'fixed' }"
-              />
-            </UFormGroup>
-            <UFormGroup :label="t('menu.docTemplateStatus') || 'Status'">
-              <UToggle v-model="formIsActive" />
-            </UFormGroup>
-          </div>
-
-          <DocumentTemplateEditor :key="editingTemplate?.id || 'new'" v-model="formContent" class="flex-1 min-h-0" />
+      <div class="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">
+        <div class="mx-auto flex w-full max-w-6xl flex-shrink-0 flex-wrap items-end gap-3">
+          <UFormGroup :label="t('menu.docTemplateName') || 'Name'" required class="min-w-[14rem] flex-1">
+            <UInput v-model="formName" :placeholder="t('menu.docTemplateNamePlaceholder') || 'e.g. Act of completed work'" />
+          </UFormGroup>
+          <UFormGroup :label="t('menu.docTemplateCategory')" class="w-44">
+            <UInput v-model="formCategory" maxlength="64" :placeholder="t('menu.docTemplateCategoryPlaceholder')" />
+          </UFormGroup>
+          <UFormGroup :label="t('menu.docTemplateBranch') || 'Branch'" class="w-52">
+            <USelectMenu v-model="formBranchId" :options="branchOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+          </UFormGroup>
+          <label class="flex cursor-pointer items-center gap-2 pb-2 text-sm font-medium"><UToggle v-model="formIsActive" />{{ t('menu.docTemplateActive') || 'Active' }}</label>
         </div>
+
+        <DocumentTemplateEditor :key="editingTemplate?.id || 'new'" v-model="formContent" class="mx-auto min-h-0 w-full max-w-6xl flex-1" />
       </div>
     </div>
   </div>

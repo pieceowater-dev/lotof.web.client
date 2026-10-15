@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useI18n } from '@/composables/useI18n';
 import { MENU_DOC_VARIABLES, menuDocVariableToken } from '@/utils/menuDocVariables';
 
@@ -9,7 +9,7 @@ const props = defineProps<{ modelValue: string }>();
 const emit = defineEmits<{ (e: 'update:modelValue', v: string): void }>();
 
 const editorRef = ref<HTMLDivElement | null>(null);
-const isVariableMenuOpen = ref(false);
+const varSearch = ref('');
 
 // Seeded once on mount rather than kept in sync via a reactive binding --
 // re-applying innerHTML on every keystroke would reset the caret position.
@@ -37,7 +37,6 @@ function insertVariable(key: string) {
   editorRef.value?.focus();
   document.execCommand('insertText', false, menuDocVariableToken(key as any, locale.value));
   handleInput();
-  isVariableMenuOpen.value = false;
 }
 
 const variableGroups = [
@@ -46,66 +45,71 @@ const variableGroups = [
   { key: 'staff', labelKey: 'menu.docVarGroupStaff', fallback: 'Staff' },
   { key: 'brand', labelKey: 'menu.docVarGroupBrand', fallback: 'Business' },
 ] as const;
+
+// The palette, grouped and filtered by the search box.
+const paletteGroups = computed(() => {
+  const q = varSearch.value.trim().toLowerCase();
+  return variableGroups.map((g) => ({
+    ...g,
+    items: MENU_DOC_VARIABLES.filter((v) => v.group === g.key && (!q || (t(v.labelKey) || v.fallback).toLowerCase().includes(q))),
+  })).filter((g) => g.items.length);
+});
 </script>
 
 <template>
-  <div class="rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden flex flex-col">
-    <div class="flex flex-wrap items-center gap-0.5 p-1.5 border-b border-gray-200 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-900/40">
-      <UButton icon="lucide:bold" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorBold') || 'Bold'" @mousedown.prevent="exec('bold')" />
-      <UButton icon="lucide:italic" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorItalic') || 'Italic'" @mousedown.prevent="exec('italic')" />
-      <UButton icon="lucide:underline" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorUnderline') || 'Underline'" @mousedown.prevent="exec('underline')" />
-      <span class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-      <UButton label="H2" size="2xs" color="gray" variant="ghost" class="font-semibold" @mousedown.prevent="exec('formatBlock', 'H2')" />
-      <UButton label="H3" size="2xs" color="gray" variant="ghost" class="font-semibold" @mousedown.prevent="exec('formatBlock', 'H3')" />
-      <UButton label="P" size="2xs" color="gray" variant="ghost" @mousedown.prevent="exec('formatBlock', 'P')" />
-      <span class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-      <UButton icon="lucide:list" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorBulletList') || 'Bullet list'" @mousedown.prevent="exec('insertUnorderedList')" />
-      <UButton icon="lucide:list-ordered" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorNumberList') || 'Numbered list'" @mousedown.prevent="exec('insertOrderedList')" />
-      <span class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-      <UButton icon="lucide:align-left" size="2xs" color="gray" variant="ghost" @mousedown.prevent="exec('justifyLeft')" />
-      <UButton icon="lucide:align-center" size="2xs" color="gray" variant="ghost" @mousedown.prevent="exec('justifyCenter')" />
-      <UButton icon="lucide:align-right" size="2xs" color="gray" variant="ghost" @mousedown.prevent="exec('justifyRight')" />
-      <span class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
-      <UButton icon="lucide:minus" size="2xs" color="gray" variant="ghost" :title="t('menu.docEditorDivider') || 'Divider'" @mousedown.prevent="exec('insertHorizontalRule')" />
+  <div class="grid min-h-0 gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+    <!-- The page: formatting bar above, a sheet of paper to write on. -->
+    <div class="flex min-h-0 min-w-0 flex-col">
+      <div class="at-panel !rounded-2xl mb-3 flex flex-shrink-0 flex-wrap items-center gap-0.5 !p-1.5">
+        <button type="button" class="cp-icon" :title="t('menu.docEditorBold') || 'Bold'" @mousedown.prevent="exec('bold')"><Icon name="lucide:bold" class="h-4 w-4" /></button>
+        <button type="button" class="cp-icon" :title="t('menu.docEditorItalic') || 'Italic'" @mousedown.prevent="exec('italic')"><Icon name="lucide:italic" class="h-4 w-4" /></button>
+        <button type="button" class="cp-icon" :title="t('menu.docEditorUnderline') || 'Underline'" @mousedown.prevent="exec('underline')"><Icon name="lucide:underline" class="h-4 w-4" /></button>
+        <span class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
+        <button type="button" class="cp-icon text-xs font-bold" @mousedown.prevent="exec('formatBlock', 'H2')">H2</button>
+        <button type="button" class="cp-icon text-xs font-bold" @mousedown.prevent="exec('formatBlock', 'H3')">H3</button>
+        <button type="button" class="cp-icon text-xs font-bold" @mousedown.prevent="exec('formatBlock', 'P')">P</button>
+        <span class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
+        <button type="button" class="cp-icon" :title="t('menu.docEditorBulletList') || 'Bullet list'" @mousedown.prevent="exec('insertUnorderedList')"><Icon name="lucide:list" class="h-4 w-4" /></button>
+        <button type="button" class="cp-icon" :title="t('menu.docEditorNumberList') || 'Numbered list'" @mousedown.prevent="exec('insertOrderedList')"><Icon name="lucide:list-ordered" class="h-4 w-4" /></button>
+        <span class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
+        <button type="button" class="cp-icon" @mousedown.prevent="exec('justifyLeft')"><Icon name="lucide:align-left" class="h-4 w-4" /></button>
+        <button type="button" class="cp-icon" @mousedown.prevent="exec('justifyCenter')"><Icon name="lucide:align-center" class="h-4 w-4" /></button>
+        <button type="button" class="cp-icon" @mousedown.prevent="exec('justifyRight')"><Icon name="lucide:align-right" class="h-4 w-4" /></button>
+        <span class="mx-1 h-5 w-px bg-gray-200 dark:bg-gray-700" />
+        <button type="button" class="cp-icon" :title="t('menu.docEditorDivider') || 'Divider'" @mousedown.prevent="exec('insertHorizontalRule')"><Icon name="lucide:minus" class="h-4 w-4" /></button>
+      </div>
 
-      <div class="ml-auto relative">
-        <UButton
-          icon="lucide:braces"
-          size="2xs"
-          color="primary"
-          variant="soft"
-          :label="t('menu.docEditorInsertVariable') || 'Insert variable'"
-          @mousedown.prevent="isVariableMenuOpen = !isVariableMenuOpen"
-        />
+      <div class="min-h-0 flex-1 overflow-y-auto rounded-2xl bg-gray-100 p-3 sm:p-6 dark:bg-gray-950/60">
         <div
-          v-if="isVariableMenuOpen"
-          class="absolute right-0 top-full mt-1 z-20 w-64 max-h-80 overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-lg py-1"
-        >
-          <template v-for="group in variableGroups" :key="group.key">
-            <div class="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-              {{ t(group.labelKey) || group.fallback }}
-            </div>
-            <button
-              v-for="v in MENU_DOC_VARIABLES.filter((x) => x.group === group.key)"
-              :key="v.key"
-              type="button"
-              class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800/60"
-              @mousedown.prevent="insertVariable(v.key)"
-            >
-              <span>{{ t(v.labelKey) || v.fallback }}</span>
-              <span class="text-[10px] font-mono text-gray-400 dark:text-gray-500 flex-shrink-0">{{ menuDocVariableToken(v.key, locale) }}</span>
-            </button>
-          </template>
-        </div>
+          ref="editorRef"
+          class="prose prose-sm mx-auto min-h-[60vh] w-full max-w-[820px] rounded-lg bg-white px-6 py-8 text-sm leading-relaxed text-gray-900 shadow-sm ring-1 ring-black/5 focus:outline-none sm:px-12 sm:py-10 dark:prose-invert"
+          contenteditable="true"
+          @input="handleInput"
+        />
       </div>
     </div>
 
-    <div
-      ref="editorRef"
-      class="flex-1 min-h-[280px] overflow-y-auto px-4 py-3 text-sm leading-relaxed focus:outline-none prose prose-sm dark:prose-invert max-w-none"
-      contenteditable="true"
-      @input="handleInput"
-      @mousedown="isVariableMenuOpen = false"
-    />
+    <!-- Variables: tap one to put it where the cursor is. The sheet keeps focus (mousedown is not allowed to take it). -->
+    <aside class="at-panel flex min-h-0 flex-col !p-3 lg:max-h-full">
+      <div class="mb-2 text-sm font-semibold">{{ t('menu.docEditorInsertVariable') || 'Insert variable' }}</div>
+      <p class="mb-2 text-xs text-gray-500">{{ t('menu.docVarsHint') || 'Click a field to insert it at the cursor. It is replaced with the order data when printing.' }}</p>
+      <UInput v-model="varSearch" size="sm" icon="lucide:search" :placeholder="t('common.search')" class="mb-2" />
+      <div class="min-h-0 flex-1 space-y-3 overflow-y-auto">
+        <section v-for="group in paletteGroups" :key="group.key">
+          <div class="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ t(group.labelKey) || group.fallback }}</div>
+          <div class="flex flex-wrap gap-1.5">
+            <button
+              v-for="v in group.items"
+              :key="v.key"
+              type="button"
+              class="pill-filter !px-2.5 !py-1 !text-xs"
+              :title="menuDocVariableToken(v.key, locale)"
+              @mousedown.prevent="insertVariable(v.key)"
+            >{{ t(v.labelKey) || v.fallback }}</button>
+          </div>
+        </section>
+        <p v-if="!paletteGroups.length" class="py-4 text-center text-sm text-gray-400">{{ t('app.noSearchResults') }}</p>
+      </div>
+    </aside>
   </div>
 </template>

@@ -24,7 +24,6 @@ import OrderFlowPanel from '@/components/menu/OrderFlowPanel.vue';
 import OrderCalls from '@/components/menu/OrderCalls.vue';
 import OrderNotes from '@/components/menu/OrderNotes.vue';
 import OrderExtras from '@/components/menu/OrderExtras.vue';
-import { applyCustomDocVariables, parseCustomDocVariables } from '@/utils/customDocVariables';
 import { useOrderStages } from '@/composables/useOrderStages';
 import type { MenuOrder } from '@/api/menu/order/list';
 import type { MenuOrderItem } from '@/api/menu/order/items';

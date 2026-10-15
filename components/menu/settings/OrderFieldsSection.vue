@@ -5,7 +5,8 @@ import { useMenuToken } from '@/composables/useMenuToken';
 import { useConfirm } from '@/composables/useConfirm';
 import { logError } from '@/utils/logger';
 import { getErrorMessage } from '@/utils/types/errors';
-import AppTable from '@/components/ui/AppTable.vue';
+import AppSkeleton from '@/components/ui/AppSkeleton.vue';
+import OrderFieldInput from '@/components/menu/OrderFieldInput.vue';
 import type { MenuOrderField, OrderFieldDataType } from '@/api/menu/orderfield/list';
 
 const { t } = useI18n();
@@ -35,6 +36,12 @@ const sourceOptions = computed(() => [
 ]);
 const isList = (ty: string) => ty === 'SELECT' || ty === 'MULTISELECT';
 const typeLabel = (type: string) => typeOptions.value.find((o) => o.value === type)?.label || type;
+
+const TYPE_ICONS: Record<string, string> = {
+  TEXT: 'lucide:type', TEXTAREA: 'lucide:align-left', NUMBER: 'lucide:hash', BOOLEAN: 'lucide:toggle-left',
+  DATE: 'lucide:calendar', DATETIME: 'lucide:calendar-clock', SELECT: 'lucide:list', MULTISELECT: 'lucide:list-checks', HEADING: 'lucide:heading',
+};
+const typeIcon = (ty: string) => TYPE_ICONS[ty] || 'lucide:type';
 
 const columns = computed(() => [
   { key: 'label', label: t('menu.orderFieldLabel') || 'Name' },
@@ -109,6 +116,20 @@ function openEdit(row: MenuOrderField) {
 const parsedOptions = computed(() =>
   form.optionsText.split('\n').map((o) => o.trim()).filter(Boolean)
 );
+// The field being edited, as the order form would receive it (drives the live preview).
+const previewField = computed<MenuOrderField>(() => ({
+  id: 'preview',
+  label: form.label,
+  dataType: form.dataType,
+  isRequired: form.isRequired,
+  options: isList(form.dataType) && form.source === 'STATIC' ? parsedOptions.value : [],
+  viewOrder: 0,
+  isActive: true,
+  defaultValue: form.defaultValue,
+  placeholder: form.placeholder,
+  hint: form.hint,
+  source: isList(form.dataType) ? (form.source as any) : 'STATIC',
+}));
 const isFormValid = computed(() =>
   form.label.trim().length > 0 && (!isList(form.dataType) || form.source !== 'STATIC' || parsedOptions.value.length > 0)
 );
@@ -181,32 +202,42 @@ onMounted(load);
       {{ error }}
     </div>
 
-    <div class="flex-1 min-h-0">
-      <AppTable soft :rows="fields" :columns="columns" :loading="loading" empty-icon="lucide:list-plus">
-        <template #label-data="{ row }">
-          <button type="button" class="font-medium text-gray-900 dark:text-gray-100 hover:text-primary-600 dark:hover:text-primary-400 text-left" @click="openEdit(row)">
-            {{ row.label }}
-          </button>
-        </template>
-        <template #dataType-data="{ row }">
-          <span class="text-gray-600 dark:text-gray-300">{{ typeLabel(row.dataType) }}</span>
-        </template>
-        <template #isRequired-data="{ row }">
-          <UIcon v-if="row.isRequired" name="lucide:check" class="w-4 h-4 text-primary-600" />
-          <span v-else class="text-gray-400">—</span>
-        </template>
-        <template #isActive-data="{ row }">
-          <UBadge :color="row.isActive ? 'primary' : 'gray'" variant="subtle">
-            {{ row.isActive ? (t('menu.docTemplateActive') || 'Active') : (t('menu.docTemplateInactive') || 'Inactive') }}
-          </UBadge>
-        </template>
-        <template #actions-data="{ row }">
-          <div class="flex items-center gap-1">
-            <UButton icon="lucide:pencil" size="2xs" color="gray" variant="ghost" @click="openEdit(row)" />
-            <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete(row)" />
+    <div class="min-h-0 flex-1 overflow-y-auto">
+      <AppSkeleton v-if="loading && !fields.length" variant="cards" :rows="3" />
+      <div v-else-if="!fields.length" class="at-panel flex flex-col items-center gap-2 !p-8 text-center text-sm text-gray-500">
+        <Icon name="lucide:list-plus" class="h-8 w-8 opacity-50" />{{ t('menu.orderFieldsEmpty') || 'No fields yet' }}
+      </div>
+      <!-- A field is shown the way the order form will show it: real control, read-only. -->
+      <div v-else class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div
+          v-for="f in fields"
+          :key="f.id"
+          class="at-panel group flex cursor-pointer flex-col gap-3 !p-4 transition hover:-translate-y-0.5"
+          :class="f.isActive ? '' : 'opacity-60'"
+          role="button"
+          tabindex="0"
+          @click="openEdit(f)"
+          @keydown.enter="openEdit(f)"
+        >
+          <div class="flex items-start gap-2.5">
+            <span class="icon-tile !h-9 !w-9 flex-shrink-0"><Icon :name="typeIcon(f.dataType)" class="h-4 w-4" /></span>
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-semibold text-gray-900 dark:text-white">{{ f.label }}</div>
+              <div class="flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
+                <span>{{ typeLabel(f.dataType) }}</span>
+                <span v-if="f.isRequired" class="at-chip !px-1.5 !py-0 !text-[11px]">{{ t('menu.orderFieldRequired') || 'Required' }}</span>
+                <span v-if="!f.isActive" class="at-chip !px-1.5 !py-0 !text-[11px]">{{ t('menu.docTemplateInactive') || 'Inactive' }}</span>
+              </div>
+            </div>
+            <div class="flex flex-shrink-0 items-center opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100" @click.stop>
+              <button type="button" class="cp-icon" :aria-label="t('common.delete')" @click="handleDelete(f)"><Icon name="lucide:trash-2" class="h-4 w-4 text-red-500" /></button>
+            </div>
           </div>
-        </template>
-      </AppTable>
+          <div v-if="f.dataType !== 'HEADING'" class="pointer-events-none" aria-hidden="true">
+            <OrderFieldInput :field="f" :model-value="f.defaultValue || ''" disabled />
+          </div>
+        </div>
+      </div>
     </div>
 
     <UModal class="at-modal" v-model="isModalOpen" :ui="{ ...atModalUi, width: 'sm:max-w-md' }">
@@ -218,6 +249,16 @@ onMounted(load);
         </template>
 
         <div class="space-y-4">
+          <!-- Live preview: the field exactly as the order form will show it. -->
+          <div class="rounded-2xl bg-gray-50 p-4 dark:bg-gray-800/40">
+            <div class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-gray-400">{{ t('menu.orderFieldPreview') || 'Preview' }}</div>
+            <div class="pointer-events-none" aria-hidden="true">
+              <OrderFieldInput v-if="form.dataType === 'HEADING'" :field="previewField" model-value="" />
+              <UFormGroup v-else :label="form.label.trim() || (t('menu.orderFieldLabel') || 'Name')" :required="form.isRequired" :help="form.hint || undefined">
+                <OrderFieldInput :field="previewField" :model-value="form.defaultValue" disabled />
+              </UFormGroup>
+            </div>
+          </div>
           <UFormGroup :label="t('menu.orderFieldLabel') || 'Name'" required>
             <UInput v-model="form.label" :placeholder="t('menu.orderFieldLabelPlaceholder') || 'e.g. Serial number'" :ui="{ rounded: 'rounded-xl' }" />
           </UFormGroup>
