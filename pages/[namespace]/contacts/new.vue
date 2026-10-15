@@ -869,7 +869,8 @@ useHead(() => ({
 </script>
 
 <template>
-  <div class="at-scope ct-scope at-bg h-full overflow-y-auto">
+  <!-- -mt-20/pt-20: the layout pads <main> by 5rem under the floating header; the page background must run under it, or a white strip cuts the scrolling content -->
+  <div class="at-scope ct-scope at-bg -mt-20 h-[calc(100%+5rem)] overflow-y-auto pt-20">
     <!-- Header -->
     <div class="cn-head bg-white/70 dark:bg-[#141414]/70 backdrop-blur-sm">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

@@ -13,6 +13,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import { FilterPaginationLengthEnum } from '@gql-hub';
 import CreateOrderModal from '@/components/menu/CreateOrderModal.vue';
 import OrderDetailModal from '@/components/menu/OrderDetailModal.vue';
+import OrderStatusPicker from '@/components/menu/OrderStatusPicker.vue';
 import MyOrderCards, { type CardFilter } from '@/components/menu/MyOrderCards.vue';
 import type { CreateOrderPrefill } from '@/utils/orderPrefill';
 import { formatDisplayPhoneUniversal } from '@/utils/phone';
@@ -922,14 +923,21 @@ const cardsRefreshKey = ref(0);
 const creatingOrder = ref(false);
 const updatingStatusId = ref<string | null>(null);
 
-async function handleStatusChange(order: MenuOrder, status: string) {
-  if (order.status === status) return;
+async function handleStatusChange(order: MenuOrder, status: string, stageId?: string) {
+  if (order.status === status && (!stageId || stageId === order.stageId)) return;
+  // A stage that needs order fields first is handled in the order card, where those fields can be filled.
+  const target = stageId ? stageById(stageId) : undefined;
+  if (target?.requiredFieldIds?.length && stageId !== order.stageId) {
+    useToast().add({ title: t('menu.stageFillFirstShort') || 'Fill in the required fields first', color: 'amber' });
+    openDetail(order);
+    return;
+  }
   updatingStatusId.value = order.id;
   const fromStatus = order.status;
   try {
     const menuToken = await getToken();
     const { menuUpdateOrderStatus } = await import('@/api/menu/order/updateStatus');
-    const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, order.id, status);
+    const updated = await menuUpdateOrderStatus(menuToken, nsSlug.value, order.id, status, stageId);
     const idx = orders.value.findIndex((o) => o.id === updated.id);
     if (idx !== -1) orders.value[idx] = updated;
     useAnalytics().track('menu_order_status_changed', { orderId: order.id, fromStatus, toStatus: status });
@@ -1204,43 +1212,11 @@ async function handleCreateOrder(payload: any) {
                never opened — stopping one level further out still prevents
                the row's own @select from firing without eating the click
                UDropdown needs. -->
-          <span v-if="nextStatuses(row.status, row.type).length" @click.stop>
-          <UDropdown :items="statusMenuItems(row)" :popper="{ placement: 'bottom-start', strategy: 'fixed' }">
-            <button
-              type="button"
-              class="inline-flex items-center gap-1 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50"
-              :disabled="updatingStatusId === row.id"
-            >
-              <span
-                class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
-                :style="{ backgroundColor: stageColor(row) }"
-              >
-                <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
-                {{ stageLabel(row) }}
-              </span>
-              <Icon v-if="row.isUrgent" name="lucide:flame" class="w-3.5 h-3.5 text-rose-500" />
-              <Icon v-if="rowOverdue(row)" name="lucide:alarm-clock" class="w-3.5 h-3.5 text-amber-500" />
-              <Icon
-                :name="updatingStatusId === row.id ? 'lucide:loader-2' : 'lucide:chevron-down'"
-                class="w-3 h-3 text-gray-400"
-                :class="{ 'animate-spin': updatingStatusId === row.id }"
-              />
-            </button>
-            <template #item="{ item }">
-              <span class="flex items-center gap-2 w-full">
-                <span class="h-2 w-2 rounded-full flex-shrink-0" :style="{ backgroundColor: statusBadgeStyle(item.status).bg }" />
-                <span class="truncate">{{ item.label }}</span>
-              </span>
-            </template>
-          </UDropdown>
-          </span>
-          <span
-            v-else
-            class="inline-flex items-center gap-1 rounded-full pl-1.5 pr-2 py-0.5 text-white text-xs font-semibold"
-            :style="{ backgroundColor: stageColor(row) }"
-          >
-            <Icon :name="statusBadgeStyle(row.status).icon" class="w-3 h-3" />
-            {{ stageLabel(row) }}
+          <!-- The wrapper stops the click here so opening the menu does not also open the order. -->
+          <span class="inline-flex items-center gap-1.5" @click.stop>
+            <OrderStatusPicker compact :order="row" :status-label="statusLabel" :updating="updatingStatusId === row.id" @pick="(st, stageId) => handleStatusChange(row, st, stageId)" />
+            <Icon v-if="row.isUrgent" name="lucide:flame" class="h-3.5 w-3.5 text-rose-500" />
+            <Icon v-if="rowOverdue(row)" name="lucide:alarm-clock" class="h-3.5 w-3.5 text-amber-500" />
           </span>
         </template>
         <template #totalAmount-data="{ row }">

@@ -45,7 +45,7 @@ const activeTabModel = computed({
       <button
         v-if="canCreateRoute"
         type="button"
-        class="pill-outline flex-shrink-0"
+        class="pill-ghost"
         :aria-label="t('app.route.add') || 'Добавить маршрут'"
         :title="t('app.route.add') || 'Добавить маршрут'"
         @click="emit('add-route')"

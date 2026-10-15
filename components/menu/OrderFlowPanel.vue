@@ -13,6 +13,7 @@ import type { MenuOrder } from '@/api/menu/order/list';
 // Time in status, urgency, the price stage and the payments journal of one
 // order, as soft panels in the order card.
 const props = defineProps<{
+  tab?: string;
   order: MenuOrder;
   nsSlug: string;
   getToken: () => Promise<string>;
@@ -114,7 +115,7 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
        after the totals) instead of sitting together at the top. -->
   <div class="contents">
     <!-- timing + urgency -->
-    <div class="order-1 flex items-center gap-1.5 flex-wrap">
+    <div v-show="!tab || tab === 'main'" class="order-1 flex items-center gap-1.5 flex-wrap">
       <span v-if="inStatus !== null && !order.closedAt" class="at-chip !text-xs" :class="overdue ? '!bg-rose-500/10 !text-rose-600' : ''">
         <Icon name="lucide:timer" class="w-3.5 h-3.5" />{{ t('menu.inStatusFor') }} {{ formatDuration(inStatus) }}<template v-if="overdue"> · {{ t('menu.overdue') }}</template>
       </span>
@@ -125,7 +126,7 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
     </div>
 
     <!-- price stage -->
-    <div v-if="priceStageEnabled" class="order-[7] at-panel !p-4 space-y-3">
+    <div v-if="priceStageEnabled" v-show="!tab || tab === 'main'" class="order-[7] at-panel !p-4 space-y-3">
       <div class="flex items-center gap-2">
         <div class="at-h2 flex-1">{{ t('menu.priceStageTitle') }}</div>
         <span v-if="order.priceApprovedAt" class="rounded-full bg-accent-100 px-2.5 py-1 text-xs font-semibold text-accent-700 dark:bg-accent-500/20 dark:text-blue-300">{{ t('menu.priceApproved') }}</span>
@@ -144,7 +145,7 @@ const methods: Array<{ key: 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER'; icon: string
     </div>
 
     <!-- payments journal -->
-    <div class="order-[10] at-panel !p-4 space-y-3">
+    <div v-show="!tab || tab === 'pay'" class="order-[10] at-panel !p-4 space-y-3">
       <div class="flex items-center gap-2 flex-wrap">
         <div class="at-h2 flex-1">{{ t('menu.paymentsTitle') }}</div>
         <span class="at-chip !text-xs">{{ t('menu.paidOf') }} {{ money(order.paidAmount) }} / {{ money(net) }}</span>

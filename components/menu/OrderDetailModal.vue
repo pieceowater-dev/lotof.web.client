@@ -131,6 +131,18 @@ function sourceTagLabel(tag: string): string {
 }
 
 const items = ref<MenuOrderItem[]>([]);
+// Order card tabs; every block carries a numeric `order` (its place in the column), and
+// the number decides its tab: 1-9 the order, 10 payments, 11-13 communication, 14+ related.
+const ORDER_TABS = [
+  { key: 'main', icon: 'lucide:receipt-text', label: 'menu.tabOrder' },
+  { key: 'pay', icon: 'lucide:wallet', label: 'menu.tabPayment' },
+  { key: 'talk', icon: 'lucide:messages-square', label: 'menu.tabTalk' },
+  { key: 'more', icon: 'lucide:layers', label: 'menu.tabRelated' },
+] as const;
+type OrderTab = typeof ORDER_TABS[number]['key'];
+const tab = ref<OrderTab>('main');
+watch(() => props.order?.id, () => { tab.value = 'main'; });
+function tabOf(n: number): OrderTab { return n <= 9 ? 'main' : n === 10 ? 'pay' : n <= 13 ? 'talk' : 'more'; }
 const history = ref<MenuOrderHistoryEntry[]>([]);
 const members = ref<MenuOrderMember[]>([]);
 const loading = ref(false);
@@ -1255,7 +1267,17 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
 
         <!-- Main content: scrolls independently of the side rail -->
         <div class="flex-1 min-w-0 h-full overflow-y-auto p-4 lg:p-5 flex flex-col gap-5 pb-8">
+          <!-- Tabs: one screen = one job. The order itself, the money, the talking, and the rest. -->
+          <div class="order-[0] -mx-1 flex-shrink-0 overflow-x-auto px-1 no-scrollbar">
+            <div class="at-seg">
+              <button v-for="tb in ORDER_TABS" :key="tb.key" type="button" class="at-seg__btn" :class="tab === tb.key ? 'at-seg__btn--on' : ''" @click="tab = tb.key">
+                <Icon :name="tb.icon" class="h-4 w-4 flex-shrink-0" /><span>{{ t(tb.label) }}</span>
+              </button>
+            </div>
+          </div>
+
           <OrderFlowPanel
+            :tab="tab"
             :order="order"
             :ns-slug="nsSlug"
             :get-token="getToken"
@@ -1266,13 +1288,13 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
             @updated="(o) => emit('statusChanged', o)"
           />
 
-          <OrderCalls class="order-[11]" :order-id="order.id" :client-id="order.clientId" />
+          <OrderCalls v-show="tab === 'talk'" class="order-[11]" :order-id="order.id" :client-id="order.clientId" />
 
-          <OrderNotes class="order-[12]" :order-id="order.id" :ns-slug="nsSlug" :get-token="getToken" :format-date="formatDate" :member-display-name="memberDisplayName" />
+          <OrderNotes v-show="tab === 'talk'" class="order-[12]" :order-id="order.id" :ns-slug="nsSlug" :get-token="getToken" :format-date="formatDate" :member-display-name="memberDisplayName" />
 
-          <OrderExtras class="order-[13]" :order="order" :ns-slug="nsSlug" :get-token="getToken" @updated="(o) => emit('statusChanged', o)" />
+          <OrderExtras v-show="tab === 'talk'" class="order-[13]" :order="order" :ns-slug="nsSlug" :get-token="getToken" @updated="(o) => emit('statusChanged', o)" />
 
-          <div class="order-[3] empty:hidden">
+          <div v-show="tabOf(3) === tab" class="order-[3] empty:hidden">
           <!-- Contact card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -1328,7 +1350,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[4] empty:hidden">
+          <div v-show="tabOf(4) === tab" class="order-[4] empty:hidden">
           <!-- lota Contacts integration: link an existing match found by
                phone, or create one from this order. Once a client is
                already linked, the name in Contact Details above is the
@@ -1367,7 +1389,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[5] empty:hidden">
+          <div v-show="tabOf(5) === tab" class="order-[5] empty:hidden">
           <!-- Delivery / pickup card -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-2.5">
             <div class="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
@@ -1423,7 +1445,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[2] empty:hidden">
+          <div v-show="tabOf(2) === tab" class="order-[2] empty:hidden">
           <!-- Warranty case banner -->
           <div
             v-if="order.warrantyOfOrderId"
@@ -1441,7 +1463,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[6] empty:hidden">
+          <div v-show="tabOf(6) === tab" class="order-[6] empty:hidden">
           <!-- Custom order fields -->
           <div v-if="visibleOrderFields.length" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between">
@@ -1485,7 +1507,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[8] empty:hidden">
+          <div v-show="tabOf(8) === tab" class="order-[8] empty:hidden">
           <!-- Products -->
           <div>
             <div class="flex items-center justify-between mb-2">
@@ -1656,7 +1678,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[15] empty:hidden">
+          <div v-show="tabOf(15) === tab" class="order-[15] empty:hidden">
           <!-- Warranty -->
           <div v-if="warrantyLines.length || order.status === 'COMPLETED'" class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -1691,7 +1713,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[14] empty:hidden">
+          <div v-show="tabOf(14) === tab" class="order-[14] empty:hidden">
           <!-- Linked tasks (lota Issues) -->
           <div class="rounded-xl ring-1 ring-gray-200 dark:ring-gray-800 p-4 space-y-3">
             <div class="flex items-center justify-between gap-2">
@@ -1720,7 +1742,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[9] empty:hidden">
+          <div v-show="tabOf(9) === tab" class="order-[9] empty:hidden">
           <!-- Discount configurator: split out of the items table footer since
                it needs a type selector (+ a product picker for item-scoped
                types), not just a bare number field. -->
@@ -1758,7 +1780,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[16] empty:hidden">
+          <div v-show="tabOf(16) === tab" class="order-[16] empty:hidden">
           <!-- Participants -->
           <div>
             <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{{ t('menu.participants') || 'Participants' }}</div>
@@ -1795,7 +1817,7 @@ async function printWithTemplate(template: MenuDocumentTemplate) {
           </div>
           </div>
 
-          <div class="order-[17] empty:hidden">
+          <div v-show="tabOf(17) === tab" class="order-[17] empty:hidden">
           <!-- Customer order history: other orders from this same phone —
                click a number to switch this modal to that order. -->
           <div v-if="!isEditingOrder && customerOrders.length">

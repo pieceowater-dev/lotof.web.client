@@ -207,7 +207,8 @@ function onCopyToClipboard(text: string) {
 </script>
 
 <template>
-  <div class="at-scope ct-scope at-bg h-full overflow-y-auto">
+  <!-- -mt-20/pt-20: the layout pads <main> by 5rem under the floating header; the page background must run under it, or a white strip cuts the scrolling content -->
+  <div class="at-scope ct-scope at-bg -mt-20 h-[calc(100%+5rem)] overflow-y-auto pt-20">
     <!-- Page Header -->
     <ContactHeader
       :client="client"

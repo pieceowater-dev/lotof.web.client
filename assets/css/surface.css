@@ -521,6 +521,15 @@
 .dark .ck-btn:hover { background: rgba(255, 255, 255, 0.16); }
 
 /* ---- Outline pill (secondary "add / create" actions next to chips): transparent, brand hairline ring ---- */
+.pill-ghost {
+  display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 0.4rem; white-space: nowrap; border-radius: 9999px;
+  padding: 0.5rem 0.9rem; font-size: 0.875rem; font-weight: 500; color: #64748b; background: transparent;
+  border: 1.5px dashed rgba(100, 116, 139, 0.45);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.pill-ghost:hover { color: #1d4ed8; border-color: rgba(37, 99, 235, 0.55); background: rgba(37, 99, 235, 0.05); }
+.dark .pill-ghost { color: #a3a3a3; border-color: rgba(255, 255, 255, 0.25); }
+.dark .pill-ghost:hover { color: #bfdbfe; border-color: rgba(147, 197, 253, 0.6); }
 .pill-outline {
   display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; gap: 0.4rem; white-space: nowrap; border-radius: 9999px;
   padding: 0.5rem 1rem; font-size: 0.875rem; font-weight: 600; color: #1d4ed8; background: transparent;
