@@ -169,3 +169,22 @@ export function toneColors(v: ThemeVars, name: string): { bg: string; fg: string
 export function isDark(bg: string): boolean {
   return lum(bg) < 0.25;
 }
+
+/** Normalises user input like "2563EB", "#abc" to "#rrggbb"; '' when it is not a colour. */
+export function normalizeHex(input: string): string {
+  let h = (input || '').trim().replace(/^#/, '').toLowerCase();
+  if (!/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(h)) return '';
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  return '#' + h;
+}
+
+/** Nearest shade of `hex` that reads on `bg` (WCAG AA 4.5:1 for links and text); the hue is kept. */
+export function readableShade(hex: string, bg: string): string {
+  if (contrast(hex, bg) >= 4.5) return hex;
+  const toward = lum(bg) < 0.4 ? '#ffffff' : '#000000';
+  for (let p = 5; p <= 100; p += 5) {
+    const c = mix(toward, hex, p);
+    if (contrast(c, bg) >= 4.5) return c;
+  }
+  return toward;
+}

@@ -229,6 +229,7 @@ const mediaCards = [
         <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.colors') }}</h3>
         <UFormGroup :label="t('pages.design.accent')" :help="t('pages.design.accentHint')">
           <ColorSwatch v-model="vars.accent" :palette="SITE_ACCENTS" />
+          <PagesBrandColor v-model="vars.accent" :bg="vars.bg" class="mt-3" />
         </UFormGroup>
         <UFormGroup :label="t('pages.design.background')" :help="t('pages.design.backgroundHint')">
           <div class="flex flex-wrap gap-2">

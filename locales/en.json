@@ -4602,7 +4602,12 @@
         "more": "More",
         "quote": "A quote in the theme's style",
         "note": "Note: a notice block in the theme colour."
-      }
+      },
+      "hexLabel": "Colour as HEX",
+      "contrastButton": "Button text: {n}:1",
+      "contrastLinks": "Links on the background: {n}:1",
+      "useReadable": "Use readable {hex}",
+      "hexInvalid": "Use a colour like #2563eb"
     },
     "domains": {
       "title": "Domains",
