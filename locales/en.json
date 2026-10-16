@@ -4653,7 +4653,7 @@
       "connectJson": "Claude Desktop and other clients (JSON config)",
       "connectNote": "ChatGPT: in developer mode add an MCP connector with this address and an Authorization header.",
       "tools": "What the AI can do",
-      "toolsText": "List sites and pages, create and edit pages from Markdown, upload images, run the pre-publish check, publish and roll back (only with the Publish permission), manage redirects.",
+      "toolsText": "Everything the editor can do except the team and its permissions: build or rebuild sites from scratch, change the design and menu, write pages and categories from Markdown, upload images, redirects, the pre-publish check, publishing, rollback and domains (publishing, domains and deleting a site need the Publish permission).",
       "hideRevoked": "Hide revoked",
       "showRevoked": "Show revoked ({n})"
     },
