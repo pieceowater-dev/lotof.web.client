@@ -140,6 +140,20 @@ function statusMeta(s: PagesSite) {
       </template>
     </PageHeader>
 
+    <section v-if="!booting && isOwner" data-tour="pages-ai" class="rounded-3xl bg-white ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+      <button type="button" class="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left sm:px-5" :aria-expanded="aiOpen" @click="aiOpen = !aiOpen">
+        <span class="icon-tile !h-10 !w-10 flex-shrink-0"><UIcon name="lucide:sparkles" class="h-5 w-5" /></span>
+        <span class="min-w-0 flex-1">
+          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.tabs.integrations') }}</span>
+          <span class="mt-0.5 block text-sm text-gray-500 dark:text-gray-400">{{ t('pages.integrations.teaser') }}</span>
+        </span>
+        <UIcon name="lucide:chevron-down" class="h-5 w-5 flex-shrink-0 text-gray-400 transition-transform" :class="aiOpen && 'rotate-180'" />
+      </button>
+      <div v-if="aiOpen" class="border-t border-black/5 px-4 pb-4 pt-4 sm:px-5 dark:border-white/10">
+        <IntegrationsPanel :sites="sites" :ns-slug="nsSlug" />
+      </div>
+    </section>
+
     <AppSkeleton v-if="booting" variant="cards" :rows="3" />
 
     <EmptyState
@@ -182,20 +196,6 @@ function statusMeta(s: PagesSite) {
         </div>
       </NuxtLink>
     </div>
-
-    <section v-if="!booting && isOwner" data-tour="pages-ai" class="rounded-3xl bg-white ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
-      <button type="button" class="flex w-full items-center gap-3 rounded-3xl px-4 py-3.5 text-left sm:px-5" :aria-expanded="aiOpen" @click="aiOpen = !aiOpen">
-        <span class="icon-tile !h-10 !w-10 flex-shrink-0"><UIcon name="lucide:sparkles" class="h-5 w-5" /></span>
-        <span class="min-w-0 flex-1">
-          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.tabs.integrations') }}</span>
-          <span class="mt-0.5 block text-sm text-gray-500 dark:text-gray-400">{{ t('pages.integrations.teaser') }}</span>
-        </span>
-        <UIcon name="lucide:chevron-down" class="h-5 w-5 flex-shrink-0 text-gray-400 transition-transform" :class="aiOpen && 'rotate-180'" />
-      </button>
-      <div v-if="aiOpen" class="border-t border-black/5 px-4 pb-4 pt-4 sm:px-5 dark:border-white/10">
-        <IntegrationsPanel :sites="sites" :ns-slug="nsSlug" />
-      </div>
-    </section>
 
     <UModal v-model="createOpen" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
       <UCard :ui="atCardUiFit">
