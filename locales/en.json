@@ -4653,7 +4653,9 @@
       "connectJson": "Claude Desktop and other clients (JSON config)",
       "connectNote": "ChatGPT: in developer mode add an MCP connector with this address and an Authorization header.",
       "tools": "What the AI can do",
-      "toolsText": "List sites and pages, create and edit pages from Markdown, upload images, run the pre-publish check, publish and roll back (only with the Publish permission), manage redirects."
+      "toolsText": "List sites and pages, create and edit pages from Markdown, upload images, run the pre-publish check, publish and roll back (only with the Publish permission), manage redirects.",
+      "hideRevoked": "Hide revoked",
+      "showRevoked": "Show revoked ({n})"
     },
     "tabs": {
       "categories": "Categories",

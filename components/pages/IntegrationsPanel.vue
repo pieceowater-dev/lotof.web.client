@@ -100,7 +100,9 @@ async function copy(text: string) {
 
 const fmt = (unix: number) => new Date(unix * 1000).toLocaleString(locale.value === 'kk' ? 'kk-KZ' : locale.value, { dateStyle: 'medium', timeStyle: 'short' });
 const isExpired = (tok: AccessToken) => tok.expiresAtUnix > 0 && tok.expiresAtUnix * 1000 < Date.now();
-const active = computed(() => tokens.value.filter(x => !x.revoked));
+const showRevoked = ref(false);
+const revokedCount = computed(() => tokens.value.filter(x => x.revoked).length);
+const visibleTokens = computed(() => (showRevoked.value ? tokens.value : tokens.value.filter(x => !x.revoked)));
 const siteName = (tok: AccessToken) => (tok.siteId ? (tok.siteId === props.site.id ? props.site.name : tok.siteId.slice(0, 8)) : t('pages.integrations.allSites'));
 
 const secretShown = computed(() => created.value?.secret || '<' + t('pages.integrations.createdTitle').toLowerCase() + '>');
@@ -132,9 +134,9 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
     </div>
 
     <div v-if="loading" class="py-4 text-sm text-gray-500">…</div>
-    <div v-else-if="!tokens.length" class="rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:bg-white/5 dark:text-gray-400">{{ t('pages.integrations.empty') }}</div>
+    <div v-else-if="!visibleTokens.length && !revokedCount" class="rounded-2xl bg-gray-50 px-4 py-6 text-center text-sm text-gray-500 dark:bg-white/5 dark:text-gray-400">{{ t('pages.integrations.empty') }}</div>
     <div v-else class="flex flex-col gap-2">
-      <div v-for="tok in tokens" :key="tok.id" class="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10" :class="(tok.revoked || isExpired(tok)) && 'opacity-60'">
+      <div v-for="tok in visibleTokens" :key="tok.id" class="flex flex-wrap items-center gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10" :class="(tok.revoked || isExpired(tok)) && 'opacity-60'">
         <span class="icon-tile !h-10 !w-10 flex-shrink-0"><UIcon name="lucide:key-round" class="h-5 w-5" /></span>
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
@@ -153,6 +155,10 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
         <button v-if="!tok.revoked" type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="revoke(tok)"><Icon name="lucide:ban" class="h-4 w-4" />{{ t('pages.integrations.revoke') }}</button>
       </div>
     </div>
+
+    <button v-if="revokedCount" type="button" class="self-start text-xs font-semibold text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200" @click="showRevoked = !showRevoked">
+      {{ showRevoked ? t('pages.integrations.hideRevoked') : t('pages.integrations.showRevoked', { n: revokedCount }) }}
+    </button>
 
     <UModal v-model="open" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }">
       <UCard :ui="atCardUiFit">
