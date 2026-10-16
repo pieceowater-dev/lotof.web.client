@@ -52,11 +52,11 @@ const parentPath = computed(() => {
   return p.path.slice(0, p.path.length - p.slug.length - 1);
 });
 
-const initialPage = computed(() => {
+const initialPage = computed<Record<string, any>>(() => {
   const p = page.value;
   if (!p) return {};
   return {
-    title: p.title, slug: p.slug, status: p.status === 'PAGE_READY' ? 'ready' : 'draft', lang: p.lang || '',
+    title: p.title, slug: p.slug, status: (p.status === 'PAGE_READY' ? 'ready' : 'draft') as 'ready' | 'draft', lang: p.lang || '',
     metaTitle: p.seo.title, metaDescription: p.seo.description, canonicalPath: p.seo.canonicalPath,
     ogImage: p.seo.ogImageUrl, noindex: p.seo.noindex,
   };

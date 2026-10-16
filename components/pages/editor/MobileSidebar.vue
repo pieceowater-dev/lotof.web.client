@@ -10,7 +10,7 @@
       >
         <Icon name="lucide:x" class="h-4 w-4" />
       </button>
-      <PagesEditorSidebarPanel v-bind="$attrs" />
+      <PagesEditorSidebarPanel v-bind="($attrs as any)" />
     </aside>
   </Teleport>
 </template>
