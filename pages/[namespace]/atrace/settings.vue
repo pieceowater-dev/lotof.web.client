@@ -136,7 +136,7 @@ onUnmounted(() => {
     >
       <template v-if="accessChecked && !accessDenied" #primary>
         <button type="button" class="at-btn at-btn--primary" @click="isInviteOpen = true">
-          <UIcon name="lucide:user-plus" class="h-4 w-4" /><span class="whitespace-nowrap">{{ t('app.sendInvite') || 'Send Invitation' }}</span>
+          <UIcon name="lucide:user-plus" class="h-4 w-4" /><span class="hidden whitespace-nowrap sm:inline">{{ t('app.sendInvite') || 'Send Invitation' }}</span><span class="sr-only sm:hidden">{{ t('app.sendInvite') || 'Send Invitation' }}</span>
         </button>
       </template>
       <template #actions>

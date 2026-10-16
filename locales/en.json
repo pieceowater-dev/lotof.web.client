@@ -4537,7 +4537,9 @@
     "changeDateMaster": "Change date / staff member",
     "bookingOpen": "Online booking is open",
     "phone": "Phone",
-    "notYourBooking": "This booking belongs to another client."
+    "notYourBooking": "This booking belongs to another client.",
+    "noBookingsForWeek": "No bookings this week",
+    "noBookingsForMonth": "No bookings this month"
   },
   "loyaltyExtras": {
     "section_tiers": "Tiers",

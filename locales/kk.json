@@ -3567,7 +3567,9 @@
     "changeDateMaster": "Күнін / шеберін өзгерту",
     "bookingOpen": "Онлайн жазылу ашық",
     "phone": "Телефон",
-    "notYourBooking": "Бұл жазылу басқа клиентке тиесілі."
+    "notYourBooking": "Бұл жазылу басқа клиентке тиесілі.",
+    "noBookingsForWeek": "Бұл аптада жазылулар жоқ",
+    "noBookingsForMonth": "Бұл айда жазылулар жоқ"
   },
   "landing": {
     "getStarted": "Бастау",

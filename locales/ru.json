@@ -3537,7 +3537,9 @@
     "changeDateMaster": "Изменить дату / мастера",
     "bookingOpen": "Онлайн-запись открыта",
     "phone": "Телефон",
-    "notYourBooking": "Эта запись принадлежит другому клиенту."
+    "notYourBooking": "Эта запись принадлежит другому клиенту.",
+    "noBookingsForWeek": "На этой неделе записей нет",
+    "noBookingsForMonth": "В этом месяце записей нет"
   },
   "goods": {
     "register": "Касса",

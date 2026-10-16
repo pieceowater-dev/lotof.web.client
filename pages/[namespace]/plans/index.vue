@@ -366,6 +366,8 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           ? 'border-primary-200 dark:border-primary-800 text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950/40'
           : 'border-gray-200 dark:border-gray-800 text-gray-500'"
         :title="autoRefresh ? (t('plans.liveOn') || 'Живые обновления включены') : (t('plans.liveOff') || 'Живые обновления выключены')"
+        :aria-label="autoRefresh ? (t('plans.liveOn') || 'Живые обновления включены') : (t('plans.liveOff') || 'Живые обновления выключены')"
+        :aria-pressed="autoRefresh"
         @click="autoRefresh = !autoRefresh"
       >
         <span v-if="autoRefresh" class="relative flex h-2 w-2">
@@ -427,7 +429,7 @@ watch(selectedLocationId, async () => { await loadLocationHours(); await loadBoo
           <div v-if="loading && !bookings.length" class="py-4"><AppSkeleton variant="list" :rows="3" /></div>
           <div v-else-if="!agendaGroups.length" class="py-14 text-center text-gray-500 dark:text-gray-400">
             <UIcon name="lucide:calendar-x" class="w-9 h-9 mx-auto mb-2 opacity-60" />
-            {{ t('plans.noBookingsForDay') || 'На этот день записей нет' }}
+            {{ view === 'day' ? t('plans.noBookingsForDay') : view === 'week' ? t('plans.noBookingsForWeek') : t('plans.noBookingsForMonth') }}
           </div>
           <template v-for="g in agendaGroups" :key="g.date">
             <div v-if="view !== 'day'" class="px-1 pt-2 text-xs font-semibold uppercase tracking-wide text-gray-500 first:pt-0">

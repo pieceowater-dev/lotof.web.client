@@ -449,11 +449,13 @@ watch(activeTab, (tb) => { if (tb === 'staff' && !members.value.length) loadStaf
                   </template>
 
                   <!-- "принимает записи как мастер" -->
-                  <UToggle
-                    v-if="row.canBeMaster"
-                    :model-value="row.isMasterOn" size="sm" :title="t('plans.asMaster') || 'мастер'"
-                    :disabled="row.role === 'MASTER' || !canManageStaff || roleSaving === row.member.userId"
-                    @update:model-value="(v: boolean) => setMemberIsMaster(row.member.userId, v)" />
+                  <label v-if="row.canBeMaster" class="flex flex-shrink-0 items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    <UToggle
+                      :model-value="row.isMasterOn" size="sm" :title="t('plans.asMaster') || 'мастер'"
+                      :disabled="row.role === 'MASTER' || !canManageStaff || roleSaving === row.member.userId"
+                      @update:model-value="(v: boolean) => setMemberIsMaster(row.member.userId, v)" />
+                    <span class="hidden sm:inline">{{ t('plans.asMaster') || 'мастер' }}</span>
+                  </label>
 
                   <!-- role -->
                   <UBadge v-if="row.isOwner" color="amber" variant="subtle" class="w-40 justify-center">{{ roleLabelRu.OWNER }}</UBadge>
