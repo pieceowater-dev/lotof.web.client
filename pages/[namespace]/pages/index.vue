@@ -39,44 +39,41 @@ onMounted(load);
 // ── create ──
 const createOpen = ref(false);
 const creating = ref(false);
-const form = reactive({ name: '', slug: '' });
-const slugTouched = ref(false);
-const slugError = ref('');
+const form = reactive({ name: '' });
 const techDomain = computed(() => sites.value[0]?.host?.split('.').slice(1).join('.') || (import.meta.dev ? 'pages.localhost' : 'pages.lota.tools'));
-// A short random suffix keeps auto-generated addresses unique ("kofeynya-x7k2"), so two businesses
-// naming their site "Кофейня" don't fight over the same address. Fixed per dialog so it stays put while typing.
+
+// The address is generated, never typed: transliterated name plus a short random code, so two businesses
+// naming their site "Кофейня" do not collide. The code is fixed per dialog so the preview does not flicker.
 const slugSuffix = ref('');
 const newSuffix = () => Math.random().toString(36).replace(/[^a-z0-9]/g, '').padEnd(4, '0').slice(0, 4);
-watch(() => form.name, (n) => {
-  if (slugTouched.value) return;
-  const base = slugifyText(n, 40);
-  form.slug = base ? `${base}-${slugSuffix.value}` : '';
-});
+const slug = computed(() => `${slugifyText(form.name, 40) || 'site'}-${slugSuffix.value}`);
+const previewUrl = computed(() => siteOrigin(`${slug.value}.${techDomain.value}`));
 
 function openCreate() {
-  form.name = ''; form.slug = ''; slugTouched.value = false; slugError.value = '';
+  form.name = '';
   slugSuffix.value = newSuffix();
   createOpen.value = true;
 }
 
-const slugValid = computed(() => /^[a-z0-9]([a-z0-9-]{1,61})[a-z0-9]$/.test(form.slug) && !form.slug.includes('--'));
-
 async function create() {
-  slugError.value = '';
-  if (!form.name.trim() || !slugValid.value) {
-    slugError.value = t('pages.sites.slugInvalid');
-    return;
-  }
+  if (!form.name.trim()) return;
   creating.value = true;
   try {
-    const site = await pagesApi.createSite(nsSlug.value, { name: form.name.trim(), slug: form.slug });
-    createOpen.value = false;
-    await navigateTo(`/${nsSlug.value}/pages/${site.id}`);
-  } catch (e: any) {
-    const msg = String(e?.response?.errors?.[0]?.message || '');
-    if (msg.includes('already taken')) slugError.value = t('pages.sites.slugTaken');
-    else if (msg.includes('3-63')) slugError.value = t('pages.sites.slugInvalid');
-    else toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
+    // A taken address is a (rare) collision of the random code: draw a new one and retry silently.
+    for (let attempt = 0; attempt < 4; attempt++) {
+      try {
+        const site = await pagesApi.createSite(nsSlug.value, { name: form.name.trim(), slug: slug.value });
+        createOpen.value = false;
+        await navigateTo(`/${nsSlug.value}/pages/${site.id}`);
+        return;
+      } catch (e: any) {
+        const msg = String(e?.response?.errors?.[0]?.message || '');
+        if (!msg.includes('already taken') || attempt === 3) throw e;
+        slugSuffix.value = newSuffix();
+      }
+    }
+  } catch (e) {
+    toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
   } finally {
     creating.value = false;
   }
@@ -147,18 +144,22 @@ function statusMeta(s: PagesSite) {
           <UFormGroup :label="t('pages.sites.name')" required>
             <UInput v-model="form.name" autofocus :placeholder="t('pages.sites.namePlaceholder')" @keyup.enter="create" />
           </UFormGroup>
-          <UFormGroup :label="t('pages.sites.address')" :error="slugError || undefined" :help="slugError ? undefined : t('pages.sites.addressHint')">
-            <UInput v-model="form.slug" @update:model-value="slugTouched = true" @keyup.enter="create" />
-          </UFormGroup>
-          <div class="rounded-2xl bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600 dark:bg-white/5 dark:text-gray-300">
-            <span class="text-gray-400">{{ t('pages.sites.willBeAt') }}</span>
-            <span class="ml-1 break-all font-medium">{{ siteOrigin(`${form.slug || 'my-site'}.${techDomain}`) }}</span>
+          <div class="rounded-2xl bg-gray-50 px-3.5 py-3 dark:bg-white/5">
+            <div class="text-xs text-gray-400">{{ t('pages.sites.willBeAt') }}</div>
+            <div class="mt-0.5 flex items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+              <UIcon name="lucide:globe" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <span class="break-all">{{ form.name.trim() ? previewUrl : '…' }}</span>
+            </div>
+          </div>
+          <div class="flex items-start gap-2.5 rounded-2xl bg-primary-50/70 px-3.5 py-3 text-sm text-gray-700 dark:bg-primary-500/10 dark:text-gray-200">
+            <UIcon name="lucide:badge-check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary-500" />
+            <span>{{ t('pages.sites.domainNote') }}</span>
           </div>
         </div>
         <template #footer>
           <div class="flex justify-end gap-2">
             <button type="button" class="at-btn" @click="createOpen = false">{{ t('common.cancel') }}</button>
-            <button type="button" class="at-btn at-btn--primary" :disabled="creating" @click="create">
+            <button type="button" class="at-btn at-btn--primary" :disabled="creating || !form.name.trim()" @click="create">
               <UIcon v-if="creating" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('pages.sites.create') }}
             </button>
           </div>

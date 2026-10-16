@@ -4133,6 +4133,7 @@
       "address": "Site address",
       "addressHint": "Latin letters, digits and hyphens. A short code is added to the name to keep the address unique. It cannot be changed later.",
       "willBeAt": "The site will be available at",
+      "domainNote": "This is a temporary address on the platform. Later you can (and should) connect your own domain: a site ranks well in Google only on its own domain.",
       "create": "Create",
       "slugInvalid": "Address: 3–63 characters, Latin letters, digits and hyphens, no hyphen at the start or end",
       "slugTaken": "This address is taken, pick another one"
