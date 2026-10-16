@@ -46,6 +46,13 @@
         :blocks="blocks"
         :is-home="props.isHome"
         :parent-path="props.parentPath"
+        :ns-slug="props.nsSlug"
+        :site-id="props.siteId"
+        :exclude="props.exclude"
+        :parent-id="props.parentId"
+        :sort="props.sort"
+        :can-move="!!props.onMove"
+        @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
         @upload-og-image="uploadOgImage"
@@ -57,6 +64,13 @@
         :blocks="blocks"
         :is-home="props.isHome"
         :parent-path="props.parentPath"
+        :ns-slug="props.nsSlug"
+        :site-id="props.siteId"
+        :exclude="props.exclude"
+        :parent-id="props.parentId"
+        :sort="props.sort"
+        :can-move="!!props.onMove"
+        @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
         @upload-og-image="uploadOgImage"
@@ -125,6 +139,13 @@ interface Props {
   /** Path of the parent page ("" for top level), shown in front of the slug. */
   parentPath?: string
   isHome?: boolean
+  /** Candidate parents ({ label, value }) and the page's current placement — WordPress "Page attributes". */
+  nsSlug?: string
+  siteId?: string
+  exclude?: Set<string>
+  parentId?: string
+  sort?: number
+  onMove?: (parentId: string, sort: number) => Promise<void>
   /** True once the page has been published at least once, so "open live" can work. */
   published?: boolean
   backTo: string
@@ -142,6 +163,9 @@ const props = withDefaults(defineProps<Props>(), {
   siteOrigin: '',
   parentPath: '',
   isHome: false,
+  parentId: '',
+  sort: 0,
+  onMove: undefined,
   published: false,
   imageResolver: undefined,
   onDelete: undefined,

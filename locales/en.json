@@ -4147,7 +4147,37 @@
         "forest": "Forest",
         "ocean": "Ocean",
         "mono": "Minimal",
-        "editorial": "Editorial"
+        "editorial": "Editorial",
+        "coffee": "Coffee shop",
+        "bakery": "Bakery",
+        "barista": "Barista",
+        "startup": "Startup",
+        "saas": "SaaS",
+        "neon": "Neon",
+        "sunset": "Sunset",
+        "sakura": "Sakura",
+        "lavender": "Lavender",
+        "mint": "Mint",
+        "slate": "Slate",
+        "law": "Law firm",
+        "medical": "Clinic",
+        "fitness": "Fitness",
+        "yoga": "Yoga",
+        "magazine": "Magazine",
+        "newspaper": "Newspaper",
+        "portfolio": "Portfolio",
+        "photo": "Photographer",
+        "architect": "Architect",
+        "kids": "Kids",
+        "eco": "Eco",
+        "devblog": "Dev blog",
+        "docs": "Docs",
+        "restaurant": "Restaurant",
+        "wedding": "Wedding",
+        "retro": "Retro",
+        "amoled": "AMOLED",
+        "deepsea": "Deep sea",
+        "corporate": "Corporate"
       },
       "colors": "Colours",
       "accent": "Accent colour",
@@ -4162,7 +4192,15 @@
         "sky": "Sky",
         "lilac": "Lilac",
         "graphite": "Graphite",
-        "midnight": "Midnight"
+        "midnight": "Midnight",
+        "snow": "Snow",
+        "sand": "Sand",
+        "blush": "Blush",
+        "lemon": "Lemon",
+        "navy": "Navy",
+        "espresso": "Espresso",
+        "ink": "Ink",
+        "black": "Black"
       },
       "typography": "Fonts",
       "bodyFont": "Body text",
@@ -4172,7 +4210,11 @@
         "serif": "Serif",
         "humanist": "Soft",
         "rounded": "Rounded",
-        "mono": "Monospace"
+        "mono": "Monospace",
+        "geometric": "Geometric",
+        "slab": "Slab",
+        "oldstyle": "Book",
+        "grotesk": "Grotesque"
       },
       "layout": "Shape and layout",
       "radius": "Corners",
@@ -4199,7 +4241,195 @@
       "footerHint": "Leave empty to use the site name",
       "preview": "Preview",
       "dark": "dark",
-      "saved": "Design saved"
+      "saved": "Design saved",
+      "group": {
+        "typography": "Fonts and headings",
+        "layout": "Shape and structure",
+        "header": "Header and menu",
+        "content": "Content",
+        "footer": "Footer"
+      },
+      "tone": {
+        "all": "All",
+        "light": "Light",
+        "dark": "Dark"
+      },
+      "knob": {
+        "font": "Body font",
+        "headingFont": "Headings font",
+        "fontSize": "Text size",
+        "leading": "Line spacing",
+        "headingWeight": "Heading weight",
+        "headingCase": "Heading case",
+        "headingAlign": "Heading alignment",
+        "titleSize": "Page title size",
+        "headingDecor": "Subheading style",
+        "width": "Text width",
+        "spacing": "Spacing",
+        "radius": "Corners",
+        "shadow": "Shadows",
+        "header": "Header",
+        "headerTone": "Header colour",
+        "nav": "Menu style",
+        "sticky": "Sticky header",
+        "logoSize": "Logo size",
+        "showName": "Show name next to logo",
+        "links": "Links in text",
+        "images": "Images",
+        "quote": "Quotes",
+        "bgStyle": "Background pattern",
+        "footerTone": "Footer colour",
+        "footerAlign": "Footer alignment"
+      },
+      "opt": {
+        "font": {
+          "sans": "Modern",
+          "serif": "Serif",
+          "humanist": "Soft",
+          "rounded": "Rounded",
+          "mono": "Monospace",
+          "geometric": "Geometric",
+          "slab": "Slab",
+          "oldstyle": "Book",
+          "grotesk": "Grotesque"
+        },
+        "fontSize": {
+          "sm": "Small",
+          "md": "Normal",
+          "lg": "Large"
+        },
+        "leading": {
+          "tight": "Tight",
+          "normal": "Normal",
+          "airy": "Airy"
+        },
+        "headingWeight": {
+          "medium": "Light",
+          "bold": "Bold",
+          "black": "Extra bold"
+        },
+        "headingCase": {
+          "normal": "Normal",
+          "upper": "UPPERCASE"
+        },
+        "headingAlign": {
+          "left": "Left",
+          "center": "Centre"
+        },
+        "titleSize": {
+          "md": "Normal",
+          "lg": "Large",
+          "xl": "Huge"
+        },
+        "headingDecor": {
+          "none": "None",
+          "underline": "Underline",
+          "bar": "Side bar"
+        },
+        "width": {
+          "narrow": "Narrow",
+          "normal": "Normal",
+          "wide": "Wide",
+          "xl": "Extra wide"
+        },
+        "spacing": {
+          "compact": "Compact",
+          "normal": "Normal",
+          "airy": "Airy"
+        },
+        "radius": {
+          "none": "None",
+          "sm": "Small",
+          "soft": "Soft",
+          "lg": "Large",
+          "round": "Round"
+        },
+        "shadow": {
+          "none": "None",
+          "soft": "Soft",
+          "lifted": "Lifted"
+        },
+        "header": {
+          "bar": "Left",
+          "center": "Centred",
+          "minimal": "Minimal",
+          "pill": "Floating"
+        },
+        "headerTone": {
+          "page": "Page colour",
+          "soft": "Soft band",
+          "accent": "Accent",
+          "dark": "Dark"
+        },
+        "nav": {
+          "plain": "Plain",
+          "underline": "Underline",
+          "pills": "Pills"
+        },
+        "sticky": {
+          "no": "No",
+          "yes": "Yes"
+        },
+        "logoSize": {
+          "sm": "Small",
+          "md": "Medium",
+          "lg": "Large"
+        },
+        "showName": {
+          "yes": "Yes",
+          "no": "Logo only"
+        },
+        "links": {
+          "underline": "Underlined",
+          "hover": "On hover",
+          "plain": "Bold, no line"
+        },
+        "images": {
+          "plain": "Plain",
+          "shadow": "Shadow",
+          "border": "Border"
+        },
+        "quote": {
+          "bar": "Bar",
+          "mark": "Quote mark",
+          "plain": "Plain"
+        },
+        "bgStyle": {
+          "flat": "Flat",
+          "dots": "Dots",
+          "grid": "Grid",
+          "glow": "Glow"
+        },
+        "footerTone": {
+          "page": "Page colour",
+          "soft": "Soft band",
+          "accent": "Accent",
+          "dark": "Dark"
+        },
+        "footerAlign": {
+          "left": "Left",
+          "center": "Centre"
+        }
+      },
+      "showAll": "Show all ({n})",
+      "showLess": "Show less",
+      "auto": "Same as text",
+      "headingColor": "Heading colour",
+      "headingColorHint": "Only colours readable on this background are shown",
+      "favicon": "Site icon (favicon)",
+      "faviconHint": "A square image for the browser tab and search results",
+      "ogImage": "Social share image",
+      "ogImageHint": "Shown when the link is shared in messengers, 1200×630",
+      "code": "Custom code",
+      "codeHint": "Extra CSS and scripts: analytics, chat widgets, pixels",
+      "customCss": "Additional CSS",
+      "customCssHint": "Applied after the theme, on every page of the site.",
+      "headHtml": "Code in <head>",
+      "headHtmlHint": "Analytics, verification, fonts: added to the head of every page.",
+      "footHtml": "Code before </body>",
+      "footHtmlHint": "Chat widgets: loaded at the end of the page.",
+      "codeWarn": "Scripts run for every visitor of your site. Only paste code you trust.",
+      "unsaved": "Unsaved changes"
     },
     "domains": {
       "title": "Domains",
@@ -4296,7 +4526,23 @@
       "parent": "Parent page",
       "slug": "Page address",
       "slugHint": "Latin letters, digits, hyphen. Filled in from the title.",
-      "createAndEdit": "Create and open"
+      "createAndEdit": "Create and open",
+      "filterAll": "All",
+      "filterReady": "To publish",
+      "filterDraft": "Drafts",
+      "search": "Search by page title",
+      "noMatches": "Nothing found",
+      "homeBadge": "Home",
+      "children": "{n} nested",
+      "quickEdit": "Quick edit",
+      "view": "View on site",
+      "duplicate": "Duplicate",
+      "copySuffix": "(copy)",
+      "duplicated": "Copy created (draft)",
+      "saved": "Saved",
+      "order": "Order",
+      "orderHint": "Lower number sits higher in the list and the site menu.",
+      "inPublish": "Include in publishing"
     },
     "publish": {
       "action": "Publish",
@@ -4397,7 +4643,12 @@
       "needSlug": "Enter a page address",
       "saveFailed": "Could not save",
       "savedToast": "Page saved",
-      "notFound": "Page not found"
+      "notFound": "Page not found",
+      "parentLabel": "Parent page",
+      "orderLabel": "Order",
+      "attributesHint": "Nesting defines the page address. Lower number sits higher in the site menu. The address changes and the old one redirects automatically.",
+      "applyMove": "Apply",
+      "moved": "Page moved"
     }
   },
   "plans": {

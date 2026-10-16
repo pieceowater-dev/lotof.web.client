@@ -1,3 +1,10 @@
+<script lang="ts">
+export interface DesignPayload {
+  themeId: string; themeVarsJson: string; logoUrl: string; footerText: string;
+  faviconUrl: string; ogImageUrl: string; headHtml: string; footHtml: string; customCss: string;
+}
+</script>
+
 <script lang="ts" setup>
 import SiteThemePreview from '@/components/pages/SiteThemePreview.vue';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
@@ -9,12 +16,12 @@ import type { PagesSite } from '@/api/pages/ops';
 import { compressImageForUpload } from '@/utils/imageCompression';
 import { siteAssetUrl } from '@/utils/pagesSite';
 import {
-  THEME_PRESETS, BACKGROUNDS, SITE_ACCENTS, FONTS, RADII, WIDTHS, HEADERS, DEFAULT_PRESET,
-  presetById, resolveVars, type ThemeVars,
+  THEME_PRESETS, BACKGROUNDS, SITE_ACCENTS, HEADING_COLORS, KNOB_GROUPS, FONT_STACKS, DEFAULT_PRESET,
+  presetById, resolveVars, isDark, contrast, type ThemeVars,
 } from '@/utils/pagesThemes';
 
 const props = defineProps<{ site: PagesSite; nsSlug: string; saving?: boolean }>();
-const emit = defineEmits<{ save: [payload: { themeId: string; themeVarsJson: string; logoUrl: string; footerText: string }] }>();
+const emit = defineEmits<{ save: [payload: DesignPayload] }>();
 
 const { t } = useI18n();
 const toast = useToast();
@@ -22,76 +29,123 @@ const { getToken } = usePagesAuth();
 
 const presetId = ref(DEFAULT_PRESET);
 const vars = reactive<ThemeVars>({ ...presetById(DEFAULT_PRESET).vars });
-const logoUrl = ref('');
-const footerText = ref('');
-const logoBusy = ref(false);
+const media = reactive({ logoUrl: '', faviconUrl: '', ogImageUrl: '' });
+const text = reactive({ footerText: '', headHtml: '', footHtml: '', customCss: '' });
+const busy = ref('');
 const saved = ref('');
 
 function load(site: PagesSite) {
-  presetId.value = site.settings.themeId || DEFAULT_PRESET;
-  Object.assign(vars, resolveVars(presetId.value, site.settings.themeVarsJson));
-  logoUrl.value = site.settings.logoUrl || '';
-  footerText.value = site.settings.footerText || '';
+  const s = site.settings;
+  presetId.value = s.themeId || DEFAULT_PRESET;
+  Object.assign(vars, resolveVars(presetId.value, s.themeVarsJson));
+  Object.assign(media, { logoUrl: s.logoUrl || '', faviconUrl: s.faviconUrl || '', ogImageUrl: s.ogImageUrl || '' });
+  Object.assign(text, { footerText: s.footerText || '', headHtml: s.headHtml || '', footHtml: s.footHtml || '', customCss: s.customCss || '' });
   saved.value = snapshot();
 }
-const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, l: logoUrl.value, f: footerText.value });
+const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text });
 watch(() => props.site, (s) => load(s), { immediate: true });
 const dirty = computed(() => snapshot() !== saved.value);
 
+// ── presets ──
+const tone = ref<'all' | 'light' | 'dark'>('all');
+const showAll = ref(false);
+const shownPresets = computed(() => {
+  const list = THEME_PRESETS.filter(p => tone.value === 'all' || (tone.value === 'dark') === isDark(p.vars.bg));
+  return showAll.value ? list : list.slice(0, 8);
+});
+const presetCount = computed(() => THEME_PRESETS.filter(p => tone.value === 'all' || (tone.value === 'dark') === isDark(p.vars.bg)).length);
 function pickPreset(id: string) {
   presetId.value = id;
   Object.assign(vars, presetById(id).vars);
 }
 
+// ── colours ──
 const bgId = computed(() => BACKGROUNDS.find(b => b.bg === vars.bg)?.id || '');
 function pickBackground(id: string) {
   const b = BACKGROUNDS.find(x => x.id === id);
-  if (b) { vars.bg = b.bg; vars.text = b.text; }
+  if (b) { vars.bg = b.bg; vars.text = b.text; if (vars.heading && contrast(vars.heading, b.bg) < 4.5) vars.heading = ''; }
 }
+const headingOptions = computed(() => HEADING_COLORS.filter(c => contrast(c, vars.bg) >= 4.5));
 
-const logoPreview = computed(() => siteAssetUrl(props.site.host, logoUrl.value));
-async function onLogo(e: Event) {
+// ── knobs ──
+const open = reactive<Record<string, boolean>>({ typography: true, layout: false, header: false, content: false, footer: false, code: false });
+const optLabel = (key: string, v: string) => t(`pages.design.opt.${key}.${v}`);
+
+// ── uploads ──
+const preview = (u: string) => siteAssetUrl(props.site.host, u);
+async function upload(kind: 'logoUrl' | 'faviconUrl' | 'ogImageUrl', e: Event) {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
   input.value = '';
   if (!file) return;
-  logoBusy.value = true;
+  busy.value = kind;
   try {
-    const media = await pagesRequestWithRefresh(async () => {
+    const m = await pagesRequestWithRefresh(async () => {
       const token = await getToken(props.nsSlug);
       const prepared = await compressImageForUpload(file, { t });
       return pagesUploadMedia(token, props.nsSlug, props.site.id, prepared, props.site.name);
     }, props.nsSlug);
-    logoUrl.value = media.url;
+    media[kind] = m.url;
   } catch (err: any) {
     toast.add({ title: t('pages.editor.uploadFailed'), description: err?.message, color: 'red' });
   } finally {
-    logoBusy.value = false;
+    busy.value = '';
   }
 }
 
 function save() {
-  emit('save', { themeId: presetId.value, themeVarsJson: JSON.stringify(vars), logoUrl: logoUrl.value, footerText: footerText.value.trim() });
+  emit('save', { themeId: presetId.value, themeVarsJson: JSON.stringify(vars), logoUrl: media.logoUrl, footerText: text.footerText.trim(),
+    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss });
   saved.value = snapshot();
 }
 
-const dark = computed(() => vars.text > vars.bg);
-function seg<T extends string>(key: 'font' | 'headingFont' | 'radius' | 'width' | 'header', value: T) {
-  (vars as any)[key] = value;
-}
+const dark = computed(() => isDark(vars.bg));
+const mediaCards = [
+  { key: 'logoUrl' as const, label: 'logo', hint: 'logoHint', wide: true },
+  { key: 'faviconUrl' as const, label: 'favicon', hint: 'faviconHint', wide: false },
+  { key: 'ogImageUrl' as const, label: 'ogImage', hint: 'ogImageHint', wide: true },
+];
 </script>
 
 <template>
   <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_22rem]">
     <div class="flex min-w-0 flex-col gap-4">
+      <!-- identity: logo, favicon, social image, footer text -->
+      <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
+        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.identity') }}</h3>
+        <div class="grid gap-4 sm:grid-cols-3">
+          <div v-for="c in mediaCards" :key="c.key" class="flex flex-col gap-2">
+            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t(`pages.design.${c.label}`) }}</div>
+            <div class="flex h-20 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 p-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+              <img v-if="media[c.key]" :src="preview(media[c.key])" alt="" class="max-h-full" :class="c.wide ? 'max-w-full object-contain' : 'h-10 w-10 object-contain'">
+              <UIcon v-else name="lucide:image" class="h-6 w-6 text-gray-300" />
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t(`pages.design.${c.hint}`) }}</p>
+            <div class="flex items-center gap-2">
+              <label class="at-btn cursor-pointer !px-3">
+                <UIcon :name="busy === c.key ? 'lucide:loader-2' : 'lucide:upload'" class="h-4 w-4" :class="busy === c.key && 'animate-spin'" />
+                {{ media[c.key] ? t('pages.editor.replaceImage') : t('pages.editor.uploadImage') }}
+                <input type="file" accept="image/*" class="hidden" :disabled="!!busy" @change="upload(c.key, $event)">
+              </label>
+              <button v-if="media[c.key]" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="media[c.key] = ''">{{ t('pages.editor.remove') }}</button>
+            </div>
+          </div>
+        </div>
+        <UFormGroup :label="t('pages.design.footer')" :help="t('pages.design.footerHint')">
+          <UInput v-model="text.footerText" maxlength="160" :placeholder="site.name" />
+        </UFormGroup>
+      </section>
+
       <!-- presets -->
       <section class="rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-        <h3 class="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.presets') }}</h3>
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.presets') }} <span class="font-normal text-gray-400">{{ THEME_PRESETS.length }}</span></h3>
+          <div class="at-seg !min-w-0">
+            <button v-for="k in (['all', 'light', 'dark'] as const)" :key="k" type="button" class="at-seg__btn !py-1" :class="tone === k && 'at-seg__btn--on'" @click="tone = k">{{ t(`pages.design.tone.${k}`) }}</button>
+          </div>
+        </div>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-          <button
-            v-for="p in THEME_PRESETS" :key="p.id" type="button" class="group text-left"
-            :aria-pressed="presetId === p.id" @click="pickPreset(p.id)"
-          >
+          <button v-for="p in shownPresets" :key="p.id" type="button" class="group text-left" :aria-pressed="presetId === p.id" @click="pickPreset(p.id)">
             <div class="rounded-xl p-0.5 transition" :class="presetId === p.id ? 'ring-2 ring-primary-500' : 'ring-1 ring-black/10 group-hover:ring-black/25 dark:ring-white/15'">
               <SiteThemePreview :vars="p.vars" :site-name="site.name" compact />
             </div>
@@ -99,6 +153,11 @@ function seg<T extends string>(key: 'font' | 'headingFont' | 'radius' | 'width' 
               <span class="h-2.5 w-2.5 rounded-full ring-1 ring-black/10" :style="{ background: p.vars.accent }" />
               {{ t(`pages.design.preset.${p.id}`) }}
             </div>
+          </button>
+        </div>
+        <div v-if="presetCount > 8" class="mt-3 flex justify-center">
+          <button type="button" class="at-btn at-btn--blue" @click="showAll = !showAll">
+            <Icon :name="showAll ? 'lucide:chevron-up' : 'lucide:chevron-down'" class="h-4 w-4" />{{ showAll ? t('pages.design.showLess') : t('pages.design.showAll', { n: presetCount }) }}
           </button>
         </div>
       </section>
@@ -117,70 +176,63 @@ function seg<T extends string>(key: 'font' | 'headingFont' | 'radius' | 'width' 
               :class="bgId === b.id ? 'border-gray-900 dark:border-white' : 'border-black/10 dark:border-white/15'"
               :style="{ background: b.bg }" :aria-label="t(`pages.design.bg.${b.id}`)" :title="t(`pages.design.bg.${b.id}`)"
               @click="pickBackground(b.id)"
-            >
-              <span class="text-[10px] font-bold" :style="{ color: b.text }">Aa</span>
-            </button>
+            ><span class="text-[10px] font-bold" :style="{ color: b.text }">Aa</span></button>
+          </div>
+        </UFormGroup>
+        <UFormGroup :label="t('pages.design.headingColor')" :help="t('pages.design.headingColorHint')">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" class="at-btn !py-1" :class="!vars.heading && 'at-btn--blue'" @click="vars.heading = ''">{{ t('pages.design.auto') }}</button>
+            <button
+              v-for="c in headingOptions" :key="c" type="button" class="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
+              :class="vars.heading === c ? 'border-gray-900 dark:border-white' : 'border-black/10 dark:border-white/15'" :style="{ background: c }" :aria-label="c" @click="vars.heading = c"
+            />
           </div>
         </UFormGroup>
       </section>
 
-      <!-- typography + shape -->
-      <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.typography') }}</h3>
-        <UFormGroup :label="t('pages.design.bodyFont')">
-          <div class="at-seg !min-w-0 flex-wrap self-start">
-            <button v-for="f in FONTS" :key="f" type="button" class="at-seg__btn" :class="vars.font === f && 'at-seg__btn--on'" @click="seg('font', f)">{{ t(`pages.design.font.${f}`) }}</button>
-          </div>
-        </UFormGroup>
-        <UFormGroup :label="t('pages.design.headingFont')">
-          <div class="at-seg !min-w-0 flex-wrap self-start">
-            <button v-for="f in FONTS" :key="f" type="button" class="at-seg__btn" :class="vars.headingFont === f && 'at-seg__btn--on'" @click="seg('headingFont', f)">{{ t(`pages.design.font.${f}`) }}</button>
-          </div>
-        </UFormGroup>
-        <h3 class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.layout') }}</h3>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <UFormGroup :label="t('pages.design.radius')">
-            <div class="at-seg !min-w-0 self-start">
-              <button v-for="r in RADII" :key="r" type="button" class="at-seg__btn" :class="vars.radius === r && 'at-seg__btn--on'" @click="seg('radius', r)">{{ t(`pages.design.radiusOpt.${r}`) }}</button>
-            </div>
-          </UFormGroup>
-          <UFormGroup :label="t('pages.design.width')">
-            <div class="at-seg !min-w-0 self-start">
-              <button v-for="w in WIDTHS" :key="w" type="button" class="at-seg__btn" :class="vars.width === w && 'at-seg__btn--on'" @click="seg('width', w)">{{ t(`pages.design.widthOpt.${w}`) }}</button>
-            </div>
-          </UFormGroup>
-          <UFormGroup :label="t('pages.design.header')">
-            <div class="at-seg !min-w-0 self-start">
-              <button v-for="h in HEADERS" :key="h" type="button" class="at-seg__btn" :class="vars.header === h && 'at-seg__btn--on'" @click="seg('header', h)">{{ t(`pages.design.headerOpt.${h}`) }}</button>
+      <!-- every other option, grouped -->
+      <section v-for="g in KNOB_GROUPS" :key="g.id" class="rounded-2xl bg-white ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+        <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left sm:px-5" :aria-expanded="open[g.id]" @click="open[g.id] = !open[g.id]">
+          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t(`pages.design.group.${g.id}`) }}</h3>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 text-gray-400 transition-transform" :class="open[g.id] && 'rotate-180'" />
+        </button>
+        <div v-if="open[g.id]" class="grid gap-4 px-4 pb-5 sm:grid-cols-2 sm:px-5">
+          <UFormGroup v-for="k in g.knobs" :key="k.key" :label="t(`pages.design.knob.${k.key}`)" :class="k.options.length > 5 && 'sm:col-span-2'">
+            <div class="at-seg !min-w-0 flex-wrap self-start">
+              <button
+                v-for="o in k.options" :key="o" type="button" class="at-seg__btn" :class="vars[k.key] === o && 'at-seg__btn--on'"
+                :style="k.key === 'font' || k.key === 'headingFont' ? { fontFamily: FONT_STACKS[o] } : undefined" @click="vars[k.key] = o"
+              >{{ optLabel(k.key, o) }}</button>
             </div>
           </UFormGroup>
         </div>
       </section>
 
-      <!-- identity -->
-      <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.identity') }}</h3>
-        <UFormGroup :label="t('pages.design.logo')" :help="t('pages.design.logoHint')">
-          <div class="flex items-center gap-3">
-            <div class="flex h-12 min-w-12 items-center justify-center overflow-hidden rounded-xl bg-gray-50 px-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
-              <img v-if="logoUrl" :src="logoPreview" alt="" class="max-h-10 w-auto">
-              <UIcon v-else name="lucide:image" class="h-5 w-5 text-gray-300" />
-            </div>
-            <label class="at-btn cursor-pointer">
-              <UIcon :name="logoBusy ? 'lucide:loader-2' : 'lucide:upload'" class="h-4 w-4" :class="logoBusy && 'animate-spin'" />
-              {{ logoUrl ? t('pages.editor.replaceImage') : t('pages.editor.uploadImage') }}
-              <input type="file" accept="image/*" class="hidden" :disabled="logoBusy" @change="onLogo">
-            </label>
-            <button v-if="logoUrl" type="button" class="text-xs text-gray-400 hover:text-gray-600" @click="logoUrl = ''">{{ t('pages.editor.remove') }}</button>
+      <!-- code: scripts + css -->
+      <section class="rounded-2xl bg-white ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+        <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left sm:px-5" :aria-expanded="open.code" @click="open.code = !open.code">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.code') }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.codeHint') }}</p>
           </div>
-        </UFormGroup>
-        <UFormGroup :label="t('pages.design.footer')" :help="t('pages.design.footerHint')">
-          <UInput v-model="footerText" maxlength="160" :placeholder="site.name" />
-        </UFormGroup>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform" :class="open.code && 'rotate-180'" />
+        </button>
+        <div v-if="open.code" class="flex flex-col gap-4 px-4 pb-5 sm:px-5">
+          <UFormGroup :label="t('pages.design.customCss')" :help="t('pages.design.customCssHint')">
+            <UTextarea v-model="text.customCss" :rows="10" spellcheck="false" :ui="{ base: 'font-mono text-xs' }" placeholder=".site-header { box-shadow: 0 2px 12px rgba(0,0,0,.08); }" />
+          </UFormGroup>
+          <UFormGroup :label="t('pages.design.headHtml')" :help="t('pages.design.headHtmlHint')">
+            <UTextarea v-model="text.headHtml" :rows="5" spellcheck="false" :ui="{ base: 'font-mono text-xs' }" placeholder="<script async src=&quot;https://www.googletagmanager.com/gtag/js?id=G-XXXX&quot;></script>" />
+          </UFormGroup>
+          <UFormGroup :label="t('pages.design.footHtml')" :help="t('pages.design.footHtmlHint')">
+            <UTextarea v-model="text.footHtml" :rows="5" spellcheck="false" :ui="{ base: 'font-mono text-xs' }" placeholder="<script>/* chat widget */</script>" />
+          </UFormGroup>
+          <div class="at-notice !mb-0 text-amber-800 dark:text-amber-200" style="background: rgba(245, 158, 11, 0.1); box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.25)">{{ t('pages.design.codeWarn') }}</div>
+        </div>
       </section>
 
-      <div class="flex items-center justify-between gap-3">
-        <p class="text-xs text-gray-400 dark:text-gray-500">{{ t('pages.settings.needsPublish') }}</p>
+      <div class="sticky bottom-0 z-10 -mx-1 flex items-center justify-between gap-3 rounded-full bg-white/85 px-4 py-2 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] backdrop-blur dark:bg-[#1f1f1f]/85 dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.09)]">
+        <p class="text-xs text-gray-400 dark:text-gray-500">{{ dirty ? t('pages.design.unsaved') : t('pages.settings.needsPublish') }}</p>
         <button type="button" class="at-btn at-btn--primary" :disabled="saving || !dirty" @click="save">
           <UIcon v-if="saving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('common.save') }}
         </button>
@@ -188,11 +240,11 @@ function seg<T extends string>(key: 'font' | 'headingFont' | 'radius' | 'width' 
     </div>
 
     <!-- live preview -->
-    <aside class="lg:sticky lg:top-24 lg:self-start">
+    <aside class="lg:sticky lg:top-4 lg:self-start">
       <div class="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-gray-400">
         {{ t('pages.design.preview') }}<span v-if="dark" class="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] normal-case text-gray-500 dark:bg-white/10">{{ t('pages.design.dark') }}</span>
       </div>
-      <SiteThemePreview :vars="vars" :site-name="site.name" :logo="logoPreview" :footer="footerText" />
+      <SiteThemePreview :vars="vars" :site-name="site.name" :logo="preview(media.logoUrl)" :footer="text.footerText" />
     </aside>
   </div>
 </template>

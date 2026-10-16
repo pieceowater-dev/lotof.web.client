@@ -10,7 +10,7 @@ export type PageStatus = 'PAGE_DRAFT' | 'PAGE_READY' | 'PAGE_ARCHIVED';
 export interface SiteSettings {
   defaultLang: string; langs: string[]; faviconUrl: string; ogImageUrl: string; googleSiteVerification: string;
   robotsTxt: string; headHtml: string; themeId: string; themeVarsJson: string; navJson: string;
-  logoUrl: string; footerText: string;
+  logoUrl: string; footerText: string; footHtml: string; customCss: string;
 }
 export interface PagesSite {
   id: string; name: string; slug: string; status: SiteStatus; settings: SiteSettings;
@@ -41,7 +41,7 @@ export interface SiteDomain {
 export interface SiteDomains { domains: SiteDomain[]; platformHost: string; primaryHost: string; cnameTarget: string; ips: string[] }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
-const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText`;
+const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss`;
 const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
 const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix`;
@@ -70,8 +70,20 @@ export const pagesApi = {
     q<{ deleteSite: { success: boolean } }>(ns, `mutation($id:ID!){ deleteSite(id:$id){ success } }`, { id }).then(r => r.deleteSite.success),
 
   // pages
-  pages: (ns: string, siteId: string, search?: string) =>
-    q<{ pages: { rows: SitePage[] } }>(ns, `query($s:ID!,$q:String,$f:DefaultFilterInput){ pages(siteId:$s,search:$q,filter:$f){ rows { ${PAGE_LIST_FIELDS} } } }`, { s: siteId, q: search || null, f: FILTER_ALL }).then(r => r.pages.rows),
+  // Every page of a site (the API caps one request at 100 rows, so walk the pages).
+  pages: async (ns: string, siteId: string, search?: string) => {
+    const out: SitePage[] = [];
+    for (let page = 1; page <= 50; page++) {
+      const r = await q<{ pages: { rows: SitePage[] } }>(ns, `query($s:ID!,$q:String,$f:DefaultFilterInput){ pages(siteId:$s,search:$q,filter:$f){ rows { ${PAGE_LIST_FIELDS} } } }`, { s: siteId, q: search || null, f: { pagination: { page, length: 'ONE_HUNDRED' } } });
+      out.push(...r.pages.rows);
+      if (r.pages.rows.length < 100) break;
+    }
+    return out;
+  },
+  /** One page of results for pickers: server-side search + paging. */
+  pagesPage: (ns: string, siteId: string, opts: { search?: string; page: number; length?: 'TEN' | 'TWENTY' | 'FIFTY' }) =>
+    q<{ pages: { rows: SitePage[]; info: { count: number } } }>(ns, `query($s:ID!,$q:String,$f:DefaultFilterInput){ pages(siteId:$s,search:$q,filter:$f){ rows { ${PAGE_LIST_FIELDS} } info { count } } }`,
+      { s: siteId, q: opts.search || null, f: { pagination: { page: opts.page, length: opts.length || 'TWENTY' } } }).then(r => r.pages),
   page: (ns: string, id: string) =>
     q<{ page: SitePage | null }>(ns, `query($id:ID!){ page(id:$id){ ${PAGE_FIELDS} } }`, { id }).then(r => r.page),
   createPage: (ns: string, input: { siteId: string; parentId?: string | null; slug: string; title: string; lang?: string }) =>

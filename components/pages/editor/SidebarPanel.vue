@@ -51,6 +51,17 @@
           </template>
         </section>
 
+        <section v-if="!isHome && canMove" class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.parentLabel') }}</label>
+          <PagesPagePicker v-model="parentSel" :ns-slug="nsSlug || ''" :site-id="siteId || ''" :exclude="exclude" />
+          <label class="pe-label mt-2">{{ t('pages.editor.orderLabel') }}</label>
+          <input v-model.number="orderSel" type="number" class="pe-field" />
+          <p class="pe-help">{{ t('pages.editor.attributesHint') }}</p>
+          <button type="button" class="at-btn at-btn--blue mt-1 self-start" :disabled="!placementChanged || moving" @click="applyMove">
+            <Icon :name="moving ? 'lucide:loader-2' : 'lucide:move'" class="h-4 w-4" :class="moving ? 'animate-spin' : ''" />{{ t('pages.editor.applyMove') }}
+          </button>
+        </section>
+
         <section class="pe-group">
           <label class="pe-label">{{ t('pages.editor.langLabel') }}</label>
           <div class="at-seg !flex w-full">
@@ -146,7 +157,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
 import { slugifyText } from '@/utils/pagesSite'
 
@@ -160,15 +171,33 @@ const props = defineProps<{
   blocks: { type: string; attrs: Record<string, any> }[]
   isHome: boolean
   parentPath: string
+  nsSlug?: string
+  siteId?: string
+  exclude?: Set<string>
+  parentId?: string
+  sort?: number
+  canMove?: boolean
   resolveImage: (src: string) => string
 }>()
 
 const emit = defineEmits<{
   'update:page': [Partial<PageState>]
   'upload-og-image': [File]
+  move: [string, number]
 }>()
 
 const { t } = useI18n()
+
+const parentSel = ref(props.parentId || '')
+const orderSel = ref(props.sort || 0)
+const moving = ref(false)
+const placementChanged = computed(() => parentSel.value !== (props.parentId || '') || Number(orderSel.value) !== (props.sort || 0))
+watch(() => [props.parentId, props.sort], () => { parentSel.value = props.parentId || ''; orderSel.value = props.sort || 0 })
+function applyMove() {
+  moving.value = true
+  emit('move', parentSel.value, Number(orderSel.value) || 0)
+  setTimeout(() => { moving.value = false }, 900)
+}
 const tab = ref<'page' | 'seo'>('page')
 const tabs = computed(() => [
   { key: 'page' as const, label: t('pages.editor.tabPage') },

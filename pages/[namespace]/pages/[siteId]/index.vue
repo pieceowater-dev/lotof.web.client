@@ -4,8 +4,9 @@ definePageMeta({ layout: 'workspace' });
 import PageHeader from '@/components/ui/PageHeader.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
-import ThemeDesigner from '@/components/pages/ThemeDesigner.vue';
+import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
+import PagePicker from '@/components/pages/PagePicker.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
@@ -78,19 +79,61 @@ const isLive = computed(() => !!site.value?.publishedVersion && site.value.statu
 const readyCount = computed(() => pages.value.filter(p => p.status === 'PAGE_READY').length);
 
 // ───────── pages tab ─────────
-const sortedPages = computed(() => [...pages.value].sort((a, b) => a.path.localeCompare(b.path)));
+// Siblings sit under their parent ordered by `sort`, then title — the same way WordPress lists a page tree.
+const sortedPages = computed(() => {
+  const byParent = new Map<string, SitePage[]>();
+  for (const p of pages.value) {
+    const key = p.path === '/' ? '' : (p.parentId || '');
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key)!.push(p);
+  }
+  const home = pages.value.find(p => p.path === '/');
+  const out: SitePage[] = [];
+  const walk = (parent: string) => {
+    for (const p of (byParent.get(parent) || []).filter(x => x !== home).sort((x, y) => (x.sort - y.sort) || x.title.localeCompare(y.title))) {
+      out.push(p); walk(p.id);
+    }
+  };
+  if (home) out.push(home);
+  walk('');
+  return out;
+});
 const hasHome = computed(() => pages.value.some(p => p.path === '/'));
 const depth = (p: SitePage) => (p.path === '/' ? 0 : p.path.split('/').length - 2);
+const childCount = (p: SitePage) => pages.value.filter(x => x.parentId === p.id).length;
+
+type PageFilter = 'all' | 'ready' | 'draft';
+const pageFilter = ref<PageFilter>('all');
+const pageQuery = ref('');
+const draftCount = computed(() => pages.value.length - readyCount.value);
+const FILTERS = computed<{ key: PageFilter; label: string; n: number }[]>(() => [
+  { key: 'all', label: t('pages.pages.filterAll'), n: pages.value.length },
+  { key: 'ready', label: t('pages.pages.filterReady'), n: readyCount.value },
+  { key: 'draft', label: t('pages.pages.filterDraft'), n: draftCount.value },
+]);
+const searching = computed(() => !!pageQuery.value.trim() || pageFilter.value !== 'all');
+const visiblePages = computed(() => {
+  const q = pageQuery.value.trim().toLowerCase();
+  return sortedPages.value.filter((p) => {
+    if (pageFilter.value === 'ready' && p.status !== 'PAGE_READY') return false;
+    if (pageFilter.value === 'draft' && p.status === 'PAGE_READY') return false;
+    return !q || p.title.toLowerCase().includes(q) || p.path.toLowerCase().includes(q);
+  });
+});
+const PAGE_SIZE = 10;
+const pageNo = ref(1);
+const pagedPages = computed(() => visiblePages.value.slice((pageNo.value - 1) * PAGE_SIZE, pageNo.value * PAGE_SIZE));
+watch([pageQuery, pageFilter], () => { pageNo.value = 1; });
+watch(() => visiblePages.value.length, (n) => { const max = Math.max(1, Math.ceil(n / PAGE_SIZE)); if (pageNo.value > max) pageNo.value = max; });
+// While filtering the tree is flat, so indentation would be misleading.
+const rowDepth = (p: SitePage) => (searching.value ? 0 : depth(p));
+const pageUrl = (p: SitePage) => `${origin.value}${p.path === '/' ? '' : p.path}`;
 
 const pageModal = ref(false);
 const pageSaving = ref(false);
 const pageForm = reactive({ title: '', slug: '', parentId: '' as string, home: false });
 const pageSlugTouched = ref(false);
 const pageError = ref('');
-const parentOptions = computed(() => [
-  { label: t('pages.pages.topLevel'), value: '' },
-  ...sortedPages.value.filter(p => p.path !== '/').map(p => ({ label: `${p.title} (${p.path})`, value: p.id })),
-]);
 const parentPath = computed(() => pages.value.find(p => p.id === pageForm.parentId)?.path || '');
 watch(() => pageForm.title, (v) => { if (!pageSlugTouched.value) pageForm.slug = slugifyText(v, 60); });
 
@@ -153,6 +196,73 @@ async function toggleReady(p: SitePage) {
       seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
     });
     p.status = next;
+  } catch (e) { fail(e); }
+}
+
+// ───────── quick edit (WordPress "Quick Edit") ─────────
+const qeOpen = ref(false);
+const qeSaving = ref(false);
+const qeError = ref('');
+const qe = reactive({ id: '', title: '', slug: '', parentId: '', sort: 0, ready: false, isHome: false });
+const qeOrig = reactive({ parentId: '', sort: 0 });
+const descendantIds = (id: string): Set<string> => {
+  const out = new Set<string>([id]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const p of pages.value) if (p.parentId && out.has(p.parentId) && !out.has(p.id)) { out.add(p.id); grew = true; }
+  }
+  return out;
+};
+function openQuickEdit(p: SitePage) {
+  Object.assign(qe, { id: p.id, title: p.title, slug: p.slug, parentId: p.parentId || '', sort: p.sort || 0, ready: p.status === 'PAGE_READY', isHome: p.path === '/' });
+  qeOrig.parentId = p.parentId || ''; qeOrig.sort = p.sort || 0;
+  qeError.value = '';
+  qeOpen.value = true;
+}
+
+async function saveQuickEdit() {
+  qeError.value = '';
+  if (!qe.title.trim()) { qeError.value = t('pages.pages.needTitle'); return; }
+  if (!qe.isHome && !qe.slug) { qeError.value = t('pages.pages.needSlug'); return; }
+  qeSaving.value = true;
+  try {
+    const full = await pagesApi.page(nsSlug.value, qe.id);
+    if (!full) return;
+    await pagesApi.updatePage(nsSlug.value, {
+      id: full.id, slug: qe.isHome ? '' : qe.slug, title: qe.title.trim(), status: qe.ready ? 'PAGE_READY' : 'PAGE_DRAFT', lang: full.lang,
+      seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+    });
+    if (!qe.isHome && (qe.parentId !== qeOrig.parentId || Number(qe.sort) !== qeOrig.sort)) {
+      await pagesApi.movePage(nsSlug.value, qe.id, qe.parentId || null, Number(qe.sort) || 0);
+    }
+    qeOpen.value = false;
+    pages.value = await pagesApi.pages(nsSlug.value, siteId.value);
+    toast.add({ title: t('pages.pages.saved'), color: 'green' });
+  } catch (e: any) {
+    const msg = String(e?.response?.errors?.[0]?.message || '');
+    if (msg.includes('already exists')) qeError.value = t('pages.pages.pathTaken');
+    else if (msg.includes('lowercase')) qeError.value = t('pages.pages.slugInvalid');
+    else fail(e);
+  } finally {
+    qeSaving.value = false;
+  }
+}
+
+async function duplicatePage(p: SitePage) {
+  try {
+    const full = await pagesApi.page(nsSlug.value, p.id);
+    if (!full) return;
+    const taken = new Set(pages.value.filter(x => (x.parentId || '') === (p.parentId || '')).map(x => x.slug));
+    let slug = `${p.slug}-copy`;
+    for (let i = 2; taken.has(slug); i++) slug = `${p.slug}-copy-${i}`;
+    const created = await pagesApi.createPage(nsSlug.value, { siteId: siteId.value, parentId: p.parentId || null, slug, title: `${p.title} ${t('pages.pages.copySuffix')}`, lang: full.lang });
+    await pagesApi.updatePage(nsSlug.value, {
+      id: created.id, slug, title: `${p.title} ${t('pages.pages.copySuffix')}`, status: 'PAGE_DRAFT', lang: full.lang,
+      seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+    });
+    pages.value = await pagesApi.pages(nsSlug.value, siteId.value);
+    toast.add({ title: t('pages.pages.duplicated'), color: 'green' });
   } catch (e) { fail(e); }
 }
 
@@ -262,7 +372,7 @@ async function saveSettings() {
         defaultLang: settingsForm.defaultLang, langs: s.langs, faviconUrl: s.faviconUrl, ogImageUrl: s.ogImageUrl,
         googleSiteVerification: settingsForm.googleSiteVerification.trim(), robotsTxt: settingsForm.robotsTxt,
         headHtml: s.headHtml, themeId: s.themeId, themeVarsJson: s.themeVarsJson, navJson: s.navJson,
-        logoUrl: s.logoUrl, footerText: s.footerText,
+        logoUrl: s.logoUrl, footerText: s.footerText, footHtml: s.footHtml, customCss: s.customCss,
       },
     });
     toast.add({ title: t('pages.settings.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
@@ -279,7 +389,7 @@ async function reloadSite() {
 }
 
 const designSaving = ref(false);
-async function saveDesign(p: { themeId: string; themeVarsJson: string; logoUrl: string; footerText: string }) {
+async function saveDesign(p: DesignPayload) {
   if (!site.value) return;
   designSaving.value = true;
   try {
@@ -287,9 +397,9 @@ async function saveDesign(p: { themeId: string; themeVarsJson: string; logoUrl: 
     site.value = await pagesApi.updateSite(nsSlug.value, {
       id: site.value.id, name: site.value.name,
       settings: {
-        defaultLang: s.defaultLang, langs: s.langs, faviconUrl: s.faviconUrl, ogImageUrl: s.ogImageUrl,
-        googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, headHtml: s.headHtml, navJson: s.navJson,
+        defaultLang: s.defaultLang, langs: s.langs, googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, navJson: s.navJson,
         themeId: p.themeId, themeVarsJson: p.themeVarsJson, logoUrl: p.logoUrl, footerText: p.footerText,
+        faviconUrl: p.faviconUrl, ogImageUrl: p.ogImageUrl, headHtml: p.headHtml, footHtml: p.footHtml, customCss: p.customCss,
       },
     });
     toast.add({ title: t('pages.design.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
@@ -379,19 +489,38 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
           </button>
         </EmptyState>
 
-        <div v-else class="flex flex-col gap-2">
+        <div v-else class="flex flex-col gap-3">
           <div v-if="!hasHome" class="at-banner">
             <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('pages.pages.noHome') }}</span>
             <button type="button" class="at-btn at-btn--blue" @click="openCreatePage({ home: true })">{{ t('pages.pages.createHome') }}</button>
           </div>
+
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div class="overflow-x-auto no-scrollbar">
+              <div class="at-seg !min-w-0">
+                <button v-for="f in FILTERS" :key="f.key" type="button" class="at-seg__btn !py-1.5" :class="pageFilter === f.key && 'at-seg__btn--on'" @click="pageFilter = f.key">
+                  {{ f.label }}<span class="text-xs opacity-60">{{ f.n }}</span>
+                </button>
+              </div>
+            </div>
+            <UInput v-model="pageQuery" icon="i-lucide-search" :placeholder="t('pages.pages.search')" class="sm:w-72" />
+          </div>
+
+          <p v-if="!visiblePages.length" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('pages.pages.noMatches') }}</p>
+
           <div
-            v-for="p in sortedPages" :key="p.id"
-            class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10"
-            :style="{ marginLeft: `${depth(p) * 1.25}rem` }"
+            v-for="p in pagedPages" :key="p.id"
+            class="group flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10"
+            :style="{ marginLeft: `${rowDepth(p) * 1.5}rem` }"
           >
-            <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon :name="p.path === '/' ? 'lucide:house' : 'lucide:file-text'" class="h-4 w-4" /></span>
+            <span v-if="rowDepth(p)" class="-mr-1 flex-shrink-0 text-gray-300 dark:text-neutral-600"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></span>
+            <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon :name="p.path === '/' ? 'lucide:house' : childCount(p) ? 'lucide:folder-tree' : 'lucide:file-text'" class="h-4 w-4" /></span>
             <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="min-w-0 flex-1 no-underline">
-              <div class="truncate font-medium text-gray-900 dark:text-white">{{ p.title }}</div>
+              <div class="flex items-center gap-2">
+                <span class="truncate font-medium text-gray-900 dark:text-white">{{ p.title }}</span>
+                <span v-if="p.path === '/'" class="flex-shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">{{ t('pages.pages.homeBadge') }}</span>
+                <span v-else-if="childCount(p)" class="flex-shrink-0 text-[11px] text-gray-400">{{ t('pages.pages.children', { n: childCount(p) }) }}</span>
+              </div>
               <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ p.path }}</div>
             </NuxtLink>
             <button
@@ -403,9 +532,16 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             >{{ p.status === 'PAGE_READY' ? t('pages.status.ready') : t('pages.status.draft') }}</button>
             <div class="flex flex-shrink-0 items-center gap-1">
               <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="at-btn !px-2.5" :aria-label="t('pages.pages.edit')" :title="t('pages.pages.edit')"><Icon name="lucide:pencil" class="h-4 w-4" /></NuxtLink>
-              <button v-if="p.path !== '/'" type="button" class="at-btn !px-2.5" :aria-label="t('pages.pages.addChild')" :title="t('pages.pages.addChild')" @click="openCreatePage({ parentId: p.id })"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></button>
+              <button type="button" class="at-btn hidden !px-2.5 sm:inline-flex" :aria-label="t('pages.pages.quickEdit')" :title="t('pages.pages.quickEdit')" @click="openQuickEdit(p)"><Icon name="lucide:sliders-horizontal" class="h-4 w-4" /></button>
+              <a v-if="isLive && p.status === 'PAGE_READY'" :href="pageUrl(p)" target="_blank" rel="noopener noreferrer" class="at-btn hidden !px-2.5 no-underline md:inline-flex" :aria-label="t('pages.pages.view')" :title="t('pages.pages.view')"><Icon name="lucide:external-link" class="h-4 w-4" /></a>
+              <button v-if="p.path !== '/'" type="button" class="at-btn hidden !px-2.5 md:inline-flex" :aria-label="t('pages.pages.addChild')" :title="t('pages.pages.addChild')" @click="openCreatePage({ parentId: p.id })"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></button>
+              <button type="button" class="at-btn hidden !px-2.5 md:inline-flex" :aria-label="t('pages.pages.duplicate')" :title="t('pages.pages.duplicate')" @click="duplicatePage(p)"><Icon name="lucide:copy" class="h-4 w-4" /></button>
               <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" :title="t('common.delete')" @click="deletePage(p)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
             </div>
+          </div>
+
+          <div v-if="visiblePages.length > PAGE_SIZE" class="flex justify-end">
+            <UPagination v-model="pageNo" :page-count="PAGE_SIZE" :total="visiblePages.length" size="xs" />
           </div>
         </div>
       </template>
@@ -547,7 +683,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
           <UFormGroup :label="t('pages.pages.title')" required><UInput v-model="pageForm.title" autofocus @keyup.enter="createPage" /></UFormGroup>
           <template v-if="!pageForm.home">
             <UFormGroup :label="t('pages.pages.parent')">
-              <USelectMenu v-model="pageForm.parentId" :options="parentOptions" value-attribute="value" option-attribute="label" :popper="{ strategy: 'fixed' }" />
+              <PagePicker v-model="pageForm.parentId" :ns-slug="nsSlug" :site-id="siteId" />
             </UFormGroup>
             <UFormGroup :label="t('pages.pages.slug')" :error="pageError || undefined" :help="pageError ? undefined : t('pages.pages.slugHint')">
               <UInput v-model="pageForm.slug" @update:model-value="pageSlugTouched = true" @keyup.enter="createPage" />
@@ -563,6 +699,36 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <button type="button" class="at-btn" @click="pageModal = false">{{ t('common.cancel') }}</button>
             <button type="button" class="at-btn at-btn--primary" :disabled="pageSaving" @click="createPage">
               <UIcon v-if="pageSaving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('pages.pages.createAndEdit') }}
+            </button>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
+
+    <!-- quick edit -->
+    <UModal v-model="qeOpen" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
+      <UCard :ui="atCardUiFit">
+        <template #header><h3 class="text-base font-semibold">{{ t('pages.pages.quickEdit') }}</h3></template>
+        <div class="space-y-3.5">
+          <UFormGroup :label="t('pages.pages.title')" required><UInput v-model="qe.title" @keyup.enter="saveQuickEdit" /></UFormGroup>
+          <template v-if="!qe.isHome">
+            <UFormGroup :label="t('pages.pages.slug')" :error="qeError || undefined"><UInput v-model="qe.slug" @keyup.enter="saveQuickEdit" /></UFormGroup>
+            <UFormGroup :label="t('pages.pages.parent')">
+              <PagePicker :key="qe.id" v-model="qe.parentId" :ns-slug="nsSlug" :site-id="siteId" :exclude="descendantIds(qe.id)" />
+            </UFormGroup>
+            <UFormGroup :label="t('pages.pages.order')" :help="t('pages.pages.orderHint')"><UInput v-model="qe.sort" type="number" /></UFormGroup>
+          </template>
+          <p v-else-if="qeError" class="text-xs text-red-600 dark:text-red-400">{{ qeError }}</p>
+          <div class="at-switch items-center justify-between">
+            <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('pages.pages.inPublish') }}</span>
+            <UToggle v-model="qe.ready" />
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <button type="button" class="at-btn" @click="qeOpen = false">{{ t('common.cancel') }}</button>
+            <button type="button" class="at-btn at-btn--primary" :disabled="qeSaving" @click="saveQuickEdit">
+              <UIcon v-if="qeSaving" name="lucide:loader-2" class="h-4 w-4 animate-spin" />{{ t('common.save') }}
             </button>
           </div>
         </template>

@@ -24,6 +24,7 @@ const loading = ref(true);
 const loadError = ref('');
 const site = ref<PagesSite | null>(null);
 const page = ref<SitePage | null>(null);
+const allPages = ref<SitePage[]>([]);
 const editorKey = ref(0);
 usePageTitle('pages', { subject: () => page.value?.title });
 
@@ -32,9 +33,9 @@ const backTo = computed(() => `/${nsSlug.value}/pages/${siteId.value}`);
 async function load() {
   try {
     await getToken(nsSlug.value);
-    const [s, p] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value)]);
+    const [s, p, all] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value)]);
     if (!s || !p || p.siteId !== s.id) { loadError.value = t('pages.editor.notFound'); return; }
-    site.value = s; page.value = p;
+    site.value = s; page.value = p; allPages.value = all;
   } catch (e) {
     logError('[pages/edit] load', e);
     loadError.value = getErrorMessage(e, t) || t('common.errorRetry');
@@ -51,6 +52,29 @@ const parentPath = computed(() => {
   if (!p || p.path === '/') return '';
   return p.path.slice(0, p.path.length - p.slug.length - 1);
 });
+
+// A page can't sit under itself or its own descendants.
+const excluded = computed(() => {
+  const banned = new Set<string>([pageId.value]);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const x of allPages.value) if (x.parentId && banned.has(x.parentId) && !banned.has(x.id)) { banned.add(x.id); grew = true; }
+  }
+  return banned;
+});
+
+async function onMove(parentId: string, sort: number) {
+  try {
+    const moved = await pagesApi.movePage(nsSlug.value, pageId.value, parentId || null, sort);
+    if (page.value) page.value = { ...page.value, parentId: moved.parentId, path: moved.path, sort: moved.sort };
+    allPages.value = await pagesApi.pages(nsSlug.value, siteId.value);
+    useToast().add({ title: t('pages.editor.moved'), color: 'green' });
+  } catch (e: any) {
+    const msg = String(e?.response?.errors?.[0]?.message || '');
+    useToast().add({ title: msg.includes('already exists') ? t('pages.pages.pathTaken') : t('common.error'), description: msg.includes('already exists') ? undefined : (msg || undefined), color: 'red' });
+  }
+}
 
 const initialPage = computed<Record<string, any>>(() => {
   const p = page.value;
@@ -125,6 +149,12 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :site-origin="siteOrigin(host)"
     :parent-path="parentPath"
     :is-home="isHome"
+    :ns-slug="nsSlug"
+    :site-id="siteId"
+    :exclude="excluded"
+    :parent-id="page?.parentId || ''"
+    :sort="page?.sort || 0"
+    :on-move="onMove"
     :published="!!site?.publishedVersion"
     :back-to="backTo"
     :image-resolver="resolveImage"
