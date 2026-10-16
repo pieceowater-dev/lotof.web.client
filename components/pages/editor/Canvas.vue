@@ -45,19 +45,19 @@
                   v-if="isAnchorableHeading(block)"
                   class="pe-tool"
                   :class="copiedAnchor === block.id ? '!text-emerald-600 dark:!text-emerald-300' : ''"
-                  :title="copiedAnchor === block.id ? 'Якорь скопирован' : 'Скопировать якорь'"
+                  :title="copiedAnchor === block.id ? t('pages.editor.ui.anchorCopied') : t('pages.editor.ui.copyAnchor')"
                   @click="copyAnchorToClipboard(blockAnchor(block, i))"
                 ><Icon :name="copiedAnchor === block.id ? 'lucide:check' : 'lucide:link-2'" class="h-3.5 w-3.5" /></button>
-                <button v-if="i > 0" class="pe-tool" title="Вверх" @click="$emit('move-block', i, -1)">
+                <button v-if="i > 0" class="pe-tool" :title="t('pages.editor.ui.up')" @click="$emit('move-block', i, -1)">
                   <Icon name="lucide:chevron-up" class="h-3.5 w-3.5" />
                 </button>
-                <button v-if="i < blocks.length - 1" class="pe-tool" title="Вниз" @click="$emit('move-block', i, 1)">
+                <button v-if="i < blocks.length - 1" class="pe-tool" :title="t('pages.editor.ui.down')" @click="$emit('move-block', i, 1)">
                   <Icon name="lucide:chevron-down" class="h-3.5 w-3.5" />
                 </button>
-                <button class="pe-tool" title="Дублировать" @click="$emit('duplicate-block', i)">
+                <button class="pe-tool" :title="t('pages.editor.ui.duplicate')" @click="$emit('duplicate-block', i)">
                   <Icon name="lucide:copy" class="h-3.5 w-3.5" />
                 </button>
-                <button class="pe-tool pe-tool--danger" title="Удалить" @click="$emit('delete-block', i)">
+                <button class="pe-tool pe-tool--danger" :title="t('pages.editor.ui.delete')" @click="$emit('delete-block', i)">
                   <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -86,7 +86,7 @@
                   v-else-if="block.type === 'paragraph'"
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
-                  data-placeholder="Начните вводить текст..."
+                  :data-placeholder="t('pages.editor.ui.typeHere')"
                   class="outline-none w-full leading-7 text-slate-700 dark:text-neutral-300 text-[15px]
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
@@ -101,7 +101,7 @@
                   v-else-if="block.type === 'quote'"
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
-                  data-placeholder="Цитата..."
+                  :data-placeholder="t('pages.editor.ui.quote')"
                   class="outline-none w-full border-l-[3px] border-blue-400 dark:border-blue-500
                          pl-4 py-1 italic text-slate-500 dark:text-neutral-400 text-lg leading-relaxed
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
@@ -117,7 +117,7 @@
                   v-else-if="block.type === 'ul'"
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
-                  data-placeholder="Элемент списка..."
+                  :data-placeholder="t('pages.editor.ui.listItem')"
                   class="outline-none w-full list-disc list-inside text-slate-700 dark:text-neutral-300 text-[15px] space-y-1 leading-7
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
@@ -132,7 +132,7 @@
                   v-else-if="block.type === 'ol'"
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
-                  data-placeholder="Элемент списка..."
+                  :data-placeholder="t('pages.editor.ui.listItem')"
                   class="outline-none w-full list-decimal list-inside text-slate-700 dark:text-neutral-300 text-[15px] space-y-1 leading-7
                          empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
@@ -166,7 +166,7 @@
                     <div
                       :ref="(el: any) => setBlockRef(block.id, el)"
                       contenteditable="true"
-                      data-placeholder="Текст заметки..."
+                      :data-placeholder="t('pages.editor.ui.noteText')"
                       class="outline-none w-full text-sm leading-relaxed
                              empty:before:content-[attr(data-placeholder)] empty:before:opacity-40"
                       @input="block.content = ($event.target as HTMLElement).innerHTML"
@@ -184,7 +184,7 @@
                           ? calloutActiveBtnClass(ct)
                           : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300'"
                         @click.stop="block.attrs.calloutType = ct"
-                      >{{ { info: 'Инфо', warning: 'Важно', success: 'Готово' }[ct] }}</button>
+                      >{{ { info: t('pages.editor.ui.calloutInfo'), warning: t('pages.editor.ui.calloutWarning'), success: t('pages.editor.ui.calloutSuccess') }[ct] }}</button>
                     </div>
                   </div>
                 </div>
@@ -193,11 +193,11 @@
                 <div v-else-if="block.type === 'image'" class="py-1">
                   <div v-if="!block.attrs.src" class="pe-drop">
                     <span class="icon-tile mb-2"><Icon name="lucide:image-plus" class="h-5 w-5" /></span>
-                    <p class="text-sm font-bold text-slate-700 dark:text-neutral-200">Добавьте изображение</p>
-                    <p class="mb-3 text-xs text-slate-400 dark:text-neutral-500">Загрузите файл</p>
+                    <p class="text-sm font-bold text-slate-700 dark:text-neutral-200">{{ t('pages.editor.ui.addImageTitle') }}</p>
+                    <p class="mb-3 text-xs text-slate-400 dark:text-neutral-500">{{ t('pages.editor.ui.uploadFile') }}</p>
                     <label class="at-btn at-btn--blue cursor-pointer">
                       <Icon name="lucide:upload" class="h-4 w-4" />
-                      <span>Выбрать файл</span>
+                      <span>{{ t('pages.editor.ui.chooseFile') }}</span>
                       <input type="file" accept="image/*" class="hidden" @change="onImageFileChange(block, $event)" />
                     </label>
                   </div>
@@ -216,13 +216,13 @@
                     <div class="mt-3 space-y-1.5">
                       <input
                         :value="block.attrs.caption"
-                        placeholder="Подпись к изображению..."
+                        :placeholder="t('pages.editor.ui.caption')"
                         class="pe-field pe-field--bare w-full text-sm text-slate-500 dark:text-neutral-400"
                         @input="block.attrs.caption = ($event.target as HTMLInputElement).value"
                       />
                       <input
                         :value="block.attrs.alt"
-                        placeholder="Alt текст для SEO (обязательно)..."
+                        :placeholder="t('pages.editor.ui.altText')"
                         class="pe-field pe-field--bare w-full text-xs text-slate-500 dark:text-neutral-400"
                         :class="block.attrs.alt ? '' : 'pe-field--bad'"
                           @input="block.attrs.alt = ($event.target as HTMLInputElement).value"
@@ -233,7 +233,7 @@
                              pe-pill !bg-white/90 dark:!bg-[#262626]/90 backdrop-blur-sm"
                       @click.stop="block.attrs.src = ''"
                     >
-                      Изменить
+                      {{ t('pages.editor.ui.change') }}
                     </button>
                   </div>
                 </div>
@@ -241,12 +241,12 @@
                 <!-- RAW HTML -->
                 <div v-else-if="block.type === 'button'" class="py-1">
                   <div class="pe-tray">
-                    <div class="pe-tray-title"><Icon name="lucide:rectangle-ellipsis" class="h-3.5 w-3.5" />Кнопка</div>
+                    <div class="pe-tray-title"><Icon name="lucide:rectangle-ellipsis" class="h-3.5 w-3.5" />{{ t('pages.editor.ui.button') }}</div>
 
                     <div class="grid gap-2">
                       <input
                         :value="String(block.attrs.text || '')"
-                        placeholder="Текст кнопки"
+                        :placeholder="t('pages.editor.ui.buttonText')"
                         class="pe-field"
                         @input="block.attrs.text = ($event.target as HTMLInputElement).value"
                       />
@@ -254,7 +254,7 @@
                       <input
                         v-if="buttonKind(block) !== 'login'"
                         :value="String(block.attrs.href || '')"
-                        placeholder="Ссылка: https://... или #yakor-sekcii"
+                        :placeholder="t('pages.editor.ui.buttonLink')"
                         class="pe-field"
                         @input="block.attrs.href = ($event.target as HTMLInputElement).value"
                       />
@@ -287,19 +287,19 @@
                             :class="buttonOpensInNewTab(block) ? 'translate-x-4.5' : 'translate-x-0.5'"
                           />
                         </span>
-                        <span>Открывать в соседней вкладке</span>
+                        <span>{{ t('pages.editor.ui.newTab') }}</span>
                       </button>
                     </div>
 
                     <div class="mt-3 flex items-center justify-between gap-3">
                       <p class="text-[11px] text-slate-500 dark:text-neutral-400">
-                        У заголовков можно скопировать якорь через иконку в тулбаре блока.
+                        {{ t('pages.editor.ui.anchorHint') }}
                       </p>
                       <a
                         :href="buttonPreviewHref(block)"
                         :class="buttonPreviewClass(block)"
                       >
-                        {{ String(block.attrs.text || 'Кнопка') || 'Кнопка' }}
+                        {{ String(block.attrs.text || t('pages.editor.ui.button')) || t('pages.editor.ui.button') }}
                       </a>
                     </div>
                   </div>
@@ -334,27 +334,27 @@
                         class="rounded-3xl bg-white p-3 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-[#1f1f1f] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.09)]"
                       >
                         <div class="mb-2 flex items-center justify-between gap-2">
-                          <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-neutral-400">Пара {{ faqIndex + 1 }}</span>
+                          <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-neutral-400">{{ t('pages.editor.ui.faqPair', { n: faqIndex + 1 }) }}</span>
                           <button
                             type="button"
                             class="pe-pill pe-pill--danger"
                             @click="removeFaqItem(block, faqIndex)"
                           >
-                            Удалить
+                            {{ t('pages.editor.ui.delete') }}
                           </button>
                         </div>
 
                         <input
                           :value="String(item.q || '')"
-                          placeholder="Вопрос"
+                          :placeholder="t('pages.editor.ui.question')"
                           class="pe-field mb-2"
                           @input="updateFaqField(block, faqIndex, 'q', ($event.target as HTMLInputElement).value)"
                         />
                         <textarea
                           :value="String(item.a || '')"
                           rows="3"
-                          placeholder="Ответ"
-                          aria-label="Ответ"
+                          :placeholder="t('pages.editor.ui.answer')"
+                          :aria-label="t('pages.editor.ui.answer')"
                           class="pe-field"
                           @input="updateFaqField(block, faqIndex, 'a', ($event.target as HTMLTextAreaElement).value)"
                         />
@@ -367,7 +367,7 @@
                         class="pe-pill pe-pill--on"
                         @click="addFaqItem(block)"
                       >
-                        + Добавить вопрос
+                        + {{ t('pages.editor.ui.addQuestion') }}
                       </button>
                     </div>
                   </div>
@@ -410,8 +410,8 @@
           <!-- Empty state -->
           <div v-if="blocks.length === 0" class="py-16 text-center">
             <span class="icon-tile mb-4 !h-14 !w-14"><Icon name="lucide:layout-template" class="h-7 w-7" /></span>
-            <p class="text-sm font-bold text-slate-600 dark:text-neutral-300">Нажмите «+» чтобы добавить первый блок</p>
-            <p class="text-xs text-slate-300 dark:text-neutral-600 mt-1">Параграфы, заголовки, изображения и многое другое</p>
+            <p class="text-sm font-bold text-slate-600 dark:text-neutral-300">{{ t('pages.editor.ui.emptyTitle') }}</p>
+            <p class="text-xs text-slate-300 dark:text-neutral-600 mt-1">{{ t('pages.editor.ui.emptyHint') }}</p>
           </div>
         </div>
       </div>
@@ -594,10 +594,10 @@ async function copyAnchorToClipboard(anchor: string) {
 }
 
 const buttonVariants = [
-  { value: 'solid', label: 'Заполненная' },
-  { value: 'outline', label: 'Контурная' },
-  { value: 'soft', label: 'Мягкая' },
-  { value: 'link', label: 'Текстовая' },
+  { value: 'solid', label: t('pages.editor.ui.btnSolid') },
+  { value: 'outline', label: t('pages.editor.ui.btnOutline') },
+  { value: 'soft', label: t('pages.editor.ui.btnSoft') },
+  { value: 'link', label: t('pages.editor.ui.btnLink') },
 ] as const
 
 function buttonVariant(block: Block): 'solid' | 'outline' | 'soft' | 'link' {
@@ -610,7 +610,7 @@ function buttonVariant(block: Block): 'solid' | 'outline' | 'soft' | 'link' {
 function setButtonKind(block: Block, kind: 'custom' | 'login') {
   block.attrs.kind = kind
   if (kind === 'login') {
-    block.attrs.text = String(block.attrs.text || '').trim() || 'Войти'
+    block.attrs.text = String(block.attrs.text || '').trim() || t('pages.editor.ui.login')
     block.attrs.href = '/?auth-needed=true'
     block.attrs.newTab = false
     if (!String(block.attrs.variant || '').trim()) {
@@ -684,7 +684,7 @@ function headingClass(type: string) {
 }
 
 function headingPlaceholder(type: string) {
-  return { h2: 'Заголовок H2...', h3: 'Заголовок H3...', h4: 'Заголовок H4...', h5: 'Заголовок H5...' }[type] ?? 'Заголовок...'
+  return { h2: t('pages.editor.ui.h2'), h3: t('pages.editor.ui.h3'), h4: t('pages.editor.ui.h4'), h5: t('pages.editor.ui.h5') }[type] ?? t('pages.editor.ui.heading')
 }
 
 function calloutClass(type: string) {

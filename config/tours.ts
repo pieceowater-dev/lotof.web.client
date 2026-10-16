@@ -185,6 +185,29 @@ export const plansTour: TourConfig = {
   ],
 };
 
+export const pagesTour: TourConfig = {
+  id: 'pages-intro',
+  steps: [
+    { id: 'welcome', target: '[data-tour="pages-title"]', titleKey: 'app.tourPagesWelcomeTitle', contentKey: 'app.tourPagesWelcomeContent', placement: 'bottom', highlightPadding: 12 },
+    { id: 'new', target: '[data-tour="pages-new"]', titleKey: 'app.tourPagesNewTitle', contentKey: 'app.tourPagesNewContent', placement: 'left', highlightPadding: 10 },
+    { id: 'cards', target: '[data-tour="pages-cards"]', titleKey: 'app.tourPagesCardsTitle', contentKey: 'app.tourPagesCardsContent', placement: 'top', highlightPadding: 8 },
+    { id: 'ai', target: '[data-tour="pages-ai"]', titleKey: 'app.tourPagesAiTitle', contentKey: 'app.tourPagesAiContent', placement: 'top', highlightPadding: 8 },
+    { id: 'team', target: '[data-tour="pages-team"]', titleKey: 'app.tourPagesTeamTitle', contentKey: 'app.tourPagesTeamContent', placement: 'bottom', highlightPadding: 8 },
+    { id: 'plan', target: '[data-tour="pages-plan"]', titleKey: 'app.tourPagesPlanTitle', contentKey: 'app.tourPagesPlanContent', placement: 'bottom', highlightPadding: 8 },
+    { id: 'help-button', target: '[data-tour="help-button"]', titleKey: 'app.tourPagesHelpTitle', contentKey: 'app.tourPagesHelpContent', placement: 'bottom', highlightPadding: 8 },
+  ],
+};
+
+export const pagesSiteTour: TourConfig = {
+  id: 'pages-site-intro',
+  steps: [
+    { id: 'tabs', target: '[data-tour="site-tabs"]', titleKey: 'app.tourPagesSiteTabsTitle', contentKey: 'app.tourPagesSiteTabsContent', placement: 'bottom', highlightPadding: 8 },
+    { id: 'newpage', target: '[data-tour="site-newpage"]', titleKey: 'app.tourPagesSiteNewTitle', contentKey: 'app.tourPagesSiteNewContent', placement: 'left', highlightPadding: 10 },
+    { id: 'publish', target: '[data-tour="site-publish"]', titleKey: 'app.tourPagesSitePublishTitle', contentKey: 'app.tourPagesSitePublishContent', placement: 'left', highlightPadding: 10 },
+    { id: 'help-button', target: '[data-tour="help-button"]', titleKey: 'app.tourPagesHelpTitle', contentKey: 'app.tourPagesHelpContent', placement: 'bottom', highlightPadding: 8 },
+  ],
+};
+
 export const goodsTour: TourConfig = {
   id: 'goods-intro',
   steps: [

@@ -155,6 +155,16 @@ const KNOWN_BUSINESS_ERRORS: Array<[RegExp, string]> = [
   [/order already has an open task/i, 'tasks.errOrderTaskExists'],
 ]
 
+// Plan-limit refusals from Pages core are worded in Russian with their numbers in a fixed shape; each is
+// turned into the localized message of the same meaning, filling {used} and {limit} from the text.
+const PAGES_LIMIT_ERRORS: Array<[RegExp, string]> = [
+  [/Достигнут лимит тарифа: сайтов \((\d+) из (\d+)\)/, 'pages.err.limitSites'],
+  [/Достигнут лимит тарифа: страниц \((\d+) из (\d+)\)/, 'pages.err.limitPages'],
+  [/Достигнут лимит тарифа: свои домены \((\d+) из (\d+)\)/, 'pages.err.limitDomains'],
+  [/Достигнут лимит тарифа: хранилище[^(]*\((\d+) МБ из (\d+) МБ\)/, 'pages.err.limitStorage'],
+  [/Недоступно на вашем тарифе: свои домены/, 'pages.err.domainsOff'],
+]
+
 // Never show raw backend/runtime internals (SQLSTATE codes, Go panics,
 // stack traces, bare "rpc error: code = Unknown desc = ...") to end users —
 // they're meaningless and alarming. The detail is never lost though: it's
@@ -195,6 +205,13 @@ export function getErrorMessage(e: unknown, t?: (key: string) => string): string
       if (re.test(desc0)) {
         const msg = t(key)
         if (msg) return msg
+      }
+    }
+    for (const [re, key] of PAGES_LIMIT_ERRORS) {
+      const m = desc0.match(re)
+      if (m) {
+        const msg = t(key)
+        if (msg) return msg.replace('{used}', m[1] ?? '').replace('{limit}', m[2] ?? '')
       }
     }
   }

@@ -14,6 +14,9 @@ const TOUR_PAGES: Record<string, TourPage> = {
   'atrace-intro': { match: /^\/[^/]+\/atrace(\/attendance(\/[^/]+)*)?\/?$/, home: (ns) => `/${ns}/atrace/attendance/all` },
   'menu-intro': { match: /^\/[^/]+\/menu\/?$/, home: (ns) => `/${ns}/menu` },
   'plans-intro': { match: /^\/[^/]+\/plans\/?$/, home: (ns) => `/${ns}/plans` },
+  // /{ns}/pages shows the sites list; the single-site redirect is skipped for a tour via ?all=1.
+  'pages-intro': { match: /^\/[^/]+\/pages\/?$/, home: (ns) => `/${ns}/pages?all=1` },
+  'pages-site-intro': { match: /^\/[^/]+\/pages\/[^/]+\/?$/, home: (ns) => `/${ns}/pages` },
   'goods-intro': { match: /^\/[^/]+\/goods\/?$/, home: (ns) => `/${ns}/goods` },
   'goods-register-intro': { match: /^\/[^/]+\/goods\/register\/?$/, home: (ns) => `/${ns}/goods/register` },
   // /{ns}/issues itself redirects to the board the user is "in".

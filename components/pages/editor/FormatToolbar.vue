@@ -53,7 +53,7 @@ function insertLink() {
         @click="emit('delete-blocks')"
       >
         <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
-        Удалить {{ props.formatBar.blockCount }} {{ props.formatBar.blockCount === 1 ? 'блок' : 'блока' }}
+        {{ t('pages.editor.ui.deleteBlocksN', { n: props.formatBar.blockCount }) }}
       </button>
 
       <template v-else>

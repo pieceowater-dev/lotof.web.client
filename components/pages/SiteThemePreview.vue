@@ -1,7 +1,9 @@
 <script lang="ts" setup>
 // Miniature of a published page, driven by the same variables the real stylesheet uses.
+import { useI18n } from '@/composables/useI18n';
 import { FONT_STACKS, onAccent, radiusPx, toneColors, type ThemeVars } from '@/utils/pagesThemes';
 
+const { t } = useI18n();
 const props = defineProps<{ vars: ThemeVars; siteName: string; logo?: string; footer?: string; compact?: boolean }>();
 
 const header = computed(() => toneColors(props.vars, props.vars.headerTone));
@@ -59,33 +61,33 @@ const navLink = (i: number) => {
           <span v-if="showName">{{ siteName || '…' }}</span>
         </span>
         <span class="flex gap-2">
-          <span :style="navLink(0)">Главная</span><span :style="navLink(1)">Меню</span><span :style="navLink(2)">Контакты</span>
+          <span :style="navLink(0)">{{ t('pages.design.pv.home') }}</span><span :style="navLink(1)">{{ t('pages.design.pv.menu') }}</span><span :style="navLink(2)">{{ t('pages.design.pv.contacts') }}</span>
         </span>
       </div>
     </div>
     <div class="mx-auto py-4" :style="{ maxWidth: maxW, fontSize: bodySize, lineHeight: vars.leading === 'tight' ? 1.45 : vars.leading === 'airy' ? 1.85 : 1.65 }">
       <div
         class="leading-tight" :style="{ fontFamily: 'var(--hfont)', fontSize: titleSize, fontWeight: weight, color: heading, textAlign: vars.headingAlign === 'center' ? 'center' : 'left', textTransform: vars.headingCase === 'upper' ? 'uppercase' : 'none', letterSpacing: vars.headingCase === 'upper' ? '.04em' : undefined }"
-      >Заголовок страницы</div>
+      >{{ t('pages.design.pv.title') }}</div>
       <div
         v-if="!compact" class="mt-2 text-[12px]"
         :style="{ fontFamily: 'var(--hfont)', fontWeight: weight, color: heading, textAlign: vars.headingAlign === 'center' ? 'center' : 'left', textTransform: vars.headingCase === 'upper' ? 'uppercase' : 'none', paddingBottom: vars.headingDecor === 'underline' ? '3px' : undefined, borderBottom: vars.headingDecor === 'underline' ? '2px solid var(--accent)' : undefined, borderLeft: vars.headingDecor === 'bar' ? '4px solid var(--accent)' : undefined, paddingLeft: vars.headingDecor === 'bar' ? '6px' : undefined }"
-      >Подзаголовок</div>
+      >{{ t('pages.design.pv.subtitle') }}</div>
       <p :style="{ marginTop: gap }">
-        Так будет выглядеть текст на вашем сайте.
-        <span :style="{ color: 'var(--accent)', textDecoration: vars.links === 'underline' ? 'underline' : 'none', fontWeight: vars.links === 'plain' ? 600 : undefined }">Ссылка</span> и абзацы.
+        {{ t('pages.design.pv.text') }}
+        <span :style="{ color: 'var(--accent)', textDecoration: vars.links === 'underline' ? 'underline' : 'none', fontWeight: vars.links === 'plain' ? 600 : undefined }">{{ t('pages.design.pv.link') }}</span> {{ t('pages.design.pv.andParagraphs') }}
       </p>
       <div class="flex items-center gap-2" :style="{ marginTop: gap }">
-        <span class="inline-block px-3 py-1 text-[10px] font-semibold" :style="{ background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 'var(--rb)' }">Кнопка</span>
-        <span class="inline-block border px-3 py-1 text-[10px] font-semibold" :style="{ borderColor: 'var(--accent)', color: 'var(--accent)', borderRadius: 'var(--rb)' }">Ещё</span>
+        <span class="inline-block px-3 py-1 text-[10px] font-semibold" :style="{ background: 'var(--accent)', color: 'var(--on-accent)', borderRadius: 'var(--rb)' }">{{ t('pages.design.pv.button') }}</span>
+        <span class="inline-block border px-3 py-1 text-[10px] font-semibold" :style="{ borderColor: 'var(--accent)', color: 'var(--accent)', borderRadius: 'var(--rb)' }">{{ t('pages.design.pv.more') }}</span>
       </div>
       <template v-if="!compact">
         <div
           class="mt-2.5 text-[10px]"
           :style="{ position: 'relative', margin: `${gap} 0`, padding: vars.quote === 'mark' ? '2px 0 2px 22px' : '2px 0 2px 8px', borderLeft: vars.quote === 'bar' ? '3px solid var(--accent)' : 'none', color: 'var(--muted)', fontStyle: 'italic' }"
-        ><span v-if="vars.quote === 'mark'" :style="{ position: 'absolute', left: 0, top: '-6px', fontSize: '26px', color: 'var(--accent)', fontFamily: 'Georgia, serif', fontStyle: 'normal' }">“</span>Цитата в стиле темы</div>
+        ><span v-if="vars.quote === 'mark'" :style="{ position: 'absolute', left: 0, top: '-6px', fontSize: '26px', color: 'var(--accent)', fontFamily: 'Georgia, serif', fontStyle: 'normal' }">“</span>{{ t('pages.design.pv.quote') }}</div>
         <div class="border p-2 text-[10px]" :style="{ background: 'var(--accent-soft)', borderColor: 'color-mix(in srgb, var(--accent) 35%, var(--bg))', borderRadius: 'var(--r)', boxShadow: 'var(--sh)' }">
-          Заметка: блок уведомления в цвете темы.
+          {{ t('pages.design.pv.note') }}
         </div>
         <div class="mt-2.5 h-10 w-full" :style="{ background: 'color-mix(in srgb, var(--text) 8%, var(--bg))', borderRadius: 'var(--r)', boxShadow: vars.images === 'shadow' ? '0 12px 32px -12px rgba(0,0,0,.4)' : undefined, border: vars.images === 'border' ? '1px solid var(--line)' : undefined }" />
       </template>

@@ -255,7 +255,7 @@ function createBlock(type: string): Block {
   const attrs = type === 'callout'
     ? { calloutType: 'info' }
     : type === 'button'
-      ? { text: 'Кнопка', href: '', newTab: true, kind: 'custom', variant: 'solid' }
+      ? { text: t('pages.editor.ui.button'), href: '', newTab: true, kind: 'custom', variant: 'solid' }
       : type === 'faq'
         ? { items: [{ q: '', a: '' }] }
       : type === 'global'
@@ -271,9 +271,9 @@ function createBlock(type: string): Block {
       : {}
 
   const content = type === 'ul'
-    ? '<li>Элемент</li>'
+    ? `<li>${t('pages.editor.ui.listItemDefault')}</li>`
     : type === 'ol'
-      ? '<li>Элемент</li>'
+      ? `<li>${t('pages.editor.ui.listItemDefault')}</li>`
       : ''
 
   return {
@@ -610,10 +610,10 @@ async function openConfirmDialog(type: ConfirmKind, blockIndex?: number, blockRa
     cancelLabel = t('pages.editor.cancel')
   } else {
     const count = type === 'deleteBlocks' && blockRange ? blockRange.end - blockRange.start + 1 : 1
-    title = type === 'deleteBlock' ? 'Удалить блок?' : `Удалить ${count} ${count === 1 ? 'блок' : 'блока'}?`
-    message = 'Это действие нельзя отменить.'
-    confirmLabel = 'Удалить'
-    cancelLabel = 'Отмена'
+    title = type === 'deleteBlock' ? t('pages.editor.ui.deleteBlockTitle') : t('pages.editor.ui.deleteBlocksTitle', { n: count })
+    message = t('pages.editor.ui.irreversible')
+    confirmLabel = t('pages.editor.ui.delete')
+    cancelLabel = t('pages.editor.cancel')
   }
   const ok = await confirm({ title, message, confirmLabel, cancelLabel, color: 'red', icon: 'lucide:trash-2' })
   if (ok) await runConfirmAction(type, blockIndex, blockRange)
@@ -749,7 +749,7 @@ function headingClass(type: string) {
 }
 
 function headingPlaceholder(type: string) {
-  return { h2: 'Заголовок H2...', h3: 'Заголовок H3...', h4: 'Заголовок H4...', h5: 'Заголовок H5...' }[type] ?? 'Заголовок...'
+  return { h2: t('pages.editor.ui.h2'), h3: t('pages.editor.ui.h3'), h4: t('pages.editor.ui.h4'), h5: t('pages.editor.ui.h5') }[type] ?? t('pages.editor.ui.heading')
 }
 
 function calloutClass(type: string) {

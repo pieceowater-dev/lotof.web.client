@@ -60,7 +60,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   // chekalka.kz visitor with no token got silently bounced to "/" before
   // ever seeing the page, since nothing below exempts it either -- it has
   // no "/atrace" substring, so isAtraceRoute never applied to save it.
-  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/goods' || to.path === '/chekalka') return;
+  if (to.path === '/issues' || to.path === '/menu' || to.path === '/contacts' || to.path === '/atrace' || to.path === '/goods' || to.path === '/sites' || to.path === '/chekalka') return;
   // /catalog and its single-vertical filtered views (/stores, /services,
   // /memberships) are the public Patron-facing marketplace -- never require a
   // hub token to browse (see pages/catalog.vue, which only asks a visitor to

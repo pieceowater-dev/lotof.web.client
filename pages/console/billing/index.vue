@@ -583,6 +583,7 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
   pages: [
     { key: 'max_sites', label: 'Макс. сайтов' },
     { key: 'max_pages', label: 'Макс. страниц' },
+    { key: 'max_domains', label: 'Макс. своих доменов (0 — не включены)' },
     { key: 'storage_mb', label: 'Хранилище, МБ (картинки и файлы сайтов)' },
   ],
   goods: [

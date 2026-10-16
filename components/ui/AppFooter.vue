@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import { useI18n } from '@/composables/useI18n';
+import { PAGES_ENABLED } from '@/config/apps';
 
 // Project-wide footer. `full` is the marketing/content footer (product
 // landings, guide, catalog, home); `minimal` is a single quiet strip for
@@ -26,6 +27,7 @@ const products = [
   { to: '/atrace', label: 'lota A-Trace' },
   { to: '/goods', label: 'lota Goods' },
   { to: '/plans', label: 'lota Запись' },
+  ...(PAGES_ENABLED ? [{ to: '/sites', label: 'lota Сайты' }] : []),
 ];
 
 const resources = computed(() => [

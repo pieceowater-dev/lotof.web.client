@@ -864,7 +864,8 @@
       "max_services": "Up to {value} services",
       "max_bookings_per_month": "Up to {value} bookings a month",
       "max_sites": "Up to {value} sites",
-      "max_pages": "Up to {value} pages"
+      "max_pages": "Up to {value} pages",
+      "max_domains": "Up to {value} custom domains"
     },
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",
@@ -1043,7 +1044,27 @@
     "limitMasters": "Staff",
     "limitServices": "Services",
     "limitBookingsPerMonth": "Bookings per month",
-    "console": "Console"
+    "console": "Console",
+    "tourPagesWelcomeTitle": "Welcome to Sites",
+    "tourPagesWelcomeContent": "Every site of your workspace lives here: build, style and publish.",
+    "tourPagesNewTitle": "New site",
+    "tourPagesNewContent": "Name the site and its address is created for you. A domain can be connected later.",
+    "tourPagesCardsTitle": "Your sites",
+    "tourPagesCardsContent": "A card shows the status, page count, version and languages. Click to open the site.",
+    "tourPagesAiTitle": "AI assistant",
+    "tourPagesAiContent": "Issue a key and connect Claude or ChatGPT: they can build pages for you. Everything stays a draft until you publish.",
+    "tourPagesTeamTitle": "Team",
+    "tourPagesTeamContent": "Give colleagues an editor or administrator role on chosen sites.",
+    "tourPagesPlanTitle": "Plan",
+    "tourPagesPlanContent": "How many sites, pages and disk space are left, and the button to change the plan.",
+    "tourPagesHelpTitle": "Guide",
+    "tourPagesHelpContent": "Repeat the tour here and open the articles about Sites.",
+    "tourPagesSiteTabsTitle": "Site sections",
+    "tourPagesSiteTabsContent": "Pages, categories, publishing, shared blocks, design, domains and settings.",
+    "tourPagesSiteNewTitle": "New page",
+    "tourPagesSiteNewContent": "Start from a blank page or a ready template: landing, about, services, contacts.",
+    "tourPagesSitePublishTitle": "Publish",
+    "tourPagesSitePublishContent": "The site is checked before it goes live. Any earlier version can be brought back."
   },
   "billing": {
     "contactUsTitle": "Contact the lota team",
@@ -1830,7 +1851,34 @@
     "howItWorksTitle": "How it works",
     "whoForTitle": "Who it's for",
     "ctaTitle": "Try {name} for free",
-    "ctaSubtitle": "Set up in a couple of minutes, free plan with no time limit."
+    "ctaSubtitle": "Set up in a couple of minutes, free plan with no time limit.",
+    "pages": {
+      "eyebrow": "Website builder",
+      "headline": "A business website in an evening, not a month",
+      "subheadline": "Pages from ready sections, menus, your brand's look and one-click publishing. Hand the build to an AI assistant or do it yourself.",
+      "f1Title": "Sections and templates",
+      "f1Desc": "Hero, cards, gallery, call to action and ready pages: landing, about, services, contacts.",
+      "f2Title": "AI builds the site",
+      "f2Desc": "Connect Claude or ChatGPT: they create pages, menus and design. Everything stays a draft until you publish.",
+      "f3Title": "Your own style",
+      "f3Desc": "38 themes, fonts, colours, background pictures and reveal animations. No two sites look alike.",
+      "f4Title": "SEO out of the box",
+      "f4Desc": "Sitemap, meta tags, social previews, structured data and a pre-publish check: broken links do not pass.",
+      "f5Title": "Several languages",
+      "f5Desc": "Copy a page into another language: the switcher and search hints appear on their own.",
+      "f6Title": "Your own domain",
+      "f6Desc": "Connect a domain, get a certificate and roll back to any earlier version in one click.",
+      "s1Title": "Create a site",
+      "s1Desc": "Name it, pick a theme and a template for the first page.",
+      "s2Title": "Fill it in",
+      "s2Desc": "Replace the texts and pictures yourself or ask the AI.",
+      "s3Title": "Publish",
+      "s3Desc": "The check finds mistakes and publishing takes seconds.",
+      "who1": "Small business",
+      "who2": "Salons and studios",
+      "who3": "Cafes and shops",
+      "who4": "Freelancers and agencies"
+    }
   },
   "admin": {
     "billingLoadFailed": "Failed to load billing data",
@@ -4530,6 +4578,20 @@
         "picked": "Selected: {n}",
         "addSelected": "Add",
         "items": "{n} items"
+      },
+      "pv": {
+        "home": "Home",
+        "menu": "Menu",
+        "contacts": "Contacts",
+        "title": "Page title",
+        "subtitle": "Subtitle",
+        "text": "This is how the text on your site will look.",
+        "link": "Link",
+        "andParagraphs": "and paragraphs.",
+        "button": "Button",
+        "more": "More",
+        "quote": "A quote in the theme's style",
+        "note": "Note: a notice block in the theme colour."
       }
     },
     "domains": {
@@ -4899,6 +4961,55 @@
         "v_fade": "Fade",
         "v_up": "Slide up",
         "v_zoom": "Zoom"
+      },
+      "ui": {
+        "anchorCopied": "Anchor copied",
+        "copyAnchor": "Copy anchor",
+        "up": "Up",
+        "down": "Down",
+        "duplicate": "Duplicate",
+        "delete": "Delete",
+        "typeHere": "Start typing...",
+        "quote": "Quote...",
+        "listItem": "List item...",
+        "listItemDefault": "Item",
+        "noteText": "Note text...",
+        "calloutInfo": "Info",
+        "calloutWarning": "Important",
+        "calloutSuccess": "Done",
+        "addImageTitle": "Add an image",
+        "uploadFile": "Upload a file",
+        "chooseFile": "Choose file",
+        "caption": "Image caption...",
+        "altText": "Alt text for SEO (required)...",
+        "change": "Change",
+        "button": "Button",
+        "buttonText": "Button text",
+        "buttonLink": "Link: https://... or #anchor",
+        "newTab": "Open in a new tab",
+        "anchorHint": "For headings you can copy the anchor with the icon in the block toolbar.",
+        "faqPair": "Pair {n}",
+        "question": "Question",
+        "answer": "Answer",
+        "addQuestion": "Add a question",
+        "emptyTitle": "Press “+” to add the first block",
+        "emptyHint": "Paragraphs, headings, images and more",
+        "btnSolid": "Filled",
+        "btnOutline": "Outline",
+        "btnSoft": "Soft",
+        "btnLink": "Text",
+        "login": "Log in",
+        "h2": "Heading H2...",
+        "h3": "Heading H3...",
+        "h4": "Heading H4...",
+        "h5": "Heading H5...",
+        "heading": "Heading...",
+        "addBlock": "Add block",
+        "block": "Block",
+        "deleteBlocksN": "Delete {n} blocks",
+        "deleteBlockTitle": "Delete the block?",
+        "deleteBlocksTitle": "Delete {n} blocks?",
+        "irreversible": "This cannot be undone."
       }
     },
     "team": {
@@ -4974,6 +5085,29 @@
       "contact": "Paid plans are connected via support",
       "done": "Plan connected",
       "ownerOnly": "Only the owner can change the plan"
+    },
+    "preflight": {
+      "no_pages": "There are no pages ready to publish",
+      "no_home": "There is no home page: the site address will return 404",
+      "mass_noindex": "{hidden} of {total} pages are hidden from search: the site will hardly appear in results. Remove noindex from the pages that should be found",
+      "robots_blocks_all": "robots.txt blocks the whole site from indexing (Disallow: /)",
+      "missing_title": "The page has no title",
+      "missing_description": "The page has no description for search engines",
+      "page_noindex": "The page is hidden from indexing",
+      "empty_page": "The page has no content",
+      "duplicate_title": "The title matches the page {detail}",
+      "broken_global": "The page uses a shared block that does not exist: {detail}",
+      "broken_link": "A link to a page that does not exist: {detail}",
+      "title_too_long": "The title is longer than 60 characters: search engines will cut it",
+      "title_too_short": "The title is too short: add a clarification",
+      "description_length": "Keep the description between 70 and 160 characters"
+    },
+    "err": {
+      "limitSites": "Plan limit reached: sites ({used} of {limit}). Move to a higher plan to add more.",
+      "limitPages": "Plan limit reached: pages ({used} of {limit}). Move to a higher plan to add more.",
+      "limitDomains": "Plan limit reached: custom domains ({used} of {limit}). Move to a higher plan.",
+      "limitStorage": "Disk limit reached ({used} MB of {limit} MB). Delete pictures you do not need or move to a higher plan.",
+      "domainsOff": "Custom domains are not available on your plan. Move to a plan that includes them."
     }
   },
   "plans": {
@@ -5362,6 +5496,10 @@
     },
     "guide": {
       "title": "lota Guide"
+    },
+    "pages": {
+      "title": "lota Sites: a website builder with an AI assistant",
+      "description": "Build a business website without a developer: ready templates and sections, custom domains, SEO and one-click publishing. An AI assistant can build it for you."
     }
   }
 }

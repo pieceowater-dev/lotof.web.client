@@ -2,7 +2,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
 import { ALL_APPS, PAGES_ENABLED } from '@/config/apps';
-import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, goodsRegisterTour, plansTour } from '@/config/tours';
+import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, goodsRegisterTour, plansTour, pagesTour } from '@/config/tours';
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
@@ -15,6 +15,7 @@ const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   contacts: contactsTour,
   goods: goodsTour,
   plans: plansTour,
+  pages: pagesTour,
 };
 
 // Pages is listed only where the app itself is available (see PAGES_ENABLED).

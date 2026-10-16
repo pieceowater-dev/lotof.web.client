@@ -8,6 +8,8 @@ import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { pagesTour } from '@/config/tours';
 import { usePagesAccess } from '@/composables/usePagesAccess';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { pagesApi, type PagesSite } from '@/api/pages/ops';
@@ -31,7 +33,7 @@ async function load() {
     await getToken(nsSlug.value);
     await Promise.all([loadAccess(), pagesApi.sites(nsSlug.value).then((r) => { sites.value = r; })]);
     // one site: go straight to it; the back arrow on its page returns here with ?all=1
-    if (sites.value.length === 1 && !route.query.all) {
+    if (sites.value.length === 1 && !route.query.all && route.query.tour !== '1') {
       await navigateTo(`/${nsSlug.value}/pages/${sites.value[0].id}`, { replace: true });
       return;
     }
@@ -42,7 +44,20 @@ async function load() {
     booting.value = false;
   }
 }
-onMounted(load);
+onMounted(async () => {
+  await load();
+  maybeStartTour();
+});
+
+// Offer the intro once, to an owner who has not seen it, and whenever it is requested with ?tour=1.
+function maybeStartTour() {
+  if (!isOwner.value || !sites.value.length || booting.value) return;
+  const { isCompleted, startTour } = useOnboarding();
+  const asked = route.query.tour === '1';
+  if (isCompleted(pagesTour.id) && !asked) return;
+  setTimeout(() => startTour(pagesTour), asked ? 700 : 1500);
+  if (asked) navigateTo({ query: { all: '1' } }, { replace: true });
+}
 
 // ── create ──
 const createOpen = ref(false);
@@ -106,19 +121,19 @@ function statusMeta(s: PagesSite) {
 
 <template>
   <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4 [&>*]:flex-shrink-0">
-    <PageHeader :title="t('pages.title')" :subtitle="t('pages.subtitle')">
+    <PageHeader data-tour="pages-title" :title="t('pages.title')" :subtitle="t('pages.subtitle')">
       <template #primary>
-        <button v-if="isOwner" type="button" class="at-btn at-btn--primary" @click="openCreate">
+        <button v-if="isOwner" type="button" data-tour="pages-new" class="at-btn at-btn--primary" @click="openCreate">
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span class="hidden min-[440px]:inline">{{ t('pages.sites.new') }}</span>
           <span class="sr-only min-[440px]:hidden">{{ t('pages.sites.new') }}</span>
         </button>
       </template>
       <template #actions>
-        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/team`" class="at-btn !px-2.5 no-underline" :title="t('pages.team.title')" :aria-label="t('pages.team.title')">
+        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/team`" data-tour="pages-team" class="at-btn !px-2.5 no-underline" :title="t('pages.team.title')" :aria-label="t('pages.team.title')">
           <Icon name="lucide:users" class="h-4 w-4" />
         </NuxtLink>
-        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/plan`" class="at-btn !px-2.5 no-underline" :title="t('pages.plan.title')" :aria-label="t('pages.plan.title')">
+        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/plan`" data-tour="pages-plan" class="at-btn !px-2.5 no-underline" :title="t('pages.plan.title')" :aria-label="t('pages.plan.title')">
           <Icon name="lucide:gauge" class="h-4 w-4" />
         </NuxtLink>
       </template>
@@ -138,7 +153,7 @@ function statusMeta(s: PagesSite) {
       </button>
     </EmptyState>
 
-    <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+    <div v-else data-tour="pages-cards" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <NuxtLink
         v-for="s in sites"
         :key="s.id"
@@ -167,7 +182,7 @@ function statusMeta(s: PagesSite) {
       </NuxtLink>
     </div>
 
-    <section v-if="!booting && isOwner" class="flex flex-col gap-3">
+    <section v-if="!booting && isOwner" data-tour="pages-ai" class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white"><UIcon name="lucide:sparkles" class="h-4 w-4 text-primary-500" />{{ t('pages.tabs.integrations') }}</h2>
       <IntegrationsPanel :sites="sites" :ns-slug="nsSlug" />
     </section>

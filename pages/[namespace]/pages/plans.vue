@@ -17,7 +17,7 @@ const toSub = (s: PagesSubscription | null) =>
 const config: AppPlansPageConfig = {
   appBundle: APP_BUNDLE,
   appKey: 'pages',
-  title: 'Тарифы — Pages',
+  title: 'Pages',
   token,
   loadPlans: async (ns) => ({ plans: await pagesApi.tariffs(ns) }),
   loadActiveSubscription: async ({ nsSlug }) => toSub(await pagesApi.subscription(nsSlug)),

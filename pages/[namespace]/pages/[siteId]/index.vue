@@ -2,6 +2,8 @@
 definePageMeta({ layout: 'workspace' });
 
 import PageHeader from '@/components/ui/PageHeader.vue';
+import { useOnboarding } from '@/composables/useOnboarding';
+import { pagesSiteTour } from '@/config/tours';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
@@ -64,7 +66,7 @@ watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { repla
 function fail(e: unknown, key = 'common.error') {
   logError('[pages/site]', e);
   const raw = (e as any)?.response?.errors?.[0]?.message;
-  toast.add({ title: t(key), description: raw || getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
+  toast.add({ title: t(key), description: getErrorMessage(e, t) || raw || t('common.errorRetry'), color: 'red' });
 }
 
 async function loadAll() {
@@ -86,7 +88,18 @@ async function loadAll() {
     booting.value = false;
   }
 }
-onMounted(() => { loadAccess(); loadAll(); });
+onMounted(async () => {
+  await Promise.all([loadAccess(), loadAll()]);
+  maybeStartTour();
+});
+
+// The site screen is explained once, to someone who can edit it.
+function maybeStartTour() {
+  if (!canManage.value || !pages.value.length) return;
+  const { isCompleted, startTour } = useOnboarding();
+  if (isCompleted(pagesSiteTour.id)) return;
+  setTimeout(() => startTour(pagesSiteTour), 1500);
+}
 
 async function reloadCategories() {
   try {
@@ -312,6 +325,17 @@ async function duplicatePage(p: SitePage) {
 const checking = ref(false);
 const publishing = ref(false);
 const publishNote = ref('');
+// Pre-publish findings arrive in Russian with a code; show the text of the visitor's language and keep the
+// variable part (a path, a block name, counts) from the original message.
+function issueText(i: { code: string; message: string }): string {
+  const key = `pages.preflight.${i.code}`;
+  const base = t(key);
+  if (!base || base === key) return i.message;
+  const detail = i.message.includes(': ') ? i.message.slice(i.message.lastIndexOf(': ') + 2) : '';
+  const nums = i.message.match(/\d+/g) || [];
+  return base.replace('{detail}', detail).replace('{hidden}', nums[0] ?? '').replace('{total}', nums[1] ?? '');
+}
+
 const errorIssues = computed(() => (preflight.value?.issues || []).filter(i => i.severity === 'error'));
 const warnIssues = computed(() => (preflight.value?.issues || []).filter(i => i.severity !== 'error'));
 
@@ -491,7 +515,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
     <template v-else-if="site">
       <PageHeader :title="site.name" :subtitle="site.host" :back-to="`/${nsSlug}/pages?all=1`" :back-label="t('pages.title')">
         <template #primary>
-          <button v-if="canManage" type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
+          <button v-if="canManage" type="button" data-tour="site-publish" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
             <UIcon :name="publishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="publishing && 'animate-spin'" />
             <span class="hidden min-[440px]:inline">{{ t('pages.publish.action') }}</span>
             <span class="sr-only min-[440px]:hidden">{{ t('pages.publish.action') }}</span>
@@ -511,7 +535,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
         <button type="button" class="at-btn at-btn--blue" @click="toggleSuspend">{{ t('pages.settings.resume') }}</button>
       </div>
 
-      <div class="overflow-x-auto no-scrollbar">
+      <div data-tour="site-tabs" class="overflow-x-auto no-scrollbar">
         <div class="at-seg">
           <button v-for="tab in TABS" :key="tab.key" type="button" class="at-seg__btn" :class="activeTab === tab.key && 'at-seg__btn--on'" @click="activeTab = tab.key">
             <Icon :name="tab.icon" class="h-4 w-4" />{{ tab.label }}
@@ -523,7 +547,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
       <template v-if="activeTab === 'pages'">
         <div class="flex items-center justify-between gap-2">
           <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('pages.pages.summary', { total: pages.length, ready: readyCount }) }}</p>
-          <button v-if="pages.length" type="button" class="at-btn at-btn--blue" @click="openCreatePage()">
+          <button v-if="pages.length" type="button" data-tour="site-newpage" class="at-btn at-btn--blue" @click="openCreatePage()">
             <Icon name="lucide:plus" class="h-4 w-4" />{{ t('pages.pages.new') }}
           </button>
         </div>
@@ -652,10 +676,10 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <Icon name="lucide:circle-check" class="h-4 w-4" />{{ t('pages.publish.allGood') }}
           </div>
           <div v-for="(i, idx) in errorIssues" :key="`e${idx}`" class="flex items-start gap-2 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-500/10 dark:text-rose-200">
-            <Icon name="lucide:circle-x" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ i.message }}</span>
+            <Icon name="lucide:circle-x" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ issueText(i) }}</span>
           </div>
           <div v-for="(i, idx) in warnIssues" :key="`w${idx}`" class="flex items-start gap-2 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
-            <Icon name="lucide:triangle-alert" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ i.message }}</span>
+            <Icon name="lucide:triangle-alert" class="mt-0.5 h-4 w-4 flex-shrink-0" /><span><b v-if="i.pagePath">{{ i.pagePath }}: </b>{{ issueText(i) }}</span>
           </div>
         </div>
 

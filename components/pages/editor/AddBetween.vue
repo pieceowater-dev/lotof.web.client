@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from '@/composables/useI18n'
+
+const { t } = useI18n()
 defineProps<{ index?: number }>()
 defineEmits<{ open: [void] }>()
 </script>
@@ -9,11 +12,12 @@ defineEmits<{ open: [void] }>()
     <button
       type="button"
       class="pe-add relative z-10 mx-auto scale-90 opacity-0 transition-all duration-150 group-hover/add:scale-100 group-hover/add:opacity-100 group-hover/block-spacer:scale-100 group-hover/block-spacer:opacity-100 focus-visible:scale-100 focus-visible:opacity-100"
-      title="Добавить блок"
+      :title="t('pages.editor.ui.addBlock')"
       @click="$emit('open')"
     >
       <Icon name="lucide:plus" class="h-3 w-3" />
-      Блок
+      {{ t('pages.editor.ui.block') }}
     </button>
   </div>
 </template>
+

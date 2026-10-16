@@ -4,7 +4,7 @@ import { PAGES_ENABLED } from '@/config/apps';
 // (/{namespace}/pages/**) behave as if they did not exist for users.
 export default defineNuxtRouteMiddleware((to) => {
   if (PAGES_ENABLED) return;
-  if (/^\/[^/]+\/pages(\/|$)/.test(to.path)) {
+  if (to.path === '/sites' || /^\/[^/]+\/pages(\/|$)/.test(to.path)) {
     return navigateTo('/', { replace: true });
   }
 });
