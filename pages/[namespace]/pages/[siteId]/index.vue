@@ -6,6 +6,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
+import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
 import PageNav from '@/components/ui/PageNav.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
@@ -37,13 +38,14 @@ const preflight = ref<PreflightResult | null>(null);
 
 usePageTitle('pages', { subject: () => site.value?.name });
 
-type TabKey = 'pages' | 'design' | 'domains' | 'publish' | 'redirects' | 'settings';
+type TabKey = 'pages' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
 const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
   { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
   { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
   { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
+  { key: 'integrations', label: t('pages.tabs.integrations'), icon: 'lucide:sparkles' },
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
 ]);
 const activeTab = ref<TabKey>((TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
@@ -617,6 +619,8 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
       </template>
 
       <!-- ═════════ REDIRECTS ═════════ -->
+      <IntegrationsPanel v-else-if="activeTab === 'integrations'" :site="site" :ns-slug="nsSlug" />
+
       <template v-else-if="activeTab === 'redirects'">
         <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
           <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">

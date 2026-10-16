@@ -39,6 +39,11 @@ export interface SiteDomain {
   records: DnsRecord[]; lastError: string; lastCheckedAtUnix: number; activatedAtUnix: number; createdAtUnix: number; suspendAtUnix: number;
 }
 export interface SiteDomains { domains: SiteDomain[]; platformHost: string; primaryHost: string; cnameTarget: string; ips: string[] }
+export type AccessScope = 'read' | 'write' | 'publish';
+export interface AccessToken {
+  id: string; name: string; prefix: string; scopes: AccessScope[]; siteId: string;
+  expiresAtUnix: number; lastUsedAtUnix: number; createdAtUnix: number; revoked: boolean;
+}
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
@@ -123,6 +128,14 @@ export const pagesApi = {
     q<{ setPrimaryDomain: SiteDomain }>(ns, `mutation($s:ID!,$h:String!){ setPrimaryDomain(siteId:$s,hostname:$h){ ${DOMAIN_FIELDS} } }`, { s: siteId, h: hostname }).then(r => r.setPrimaryDomain),
   removeDomain: (ns: string, id: string) =>
     q<{ removeSiteDomain: { success: boolean } }>(ns, `mutation($id:ID!){ removeSiteDomain(id:$id){ success } }`, { id }).then(r => r.removeSiteDomain.success),
+
+  // access tokens (MCP and other external clients)
+  accessTokens: (ns: string) =>
+    q<{ accessTokens: AccessToken[] }>(ns, `query{ accessTokens { id name prefix scopes siteId expiresAtUnix lastUsedAtUnix createdAtUnix revoked } }`).then(r => r.accessTokens),
+  createAccessToken: (ns: string, input: { name: string; scopes: AccessScope[]; siteId?: string; expiresAtUnix?: number }) =>
+    q<{ createAccessToken: { secret: string; token: AccessToken } }>(ns, `mutation($n:String!,$s:[AccessScope!]!,$site:ID,$e:Int){ createAccessToken(name:$n,scopes:$s,siteId:$site,expiresAtUnix:$e){ secret token { id name prefix scopes siteId expiresAtUnix lastUsedAtUnix createdAtUnix revoked } } }`, { n: input.name, s: input.scopes, site: input.siteId || null, e: input.expiresAtUnix || null }).then(r => r.createAccessToken),
+  revokeAccessToken: (ns: string, id: string) =>
+    q<{ revokeAccessToken: { success: boolean } }>(ns, `mutation($id:ID!){ revokeAccessToken(id:$id){ success } }`, { id }).then(r => r.revokeAccessToken.success),
 
   // redirects
   redirects: (ns: string, siteId: string) =>
