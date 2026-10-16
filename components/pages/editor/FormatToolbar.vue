@@ -38,7 +38,7 @@ function insertLink() {
   <Teleport to="body">
     <div
       v-if="props.formatBar.visible"
-      class="fixed z-40 bg-slate-950 rounded-xl shadow-2xl border border-slate-800 p-1 flex items-center gap-1"
+      class="pe-format fixed z-40"
       :style="{
         left: props.formatBar.x + 'px',
         top: props.formatBar.y + 'px',
@@ -49,7 +49,7 @@ function insertLink() {
       <!-- Multi-block selection: delete action instead of text formatting -->
       <button
         v-if="props.formatBar.mode === 'deleteBlocks'"
-        class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-950/40 transition-colors text-sm font-medium"
+        class="pe-pill pe-pill--danger !text-red-600 dark:!text-red-300"
         @click="emit('delete-blocks')"
       >
         <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
@@ -85,7 +85,7 @@ function insertLink() {
         cmd="strikethrough"
       />
 
-      <div class="h-5 w-px bg-slate-700" />
+      <div class="mx-0.5 h-5 w-px bg-slate-900/10 dark:bg-white/15" />
 
       <!-- H2 -->
       <PagesEditorFormatButton
@@ -105,14 +105,14 @@ function insertLink() {
 
       <!-- Link -->
       <button
-        class="p-1.5 rounded text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+        class="pe-tool"
         :title="t('admin.editor.insertLink')"
         @click="insertLink"
       >
         <Icon name="lucide:link" class="h-3.5 w-3.5" />
       </button>
 
-      <div class="h-5 w-px bg-slate-700" />
+      <div class="mx-0.5 h-5 w-px bg-slate-900/10 dark:bg-white/15" />
 
       <!-- Clear formatting -->
       <PagesEditorFormatButton

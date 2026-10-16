@@ -1,5 +1,5 @@
 <template>
-  <div class="at-scope ct-scope publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-[#141414]">
+  <div class="at-scope ct-scope publication-builder pe-root flex flex-col h-screen overflow-hidden">
     <PagesEditorHeader
       :page="article"
       :path="pathLabel"
@@ -83,24 +83,13 @@
       @delete-blocks="deleteSelectedBlocks"
     />
 
-    <Teleport to="body">
-      <PagesEditorConfirmDialog
-        :open="confirmDialog.open"
-        :title="confirmDialog.title"
-        :message="confirmDialog.message"
-        :confirm-label="confirmDialog.confirmLabel"
-        :cancel-label="confirmDialog.cancelLabel"
-        :variant="confirmDialog.variant"
-        @confirm="runConfirmAction"
-        @cancel="confirmDialog.open = false"
-      />
-    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { useConfirm } from '@/composables/useConfirm'
 import { compressImageForUpload } from '@/utils/imageCompression'
 
 const { t } = useI18n()
@@ -524,67 +513,40 @@ const isDirty = ref(false)
 const isSaving = ref(false)
 const isMobileSidebarOpen = ref(false)
 
-const confirmDialog = reactive({
-  open: false,
-  type: 'deleteBlock' as 'deleteBlock' | 'deleteBlocks' | 'deletePage',
-  title: '',
-  message: '',
-  confirmLabel: '',
-  cancelLabel: '',
-  variant: 'danger' as 'danger' | 'primary',
-})
+const { confirm } = useConfirm()
 
-const pendingDeleteBlockIndex = ref<number | null>(null)
-const pendingDeleteBlockRange = ref<{ start: number; end: number } | null>(null)
+type ConfirmKind = 'deleteBlock' | 'deleteBlocks' | 'deletePage'
 
-function openConfirmDialog(type: 'deleteBlock' | 'deleteBlocks' | 'deletePage', blockIndex?: number, blockRange?: { start: number; end: number }) {
-  pendingDeleteBlockIndex.value = null
-  pendingDeleteBlockRange.value = null
-
-  if (type === 'deleteBlock') {
-    confirmDialog.type = 'deleteBlock'
-    confirmDialog.title = 'Удалить блок?'
-    confirmDialog.message = 'Это действие нельзя отменить.'
-    confirmDialog.confirmLabel = 'Удалить'
-    confirmDialog.cancelLabel = 'Отмена'
-    confirmDialog.variant = 'danger'
-    pendingDeleteBlockIndex.value = typeof blockIndex === 'number' ? blockIndex : null
-  } else if (type === 'deleteBlocks') {
-    const count = blockRange ? blockRange.end - blockRange.start + 1 : 0
-    confirmDialog.type = 'deleteBlocks'
-    confirmDialog.title = `Удалить ${count} ${count === 1 ? 'блок' : 'блока'}?`
-    confirmDialog.message = 'Это действие нельзя отменить.'
-    confirmDialog.confirmLabel = 'Удалить'
-    confirmDialog.cancelLabel = 'Отмена'
-    confirmDialog.variant = 'danger'
-    pendingDeleteBlockRange.value = blockRange || null
+async function openConfirmDialog(type: ConfirmKind, blockIndex?: number, blockRange?: { start: number; end: number }) {
+  let title: string
+  let message: string
+  let confirmLabel: string
+  let cancelLabel: string
+  if (type === 'deletePage') {
+    title = t('pages.editor.deleteTitle')
+    message = t('pages.editor.deleteText')
+    confirmLabel = t('pages.editor.delete')
+    cancelLabel = t('pages.editor.cancel')
   } else {
-    confirmDialog.type = 'deletePage'
-    confirmDialog.title = t('pages.editor.deleteTitle')
-    confirmDialog.message = t('pages.editor.deleteText')
-    confirmDialog.confirmLabel = t('pages.editor.delete')
-    confirmDialog.cancelLabel = t('pages.editor.cancel')
-    confirmDialog.variant = 'danger'
+    const count = type === 'deleteBlocks' && blockRange ? blockRange.end - blockRange.start + 1 : 1
+    title = type === 'deleteBlock' ? 'Удалить блок?' : `Удалить ${count} ${count === 1 ? 'блок' : 'блока'}?`
+    message = 'Это действие нельзя отменить.'
+    confirmLabel = 'Удалить'
+    cancelLabel = 'Отмена'
   }
-  confirmDialog.open = true
+  const ok = await confirm({ title, message, confirmLabel, cancelLabel, color: 'red', icon: 'lucide:trash-2' })
+  if (ok) await runConfirmAction(type, blockIndex, blockRange)
 }
 
-async function runConfirmAction() {
-  const type = confirmDialog.type
-  confirmDialog.open = false
-
+async function runConfirmAction(type: ConfirmKind, index?: number, range?: { start: number; end: number }) {
   if (type === 'deleteBlock') {
-    const index = pendingDeleteBlockIndex.value
-    pendingDeleteBlockIndex.value = null
-    if (index === null || index < 0 || index >= blocks.value.length) return
+    if (index === undefined || index < 0 || index >= blocks.value.length) return
     blocks.value.splice(index, 1)
     markDirty()
     return
   }
 
   if (type === 'deleteBlocks') {
-    const range = pendingDeleteBlockRange.value
-    pendingDeleteBlockRange.value = null
     selectedBlockRange.value = null
     hideFormatBar()
     if (!range) return
@@ -596,13 +558,11 @@ async function runConfirmAction() {
     return
   }
 
-  if (type === 'deletePage') {
-    if (!props.onDelete) return
-    try {
-      await props.onDelete()
-    } catch (error) {
-      console.error('[delete page] failed', error)
-    }
+  if (!props.onDelete) return
+  try {
+    await props.onDelete()
+  } catch (error) {
+    console.error('[delete page] failed', error)
   }
 }
 
@@ -870,7 +830,6 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     picker.open = false
     hideFormatBar()
-    confirmDialog.open = false
   }
 }
 

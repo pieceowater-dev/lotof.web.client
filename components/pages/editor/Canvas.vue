@@ -1,30 +1,28 @@
 <template>
   <main class="flex-1 overflow-y-auto" @click.self="$emit('click-self')">
-    <div class="min-h-full py-8 px-4">
+    <div class="min-h-full px-3 py-4 sm:px-4 sm:py-6">
       <!-- Document card -->
-      <div class="mx-auto max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-black/30 border border-slate-200/60 dark:border-white/10">
+      <div class="pe-sheet mx-auto max-w-4xl">
         <!-- Title area -->
-        <div class="px-6 pt-8 pb-5 sm:px-10 md:px-14 sm:pt-10 sm:pb-6 border-b border-slate-100 dark:border-white/10">
+        <div class="px-6 pt-8 pb-5 sm:px-10 md:px-14 sm:pt-10 sm:pb-6 border-b border-slate-900/[0.06] dark:border-white/10">
           <div
             ref="titleEl"
             contenteditable="true"
             :data-placeholder="t('admin.editor.titlePlaceholder')"
-            class="text-4xl font-bold text-slate-900 dark:text-white leading-snug outline-none w-full
+            class="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-snug outline-none w-full
                    empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 dark:empty:before:text-neutral-700"
             @input="onTitleInput"
           />
           <!-- Address preview -->
           <button
             type="button"
-            class="mt-3 inline-flex items-center gap-1.5 text-xs transition-colors"
-            :class="liveUrl
-              ? 'text-slate-400 hover:text-blue-500 dark:text-neutral-600 dark:hover:text-blue-400 cursor-pointer'
-              : 'text-slate-400 dark:text-neutral-600 cursor-default'"
+            class="pe-address mt-4"
+            :class="liveUrl ? 'cursor-pointer' : 'cursor-default'"
             @click="openLive"
           >
-            <Icon name="lucide:globe" class="h-3 w-3" />
-            <span>{{ siteHost }}{{ pathLabel }}</span>
-            <Icon v-if="liveUrl" name="lucide:external-link" class="h-3 w-3" />
+            <Icon name="lucide:globe" class="h-3.5 w-3.5 flex-shrink-0" />
+            <span class="truncate">{{ siteHost }}{{ pathLabel }}</span>
+            <Icon v-if="liveUrl" name="lucide:external-link" class="h-3 w-3 flex-shrink-0" />
           </button>
         </div>
 
@@ -36,43 +34,31 @@
 
             <!-- Block container with drag/drop and toolbar -->
             <div
-              class="group/block relative py-2.5 rounded-lg transition-colors"
+              class="pe-block group/block relative py-2"
               :data-block-index="i"
-              :class="isBlockSelected(i) ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-200 dark:ring-blue-900' : ''"
+              :class="isBlockSelected(i) ? 'pe-block--picked' : ''"
             >
               <!-- Block toolbar -->
-              <div class="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-white/90 p-0.5 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-white/15 dark:bg-[#1a1a1a]/90">
+              <div class="pe-tools absolute -top-3 right-3 z-10 opacity-0 transition-opacity group-hover/block:opacity-100 group-focus-within/block:opacity-100">
                 <button
                   v-if="isAnchorableHeading(block)"
-                  class="rounded-md p-1 transition-colors"
-                  :class="copiedAnchor === block.id
-                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-[#262626] dark:hover:text-blue-300'"
+                  class="pe-tool"
+                  :class="copiedAnchor === block.id ? '!text-emerald-600 dark:!text-emerald-300' : ''"
                   :title="copiedAnchor === block.id ? 'Якорь скопирован' : 'Скопировать якорь'"
                   @click="copyAnchorToClipboard(blockAnchor(block, i))"
-                ><Icon :name="copiedAnchor === block.id ? 'lucide:check' : 'lucide:link-2'" class="h-3 w-3" /></button>
-                <button
-                  v-if="i > 0"
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#262626] dark:hover:text-neutral-200"
-                  title="Вверх"
-                  @click="$emit('move-block', i, -1)"
-                ><Icon name="lucide:chevron-up" class="h-3 w-3" /></button>
-                <button
-                  v-if="i < blocks.length - 1"
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#262626] dark:hover:text-neutral-200"
-                  title="Вниз"
-                  @click="$emit('move-block', i, 1)"
-                ><Icon name="lucide:chevron-down" class="h-3 w-3" /></button>
-                <button
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-[#262626] dark:hover:text-blue-300"
-                  title="Дублировать"
-                  @click="$emit('duplicate-block', i)"
-                ><Icon name="lucide:copy" class="h-3 w-3" /></button>
-                <button
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400"
-                  title="Удалить"
-                  @click="$emit('delete-block', i)"
-                ><Icon name="lucide:trash-2" class="h-3 w-3" /></button>
+                ><Icon :name="copiedAnchor === block.id ? 'lucide:check' : 'lucide:link-2'" class="h-3.5 w-3.5" /></button>
+                <button v-if="i > 0" class="pe-tool" title="Вверх" @click="$emit('move-block', i, -1)">
+                  <Icon name="lucide:chevron-up" class="h-3.5 w-3.5" />
+                </button>
+                <button v-if="i < blocks.length - 1" class="pe-tool" title="Вниз" @click="$emit('move-block', i, 1)">
+                  <Icon name="lucide:chevron-down" class="h-3.5 w-3.5" />
+                </button>
+                <button class="pe-tool" title="Дублировать" @click="$emit('duplicate-block', i)">
+                  <Icon name="lucide:copy" class="h-3.5 w-3.5" />
+                </button>
+                <button class="pe-tool pe-tool--danger" title="Удалить" @click="$emit('delete-block', i)">
+                  <Icon name="lucide:trash-2" class="h-3.5 w-3.5" />
+                </button>
               </div>
 
               <!-- Block content -->
@@ -169,7 +155,7 @@
                 <!-- CALLOUT -->
                 <div
                   v-else-if="block.type === 'callout'"
-                  class="rounded-xl p-4 flex gap-3"
+                  class="rounded-3xl p-4 flex gap-3"
                   :class="calloutClass(block.attrs.calloutType)"
                 >
                   <div class="flex-shrink-0 mt-0.5 h-5 w-5 rounded-full flex items-center justify-center" :class="calloutIconBg(block.attrs.calloutType)">
@@ -192,7 +178,7 @@
                     <div class="mt-2.5 flex gap-1">
                       <button
                         v-for="ct in ['info','warning','success']" :key="ct"
-                        class="text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide transition-all"
+                        class="text-[10px] px-2.5 py-1 rounded-full border font-bold uppercase tracking-wide transition-all"
                         :class="block.attrs.calloutType === ct
                           ? calloutActiveBtnClass(ct)
                           : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300'"
@@ -204,30 +190,15 @@
 
                 <!-- IMAGE -->
                 <div v-else-if="block.type === 'image'" class="py-1">
-                  <div
-                    v-if="!block.attrs.src"
-                    class="border-2 border-dashed border-slate-200 dark:border-white/15 rounded-xl p-10 text-center
-                           hover:border-blue-300 dark:hover:border-blue-700 transition-colors group/img-drop"
-                  >
-                    <div class="inline-flex rounded-xl bg-slate-100 dark:bg-[#262626] p-3 mb-3">
-                      <Icon name="lucide:image-plus" class="h-7 w-7 text-slate-400 dark:text-neutral-500" />
-                    </div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1">Добавьте изображение</p>
-                    <p class="text-xs text-slate-400 dark:text-neutral-500 mb-4">Загрузите файл</p>
-                    <div class="mb-4">
-                      <label
-                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200 dark:hover:bg-[#262626]"
-                      >
-                        <Icon name="lucide:upload" class="h-4 w-4" />
-                        <span>Выбрать файл</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          class="hidden"
-                          @change="onImageFileChange(block, $event)"
-                        />
-                      </label>
-                    </div>
+                  <div v-if="!block.attrs.src" class="pe-drop">
+                    <span class="icon-tile mb-2"><Icon name="lucide:image-plus" class="h-5 w-5" /></span>
+                    <p class="text-sm font-bold text-slate-700 dark:text-neutral-200">Добавьте изображение</p>
+                    <p class="mb-3 text-xs text-slate-400 dark:text-neutral-500">Загрузите файл</p>
+                    <label class="at-btn at-btn--blue cursor-pointer">
+                      <Icon name="lucide:upload" class="h-4 w-4" />
+                      <span>Выбрать файл</span>
+                      <input type="file" accept="image/*" class="hidden" @change="onImageFileChange(block, $event)" />
+                    </label>
                   </div>
                   <div v-else class="relative group/img">
                     <!-- Admin-uploaded article image of arbitrary aspect
@@ -237,7 +208,7 @@
                     <img
                       :src="resolveImage(block.attrs.src)"
                       :alt="block.attrs.alt || 'Image'"
-                      class="w-full rounded-xl object-cover shadow-sm"
+                      class="w-full rounded-3xl object-cover"
                       style="min-height: 200px"
                     />
                     <!-- Caption & alt -->
@@ -245,30 +216,20 @@
                       <input
                         :value="block.attrs.caption"
                         placeholder="Подпись к изображению..."
-                        class="w-full text-sm text-center text-slate-500 dark:text-neutral-400 bg-transparent outline-none
-                               border-b border-transparent focus:border-slate-300 dark:focus:border-white/20 py-0.5 transition-colors"
+                        class="pe-field pe-field--bare w-full text-sm text-slate-500 dark:text-neutral-400"
                         @input="block.attrs.caption = ($event.target as HTMLInputElement).value"
                       />
-                      <div class="relative">
-                        <input
-                          :value="block.attrs.alt"
-                          placeholder="Alt текст для SEO (обязательно)..."
-                          class="w-full text-xs text-center text-slate-400 dark:text-neutral-500 bg-transparent outline-none
-                                 border-b transition-colors py-0.5"
-                          :class="block.attrs.alt
-                            ? 'border-transparent focus:border-slate-200 dark:focus:border-white/15'
-                            : 'border-red-300 dark:border-red-700 focus:border-slate-200 dark:focus:border-white/15'"
+                      <input
+                        :value="block.attrs.alt"
+                        placeholder="Alt текст для SEO (обязательно)..."
+                        class="pe-field pe-field--bare w-full text-xs text-slate-500 dark:text-neutral-400"
+                        :class="block.attrs.alt ? '' : 'pe-field--bad'"
                           @input="block.attrs.alt = ($event.target as HTMLInputElement).value"
-                        />
-                        <div v-if="!block.attrs.alt" class="absolute -right-1 -top-1 text-red-500 text-lg font-bold" title="Alt required">
-                          *
-                        </div>
-                      </div>
+                      />
                     </div>
                     <button
                       class="absolute top-2.5 right-2.5 opacity-0 group-hover/img:opacity-100 transition-opacity
-                             bg-white/90 dark:bg-[#262626]/90 backdrop-blur-sm text-slate-600 dark:text-neutral-300
-                             border border-slate-200 dark:border-white/20 rounded-lg px-2.5 py-1 text-xs font-medium shadow-sm"
+                             pe-pill !bg-white/90 dark:!bg-[#262626]/90 backdrop-blur-sm"
                       @click.stop="block.attrs.src = ''"
                     >
                       Изменить
@@ -278,16 +239,14 @@
 
                 <!-- RAW HTML -->
                 <div v-else-if="block.type === 'button'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/15 dark:bg-[#1a1a1a]/60">
-                    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-neutral-300">
-                      <span class="font-semibold uppercase tracking-[0.08em]">Кнопка</span>
-                    </div>
+                  <div class="pe-tray">
+                    <div class="pe-tray-title"><Icon name="lucide:rectangle-ellipsis" class="h-3.5 w-3.5" />Кнопка</div>
 
                     <div class="grid gap-2">
                       <input
                         :value="String(block.attrs.text || '')"
                         placeholder="Текст кнопки"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
+                        class="pe-field"
                         @input="block.attrs.text = ($event.target as HTMLInputElement).value"
                       />
 
@@ -295,7 +254,7 @@
                         v-if="buttonKind(block) !== 'login'"
                         :value="String(block.attrs.href || '')"
                         placeholder="Ссылка: https://... или #yakor-sekcii"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
+                        class="pe-field"
                         @input="block.attrs.href = ($event.target as HTMLInputElement).value"
                       />
 
@@ -304,10 +263,8 @@
                           v-for="variant in buttonVariants"
                           :key="variant.value"
                           type="button"
-                          class="rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition"
-                          :class="buttonVariant(block) === variant.value
-                            ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-                            : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-400 dark:hover:text-neutral-200'"
+                          class="pe-pill"
+                          :class="buttonVariant(block) === variant.value ? 'pe-pill--on' : ''"
                           @click="setButtonVariant(block, variant.value)"
                         >
                           {{ variant.label }}
@@ -317,12 +274,12 @@
                       <button
                         v-if="buttonKind(block) !== 'login'"
                         type="button"
-                        class="inline-flex items-center gap-3 rounded-lg px-1 py-1 text-xs text-slate-600 transition dark:text-neutral-300"
+                        class="inline-flex items-center gap-3 rounded-full px-1 py-1 text-xs font-medium text-slate-600 transition dark:text-neutral-300"
                         @click="block.attrs.newTab = !buttonOpensInNewTab(block)"
                       >
                         <span
                           class="relative inline-flex h-5 w-9 items-center rounded-full transition"
-                          :class="buttonOpensInNewTab(block) ? 'bg-blue-500 dark:bg-blue-500' : 'bg-slate-300 dark:bg-[#303030]'"
+                          :class="buttonOpensInNewTab(block) ? 'bg-gradient-to-r from-blue-600 to-emerald-500' : 'bg-slate-300 dark:bg-[#3a3a3a]'"
                         >
                           <span
                             class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition"
@@ -348,22 +305,20 @@
                 </div>
 
                 <div v-else-if="block.type === 'faq'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/15 dark:bg-[#1a1a1a]/60">
-                    <div class="mb-3 flex items-center justify-between gap-2">
-                      <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-neutral-300">FAQ</h4>
-                    </div>
+                  <div class="pe-tray">
+                    <div class="pe-tray-title"><Icon name="lucide:messages-square" class="h-3.5 w-3.5" />FAQ</div>
 
                     <div class="space-y-3">
                       <div
                         v-for="(item, faqIndex) in getFaqItems(block)"
                         :key="`faq-${block.id}-${faqIndex}`"
-                        class="rounded-lg border border-slate-200 bg-white p-3 dark:border-white/15 dark:bg-[#1a1a1a]"
+                        class="rounded-3xl bg-white p-3 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-[#1f1f1f] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.09)]"
                       >
                         <div class="mb-2 flex items-center justify-between gap-2">
                           <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-neutral-400">Пара {{ faqIndex + 1 }}</span>
                           <button
                             type="button"
-                            class="rounded-md border border-transparent px-2 py-1 text-[11px] text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300"
+                            class="pe-pill pe-pill--danger"
                             @click="removeFaqItem(block, faqIndex)"
                           >
                             Удалить
@@ -373,7 +328,7 @@
                         <input
                           :value="String(item.q || '')"
                           placeholder="Вопрос"
-                          class="mb-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
+                          class="pe-field mb-2"
                           @input="updateFaqField(block, faqIndex, 'q', ($event.target as HTMLInputElement).value)"
                         />
                         <textarea
@@ -381,7 +336,7 @@
                           rows="3"
                           placeholder="Ответ"
                           aria-label="Ответ"
-                          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
+                          class="pe-field"
                           @input="updateFaqField(block, faqIndex, 'a', ($event.target as HTMLTextAreaElement).value)"
                         />
                       </div>
@@ -390,7 +345,7 @@
                     <div class="mt-4 flex justify-end">
                       <button
                         type="button"
-                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 transition hover:text-blue-700 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-300 dark:hover:text-blue-300"
+                        class="pe-pill pe-pill--on"
                         @click="addFaqItem(block)"
                       >
                         + Добавить вопрос
@@ -400,17 +355,13 @@
                 </div>
 
                 <div v-else-if="block.type === 'html'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 dark:border-white/15 overflow-hidden">
-                    <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-[#262626]/60 border-b border-slate-200 dark:border-white/15">
-                      <Icon name="lucide:code-xml" class="h-4 w-4 text-slate-400" />
-                      <span class="text-xs font-semibold text-slate-600 dark:text-neutral-300">HTML</span>
-                    </div>
+                  <div class="pe-tray">
+                    <div class="pe-tray-title"><Icon name="lucide:code-xml" class="h-3.5 w-3.5" />HTML</div>
                     <textarea
                       :value="block.content"
                       placeholder="&lt;div&gt;...&lt;/div&gt;"
                       aria-label="HTML"
-                      class="w-full px-4 py-3 font-mono text-xs text-slate-900 dark:text-white bg-white dark:bg-[#1a1a1a] outline-none resize-none
-                             focus:ring-2 focus:ring-blue-500"
+                      class="pe-field !rounded-3xl !px-4 !py-3 font-mono !text-xs"
                       rows="6"
                       @input="block.content = ($event.target as HTMLTextAreaElement).value"
                     />
@@ -425,10 +376,8 @@
 
           <!-- Empty state -->
           <div v-if="blocks.length === 0" class="py-16 text-center">
-            <div class="inline-flex rounded-2xl bg-slate-100 dark:bg-[#262626] p-5 mb-4">
-              <Icon name="lucide:layout-template" class="h-10 w-10 text-slate-300 dark:text-neutral-600" />
-            </div>
-            <p class="text-sm font-medium text-slate-400 dark:text-neutral-500">Нажмите «+» чтобы добавить первый блок</p>
+            <span class="icon-tile mb-4 !h-14 !w-14"><Icon name="lucide:layout-template" class="h-7 w-7" /></span>
+            <p class="text-sm font-bold text-slate-600 dark:text-neutral-300">Нажмите «+» чтобы добавить первый блок</p>
             <p class="text-xs text-slate-300 dark:text-neutral-600 mt-1">Параграфы, заголовки, изображения и многое другое</p>
           </div>
         </div>

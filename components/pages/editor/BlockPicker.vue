@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from '@/composables/useI18n'
-import { useEscapeToClose } from '@/composables/useEscapeToClose'
+import { atModalUi, atCardUi } from '@/utils/atraceUi'
 
 const props = defineProps<{
   open: boolean
@@ -12,7 +12,10 @@ const emit = defineEmits<{
   'add': [string]
 }>()
 
-useEscapeToClose(computed(() => props.open), () => emit('update:open', false))
+const isOpen = computed({
+  get: () => props.open,
+  set: (v: boolean) => emit('update:open', v)
+})
 
 const { t } = useI18n()
 
@@ -65,45 +68,36 @@ const blockGroups = [
 </script>
 
 <template>
-  <Teleport to="body">
-    <div
-      v-if="open"
-      class="fixed inset-0 z-50 overflow-y-auto p-4 bg-slate-900/30 dark:bg-black/50 backdrop-blur-md"
-      @click.self="$emit('update:open', false)"
-      @keydown.esc="$emit('update:open', false)"
-    >
-      <div class="mx-auto my-4 flex max-h-[calc(100vh-2rem)] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-[#1a1a1a]">
-        <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-white/10">
-          <h3 class="font-semibold text-slate-900 dark:text-white">{{ t('admin.editor.addBlock') }}</h3>
-          <button
-            @click="$emit('update:open', false)"
-            class="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-[#262626] transition-colors"
-          >
+  <UModal v-model="isOpen" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
+    <UCard :ui="{ ...atCardUi, body: { padding: 'px-5 py-4 sm:px-7 sm:py-5', base: 'max-h-[calc(100dvh-10rem)] overflow-y-auto' }, header: { padding: 'px-5 pt-5 pb-3 sm:px-7' } }">
+      <template #header>
+        <div class="flex items-center justify-between gap-3">
+          <h3 class="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">{{ t('admin.editor.addBlock') }}</h3>
+          <button type="button" class="pe-round" aria-label="Close" @click="isOpen = false">
             <Icon name="lucide:x" class="h-4 w-4" />
           </button>
         </div>
+      </template>
 
-        <!-- Content -->
-        <div class="grid gap-4 overflow-y-auto p-4">
-          <div v-for="group in blockGroups" :key="group.label" class="space-y-3">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300 px-1">{{ t(`admin.editor.blockGroups.${group.label}`) }}</h4>
-            <div class="grid grid-cols-3 gap-2">
-              <button
-                v-for="item in group.types"
-                :key="item.type"
-                @click="$emit('add', item.type); $emit('update:open', false)"
-                class="flex flex-col items-center gap-2 p-3 rounded-lg border border-slate-200 dark:border-white/15 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/20 transition-all hover:shadow-sm"
-              >
-                <div :class="`h-10 w-10 rounded-lg flex items-center justify-center ${item.iconBg}`">
-                  <Icon :name="item.icon" :class="`h-5 w-5 ${item.iconColor}`" />
-                </div>
-                <span class="text-xs text-center leading-tight font-medium text-slate-600 dark:text-neutral-200">{{ resolveBlockTypeLabel(item.label) }}</span>
-              </button>
-            </div>
+      <div class="grid gap-5">
+        <div v-for="group in blockGroups" :key="group.label" class="space-y-2">
+          <h4 class="pe-label">{{ t(`admin.editor.blockGroups.${group.label}`) }}</h4>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="item in group.types"
+              :key="item.type"
+              type="button"
+              class="pe-tile"
+              @click="$emit('add', item.type); isOpen = false"
+            >
+              <span :class="`flex h-10 w-10 items-center justify-center rounded-2xl ${item.iconBg}`">
+                <Icon :name="item.icon" :class="`h-5 w-5 ${item.iconColor}`" />
+              </span>
+              <span class="text-center text-xs font-semibold leading-tight text-slate-600 dark:text-neutral-200">{{ resolveBlockTypeLabel(item.label) }}</span>
+            </button>
           </div>
         </div>
       </div>
-    </div>
-  </Teleport>
+    </UCard>
+  </UModal>
 </template>

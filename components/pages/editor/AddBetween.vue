@@ -4,19 +4,16 @@ defineEmits<{ open: [void] }>()
 </script>
 
 <template>
-  <div class="relative h-4 flex items-center group/add cursor-default">
-    <!-- Dashed line -->
-    <div class="absolute inset-0 flex items-center pointer-events-none">
-      <div class="w-full h-px bg-gradient-to-r from-transparent via-blue-300 dark:via-blue-700 to-transparent opacity-0 group-hover/block-spacer:opacity-100 group-hover/add:opacity-100 transition-opacity duration-150" />
-    </div>
-
-    <!-- Plus button -->
+  <div class="group/add relative flex h-5 cursor-default items-center">
+    <div class="pointer-events-none absolute inset-x-6 top-1/2 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 transition-opacity duration-150 group-hover/add:opacity-100 group-hover/block-spacer:opacity-100" />
     <button
-      class="relative mx-auto z-10 flex items-center justify-center h-5 w-5 rounded-full transition-all duration-150 opacity-0 group-hover/block-spacer:opacity-100 group-hover/add:opacity-100 scale-75 group-hover/block-spacer:scale-100 group-hover/add:scale-100 bg-white dark:bg-[#262626] border border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-600 shadow-sm shadow-blue-200/50 dark:shadow-blue-900/50"
-      @click="$emit('open')"
+      type="button"
+      class="pe-add relative z-10 mx-auto scale-90 opacity-0 transition-all duration-150 group-hover/add:scale-100 group-hover/add:opacity-100 group-hover/block-spacer:scale-100 group-hover/block-spacer:opacity-100 focus-visible:scale-100 focus-visible:opacity-100"
       title="Добавить блок"
+      @click="$emit('open')"
     >
       <Icon name="lucide:plus" class="h-3 w-3" />
+      Блок
     </button>
   </div>
 </template>

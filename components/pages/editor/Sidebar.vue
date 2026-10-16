@@ -1,6 +1,8 @@
 <template>
-  <aside class="hidden w-72 flex-shrink-0 flex-col overflow-hidden border-l border-slate-200 bg-white md:flex xl:w-[300px] dark:border-white/10 dark:bg-[#1a1a1a]">
-    <PagesEditorSidebarPanel v-bind="($attrs as any)" />
+  <aside class="hidden w-72 flex-shrink-0 py-3 pl-1 pr-3 md:block xl:w-[316px]">
+    <div class="pe-side">
+      <PagesEditorSidebarPanel v-bind="($attrs as any)" />
+    </div>
   </aside>
 </template>
 

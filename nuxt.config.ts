@@ -195,6 +195,7 @@ export default defineNuxtConfig({
     '@/assets/css/surface.css',
     '@/assets/css/storefront.css',
     '@/assets/css/atrace.css',
+    '@/assets/css/pages-editor.css',
     '@/assets/css/console.css',
     '@/assets/css/contacts.css',
     '@/assets/css/issues.css'
