@@ -33,6 +33,33 @@
  },
  "presets": [
   {
+   "id": "lota",
+   "vars": {
+    "accent": "#0e7490",
+    "bg": "#ffffff",
+    "text": "#1e293b",
+    "font": "sans",
+    "headingFont": "sans",
+    "radius": "round",
+    "width": "wide",
+    "header": "pill",
+    "headerTone": "page",
+    "sticky": "yes",
+    "logoSize": "sm",
+    "showName": "yes",
+    "nav": "pills",
+    "mobileNav": "burger",
+    "footerTone": "dark",
+    "footerAlign": "center",
+    "links": "underline",
+    "images": "border",
+    "quote": "bar",
+    "bgStyle": "glow",
+    "spacing": "normal",
+    "shadow": "soft"
+   }
+  },
+  {
    "id": "classic",
    "vars": {}
   },

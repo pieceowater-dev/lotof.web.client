@@ -10,7 +10,7 @@ export type ThemeVars = Record<string, string> & {
 
 export interface ThemePreset { id: string; vars: ThemeVars }
 
-export const DEFAULT_PRESET = 'classic';
+export const DEFAULT_PRESET = 'lota';
 const DEFAULTS = data.defaults as unknown as ThemeVars;
 export const THEME_PRESETS: ThemePreset[] = (data.presets as { id: string; vars: Record<string, string> }[])
   .map(p => ({ id: p.id, vars: { ...DEFAULTS, ...p.vars } as ThemeVars }));
@@ -109,7 +109,7 @@ const RADIUS_PX: Record<string, { card: string; btn: string }> = {
 export const radiusPx = (r: string) => RADIUS_PX[r] ?? RADIUS_PX.soft;
 
 export function presetById(id: string): ThemePreset {
-  return THEME_PRESETS.find(p => p.id === id) ?? THEME_PRESETS[0];
+  return THEME_PRESETS.find(p => p.id === id) ?? THEME_PRESETS.find(p => p.id === DEFAULT_PRESET) ?? THEME_PRESETS[0];
 }
 
 const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
