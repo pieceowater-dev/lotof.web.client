@@ -337,6 +337,30 @@ const dimPanels = computed(() => {
   ].map((p) => ({ top: `${p.top}px`, left: `${p.left}px`, width: `${p.width}px`, height: `${p.height}px` }));
 });
 
+// The four panels leave square corners of undimmed page inside the highlight's rounded ring. Four small
+// pieces with a quarter-circle mask fill exactly the part outside the ring's radius (1.1rem = 17.6px).
+const CORNER = 18;
+const dimCorners = computed(() => {
+  const r = highlightRect.value;
+  if (!r) return [];
+  const { width: vw, height: vh } = viewportSize.value;
+  const x = Math.max(0, r.left - r.padding);
+  const y = Math.max(0, r.top - r.padding);
+  const x2 = Math.min(vw, r.left + r.width + r.padding);
+  const y2 = Math.min(vh, r.top + r.height + r.padding);
+  const mask = (at: string) => `radial-gradient(circle at ${at}, transparent ${CORNER - 0.5}px, #000 ${CORNER}px)`;
+  const piece = (left: number, top: number, at: string) => ({
+    left: `${left}px`, top: `${top}px`, width: `${CORNER}px`, height: `${CORNER}px`,
+    WebkitMaskImage: mask(at), maskImage: mask(at),
+  });
+  return [
+    piece(x, y, '100% 100%'),
+    piece(x2 - CORNER, y, '0 100%'),
+    piece(x, y2 - CORNER, '100% 0'),
+    piece(x2 - CORNER, y2 - CORNER, '0 0'),
+  ];
+});
+
 const progress = computed(() => {
   if (!totalSteps.value) return 0;
   return ((currentStepIndex.value + 1) / totalSteps.value) * 100;
@@ -380,6 +404,12 @@ const stepContent = computed(() => {
           :key="i"
           class="fixed z-[9998] pointer-events-none tour-dim"
           :style="panel"
+        />
+        <div
+          v-for="(corner, i) in dimCorners"
+          :key="`c${i}`"
+          class="fixed z-[9998] pointer-events-none tour-dim"
+          :style="corner"
         />
       </template>
 
