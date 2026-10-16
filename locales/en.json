@@ -4828,7 +4828,13 @@
       "moved": "Page moved",
       "globalTitle": "Shared block",
       "globalNone": "No shared blocks yet. Create them on the site's \"Shared blocks\" tab.",
-      "globalHint": "Shows the same block on many pages. Edit it on the \"Shared blocks\" tab."
+      "globalHint": "Shows the same block on many pages. Edit it on the \"Shared blocks\" tab.",
+      "translations": "Page languages",
+      "noTranslation": "none",
+      "createTranslation": "Create translation",
+      "translationsHint": "A translation is a draft copy of the page in another language, linked to the original. After publishing, linked pages get a language switcher and hreflang hints for search engines.",
+      "translationCreated": "Translation created: translate the text and include it in publishing",
+      "translationExists": "A translation in that language already exists"
     },
     "team": {
       "title": "Team",

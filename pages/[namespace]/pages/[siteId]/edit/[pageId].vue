@@ -27,6 +27,7 @@ const page = ref<SitePage | null>(null);
 const allPages = ref<SitePage[]>([]);
 const categories = ref<SiteCategory[]>([]);
 const globalBlocks = ref<GlobalBlock[]>([]);
+const translations = ref<SitePage[]>([]);
 const editorKey = ref(0);
 usePageTitle('pages', { subject: () => page.value?.title });
 
@@ -35,9 +36,9 @@ const backTo = computed(() => `/${nsSlug.value}/pages/${siteId.value}`);
 async function load() {
   try {
     await getToken(nsSlug.value);
-    const [s, p, all, cats, gbs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value), pagesApi.globalBlocks(nsSlug.value, siteId.value).catch(() => [] as GlobalBlock[])]);
+    const [s, p, all, cats, gbs, trs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value), pagesApi.globalBlocks(nsSlug.value, siteId.value).catch(() => [] as GlobalBlock[]), pagesApi.pageTranslations(nsSlug.value, pageId.value).catch(() => [] as SitePage[])]);
     if (!s || !p || p.siteId !== s.id) { loadError.value = t('pages.editor.notFound'); return; }
-    site.value = s; page.value = p; allPages.value = all; categories.value = cats; globalBlocks.value = gbs;
+    site.value = s; page.value = p; allPages.value = all; categories.value = cats; globalBlocks.value = gbs; translations.value = trs;
   } catch (e) {
     logError('[pages/edit] load', e);
     loadError.value = getErrorMessage(e, t) || t('common.errorRetry');
@@ -77,6 +78,19 @@ async function onMove(parentId: string, sort: number) {
     useToast().add({ title: msg.includes('already exists') ? t('pages.pages.pathTaken') : t('common.error'), description: msg.includes('already exists') ? undefined : (msg || undefined), color: 'red' });
   }
 }
+
+const siteLangs = computed(() => [site.value?.settings.defaultLang || 'ru', ...(site.value?.settings.langs || [])])
+async function onTranslate(lang: string) {
+  try {
+    const created = await pagesApi.createPageTranslation(nsSlug.value, pageId.value, lang)
+    useToast().add({ title: t('pages.editor.translationCreated'), color: 'green' })
+    await navigateTo(`/${nsSlug.value}/pages/${siteId.value}/edit/${created.id}`)
+  } catch (e: any) {
+    const msg = String(e?.response?.errors?.[0]?.message || '')
+    useToast().add({ title: t('common.error'), description: msg.includes('already has') ? t('pages.editor.translationExists') : (msg || undefined), color: 'red' })
+  }
+}
+function onOpenPage(id: string) { navigateTo(`/${nsSlug.value}/pages/${siteId.value}/edit/${id}`) }
 
 async function onCategories(ids: string[]) {
   try {
@@ -169,6 +183,10 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :on-move="onMove"
     :categories="categories"
     :global-blocks="globalBlocks"
+    :translations="translations"
+    :site-langs="siteLangs"
+    :on-translate="onTranslate"
+    :on-open-page="onOpenPage"
     :category-ids="page?.categoryIds || []"
     :on-categories="onCategories"
     :published="!!site?.publishedVersion"

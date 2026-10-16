@@ -25,6 +25,7 @@ export interface SitePage {
   id: string; siteId: string; parentId: string | null; slug: string; path: string; title: string; status: PageStatus;
   seo: PageSeo; blocks: PageBlock[]; schemaVersion: number; sort: number; lang: string; createdAtUnix: number; updatedAtUnix: number;
   categoryIds: string[];
+  translationGroup: string;
 }
 export interface SiteCategory { id: string; siteId: string; parentId: string | null; slug: string; title: string; description: string; sort: number; pageCount: number }
 export interface CategoryInput { parentId?: string | null; slug?: string; title: string; description?: string; sort?: number }
@@ -56,7 +57,7 @@ export interface SiteMedia { id: string; siteId: string; sha256: string; ext: st
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
 const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
-const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix categoryIds`;
+const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix categoryIds translationGroup`;
 const PAGE_FIELDS = `${PAGE_LIST_FIELDS} createdAtUnix schemaVersion seo { ${SEO_FIELDS} } blocks { id type content attrsJson }`;
 const VERSION_FIELDS = `id siteId version pageCount bytes createdBy note live createdAtUnix`;
 const DOMAIN_FIELDS = `id siteId hostname displayHostname isPrimary status isApex lastError lastCheckedAtUnix activatedAtUnix createdAtUnix suspendAtUnix records { type name value done purpose }`;
@@ -107,6 +108,12 @@ export const pagesApi = {
     categoryIds?: string[];
   }) =>
     q<{ updatePage: SitePage }>(ns, `mutation($i:UpdatePageInput!){ updatePage(input:$i){ ${PAGE_FIELDS} } }`, { i: input }).then(r => r.updatePage),
+  pageTranslations: (ns: string, pageId: string) =>
+    q<{ pageTranslations: SitePage[] }>(ns, `query($p:ID!){ pageTranslations(pageId:$p){ ${PAGE_LIST_FIELDS} } }`, { p: pageId }).then(r => r.pageTranslations),
+  createPageTranslation: (ns: string, pageId: string, lang: string) =>
+    q<{ createPageTranslation: SitePage }>(ns, `mutation($p:ID!,$l:String!){ createPageTranslation(pageId:$p,lang:$l){ ${PAGE_LIST_FIELDS} } }`, { p: pageId, l: lang }).then(r => r.createPageTranslation),
+  unlinkPageTranslation: (ns: string, pageId: string) =>
+    q<{ unlinkPageTranslation: SitePage }>(ns, `mutation($p:ID!){ unlinkPageTranslation(pageId:$p){ ${PAGE_LIST_FIELDS} } }`, { p: pageId }).then(r => r.unlinkPageTranslation),
   setPageCategories: (ns: string, pageId: string, categoryIds: string[]) =>
     q<{ setPageCategories: SitePage }>(ns, `mutation($p:ID!,$c:[ID!]!){ setPageCategories(pageId:$p,categoryIds:$c){ ${PAGE_FIELDS} } }`, { p: pageId, c: categoryIds }).then(r => r.setPageCategories),
   movePage: (ns: string, id: string, parentId: string | null, sort: number) =>

@@ -56,6 +56,11 @@
         :categories="props.categories"
         :category-ids="props.categoryIds"
         :can-categories="!!props.onCategories && props.categories.length > 0"
+        :translations="props.translations"
+        :site-langs="props.siteLangs"
+        :can-translate="!!props.onTranslate"
+        @translate="(l: string) => props.onTranslate?.(l)"
+        @open-page="(id: string) => props.onOpenPage?.(id)"
         @categories="(ids: string[]) => props.onCategories?.(ids)"
         @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
@@ -78,6 +83,11 @@
         :categories="props.categories"
         :category-ids="props.categoryIds"
         :can-categories="!!props.onCategories && props.categories.length > 0"
+        :translations="props.translations"
+        :site-langs="props.siteLangs"
+        :can-translate="!!props.onTranslate"
+        @translate="(l: string) => props.onTranslate?.(l)"
+        @open-page="(id: string) => props.onOpenPage?.(id)"
         @categories="(ids: string[]) => props.onCategories?.(ids)"
         @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
@@ -161,6 +171,11 @@ interface Props {
   onCategories?: (ids: string[]) => Promise<void>
   /** Reusable blocks of the site, offered by the "shared block" block. */
   globalBlocks?: { slug: string; name: string }[]
+  /** The page and its translations; the sidebar offers the missing languages. */
+  translations?: { id: string; lang: string; path: string; status: string }[]
+  siteLangs?: string[]
+  onTranslate?: (lang: string) => Promise<void>
+  onOpenPage?: (id: string) => void
   /** True once the page has been published at least once, so "open live" can work. */
   published?: boolean
   backTo: string
@@ -185,6 +200,10 @@ const props = withDefaults(defineProps<Props>(), {
   categoryIds: () => [],
   onCategories: undefined,
   globalBlocks: () => [],
+  translations: () => [],
+  siteLangs: () => [],
+  onTranslate: undefined,
+  onOpenPage: undefined,
   published: false,
   imageResolver: undefined,
   onDelete: undefined,

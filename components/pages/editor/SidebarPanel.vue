@@ -62,6 +62,26 @@
           </button>
         </section>
 
+        <section v-if="canTranslate" class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.translations') }}</label>
+          <div class="flex flex-col gap-1.5">
+            <div v-for="r in langRows" :key="r.lang" class="flex items-center gap-2 rounded-2xl px-3 py-2 ring-1 ring-black/5 dark:ring-white/10" :class="r.page?.id === undefined ? '' : 'bg-gray-50 dark:bg-white/5'">
+              <span class="w-8 flex-shrink-0 text-xs font-bold uppercase text-slate-500 dark:text-neutral-400">{{ r.lang }}</span>
+              <template v-if="r.page">
+                <button type="button" class="min-w-0 flex-1 truncate text-left text-sm font-medium text-slate-800 hover:underline dark:text-white" @click="emit('open-page', r.page.id)">{{ r.page.path }}</button>
+                <span class="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold" :class="r.page.status === 'PAGE_READY' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'">{{ r.page.status === 'PAGE_READY' ? t('pages.status.ready') : t('pages.status.draft') }}</span>
+              </template>
+              <template v-else>
+                <span class="min-w-0 flex-1 text-sm text-slate-400">{{ t('pages.editor.noTranslation') }}</span>
+                <button type="button" class="at-btn !px-2.5 !py-1 text-xs" :disabled="translating === r.lang" @click="translateTo(r.lang)">
+                  <Icon :name="translating === r.lang ? 'lucide:loader-2' : 'lucide:languages'" class="h-3.5 w-3.5" :class="translating === r.lang ? 'animate-spin' : ''" />{{ t('pages.editor.createTranslation') }}
+                </button>
+              </template>
+            </div>
+          </div>
+          <p class="pe-help">{{ t('pages.editor.translationsHint') }}</p>
+        </section>
+
         <section v-if="canCategories" class="pe-group">
           <label class="pe-label">{{ t('pages.categories.title2') }}</label>
           <PagesCategoryChips v-model="catSel" :categories="categories || []" />
@@ -189,6 +209,9 @@ const props = defineProps<{
   categories?: any[]
   categoryIds?: string[]
   canCategories?: boolean
+  translations?: { id: string; lang: string; path: string; status: string }[]
+  siteLangs?: string[]
+  canTranslate?: boolean
   resolveImage: (src: string) => string
 }>()
 
@@ -197,6 +220,8 @@ const emit = defineEmits<{
   'upload-og-image': [File]
   move: [string, number]
   categories: [string[]]
+  translate: [string]
+  'open-page': [string]
 }>()
 
 const { t } = useI18n()
@@ -223,6 +248,19 @@ function applyCategories() {
   catSaving.value = true
   emit('categories', [...catSel.value])
   setTimeout(() => { catSaving.value = false }, 900)
+}
+const ALL_LANGS = ['ru', 'kk', 'en']
+const translating = ref('')
+// languages worth offering: the site's own plus the usual ones, minus those the page group already covers
+const langRows = computed(() => {
+  const have = new Map((props.translations || []).map(x => [x.lang.toLowerCase(), x]))
+  const wanted = Array.from(new Set([...(props.siteLangs || []), ...ALL_LANGS].map(l => l.toLowerCase())))
+  return wanted.map(l => ({ lang: l, page: have.get(l) || null }))
+})
+function translateTo(lang: string) {
+  translating.value = lang
+  emit('translate', lang)
+  setTimeout(() => { translating.value = '' }, 1500)
 }
 const tab = ref<'page' | 'seo'>('page')
 const tabs = computed(() => [
