@@ -43,10 +43,19 @@ const form = reactive({ name: '', slug: '' });
 const slugTouched = ref(false);
 const slugError = ref('');
 const techDomain = computed(() => sites.value[0]?.host?.split('.').slice(1).join('.') || (import.meta.dev ? 'pages.localhost' : 'pages.lota.tools'));
-watch(() => form.name, (n) => { if (!slugTouched.value) form.slug = slugifyText(n, 40); });
+// A short random suffix keeps auto-generated addresses unique ("kofeynya-x7k2"), so two businesses
+// naming their site "Кофейня" don't fight over the same address. Fixed per dialog so it stays put while typing.
+const slugSuffix = ref('');
+const newSuffix = () => Math.random().toString(36).replace(/[^a-z0-9]/g, '').padEnd(4, '0').slice(0, 4);
+watch(() => form.name, (n) => {
+  if (slugTouched.value) return;
+  const base = slugifyText(n, 40);
+  form.slug = base ? `${base}-${slugSuffix.value}` : '';
+});
 
 function openCreate() {
   form.name = ''; form.slug = ''; slugTouched.value = false; slugError.value = '';
+  slugSuffix.value = newSuffix();
   createOpen.value = true;
 }
 

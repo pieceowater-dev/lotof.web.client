@@ -4131,7 +4131,7 @@
       "name": "Name",
       "namePlaceholder": "E.g. Zerno Coffee",
       "address": "Site address",
-      "addressHint": "Latin letters, digits and hyphens. Cannot be changed later.",
+      "addressHint": "Latin letters, digits and hyphens. A short code is added to the name to keep the address unique. It cannot be changed later.",
       "willBeAt": "The site will be available at",
       "create": "Create",
       "slugInvalid": "Address: 3–63 characters, Latin letters, digits and hyphens, no hyphen at the start or end",
