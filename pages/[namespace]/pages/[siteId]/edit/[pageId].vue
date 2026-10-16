@@ -6,7 +6,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
 import { usePageTitle } from '@/composables/usePageTitle';
-import { pagesApi, type PagesSite, type SitePage } from '@/api/pages/ops';
+import { pagesApi, type PagesSite, type SitePage, type SiteCategory } from '@/api/pages/ops';
 import { pagesUploadMedia } from '@/api/pages/media';
 import { pagesRequestWithRefresh } from '@/api/pages/pagesRequestWithRefresh';
 import { siteAssetUrl, siteOrigin, toSiteRelative } from '@/utils/pagesSite';
@@ -25,6 +25,7 @@ const loadError = ref('');
 const site = ref<PagesSite | null>(null);
 const page = ref<SitePage | null>(null);
 const allPages = ref<SitePage[]>([]);
+const categories = ref<SiteCategory[]>([]);
 const editorKey = ref(0);
 usePageTitle('pages', { subject: () => page.value?.title });
 
@@ -33,9 +34,9 @@ const backTo = computed(() => `/${nsSlug.value}/pages/${siteId.value}`);
 async function load() {
   try {
     await getToken(nsSlug.value);
-    const [s, p, all] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value)]);
+    const [s, p, all, cats] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value)]);
     if (!s || !p || p.siteId !== s.id) { loadError.value = t('pages.editor.notFound'); return; }
-    site.value = s; page.value = p; allPages.value = all;
+    site.value = s; page.value = p; allPages.value = all; categories.value = cats;
   } catch (e) {
     logError('[pages/edit] load', e);
     loadError.value = getErrorMessage(e, t) || t('common.errorRetry');
@@ -73,6 +74,16 @@ async function onMove(parentId: string, sort: number) {
   } catch (e: any) {
     const msg = String(e?.response?.errors?.[0]?.message || '');
     useToast().add({ title: msg.includes('already exists') ? t('pages.pages.pathTaken') : t('common.error'), description: msg.includes('already exists') ? undefined : (msg || undefined), color: 'red' });
+  }
+}
+
+async function onCategories(ids: string[]) {
+  try {
+    const saved = await pagesApi.setPageCategories(nsSlug.value, pageId.value, ids)
+    if (page.value) page.value = { ...page.value, categoryIds: saved.categoryIds }
+    useToast().add({ title: t('pages.editor.categoriesSaved'), color: 'green' })
+  } catch (e: any) {
+    useToast().add({ title: t('common.error'), description: String(e?.response?.errors?.[0]?.message || '') || undefined, color: 'red' })
   }
 }
 
@@ -155,6 +166,9 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :parent-id="page?.parentId || ''"
     :sort="page?.sort || 0"
     :on-move="onMove"
+    :categories="categories"
+    :category-ids="page?.categoryIds || []"
+    :on-categories="onCategories"
     :published="!!site?.publishedVersion"
     :back-to="backTo"
     :image-resolver="resolveImage"

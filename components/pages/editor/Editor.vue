@@ -52,6 +52,10 @@
         :parent-id="props.parentId"
         :sort="props.sort"
         :can-move="!!props.onMove"
+        :categories="props.categories"
+        :category-ids="props.categoryIds"
+        :can-categories="!!props.onCategories && props.categories.length > 0"
+        @categories="(ids: string[]) => props.onCategories?.(ids)"
         @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
@@ -70,6 +74,10 @@
         :parent-id="props.parentId"
         :sort="props.sort"
         :can-move="!!props.onMove"
+        :categories="props.categories"
+        :category-ids="props.categoryIds"
+        :can-categories="!!props.onCategories && props.categories.length > 0"
+        @categories="(ids: string[]) => props.onCategories?.(ids)"
         @move="(p: string, s: number) => props.onMove?.(p, s)"
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
@@ -146,6 +154,10 @@ interface Props {
   parentId?: string
   sort?: number
   onMove?: (parentId: string, sort: number) => Promise<void>
+  /** Categories of the site and the ones this page is in; applied on their own (not part of the content save). */
+  categories?: any[]
+  categoryIds?: string[]
+  onCategories?: (ids: string[]) => Promise<void>
   /** True once the page has been published at least once, so "open live" can work. */
   published?: boolean
   backTo: string
@@ -166,6 +178,9 @@ const props = withDefaults(defineProps<Props>(), {
   parentId: '',
   sort: 0,
   onMove: undefined,
+  categories: () => [],
+  categoryIds: () => [],
+  onCategories: undefined,
   published: false,
   imageResolver: undefined,
   onDelete: undefined,

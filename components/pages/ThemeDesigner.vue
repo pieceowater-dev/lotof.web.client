@@ -7,8 +7,7 @@ export interface DesignPayload {
 
 <script lang="ts" setup>
 import SiteThemePreview from '@/components/pages/SiteThemePreview.vue';
-import PagePicker from '@/components/pages/PagePicker.vue';
-import type { SitePage } from '@/api/pages/ops';
+import MenuEditor from '@/components/pages/MenuEditor.vue';
 import ColorSwatch from '@/components/ui/ColorSwatch.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
@@ -35,24 +34,8 @@ const media = reactive({ logoUrl: '', faviconUrl: '', ogImageUrl: '' });
 const text = reactive({ footerText: '', headHtml: '', footHtml: '', customCss: '' });
 const busy = ref('');
 
-// ── site menu: automatic (every top-level page) or a hand-made list ──
-interface NavItem { label: string; href: string }
-const nav = reactive<{ custom: boolean; items: NavItem[] }>({ custom: false, items: [] });
-function loadNav(raw: string) {
-  let o: any = [];
-  try { o = JSON.parse(raw || '[]'); } catch { o = []; }
-  nav.items = Array.isArray(o) ? o.slice(0, 20).map((i: any) => ({ label: String(i.label || ''), href: String(i.href || '') })) : [];
-  nav.custom = nav.items.length > 0;
-}
-const navJson = () => (nav.custom && nav.items.length ? JSON.stringify(nav.items.filter(i => i.label.trim() && i.href.trim())) : '');
-function addNavPage(p: SitePage | null) { if (p && nav.items.length < 20 && !nav.items.some(i => i.href === p.path)) nav.items.push({ label: p.title, href: p.path }); }
-function addNavLink() { if (nav.items.length < 20) nav.items.push({ label: '', href: 'https://' }); }
-function moveNav(i: number, d: number) {
-  const j = i + d;
-  if (j < 0 || j >= nav.items.length) return;
-  [nav.items[i], nav.items[j]] = [nav.items[j], nav.items[i]];
-}
-const navPickerKey = ref(0);
+// ── site menu (edited by MenuEditor; navJson is the serialized tree) ──
+const navJsonVal = ref('');
 
 // ── floating contact buttons ──
 const FLOAT_KINDS = ['call', 'whatsapp', 'telegram', 'email', 'link', 'top'] as const;
@@ -76,10 +59,10 @@ function load(site: PagesSite) {
   Object.assign(media, { logoUrl: s.logoUrl || '', faviconUrl: s.faviconUrl || '', ogImageUrl: s.ogImageUrl || '' });
   Object.assign(text, { footerText: s.footerText || '', headHtml: s.headHtml || '', footHtml: s.footHtml || '', customCss: s.customCss || '' });
   loadFloat(s.floatJson);
-  loadNav(s.navJson);
+  navJsonVal.value = s.navJson || '';
   saved.value = snapshot();
 }
-const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text, f: float, n: nav });
+const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text, f: float, n: navJsonVal.value });
 watch(() => props.site, (s) => load(s), { immediate: true });
 const dirty = computed(() => snapshot() !== saved.value);
 
@@ -132,7 +115,7 @@ async function upload(kind: 'logoUrl' | 'faviconUrl' | 'ogImageUrl', e: Event) {
 
 function save() {
   emit('save', { themeId: presetId.value, themeVarsJson: JSON.stringify(vars), logoUrl: media.logoUrl, footerText: text.footerText.trim(),
-    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss, floatJson: floatJson(), navJson: navJson() });
+    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss, floatJson: floatJson(), navJson: navJsonVal.value });
   saved.value = snapshot();
 }
 
@@ -174,40 +157,7 @@ const mediaCards = [
       </section>
 
       <!-- site menu -->
-      <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-        <div class="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.menu.title') }}</h3>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.hint') }}</p>
-          </div>
-          <div class="at-seg !min-w-0">
-            <button type="button" class="at-seg__btn" :class="!nav.custom && 'at-seg__btn--on'" @click="nav.custom = false">{{ t('pages.design.menu.auto') }}</button>
-            <button type="button" class="at-seg__btn" :class="nav.custom && 'at-seg__btn--on'" @click="nav.custom = true">{{ t('pages.design.menu.custom') }}</button>
-          </div>
-        </div>
-        <template v-if="nav.custom">
-          <div v-if="nav.items.length" class="flex flex-col gap-2">
-            <div v-for="(it, i) in nav.items" :key="i" class="flex items-center gap-2 rounded-2xl bg-gray-50 p-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
-              <div class="flex flex-col">
-                <button type="button" class="rounded-full p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30" :disabled="i === 0" :aria-label="t('pages.design.menu.up')" @click="moveNav(i, -1)"><Icon name="lucide:chevron-up" class="h-4 w-4" /></button>
-                <button type="button" class="rounded-full p-0.5 text-gray-400 hover:text-gray-700 disabled:opacity-30" :disabled="i === nav.items.length - 1" :aria-label="t('pages.design.menu.down')" @click="moveNav(i, 1)"><Icon name="lucide:chevron-down" class="h-4 w-4" /></button>
-              </div>
-              <div class="grid min-w-0 flex-1 gap-2 sm:grid-cols-2">
-                <UInput v-model="it.label" maxlength="40" :placeholder="t('pages.design.menu.label')" />
-                <UInput v-model="it.href" :placeholder="t('pages.design.menu.href')" />
-              </div>
-              <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" @click="nav.items.splice(i, 1)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
-            </div>
-          </div>
-          <div class="flex flex-wrap items-start gap-2">
-            <div class="min-w-[14rem] flex-1">
-              <PagePicker :key="navPickerKey" model-value="" :ns-slug="nsSlug" :site-id="site.id" hide-top :placeholder="t('pages.design.menu.addPage')" @pick="(p) => { addNavPage(p); navPickerKey++; }" />
-            </div>
-            <button type="button" class="at-btn at-btn--blue" @click="addNavLink"><Icon name="lucide:link-2" class="h-4 w-4" />{{ t('pages.design.menu.addLink') }}</button>
-          </div>
-        </template>
-        <p v-else class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.autoHint') }}</p>
-      </section>
+      <MenuEditor v-model="navJsonVal" :site-id="site.id" :ns-slug="nsSlug" />
 
       <!-- floating contact buttons -->
       <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">

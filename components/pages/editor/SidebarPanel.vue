@@ -62,6 +62,15 @@
           </button>
         </section>
 
+        <section v-if="canCategories" class="pe-group">
+          <label class="pe-label">{{ t('pages.categories.title2') }}</label>
+          <PagesCategoryChips v-model="catSel" :categories="categories || []" />
+          <p class="pe-help">{{ t('pages.editor.categoriesHint') }}</p>
+          <button v-if="catsChanged" type="button" class="at-btn at-btn--blue mt-1 self-start" :disabled="catSaving" @click="applyCategories">
+            <Icon :name="catSaving ? 'lucide:loader-2' : 'lucide:check'" class="h-4 w-4" :class="catSaving ? 'animate-spin' : ''" />{{ t('pages.editor.applyCategories') }}
+          </button>
+        </section>
+
         <section class="pe-group">
           <label class="pe-label">{{ t('pages.editor.langLabel') }}</label>
           <div class="at-seg !flex w-full">
@@ -177,6 +186,9 @@ const props = defineProps<{
   parentId?: string
   sort?: number
   canMove?: boolean
+  categories?: any[]
+  categoryIds?: string[]
+  canCategories?: boolean
   resolveImage: (src: string) => string
 }>()
 
@@ -184,6 +196,7 @@ const emit = defineEmits<{
   'update:page': [Partial<PageState>]
   'upload-og-image': [File]
   move: [string, number]
+  categories: [string[]]
 }>()
 
 const { t } = useI18n()
@@ -197,6 +210,19 @@ function applyMove() {
   moving.value = true
   emit('move', parentSel.value, Number(orderSel.value) || 0)
   setTimeout(() => { moving.value = false }, 900)
+}
+const catSel = ref<string[]>([...(props.categoryIds || [])])
+const catSaving = ref(false)
+const catsChanged = computed(() => {
+  const a = [...catSel.value].sort().join(',')
+  const b = [...(props.categoryIds || [])].sort().join(',')
+  return a !== b
+})
+watch(() => props.categoryIds, (v) => { catSel.value = [...(v || [])] })
+function applyCategories() {
+  catSaving.value = true
+  emit('categories', [...catSel.value])
+  setTimeout(() => { catSaving.value = false }, 900)
 }
 const tab = ref<'page' | 'seo'>('page')
 const tabs = computed(() => [

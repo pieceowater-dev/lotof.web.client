@@ -7,6 +7,8 @@ import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
+import CategoriesPanel from '@/components/pages/CategoriesPanel.vue';
+import CategoryChips from '@/components/pages/CategoryChips.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
 import PageNav from '@/components/ui/PageNav.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
@@ -15,7 +17,7 @@ import { usePagesAuth } from '@/composables/usePagesAuth';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { useConfirm } from '@/composables/useConfirm';
 import {
-  pagesApi, type PagesSite, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult,
+  pagesApi, type PagesSite, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult, type SiteCategory,
 } from '@/api/pages/ops';
 import { siteOrigin, slugifyText } from '@/utils/pagesSite';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -32,15 +34,17 @@ const { confirm } = useConfirm();
 const booting = ref(true);
 const site = ref<PagesSite | null>(null);
 const pages = ref<SitePage[]>([]);
+const categories = ref<SiteCategory[]>([]);
 const versions = ref<SiteVersion[]>([]);
 const redirects = ref<SiteRedirect[]>([]);
 const preflight = ref<PreflightResult | null>(null);
 
 usePageTitle('pages', { subject: () => site.value?.name });
 
-type TabKey = 'pages' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
+type TabKey = 'pages' | 'categories' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
 const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
+  { key: 'categories', label: t('pages.tabs.categories'), icon: 'lucide:folder' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
   { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
   { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
@@ -60,14 +64,15 @@ function fail(e: unknown, key = 'common.error') {
 async function loadAll() {
   try {
     await getToken(nsSlug.value);
-    const [s, p, v, r] = await Promise.all([
+    const [s, p, v, r, cats] = await Promise.all([
       pagesApi.site(nsSlug.value, siteId.value),
       pagesApi.pages(nsSlug.value, siteId.value),
       pagesApi.versions(nsSlug.value, siteId.value),
       pagesApi.redirects(nsSlug.value, siteId.value),
+      pagesApi.categories(nsSlug.value, siteId.value),
     ]);
     if (!s) { await navigateTo(`/${nsSlug.value}/pages`); return; }
-    site.value = s; pages.value = p; versions.value = v; redirects.value = r;
+    site.value = s; pages.value = p; versions.value = v; redirects.value = r; categories.value = cats;
     fillSettings(s);
   } catch (e) {
     fail(e);
@@ -76,6 +81,14 @@ async function loadAll() {
   }
 }
 onMounted(loadAll);
+
+async function reloadCategories() {
+  try {
+    [categories.value, pages.value] = await Promise.all([pagesApi.categories(nsSlug.value, siteId.value), pagesApi.pages(nsSlug.value, siteId.value)]);
+  } catch (e) { fail(e); }
+}
+const catTitle = (id: string) => categories.value.find(c => c.id === id)?.title || '';
+function showCategoryPages(id: string) { categoryFilter.value = id; pageFilter.value = 'all'; activeTab.value = 'pages'; }
 
 const origin = computed(() => (site.value ? siteOrigin(site.value.host) : ''));
 const isLive = computed(() => !!site.value?.publishedVersion && site.value.status !== 'SITE_SUSPENDED');
@@ -108,25 +121,27 @@ const childCount = (p: SitePage) => pages.value.filter(x => x.parentId === p.id)
 type PageFilter = 'all' | 'ready' | 'draft';
 const pageFilter = ref<PageFilter>('all');
 const pageQuery = ref('');
+const categoryFilter = ref('');
 const draftCount = computed(() => pages.value.length - readyCount.value);
 const FILTERS = computed<{ key: PageFilter; label: string; n: number }[]>(() => [
   { key: 'all', label: t('pages.pages.filterAll'), n: pages.value.length },
   { key: 'ready', label: t('pages.pages.filterReady'), n: readyCount.value },
   { key: 'draft', label: t('pages.pages.filterDraft'), n: draftCount.value },
 ]);
-const searching = computed(() => !!pageQuery.value.trim() || pageFilter.value !== 'all');
+const searching = computed(() => !!pageQuery.value.trim() || pageFilter.value !== 'all' || !!categoryFilter.value);
 const visiblePages = computed(() => {
   const q = pageQuery.value.trim().toLowerCase();
   return sortedPages.value.filter((p) => {
     if (pageFilter.value === 'ready' && p.status !== 'PAGE_READY') return false;
     if (pageFilter.value === 'draft' && p.status === 'PAGE_READY') return false;
+    if (categoryFilter.value && !(p.categoryIds || []).includes(categoryFilter.value)) return false;
     return !q || p.title.toLowerCase().includes(q) || p.path.toLowerCase().includes(q);
   });
 });
 const pageSize = ref(10);
 const pageNo = ref(1);
 const pagedPages = computed(() => visiblePages.value.slice((pageNo.value - 1) * pageSize.value, pageNo.value * pageSize.value));
-watch([pageQuery, pageFilter, pageSize], () => { pageNo.value = 1; });
+watch([pageQuery, pageFilter, pageSize, categoryFilter], () => { pageNo.value = 1; });
 watch(() => visiblePages.value.length, (n) => { const max = Math.max(1, Math.ceil(n / pageSize.value)); if (pageNo.value > max) pageNo.value = max; });
 // While filtering the tree is flat, so indentation would be misleading.
 const rowDepth = (p: SitePage) => (searching.value ? 0 : depth(p));
@@ -206,7 +221,7 @@ async function toggleReady(p: SitePage) {
 const qeOpen = ref(false);
 const qeSaving = ref(false);
 const qeError = ref('');
-const qe = reactive({ id: '', title: '', slug: '', parentId: '', sort: 0, ready: false, isHome: false });
+const qe = reactive({ id: '', title: '', slug: '', parentId: '', sort: 0, ready: false, isHome: false, cats: [] as string[] });
 const qeOrig = reactive({ parentId: '', sort: 0 });
 const descendantIds = (id: string): Set<string> => {
   const out = new Set<string>([id]);
@@ -218,7 +233,7 @@ const descendantIds = (id: string): Set<string> => {
   return out;
 };
 function openQuickEdit(p: SitePage) {
-  Object.assign(qe, { id: p.id, title: p.title, slug: p.slug, parentId: p.parentId || '', sort: p.sort || 0, ready: p.status === 'PAGE_READY', isHome: p.path === '/' });
+  Object.assign(qe, { id: p.id, title: p.title, slug: p.slug, parentId: p.parentId || '', sort: p.sort || 0, ready: p.status === 'PAGE_READY', isHome: p.path === '/', cats: [...(p.categoryIds || [])] });
   qeOrig.parentId = p.parentId || ''; qeOrig.sort = p.sort || 0;
   qeError.value = '';
   qeOpen.value = true;
@@ -235,12 +250,13 @@ async function saveQuickEdit() {
     await pagesApi.updatePage(nsSlug.value, {
       id: full.id, slug: qe.isHome ? '' : qe.slug, title: qe.title.trim(), status: qe.ready ? 'PAGE_READY' : 'PAGE_DRAFT', lang: full.lang,
       seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+      categoryIds: qe.cats,
     });
     if (!qe.isHome && (qe.parentId !== qeOrig.parentId || Number(qe.sort) !== qeOrig.sort)) {
       await pagesApi.movePage(nsSlug.value, qe.id, qe.parentId || null, Number(qe.sort) || 0);
     }
     qeOpen.value = false;
-    pages.value = await pagesApi.pages(nsSlug.value, siteId.value);
+    await reloadCategories();
     toast.add({ title: t('pages.pages.saved'), color: 'green' });
   } catch (e: any) {
     const msg = String(e?.response?.errors?.[0]?.message || '');
@@ -263,8 +279,9 @@ async function duplicatePage(p: SitePage) {
     await pagesApi.updatePage(nsSlug.value, {
       id: created.id, slug, title: `${p.title} ${t('pages.pages.copySuffix')}`, status: 'PAGE_DRAFT', lang: full.lang,
       seo: full.seo, blocks: full.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+      categoryIds: full.categoryIds || [],
     });
-    pages.value = await pagesApi.pages(nsSlug.value, siteId.value);
+    await reloadCategories();
     toast.add({ title: t('pages.pages.duplicated'), color: 'green' });
   } catch (e) { fail(e); }
 }
@@ -516,6 +533,12 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <UInput v-model="pageQuery" icon="i-lucide-search" :placeholder="t('pages.pages.search')" class="sm:w-72" />
           </div>
 
+          <div v-if="categories.length" class="flex flex-wrap items-center gap-1.5">
+            <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('pages.categories.filter') }}</span>
+            <button type="button" class="rounded-full px-3 py-1 text-xs font-semibold ring-1 transition" :class="!categoryFilter ? 'bg-primary-50 text-primary-700 ring-primary-300 dark:bg-blue-500/15 dark:text-primary-300 dark:ring-primary-500/40' : 'bg-white text-gray-600 ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:text-gray-300 dark:ring-white/10'" @click="categoryFilter = ''">{{ t('pages.categories.all') }}</button>
+            <button v-for="c in categories" :key="c.id" type="button" class="rounded-full px-3 py-1 text-xs font-semibold ring-1 transition" :class="categoryFilter === c.id ? 'bg-primary-50 text-primary-700 ring-primary-300 dark:bg-blue-500/15 dark:text-primary-300 dark:ring-primary-500/40' : 'bg-white text-gray-600 ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:text-gray-300 dark:ring-white/10'" @click="categoryFilter = categoryFilter === c.id ? '' : c.id">{{ c.title }}<span class="ml-1 opacity-60">{{ c.pageCount }}</span></button>
+          </div>
+
           <p v-if="!visiblePages.length" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('pages.pages.noMatches') }}</p>
 
           <div
@@ -533,6 +556,10 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
                 <span class="hidden flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-primary-600 opacity-0 transition group-hover:opacity-100 sm:inline-flex dark:text-primary-300"><Icon name="lucide:pencil" class="h-3 w-3" />{{ t('pages.pages.openEditor') }}</span>
               </div>
               <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ p.path }}</div>
+              <div v-if="(p.categoryIds || []).length" class="mt-1 flex flex-wrap gap-1">
+                <span v-for="cid in p.categoryIds.slice(0, 4)" :key="cid" class="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700 dark:bg-blue-500/15 dark:text-primary-300"><Icon name="lucide:tag" class="h-3 w-3" />{{ catTitle(cid) }}</span>
+                <span v-if="p.categoryIds.length > 4" class="text-[11px] text-gray-400">+{{ p.categoryIds.length - 4 }}</span>
+              </div>
             </NuxtLink>
             <button
               type="button"
@@ -557,6 +584,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
           </div>
         </div>
       </template>
+
+      <!-- ═════════ CATEGORIES ═════════ -->
+      <CategoriesPanel v-else-if="activeTab === 'categories'" :site="site" :ns-slug="nsSlug" :categories="categories" @changed="reloadCategories" @show-pages="showCategoryPages" />
 
       <!-- ═════════ DESIGN ═════════ -->
       <ThemeDesigner v-else-if="activeTab === 'design'" :site="site" :ns-slug="nsSlug" :saving="designSaving" @save="saveDesign" />
@@ -733,6 +763,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <UFormGroup :label="t('pages.pages.order')" :help="t('pages.pages.orderHint')"><UInput v-model="qe.sort" type="number" /></UFormGroup>
           </template>
           <p v-else-if="qeError" class="text-xs text-red-600 dark:text-red-400">{{ qeError }}</p>
+          <UFormGroup v-if="categories.length" :label="t('pages.categories.title2')">
+            <CategoryChips v-model="qe.cats" :categories="categories" />
+          </UFormGroup>
           <div class="at-switch items-center justify-between">
             <span class="text-sm font-semibold text-gray-800 dark:text-gray-100">{{ t('pages.pages.inPublish') }}</span>
             <UToggle v-model="qe.ready" />

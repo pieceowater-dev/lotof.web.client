@@ -4479,7 +4479,40 @@
         "addPage": "Add a page to the menu…",
         "addLink": "Custom link",
         "up": "Up",
-        "down": "Down"
+        "down": "Down",
+        "hint2": "What the header menu is made of: tick pages and categories, add links and headings, nest items. For long catalogues turn on \"Mega menu\".",
+        "home": "Home",
+        "catalogName": "Catalog",
+        "kind": {
+          "page": "Page",
+          "category": "Category",
+          "home": "Home",
+          "link": "Link",
+          "group": "Heading"
+        },
+        "missing": "Missing",
+        "draftHint": "Draft: the item shows in the menu once the page is included in publishing",
+        "mega": "Mega menu",
+        "megaHint": "A wide full-width panel: nested items become columns",
+        "outdent": "Move up a level",
+        "indent": "Nest under the item above",
+        "empty": "The menu is empty. Add pages and categories.",
+        "add": "Add to menu",
+        "catalog": "Catalog from categories",
+        "count": "{n} of {max}",
+        "tab": {
+          "pages": "Pages",
+          "categories": "Categories",
+          "link": "Link",
+          "group": "Heading"
+        },
+        "catsHint": "Tick the categories for the menu",
+        "selectAll": "Select all",
+        "groupHint": "An item without a link: it opens its nested items",
+        "into": "Add to",
+        "topLevel": "Top level",
+        "picked": "Selected: {n}",
+        "addSelected": "Add"
       }
     },
     "domains": {
@@ -4541,6 +4574,35 @@
         "not_configured": "The platform is not set up to verify domains"
       }
     },
+    "categories": {
+      "intro": "Categories group pages, like WordPress categories. Each one gets its own listing page (/category/…) and can be put in the site menu.",
+      "new": "New category",
+      "edit": "Edit category",
+      "empty": "No categories yet. Create one, like \"News\" or \"Services\", and tick it on your pages.",
+      "none": "No categories yet",
+      "noParents": "No other categories: this one will be top level",
+      "title": "Name",
+      "title2": "Categories",
+      "slug": "Address",
+      "slugHint": "Latin letters, digits and hyphens. Leave empty to derive it from the name.",
+      "description": "Description",
+      "descriptionHint": "Shown above the list of pages and in search results.",
+      "parent": "Nest under",
+      "order": "Order",
+      "orderHint": "Lower number comes first.",
+      "needTitle": "Enter a name",
+      "slugTaken": "A category with this address already exists",
+      "slugInvalid": "Address: lowercase latin letters, digits, hyphen and underscore",
+      "cycle": "A category cannot be placed inside itself or its own child",
+      "saved": "Saved",
+      "deleteTitle": "Delete category \"{name}\"?",
+      "deleteText": "Pages stay, they just leave this category. Nested categories become top level.",
+      "pageCount": "{n} pages",
+      "showPages": "Show the category's pages",
+      "addChild": "Add nested",
+      "filter": "Category:",
+      "all": "All"
+    },
     "integrations": {
       "title": "AI connection",
       "intro": "Claude, ChatGPT and other AI clients can create and edit pages of this site over MCP. Everything the AI does lands in drafts; it goes live only after publishing.",
@@ -4593,6 +4655,7 @@
       "toolsText": "List sites and pages, create and edit pages from Markdown, upload images, run the pre-publish check, publish and roll back (only with the Publish permission), manage redirects."
     },
     "tabs": {
+      "categories": "Categories",
       "integrations": "AI",
       "domains": "Domains",
       "design": "Design",
@@ -4751,6 +4814,9 @@
       "notFound": "Page not found",
       "parentLabel": "Parent page",
       "orderLabel": "Order",
+      "categoriesHint": "Categories show under the page title and on the category page.",
+      "applyCategories": "Apply categories",
+      "categoriesSaved": "Categories saved",
       "attributesHint": "Nesting defines the page address. Lower number sits higher in the site menu. The address changes and the old one redirects automatically.",
       "applyMove": "Apply",
       "moved": "Page moved"

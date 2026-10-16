@@ -24,7 +24,10 @@ export interface PageSeo {
 export interface SitePage {
   id: string; siteId: string; parentId: string | null; slug: string; path: string; title: string; status: PageStatus;
   seo: PageSeo; blocks: PageBlock[]; schemaVersion: number; sort: number; lang: string; createdAtUnix: number; updatedAtUnix: number;
+  categoryIds: string[];
 }
+export interface SiteCategory { id: string; siteId: string; parentId: string | null; slug: string; title: string; description: string; sort: number; pageCount: number }
+export interface CategoryInput { parentId?: string | null; slug?: string; title: string; description?: string; sort?: number }
 export interface PageRevision { id: string; pageId: string; authorId: string; createdAtUnix: number }
 export interface SiteVersion {
   id: string; siteId: string; version: string; pageCount: number; bytes: number; createdBy: string; note: string; live: boolean; createdAtUnix: number;
@@ -49,7 +52,7 @@ export interface SiteMedia { id: string; siteId: string; sha256: string; ext: st
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
 const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
-const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix`;
+const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix categoryIds`;
 const PAGE_FIELDS = `${PAGE_LIST_FIELDS} createdAtUnix schemaVersion seo { ${SEO_FIELDS} } blocks { id type content attrsJson }`;
 const VERSION_FIELDS = `id siteId version pageCount bytes createdBy note live createdAtUnix`;
 const DOMAIN_FIELDS = `id siteId hostname displayHostname isPrimary status isApex lastError lastCheckedAtUnix activatedAtUnix createdAtUnix suspendAtUnix records { type name value done purpose }`;
@@ -96,8 +99,12 @@ export const pagesApi = {
   updatePage: (ns: string, input: {
     id: string; slug: string; title: string; status: PageStatus; lang?: string;
     seo?: Partial<PageSeo>; blocks: { id: string; type: string; content: string; attrsJson?: string }[];
+    /** Omit to keep the page's categories; [] clears them. */
+    categoryIds?: string[];
   }) =>
     q<{ updatePage: SitePage }>(ns, `mutation($i:UpdatePageInput!){ updatePage(input:$i){ ${PAGE_FIELDS} } }`, { i: input }).then(r => r.updatePage),
+  setPageCategories: (ns: string, pageId: string, categoryIds: string[]) =>
+    q<{ setPageCategories: SitePage }>(ns, `mutation($p:ID!,$c:[ID!]!){ setPageCategories(pageId:$p,categoryIds:$c){ ${PAGE_FIELDS} } }`, { p: pageId, c: categoryIds }).then(r => r.setPageCategories),
   movePage: (ns: string, id: string, parentId: string | null, sort: number) =>
     q<{ movePage: SitePage }>(ns, `mutation($id:ID!,$p:ID,$s:Int!){ movePage(id:$id,parentId:$p,sort:$s){ ${PAGE_LIST_FIELDS} } }`, { id, p: parentId, s: sort }).then(r => r.movePage),
   deletePage: (ns: string, id: string) =>
@@ -128,6 +135,16 @@ export const pagesApi = {
     q<{ setPrimaryDomain: SiteDomain }>(ns, `mutation($s:ID!,$h:String!){ setPrimaryDomain(siteId:$s,hostname:$h){ ${DOMAIN_FIELDS} } }`, { s: siteId, h: hostname }).then(r => r.setPrimaryDomain),
   removeDomain: (ns: string, id: string) =>
     q<{ removeSiteDomain: { success: boolean } }>(ns, `mutation($id:ID!){ removeSiteDomain(id:$id){ success } }`, { id }).then(r => r.removeSiteDomain.success),
+
+  // categories
+  categories: (ns: string, siteId: string) =>
+    q<{ categories: SiteCategory[] }>(ns, `query($s:ID!){ categories(siteId:$s){ id siteId parentId slug title description sort pageCount } }`, { s: siteId }).then(r => r.categories),
+  createCategory: (ns: string, siteId: string, input: CategoryInput) =>
+    q<{ createCategory: SiteCategory }>(ns, `mutation($s:ID!,$i:CategoryInput!){ createCategory(siteId:$s,input:$i){ id siteId parentId slug title description sort pageCount } }`, { s: siteId, i: input }).then(r => r.createCategory),
+  updateCategory: (ns: string, id: string, input: CategoryInput) =>
+    q<{ updateCategory: SiteCategory }>(ns, `mutation($id:ID!,$i:CategoryInput!){ updateCategory(id:$id,input:$i){ id siteId parentId slug title description sort pageCount } }`, { id, i: input }).then(r => r.updateCategory),
+  deleteCategory: (ns: string, id: string) =>
+    q<{ deleteCategory: { success: boolean } }>(ns, `mutation($id:ID!){ deleteCategory(id:$id){ success } }`, { id }).then(r => r.deleteCategory.success),
 
   // access tokens (MCP and other external clients)
   accessTokens: (ns: string) =>

@@ -144,7 +144,7 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
             <span v-else-if="isExpired(tok)" class="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">{{ t('pages.integrations.expired') }}</span>
           </div>
           <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span v-for="sc in tok.scopes" :key="sc" class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="sc === 'publish' ? 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'bg-primary-50 text-primary-700 dark:bg-primary-500/15 dark:text-primary-300'">{{ t(`pages.integrations.scope.${sc}`) }}</span>
+            <span v-for="sc in tok.scopes" :key="sc" class="rounded-full px-2 py-0.5 text-[11px] font-semibold" :class="sc === 'publish' ? 'bg-orange-50 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300' : 'bg-primary-50 text-primary-700 dark:bg-blue-500/15 dark:text-primary-300'">{{ t(`pages.integrations.scope.${sc}`) }}</span>
             <span class="text-xs text-gray-500 dark:text-gray-400">· {{ siteName(tok) }}</span>
             <span v-if="tok.expiresAtUnix" class="text-xs text-gray-500 dark:text-gray-400">· {{ t('pages.integrations.expires', { date: fmt(tok.expiresAtUnix) }) }}</span>
             <span class="text-xs text-gray-400 dark:text-gray-500">· {{ tok.lastUsedAtUnix ? t('pages.integrations.lastUsed', { date: fmt(tok.lastUsedAtUnix) }) : t('pages.integrations.neverUsed') }}</span>
@@ -165,7 +165,7 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
             <div class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('pages.integrations.scopes') }}</div>
             <div class="flex flex-col gap-1.5">
               <button v-for="sc in SCOPES" :key="sc" type="button" class="flex items-center gap-3 rounded-2xl px-3.5 py-2.5 text-left ring-1 transition"
-                :class="form.scopes.includes(sc) ? 'bg-primary-50 ring-primary-300 dark:bg-primary-500/10 dark:ring-primary-500/40' : 'bg-white ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:ring-white/10 dark:hover:bg-white/5'"
+                :class="form.scopes.includes(sc) ? 'bg-primary-50 ring-primary-300 dark:bg-blue-500/10 dark:ring-primary-500/40' : 'bg-white ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:ring-white/10 dark:hover:bg-white/5'"
                 @click="toggleScope(sc)">
                 <UIcon :name="form.scopes.includes(sc) ? 'lucide:circle-check' : 'lucide:circle'" class="h-5 w-5 flex-shrink-0" :class="form.scopes.includes(sc) ? 'text-primary-600' : 'text-gray-300 dark:text-gray-600'" />
                 <span class="min-w-0">
