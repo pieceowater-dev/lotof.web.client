@@ -268,6 +268,8 @@ function createBlock(type: string): Block {
         ? { cols: '3', images: [] }
       : type === 'cta'
         ? { title: '', text: '', buttonText: '', buttonHref: '' }
+      : type === 'schema'
+        ? { kind: 'LocalBusiness' }
       : {}
 
   const content = type === 'ul'
@@ -733,7 +735,7 @@ function blockTypeLabel(type: string) {
     paragraph: '¶', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5',
     quote: '"', ul: 'UL', ol: 'OL', image: 'IMG',
     callout: 'ℹ', spoiler: 'S', spoiler_open: 'S+', spoiler_close: 'S-', divider: '—', html: '</>',
-    button: 'BTN', faq: 'FAQ', hero: 'HERO', columns: 'COL', gallery: 'IMG+', cta: 'CTA',
+    button: 'BTN', faq: 'FAQ', hero: 'HERO', columns: 'COL', gallery: 'IMG+', cta: 'CTA', schema: 'SEO',
   }
   return map[type] ?? type
 }
@@ -789,7 +791,7 @@ function calloutActiveBtnClass(type: string) {
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────
-const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global', 'hero', 'columns', 'gallery', 'cta']
+const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global', 'hero', 'columns', 'gallery', 'cta', 'schema']
 
 function stripHtml(value: string): string {
   return String(value || '')
@@ -811,6 +813,7 @@ function isMeaningfulBlock(block: Block): boolean {
   if (type === 'button') return String(block?.attrs?.text || '').trim().length > 0 && String(block?.attrs?.href || '').trim().length > 0
   if (type === 'global') return String(block?.attrs?.ref || '').trim().length > 0
   if (type === 'hero' || type === 'cta') return ['title', 'subtitle', 'text', 'buttonText'].some(k => String(block?.attrs?.[k] || '').trim())
+  if (type === 'schema') return !!String(block?.attrs?.name || block?.attrs?.itemName || '').trim()
   if (type === 'columns') return (block?.attrs?.items || []).some((i: any) => String(i?.title || i?.text || '').trim())
   if (type === 'gallery') return (block?.attrs?.images || []).length > 0
   if (type === 'faq') {

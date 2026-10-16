@@ -373,6 +373,12 @@
                   </div>
                 </div>
 
+                <PagesEditorSchemaBlock
+                  v-else-if="block.type === 'schema'"
+                  :block="block"
+                  :resolve="imageResolver"
+                />
+
                 <PagesEditorSectionBlock
                   v-else-if="['hero', 'columns', 'gallery', 'cta'].includes(block.type)"
                   :block="block"

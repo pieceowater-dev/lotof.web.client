@@ -72,6 +72,7 @@ const allGroups = [
       { type: 'faq', label: 'faq', icon: 'lucide:messages-square', iconBg: 'bg-cyan-100 dark:bg-cyan-900/30', iconColor: 'text-cyan-600 dark:text-cyan-400' },
       { type: 'callout', label: 'callout', icon: 'lucide:info', iconBg: 'bg-amber-100 dark:bg-amber-900/30', iconColor: 'text-amber-600 dark:text-amber-400' },
       { type: 'divider', label: 'divider', icon: 'lucide:minus', iconBg: 'bg-violet-100 dark:bg-violet-900/30', iconColor: 'text-violet-600 dark:text-violet-400' },
+      { type: 'schema', label: 'schema', icon: 'lucide:badge-check', iconBg: 'bg-teal-100 dark:bg-teal-900/30', iconColor: 'text-teal-600 dark:text-teal-400' },
       { type: 'global', label: 'global', icon: 'lucide:blocks', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30', iconColor: 'text-emerald-600 dark:text-emerald-400' },
       { type: 'html', label: 'html', icon: 'lucide:code-2', iconBg: 'bg-violet-100 dark:bg-violet-900/30', iconColor: 'text-violet-600 dark:text-violet-400' }
     ]
