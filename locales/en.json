@@ -5100,7 +5100,15 @@
       "broken_link": "A link to a page that does not exist: {detail}",
       "title_too_long": "The title is longer than 60 characters: search engines will cut it",
       "title_too_short": "The title is too short: add a clarification",
-      "description_length": "Keep the description between 70 and 160 characters"
+      "description_length": "Keep the description between 70 and 160 characters",
+      "canonical_missing_page": "The canonical address points to a page that does not exist: {detail}",
+      "duplicate_description": "The description matches the page {detail}",
+      "image_no_alt": "The image has no description (alt): it is needed for image search and accessibility",
+      "orphan_page": "No page or menu links to this page: a crawler may not find it",
+      "redirect_loop": "The redirect loops and will be disabled",
+      "redirect_shadows_page": "A redirect from this address overrides an existing page",
+      "thin_content": "Very little text: such pages rank poorly",
+      "template_text": "The page still has template text: replace it with your own, otherwise it duplicates other sites"
     },
     "err": {
       "limitSites": "Plan limit reached: sites ({used} of {limit}). Move to a higher plan to add more.",
