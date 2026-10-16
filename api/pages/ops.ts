@@ -10,7 +10,7 @@ export type PageStatus = 'PAGE_DRAFT' | 'PAGE_READY' | 'PAGE_ARCHIVED';
 export interface SiteSettings {
   defaultLang: string; langs: string[]; faviconUrl: string; ogImageUrl: string; googleSiteVerification: string;
   robotsTxt: string; headHtml: string; themeId: string; themeVarsJson: string; navJson: string;
-  logoUrl: string; footerText: string; footHtml: string; customCss: string;
+  logoUrl: string; footerText: string; footHtml: string; customCss: string; floatJson: string;
 }
 export interface PagesSite {
   id: string; name: string; slug: string; status: SiteStatus; settings: SiteSettings;
@@ -41,7 +41,7 @@ export interface SiteDomain {
 export interface SiteDomains { domains: SiteDomain[]; platformHost: string; primaryHost: string; cnameTarget: string; ips: string[] }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
-const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss`;
+const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
 const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
 const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix`;

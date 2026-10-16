@@ -4429,7 +4429,39 @@
       "footHtml": "Code before </body>",
       "footHtmlHint": "Chat widgets: loaded at the end of the page.",
       "codeWarn": "Scripts run for every visitor of your site. Only paste code you trust.",
-      "unsaved": "Unsaved changes"
+      "unsaved": "Unsaved changes",
+      "float": {
+        "title": "Floating buttons",
+        "hint": "“Contact us”, “Call”, WhatsApp and other buttons floating over every page of the site.",
+        "add": "Add button",
+        "position": "Position",
+        "pos": {
+          "right": "Right",
+          "left": "Left"
+        },
+        "style": "Style",
+        "styles": {
+          "icons": "Icons only",
+          "labels": "With labels"
+        },
+        "label": "Label (e.g. Contact us)",
+        "kind": {
+          "call": "Call",
+          "whatsapp": "WhatsApp",
+          "telegram": "Telegram",
+          "email": "Email",
+          "link": "Link",
+          "top": "To top"
+        },
+        "value": {
+          "call": "Phone: +7 700 123 45 67",
+          "whatsapp": "WhatsApp number: 77001234567",
+          "telegram": "Telegram name: @company",
+          "email": "Email: hello@example.com",
+          "link": "URL: https://… or /page",
+          "top": ""
+        }
+      }
     },
     "domains": {
       "title": "Domains",

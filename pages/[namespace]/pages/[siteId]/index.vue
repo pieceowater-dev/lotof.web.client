@@ -372,7 +372,7 @@ async function saveSettings() {
         defaultLang: settingsForm.defaultLang, langs: s.langs, faviconUrl: s.faviconUrl, ogImageUrl: s.ogImageUrl,
         googleSiteVerification: settingsForm.googleSiteVerification.trim(), robotsTxt: settingsForm.robotsTxt,
         headHtml: s.headHtml, themeId: s.themeId, themeVarsJson: s.themeVarsJson, navJson: s.navJson,
-        logoUrl: s.logoUrl, footerText: s.footerText, footHtml: s.footHtml, customCss: s.customCss,
+        logoUrl: s.logoUrl, footerText: s.footerText, footHtml: s.footHtml, customCss: s.customCss, floatJson: s.floatJson,
       },
     });
     toast.add({ title: t('pages.settings.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
@@ -399,7 +399,7 @@ async function saveDesign(p: DesignPayload) {
       settings: {
         defaultLang: s.defaultLang, langs: s.langs, googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, navJson: s.navJson,
         themeId: p.themeId, themeVarsJson: p.themeVarsJson, logoUrl: p.logoUrl, footerText: p.footerText,
-        faviconUrl: p.faviconUrl, ogImageUrl: p.ogImageUrl, headHtml: p.headHtml, footHtml: p.footHtml, customCss: p.customCss,
+        faviconUrl: p.faviconUrl, ogImageUrl: p.ogImageUrl, headHtml: p.headHtml, footHtml: p.footHtml, customCss: p.customCss, floatJson: p.floatJson,
       },
     });
     toast.add({ title: t('pages.design.saved'), description: t('pages.settings.needsPublish'), color: 'green' });

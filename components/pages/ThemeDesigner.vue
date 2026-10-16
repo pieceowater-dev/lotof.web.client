@@ -1,7 +1,7 @@
 <script lang="ts">
 export interface DesignPayload {
   themeId: string; themeVarsJson: string; logoUrl: string; footerText: string;
-  faviconUrl: string; ogImageUrl: string; headHtml: string; footHtml: string; customCss: string;
+  faviconUrl: string; ogImageUrl: string; headHtml: string; footHtml: string; customCss: string; floatJson: string;
 }
 </script>
 
@@ -32,6 +32,20 @@ const vars = reactive<ThemeVars>({ ...presetById(DEFAULT_PRESET).vars });
 const media = reactive({ logoUrl: '', faviconUrl: '', ogImageUrl: '' });
 const text = reactive({ footerText: '', headHtml: '', footHtml: '', customCss: '' });
 const busy = ref('');
+
+// ── floating contact buttons ──
+const FLOAT_KINDS = ['call', 'whatsapp', 'telegram', 'email', 'link', 'top'] as const;
+interface FloatItem { kind: string; label: string; value: string }
+const float = reactive<{ position: string; style: string; items: FloatItem[] }>({ position: 'right', style: 'icons', items: [] });
+function loadFloat(raw: string) {
+  let o: any = {};
+  try { o = JSON.parse(raw || '{}') || {}; } catch { o = {}; }
+  float.position = o.position === 'left' ? 'left' : 'right';
+  float.style = o.style === 'labels' ? 'labels' : 'icons';
+  float.items = Array.isArray(o.items) ? o.items.slice(0, 5).map((i: any) => ({ kind: String(i.kind || 'call'), label: String(i.label || ''), value: String(i.value || '') })) : [];
+}
+const floatJson = () => (float.items.length ? JSON.stringify({ position: float.position, style: float.style, items: float.items }) : '');
+function addFloat() { if (float.items.length < 5) float.items.push({ kind: 'call', label: '', value: '' }); }
 const saved = ref('');
 
 function load(site: PagesSite) {
@@ -40,9 +54,10 @@ function load(site: PagesSite) {
   Object.assign(vars, resolveVars(presetId.value, s.themeVarsJson));
   Object.assign(media, { logoUrl: s.logoUrl || '', faviconUrl: s.faviconUrl || '', ogImageUrl: s.ogImageUrl || '' });
   Object.assign(text, { footerText: s.footerText || '', headHtml: s.headHtml || '', footHtml: s.footHtml || '', customCss: s.customCss || '' });
+  loadFloat(s.floatJson);
   saved.value = snapshot();
 }
-const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text });
+const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text, f: float });
 watch(() => props.site, (s) => load(s), { immediate: true });
 const dirty = computed(() => snapshot() !== saved.value);
 
@@ -95,7 +110,7 @@ async function upload(kind: 'logoUrl' | 'faviconUrl' | 'ogImageUrl', e: Event) {
 
 function save() {
   emit('save', { themeId: presetId.value, themeVarsJson: JSON.stringify(vars), logoUrl: media.logoUrl, footerText: text.footerText.trim(),
-    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss });
+    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss, floatJson: floatJson() });
   saved.value = snapshot();
 }
 
@@ -134,6 +149,45 @@ const mediaCards = [
         <UFormGroup :label="t('pages.design.footer')" :help="t('pages.design.footerHint')">
           <UInput v-model="text.footerText" maxlength="160" :placeholder="site.name" />
         </UFormGroup>
+      </section>
+
+      <!-- floating contact buttons -->
+      <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.float.title') }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.float.hint') }}</p>
+          </div>
+          <button v-if="float.items.length < 5" type="button" class="at-btn at-btn--blue" @click="addFloat"><Icon name="lucide:plus" class="h-4 w-4" />{{ t('pages.design.float.add') }}</button>
+        </div>
+        <template v-if="float.items.length">
+          <div class="grid gap-4 sm:grid-cols-2">
+            <UFormGroup :label="t('pages.design.float.position')">
+              <div class="at-seg !min-w-0 self-start">
+                <button v-for="p in ['right', 'left']" :key="p" type="button" class="at-seg__btn" :class="float.position === p && 'at-seg__btn--on'" @click="float.position = p">{{ t(`pages.design.float.pos.${p}`) }}</button>
+              </div>
+            </UFormGroup>
+            <UFormGroup :label="t('pages.design.float.style')">
+              <div class="at-seg !min-w-0 self-start">
+                <button v-for="p in ['icons', 'labels']" :key="p" type="button" class="at-seg__btn" :class="float.style === p && 'at-seg__btn--on'" @click="float.style = p">{{ t(`pages.design.float.styles.${p}`) }}</button>
+              </div>
+            </UFormGroup>
+          </div>
+          <div class="flex flex-col gap-3">
+            <div v-for="(it, i) in float.items" :key="i" class="flex flex-col gap-2 rounded-2xl bg-gray-50 p-3 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+              <div class="flex items-start justify-between gap-2">
+                <div class="at-seg !min-w-0 flex-wrap">
+                  <button v-for="k in FLOAT_KINDS" :key="k" type="button" class="at-seg__btn !px-3 !py-1.5 !text-xs" :class="it.kind === k && 'at-seg__btn--on'" @click="it.kind = k">{{ t(`pages.design.float.kind.${k}`) }}</button>
+                </div>
+                <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" @click="float.items.splice(i, 1)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
+              </div>
+              <div class="grid gap-2 sm:grid-cols-2">
+                <UInput v-model="it.label" maxlength="40" :placeholder="t('pages.design.float.label')" />
+                <UInput v-if="it.kind !== 'top'" v-model="it.value" :placeholder="t(`pages.design.float.value.${it.kind}`)" />
+              </div>
+            </div>
+          </div>
+        </template>
       </section>
 
       <!-- presets -->
