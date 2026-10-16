@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import PageHeader from '@/components/ui/PageHeader.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -128,40 +129,22 @@ onUnmounted(() => {
 
 <template>
   <div class="at-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0 overflow-y-auto md:overflow-visible">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-      <div class="text-left">
-        <h1 class="at-title">
-          {{ t('app.atraceManagement') || 'Управление' }}
-        </h1>
-        <p class="at-sub">{{ t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days' }}</p>
-      </div>
-      <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
-        <NuxtLink
-          :to="`/${nsSlug}/atrace/plans?manage=1`"
-          class="at-btn at-btn--amber"
-        >
-          <UIcon name="lucide:star" class="h-4 w-4" />
-          {{ t('app.upgradePlan') || 'Upgrade Plan' }}
-        </NuxtLink>
-        <button
-          v-if="accessChecked && !accessDenied"
-          type="button"
-          class="at-btn at-btn--primary"
-          @click="isInviteOpen = true"
-        >
-          <UIcon name="lucide:user-plus" class="h-4 w-4" />
-          {{ t('app.sendInvite') || 'Send Invitation' }}
+    <PageHeader
+      :title="t('app.atraceManagement') || 'Управление'"
+      :subtitle="t('app.atraceSettingsSubtitle') || 'Manage members, roles, and working days'"
+      :menu="[[{ label: t('app.upgradePlan') || 'Upgrade Plan', icon: 'lucide:star', to: `/${nsSlug}/atrace/plans?manage=1` }]]"
+    >
+      <template v-if="accessChecked && !accessDenied" #primary>
+        <button type="button" class="at-btn at-btn--primary" @click="isInviteOpen = true">
+          <UIcon name="lucide:user-plus" class="h-4 w-4" /><span class="whitespace-nowrap">{{ t('app.sendInvite') || 'Send Invitation' }}</span>
         </button>
-        <button
-          type="button"
-          class="at-btn at-btn--blue"
-          @click="goBack"
-        >
-          <UIcon name="lucide:arrow-left" class="h-4 w-4" />
-          <span class="hidden sm:inline">{{ t('app.back') }}</span>
+      </template>
+      <template #actions>
+        <button type="button" class="at-btn" :aria-label="t('app.back')" @click="goBack">
+          <UIcon name="lucide:arrow-left" class="h-4 w-4" /><span class="hidden sm:inline">{{ t('app.back') }}</span>
         </button>
-      </div>
-    </div>
+      </template>
+    </PageHeader>
 
     <div v-if="!accessChecked" class="flex-1 min-h-0 overflow-hidden"><AppSkeleton variant="panel" :rows="2" /></div>
 

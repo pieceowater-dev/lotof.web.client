@@ -544,14 +544,19 @@ function addTagToFilter(tagId: string, tagName: string) {
           @click="emit('rowClick', client)"
           @keydown.enter="emit('rowClick', client)"
         >
-          <button type="button" class="mt-0.5 flex-shrink-0" :aria-label="t('common.select')" @click.stop="toggleRow(client)">
-            <UIcon :name="selectedRows[client.client.id] ? 'lucide:check-square' : 'lucide:square'" class="h-5 w-5" :class="selectedRows[client.client.id] ? 'text-accent-600' : 'text-gray-400'" />
-          </button>
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2">
-              <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-blue-300">
-                <UIcon :name="client.client.clientType === 'INDIVIDUAL' ? 'lucide:user-round' : 'lucide:building-2'" class="h-4 w-4" />
-              </span>
+              <!-- the avatar is the selection toggle on phones: no checkbox column eating the card width -->
+              <button
+                type="button"
+                class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition"
+                :class="selectedRows[client.client.id] ? 'bg-accent-600 text-white' : 'bg-blue-500/10 text-blue-600 dark:bg-white/10 dark:text-blue-300'"
+                :aria-label="t('common.select')"
+                :aria-pressed="!!selectedRows[client.client.id]"
+                @click.stop="toggleRow(client)"
+              >
+                <UIcon :name="selectedRows[client.client.id] ? 'lucide:check' : client.client.clientType === 'INDIVIDUAL' ? 'lucide:user-round' : 'lucide:building-2'" class="h-4 w-4" />
+              </button>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class="truncate font-semibold text-gray-900 dark:text-white">{{ getClientName(client) }}</span>
@@ -566,7 +571,6 @@ function addTagToFilter(tagId: string, tagName: string) {
               <a v-if="getPrimaryPhone(client)" :href="`tel:${getPrimaryPhone(client)?.value}`" class="at-btn !px-3 !py-1.5" @click.stop>
                 <UIcon name="lucide:phone" class="h-4 w-4" /><span class="text-sm tabular-nums">{{ getPrimaryPhoneDisplay(client) }}</span>
               </a>
-              <span v-else class="text-xs italic text-gray-400">{{ t('contacts.noPhone') || 'No phone' }}</span>
               <span class="ml-auto flex-shrink-0 text-[11px] text-gray-400">{{ new Date(client.client.updatedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) }}</span>
             </div>
             <div v-if="getClientTags(client).length" class="mt-2 flex flex-wrap gap-1">

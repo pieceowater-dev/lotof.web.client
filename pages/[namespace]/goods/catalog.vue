@@ -36,7 +36,7 @@ async function getToken(): Promise<string> {
 }
 
 const TABS = [
-  { key: 'goods', labelKey: 'goods.catalog' },
+  { key: 'goods', labelKey: 'app.goods' },
   { key: 'categories', labelKey: 'goods.categories' },
   { key: 'units', labelKey: 'goods.units' },
 ] as const;
@@ -289,10 +289,8 @@ onMounted(loadAll);
                 v-for="tab in TABS"
                 :key="tab.key"
                 type="button"
-                class="px-3 py-1.5 rounded-full text-sm font-medium border transition whitespace-nowrap"
-                :class="activeTab === tab.key
-                  ? 'bg-primary-100 text-primary-700 border-primary-200 dark:bg-primary-900/40 dark:text-primary-100 dark:border-primary-900/60'
-                  : 'bg-gray-50 dark:bg-gray-900/60 border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300'"
+                class="pill-filter flex-shrink-0"
+                :class="activeTab === tab.key ? 'pill-filter--active' : ''"
                 @click="activeTab = tab.key"
               >
                 {{ t(tab.labelKey) }}
@@ -321,7 +319,7 @@ onMounted(loadAll);
       <div class="flex-1 min-h-0">
         <AppTable soft :rows="goodRows" :columns="goodColumns" :loading="loading" empty-icon="lucide:package" @select="(r: any) => openEditGood(goodById.get(r.id)!)">
           <template #name-data="{ row }">
-            <button type="button" class="font-medium text-left hover:underline hover:text-primary-600 dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
+            <button type="button" class="font-medium text-left text-gray-900 hover:underline hover:text-primary-600 dark:text-white dark:hover:text-primary-400" @click="openEditGood(goodById.get(row.id)!)">
               {{ maskProfanity(row.name) }}
             </button>
           </template>

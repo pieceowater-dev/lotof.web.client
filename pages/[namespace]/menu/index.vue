@@ -68,6 +68,11 @@ const { titleBySlug } = useNamespace();
 
 usePageTitle('menu');
 
+function hasCustomerName(row: { customerName?: string | null }) {
+  const n = (row.customerName || '').trim().toLowerCase();
+  return !!n && n !== (t('menu.guestCustomer') || '').toLowerCase() && n !== 'клиент' && n !== 'guest';
+}
+
 const STATUSES = ['NEW', 'ACCEPTED', 'IN_PREPARATION', 'READY', 'DELIVERING', 'COMPLETED', 'CANCELLED'] as const;
 
 const customStatusLabels = ref<StatusLabels>({});
@@ -1147,9 +1152,10 @@ async function handleCreateOrder(payload: any) {
                 <Icon v-if="row.isUrgent" name="lucide:flame" class="h-3.5 w-3.5 text-rose-500" />
                 <Icon v-if="rowOverdue(row)" name="lucide:alarm-clock" class="h-3.5 w-3.5 text-amber-500" />
               </div>
-              <div class="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">
-                <UserAvatar :name="row.customerName || (t('menu.guestCustomer') || 'Guest')" size="xs" />
-                <span class="truncate">{{ row.customerName || (t('menu.guestCustomer') || 'Guest') }}</span>
+              <!-- an anonymous order shows no placeholder name: the phone chip below says who to call -->
+              <div v-if="hasCustomerName(row)" class="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-gray-700 dark:text-gray-200">
+                <UserAvatar :name="row.customerName" size="xs" />
+                <span class="truncate">{{ row.customerName }}</span>
               </div>
             </div>
             <div class="flex-shrink-0 text-right">

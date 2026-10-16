@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import PageHeader from '@/components/ui/PageHeader.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 definePageMeta({ layout: 'workspace' });
 
@@ -151,36 +152,18 @@ onMounted(() => {
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-      <div class="text-left">
-        <h1 class="text-xl sm:text-2xl font-semibold">{{ t('tasks.title') || 'Boards' }}</h1>
-        <span class="text-sm text-gray-600 dark:text-gray-400">{{ t('tasks.subtitle') || 'Kanban boards for your team' }}</span>
-      </div>
-      <div class="flex flex-wrap items-center gap-2 self-start">
-        <UButton
-          v-if="isOwnerOrManager"
-          icon="lucide:settings"
-          size="xs"
-          color="gray"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
-          :to="`/${nsSlug}/issues/settings`"
-        >
-          {{ t('tasks.settings') || 'Settings' }}
-        </UButton>
-        <UButton
-          v-if="isOwnerOrManager"
-          icon="lucide:plus"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
-          @click="openCreate"
-        >
-          {{ t('tasks.createBoard') || 'Create board' }}
-        </UButton>
-      </div>
-    </div>
+    <PageHeader :title="t('tasks.title') || 'Boards'" :subtitle="t('tasks.subtitle') || 'Kanban boards for your team'">
+      <template v-if="isOwnerOrManager" #primary>
+        <button type="button" class="at-btn at-btn--primary" @click="openCreate">
+          <Icon name="lucide:plus" class="h-4 w-4" /><span class="whitespace-nowrap">{{ t('tasks.createBoard') || 'Create board' }}</span>
+        </button>
+      </template>
+      <template v-if="isOwnerOrManager" #actions>
+        <NuxtLink :to="`/${nsSlug}/issues/settings`" class="at-btn !px-2.5" :aria-label="t('tasks.settings') || 'Settings'" :title="t('tasks.settings') || 'Settings'">
+          <Icon name="lucide:settings" class="h-4 w-4" />
+        </NuxtLink>
+      </template>
+    </PageHeader>
 
     <div v-if="error" class="mb-4 rounded-lg bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 text-sm px-3 py-2">
       {{ error }}
@@ -191,7 +174,7 @@ onMounted(() => {
     <div v-else-if="!boards.length" class="flex-1 flex flex-col items-center justify-center text-center gap-3 text-gray-400">
       <UIcon name="lucide:clipboard-check" class="w-10 h-10" />
       <p>{{ t('tasks.noBoards') || 'No boards yet' }}</p>
-      <UButton v-if="isOwnerOrManager" icon="lucide:plus" color="primary" variant="soft" @click="openCreate">
+      <UButton v-if="isOwnerOrManager" icon="lucide:plus" color="primary" @click="openCreate">
         {{ t('tasks.createBoard') || 'Create board' }}
       </UButton>
     </div>
@@ -214,9 +197,10 @@ onMounted(() => {
               <UBadge v-if="!board.isActive" color="gray" variant="subtle" size="xs">{{ t('tasks.inactive') || 'Inactive' }}</UBadge>
             </div>
           </div>
-          <div v-if="isOwnerOrManager" class="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-            <UButton icon="lucide:settings" size="2xs" color="gray" variant="ghost" @click="openSettings(board, $event)" />
-            <UButton icon="lucide:trash-2" size="2xs" color="red" variant="ghost" @click="handleDelete(board, $event)" />
+          <!-- always visible on touch screens (no hover there); revealed on hover on desktop -->
+          <div v-if="isOwnerOrManager" class="flex items-center gap-1 flex-shrink-0 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+            <UButton icon="lucide:settings" size="sm" color="gray" variant="ghost" :aria-label="t('tasks.settings') || 'Settings'" @click="openSettings(board, $event)" />
+            <UButton icon="lucide:trash-2" size="sm" color="red" variant="ghost" :aria-label="t('common.delete') || 'Delete'" @click="handleDelete(board, $event)" />
           </div>
         </div>
       </NuxtLink>

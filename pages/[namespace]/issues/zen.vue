@@ -389,7 +389,7 @@ onBeforeUnmount(() => {
           <span class="text-base font-bold leading-none">lota <span class="font-normal text-gray-400">Zen</span></span>
         </div>
         <UDropdown :items="menuItems" :popper="{ placement: 'bottom-end', strategy: 'fixed' }">
-          <UButton icon="lucide:menu" size="sm" color="gray" variant="ghost" />
+          <UButton icon="lucide:menu" size="md" color="gray" variant="ghost" :aria-label="t('tasks.moreActions') || 'Menu'" />
         </UDropdown>
       </div>
       <p v-if="geoStatus === 'denied' && geoHelp" class="mx-4 mb-2.5 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-snug text-amber-900 dark:bg-amber-900/20 dark:text-amber-100">{{ t('tasks.zenGeoHelp') }}</p>
@@ -403,7 +403,7 @@ onBeforeUnmount(() => {
             <template v-if="geoStatus === 'active'">{{ lastSentAgo ? `${t('tasks.zenLastSent') || 'Last sent'}: ${lastSentAgo}` : (t('tasks.zenLocatingLabel') || 'Locating...') }}</template>
             <template v-else-if="geoStatus === 'denied'">
               {{ t('tasks.zenGeoDenied') || 'Location access denied' }}
-              <button type="button" class="ml-1 font-medium text-primary-600 underline dark:text-primary-300" @click="geoHelp = !geoHelp">{{ t('tasks.zenGeoHow') }}</button>
+              <button type="button" class="ml-1 inline-flex min-h-[2rem] items-center px-1 font-medium text-primary-600 underline dark:text-primary-300" @click="geoHelp = !geoHelp">{{ t('tasks.zenGeoHow') }}</button>
             </template>
             <template v-else-if="geoStatus === 'unsupported'">{{ t('tasks.zenGeoUnsupported') || 'Geolocation not supported' }}</template>
             <template v-else>{{ t('tasks.zenGeoStarting') || 'Starting location...' }}</template>
@@ -413,14 +413,15 @@ onBeforeUnmount(() => {
           <span v-if="pendingCount" class="text-[11px] px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-semibold">
             {{ pendingCount }} {{ t('tasks.zenPending') || 'pending' }}
           </span>
-          <UButton icon="lucide:locate-fixed" size="xs" color="gray" variant="soft" :title="t('tasks.zenRefreshLocation') || 'Refresh location'" @click="manualRefreshLocation" />
+          <UButton icon="lucide:locate-fixed" size="md" color="gray" variant="soft" :title="t('tasks.zenRefreshLocation') || 'Refresh location'" :aria-label="t('tasks.zenRefreshLocation') || 'Refresh location'" @click="manualRefreshLocation" />
           <UButton
             icon="lucide:refresh-cw"
-            size="xs"
+            size="md"
             color="gray"
             variant="soft"
             :loading="refreshing"
             :title="t('tasks.zenRefreshList') || 'Refresh list'"
+            :aria-label="t('tasks.zenRefreshList') || 'Refresh list'"
             @click="load({ manual: true })"
           />
         </div>

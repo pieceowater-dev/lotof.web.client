@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import PageHeader from '@/components/ui/PageHeader.vue';
 import { useGoodsMoney } from '@/composables/useGoodsMoney';
 import StorageUsageCard from '@/components/ui/StorageUsageCard.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
@@ -540,23 +541,14 @@ onMounted(() => {
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex items-center justify-between flex-shrink-0 gap-2">
-      <h1 class="text-xl sm:text-2xl font-semibold text-gray-900 dark:text-white">{{ t('goods.settings') }}</h1>
-      <div class="flex items-center gap-1.5 flex-wrap justify-end">
-        <UButton
-          v-if="staffRole === 'OWNER'"
-          icon="lucide:star"
-          size="xs"
-          color="amber"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap"
-          :to="`/${nsSlug}/goods/plans?manage=1`"
-        >
-          {{ t('goods.upgradePlan') }}
-        </UButton>
-        <UButton color="primary" variant="soft" size="xs" icon="lucide:arrow-left" class="min-w-fit whitespace-nowrap gap-2" :to="`/${nsSlug}/goods`">{{ t('goods.warehouse') }}</UButton>
-      </div>
-    </div>
+    <PageHeader
+      :title="t('goods.settings')"
+      :menu="staffRole === 'OWNER' ? [[{ label: t('goods.upgradePlan'), icon: 'lucide:star', to: `/${nsSlug}/goods/plans?manage=1` }]] : undefined"
+    >
+      <template #actions>
+        <NuxtLink :to="`/${nsSlug}/goods`" class="at-btn"><Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="whitespace-nowrap">{{ t('goods.warehouse') }}</span></NuxtLink>
+      </template>
+    </PageHeader>
 
     <div v-scroll-fade class="mt-3 mb-1 flex-shrink-0 overflow-x-auto no-scrollbar">
       <div class="at-seg">

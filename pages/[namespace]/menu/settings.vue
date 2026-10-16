@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import PageHeader from '@/components/ui/PageHeader.vue';
 definePageMeta({ layout: 'workspace' });
 
 import { useI18n } from '@/composables/useI18n';
@@ -68,36 +69,14 @@ watch(activeTab, (tab) => {
 
 <template>
   <div class="at-scope ct-scope h-full flex flex-col p-4 pb-safe-or-4 min-h-0">
-    <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 flex-shrink-0 gap-3">
-      <div class="text-left">
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          {{ t('menu.settings') || 'Settings' }}
-        </h1>
-      </div>
-      <div class="flex flex-row flex-wrap justify-between items-center gap-2 w-full md:w-auto">
-        <UButton
-          v-if="staffRole === 'OWNER'"
-          icon="lucide:star"
-          size="xs"
-          color="amber"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap"
-          :to="`/${nsSlug}/menu/plans?manage=1`"
-        >
-          {{ t('menu.upgradePlan') || 'Upgrade plan' }}
-        </UButton>
-        <UButton
-          icon="lucide:arrow-left"
-          size="xs"
-          color="primary"
-          variant="soft"
-          class="min-w-fit whitespace-nowrap gap-2"
-          @click="goBack"
-        >
-          {{ t('app.back') || 'Back' }}
-        </UButton>
-      </div>
-    </div>
+    <PageHeader
+      :title="t('menu.settings') || 'Settings'"
+      :menu="staffRole === 'OWNER' ? [[{ label: t('menu.upgradePlan') || 'Upgrade plan', icon: 'lucide:star', to: `/${nsSlug}/menu/plans?manage=1` }]] : undefined"
+    >
+      <template #actions>
+        <button type="button" class="at-btn" @click="goBack"><Icon name="lucide:arrow-left" class="h-4 w-4" /><span class="whitespace-nowrap">{{ t('app.back') || 'Back' }}</span></button>
+      </template>
+    </PageHeader>
 
     <div v-scroll-fade class="mb-4 flex-shrink-0 overflow-x-auto no-scrollbar">
       <div class="at-seg">
