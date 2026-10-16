@@ -164,7 +164,7 @@ function statusMeta(s: PagesSite) {
           <span class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm"><i class="inline-block h-2 w-2 rounded-full" :class="s.status === 'SITE_PUBLISHED' ? 'bg-emerald-500' : s.status === 'SITE_SUSPENDED' ? 'bg-rose-500' : 'bg-amber-500'" />{{ statusMeta(s).label }}</span>
         </div>
         <div class="-mt-7 flex flex-col gap-3 px-4 pb-4">
-          <span class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow ring-1 ring-black/5 dark:bg-[#2a2a2a] dark:ring-white/10">
+          <span class="relative z-10 flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow ring-1 ring-black/5 dark:bg-[#2a2a2a] dark:ring-white/10">
             <img v-if="s.settings.logoUrl" :src="siteAssetUrl(s.host, s.settings.logoUrl)" alt="" class="h-full w-full object-contain">
             <UIcon v-else name="lucide:globe" class="h-6 w-6 text-gray-500" />
           </span>
