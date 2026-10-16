@@ -128,6 +128,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { BLOCK_FORM_TYPES, defaultAttrs } from '@/utils/pagesBlockForms'
 import { useConfirm } from '@/composables/useConfirm'
 import { compressImageForUpload } from '@/utils/imageCompression'
 
@@ -270,6 +271,8 @@ function createBlock(type: string): Block {
         ? { title: '', text: '', buttonText: '', buttonHref: '' }
       : type === 'schema'
         ? { kind: 'LocalBusiness' }
+      : BLOCK_FORM_TYPES.includes(type)
+        ? defaultAttrs(type)
       : {}
 
   const content = type === 'ul'
@@ -791,7 +794,7 @@ function calloutActiveBtnClass(type: string) {
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────
-const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global', 'hero', 'columns', 'gallery', 'cta', 'schema']
+const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global', 'hero', 'columns', 'gallery', 'cta', 'schema', ...BLOCK_FORM_TYPES]
 
 function stripHtml(value: string): string {
   return String(value || '')
@@ -813,6 +816,7 @@ function isMeaningfulBlock(block: Block): boolean {
   if (type === 'button') return String(block?.attrs?.text || '').trim().length > 0 && String(block?.attrs?.href || '').trim().length > 0
   if (type === 'global') return String(block?.attrs?.ref || '').trim().length > 0
   if (type === 'hero' || type === 'cta') return ['title', 'subtitle', 'text', 'buttonText'].some(k => String(block?.attrs?.[k] || '').trim())
+  if (BLOCK_FORM_TYPES.includes(type)) return JSON.stringify(block?.attrs || {}).replace(/["{}[\]:,]|false|true|null|""/g, '').trim().length > 0
   if (type === 'schema') return !!String(block?.attrs?.name || block?.attrs?.itemName || '').trim()
   if (type === 'columns') return (block?.attrs?.items || []).some((i: any) => String(i?.title || i?.text || '').trim())
   if (type === 'gallery') return (block?.attrs?.images || []).length > 0

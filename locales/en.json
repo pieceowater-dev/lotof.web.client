@@ -2342,7 +2342,16 @@
         "columns": "Cards",
         "gallery": "Gallery",
         "cta": "Call to action",
-        "schema": "Structured data"
+        "schema": "Structured data",
+        "accordion": "Accordion",
+        "tabs": "Tabs",
+        "pricing": "Pricing",
+        "testimonials": "Testimonials",
+        "stats": "Numbers",
+        "steps": "Steps",
+        "logos": "Partner logos",
+        "contacts": "Contacts",
+        "map": "Map"
       }
     },
     "interval": {
@@ -4961,7 +4970,16 @@
         "st_image": "Background picture",
         "v_fade": "Fade",
         "v_up": "Slide up",
-        "v_zoom": "Zoom"
+        "v_zoom": "Zoom",
+        "accordion": "Accordion",
+        "tabs": "Tabs",
+        "pricing": "Pricing",
+        "testimonials": "Testimonials",
+        "stats": "Numbers",
+        "steps": "Steps",
+        "logos": "Partner logos",
+        "contacts": "Contacts",
+        "map": "Map"
       },
       "ui": {
         "anchorCopied": "Anchor copied",
@@ -5079,6 +5097,36 @@
         "day_fri": "Fri",
         "day_sat": "Sat",
         "day_sun": "Sun"
+      },
+      "f": {
+        "title": "Title",
+        "text": "Text",
+        "name": "Name",
+        "price": "Price",
+        "period": "Period (per month)",
+        "features": "What is included (one per line)",
+        "buttonText": "Button text",
+        "buttonHref": "Button link",
+        "highlight": "Highlight",
+        "author": "Author",
+        "role": "Who they are",
+        "value": "Number (12 years, 500+)",
+        "label": "Label",
+        "src": "Image: /media/… or https://…",
+        "alt": "Description",
+        "href": "Link",
+        "phone": "Phone",
+        "email": "Email",
+        "address": "Address",
+        "hours": "Opening hours",
+        "whatsapp": "WhatsApp: number",
+        "telegram": "Telegram: @name",
+        "lat": "Latitude",
+        "lng": "Longitude",
+        "caption": "Map caption",
+        "zoom_far": "District",
+        "zoom_normal": "Street",
+        "zoom_near": "Building"
       }
     },
     "team": {

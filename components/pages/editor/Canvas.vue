@@ -373,6 +373,13 @@
                   </div>
                 </div>
 
+                <PagesEditorItemsBlock
+                  v-else-if="BLOCK_FORM_TYPES.includes(block.type)"
+                  :block="block"
+                  :upload="uploadImage"
+                  :resolve="imageResolver"
+                />
+
                 <PagesEditorSchemaBlock
                   v-else-if="block.type === 'schema'"
                   :block="block"
@@ -428,6 +435,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from '@/composables/useI18n'
+import { BLOCK_FORM_TYPES } from '@/utils/pagesBlockForms'
 
 interface Block {
   id: string
