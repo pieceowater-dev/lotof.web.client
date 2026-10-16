@@ -4223,7 +4223,11 @@
         "geometric": "Geometric",
         "slab": "Slab",
         "oldstyle": "Book",
-        "grotesk": "Grotesque"
+        "grotesk": "Grotesque",
+        "didone": "High contrast",
+        "condensed": "Condensed",
+        "typewriter": "Typewriter",
+        "optima": "Flared"
       },
       "layout": "Shape and layout",
       "radius": "Corners",
@@ -4301,7 +4305,11 @@
           "geometric": "Geometric",
           "slab": "Slab",
           "oldstyle": "Book",
-          "grotesk": "Grotesque"
+          "grotesk": "Grotesque",
+          "didone": "High contrast",
+          "condensed": "Condensed",
+          "typewriter": "Typewriter",
+          "optima": "Flared"
         },
         "fontSize": {
           "sm": "Small",
@@ -4723,7 +4731,10 @@
       "inPublish": "Include in publishing",
       "shown": "{from}–{to} of {total}",
       "openEditor": "Open in editor",
-      "pagesWord": "pages"
+      "pagesWord": "pages",
+      "template": "Template",
+      "templateBlank": "Blank",
+      "templateBlankHint": "Start from scratch"
     },
     "publish": {
       "action": "Publish",
@@ -4882,7 +4893,12 @@
         "v_center": "Center",
         "v_right": "Right",
         "v_narrow": "Narrow",
-        "v_wide": "Wide"
+        "v_wide": "Wide",
+        "st_anim": "Reveal",
+        "st_image": "Background picture",
+        "v_fade": "Fade",
+        "v_up": "Slide up",
+        "v_zoom": "Zoom"
       }
     },
     "team": {

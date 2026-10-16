@@ -21,6 +21,7 @@ export interface PageSeo {
   title: string; description: string; canonicalPath: string; ogTitle: string; ogDescription: string;
   ogImageUrl: string; noindex: boolean; schemaType: string;
 }
+export interface PageTemplate { id: string; name: string; description: string; icon: string; title: string; blocks: PageBlock[] }
 export interface SitePage {
   id: string; siteId: string; parentId: string | null; slug: string; path: string; title: string; status: PageStatus;
   seo: PageSeo; blocks: PageBlock[]; schemaVersion: number; sort: number; lang: string; createdAtUnix: number; updatedAtUnix: number;
@@ -107,6 +108,8 @@ export const pagesApi = {
       { s: siteId, q: opts.search || null, f: { pagination: { page: opts.page, length: opts.length || 'TWENTY' } } }).then(r => r.pages),
   page: (ns: string, id: string) =>
     q<{ page: SitePage | null }>(ns, `query($id:ID!){ page(id:$id){ ${PAGE_FIELDS} } }`, { id }).then(r => r.page),
+  pageTemplates: (ns: string, lang: string) =>
+    q<{ pageTemplates: PageTemplate[] }>(ns, `query($l:String){ pageTemplates(lang:$l){ id name description icon title blocks { id type content attrsJson } } }`, { l: lang }).then(r => r.pageTemplates),
   createPage: (ns: string, input: { siteId: string; parentId?: string | null; slug: string; title: string; lang?: string }) =>
     q<{ createPage: SitePage }>(ns, `mutation($i:CreatePageInput!){ createPage(input:$i){ ${PAGE_FIELDS} } }`, { i: input }).then(r => r.createPage),
   updatePage: (ns: string, input: {

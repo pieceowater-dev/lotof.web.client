@@ -18,8 +18,8 @@ export const THEME_PRESETS: ThemePreset[] = (data.presets as { id: string; vars:
 /** Every non-colour option, grouped for the designer. Values must match the backend enums. */
 export const KNOB_GROUPS: { id: string; knobs: { key: string; options: string[] }[] }[] = [
   { id: 'typography', knobs: [
-    { key: 'font', options: ['sans', 'serif', 'humanist', 'rounded', 'mono', 'geometric', 'slab', 'oldstyle', 'grotesk'] },
-    { key: 'headingFont', options: ['sans', 'serif', 'humanist', 'rounded', 'mono', 'geometric', 'slab', 'oldstyle', 'grotesk'] },
+    { key: 'font', options: ['sans', 'serif', 'humanist', 'rounded', 'mono', 'geometric', 'slab', 'oldstyle', 'grotesk', 'didone', 'condensed', 'typewriter', 'optima'] },
+    { key: 'headingFont', options: ['sans', 'serif', 'humanist', 'rounded', 'mono', 'geometric', 'slab', 'oldstyle', 'grotesk', 'didone', 'condensed', 'typewriter', 'optima'] },
     { key: 'fontSize', options: ['sm', 'md', 'lg'] },
     { key: 'leading', options: ['tight', 'normal', 'airy'] },
     { key: 'headingWeight', options: ['medium', 'bold', 'black'] },

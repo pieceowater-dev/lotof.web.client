@@ -397,6 +397,8 @@
               <PagesEditorBlockStyleBar
                 v-if="activeBlockId === block.id && !['spoiler_open', 'spoiler_close'].includes(block.type)"
                 :attrs="block.attrs"
+                :upload="uploadImage"
+                :resolve="imageResolver"
                 @change="(st) => { if (st) block.attrs.style = st; else delete block.attrs.style }"
               />
             </div>

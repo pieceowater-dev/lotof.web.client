@@ -18,7 +18,7 @@ import { usePageTitle } from '@/composables/usePageTitle';
 import { useConfirm } from '@/composables/useConfirm';
 import { usePagesAccess } from '@/composables/usePagesAccess';
 import {
-  pagesApi, type PagesSite, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult, type SiteCategory,
+  pagesApi, type PagesSite, type PageTemplate, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult, type SiteCategory,
 } from '@/api/pages/ops';
 import { siteOrigin, slugifyText } from '@/utils/pagesSite';
 import { getErrorMessage } from '@/utils/types/errors';
@@ -157,6 +157,13 @@ const pageModal = ref(false);
 const pageSaving = ref(false);
 const pageForm = reactive({ title: '', slug: '', parentId: '' as string, home: false });
 const pageSlugTouched = ref(false);
+// ready-made layouts offered when a page is created; '' = an empty page
+const templates = ref<PageTemplate[]>([]);
+const templateId = ref('');
+async function loadTemplates() {
+  if (templates.value.length) return;
+  try { templates.value = await pagesApi.pageTemplates(nsSlug.value, locale.value); } catch { /* the modal simply offers an empty page */ }
+}
 const pageError = ref('');
 const parentPath = computed(() => pages.value.find(p => p.id === pageForm.parentId)?.path || '');
 watch(() => pageForm.title, (v) => { if (!pageSlugTouched.value) pageForm.slug = slugifyText(v, 60); });
@@ -168,7 +175,9 @@ function openCreatePage(opts: { parentId?: string; home?: boolean } = {}) {
   pageForm.home = !!opts.home;
   pageSlugTouched.value = false;
   pageError.value = '';
+  templateId.value = '';
   pageModal.value = true;
+  loadTemplates();
 }
 
 async function createPage() {
@@ -181,6 +190,13 @@ async function createPage() {
       siteId: siteId.value, parentId: pageForm.home ? null : (pageForm.parentId || null),
       slug: pageForm.home ? '' : pageForm.slug, title: pageForm.title.trim(),
     });
+    const tpl = templates.value.find(x => x.id === templateId.value);
+    if (tpl) {
+      await pagesApi.updatePage(nsSlug.value, {
+        id: created.id, slug: created.slug, title: created.title, status: 'PAGE_DRAFT',
+        blocks: tpl.blocks.map(b => ({ id: b.id, type: b.type, content: b.content, attrsJson: b.attrsJson })),
+      });
+    }
     pageModal.value = false;
     await navigateTo(`/${nsSlug.value}/pages/${siteId.value}/edit/${created.id}`);
   } catch (e: any) {
@@ -737,6 +753,19 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
         <template #header><h3 class="text-base font-semibold">{{ pageForm.home ? t('pages.pages.createHome') : t('pages.pages.new') }}</h3></template>
         <div class="space-y-3.5">
           <UFormGroup :label="t('pages.pages.title')" required><UInput v-model="pageForm.title" autofocus @keyup.enter="createPage" /></UFormGroup>
+          <div v-if="templates.length">
+            <div class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('pages.pages.template') }}</div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              <button type="button" class="flex items-start gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition" :class="templateId === '' ? 'bg-blue-50 ring-blue-300 dark:bg-blue-500/10 dark:ring-blue-400/50' : 'bg-white ring-black/10 hover:ring-black/20 dark:bg-white/5 dark:ring-white/10'" @click="templateId = ''">
+                <UIcon name="lucide:file" class="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-500" />
+                <span><span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.pages.templateBlank') }}</span><span class="block text-xs text-gray-500 dark:text-gray-400">{{ t('pages.pages.templateBlankHint') }}</span></span>
+              </button>
+              <button v-for="tp in templates" :key="tp.id" type="button" class="flex items-start gap-2.5 rounded-2xl px-3 py-2.5 text-left ring-1 transition" :class="templateId === tp.id ? 'bg-blue-50 ring-blue-300 dark:bg-blue-500/10 dark:ring-blue-400/50' : 'bg-white ring-black/10 hover:ring-black/20 dark:bg-white/5 dark:ring-white/10'" @click="templateId = tp.id">
+                <UIcon :name="tp.icon" class="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+                <span><span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ tp.name }}</span><span class="block text-xs text-gray-500 dark:text-gray-400">{{ tp.description }}</span></span>
+              </button>
+            </div>
+          </div>
           <template v-if="!pageForm.home">
             <UFormGroup :label="t('pages.pages.parent')">
               <PagePicker v-model="pageForm.parentId" :ns-slug="nsSlug" :site-id="siteId" />
