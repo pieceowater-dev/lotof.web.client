@@ -45,9 +45,9 @@ type TabKey = 'pages' | 'categories' | 'design' | 'domains' | 'publish' | 'redir
 const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
   { key: 'categories', label: t('pages.tabs.categories'), icon: 'lucide:folder' },
+  { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
   { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
-  { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
   { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
   { key: 'integrations', label: t('pages.tabs.integrations'), icon: 'lucide:sparkles' },
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
@@ -578,8 +578,16 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             </div>
           </div>
 
-          <div v-if="visiblePages.length > 10" class="flex flex-wrap items-center justify-between gap-2">
-            <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.pages.shown', { from: (pageNo - 1) * pageSize + 1, to: Math.min(pageNo * pageSize, visiblePages.length), total: visiblePages.length }) }}</span>
+          <div v-if="visiblePages.length" class="at-tray-foot flex flex-wrap items-center justify-between gap-x-4 gap-y-3 rounded-2xl px-4 py-3">
+            <div class="text-xs text-gray-600 dark:text-gray-400">
+              {{ t('common.showing') }}
+              <span class="font-medium text-gray-900 dark:text-white">{{ (pageNo - 1) * pageSize + 1 }}</span>
+              {{ t('common.to') }}
+              <span class="font-medium text-gray-900 dark:text-white">{{ Math.min(pageNo * pageSize, visiblePages.length) }}</span>
+              {{ t('common.of') }}
+              <span class="font-medium text-gray-900 dark:text-white">{{ visiblePages.length }}</span>
+              {{ t('pages.pages.pagesWord') }}
+            </div>
             <PageNav v-model:page="pageNo" v-model:page-size="pageSize" :total="visiblePages.length" :size-options="[10, 25, 50]" />
           </div>
         </div>

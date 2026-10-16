@@ -4710,7 +4710,8 @@
       "orderHint": "Lower number sits higher in the list and the site menu.",
       "inPublish": "Include in publishing",
       "shown": "{from}–{to} of {total}",
-      "openEditor": "Open in editor"
+      "openEditor": "Open in editor",
+      "pagesWord": "pages"
     },
     "publish": {
       "action": "Publish",
