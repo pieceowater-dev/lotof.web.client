@@ -4877,6 +4877,16 @@
       "needName": "Enter a name",
       "slugTaken": "A shared block with this address already exists",
       "howTo": "To add it to a page: in the editor press \"+\" → \"Shared block\" and pick it."
+    },
+    "usage": {
+      "title": "Plan and usage",
+      "plan": "Plan: {name}",
+      "of": "{used} of {limit}",
+      "unlimited": "{used} (no limit)",
+      "sites": "Sites",
+      "pages": "Pages",
+      "disk": "Disk (images and published files)",
+      "diskHint": "There is one disk limit for the whole workspace: it covers uploaded images and the files of the published versions of all your sites. Delete unneeded images to free space."
     }
   },
   "plans": {

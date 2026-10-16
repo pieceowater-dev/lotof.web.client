@@ -9,6 +9,7 @@ import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import CategoriesPanel from '@/components/pages/CategoriesPanel.vue';
 import GlobalBlocksPanel from '@/components/pages/GlobalBlocksPanel.vue';
+import PlanUsage from '@/components/pages/PlanUsage.vue';
 import CategoryChips from '@/components/pages/CategoryChips.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
 import PageNav from '@/components/ui/PageNav.vue';
@@ -696,6 +697,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
       <!-- ═════════ SETTINGS ═════════ -->
       <template v-else>
+        <PlanUsage :ns-slug="nsSlug" />
         <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
           <UFormGroup :label="t('pages.sites.name')" required><UInput v-model="settingsForm.name" /></UFormGroup>
           <UFormGroup :label="t('pages.settings.language')">

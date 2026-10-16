@@ -48,6 +48,8 @@ export interface AccessToken {
   id: string; name: string; prefix: string; scopes: AccessScope[]; siteId: string;
   expiresAtUnix: number; lastUsedAtUnix: number; createdAtUnix: number; revoked: boolean;
 }
+export interface PagesPlan { planCode: string; planName: string; limitsJson: string; isSubscriptionActive: boolean }
+export interface PagesUsage { sites: number; pages: number; mediaBytes: number; publishedBytes: number }
 export type PagesRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'NONE';
 export interface PagesAccess { role: PagesRole; allSites: boolean; siteIds: string[] }
 export interface PagesStaffMember { id: string; userId: string; role: 'ADMIN' | 'EDITOR'; allSites: boolean; siteIds: string[]; createdAtUnix: number }
@@ -156,6 +158,12 @@ export const pagesApi = {
     q<{ updateCategory: SiteCategory }>(ns, `mutation($id:ID!,$i:CategoryInput!){ updateCategory(id:$id,input:$i){ id siteId parentId slug title description sort pageCount } }`, { id, i: input }).then(r => r.updateCategory),
   deleteCategory: (ns: string, id: string) =>
     q<{ deleteCategory: { success: boolean } }>(ns, `mutation($id:ID!){ deleteCategory(id:$id){ success } }`, { id }).then(r => r.deleteCategory.success),
+
+  // tariff and what the namespace uses of it
+  plan: (ns: string) =>
+    q<{ pagesPlan: PagesPlan | null }>(ns, `query{ pagesPlan { planCode planName limitsJson isSubscriptionActive } }`).then(r => r.pagesPlan),
+  usage: (ns: string) =>
+    q<{ pagesUsage: PagesUsage }>(ns, `query{ pagesUsage { sites pages mediaBytes publishedBytes } }`).then(r => r.pagesUsage),
 
   // team (owner only) and the caller's own access
   myAccess: (ns: string) =>
