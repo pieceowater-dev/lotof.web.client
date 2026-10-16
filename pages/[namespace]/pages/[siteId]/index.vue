@@ -6,6 +6,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 import { pagesSiteTour } from '@/config/tours';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import BlogSettingsPanel from '@/components/pages/BlogSettingsPanel.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import CategoriesPanel from '@/components/pages/CategoriesPanel.vue';
@@ -439,6 +440,7 @@ async function saveSettings() {
         googleSiteVerification: settingsForm.googleSiteVerification.trim(), robotsTxt: settingsForm.robotsTxt,
         headHtml: s.headHtml, themeId: s.themeId, themeVarsJson: s.themeVarsJson, navJson: s.navJson,
         logoUrl: s.logoUrl, footerText: s.footerText, footHtml: s.footHtml, customCss: s.customCss, floatJson: s.floatJson,
+        menusJson: s.menusJson, featuresJson: s.featuresJson,
       },
     });
     toast.add({ title: t('pages.settings.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
@@ -466,10 +468,22 @@ async function saveDesign(p: DesignPayload) {
         defaultLang: s.defaultLang, langs: s.langs, googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, navJson: p.navJson,
         themeId: p.themeId, themeVarsJson: p.themeVarsJson, logoUrl: p.logoUrl, footerText: p.footerText,
         faviconUrl: p.faviconUrl, ogImageUrl: p.ogImageUrl, headHtml: p.headHtml, footHtml: p.footHtml, customCss: p.customCss, floatJson: p.floatJson,
+        menusJson: p.menusJson, featuresJson: s.featuresJson,
       },
     });
     toast.add({ title: t('pages.design.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
   } catch (e) { fail(e); } finally { designSaving.value = false; }
+}
+
+const blogSaving = ref(false);
+async function saveBlog(featuresJson: string) {
+  if (!site.value) return;
+  blogSaving.value = true;
+  try {
+    const s = site.value.settings;
+    site.value = await pagesApi.updateSite(nsSlug.value, { id: site.value.id, name: site.value.name, settings: { ...s, featuresJson } });
+    toast.add({ title: t('pages.blog.saved'), description: t('pages.settings.needsPublish'), color: 'green' });
+  } catch (e) { fail(e); } finally { blogSaving.value = false; }
 }
 
 async function toggleSuspend() {
@@ -722,6 +736,8 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             </button>
           </div>
         </div>
+
+        <BlogSettingsPanel :site="site" :saving="blogSaving" @save="saveBlog" />
 
         <div class="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
           <div class="flex flex-wrap items-center justify-between gap-3">

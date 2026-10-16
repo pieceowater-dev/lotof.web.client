@@ -11,6 +11,7 @@ export interface SiteSettings {
   defaultLang: string; langs: string[]; faviconUrl: string; ogImageUrl: string; googleSiteVerification: string;
   robotsTxt: string; headHtml: string; themeId: string; themeVarsJson: string; navJson: string;
   logoUrl: string; footerText: string; footHtml: string; customCss: string; floatJson: string;
+  menusJson: string; featuresJson: string;
 }
 export interface PagesSite {
   id: string; name: string; slug: string; status: SiteStatus; settings: SiteSettings;
@@ -21,12 +22,30 @@ export interface PageSeo {
   title: string; description: string; canonicalPath: string; ogTitle: string; ogDescription: string;
   ogImageUrl: string; noindex: boolean; schemaType: string;
 }
+export type PageKind = '' | 'post' | 'news';
+export type PageLayout = '' | 'wide' | 'narrow' | 'bare' | 'sidebar';
+export interface PageMeta {
+  kind: string; tags: string[]; excerpt: string; featuredImage: string; author: string; pinned: boolean; layout: string;
+  /** Unix time the page waits for before it goes live; 0 = none */
+  publishAtUnix: number;
+}
+export interface PageMetaInput {
+  kind?: string; tags?: string[]; excerpt?: string; featuredImage?: string; author?: string; pinned?: boolean; layout?: string; publishAtUnix?: number;
+}
+export interface PageTag { name: string; count: number }
+export interface BulkPagesResult { affected: number; failed: string[] }
+export interface NotFoundEntry { path: string; hits: number; lastSeenUnix: number; referrer: string; hasRedirect: boolean }
+export interface LinkPage { pageId: string; path: string; title: string; incoming: number; depth: number }
+export interface LinkSuggestion { pageId: string; pageTitle: string; targetId: string; targetPath: string; targetTitle: string; phrase: string }
+export interface LinkReport { orphans: LinkPage[]; deep: LinkPage[]; suggestions: LinkSuggestion[]; pages: number }
 export interface PageTemplate { id: string; name: string; description: string; icon: string; title: string; blocks: PageBlock[] }
 export interface SitePage {
   id: string; siteId: string; parentId: string | null; slug: string; path: string; title: string; status: PageStatus;
   seo: PageSeo; blocks: PageBlock[]; schemaVersion: number; sort: number; lang: string; createdAtUnix: number; updatedAtUnix: number;
   categoryIds: string[];
   translationGroup: string;
+  meta: PageMeta;
+  trashedAtUnix: number;
 }
 export interface SiteCategory { id: string; siteId: string; parentId: string | null; slug: string; title: string; description: string; sort: number; pageCount: number }
 export interface CategoryInput { parentId?: string | null; slug?: string; title: string; description?: string; sort?: number }
@@ -63,10 +82,10 @@ export interface GlobalBlock { id: string; siteId: string; slug: string; name: s
 export interface GlobalBlockInput { name: string; slug?: string; markdown?: string; blocks?: { id: string; type: string; content: string; attrsJson?: string }[] }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
-const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
+const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson menusJson featuresJson`;
 const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
-const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix categoryIds translationGroup`;
+const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix categoryIds translationGroup trashedAtUnix meta { kind tags excerpt featuredImage author pinned layout publishAtUnix }`;
 const PAGE_FIELDS = `${PAGE_LIST_FIELDS} createdAtUnix schemaVersion seo { ${SEO_FIELDS} } blocks { id type content attrsJson }`;
 const VERSION_FIELDS = `id siteId version pageCount bytes createdBy note live createdAtUnix`;
 const DOMAIN_FIELDS = `id siteId hostname displayHostname isPrimary status isApex lastError lastCheckedAtUnix activatedAtUnix createdAtUnix suspendAtUnix records { type name value done purpose }`;
@@ -117,6 +136,8 @@ export const pagesApi = {
     seo?: Partial<PageSeo>; blocks: { id: string; type: string; content: string; attrsJson?: string }[];
     /** Omit to keep the page's categories; [] clears them. */
     categoryIds?: string[];
+    /** Omit to keep kind, tags, excerpt, author and the scheduled time. */
+    meta?: PageMetaInput;
   }) =>
     q<{ updatePage: SitePage }>(ns, `mutation($i:UpdatePageInput!){ updatePage(input:$i){ ${PAGE_FIELDS} } }`, { i: input }).then(r => r.updatePage),
   pageTranslations: (ns: string, pageId: string) =>
@@ -131,6 +152,24 @@ export const pagesApi = {
     q<{ movePage: SitePage }>(ns, `mutation($id:ID!,$p:ID,$s:Int!){ movePage(id:$id,parentId:$p,sort:$s){ ${PAGE_LIST_FIELDS} } }`, { id, p: parentId, s: sort }).then(r => r.movePage),
   deletePage: (ns: string, id: string) =>
     q<{ deletePage: { success: boolean } }>(ns, `mutation($id:ID!){ deletePage(id:$id){ success } }`, { id }).then(r => r.deletePage.success),
+  /** The trash: deleted pages, kept 30 days. */
+  trash: (ns: string, siteId: string) =>
+    q<{ pages: { rows: SitePage[] } }>(ns, `query($s:ID!,$f:DefaultFilterInput){ pages(siteId:$s,trashed:true,filter:$f){ rows { ${PAGE_LIST_FIELDS} } } }`, { s: siteId, f: FILTER_ALL }).then(r => r.pages.rows),
+  restorePage: (ns: string, id: string) =>
+    q<{ restorePage: SitePage }>(ns, `mutation($id:ID!){ restorePage(id:$id){ ${PAGE_LIST_FIELDS} } }`, { id }).then(r => r.restorePage),
+  purgePage: (ns: string, id: string) =>
+    q<{ purgePage: { success: boolean } }>(ns, `mutation($id:ID!){ purgePage(id:$id){ success } }`, { id }).then(r => r.purgePage.success),
+  /** action: trash | restore | purge | draft | publish | move */
+  bulkPages: (ns: string, siteId: string, ids: string[], action: string, parentId?: string | null) =>
+    q<{ bulkPages: BulkPagesResult }>(ns, `mutation($s:ID!,$i:[ID!]!,$a:String!,$p:ID){ bulkPages(siteId:$s,ids:$i,action:$a,parentId:$p){ affected failed } }`, { s: siteId, i: ids, a: action, p: parentId || null }).then(r => r.bulkPages),
+  pageTags: (ns: string, siteId: string) =>
+    q<{ pageTags: PageTag[] }>(ns, `query($s:ID!){ pageTags(siteId:$s){ name count } }`, { s: siteId }).then(r => r.pageTags),
+  notFoundLog: (ns: string, siteId: string) =>
+    q<{ notFoundLog: NotFoundEntry[] }>(ns, `query($s:ID!){ notFoundLog(siteId:$s){ path hits lastSeenUnix referrer hasRedirect } }`, { s: siteId }).then(r => r.notFoundLog),
+  clearNotFound: (ns: string, siteId: string, path?: string) =>
+    q<{ clearNotFound: { success: boolean } }>(ns, `mutation($s:ID!,$p:String){ clearNotFound(siteId:$s,path:$p){ success } }`, { s: siteId, p: path || null }).then(r => r.clearNotFound.success),
+  linkReport: (ns: string, siteId: string) =>
+    q<{ linkReport: LinkReport }>(ns, `query($s:ID!){ linkReport(siteId:$s){ pages orphans { pageId path title incoming depth } deep { pageId path title incoming depth } suggestions { pageId pageTitle targetId targetPath targetTitle phrase } } }`, { s: siteId }).then(r => r.linkReport),
   revisions: (ns: string, pageId: string) =>
     q<{ pageRevisions: { rows: PageRevision[] } }>(ns, `query($p:ID!,$f:DefaultFilterInput){ pageRevisions(pageId:$p,filter:$f){ rows { id pageId authorId createdAtUnix } } }`, { p: pageId, f: FILTER_ALL }).then(r => r.pageRevisions.rows),
   restoreRevision: (ns: string, revisionId: string) =>

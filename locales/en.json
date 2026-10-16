@@ -4587,7 +4587,11 @@
         "topLevel": "Top level",
         "picked": "Selected: {n}",
         "addSelected": "Add",
-        "items": "{n} items"
+        "items": "{n} items",
+        "footerTitle": "Footer menu",
+        "footerHint": "Links at the bottom of every page. An item with children becomes a column.",
+        "sidebarTitle": "Sidebar menu",
+        "sidebarHint": "Shown on pages that use the sidebar layout."
       },
       "pv": {
         "home": "Home",
@@ -5240,6 +5244,41 @@
       "limitDomains": "Plan limit reached: custom domains ({used} of {limit}). Move to a higher plan.",
       "limitStorage": "Disk limit reached ({used} MB of {limit} MB). Delete pictures you do not need or move to a higher plan.",
       "domainsOff": "Custom domains are not available on your plan. Move to a plan that includes them."
+    },
+    "blog": {
+      "title": "Blog and search",
+      "hint": "Posts, feeds, archives and site search. Works as soon as you have pages of the Post or News kind.",
+      "path": "Blog address",
+      "pathHint": "The post feed lives here. A page of your own at the same address wins over the feed.",
+      "perPage": "Posts per page",
+      "layouts": "Default page layout",
+      "layoutsHint": "Each page can override it in the editor.",
+      "saved": "Blog settings saved",
+      "unsaved": "Unsaved changes",
+      "f": {
+        "search": "Site search",
+        "searchHint": "A /search page and a search icon in the header.",
+        "rss": "Subscribe (RSS)",
+        "rssHint": "The /feed.xml and /atom.xml feeds.",
+        "archives": "Monthly archives",
+        "archivesHint": "/archive pages; kept out of Google's index.",
+        "authors": "Author pages",
+        "authorsHint": "The list of each author's posts.",
+        "related": "Related posts",
+        "relatedHint": "Three posts on the same topic under each post."
+      },
+      "kind": {
+        "page": "Ordinary pages",
+        "post": "Blog posts",
+        "news": "News"
+      },
+      "layout": {
+        "default": "Default",
+        "wide": "Wide",
+        "narrow": "Narrow",
+        "sidebar": "With sidebar",
+        "bare": "No header or footer"
+      }
     }
   },
   "plans": {

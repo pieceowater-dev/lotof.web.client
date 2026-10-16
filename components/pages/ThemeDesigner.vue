@@ -1,7 +1,7 @@
 <script lang="ts">
 export interface DesignPayload {
   themeId: string; themeVarsJson: string; logoUrl: string; footerText: string;
-  faviconUrl: string; ogImageUrl: string; headHtml: string; footHtml: string; customCss: string; floatJson: string; navJson: string;
+  faviconUrl: string; ogImageUrl: string; headHtml: string; footHtml: string; customCss: string; floatJson: string; navJson: string; menusJson: string;
 }
 </script>
 
@@ -52,6 +52,24 @@ const floatJson = () => (float.items.length ? JSON.stringify({ position: float.p
 function addFloat() { if (float.items.length < 5) float.items.push({ kind: 'call', label: '', value: '' }); }
 const saved = ref('');
 
+// Footer and sidebar menus are stored together as {"footer":[...],"sidebar":[...]}; each editor works on its own array.
+const footerJsonVal = ref('');
+const sidebarJsonVal = ref('');
+function parseMenus(raw: string): { footer: string; sidebar: string } {
+  try {
+    const o = JSON.parse(raw || '{}');
+    const one = (v: any) => (Array.isArray(v) && v.length ? JSON.stringify(v) : '');
+    return { footer: one(o.footer), sidebar: one(o.sidebar) };
+  } catch { return { footer: '', sidebar: '' }; }
+}
+function menusJson(): string {
+  const out: Record<string, any> = {};
+  for (const [k, v] of [['footer', footerJsonVal.value], ['sidebar', sidebarJsonVal.value]] as const) {
+    try { const a = JSON.parse(v || '[]'); if (Array.isArray(a) && a.length) out[k] = a; } catch { /* ignore */ }
+  }
+  return Object.keys(out).length ? JSON.stringify(out) : '';
+}
+
 function load(site: PagesSite) {
   const s = site.settings;
   presetId.value = s.themeId || DEFAULT_PRESET;
@@ -60,9 +78,12 @@ function load(site: PagesSite) {
   Object.assign(text, { footerText: s.footerText || '', headHtml: s.headHtml || '', footHtml: s.footHtml || '', customCss: s.customCss || '' });
   loadFloat(s.floatJson);
   navJsonVal.value = s.navJson || '';
+  const extra = parseMenus(s.menusJson);
+  footerJsonVal.value = extra.footer;
+  sidebarJsonVal.value = extra.sidebar;
   saved.value = snapshot();
 }
-const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text, f: float, n: navJsonVal.value });
+const snapshot = () => JSON.stringify({ p: presetId.value, v: vars, m: media, x: text, f: float, n: navJsonVal.value, e: [footerJsonVal.value, sidebarJsonVal.value] });
 watch(() => props.site, (s) => load(s), { immediate: true });
 const dirty = computed(() => snapshot() !== saved.value);
 
@@ -115,7 +136,7 @@ async function upload(kind: 'logoUrl' | 'faviconUrl' | 'ogImageUrl', e: Event) {
 
 function save() {
   emit('save', { themeId: presetId.value, themeVarsJson: JSON.stringify(vars), logoUrl: media.logoUrl, footerText: text.footerText.trim(),
-    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss, floatJson: floatJson(), navJson: navJsonVal.value });
+    faviconUrl: media.faviconUrl, ogImageUrl: media.ogImageUrl, headHtml: text.headHtml, footHtml: text.footHtml, customCss: text.customCss, floatJson: floatJson(), navJson: navJsonVal.value, menusJson: menusJson() });
   saved.value = snapshot();
 }
 
@@ -186,6 +207,8 @@ const mediaCards = [
 
       <!-- site menu -->
       <MenuEditor v-model="navJsonVal" :site-id="site.id" :ns-slug="nsSlug" />
+      <MenuEditor v-model="footerJsonVal" extra :title="t('pages.design.menu.footerTitle')" :hint="t('pages.design.menu.footerHint')" :site-id="site.id" :ns-slug="nsSlug" />
+      <MenuEditor v-model="sidebarJsonVal" extra :title="t('pages.design.menu.sidebarTitle')" :hint="t('pages.design.menu.sidebarHint')" :site-id="site.id" :ns-slug="nsSlug" />
 
       <!-- floating contact buttons -->
       <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">

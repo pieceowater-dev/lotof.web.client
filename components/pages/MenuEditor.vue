@@ -8,7 +8,7 @@ import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 // Stored as Settings.navJson; the renderer resolves page/category references at publish time.
 interface MenuNode { kind: 'page' | 'category' | 'home' | 'link' | 'group'; ref?: string; href?: string; label: string; mega?: boolean; children: MenuNode[] }
 
-const props = defineProps<{ modelValue: string; siteId: string; nsSlug: string }>();
+const props = defineProps<{ modelValue: string; siteId: string; nsSlug: string; title?: string; hint?: string; extra?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
 const { t } = useI18n();
 
@@ -34,7 +34,7 @@ function parse(raw: string) {
   let o: any = [];
   try { o = JSON.parse(raw || '[]'); } catch { o = []; }
   items.value = Array.isArray(o) ? (o.map((n: any) => norm(n, 1)).filter(Boolean) as MenuNode[]) : [];
-  custom.value = items.value.length > 0;
+  custom.value = props.extra || items.value.length > 0; // footer and sidebar menus have no automatic mode
 }
 function clean(nodes: MenuNode[]): any[] {
   return nodes.map((n) => {
@@ -182,11 +182,11 @@ function buildCatalog() {
       <button type="button" class="group flex min-w-0 flex-1 items-start gap-2 text-left" :aria-expanded="!collapsed" @click="collapsed = !collapsed">
         <Icon name="lucide:chevron-down" class="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400 transition-transform group-hover:text-gray-700 dark:group-hover:text-gray-200" :class="collapsed && '-rotate-90'" />
         <span class="min-w-0">
-          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.menu.title') }}<span v-if="collapsed" class="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">{{ custom ? t('pages.design.menu.items', { n: count }) : t('pages.design.menu.auto') }}</span></span>
-          <span v-if="!collapsed" class="block text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.hint2') }}</span>
+          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ title || t('pages.design.menu.title') }}<span v-if="collapsed" class="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">{{ custom ? t('pages.design.menu.items', { n: count }) : t('pages.design.menu.auto') }}</span></span>
+          <span v-if="!collapsed" class="block text-xs text-gray-500 dark:text-gray-400">{{ hint || t('pages.design.menu.hint2') }}</span>
         </span>
       </button>
-      <div v-show="!collapsed" class="at-seg !min-w-0">
+      <div v-show="!collapsed && !extra" class="at-seg !min-w-0">
         <button type="button" class="at-seg__btn" :class="!custom && 'at-seg__btn--on'" @click="custom = false">{{ t('pages.design.menu.auto') }}</button>
         <button type="button" class="at-seg__btn" :class="custom && 'at-seg__btn--on'" @click="custom = true">{{ t('pages.design.menu.custom') }}</button>
       </div>
