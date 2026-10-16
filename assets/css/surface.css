@@ -277,7 +277,7 @@
 
 .hdr-lang-group { display: flex; flex-shrink: 0; align-items: center; gap: 0.1rem; border-radius: 9999px; padding: 0.15rem; background: rgba(15, 23, 42, 0.05); }
 .dark .hdr-lang-group { background: rgba(255, 255, 255, 0.07); }
-.hdr-lang { border-radius: 9999px; padding: 0.25rem 0.6rem; font-size: 0.6875rem; font-weight: 700; color: #94a3b8; transition: background 0.15s, color 0.15s; }
+.hdr-lang { border-radius: 9999px; padding: 0.25rem 0.6rem; font-size: 0.6875rem; font-weight: 700; color: #596579; transition: background 0.15s, color 0.15s; }
 .hdr-lang:hover { color: #475569; }
 .hdr-lang--on, .hdr-lang--on:hover { color: #0f172a; background: #fff; box-shadow: 0 2px 6px -2px rgba(15, 23, 42, 0.25); }
 .dark .hdr-lang:hover { color: #d4d4d4; }

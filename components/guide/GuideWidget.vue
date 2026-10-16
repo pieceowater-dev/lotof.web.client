@@ -8,8 +8,8 @@
       <div class="flex items-center justify-between px-5 pb-3 pt-5">
         <div class="flex items-center gap-2.5">
           <picture>
-            <source srcset="/assets/logo.webp" type="image/webp">
-            <img src="/assets/logo.png" alt="lota" width="22" height="22" class="h-[22px] w-[22px]">
+            <source srcset="/assets/logo-64.webp" type="image/webp">
+            <img src="/assets/logo-64.png" alt="lota" width="22" height="22" class="h-[22px] w-[22px]">
           </picture>
           <h2 class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">lota <span class="grad-text">{{ t('guide.title') }}</span></h2>
         </div>

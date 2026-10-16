@@ -9,6 +9,12 @@ defineProps<{ posts: HomeFeedPost[] }>();
 const emit = defineEmits<{ open: [post: HomeFeedPost]; all: [] }>();
 
 const broken = ref<Record<string, boolean>>({});
+
+// Cover images of our own publications can be served at a smaller width; a
+// card here is drawn ~400 px wide, so 800 px covers a 2x screen.
+function sized(src: string) {
+  return src.startsWith('/publication/') ? `${src}${src.includes('?') ? '&' : '?'}w=800` : src;
+}
 </script>
 
 <template>
@@ -25,8 +31,8 @@ const broken = ref<Record<string, boolean>>({});
     </div>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-5">
-      <article
-        v-for="(post, idx) in posts"
+      <div
+        v-for="post in posts"
         :key="post.id"
         class="bezel bezel-hover group cursor-pointer"
         role="button"
@@ -38,10 +44,10 @@ const broken = ref<Record<string, boolean>>({});
           <div class="relative overflow-hidden">
             <img
               v-if="post.image && !broken[post.id]"
-              :src="post.image"
+              :src="sized(post.image)"
               :alt="post.imageAlt"
               class="h-48 w-full object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.03] sm:h-52"
-              :loading="idx === 0 ? 'eager' : 'lazy'"
+              loading="lazy"
               decoding="async"
               width="1200"
               height="630"
@@ -65,7 +71,7 @@ const broken = ref<Record<string, boolean>>({});
             </span>
           </div>
         </div>
-      </article>
+      </div>
     </div>
   </section>
 </template>

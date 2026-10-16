@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
           :ref="(el) => setVideoRef(slide.id, el)"
           class="absolute inset-0 h-full w-full object-cover"
           :src="loadedIds.has(slide.id) ? slide.src : undefined"
-          :poster="slide.poster"
+          :poster="nearView ? slide.poster : undefined"
           :width="props.width"
           :height="props.height"
           :preload="!loadedIds.has(slide.id) ? 'none' : i === front ? 'auto' : 'metadata'"

@@ -16,9 +16,10 @@
       @renew="handleSubscriptionRenew"
       @close="handleSubscriptionClose"
     />
-    <PhoneRequiredModal />
-    <ContactUsModal />
-    <DowngradeBlockedModal />
+    <!-- Rarely shown dialogs: their code is fetched the first time they open, not with every page. -->
+    <LazyPhoneRequiredModal v-if="phoneModalMounted" />
+    <LazyContactUsModal v-if="contactModalMounted" />
+    <LazyDowngradeBlockedModal v-if="downgradeModalMounted" />
   </ClientOnly>
 
   <UNotifications :ui="notificationsUi" />
@@ -26,7 +27,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed, watch } from 'vue';
+import { onMounted, onBeforeUnmount, computed, ref, watch } from 'vue';
+import { usePhoneGate } from '@/composables/usePhoneGate';
+import { useContactUsModal } from '@/composables/useContactUsModal';
+import { useDowngradeBlockedModal } from '@/composables/useDowngradeBlockedModal';
 import { useRoute } from 'vue-router';
 import {
   setAtraceUnauthorizedHandler,
@@ -42,9 +46,6 @@ import { useI18n } from '@/composables/useI18n';
 import { useNamespace } from '@/composables/useNamespace';
 import { ALL_APPS } from '@/config/apps';
 import SubscriptionRenewalModal from '@/components/ui/SubscriptionRenewalModal.vue';
-import PhoneRequiredModal from '@/components/ui/PhoneRequiredModal.vue';
-import ContactUsModal from '@/components/ui/ContactUsModal.vue';
-import DowngradeBlockedModal from '@/components/ui/DowngradeBlockedModal.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 
 const route = useRoute();
@@ -59,6 +60,17 @@ type SupportedLocale = (typeof supportedLocales)[number];
 function isSupportedLocale(value: string): value is SupportedLocale {
   return (supportedLocales as readonly string[]).includes(value);
 }
+
+// Mount each rarely used dialog the first time its state opens (and keep it).
+const phoneGate = usePhoneGate();
+const contactUsModal = useContactUsModal();
+const downgradeModal = useDowngradeBlockedModal();
+const phoneModalMounted = ref(false);
+const contactModalMounted = ref(false);
+const downgradeModalMounted = ref(false);
+watch(() => phoneGate.state.value.open, (v) => { if (v) phoneModalMounted.value = true; }, { immediate: true });
+watch(() => contactUsModal.isOpen.value, (v) => { if (v) contactModalMounted.value = true; }, { immediate: true });
+watch(() => downgradeModal.isOpen.value, (v) => { if (v) downgradeModalMounted.value = true; }, { immediate: true });
 
 const showSubscriptionModal = computed(() => Boolean(subscriptionError.value) && !subscriptionErrorShown.value);
 

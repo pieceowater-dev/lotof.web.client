@@ -7,7 +7,6 @@ import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { useAppInstallStatus } from '@/composables/useAppInstallStatus';
 import { useConsoleAccess } from '@/composables/useConsoleAccess';
 import { useImpersonation } from '@/composables/useImpersonation';
-import GuideWidget from '@/components/guide/GuideWidget.vue';
 import { LSKeys } from '@/utils/storageKeys';
 import { logError } from '@/utils/logger';
 
@@ -236,6 +235,8 @@ let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
 // запускается изнутри виджета, а не напрямую по клику на кнопку).
 const showHelpButton = computed(() => true);
 const isGuideOpen = ref(false);
+const guideMounted = ref(false);
+watch(isGuideOpen, (v) => { if (v) guideMounted.value = true; });
 
 function handleHelpClick() {
   isGuideOpen.value = true;
@@ -385,9 +386,9 @@ const goHome = () => {
         @keydown.enter="goHome"
       >
         <picture>
-          <source srcset="/assets/logo.webp" type="image/webp">
+          <source srcset="/assets/logo-64.webp" type="image/webp">
           <img
-            src="/assets/logo.png"
+            src="/assets/logo-64.png"
             alt="Logo"
             width="20"
             height="20"
@@ -667,7 +668,8 @@ const goHome = () => {
       </template>
     </div>
 
-    <div class="pointer-events-none absolute left-0 top-0 -z-10 opacity-0">
+    <!-- off-screen copy used only to measure widths: hidden from assistive tech and the tab order -->
+    <div class="pointer-events-none absolute left-0 top-0 -z-10 opacity-0" aria-hidden="true" inert>
       <div class="flex items-center gap-2 whitespace-nowrap">
         <div
           ref="desktopMeasureRef"
@@ -715,6 +717,8 @@ const goHome = () => {
           v-if="showHelpButton"
           ref="desktopHelpMeasureRef"
           class="flex shrink-0"
+          aria-hidden="true"
+          inert
         >
           <UButton
             variant="ghost"
@@ -799,7 +803,8 @@ const goHome = () => {
     </div>
   </UModal>
 
-  <GuideWidget v-model="isGuideOpen" />
+  <!-- The guide drawer (markdown renderer and all) is fetched the first time it is opened. -->
+  <LazyGuideWidget v-if="guideMounted" v-model="isGuideOpen" />
 
   <!-- Catalog profile sheet: everything a logged-in Patron might want
        (bonuses, orders/favorites, cross-sell into the hub) lives here

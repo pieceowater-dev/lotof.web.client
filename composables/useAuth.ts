@@ -36,7 +36,12 @@ export function useAuth() {
         // On hard reload we may only have refresh_token (httpOnly). Try one silent refresh.
         if (process.client && !silentRefreshAttempted.value) {
           silentRefreshAttempted.value = true;
-          const refreshed = await refreshAccessToken();
+          // A first-time visitor has no refresh cookie, so the call could only
+          // answer 401 (a red console error, a failed request on the landing
+          // page's critical path). The flag is set on every signed-in visit.
+          let hadSession = true;
+          try { hadSession = localStorage.getItem(LSKeys.HAS_SESSION) === '1'; } catch { /* storage blocked: try anyway */ }
+          const refreshed = hadSession ? await refreshAccessToken() : false;
           if (refreshed) {
             const refreshedToken = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
             if (refreshedToken) {

@@ -56,15 +56,15 @@ function handleGoToCatalog() {
 
 // Promo video deck. Order = default deck order: general, A-Trace, then the rest.
 const promoSlides = [
-  { id: 'lota', icon: 'lucide:layout-grid', src: '/media/brag.mp4', poster: '/assets/brag-poster.jpg', titleKey: 'app.promoVideoTitle', descKey: 'app.promoVideoDesc' },
-  { id: 'atrace', icon: 'lucide:qr-code', src: '/media/atrace.mp4', poster: '/assets/atrace-poster.jpg', titleKey: 'app.promoSlideAtraceTitle', descKey: 'app.promoSlideAtraceDesc' },
-  { id: 'coffee', icon: 'lucide:coffee', src: '/media/coffee.mp4', poster: '/assets/coffee-poster.jpg', titleKey: 'app.promoSlideCoffeeTitle', descKey: 'app.promoSlideCoffeeDesc' },
-  { id: 'contacts', icon: 'lucide:contact', src: '/media/contacts.mp4', poster: '/assets/contacts-poster.jpg', titleKey: 'app.promoSlideContactsTitle', descKey: 'app.promoSlideContactsDesc' },
-  { id: 'orders', icon: 'lucide:receipt-text', src: '/media/orders.mp4', poster: '/assets/orders-poster.jpg', titleKey: 'app.promoSlideOrdersTitle', descKey: 'app.promoSlideOrdersDesc' },
-  { id: 'orders-issues', icon: 'lucide:truck', src: '/media/orders-issues.mp4', poster: '/assets/orders-issues-poster.jpg', titleKey: 'app.promoSlideOrdersIssuesTitle', descKey: 'app.promoSlideOrdersIssuesDesc' },
-  { id: 'goods', icon: 'lucide:package', src: '/media/goods.mp4', poster: '/assets/goods-poster.jpg', titleKey: 'app.promoSlideGoodsTitle', descKey: 'app.promoSlideGoodsDesc' },
-  { id: 'plans', icon: 'lucide:calendar-check', src: '/media/plans.mp4', poster: '/assets/plans-poster.jpg', titleKey: 'app.promoSlidePlansTitle', descKey: 'app.promoSlidePlansDesc' },
-  { id: 'referral', icon: 'lucide:gift', src: '/media/referral.mp4', poster: '/assets/referral-poster.jpg', titleKey: 'app.promoSlideReferralTitle', descKey: 'app.promoSlideReferralDesc' },
+  { id: 'lota', icon: 'lucide:layout-grid', src: '/media/brag.mp4', poster: '/assets/brag-poster.webp', titleKey: 'app.promoVideoTitle', descKey: 'app.promoVideoDesc' },
+  { id: 'atrace', icon: 'lucide:qr-code', src: '/media/atrace.mp4', poster: '/assets/atrace-poster.webp', titleKey: 'app.promoSlideAtraceTitle', descKey: 'app.promoSlideAtraceDesc' },
+  { id: 'coffee', icon: 'lucide:coffee', src: '/media/coffee.mp4', poster: '/assets/coffee-poster.webp', titleKey: 'app.promoSlideCoffeeTitle', descKey: 'app.promoSlideCoffeeDesc' },
+  { id: 'contacts', icon: 'lucide:contact', src: '/media/contacts.mp4', poster: '/assets/contacts-poster.webp', titleKey: 'app.promoSlideContactsTitle', descKey: 'app.promoSlideContactsDesc' },
+  { id: 'orders', icon: 'lucide:receipt-text', src: '/media/orders.mp4', poster: '/assets/orders-poster.webp', titleKey: 'app.promoSlideOrdersTitle', descKey: 'app.promoSlideOrdersDesc' },
+  { id: 'orders-issues', icon: 'lucide:truck', src: '/media/orders-issues.mp4', poster: '/assets/orders-issues-poster.webp', titleKey: 'app.promoSlideOrdersIssuesTitle', descKey: 'app.promoSlideOrdersIssuesDesc' },
+  { id: 'goods', icon: 'lucide:package', src: '/media/goods.mp4', poster: '/assets/goods-poster.webp', titleKey: 'app.promoSlideGoodsTitle', descKey: 'app.promoSlideGoodsDesc' },
+  { id: 'plans', icon: 'lucide:calendar-check', src: '/media/plans.mp4', poster: '/assets/plans-poster.webp', titleKey: 'app.promoSlidePlansTitle', descKey: 'app.promoSlidePlansDesc' },
+  { id: 'referral', icon: 'lucide:gift', src: '/media/referral.mp4', poster: '/assets/referral-poster.webp', titleKey: 'app.promoSlideReferralTitle', descKey: 'app.promoSlideReferralDesc' },
 ] as const;
 const activePromo = ref(0);
 // "Three steps" scenario: auto-advances while it is on screen, pauses on hover, a click picks a step.
@@ -838,8 +838,8 @@ watch([articlesSearch, selectedArticleTag], () => {
                 <div class="seam-slot pointer-events-none" aria-hidden="true">
                   <div class="seam-badge">
                     <picture>
-                      <source srcset="/assets/logo.webp" type="image/webp">
-                      <img src="/assets/logo.png" alt="" width="28" height="28" class="h-7 w-7">
+                      <source srcset="/assets/logo-64.webp" type="image/webp">
+                      <img src="/assets/logo-64.png" alt="" width="28" height="28" class="h-7 w-7">
                     </picture>
                   </div>
                 </div>
@@ -1094,7 +1094,7 @@ watch([articlesSearch, selectedArticleTag], () => {
           <div data-fx-scale>
             <PromoVideoPlayer
               src="/media/lota-full.mp4"
-              poster="/assets/lota-full-poster.jpg"
+              poster="/assets/lota-full-poster.webp"
               :width="1920"
               :height="1080"
               :sound-on-label="t('app.promoVideoSoundOn')"

@@ -10,6 +10,11 @@ const WEBP_QUALITY = 78;
 const TRANSFORMABLE_TYPES = new Set(['image/png', 'image/jpeg', 'image/jpg']);
 
 export default defineEventHandler(async (event) => {
+  // Cards ask for a width that matches how big they are drawn (?w=800), so a
+  // 380 px-wide preview doesn't download the 1600 px hero. Only a few fixed
+  // widths are accepted, which also keeps the set of cacheable variants small.
+  const requested = Number(getQuery(event).w);
+  const targetWidth = [480, 640, 800, 1200, MAX_WIDTH].includes(requested) ? requested : MAX_WIDTH;
   const publicationId = String(getRouterParam(event, 'publicationId') || '').trim();
   const filename = String(getRouterParam(event, 'filename') || '').trim();
 
@@ -44,7 +49,7 @@ export default defineEventHandler(async (event) => {
   if (acceptsWebp && TRANSFORMABLE_TYPES.has(contentType)) {
     try {
       const transformed = await sharp(buffer)
-        .resize({ width: MAX_WIDTH, withoutEnlargement: true })
+        .resize({ width: targetWidth, withoutEnlargement: true })
         .webp({ quality: WEBP_QUALITY })
         .toBuffer();
       setHeader(event, 'content-type', 'image/webp');

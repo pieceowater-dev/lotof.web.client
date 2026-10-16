@@ -178,8 +178,8 @@ useHead(() => ({
           class="hidden md:inline-flex items-center gap-1 text-[11px] text-gray-500 hover:text-gray-300 transition-colors"
         >
           <picture>
-            <source srcset="/assets/logo.webp" type="image/webp">
-            <img src="/assets/logo.png" alt="" width="12" height="12" class="w-3 h-3">
+            <source srcset="/assets/logo-64.webp" type="image/webp">
+            <img src="/assets/logo-64.png" alt="" width="12" height="12" class="w-3 h-3">
           </picture>
           {{ t('menu.poweredBy') || 'Powered by' }} <span class="font-semibold">lota</span>
         </a>

@@ -83,7 +83,7 @@ const socials = [
         <!-- Brand + socials -->
         <div class="col-span-2 lg:col-span-1">
           <NuxtLink to="/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2.5">
-            <img src="/assets/logo.png" alt="lota" width="24" height="24" class="h-6 w-6">
+            <img src="/assets/logo-64.png" alt="lota" width="24" height="24" class="h-6 w-6">
             <span class="text-lg font-extrabold tracking-tight text-gray-900 dark:text-white">lota</span>
           </NuxtLink>
           <p class="mt-3 max-w-xs text-sm leading-6 text-gray-500 dark:text-gray-400">

@@ -1,7 +1,5 @@
-import { computed, watch } from 'vue';
+import { computed, effectScope, shallowReactive, watch } from 'vue';
 import { LSKeys } from '@/utils/storageKeys';
-import en from '@/locales/en.json';
-import kk from '@/locales/kk.json';
 import ru from '@/locales/ru.json';
 
 type Locale = 'en' | 'ru' | 'kk';
@@ -17,17 +15,50 @@ function normalizeLocale(value?: string | null): Locale | undefined {
   return undefined;
 }
 
-const messages: Record<Locale, Record<string, any>> = {
-  en: en as any,
-  kk: kk as any,
-  ru: ru as any
+// Russian (the default) ships in the main bundle. English and Kazakh are ~500 KB
+// of JSON that most visitors never read, so they are fetched only when the
+// interface switches to them -- or when a Russian key is missing and a fallback
+// is needed. `messages` is reactive, so every t() that already ran re-renders
+// once a language arrives.
+const messages = shallowReactive<Partial<Record<Locale, Record<string, any>>>>({ ru: ru as any });
+const loading = new Map<Locale, Promise<void>>();
+let loadWatcherRegistered = false;
+const loaders: Record<'en' | 'kk', () => Promise<{ default: unknown }>> = {
+  en: () => import('@/locales/en.json'),
+  kk: () => import('@/locales/kk.json'),
 };
+function ensureLocale(l: Locale): Promise<void> {
+  if (messages[l] || l === 'ru') return Promise.resolve();
+  let p = loading.get(l);
+  if (!p) {
+    p = loaders[l]().then((m) => { messages[l] = m.default as any; }).catch(() => { loading.delete(l); });
+    loading.set(l, p);
+  }
+  return p;
+}
+
+// A missing Russian key only needs another language as a last resort, so that
+// download waits until the page has painted and settled (it would otherwise
+// compete with the first render on a slow connection).
+const fallbackScheduled = new Set<Locale>();
+function scheduleFallbackLoad(l: Locale) {
+  if (!import.meta.client || fallbackScheduled.has(l)) return;
+  fallbackScheduled.add(l);
+  setTimeout(() => { void ensureLocale(l); }, 4000);
+}
 
 export function useI18n() {
   // Defaults to Russian for everyone regardless of browser/OS locale --
   // an explicit product decision, not a detection bug. An explicit choice
   // (stored in localStorage, synced below) always wins over this default.
   const locale = useState<Locale>('i18n-locale', () => DEFAULT_LOCALE);
+  // One watcher for the whole client app (not one per component): load the
+  // language the interface switches to. A detached scope outlives the first
+  // component that happened to call useI18n().
+  if (import.meta.client && !loadWatcherRegistered) {
+    loadWatcherRegistered = true;
+    effectScope(true).run(() => watch(locale, (l) => { void ensureLocale(l); }, { immediate: true }));
+  }
 
   const isClientLocaleSynced = useState<boolean>('i18n-client-synced', () => false);
   if (process.client && !isClientLocaleSynced.value) {
@@ -106,6 +137,7 @@ export function useI18n() {
     let result = resolveMessage(primaryLocale, path) ?? '';
     for (const fallbackLocale of fallbackLocales) {
       if (result) break;
+      if (!messages[fallbackLocale]) { scheduleFallbackLoad(fallbackLocale); continue; }
       result = resolveMessage(fallbackLocale, path) ?? '';
     }
     

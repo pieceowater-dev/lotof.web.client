@@ -30,8 +30,8 @@
       <div class="flex items-center justify-between pt-2">
         <a :href="siteUrl" target="_blank" rel="noopener" class="sf-powered">
           <picture>
-            <source srcset="/assets/logo.webp" type="image/webp">
-            <img src="/assets/logo.png" alt="" width="12" height="12" class="h-3 w-3">
+            <source srcset="/assets/logo-64.webp" type="image/webp">
+            <img src="/assets/logo-64.png" alt="" width="12" height="12" class="h-3 w-3">
           </picture>
           {{ poweredLabel }}
         </a>

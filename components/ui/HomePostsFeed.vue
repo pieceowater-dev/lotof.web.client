@@ -47,7 +47,7 @@ function onImageError(postId: string) {
 
 <template>
   <section class="space-y-5 md:space-y-6" aria-label="Posts feed">
-    <article
+    <div
       v-for="(post, postIndex) in props.posts"
       :key="post.id"
       class="bezel bezel-hover group cursor-pointer"
@@ -126,6 +126,6 @@ function onImageError(postId: string) {
           </div>
         </div>
       </div>
-    </article>
+    </div>
   </section>
 </template>

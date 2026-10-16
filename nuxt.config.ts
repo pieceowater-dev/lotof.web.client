@@ -87,6 +87,10 @@ export default defineNuxtConfig({
     '/favicon/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/fonts/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
     '/images/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+    // Unhashed public files (logos, posters, videos): cached for a week and
+    // revalidated in the background, so a replaced file still reaches visitors.
+    '/assets/**': { headers: { 'cache-control': 'public, max-age=604800, stale-while-revalidate=86400' } },
+    '/media/**': { headers: { 'cache-control': 'public, max-age=604800, stale-while-revalidate=86400' } },
     // API routes
     '/api/**': { cors: true, headers: { 'cache-control': 'no-cache, no-store, must-revalidate' } },
     '/api-hub/**': { proxy: buildApiProxyTarget(process.env.VITE_API_HUB, '/api-hub', 8080) },
@@ -302,6 +306,35 @@ export default defineNuxtConfig({
       ignore: ['/guide', '/catalog', '/stores', '/services', '/news']
     },
     compressPublicAssets: true,
+    hooks: {
+      // The landing page is prerendered, and the whole app's CSS is one 325 KB
+      // (37 KB brotli) render-blocking stylesheet -- a first-time visitor on a
+      // phone saw nothing for ~4 s. Inline only the rules the prerendered HTML
+      // actually uses and load the rest of the stylesheet without blocking
+      // paint. Only '/' (where first visits land); every other page keeps the
+      // normal cached stylesheet, and any failure leaves the HTML untouched.
+      async 'prerender:generate'(route: { route: string; fileName?: string; contents?: string }) {
+        if (route.route !== '/' || !route.contents || !route.fileName?.endsWith('.html')) return;
+        try {
+          const { default: Beasties } = await import('beasties');
+          // The client build's CSS lives in .nuxt/dist/client at this point;
+          // it is only copied into .output/public after prerendering.
+          const publicDir = new URL('./.nuxt/dist/client', import.meta.url).pathname;
+          const beasties = new Beasties({
+            path: publicDir,
+            publicPath: '/',
+            preload: 'media',
+            inlineFonts: false,
+            pruneSource: false,
+            reduceInlineStyles: false,
+            logLevel: 'warn',
+          });
+          route.contents = await beasties.process(route.contents);
+        } catch (e) {
+          console.warn('[critical-css] skipped:', (e as Error)?.message || e);
+        }
+      },
+    },
     routeRules: {
       '/**': {
         headers: {

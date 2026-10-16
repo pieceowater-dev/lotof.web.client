@@ -383,8 +383,8 @@ onBeforeUnmount(() => {
       <div class="px-4 pt-3 pb-2 flex items-center justify-between">
         <div class="flex items-center gap-1.5">
           <picture>
-            <source srcset="/assets/logo.webp" type="image/webp">
-            <img src="/assets/logo.png" alt="lota" width="22" height="22" class="h-[22px] w-[22px] flex-shrink-0">
+            <source srcset="/assets/logo-64.webp" type="image/webp">
+            <img src="/assets/logo-64.png" alt="lota" width="22" height="22" class="h-[22px] w-[22px] flex-shrink-0">
           </picture>
           <span class="text-base font-bold leading-none">lota <span class="font-normal text-gray-400">Zen</span></span>
         </div>
