@@ -377,20 +377,20 @@
                   v-else-if="BLOCK_FORM_TYPES.includes(block.type)"
                   :block="block"
                   :upload="uploadImage"
-                  :resolve="imageResolver"
+                  :resolve="resolveImage"
                 />
 
                 <PagesEditorSchemaBlock
                   v-else-if="block.type === 'schema'"
                   :block="block"
-                  :resolve="imageResolver"
+                  :resolve="resolveImage"
                 />
 
                 <PagesEditorSectionBlock
                   v-else-if="['hero', 'columns', 'gallery', 'cta'].includes(block.type)"
                   :block="block"
                   :upload="uploadImage"
-                  :resolve="imageResolver"
+                  :resolve="resolveImage"
                 />
 
                 <div v-else-if="block.type === 'html'" class="py-1">
@@ -411,7 +411,7 @@
                 v-if="activeBlockId === block.id && !['spoiler_open', 'spoiler_close'].includes(block.type)"
                 :attrs="block.attrs"
                 :upload="uploadImage"
-                :resolve="imageResolver"
+                :resolve="resolveImage"
                 @change="(st) => { if (st) block.attrs.style = st; else delete block.attrs.style }"
               />
             </div>
