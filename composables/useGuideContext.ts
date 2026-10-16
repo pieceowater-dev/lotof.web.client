@@ -18,7 +18,7 @@ const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   pages: pagesTour,
 };
 
-// Pages is listed only where the app itself is available (see PAGES_ENABLED).
+// Pages is listed wherever the app itself is available (see PAGES_ENABLED).
 export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods', 'plans', ...(PAGES_ENABLED ? (['pages'] as GuideAppId[]) : [])];
 
 const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE', 'GOODS', 'PLANS', 'PAGES'];

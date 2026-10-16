@@ -8,11 +8,10 @@ export type AppConfig = {
   canAdd: boolean;       // false if still under development (coming soon)
 };
 
-// lota Pages (site builder) is not released yet: its bundle is not registered in Hub/Capital billing and the
-// backend is not deployed. It is visible only in local development, or in a build made with
-// VITE_PAGES_ENABLED=true (e.g. a staging environment). Everywhere else the app does not exist for users:
-// no header tab, no hub tile, and its routes redirect home (see middleware/pages-gate.global.ts).
-export const PAGES_ENABLED = import.meta.dev || import.meta.env.VITE_PAGES_ENABLED === 'true';
+// lota Pages (site builder) is released (2026-10-17): it is on everywhere. A build made with
+// VITE_PAGES_ENABLED=false hides it again (no header tab, no hub tile, its routes redirect home: see
+// middleware/pages-gate.global.ts), which is the switch to use if it ever has to be pulled back.
+export const PAGES_ENABLED = import.meta.env.VITE_PAGES_ENABLED !== 'false';
 
 const PAGES_APP: AppConfig = {
   name: 'lota Pages',
@@ -21,7 +20,7 @@ const PAGES_APP: AppConfig = {
   icon: 'lucide:panels-top-left',
   titleKey: 'app.pages',
   descriptionKey: 'app.pagesDesc',
-  // The entry exists only where PAGES_ENABLED (dev/staging); there it is fully open, not a "coming soon" tile.
+  // The entry exists wherever PAGES_ENABLED (everywhere unless switched off); it is fully open, not a "coming soon" tile.
   canAdd: true,
 };
 
@@ -122,7 +121,7 @@ export const ALL_APPS: AppConfig[] = [
     descriptionKey: 'app.plansDesc',
     canAdd: true,
   },
-  // lota Pages is hidden everywhere (header, hub tiles, routes) unless PAGES_ENABLED (see above).
+  // lota Pages is hidden (header, hub tiles, routes) only when PAGES_ENABLED is switched off (see above).
   ...(PAGES_ENABLED ? [PAGES_APP] : []),
 ];
 

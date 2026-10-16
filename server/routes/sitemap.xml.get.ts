@@ -230,7 +230,7 @@ export default defineEventHandler(async (event) => {
     xmlUrl(`${siteUrl}/menu`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/goods`, today, 'weekly', '0.9'),
     xmlUrl(`${siteUrl}/plans`, today, 'weekly', '0.9'),
-    ...(process.env.VITE_PAGES_ENABLED === 'true' ? [xmlUrl(`${siteUrl}/sites`, today, 'weekly', '0.9')] : []),
+    ...(process.env.VITE_PAGES_ENABLED !== 'false' ? [xmlUrl(`${siteUrl}/sites`, today, 'weekly', '0.9')] : []),
     xmlUrl(`${siteUrl}/feed`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/news`, today, 'daily', '0.9'),
     xmlUrl(`${siteUrl}/guide`, today, 'weekly', '0.9'),

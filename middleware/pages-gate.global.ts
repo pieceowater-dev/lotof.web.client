@@ -1,7 +1,7 @@
 import { PAGES_ENABLED } from '@/config/apps';
 
-// lota Pages is not released: outside local development / a VITE_PAGES_ENABLED build its routes
-// (/{namespace}/pages/**) behave as if they did not exist for users.
+// lota Pages routes (/{namespace}/pages/**) behave as if they did not exist for users only when the app is
+// switched off with VITE_PAGES_ENABLED=false.
 export default defineNuxtRouteMiddleware((to) => {
   if (PAGES_ENABLED) return;
   if (to.path === '/sites' || /^\/[^/]+\/pages(\/|$)/.test(to.path)) {
