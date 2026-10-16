@@ -5,6 +5,7 @@ import PageHeader from '@/components/ui/PageHeader.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner from '@/components/pages/ThemeDesigner.vue';
+import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
@@ -34,10 +35,11 @@ const preflight = ref<PreflightResult | null>(null);
 
 usePageTitle('pages', { subject: () => site.value?.name });
 
-type TabKey = 'pages' | 'design' | 'publish' | 'redirects' | 'settings';
+type TabKey = 'pages' | 'design' | 'domains' | 'publish' | 'redirects' | 'settings';
 const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
+  { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
   { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
   { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
@@ -267,6 +269,15 @@ async function saveSettings() {
   } catch (e) { fail(e); } finally { settingsSaving.value = false; }
 }
 
+// The primary host changes with domains: refresh the site (header address) and the version list (auto-republish).
+async function reloadSite() {
+  try {
+    const [s, vs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.versions(nsSlug.value, siteId.value)]);
+    if (s) site.value = s;
+    versions.value = vs;
+  } catch (e) { fail(e); }
+}
+
 const designSaving = ref(false);
 async function saveDesign(p: { themeId: string; themeVarsJson: string; logoUrl: string; footerText: string }) {
   if (!site.value) return;
@@ -401,6 +412,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
       <!-- ═════════ DESIGN ═════════ -->
       <ThemeDesigner v-else-if="activeTab === 'design'" :site="site" :ns-slug="nsSlug" :saving="designSaving" @save="saveDesign" />
+
+      <!-- ═════════ DOMAINS ═════════ -->
+      <DomainsPanel v-else-if="activeTab === 'domains'" :site="site" :ns-slug="nsSlug" @changed="reloadSite" />
 
       <!-- ═════════ PUBLISH ═════════ -->
       <template v-else-if="activeTab === 'publish'">

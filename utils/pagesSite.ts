@@ -6,7 +6,8 @@
  */
 export function siteOrigin(host: string): string {
   if (!host) return '';
-  if (host.endsWith('.localhost')) {
+  // Local development has no TLS and serves every site (including attached test domains) from the edge's dev port.
+  if (host.endsWith('.localhost') || import.meta.dev) {
     const port = (import.meta.env.VITE_PAGES_EDGE_PORT as string | undefined) || '18090';
     return `http://${host}:${port}`;
   }

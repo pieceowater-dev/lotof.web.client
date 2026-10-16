@@ -14,7 +14,7 @@ export interface SiteSettings {
 }
 export interface PagesSite {
   id: string; name: string; slug: string; status: SiteStatus; settings: SiteSettings;
-  publishedVersion: string; pageCount: number; createdAtUnix: number; updatedAtUnix: number; host: string;
+  publishedVersion: string; pageCount: number; createdAtUnix: number; updatedAtUnix: number; host: string; platformHost: string;
 }
 export interface PageBlock { id: string; type: string; content: string; attrsJson: string }
 export interface PageSeo {
@@ -32,14 +32,22 @@ export interface SiteVersion {
 export interface PreflightIssue { severity: 'error' | 'warning'; code: string; pagePath: string; message: string }
 export interface PreflightResult { ok: boolean; issues: PreflightIssue[] }
 export interface SiteRedirect { id: string; siteId: string; fromPath: string; toPath: string; code: number; source: string }
+export type DomainStatus = 'DOMAIN_PENDING_DNS' | 'DOMAIN_DNS_VERIFIED' | 'DOMAIN_TLS_PROVISIONING' | 'DOMAIN_ACTIVE' | 'DOMAIN_TLS_FAILED' | 'DOMAIN_MISCONFIGURED' | 'DOMAIN_SUSPENDED';
+export interface DnsRecord { type: string; name: string; value: string; done: boolean; purpose: 'ownership' | 'routing' | string }
+export interface SiteDomain {
+  id: string; siteId: string; hostname: string; displayHostname: string; isPrimary: boolean; status: DomainStatus; isApex: boolean;
+  records: DnsRecord[]; lastError: string; lastCheckedAtUnix: number; activatedAtUnix: number; createdAtUnix: number; suspendAtUnix: number;
+}
+export interface SiteDomains { domains: SiteDomain[]; platformHost: string; primaryHost: string; cnameTarget: string; ips: string[] }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText`;
-const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host settings { ${SETTINGS_FIELDS} }`;
+const SITE_FIELDS = `id name slug status publishedVersion pageCount createdAtUnix updatedAtUnix host platformHost settings { ${SETTINGS_FIELDS} }`;
 const SEO_FIELDS = `title description canonicalPath ogTitle ogDescription ogImageUrl noindex schemaType`;
 const PAGE_LIST_FIELDS = `id siteId parentId slug path title status sort lang updatedAtUnix`;
 const PAGE_FIELDS = `${PAGE_LIST_FIELDS} createdAtUnix schemaVersion seo { ${SEO_FIELDS} } blocks { id type content attrsJson }`;
 const VERSION_FIELDS = `id siteId version pageCount bytes createdBy note live createdAtUnix`;
+const DOMAIN_FIELDS = `id siteId hostname displayHostname isPrimary status isApex lastError lastCheckedAtUnix activatedAtUnix createdAtUnix suspendAtUnix records { type name value done purpose }`;
 const FILTER_ALL = { pagination: { page: 1, length: 'ONE_HUNDRED' } };
 
 function q<T>(ns: string, doc: string, vars?: Record<string, any>): Promise<T> {
@@ -91,6 +99,18 @@ export const pagesApi = {
     q<{ siteVersions: { rows: SiteVersion[] } }>(ns, `query($s:ID!,$f:DefaultFilterInput){ siteVersions(siteId:$s,filter:$f){ rows { ${VERSION_FIELDS} } } }`, { s: siteId, f: FILTER_ALL }).then(r => r.siteVersions.rows),
   rollback: (ns: string, siteId: string, version: string) =>
     q<{ rollbackSite: SiteVersion }>(ns, `mutation($s:ID!,$v:String!){ rollbackSite(siteId:$s,version:$v){ ${VERSION_FIELDS} } }`, { s: siteId, v: version }).then(r => r.rollbackSite),
+
+  // custom domains
+  domains: (ns: string, siteId: string) =>
+    q<{ siteDomains: SiteDomains }>(ns, `query($s:ID!){ siteDomains(siteId:$s){ platformHost primaryHost cnameTarget ips domains { ${DOMAIN_FIELDS} } } }`, { s: siteId }).then(r => r.siteDomains),
+  addDomain: (ns: string, siteId: string, hostname: string) =>
+    q<{ addSiteDomain: SiteDomain }>(ns, `mutation($s:ID!,$h:String!){ addSiteDomain(siteId:$s,hostname:$h){ ${DOMAIN_FIELDS} } }`, { s: siteId, h: hostname }).then(r => r.addSiteDomain),
+  checkDomain: (ns: string, id: string) =>
+    q<{ checkSiteDomain: SiteDomain }>(ns, `mutation($id:ID!){ checkSiteDomain(id:$id){ ${DOMAIN_FIELDS} } }`, { id }).then(r => r.checkSiteDomain),
+  setPrimaryDomain: (ns: string, siteId: string, hostname: string) =>
+    q<{ setPrimaryDomain: SiteDomain }>(ns, `mutation($s:ID!,$h:String!){ setPrimaryDomain(siteId:$s,hostname:$h){ ${DOMAIN_FIELDS} } }`, { s: siteId, h: hostname }).then(r => r.setPrimaryDomain),
+  removeDomain: (ns: string, id: string) =>
+    q<{ removeSiteDomain: { success: boolean } }>(ns, `mutation($id:ID!){ removeSiteDomain(id:$id){ success } }`, { id }).then(r => r.removeSiteDomain.success),
 
   // redirects
   redirects: (ns: string, siteId: string) =>
