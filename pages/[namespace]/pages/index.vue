@@ -87,7 +87,7 @@ function statusMeta(s: PagesSite) {
 </script>
 
 <template>
-  <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4">
+  <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4 [&>*]:flex-shrink-0">
     <PageHeader :title="t('pages.title')" :subtitle="t('pages.subtitle')">
       <template #primary>
         <button type="button" class="at-btn at-btn--primary" @click="openCreate">

@@ -326,7 +326,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 </script>
 
 <template>
-  <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4">
+  <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4 [&>*]:flex-shrink-0">
     <NuxtLink :to="`/${nsSlug}/pages`" class="at-btn self-start !px-3">
       <Icon name="lucide:arrow-left" class="h-4 w-4" />{{ t('pages.title') }}
     </NuxtLink>
