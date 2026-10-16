@@ -39,6 +39,7 @@ import {
   setGoodsUnauthorizedHandler,
   setTasksUnauthorizedHandler,
   setPlansUnauthorizedHandler,
+  setPagesUnauthorizedHandler,
 } from '@/api/clients';
 import { CookieKeys } from '@/utils/storageKeys';
 import { log, logWarn } from '@/utils/logger';
@@ -330,6 +331,13 @@ onMounted(() => {
       const cookie = useCookie(CookieKeys.PLANS_TOKEN, { path: '/' });
       cookie.value = null;
     } catch (e) { logWarn('[app.vue] failed to clear plans token cookie', e); }
+  });
+  setPagesUnauthorizedHandler(() => {
+    log('[app.vue] Pages token expired, clearing for refresh');
+    try {
+      const cookie = useCookie(CookieKeys.PAGES_TOKEN, { path: '/' });
+      cookie.value = null;
+    } catch (e) { logWarn('[app.vue] failed to clear pages token cookie', e); }
   });
 });
 

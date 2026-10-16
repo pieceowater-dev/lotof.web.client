@@ -542,7 +542,8 @@ const projects = [
   { id: 'menu', appCode: 'pieceowater.menu', title: 'Lota Orders', icon: 'lucide:receipt-text' },
   { id: 'goods', appCode: 'pieceowater.goods', title: 'Lota Goods', icon: 'lucide:package' },
   { id: 'issues', appCode: 'pieceowater.issues', title: 'Lota Issues', icon: 'lucide:clipboard-check' },
-  { id: 'plans', appCode: 'pieceowater.plans', title: 'Lota Plans', icon: 'lucide:calendar-check' }
+  { id: 'plans', appCode: 'pieceowater.plans', title: 'Lota Plans', icon: 'lucide:calendar-check' },
+  { id: 'pages', appCode: 'pieceowater.pages', title: 'Lota Pages', icon: 'lucide:panels-top-left' }
 ] as const;
 
 // Known usage-limit keys per app -- these are the exact keys product
@@ -578,6 +579,11 @@ const PLAN_LIMIT_KEYS: Record<string, Array<{ key: string; label: string }>> = {
   ],
   plans: [
     { key: 'storage_mb', label: 'Хранилище, МБ (фото и файлы)' },
+  ],
+  pages: [
+    { key: 'max_sites', label: 'Макс. сайтов' },
+    { key: 'max_pages', label: 'Макс. страниц' },
+    { key: 'storage_mb', label: 'Хранилище, МБ (картинки и файлы сайтов)' },
   ],
   goods: [
     { key: 'max_warehouses', label: 'Макс. складов' },

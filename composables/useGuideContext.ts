@@ -1,12 +1,12 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { useI18n } from '@/composables/useI18n';
-import { ALL_APPS } from '@/config/apps';
+import { ALL_APPS, PAGES_ENABLED } from '@/config/apps';
 import { atraceTour, contactsTour, issuesTour, menuTour, goodsTour, goodsRegisterTour, plansTour } from '@/config/tours';
 import type { TourConfig } from '@/composables/useOnboarding';
 import type { GuideApp } from '@/api/guide/public';
 
-export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace' | 'goods' | 'plans';
+export type GuideAppId = 'issues' | 'menu' | 'contacts' | 'atrace' | 'goods' | 'plans' | 'pages';
 
 const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   atrace: atraceTour,
@@ -17,9 +17,10 @@ const APP_TOURS: Partial<Record<GuideAppId, TourConfig>> = {
   plans: plansTour,
 };
 
-export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods', 'plans'];
+// Pages is listed only where the app itself is available (see PAGES_ENABLED).
+export const GUIDE_APP_IDS: GuideAppId[] = ['issues', 'menu', 'contacts', 'atrace', 'goods', 'plans', ...(PAGES_ENABLED ? (['pages'] as GuideAppId[]) : [])];
 
-const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE', 'GOODS', 'PLANS'];
+const ALL_GUIDE_APPS: GuideApp[] = ['GLOBAL', 'LANDING', 'ISSUES', 'MENU', 'CONTACTS', 'ATRACE', 'GOODS', 'PLANS', 'PAGES'];
 
 /** Route param ("issues") -> GuideApp ("ISSUES"), or null if not a known app. */
 export function guideAppFromParam(param: string): GuideApp | null {
@@ -39,6 +40,7 @@ export const GUIDE_APP_BY_ID: Record<GuideAppId, GuideApp> = {
   atrace: 'ATRACE',
   goods: 'GOODS',
   plans: 'PLANS',
+  pages: 'PAGES',
 };
 
 /**
@@ -60,6 +62,7 @@ export function useGuideContext() {
   const isIssuesRoute = computed(() => /^\/[^/]+\/issues\/(?!plans$|settings$|zen$)[^/]+\/?$/.test(route.path));
   const isGoodsRoute = computed(() => /^\/[^/]+\/goods(\/|$)/.test(route.path));
   const isPlansRoute = computed(() => /^\/[^/]+\/plans(\/|$)/.test(route.path));
+  const isPagesRoute = computed(() => /^\/[^/]+\/pages(\/|$)/.test(route.path));
   const isConsoleRoute = computed(() => route.path.startsWith('/console'));
   const isPublicationRoute = computed(() => /^\/(blog|whatsnew|articles|academy|news)\//.test(route.path));
 
@@ -70,6 +73,7 @@ export function useGuideContext() {
     if (isIssuesRoute.value) return 'issues';
     if (isGoodsRoute.value) return 'goods';
     if (isPlansRoute.value) return 'plans';
+    if (isPagesRoute.value) return 'pages';
     return null;
   });
 

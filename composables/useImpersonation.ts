@@ -5,11 +5,12 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useGoodsToken } from '@/composables/useGoodsToken';
+import { usePagesToken } from '@/composables/usePagesToken';
 import { useContactsToken } from '@/composables/useContactsToken';
 
 const hubApiBase = getApiBasePath('hub');
 
-// Every per-app token (Atrace/Menu/Tasks/Goods/Contacts) is minted against
+// Every per-app token (Atrace/Menu/Tasks/Goods/Contacts/Pages) is minted against
 // whichever hub identity was active at exchange time. Swapping identity
 // (impersonate in, impersonate out) without invalidating these leaves stale
 // cookies around: on the next page, useAppToken.ensure() sees a same-namespace
@@ -27,6 +28,7 @@ function clearAllAppTokens() {
     [useMenuToken, CookieKeys.MENU_TOKEN],
     [useTasksToken, CookieKeys.TASKS_TOKEN],
     [useGoodsToken, CookieKeys.GOODS_TOKEN],
+    [usePagesToken, CookieKeys.PAGES_TOKEN],
     [useContactsToken, CookieKeys.CONTACTS_TOKEN],
   ];
   for (const [useToken, cookieKey] of clears) {

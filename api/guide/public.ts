@@ -1,6 +1,6 @@
 import { capitalClient } from '@/api/clients';
 
-export type GuideApp = 'GLOBAL' | 'LANDING' | 'ISSUES' | 'MENU' | 'CONTACTS' | 'ATRACE' | 'GOODS' | 'PLANS';
+export type GuideApp = 'GLOBAL' | 'LANDING' | 'ISSUES' | 'MENU' | 'CONTACTS' | 'ATRACE' | 'GOODS' | 'PLANS' | 'PAGES';
 export type GuideArticleStatus = 'DRAFT' | 'PUBLISHED';
 
 export type GuideCategory = {

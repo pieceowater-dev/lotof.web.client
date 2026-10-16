@@ -115,9 +115,9 @@ const disk = computed(() => {
               {{ t('pages.plan.diskTitle') }}
               <span v-if="disk.quota > 0" class="font-normal text-gray-500 dark:text-gray-400">{{ t('pages.plan.diskOf', { limit: fmtBytes(disk.quota) }) }}</span>
             </h3>
-            <div class="flex items-center justify-between gap-3"><span class="flex items-center gap-2"><i class="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />{{ t('pages.plan.diskMedia') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.media) }}</span></div>
-            <div class="mt-1 flex items-center justify-between gap-3"><span class="flex items-center gap-2"><i class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />{{ t('pages.plan.diskPublished') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.pub) }}</span></div>
-            <div v-if="disk.quota > 0" class="mt-1 flex items-center justify-between gap-3"><span class="flex items-center gap-2"><i class="inline-block h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-white/20" />{{ t('pages.plan.diskFree') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.free) }}</span></div>
+            <div class="flex items-center justify-between gap-3"><span class="flex items-center gap-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-blue-500" />{{ t('pages.plan.diskMedia') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.media) }}</span></div>
+            <div class="mt-1 flex items-center justify-between gap-3"><span class="flex items-center gap-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-emerald-500" />{{ t('pages.plan.diskPublished') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.pub) }}</span></div>
+            <div v-if="disk.quota > 0" class="mt-1 flex items-center justify-between gap-3"><span class="flex items-center gap-2"><span class="inline-block h-2.5 w-2.5 rounded-full bg-gray-200 dark:bg-white/20" />{{ t('pages.plan.diskFree') }}</span><span class="tabular-nums text-gray-500 dark:text-gray-400">{{ fmtBytes(disk.free) }}</span></div>
             <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">{{ t('pages.usage.diskHint') }}</p>
           </div>
         </div>

@@ -743,7 +743,9 @@
       "max_links": "{value} сілтемеге дейін",
       "max_masters": "{value} шеберге дейін",
       "max_services": "{value} қызметке дейін",
-      "max_bookings_per_month": "Айына {value} жазылуға дейін"
+      "max_bookings_per_month": "Айына {value} жазылуға дейін",
+      "max_sites": "{value} сайтқа дейін",
+      "max_pages": "{value} бетке дейін"
     },
     "subscriptionPlans": "Тариф жоспарлары",
     "choosePlanDescription": "Командаңызға лайық тариф жоспарын таңдаңыз",

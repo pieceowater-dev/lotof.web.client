@@ -4,6 +4,7 @@ import { useContactsToken } from '@/composables/useContactsToken';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useGoodsToken } from '@/composables/useGoodsToken';
+import { usePagesToken } from '@/composables/usePagesToken';
 import { usePhoneGate } from '@/composables/usePhoneGate';
 import { useNamespace } from '@/composables/useNamespace';
 import { refreshAccessToken } from '@/api/auth/tokenRefresh';
@@ -90,6 +91,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const isMenuRoute = /\/menu(\/|$)/.test(to.path);
   const isTasksRoute = /\/issues(\/|$)/.test(to.path);
   const isGoodsRoute = /\/goods(\/|$)/.test(to.path);
+  const isPagesRoute = /^\/[^/]+\/pages(\/|$)/.test(to.path);
   let token = useCookie<string | null>(CookieKeys.TOKEN, { path: '/' }).value;
   if (!token) {
     // Try one refresh before redirecting to root when access token is expired.
@@ -234,6 +236,28 @@ export default defineNuxtRouteMiddleware(async (to) => {
       return;
     }
     const { ensure, current } = useGoodsToken();
+    const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
+    if (attempt.kind === 'redirect') return attempt.result;
+    if (attempt.kind !== 'token') {
+      try {
+        const full = to.fullPath || to.path;
+        const trimmed = full.startsWith('/') ? full.slice(1) : full;
+        localStorage.setItem('back-to', trimmed);
+      } catch {}
+      // auth-needed tells the homepage to auto-trigger the login flow on
+      // arrival instead of leaving the visitor to notice and click "Log In"
+      // themselves -- same flag the /atrace/qr redirect already used.
+      return navigateTo({ path: '/', query: { 'auth-needed': 'true' } });
+    }
+  }
+
+  if (isPagesRoute) {
+    const nsSlug = typeof to.params?.namespace === 'string' ? to.params.namespace : '';
+    // Skip token check for plans page - it doesn't require app token
+    if (to.path.includes('/pages/plans')) {
+      return;
+    }
+    const { ensure, current } = usePagesToken();
     const attempt = await ensureWithNamespaceFallback(ensure, current, nsSlug, token);
     if (attempt.kind === 'redirect') return attempt.result;
     if (attempt.kind !== 'token') {

@@ -167,7 +167,7 @@ export const pagesApi = {
 
   // tariff and what the namespace uses of it
   plan: (ns: string) =>
-    q<{ pagesPlan: PagesPlan | null }>(ns, `query{ pagesPlan { planCode planName limitsJson isSubscriptionActive } }`).then(r => r.pagesPlan),
+    q<{ getPlanLimits: PagesPlan | null }>(ns, `query{ getPlanLimits(appBundle:"pieceowater.pages"){ planCode planName limitsJson isSubscriptionActive } }`).then(r => r.getPlanLimits),
   usage: (ns: string) =>
     q<{ pagesUsage: PagesUsage }>(ns, `query{ pagesUsage { sites pages mediaBytes publishedBytes } }`).then(r => r.pagesUsage),
 

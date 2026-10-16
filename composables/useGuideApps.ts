@@ -14,6 +14,7 @@ const GRADIENTS: Record<string, [string, string]> = {
   atrace: ['#22d3ee', '#2563eb'],
   goods: ['#34d399', '#0d9488'],
   plans: ['#fb7185', '#f43f5e'],
+  pages: ['#38bdf8', '#10b981'],
   global: ['#2563eb', '#10b981'],
   landing: ['#38bdf8', '#2563eb'],
 };

@@ -862,7 +862,9 @@
       "max_links": "Up to {value} links",
       "max_masters": "Up to {value} staff",
       "max_services": "Up to {value} services",
-      "max_bookings_per_month": "Up to {value} bookings a month"
+      "max_bookings_per_month": "Up to {value} bookings a month",
+      "max_sites": "Up to {value} sites",
+      "max_pages": "Up to {value} pages"
     },
     "subscriptionPlans": "Subscription Plans",
     "choosePlanDescription": "Choose a plan that works best for your team",

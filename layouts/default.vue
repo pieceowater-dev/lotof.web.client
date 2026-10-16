@@ -35,19 +35,19 @@ const route = useRoute();
 
 // Quiet one-line footer for in-app workspace + console screens; the full
 // four-column footer everywhere else (public / marketing / content).
-const QUIET_FOOTER = /^\/(console(\/|$)|[^/]+\/(menu|atrace|issues|contacts|goods|bundles|plans)(\/|$))/;
+const QUIET_FOOTER = /^\/(console(\/|$)|[^/]+\/(menu|atrace|issues|contacts|goods|bundles|plans|pages)(\/|$))/;
 
 // `h-full`-rooted workspace pages that manage their own internal scroll —
 // console pages are normal scrolling content and must NOT be in here (their
 // footer was overlapping because of the shared min-h-0).
-const WORKSPACE_PAGE = /^\/[^/]+\/(menu|atrace|issues|contacts|goods|plans)(\/|$)/;
+const WORKSPACE_PAGE = /^\/[^/]+\/(menu|atrace|issues|contacts|goods|plans|pages)(\/|$)/;
 
 // …but the tariff / bundle pricing pages that live under a namespace
 // (`/ns/bundles`, `/ns/plans/plans`, and `/ns/<app>/plans` for every app)
 // are tall auto-height scrolling pages, NOT h-full shells — with min-h-0 the
 // content box shrinks below its content and the footer rides up over it
 // ("прилип"). Exclude them so they grow with their content like `/` does.
-const PRICING_PAGE = /^\/[^/]+\/(bundles|(?:menu|atrace|issues|contacts|goods|plans)\/plans)(\/|$)/;
+const PRICING_PAGE = /^\/[^/]+\/(bundles|(?:menu|atrace|issues|contacts|goods|plans|pages)\/plans)(\/|$)/;
 
 const isWorkspacePage = computed(
   () => WORKSPACE_PAGE.test(route.path) && !PRICING_PAGE.test(route.path),

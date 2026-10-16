@@ -84,6 +84,7 @@ module.exports = {
     useMenuStaffRole: 'readonly',
     useGoodsToken: 'readonly',
     useGoodsStaffRole: 'readonly',
+    usePagesToken: 'readonly',
     usePatronAuth: 'readonly',
     usePreferredSpace: 'readonly',
     useTasksToken: 'readonly',

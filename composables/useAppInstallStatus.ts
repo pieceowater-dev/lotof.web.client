@@ -1,5 +1,5 @@
 import { reactive } from 'vue';
-import { ALL_APPS, PAGES_ENABLED, type AppConfig } from '@/config/apps';
+import { ALL_APPS, type AppConfig } from '@/config/apps';
 import { CookieKeys } from '@/utils/storageKeys';
 
 // Module-level (not per-component instance) so every consumer -- the home
@@ -8,10 +8,6 @@ import { CookieKeys } from '@/utils/storageKeys';
 // that can drift out of sync with the others.
 const appInstalled: Record<string, boolean> = reactive({});
 let checkSeq = 0;
-
-// lota Pages is not billable yet (no plan/bundle in Hub), so wherever it is enabled (local dev, staging) the app
-// counts as installed for every namespace: its tile opens it directly instead of the plan-selection page.
-const PAGES_BUNDLE = 'pieceowater.pages';
 
 /**
  * Where clicking into `app` from `ns` should go: straight into the app if
@@ -56,10 +52,8 @@ async function ensureAppInstallStatus(ns: string): Promise<void> {
   const installedMap = await hubAreAppsInNamespace(token, ns, bundles);
   if (seq !== checkSeq) return; // superseded by a newer check
   for (const b of bundles) appInstalled[b] = !!installedMap[b];
-  if (PAGES_ENABLED) appInstalled[PAGES_BUNDLE] = true;
 }
 
 export function useAppInstallStatus() {
-  if (PAGES_ENABLED) appInstalled[PAGES_BUNDLE] = true; // identical on server and client, so no hydration difference
   return { appInstalled, appRoutePath, resolveAppDestination, ensureAppInstallStatus };
 }

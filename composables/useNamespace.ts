@@ -4,6 +4,7 @@ import { useAtraceToken } from '@/composables/useAtraceToken';
 import { useMenuToken } from '@/composables/useMenuToken';
 import { useTasksToken } from '@/composables/useTasksToken';
 import { useGoodsToken } from '@/composables/useGoodsToken';
+import { usePagesToken } from '@/composables/usePagesToken';
 
 export function useNamespace() {
   // Backed by API: namespaces the current user belongs to
@@ -98,6 +99,11 @@ export function useNamespace() {
         const { clear } = useGoodsToken();
         clear();
         document.cookie = `${CookieKeys.GOODS_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
+      } catch {}
+      try {
+        const { clear } = usePagesToken();
+        clear();
+        document.cookie = `${CookieKeys.PAGES_TOKEN}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;`;
       } catch {}
       try {
         useAnalytics().setNamespaceContext(ns);

@@ -860,7 +860,9 @@
       "max_links": "До {value} ссылок",
       "max_masters": "До {value} мастеров",
       "max_services": "До {value} услуг",
-      "max_bookings_per_month": "До {value} записей в месяц"
+      "max_bookings_per_month": "До {value} записей в месяц",
+      "max_sites": "До {value} сайтов",
+      "max_pages": "До {value} страниц"
     },
     "subscriptionPlans": "Тарифные планы",
     "choosePlanDescription": "Выберите тарифный план для вашей команды",
@@ -3942,7 +3944,7 @@
       "current": "Текущий тариф: {name}",
       "diskTitle": "Диск",
       "diskUsed": "занято",
-      "diskFree": "свободно",
+      "diskFree": "Свободно",
       "diskMedia": "Изображения и файлы",
       "diskPublished": "Опубликованные версии",
       "diskOf": "из {limit}",
