@@ -78,7 +78,7 @@ async function remove(b: GlobalBlock) {
   }
 }
 
-const preview = (b: GlobalBlock) => b.markdown.replace(/[#*>:`_\[\]()]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
+const preview = (b: GlobalBlock) => b.markdown.replace(/[#*>:`_[\]()]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 140);
 </script>
 
 <template>
