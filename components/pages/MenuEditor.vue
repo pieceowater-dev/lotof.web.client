@@ -72,6 +72,10 @@ const rows = computed<Row[]>(() => {
   return out;
 });
 const count = computed(() => rows.value.length);
+// A big menu is a long list: fold it away. Starts folded when the menu is already large.
+const collapsed = ref(false);
+const foldDecided = ref(false);
+watch(count, (n) => { if (!foldDecided.value && n > 0) { collapsed.value = n > 8; foldDecided.value = true; } }, { immediate: true });
 const subtreeDepth = (n: MenuNode): number => 1 + Math.max(0, ...n.children.map(subtreeDepth));
 
 function defaultLabel(n: MenuNode): string {
@@ -175,17 +179,20 @@ function buildCatalog() {
 <template>
   <section class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
     <div class="flex flex-wrap items-start justify-between gap-2">
-      <div>
-        <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.menu.title') }}</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.hint2') }}</p>
-      </div>
-      <div class="at-seg !min-w-0">
+      <button type="button" class="group flex min-w-0 flex-1 items-start gap-2 text-left" :aria-expanded="!collapsed" @click="collapsed = !collapsed">
+        <Icon name="lucide:chevron-down" class="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400 transition-transform group-hover:text-gray-700 dark:group-hover:text-gray-200" :class="collapsed && '-rotate-90'" />
+        <span class="min-w-0">
+          <span class="block text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.design.menu.title') }}<span v-if="collapsed" class="ml-2 text-xs font-normal text-gray-500 dark:text-gray-400">{{ custom ? t('pages.design.menu.items', { n: count }) : t('pages.design.menu.auto') }}</span></span>
+          <span v-if="!collapsed" class="block text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.hint2') }}</span>
+        </span>
+      </button>
+      <div v-show="!collapsed" class="at-seg !min-w-0">
         <button type="button" class="at-seg__btn" :class="!custom && 'at-seg__btn--on'" @click="custom = false">{{ t('pages.design.menu.auto') }}</button>
         <button type="button" class="at-seg__btn" :class="custom && 'at-seg__btn--on'" @click="custom = true">{{ t('pages.design.menu.custom') }}</button>
       </div>
     </div>
 
-    <template v-if="custom">
+    <template v-if="custom && !collapsed">
       <div v-if="rows.length" class="flex flex-col gap-1.5">
         <div v-for="(r, i) in rows" :key="i" class="flex items-center gap-2 rounded-2xl bg-gray-50 p-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10" :style="{ marginLeft: `${r.depth * 1.25}rem` }">
           <span class="icon-tile !h-8 !w-8 flex-shrink-0" :title="t(`pages.design.menu.kind.${r.node.kind}`)"><UIcon :name="KIND_ICON[r.node.kind]" class="h-4 w-4" /></span>
@@ -215,7 +222,7 @@ function buildCatalog() {
         <span class="text-xs text-gray-400">{{ t('pages.design.menu.count', { n: count, max: MAX_ITEMS }) }}</span>
       </div>
     </template>
-    <p v-else class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.autoHint') }}</p>
+    <p v-else-if="!custom && !collapsed" class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.design.menu.autoHint') }}</p>
 
     <UModal v-model="open" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-xl' }">
       <UCard :ui="atCardUiFit">

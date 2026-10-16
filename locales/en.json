@@ -4512,7 +4512,8 @@
         "into": "Add to",
         "topLevel": "Top level",
         "picked": "Selected: {n}",
-        "addSelected": "Add"
+        "addSelected": "Add",
+        "items": "{n} items"
       }
     },
     "domains": {

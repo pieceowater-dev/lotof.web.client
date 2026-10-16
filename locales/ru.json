@@ -3512,7 +3512,8 @@
         "into": "Добавить в",
         "topLevel": "Верхний уровень",
         "picked": "Выбрано: {n}",
-        "addSelected": "Добавить"
+        "addSelected": "Добавить",
+        "items": "{n} пунктов"
       }
     },
     "domains": {
