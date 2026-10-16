@@ -7,6 +7,7 @@ import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
+import PageNav from '@/components/ui/PageNav.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
@@ -120,11 +121,11 @@ const visiblePages = computed(() => {
     return !q || p.title.toLowerCase().includes(q) || p.path.toLowerCase().includes(q);
   });
 });
-const PAGE_SIZE = 10;
+const pageSize = ref(10);
 const pageNo = ref(1);
-const pagedPages = computed(() => visiblePages.value.slice((pageNo.value - 1) * PAGE_SIZE, pageNo.value * PAGE_SIZE));
-watch([pageQuery, pageFilter], () => { pageNo.value = 1; });
-watch(() => visiblePages.value.length, (n) => { const max = Math.max(1, Math.ceil(n / PAGE_SIZE)); if (pageNo.value > max) pageNo.value = max; });
+const pagedPages = computed(() => visiblePages.value.slice((pageNo.value - 1) * pageSize.value, pageNo.value * pageSize.value));
+watch([pageQuery, pageFilter, pageSize], () => { pageNo.value = 1; });
+watch(() => visiblePages.value.length, (n) => { const max = Math.max(1, Math.ceil(n / pageSize.value)); if (pageNo.value > max) pageNo.value = max; });
 // While filtering the tree is flat, so indentation would be misleading.
 const rowDepth = (p: SitePage) => (searching.value ? 0 : depth(p));
 const pageUrl = (p: SitePage) => `${origin.value}${p.path === '/' ? '' : p.path}`;
@@ -397,7 +398,7 @@ async function saveDesign(p: DesignPayload) {
     site.value = await pagesApi.updateSite(nsSlug.value, {
       id: site.value.id, name: site.value.name,
       settings: {
-        defaultLang: s.defaultLang, langs: s.langs, googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, navJson: s.navJson,
+        defaultLang: s.defaultLang, langs: s.langs, googleSiteVerification: s.googleSiteVerification, robotsTxt: s.robotsTxt, navJson: p.navJson,
         themeId: p.themeId, themeVarsJson: p.themeVarsJson, logoUrl: p.logoUrl, footerText: p.footerText,
         faviconUrl: p.faviconUrl, ogImageUrl: p.ogImageUrl, headHtml: p.headHtml, footHtml: p.footHtml, customCss: p.customCss, floatJson: p.floatJson,
       },
@@ -441,7 +442,14 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
       <Icon name="lucide:arrow-left" class="h-4 w-4" />{{ t('pages.title') }}
     </NuxtLink>
 
-    <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="3" /></div>
+    <div v-if="booting" class="flex flex-col gap-4" role="status" aria-busy="true">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-col gap-2"><span class="sk sk-line sk-line--lg" style="width: 12rem" /><span class="sk sk-line sk-line--sm" style="width: 9rem" /></div>
+        <span class="sk sk-pill" style="width: 8.5rem" />
+      </div>
+      <span class="sk sk-pill" style="width: 100%; max-width: 34rem; height: 2.75rem" />
+      <AppSkeleton variant="list" :rows="6" />
+    </div>
 
     <template v-else-if="site">
       <PageHeader :title="site.name" :subtitle="site.host">
@@ -510,16 +518,17 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
           <div
             v-for="p in pagedPages" :key="p.id"
-            class="group flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10"
+            class="group flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 transition hover:ring-primary-400/60 hover:shadow-[0_14px_28px_-20px_rgba(37,99,235,0.5)] dark:bg-[#1f1f1f] dark:ring-white/10 dark:hover:ring-primary-400/50"
             :style="{ marginLeft: `${rowDepth(p) * 1.5}rem` }"
           >
             <span v-if="rowDepth(p)" class="-mr-1 flex-shrink-0 text-gray-300 dark:text-neutral-600"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></span>
             <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon :name="p.path === '/' ? 'lucide:house' : childCount(p) ? 'lucide:folder-tree' : 'lucide:file-text'" class="h-4 w-4" /></span>
-            <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="min-w-0 flex-1 no-underline">
+            <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="min-w-0 flex-1 no-underline" :title="t('pages.pages.openEditor')">
               <div class="flex items-center gap-2">
-                <span class="truncate font-medium text-gray-900 dark:text-white">{{ p.title }}</span>
+                <span class="truncate font-medium text-gray-900 decoration-primary-400/70 underline-offset-4 transition group-hover:text-primary-600 group-hover:underline dark:text-white dark:group-hover:text-primary-300">{{ p.title }}</span>
                 <span v-if="p.path === '/'" class="flex-shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">{{ t('pages.pages.homeBadge') }}</span>
                 <span v-else-if="childCount(p)" class="flex-shrink-0 text-[11px] text-gray-400">{{ t('pages.pages.children', { n: childCount(p) }) }}</span>
+                <span class="hidden flex-shrink-0 items-center gap-1 text-[11px] font-semibold text-primary-600 opacity-0 transition group-hover:opacity-100 sm:inline-flex dark:text-primary-300"><Icon name="lucide:pencil" class="h-3 w-3" />{{ t('pages.pages.openEditor') }}</span>
               </div>
               <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ p.path }}</div>
             </NuxtLink>
@@ -540,8 +549,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             </div>
           </div>
 
-          <div v-if="visiblePages.length > PAGE_SIZE" class="flex justify-end">
-            <UPagination v-model="pageNo" :page-count="PAGE_SIZE" :total="visiblePages.length" size="xs" />
+          <div v-if="visiblePages.length > 10" class="flex flex-wrap items-center justify-between gap-2">
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.pages.shown', { from: (pageNo - 1) * pageSize + 1, to: Math.min(pageNo * pageSize, visiblePages.length), total: visiblePages.length }) }}</span>
+            <PageNav v-model:page="pageNo" v-model:page-size="pageSize" :total="visiblePages.length" :size-options="[10, 25, 50]" />
           </div>
         </div>
       </template>

@@ -4279,7 +4279,8 @@
         "quote": "Quotes",
         "bgStyle": "Background pattern",
         "footerTone": "Footer colour",
-        "footerAlign": "Footer alignment"
+        "footerAlign": "Footer alignment",
+        "mobileNav": "Menu on phones"
       },
       "opt": {
         "font": {
@@ -4409,6 +4410,10 @@
         "footerAlign": {
           "left": "Left",
           "center": "Centre"
+        },
+        "mobileNav": {
+          "burger": "Burger",
+          "inline": "Inline"
         }
       },
       "showAll": "Show all ({n})",
@@ -4461,6 +4466,19 @@
           "link": "URL: https://… or /page",
           "top": ""
         }
+      },
+      "menu": {
+        "title": "Site menu",
+        "hint": "Which items appear in the header. On phones the menu collapses into a burger (change it below, under “Header and menu”).",
+        "auto": "Automatic",
+        "custom": "Custom list",
+        "autoHint": "The menu lists Home and every top-level page except those hidden from search. The page order number sets the order.",
+        "label": "Item label",
+        "href": "Address: /page or https://…",
+        "addPage": "Add a page to the menu…",
+        "addLink": "Custom link",
+        "up": "Up",
+        "down": "Down"
       }
     },
     "domains": {
@@ -4574,7 +4592,9 @@
       "saved": "Saved",
       "order": "Order",
       "orderHint": "Lower number sits higher in the list and the site menu.",
-      "inPublish": "Include in publishing"
+      "inPublish": "Include in publishing",
+      "shown": "{from}–{to} of {total}",
+      "openEditor": "Open in editor"
     },
     "publish": {
       "action": "Publish",

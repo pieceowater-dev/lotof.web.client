@@ -98,7 +98,7 @@ function statusMeta(s: PagesSite) {
       </template>
     </PageHeader>
 
-    <div v-if="booting" class="py-4"><AppSkeleton variant="panel" :rows="2" /></div>
+    <AppSkeleton v-if="booting" variant="cards" :rows="3" />
 
     <EmptyState
       v-else-if="!sites.length"

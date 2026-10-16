@@ -11,8 +11,11 @@ const props = defineProps<{
   /** Page ids that can't be chosen (the page itself and everything below it). */
   exclude?: Set<string>;
   topLabel?: string;
+  /** Hide the "top level" row (used when the picker only chooses a page). */
+  hideTop?: boolean;
+  placeholder?: string;
 }>();
-const emit = defineEmits<{ 'update:modelValue': [id: string] }>();
+const emit = defineEmits<{ 'update:modelValue': [id: string]; pick: [page: SitePage | null] }>();
 const { t } = useI18n();
 
 const open = ref(false);
@@ -58,6 +61,7 @@ function onScroll() {
 }
 function choose(id: string) {
   emit('update:modelValue', id);
+  emit('pick', id ? known[id] || null : null);
   open.value = false;
 }
 
@@ -78,7 +82,7 @@ onBeforeUnmount(() => clearTimeout(timer));
     >
       <span class="min-w-0 truncate">
         <template v-if="current">{{ current.title }} <span class="text-xs text-gray-400">{{ current.path }}</span></template>
-        <template v-else>{{ topLabel || t('pages.pages.topLevel') }}</template>
+        <template v-else>{{ placeholder || topLabel || t('pages.pages.topLevel') }}</template>
       </span>
       <Icon name="lucide:chevron-down" class="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform" :class="open && 'rotate-180'" />
     </button>
@@ -89,7 +93,7 @@ onBeforeUnmount(() => clearTimeout(timer));
       </div>
       <div ref="listEl" class="max-h-56 overflow-y-auto overscroll-contain px-1 pb-2" @scroll.passive="onScroll">
         <button
-          type="button" class="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/5"
+          v-if="!hideTop" type="button" class="flex w-full items-center gap-2 rounded-2xl px-3 py-2 text-left text-sm hover:bg-black/5 dark:hover:bg-white/5"
           :class="!modelValue && 'font-semibold text-primary-600 dark:text-primary-400'" @click="choose('')"
         >
           <Icon name="lucide:corner-left-up" class="h-4 w-4 flex-shrink-0" />{{ topLabel || t('pages.pages.topLevel') }}

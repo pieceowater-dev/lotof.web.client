@@ -28,7 +28,8 @@
   "bgStyle": "flat",
   "quote": "bar",
   "spacing": "normal",
-  "shadow": "none"
+  "shadow": "none",
+  "mobileNav": "burger"
  },
  "presets": [
   {

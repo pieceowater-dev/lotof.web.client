@@ -38,6 +38,7 @@ export const KNOB_GROUPS: { id: string; knobs: { key: string; options: string[] 
     { key: 'header', options: ['bar', 'center', 'minimal', 'pill'] },
     { key: 'headerTone', options: ['page', 'soft', 'accent', 'dark'] },
     { key: 'nav', options: ['plain', 'underline', 'pills'] },
+    { key: 'mobileNav', options: ['burger', 'inline'] },
     { key: 'sticky', options: ['no', 'yes'] },
     { key: 'logoSize', options: ['sm', 'md', 'lg'] },
     { key: 'showName', options: ['yes', 'no'] },
