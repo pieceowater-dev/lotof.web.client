@@ -12,7 +12,7 @@ defineEmits<{ open: [void] }>()
 
     <!-- Plus button -->
     <button
-      class="relative mx-auto z-10 flex items-center justify-center h-5 w-5 rounded-full transition-all duration-150 opacity-0 group-hover/block-spacer:opacity-100 group-hover/add:opacity-100 scale-75 group-hover/block-spacer:scale-100 group-hover/add:scale-100 bg-white dark:bg-slate-800 border border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-600 shadow-sm shadow-blue-200/50 dark:shadow-blue-900/50"
+      class="relative mx-auto z-10 flex items-center justify-center h-5 w-5 rounded-full transition-all duration-150 opacity-0 group-hover/block-spacer:opacity-100 group-hover/add:opacity-100 scale-75 group-hover/block-spacer:scale-100 group-hover/add:scale-100 bg-white dark:bg-[#262626] border border-blue-300 dark:border-blue-700 text-blue-500 dark:text-blue-400 hover:bg-blue-600 hover:text-white hover:border-blue-600 shadow-sm shadow-blue-200/50 dark:shadow-blue-900/50"
       @click="$emit('open')"
       title="Добавить блок"
     >

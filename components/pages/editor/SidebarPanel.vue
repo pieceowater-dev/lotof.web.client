@@ -1,14 +1,14 @@
 <template>
   <div class="flex h-full flex-col">
-    <div class="flex gap-1 border-b border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950">
+    <div class="flex gap-1 border-b border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-[#141414]">
       <button
         v-for="item in tabs"
         :key="item.key"
         type="button"
         class="relative flex-1 overflow-hidden rounded-lg py-1.5 text-sm font-semibold transition-all duration-200"
         :class="tab === item.key
-          ? 'border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white'
-          : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'"
+          ? 'border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-white/15 dark:bg-[#262626] dark:text-white'
+          : 'text-slate-500 hover:text-slate-700 dark:text-neutral-400 dark:hover:text-neutral-200'"
         @click="tab = item.key"
       >{{ item.label }}</button>
     </div>
@@ -17,53 +17,53 @@
       <!-- PAGE -->
       <template v-if="tab === 'page'">
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.statusLabel') }}</label>
-          <div class="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.statusLabel') }}</label>
+          <div class="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-[#262626]">
             <button
               v-for="s in statusOptions"
               :key="s.value"
               type="button"
               class="flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all"
               :class="page.status === s.value
-                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#303030] dark:text-white'
+                : 'text-slate-500 hover:text-slate-700 dark:text-neutral-400'"
               @click="$emit('update:page', { status: s.value })"
             >{{ s.label }}</button>
           </div>
-          <p class="text-xs leading-relaxed text-slate-400 dark:text-slate-500">{{ t('pages.editor.statusHint') }}</p>
+          <p class="text-xs leading-relaxed text-slate-400 dark:text-neutral-500">{{ t('pages.editor.statusHint') }}</p>
         </section>
 
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.addressLabel') }}</label>
-          <div v-if="isHome" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-slate-800/60 dark:text-slate-400">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.addressLabel') }}</label>
+          <div v-if="isHome" class="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:bg-[#262626]/60 dark:text-neutral-400">
             {{ t('pages.editor.homeAddress') }}
           </div>
           <template v-else>
-            <div class="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-blue-500 dark:border-slate-700 dark:bg-slate-900">
+            <div class="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white focus-within:ring-2 focus-within:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a]">
               <span class="max-w-[55%] flex-shrink-0 truncate pl-3 text-xs text-slate-400">{{ parentPath }}/</span>
               <input
                 :value="page.slug"
                 type="text"
-                class="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none dark:text-slate-200"
+                class="min-w-0 flex-1 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none dark:text-neutral-200"
                 :placeholder="t('pages.editor.slugPlaceholder')"
                 @input="onSlug(($event.target as HTMLInputElement).value)"
               />
             </div>
-            <p class="text-xs leading-relaxed text-slate-400 dark:text-slate-500">{{ t('pages.editor.slugHint') }}</p>
+            <p class="text-xs leading-relaxed text-slate-400 dark:text-neutral-500">{{ t('pages.editor.slugHint') }}</p>
           </template>
         </section>
 
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.langLabel') }}</label>
-          <div class="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.langLabel') }}</label>
+          <div class="flex gap-1 rounded-xl bg-slate-100 p-1 dark:bg-[#262626]">
             <button
               v-for="l in langOptions"
               :key="l.value"
               type="button"
               class="flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition-all"
               :class="page.lang === l.value
-                ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-700 dark:text-white'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'"
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#303030] dark:text-white'
+                : 'text-slate-500 hover:text-slate-700 dark:text-neutral-400'"
               @click="$emit('update:page', { lang: l.value })"
             >{{ l.label }}</button>
           </div>
@@ -74,13 +74,13 @@
       <template v-else>
         <section class="space-y-2">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.metaTitle') }}</label>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.metaTitle') }}</label>
             <span class="text-[11px]" :class="lenClass(page.metaTitle.length, 30, 60)">{{ page.metaTitle.length }}/60</span>
           </div>
           <input
             :value="page.metaTitle"
             type="text"
-            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
             :placeholder="page.title || t('pages.editor.metaTitlePlaceholder')"
             @input="$emit('update:page', { metaTitle: ($event.target as HTMLInputElement).value })"
           />
@@ -88,29 +88,29 @@
 
         <section class="space-y-2">
           <div class="flex items-center justify-between">
-            <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.metaDescription') }}</label>
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.metaDescription') }}</label>
             <span class="text-[11px]" :class="lenClass(page.metaDescription.length, 120, 160)">{{ page.metaDescription.length }}/160</span>
           </div>
           <textarea
             :value="page.metaDescription"
             rows="4"
-            class="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            class="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm leading-relaxed text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
             :placeholder="t('pages.editor.metaDescriptionPlaceholder')"
             @input="$emit('update:page', { metaDescription: ($event.target as HTMLTextAreaElement).value })"
           />
         </section>
 
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.ogImage') }}</label>
-          <div v-if="page.ogImage" class="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.ogImage') }}</label>
+          <div v-if="page.ogImage" class="group relative overflow-hidden rounded-xl border border-slate-200 dark:border-white/15">
             <img :src="resolveImage(page.ogImage)" alt="" class="h-32 w-full object-cover" />
             <button
               type="button"
-              class="absolute right-2 top-2 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 text-xs font-medium text-slate-600 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-300"
+              class="absolute right-2 top-2 rounded-lg border border-slate-200 bg-white/90 px-2 py-1 text-xs font-medium text-slate-600 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-hover:opacity-100 dark:border-white/20 dark:bg-[#262626]/90 dark:text-neutral-300"
               @click="$emit('update:page', { ogImage: '' })"
             >{{ t('pages.editor.remove') }}</button>
           </div>
-          <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200 dark:hover:bg-[#262626]">
             <Icon name="lucide:upload" class="h-4 w-4" />
             <span>{{ page.ogImage ? t('pages.editor.replaceImage') : t('pages.editor.uploadImage') }}</span>
             <input type="file" accept="image/*" class="hidden" @change="onOgFile" />
@@ -118,30 +118,30 @@
         </section>
 
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.canonical') }}</label>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.canonical') }}</label>
           <input
             :value="page.canonicalPath"
             type="text"
-            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
             placeholder="/other-page"
             @input="$emit('update:page', { canonicalPath: ($event.target as HTMLInputElement).value })"
           />
-          <p class="text-xs leading-relaxed text-slate-400 dark:text-slate-500">{{ t('pages.editor.canonicalHint') }}</p>
+          <p class="text-xs leading-relaxed text-slate-400 dark:text-neutral-500">{{ t('pages.editor.canonicalHint') }}</p>
         </section>
 
-        <section class="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700">
+        <section class="flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-white/15">
           <div class="min-w-0">
-            <div class="text-sm font-semibold text-slate-800 dark:text-slate-100">{{ t('pages.editor.noindex') }}</div>
-            <p class="mt-0.5 text-xs leading-relaxed text-slate-400 dark:text-slate-500">{{ t('pages.editor.noindexHint') }}</p>
+            <div class="text-sm font-semibold text-slate-800 dark:text-neutral-100">{{ t('pages.editor.noindex') }}</div>
+            <p class="mt-0.5 text-xs leading-relaxed text-slate-400 dark:text-neutral-500">{{ t('pages.editor.noindexHint') }}</p>
           </div>
           <UToggle :model-value="page.noindex" @update:model-value="$emit('update:page', { noindex: $event })" />
         </section>
 
         <section class="space-y-2">
-          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-300">{{ t('pages.editor.checks') }}</label>
+          <label class="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-neutral-300">{{ t('pages.editor.checks') }}</label>
           <ul class="space-y-1.5">
-            <li v-for="c in checks" :key="c.id" class="flex items-center gap-2 text-sm" :class="c.ok ? 'text-slate-600 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500'">
-              <Icon :name="c.ok ? 'lucide:circle-check' : 'lucide:circle'" class="h-4 w-4 flex-shrink-0" :class="c.ok ? 'text-emerald-500' : 'text-slate-300 dark:text-slate-600'" />
+            <li v-for="c in checks" :key="c.id" class="flex items-center gap-2 text-sm" :class="c.ok ? 'text-slate-600 dark:text-neutral-300' : 'text-slate-400 dark:text-neutral-500'">
+              <Icon :name="c.ok ? 'lucide:circle-check' : 'lucide:circle'" class="h-4 w-4 flex-shrink-0" :class="c.ok ? 'text-emerald-500' : 'text-slate-300 dark:text-neutral-600'" />
               {{ c.label }}
             </li>
           </ul>

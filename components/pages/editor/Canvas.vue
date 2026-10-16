@@ -2,15 +2,15 @@
   <main class="flex-1 overflow-y-auto" @click.self="$emit('click-self')">
     <div class="min-h-full py-8 px-4">
       <!-- Document card -->
-      <div class="mx-auto max-w-2xl bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-black/30 border border-slate-200/60 dark:border-slate-800">
+      <div class="mx-auto max-w-4xl bg-white dark:bg-[#1a1a1a] rounded-2xl shadow-xl shadow-slate-200/60 dark:shadow-black/30 border border-slate-200/60 dark:border-white/10">
         <!-- Title area -->
-        <div class="px-12 pt-10 pb-6 border-b border-slate-100 dark:border-slate-800">
+        <div class="px-6 pt-8 pb-5 sm:px-10 md:px-14 sm:pt-10 sm:pb-6 border-b border-slate-100 dark:border-white/10">
           <div
             ref="titleEl"
             contenteditable="true"
             :data-placeholder="t('admin.editor.titlePlaceholder')"
             class="text-4xl font-bold text-slate-900 dark:text-white leading-snug outline-none w-full
-                   empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 dark:empty:before:text-slate-700"
+                   empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 dark:empty:before:text-neutral-700"
             @input="onTitleInput"
           />
           <!-- Address preview -->
@@ -18,8 +18,8 @@
             type="button"
             class="mt-3 inline-flex items-center gap-1.5 text-xs transition-colors"
             :class="liveUrl
-              ? 'text-slate-400 hover:text-blue-500 dark:text-slate-600 dark:hover:text-blue-400 cursor-pointer'
-              : 'text-slate-400 dark:text-slate-600 cursor-default'"
+              ? 'text-slate-400 hover:text-blue-500 dark:text-neutral-600 dark:hover:text-blue-400 cursor-pointer'
+              : 'text-slate-400 dark:text-neutral-600 cursor-default'"
             @click="openLive"
           >
             <Icon name="lucide:globe" class="h-3 w-3" />
@@ -29,7 +29,7 @@
         </div>
 
         <!-- ── BLOCKS ─────────────────────────────────────────────── -->
-        <div class="px-12 py-6 pb-16">
+        <div class="px-6 py-6 pb-16 sm:px-10 md:px-14">
           <template v-for="(block, i) in blocks" :key="block.id">
             <!-- Add button between blocks -->
             <PagesEditorAddBetween :index="i" @open="$emit('add-block-at', i)" />
@@ -41,30 +41,30 @@
               :class="isBlockSelected(i) ? 'bg-blue-50 dark:bg-blue-950/30 ring-1 ring-blue-200 dark:ring-blue-900' : ''"
             >
               <!-- Block toolbar -->
-              <div class="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-white/90 p-0.5 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-slate-700 dark:bg-slate-900/90">
+              <div class="absolute right-2 top-2 z-10 flex items-center gap-0.5 rounded-lg border border-slate-200/80 bg-white/90 p-0.5 shadow-sm opacity-0 backdrop-blur-sm transition-opacity group-hover/block:opacity-100 dark:border-white/15 dark:bg-[#1a1a1a]/90">
                 <button
                   v-if="isAnchorableHeading(block)"
                   class="rounded-md p-1 transition-colors"
                   :class="copiedAnchor === block.id
                     ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-300'"
+                    : 'text-slate-400 hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-[#262626] dark:hover:text-blue-300'"
                   :title="copiedAnchor === block.id ? 'Якорь скопирован' : 'Скопировать якорь'"
                   @click="copyAnchorToClipboard(blockAnchor(block, i))"
                 ><Icon :name="copiedAnchor === block.id ? 'lucide:check' : 'lucide:link-2'" class="h-3 w-3" /></button>
                 <button
                   v-if="i > 0"
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#262626] dark:hover:text-neutral-200"
                   title="Вверх"
                   @click="$emit('move-block', i, -1)"
                 ><Icon name="lucide:chevron-up" class="h-3 w-3" /></button>
                 <button
                   v-if="i < blocks.length - 1"
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-[#262626] dark:hover:text-neutral-200"
                   title="Вниз"
                   @click="$emit('move-block', i, 1)"
                 ><Icon name="lucide:chevron-down" class="h-3 w-3" /></button>
                 <button
-                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-slate-800 dark:hover:text-blue-300"
+                  class="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-blue-600 dark:hover:bg-[#262626] dark:hover:text-blue-300"
                   title="Дублировать"
                   @click="$emit('duplicate-block', i)"
                 ><Icon name="lucide:copy" class="h-3 w-3" /></button>
@@ -85,7 +85,7 @@
                   contenteditable="true"
                   :data-placeholder="headingPlaceholder(block.type)"
                   class="outline-none w-full
-                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 dark:empty:before:text-slate-700"
+                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-200 dark:empty:before:text-neutral-700"
                   :class="headingClass(block.type)"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
@@ -100,8 +100,8 @@
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
                   data-placeholder="Начните вводить текст..."
-                  class="outline-none w-full leading-7 text-slate-700 dark:text-slate-300 text-[15px]
-                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
+                  class="outline-none w-full leading-7 text-slate-700 dark:text-neutral-300 text-[15px]
+                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
                   @paste="$emit('block-paste', block, i, $event)"
@@ -116,8 +116,8 @@
                   contenteditable="true"
                   data-placeholder="Цитата..."
                   class="outline-none w-full border-l-[3px] border-blue-400 dark:border-blue-500
-                         pl-4 py-1 italic text-slate-500 dark:text-slate-400 text-lg leading-relaxed
-                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
+                         pl-4 py-1 italic text-slate-500 dark:text-neutral-400 text-lg leading-relaxed
+                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
                   @paste="$emit('block-paste', block, i, $event)"
@@ -131,8 +131,8 @@
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
                   data-placeholder="Элемент списка..."
-                  class="outline-none w-full list-disc list-inside text-slate-700 dark:text-slate-300 text-[15px] space-y-1 leading-7
-                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
+                  class="outline-none w-full list-disc list-inside text-slate-700 dark:text-neutral-300 text-[15px] space-y-1 leading-7
+                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
                   @paste="$emit('block-paste', block, i, $event)"
@@ -146,8 +146,8 @@
                   :ref="(el: any) => setBlockRef(block.id, el)"
                   contenteditable="true"
                   data-placeholder="Элемент списка..."
-                  class="outline-none w-full list-decimal list-inside text-slate-700 dark:text-slate-300 text-[15px] space-y-1 leading-7
-                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-slate-600"
+                  class="outline-none w-full list-decimal list-inside text-slate-700 dark:text-neutral-300 text-[15px] space-y-1 leading-7
+                         empty:before:content-[attr(data-placeholder)] empty:before:text-slate-300 dark:empty:before:text-neutral-600"
                   @input="block.content = ($event.target as HTMLElement).innerHTML"
                   @keydown="$emit('block-keydown', block, i, $event)"
                   @paste="$emit('block-paste', block, i, $event)"
@@ -158,11 +158,11 @@
                 <!-- DIVIDER -->
                 <div v-else-if="block.type === 'divider'" class="py-3">
                   <div class="flex items-center gap-3">
-                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
-                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                    <div class="flex-1 h-px bg-slate-200 dark:bg-slate-700" />
+                    <div class="flex-1 h-px bg-slate-200 dark:bg-[#303030]" />
+                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
+                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
+                    <div class="h-1 w-1 rounded-full bg-slate-300 dark:bg-[#3a3a3a]" />
+                    <div class="flex-1 h-px bg-slate-200 dark:bg-[#303030]" />
                   </div>
                 </div>
 
@@ -195,7 +195,7 @@
                         class="text-[10px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wide transition-all"
                         :class="block.attrs.calloutType === ct
                           ? calloutActiveBtnClass(ct)
-                          : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300'"
+                          : 'border-transparent text-slate-400 hover:text-slate-600 dark:text-neutral-500 dark:hover:text-neutral-300'"
                         @click.stop="block.attrs.calloutType = ct"
                       >{{ { info: 'Инфо', warning: 'Важно', success: 'Готово' }[ct] }}</button>
                     </div>
@@ -206,17 +206,17 @@
                 <div v-else-if="block.type === 'image'" class="py-1">
                   <div
                     v-if="!block.attrs.src"
-                    class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-10 text-center
+                    class="border-2 border-dashed border-slate-200 dark:border-white/15 rounded-xl p-10 text-center
                            hover:border-blue-300 dark:hover:border-blue-700 transition-colors group/img-drop"
                   >
-                    <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-800 p-3 mb-3">
-                      <Icon name="lucide:image-plus" class="h-7 w-7 text-slate-400 dark:text-slate-500" />
+                    <div class="inline-flex rounded-xl bg-slate-100 dark:bg-[#262626] p-3 mb-3">
+                      <Icon name="lucide:image-plus" class="h-7 w-7 text-slate-400 dark:text-neutral-500" />
                     </div>
-                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Добавьте изображение</p>
-                    <p class="text-xs text-slate-400 dark:text-slate-500 mb-4">Загрузите файл</p>
+                    <p class="text-sm font-medium text-slate-500 dark:text-neutral-400 mb-1">Добавьте изображение</p>
+                    <p class="text-xs text-slate-400 dark:text-neutral-500 mb-4">Загрузите файл</p>
                     <div class="mb-4">
                       <label
-                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                        class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200 dark:hover:bg-[#262626]"
                       >
                         <Icon name="lucide:upload" class="h-4 w-4" />
                         <span>Выбрать файл</span>
@@ -245,19 +245,19 @@
                       <input
                         :value="block.attrs.caption"
                         placeholder="Подпись к изображению..."
-                        class="w-full text-sm text-center text-slate-500 dark:text-slate-400 bg-transparent outline-none
-                               border-b border-transparent focus:border-slate-300 dark:focus:border-slate-600 py-0.5 transition-colors"
+                        class="w-full text-sm text-center text-slate-500 dark:text-neutral-400 bg-transparent outline-none
+                               border-b border-transparent focus:border-slate-300 dark:focus:border-white/20 py-0.5 transition-colors"
                         @input="block.attrs.caption = ($event.target as HTMLInputElement).value"
                       />
                       <div class="relative">
                         <input
                           :value="block.attrs.alt"
                           placeholder="Alt текст для SEO (обязательно)..."
-                          class="w-full text-xs text-center text-slate-400 dark:text-slate-500 bg-transparent outline-none
+                          class="w-full text-xs text-center text-slate-400 dark:text-neutral-500 bg-transparent outline-none
                                  border-b transition-colors py-0.5"
                           :class="block.attrs.alt
-                            ? 'border-transparent focus:border-slate-200 dark:focus:border-slate-700'
-                            : 'border-red-300 dark:border-red-700 focus:border-slate-200 dark:focus:border-slate-700'"
+                            ? 'border-transparent focus:border-slate-200 dark:focus:border-white/15'
+                            : 'border-red-300 dark:border-red-700 focus:border-slate-200 dark:focus:border-white/15'"
                           @input="block.attrs.alt = ($event.target as HTMLInputElement).value"
                         />
                         <div v-if="!block.attrs.alt" class="absolute -right-1 -top-1 text-red-500 text-lg font-bold" title="Alt required">
@@ -267,8 +267,8 @@
                     </div>
                     <button
                       class="absolute top-2.5 right-2.5 opacity-0 group-hover/img:opacity-100 transition-opacity
-                             bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm text-slate-600 dark:text-slate-300
-                             border border-slate-200 dark:border-slate-600 rounded-lg px-2.5 py-1 text-xs font-medium shadow-sm"
+                             bg-white/90 dark:bg-[#262626]/90 backdrop-blur-sm text-slate-600 dark:text-neutral-300
+                             border border-slate-200 dark:border-white/20 rounded-lg px-2.5 py-1 text-xs font-medium shadow-sm"
                       @click.stop="block.attrs.src = ''"
                     >
                       Изменить
@@ -278,8 +278,8 @@
 
                 <!-- RAW HTML -->
                 <div v-else-if="block.type === 'button'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
-                    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/15 dark:bg-[#1a1a1a]/60">
+                    <div class="mb-3 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-neutral-300">
                       <span class="font-semibold uppercase tracking-[0.08em]">Кнопка</span>
                     </div>
 
@@ -287,7 +287,7 @@
                       <input
                         :value="String(block.attrs.text || '')"
                         placeholder="Текст кнопки"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
                         @input="block.attrs.text = ($event.target as HTMLInputElement).value"
                       />
 
@@ -295,7 +295,7 @@
                         v-if="buttonKind(block) !== 'login'"
                         :value="String(block.attrs.href || '')"
                         placeholder="Ссылка: https://... или #yakor-sekcii"
-                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                        class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
                         @input="block.attrs.href = ($event.target as HTMLInputElement).value"
                       />
 
@@ -307,7 +307,7 @@
                           class="rounded-md border px-2.5 py-1.5 text-[11px] font-medium transition"
                           :class="buttonVariant(block) === variant.value
                             ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300'
-                            : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-slate-200'"
+                            : 'border-slate-200 bg-white text-slate-500 hover:text-slate-700 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-400 dark:hover:text-neutral-200'"
                           @click="setButtonVariant(block, variant.value)"
                         >
                           {{ variant.label }}
@@ -317,12 +317,12 @@
                       <button
                         v-if="buttonKind(block) !== 'login'"
                         type="button"
-                        class="inline-flex items-center gap-3 rounded-lg px-1 py-1 text-xs text-slate-600 transition dark:text-slate-300"
+                        class="inline-flex items-center gap-3 rounded-lg px-1 py-1 text-xs text-slate-600 transition dark:text-neutral-300"
                         @click="block.attrs.newTab = !buttonOpensInNewTab(block)"
                       >
                         <span
                           class="relative inline-flex h-5 w-9 items-center rounded-full transition"
-                          :class="buttonOpensInNewTab(block) ? 'bg-blue-500 dark:bg-blue-500' : 'bg-slate-300 dark:bg-slate-700'"
+                          :class="buttonOpensInNewTab(block) ? 'bg-blue-500 dark:bg-blue-500' : 'bg-slate-300 dark:bg-[#303030]'"
                         >
                           <span
                             class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition"
@@ -334,7 +334,7 @@
                     </div>
 
                     <div class="mt-3 flex items-center justify-between gap-3">
-                      <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                      <p class="text-[11px] text-slate-500 dark:text-neutral-400">
                         У заголовков можно скопировать якорь через иконку в тулбаре блока.
                       </p>
                       <a
@@ -348,19 +348,19 @@
                 </div>
 
                 <div v-else-if="block.type === 'faq'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-white/15 dark:bg-[#1a1a1a]/60">
                     <div class="mb-3 flex items-center justify-between gap-2">
-                      <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-slate-300">FAQ</h4>
+                      <h4 class="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600 dark:text-neutral-300">FAQ</h4>
                     </div>
 
                     <div class="space-y-3">
                       <div
                         v-for="(item, faqIndex) in getFaqItems(block)"
                         :key="`faq-${block.id}-${faqIndex}`"
-                        class="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900"
+                        class="rounded-lg border border-slate-200 bg-white p-3 dark:border-white/15 dark:bg-[#1a1a1a]"
                       >
                         <div class="mb-2 flex items-center justify-between gap-2">
-                          <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Пара {{ faqIndex + 1 }}</span>
+                          <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-neutral-400">Пара {{ faqIndex + 1 }}</span>
                           <button
                             type="button"
                             class="rounded-md border border-transparent px-2 py-1 text-[11px] text-slate-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:hover:border-red-800 dark:hover:bg-red-950/40 dark:hover:text-red-300"
@@ -373,7 +373,7 @@
                         <input
                           :value="String(item.q || '')"
                           placeholder="Вопрос"
-                          class="mb-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          class="mb-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
                           @input="updateFaqField(block, faqIndex, 'q', ($event.target as HTMLInputElement).value)"
                         />
                         <textarea
@@ -381,7 +381,7 @@
                           rows="3"
                           placeholder="Ответ"
                           aria-label="Ответ"
-                          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                          class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:ring-2 focus:ring-blue-500 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-200"
                           @input="updateFaqField(block, faqIndex, 'a', ($event.target as HTMLTextAreaElement).value)"
                         />
                       </div>
@@ -390,7 +390,7 @@
                     <div class="mt-4 flex justify-end">
                       <button
                         type="button"
-                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 transition hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:text-blue-300"
+                        class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[12px] font-medium text-slate-600 transition hover:text-blue-700 dark:border-white/15 dark:bg-[#1a1a1a] dark:text-neutral-300 dark:hover:text-blue-300"
                         @click="addFaqItem(block)"
                       >
                         + Добавить вопрос
@@ -400,16 +400,16 @@
                 </div>
 
                 <div v-else-if="block.type === 'html'" class="py-1">
-                  <div class="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
+                  <div class="rounded-xl border border-slate-200 dark:border-white/15 overflow-hidden">
+                    <div class="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-[#262626]/60 border-b border-slate-200 dark:border-white/15">
                       <Icon name="lucide:code-xml" class="h-4 w-4 text-slate-400" />
-                      <span class="text-xs font-semibold text-slate-600 dark:text-slate-300">HTML</span>
+                      <span class="text-xs font-semibold text-slate-600 dark:text-neutral-300">HTML</span>
                     </div>
                     <textarea
                       :value="block.content"
                       placeholder="&lt;div&gt;...&lt;/div&gt;"
                       aria-label="HTML"
-                      class="w-full px-4 py-3 font-mono text-xs text-slate-900 dark:text-white bg-white dark:bg-slate-900 outline-none resize-none
+                      class="w-full px-4 py-3 font-mono text-xs text-slate-900 dark:text-white bg-white dark:bg-[#1a1a1a] outline-none resize-none
                              focus:ring-2 focus:ring-blue-500"
                       rows="6"
                       @input="block.content = ($event.target as HTMLTextAreaElement).value"
@@ -425,11 +425,11 @@
 
           <!-- Empty state -->
           <div v-if="blocks.length === 0" class="py-16 text-center">
-            <div class="inline-flex rounded-2xl bg-slate-100 dark:bg-slate-800 p-5 mb-4">
-              <Icon name="lucide:layout-template" class="h-10 w-10 text-slate-300 dark:text-slate-600" />
+            <div class="inline-flex rounded-2xl bg-slate-100 dark:bg-[#262626] p-5 mb-4">
+              <Icon name="lucide:layout-template" class="h-10 w-10 text-slate-300 dark:text-neutral-600" />
             </div>
-            <p class="text-sm font-medium text-slate-400 dark:text-slate-500">Нажмите «+» чтобы добавить первый блок</p>
-            <p class="text-xs text-slate-300 dark:text-slate-600 mt-1">Параграфы, заголовки, изображения и многое другое</p>
+            <p class="text-sm font-medium text-slate-400 dark:text-neutral-500">Нажмите «+» чтобы добавить первый блок</p>
+            <p class="text-xs text-slate-300 dark:text-neutral-600 mt-1">Параграфы, заголовки, изображения и многое другое</p>
           </div>
         </div>
       </div>
@@ -694,7 +694,7 @@ function headingClass(type: string) {
     h2: 'text-3xl font-bold text-slate-900 dark:text-white',
     h3: 'text-2xl font-bold text-slate-900 dark:text-white',
     h4: 'text-xl font-semibold text-slate-900 dark:text-white',
-    h5: 'text-lg font-semibold text-slate-800 dark:text-slate-100',
+    h5: 'text-lg font-semibold text-slate-800 dark:text-neutral-100',
   }[type] ?? 'text-2xl font-bold text-slate-900 dark:text-white'
 }
 

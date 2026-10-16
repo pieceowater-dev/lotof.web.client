@@ -1,5 +1,5 @@
 <template>
-  <div class="at-scope ct-scope publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-slate-950">
+  <div class="at-scope ct-scope publication-builder flex flex-col h-screen overflow-hidden bg-slate-100 dark:bg-[#141414]">
     <PagesEditorHeader
       :page="article"
       :path="pathLabel"
@@ -703,7 +703,7 @@ function headingClass(type: string) {
     h2: 'text-3xl font-bold text-slate-900 dark:text-white',
     h3: 'text-2xl font-bold text-slate-900 dark:text-white',
     h4: 'text-xl font-semibold text-slate-900 dark:text-white',
-    h5: 'text-lg font-semibold text-slate-800 dark:text-slate-100',
+    h5: 'text-lg font-semibold text-slate-800 dark:text-neutral-100',
   }[type] ?? 'text-2xl font-bold text-slate-900 dark:text-white'
 }
 

@@ -5,10 +5,10 @@
     @click.self="$emit('cancel')"
     @keydown.esc="$emit('cancel')"
   >
-    <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl">
-      <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+    <div class="mx-auto my-8 w-full max-w-md rounded-2xl border border-slate-200 dark:border-white/15 bg-white dark:bg-[#1a1a1a] shadow-2xl">
+      <div class="p-5 border-b border-slate-100 dark:border-white/10">
         <h3 class="text-lg font-bold text-slate-900 dark:text-white">{{ title }}</h3>
-        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{{ message }}</p>
+        <p class="mt-1.5 text-sm text-slate-500 dark:text-neutral-400">{{ message }}</p>
       </div>
 
       <div class="p-4 flex items-center justify-end gap-2">
