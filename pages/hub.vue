@@ -812,6 +812,7 @@ watch(user, (u) => {
         <HubSkeleton v-if="!initialized || !isLoggedIn" />
       </ClientOnly>
 
+      <ClientOnly>
       <!-- HUB: compact daily launcher (iCloud-style app grid on top). -->
       <div v-if="initialized && isLoggedIn" class="relative -mt-20 overflow-hidden">
         <svg width="0" height="0" class="absolute" aria-hidden="true" focusable="false">
@@ -1196,6 +1197,7 @@ watch(user, (u) => {
           </div>
         </template>
       </Modal>
+      </ClientOnly>
     </div>
   </div>
 </template>

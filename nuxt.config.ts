@@ -328,7 +328,8 @@ export default defineNuxtConfig({
             "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
             "font-src 'self' data:; " +
             "media-src 'self' https: blob:; " +
-            "connect-src 'self' wss: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
+            // Local development talks straight to the gateways on localhost:<port>.
+            `connect-src 'self' wss: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com${process.env.NODE_ENV === 'production' ? '' : ' http://localhost:* ws://localhost:*'}; ` +
             "frame-ancestors 'none'; " +
             "base-uri 'self'; " +
             "form-action 'self'; " +

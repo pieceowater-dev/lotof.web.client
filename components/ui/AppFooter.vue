@@ -10,6 +10,8 @@ import { useI18n } from '@/composables/useI18n';
 // footer shows up under real app/work screens, and a stray click on
 // "Гид" or "Оферта" must never navigate the current tab away from what
 // the user was doing.
+defineOptions({ inheritAttrs: false });
+
 const props = withDefaults(defineProps<{ variant?: 'full' | 'minimal' }>(), {
   variant: 'full',
 });
@@ -56,7 +58,7 @@ const socials = [
 
 <template>
   <!-- Minimal: one quiet line for in-app / console screens. -->
-  <footer v-if="variant === 'minimal'" class="ft-min">
+  <footer v-if="variant === 'minimal'" v-bind="$attrs" class="ft-min">
     <div class="mx-auto flex max-w-7xl flex-col items-center gap-1.5 sm:flex-row sm:justify-between">
       <span class="text-xs text-gray-400 dark:text-gray-500">© {{ year }} lota — @pieceowater</span>
       <div class="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
@@ -75,7 +77,7 @@ const socials = [
   </footer>
 
   <!-- Full: marketing / content footer — a rounded sheet that sits flush with the bottom edge. -->
-  <footer v-else class="ft">
+  <footer v-else v-bind="$attrs" class="ft">
     <div class="mx-auto max-w-7xl px-5 pb-6 pt-9 sm:px-8 sm:pt-12">
       <div class="grid grid-cols-2 gap-x-6 gap-y-9 lg:grid-cols-[1.4fr_1fr_1fr_1.3fr]">
         <!-- Brand + socials -->

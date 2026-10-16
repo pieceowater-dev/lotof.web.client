@@ -21,7 +21,8 @@ const PAGES_APP: AppConfig = {
   icon: 'lucide:panels-top-left',
   titleKey: 'app.pages',
   descriptionKey: 'app.pagesDesc',
-  canAdd: false,
+  // The entry exists only where PAGES_ENABLED (dev/staging); there it is fully open, not a "coming soon" tile.
+  canAdd: true,
 };
 
 // Order here drives both the header nav buttons and the home dashboard tiles
