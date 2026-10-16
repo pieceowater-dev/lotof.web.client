@@ -18,7 +18,7 @@ import { compressImageForUpload } from '@/utils/imageCompression';
 import { siteAssetUrl } from '@/utils/pagesSite';
 import {
   THEME_PRESETS, BACKGROUNDS, SITE_ACCENTS, HEADING_COLORS, KNOB_GROUPS, FONT_STACKS, DEFAULT_PRESET,
-  presetById, resolveVars, isDark, contrast, type ThemeVars,
+  presetById, resolveVars, isDark, contrast, toneColors, type ThemeVars,
 } from '@/utils/pagesThemes';
 
 const props = defineProps<{ site: PagesSite; nsSlug: string; saving?: boolean }>();
@@ -120,6 +120,7 @@ function save() {
 }
 
 const dark = computed(() => isDark(vars.bg));
+const headerTone = computed(() => toneColors(vars, vars.headerTone));
 const mediaCards = [
   { key: 'logoUrl' as const, label: 'logo', hint: 'logoHint', wide: true },
   { key: 'faviconUrl' as const, label: 'favicon', hint: 'faviconHint', wide: false },
@@ -136,9 +137,36 @@ const mediaCards = [
         <div class="grid gap-4 sm:grid-cols-3">
           <div v-for="c in mediaCards" :key="c.key" class="flex flex-col gap-2">
             <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t(`pages.design.${c.label}`) }}</div>
-            <div class="flex h-20 items-center justify-center overflow-hidden rounded-2xl bg-gray-50 p-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
-              <img v-if="media[c.key]" :src="preview(media[c.key])" alt="" class="max-h-full" :class="c.wide ? 'max-w-full object-contain' : 'h-10 w-10 object-contain'">
-              <UIcon v-else name="lucide:image" class="h-6 w-6 text-gray-300" />
+            <!-- the picture as it will look in its place -->
+            <div class="overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+              <div v-if="c.key === 'logoUrl'" class="flex h-24 items-center justify-between gap-3 px-4" :style="{ background: headerTone.bg, color: headerTone.fg }">
+                <span class="flex min-w-0 items-center gap-2">
+                  <img v-if="media.logoUrl" :src="preview(media.logoUrl)" alt="" class="max-h-10 w-auto max-w-[5rem] object-contain">
+                  <UIcon v-else name="lucide:image" class="h-6 w-6 opacity-40" />
+                  <span class="truncate text-sm font-bold">{{ site.name }}</span>
+                </span>
+                <span class="flex flex-shrink-0 gap-2 opacity-60"><i class="h-1.5 w-8 rounded-full bg-current" /><i class="h-1.5 w-8 rounded-full bg-current" /><i class="hidden h-1.5 w-8 rounded-full bg-current sm:block" /></span>
+              </div>
+              <div v-else-if="c.key === 'faviconUrl'" class="flex h-24 flex-col justify-end bg-gray-200/70 px-3 pt-3 dark:bg-white/10">
+                <div class="flex items-center gap-2 rounded-t-xl bg-white px-3 py-2 shadow-sm dark:bg-[#2a2a2a]">
+                  <img v-if="media.faviconUrl" :src="preview(media.faviconUrl)" alt="" class="h-4 w-4 flex-shrink-0 object-contain">
+                  <UIcon v-else name="lucide:globe" class="h-4 w-4 flex-shrink-0 text-gray-400" />
+                  <span class="min-w-0 flex-1 truncate text-xs text-gray-700 dark:text-gray-200">{{ site.name }}</span>
+                  <UIcon name="lucide:x" class="h-3 w-3 flex-shrink-0 text-gray-400" />
+                </div>
+              </div>
+              <div v-else class="p-3">
+                <div class="overflow-hidden rounded-xl bg-white ring-1 ring-black/10 dark:bg-[#2a2a2a] dark:ring-white/10">
+                  <div class="flex w-full items-center justify-center bg-gray-100 dark:bg-white/5" style="aspect-ratio: 1.91 / 1">
+                    <img v-if="media.ogImageUrl" :src="preview(media.ogImageUrl)" alt="" class="h-full w-full object-cover">
+                    <UIcon v-else name="lucide:image" class="h-6 w-6 text-gray-300" />
+                  </div>
+                  <div class="px-3 py-2">
+                    <div class="truncate text-[10px] uppercase tracking-wide text-gray-400">{{ site.host }}</div>
+                    <div class="truncate text-xs font-semibold text-gray-800 dark:text-gray-100">{{ site.name }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
             <p class="text-xs text-gray-500 dark:text-gray-400">{{ t(`pages.design.${c.hint}`) }}</p>
             <div class="flex items-center gap-2">
