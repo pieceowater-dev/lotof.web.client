@@ -4748,7 +4748,8 @@
       "tools": "What the AI can do",
       "toolsText": "Everything the editor can do except the team and its permissions: build or rebuild sites from scratch, change the design and menu, write pages and categories from Markdown, upload images, redirects, the pre-publish check, publishing, rollback and domains (publishing, domains and deleting a site need the Publish permission).",
       "hideRevoked": "Hide revoked",
-      "showRevoked": "Show revoked ({n})"
+      "showRevoked": "Show revoked ({n})",
+      "teaser": "Let Claude or ChatGPT build and edit your sites for you: connect in a minute"
     },
     "tabs": {
       "categories": "Categories",
