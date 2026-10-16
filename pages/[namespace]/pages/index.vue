@@ -7,6 +7,7 @@ import EmptyState from '@/components/ui/EmptyState.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
+import { usePagesAccess } from '@/composables/usePagesAccess';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { pagesApi, type PagesSite } from '@/api/pages/ops';
 import { siteOrigin, slugifyText } from '@/utils/pagesSite';
@@ -20,13 +21,14 @@ const toast = useToast();
 const { getToken } = usePagesAuth();
 usePageTitle('pages');
 
+const { load: loadAccess, isOwner } = usePagesAccess(() => nsSlug.value);
 const booting = ref(true);
 const sites = ref<PagesSite[]>([]);
 
 async function load() {
   try {
     await getToken(nsSlug.value);
-    sites.value = await pagesApi.sites(nsSlug.value);
+    await Promise.all([loadAccess(), pagesApi.sites(nsSlug.value).then((r) => { sites.value = r; })]);
   } catch (e) {
     logError('[pages] load sites', e);
     toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
@@ -90,11 +92,16 @@ function statusMeta(s: PagesSite) {
   <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4 [&>*]:flex-shrink-0">
     <PageHeader :title="t('pages.title')" :subtitle="t('pages.subtitle')">
       <template #primary>
-        <button type="button" class="at-btn at-btn--primary" @click="openCreate">
+        <button v-if="isOwner" type="button" class="at-btn at-btn--primary" @click="openCreate">
           <Icon name="lucide:plus" class="h-4 w-4" />
           <span class="hidden min-[440px]:inline">{{ t('pages.sites.new') }}</span>
           <span class="sr-only min-[440px]:hidden">{{ t('pages.sites.new') }}</span>
         </button>
+      </template>
+      <template #actions>
+        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/team`" class="at-btn !px-2.5 no-underline" :title="t('pages.team.title')" :aria-label="t('pages.team.title')">
+          <Icon name="lucide:users" class="h-4 w-4" />
+        </NuxtLink>
       </template>
     </PageHeader>
 
@@ -107,7 +114,7 @@ function statusMeta(s: PagesSite) {
       :title="t('pages.sites.emptyTitle')"
       :description="t('pages.sites.emptyText')"
     >
-      <button type="button" class="at-btn at-btn--primary mt-2" @click="openCreate">
+      <button v-if="isOwner" type="button" class="at-btn at-btn--primary mt-2" @click="openCreate">
         <Icon name="lucide:plus" class="h-4 w-4" />{{ t('pages.sites.new') }}
       </button>
     </EmptyState>

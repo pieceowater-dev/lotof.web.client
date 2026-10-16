@@ -9,7 +9,8 @@ export const CookieKeys = {
   TASKS_TOKEN: 'tasks-token',
   GOODS_TOKEN: 'goods-token',
   PLANS_TOKEN: 'plans-token',
-  PAGES_TOKEN: 'pages-token',
+  // v2: tokens now carry the owner claim and roles; older cached tokens lack it
+  PAGES_TOKEN: 'pages-token-v2',
   // Namespace-less Patron identity (see hub.gtw's PatronAuthService) --
   // deliberately its own cookie, never mixed with TOKEN (the namespace-owning
   // hub User session), matching backend's dedicated patron_token cookie.

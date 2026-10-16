@@ -4821,6 +4821,28 @@
       "attributesHint": "Nesting defines the page address. Lower number sits higher in the site menu. The address changes and the old one redirects automatically.",
       "applyMove": "Apply",
       "moved": "Page moved"
+    },
+    "team": {
+      "title": "Team",
+      "subtitle": "Which workspace members can work with pages, and on which sites",
+      "role": {
+        "ADMIN": "Administrator",
+        "EDITOR": "Article editor"
+      },
+      "adminDesc": "Everything on the chosen sites: pages, design, menu, redirects, domains, access keys and publishing.",
+      "editorDesc": "Writes articles on the chosen sites: pages, categories and images. Cannot change the design, publish the site or touch domains.",
+      "empty": "There are no other members in the workspace yet. Invite them in the console and they will show up here.",
+      "noAccess": "No access",
+      "editTitle": "Access to pages",
+      "roleLabel": "Role",
+      "sitesLabel": "Sites",
+      "allSites": "All sites",
+      "chosenSites": "Chosen",
+      "allSitesHint": "Including sites created later.",
+      "saved": "Access saved",
+      "revoke": "Remove access",
+      "revokeTitle": "Remove access for \"{name}\"?",
+      "revokeText": "They lose access to every Pages site in this workspace right away."
     }
   },
   "plans": {

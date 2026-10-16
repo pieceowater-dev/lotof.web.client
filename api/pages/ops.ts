@@ -47,6 +47,9 @@ export interface AccessToken {
   id: string; name: string; prefix: string; scopes: AccessScope[]; siteId: string;
   expiresAtUnix: number; lastUsedAtUnix: number; createdAtUnix: number; revoked: boolean;
 }
+export type PagesRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'NONE';
+export interface PagesAccess { role: PagesRole; allSites: boolean; siteIds: string[] }
+export interface PagesStaffMember { id: string; userId: string; role: 'ADMIN' | 'EDITOR'; allSites: boolean; siteIds: string[]; createdAtUnix: number }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
@@ -145,6 +148,16 @@ export const pagesApi = {
     q<{ updateCategory: SiteCategory }>(ns, `mutation($id:ID!,$i:CategoryInput!){ updateCategory(id:$id,input:$i){ id siteId parentId slug title description sort pageCount } }`, { id, i: input }).then(r => r.updateCategory),
   deleteCategory: (ns: string, id: string) =>
     q<{ deleteCategory: { success: boolean } }>(ns, `mutation($id:ID!){ deleteCategory(id:$id){ success } }`, { id }).then(r => r.deleteCategory.success),
+
+  // team (owner only) and the caller's own access
+  myAccess: (ns: string) =>
+    q<{ myPagesAccess: PagesAccess }>(ns, `query{ myPagesAccess { role allSites siteIds } }`).then(r => r.myPagesAccess),
+  staff: (ns: string) =>
+    q<{ pagesStaff: PagesStaffMember[] }>(ns, `query{ pagesStaff { id userId role allSites siteIds createdAtUnix } }`).then(r => r.pagesStaff),
+  upsertStaff: (ns: string, input: { userId: string; role: 'ADMIN' | 'EDITOR'; allSites: boolean; siteIds: string[] }) =>
+    q<{ upsertPagesStaff: PagesStaffMember }>(ns, `mutation($u:String!,$r:PagesStaffRole!,$a:Boolean!,$s:[ID!]){ upsertPagesStaff(userId:$u,role:$r,allSites:$a,siteIds:$s){ id userId role allSites siteIds createdAtUnix } }`, { u: input.userId, r: input.role, a: input.allSites, s: input.siteIds }).then(r => r.upsertPagesStaff),
+  removeStaff: (ns: string, userId: string) =>
+    q<{ removePagesStaff: { success: boolean } }>(ns, `mutation($u:String!){ removePagesStaff(userId:$u){ success } }`, { u: userId }).then(r => r.removePagesStaff.success),
 
   // access tokens (MCP and other external clients)
   accessTokens: (ns: string) =>

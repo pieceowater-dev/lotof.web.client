@@ -16,6 +16,7 @@ import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { useConfirm } from '@/composables/useConfirm';
+import { usePagesAccess } from '@/composables/usePagesAccess';
 import {
   pagesApi, type PagesSite, type SitePage, type SiteVersion, type SiteRedirect, type PreflightResult, type SiteCategory,
 } from '@/api/pages/ops';
@@ -42,7 +43,8 @@ const preflight = ref<PreflightResult | null>(null);
 usePageTitle('pages', { subject: () => site.value?.name });
 
 type TabKey = 'pages' | 'categories' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
-const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
+const { load: loadAccess, canManage } = usePagesAccess(() => nsSlug.value);
+const ALL_TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
   { key: 'categories', label: t('pages.tabs.categories'), icon: 'lucide:folder' },
   { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
@@ -52,7 +54,10 @@ const TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'integrations', label: t('pages.tabs.integrations'), icon: 'lucide:sparkles' },
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
 ]);
-const activeTab = ref<TabKey>((TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
+// Editors work with articles only: no publishing, design, domains, redirects, keys or settings.
+const TABS = computed(() => (canManage.value ? ALL_TABS.value : ALL_TABS.value.filter(x => x.key === 'pages' || x.key === 'categories')));
+const activeTab = ref<TabKey>((ALL_TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
+watch(canManage, (v) => { if (!v && activeTab.value !== 'pages' && activeTab.value !== 'categories') activeTab.value = 'pages'; });
 watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { replace: true }));
 
 function fail(e: unknown, key = 'common.error') {
@@ -80,7 +85,7 @@ async function loadAll() {
     booting.value = false;
   }
 }
-onMounted(loadAll);
+onMounted(() => { loadAccess(); loadAll(); });
 
 async function reloadCategories() {
   try {
@@ -473,7 +478,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
     <template v-else-if="site">
       <PageHeader :title="site.name" :subtitle="site.host">
         <template #primary>
-          <button type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
+          <button v-if="canManage" type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
             <UIcon :name="publishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="publishing && 'animate-spin'" />
             <span class="hidden min-[440px]:inline">{{ t('pages.publish.action') }}</span>
             <span class="sr-only min-[440px]:hidden">{{ t('pages.publish.action') }}</span>
