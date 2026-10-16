@@ -8,6 +8,7 @@ import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesig
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
 import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import CategoriesPanel from '@/components/pages/CategoriesPanel.vue';
+import GlobalBlocksPanel from '@/components/pages/GlobalBlocksPanel.vue';
 import CategoryChips from '@/components/pages/CategoryChips.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
 import PageNav from '@/components/ui/PageNav.vue';
@@ -42,12 +43,13 @@ const preflight = ref<PreflightResult | null>(null);
 
 usePageTitle('pages', { subject: () => site.value?.name });
 
-type TabKey = 'pages' | 'categories' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
+type TabKey = 'pages' | 'categories' | 'blocks' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
 const { load: loadAccess, canManage } = usePagesAccess(() => nsSlug.value);
 const ALL_TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
   { key: 'categories', label: t('pages.tabs.categories'), icon: 'lucide:folder' },
   { key: 'publish', label: t('pages.tabs.publish'), icon: 'lucide:rocket' },
+  { key: 'blocks', label: t('pages.tabs.blocks'), icon: 'lucide:blocks' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
   { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
   { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
@@ -55,9 +57,9 @@ const ALL_TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => 
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
 ]);
 // Editors work with articles only: no publishing, design, domains, redirects, keys or settings.
-const TABS = computed(() => (canManage.value ? ALL_TABS.value : ALL_TABS.value.filter(x => x.key === 'pages' || x.key === 'categories')));
+const TABS = computed(() => (canManage.value ? ALL_TABS.value : ALL_TABS.value.filter(x => x.key === 'pages' || x.key === 'categories' || x.key === 'blocks')));
 const activeTab = ref<TabKey>((ALL_TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
-watch(canManage, (v) => { if (!v && activeTab.value !== 'pages' && activeTab.value !== 'categories') activeTab.value = 'pages'; });
+watch(canManage, (v) => { if (!v && !['pages', 'categories', 'blocks'].includes(activeTab.value)) activeTab.value = 'pages'; });
 watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { replace: true }));
 
 function fail(e: unknown, key = 'common.error') {
@@ -600,6 +602,8 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
       <!-- ═════════ CATEGORIES ═════════ -->
       <CategoriesPanel v-else-if="activeTab === 'categories'" :site="site" :ns-slug="nsSlug" :categories="categories" @changed="reloadCategories" @show-pages="showCategoryPages" />
+
+      <GlobalBlocksPanel v-else-if="activeTab === 'blocks'" :site="site" :ns-slug="nsSlug" />
 
       <!-- ═════════ DESIGN ═════════ -->
       <ThemeDesigner v-else-if="activeTab === 'design'" :site="site" :ns-slug="nsSlug" :saving="designSaving" @save="saveDesign" />

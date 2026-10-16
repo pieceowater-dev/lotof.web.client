@@ -20,6 +20,7 @@
         :site-host="props.siteHost"
         :path-label="pathLabel"
         :live-url="liveUrl"
+        :global-blocks="props.globalBlocks"
         :image-resolver="resolveImage"
         :active-block-id="activeBlockId"
         :drag-state="dragState"
@@ -158,6 +159,8 @@ interface Props {
   categories?: any[]
   categoryIds?: string[]
   onCategories?: (ids: string[]) => Promise<void>
+  /** Reusable blocks of the site, offered by the "shared block" block. */
+  globalBlocks?: { slug: string; name: string }[]
   /** True once the page has been published at least once, so "open live" can work. */
   published?: boolean
   backTo: string
@@ -181,6 +184,7 @@ const props = withDefaults(defineProps<Props>(), {
   categories: () => [],
   categoryIds: () => [],
   onCategories: undefined,
+  globalBlocks: () => [],
   published: false,
   imageResolver: undefined,
   onDelete: undefined,
@@ -226,6 +230,8 @@ function createBlock(type: string): Block {
       ? { text: 'Кнопка', href: '', newTab: true, kind: 'custom', variant: 'solid' }
       : type === 'faq'
         ? { items: [{ q: '', a: '' }] }
+      : type === 'global'
+        ? { ref: '' }
       : {}
 
   const content = type === 'ul'
@@ -747,7 +753,7 @@ function calloutActiveBtnClass(type: string) {
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────
-const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq']
+const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global']
 
 function stripHtml(value: string): string {
   return String(value || '')
@@ -767,6 +773,7 @@ function isMeaningfulBlock(block: Block): boolean {
   if (type === 'image') return String(block?.attrs?.src || '').trim().length > 0
   if (type === 'html') return stripHtml(String(block?.content || '')).length > 0
   if (type === 'button') return String(block?.attrs?.text || '').trim().length > 0 && String(block?.attrs?.href || '').trim().length > 0
+  if (type === 'global') return String(block?.attrs?.ref || '').trim().length > 0
   if (type === 'faq') {
     const items = Array.isArray(block?.attrs?.items) ? block.attrs.items : []
     return items.some((item: any) => String(item?.q || '').trim() || String(item?.a || '').trim())

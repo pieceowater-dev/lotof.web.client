@@ -304,6 +304,24 @@
                   </div>
                 </div>
 
+                <div v-else-if="block.type === 'global'" class="py-1">
+                  <div class="pe-tray">
+                    <div class="pe-tray-title"><Icon name="lucide:blocks" class="h-3.5 w-3.5" />{{ t('pages.editor.globalTitle') }}</div>
+                    <p v-if="!(globalBlocks || []).length" class="text-sm text-slate-500 dark:text-neutral-400">{{ t('pages.editor.globalNone') }}</p>
+                    <div v-else class="flex flex-wrap gap-1.5">
+                      <button
+                        v-for="g in globalBlocks"
+                        :key="g.slug"
+                        type="button"
+                        class="rounded-full px-3 py-1.5 text-sm font-medium ring-1 transition"
+                        :class="block.attrs.ref === g.slug ? 'bg-primary-50 text-primary-700 ring-primary-300 dark:bg-blue-500/15 dark:text-primary-300 dark:ring-primary-500/40' : 'bg-white text-gray-600 ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:text-gray-300 dark:ring-white/10'"
+                        @click="block.attrs.ref = g.slug"
+                      >{{ g.name }}</button>
+                    </div>
+                    <p class="mt-2 text-xs text-slate-500 dark:text-neutral-400">{{ t('pages.editor.globalHint') }}</p>
+                  </div>
+                </div>
+
                 <div v-else-if="block.type === 'faq'" class="py-1">
                   <div class="pe-tray">
                     <div class="pe-tray-title"><Icon name="lucide:messages-square" class="h-3.5 w-3.5" />FAQ</div>
@@ -409,6 +427,7 @@ interface Props {
   activeBlockId: string | null
   dragState: any
   selectedBlockRange?: { start: number; end: number } | null
+  globalBlocks?: { slug: string; name: string }[]
 }
 
 const props = defineProps<Props>()

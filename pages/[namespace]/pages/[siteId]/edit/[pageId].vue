@@ -6,7 +6,7 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
 import { usePageTitle } from '@/composables/usePageTitle';
-import { pagesApi, type PagesSite, type SitePage, type SiteCategory } from '@/api/pages/ops';
+import { pagesApi, type PagesSite, type SitePage, type SiteCategory, type GlobalBlock } from '@/api/pages/ops';
 import { pagesUploadMedia } from '@/api/pages/media';
 import { pagesRequestWithRefresh } from '@/api/pages/pagesRequestWithRefresh';
 import { siteAssetUrl, siteOrigin, toSiteRelative } from '@/utils/pagesSite';
@@ -26,6 +26,7 @@ const site = ref<PagesSite | null>(null);
 const page = ref<SitePage | null>(null);
 const allPages = ref<SitePage[]>([]);
 const categories = ref<SiteCategory[]>([]);
+const globalBlocks = ref<GlobalBlock[]>([]);
 const editorKey = ref(0);
 usePageTitle('pages', { subject: () => page.value?.title });
 
@@ -34,9 +35,9 @@ const backTo = computed(() => `/${nsSlug.value}/pages/${siteId.value}`);
 async function load() {
   try {
     await getToken(nsSlug.value);
-    const [s, p, all, cats] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value)]);
+    const [s, p, all, cats, gbs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value), pagesApi.globalBlocks(nsSlug.value, siteId.value).catch(() => [] as GlobalBlock[])]);
     if (!s || !p || p.siteId !== s.id) { loadError.value = t('pages.editor.notFound'); return; }
-    site.value = s; page.value = p; allPages.value = all; categories.value = cats;
+    site.value = s; page.value = p; allPages.value = all; categories.value = cats; globalBlocks.value = gbs;
   } catch (e) {
     logError('[pages/edit] load', e);
     loadError.value = getErrorMessage(e, t) || t('common.errorRetry');
@@ -167,6 +168,7 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :sort="page?.sort || 0"
     :on-move="onMove"
     :categories="categories"
+    :global-blocks="globalBlocks"
     :category-ids="page?.categoryIds || []"
     :on-categories="onCategories"
     :published="!!site?.publishedVersion"

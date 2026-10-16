@@ -50,6 +50,7 @@ export interface AccessToken {
 export type PagesRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'NONE';
 export interface PagesAccess { role: PagesRole; allSites: boolean; siteIds: string[] }
 export interface PagesStaffMember { id: string; userId: string; role: 'ADMIN' | 'EDITOR'; allSites: boolean; siteIds: string[]; createdAtUnix: number }
+export interface GlobalBlock { id: string; siteId: string; slug: string; name: string; markdown: string; usedBy: number; updatedAtUnix: number }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
@@ -158,6 +159,16 @@ export const pagesApi = {
     q<{ upsertPagesStaff: PagesStaffMember }>(ns, `mutation($u:String!,$r:PagesStaffRole!,$a:Boolean!,$s:[ID!]){ upsertPagesStaff(userId:$u,role:$r,allSites:$a,siteIds:$s){ id userId role allSites siteIds createdAtUnix } }`, { u: input.userId, r: input.role, a: input.allSites, s: input.siteIds }).then(r => r.upsertPagesStaff),
   removeStaff: (ns: string, userId: string) =>
     q<{ removePagesStaff: { success: boolean } }>(ns, `mutation($u:String!){ removePagesStaff(userId:$u){ success } }`, { u: userId }).then(r => r.removePagesStaff.success),
+
+  // global (reusable) blocks
+  globalBlocks: (ns: string, siteId: string) =>
+    q<{ globalBlocks: GlobalBlock[] }>(ns, `query($s:ID!){ globalBlocks(siteId:$s){ id siteId slug name markdown usedBy updatedAtUnix } }`, { s: siteId }).then(r => r.globalBlocks),
+  createGlobalBlock: (ns: string, siteId: string, input: { name: string; slug?: string; markdown: string }) =>
+    q<{ createGlobalBlock: GlobalBlock }>(ns, `mutation($s:ID!,$i:GlobalBlockInput!){ createGlobalBlock(siteId:$s,input:$i){ id siteId slug name markdown usedBy updatedAtUnix } }`, { s: siteId, i: input }).then(r => r.createGlobalBlock),
+  updateGlobalBlock: (ns: string, id: string, input: { name: string; slug?: string; markdown: string }) =>
+    q<{ updateGlobalBlock: GlobalBlock }>(ns, `mutation($id:ID!,$i:GlobalBlockInput!){ updateGlobalBlock(id:$id,input:$i){ id siteId slug name markdown usedBy updatedAtUnix } }`, { id, i: input }).then(r => r.updateGlobalBlock),
+  deleteGlobalBlock: (ns: string, id: string) =>
+    q<{ deleteGlobalBlock: { success: boolean } }>(ns, `mutation($id:ID!){ deleteGlobalBlock(id:$id){ success } }`, { id }).then(r => r.deleteGlobalBlock.success),
 
   // access tokens (MCP and other external clients)
   accessTokens: (ns: string) =>

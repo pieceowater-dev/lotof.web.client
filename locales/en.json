@@ -2285,7 +2285,8 @@
         "spoilerOpen": "Spoiler: open section",
         "spoilerClose": "Spoiler: close section",
         "divider": "Divider",
-        "html": "HTML code"
+        "html": "HTML code",
+        "global": "Shared block"
       }
     },
     "interval": {
@@ -4665,7 +4666,8 @@
       "pages": "Pages",
       "publish": "Publishing",
       "redirects": "Redirects",
-      "settings": "Settings"
+      "settings": "Settings",
+      "blocks": "Shared blocks"
     },
     "status": {
       "ready": "To publish",
@@ -4823,7 +4825,10 @@
       "categoriesSaved": "Categories saved",
       "attributesHint": "Nesting defines the page address. Lower number sits higher in the site menu. The address changes and the old one redirects automatically.",
       "applyMove": "Apply",
-      "moved": "Page moved"
+      "moved": "Page moved",
+      "globalTitle": "Shared block",
+      "globalNone": "No shared blocks yet. Create them on the site's \"Shared blocks\" tab.",
+      "globalHint": "Shows the same block on many pages. Edit it on the \"Shared blocks\" tab."
     },
     "team": {
       "title": "Team",
@@ -4846,6 +4851,26 @@
       "revoke": "Remove access",
       "revokeTitle": "Remove access for \"{name}\"?",
       "revokeText": "They lose access to every Pages site in this workspace right away."
+    },
+    "blocks": {
+      "intro": "A block written once and shown on many pages: contacts, a call to action, an offer. Change it here and it updates everywhere on the next publish.",
+      "new": "New shared block",
+      "edit": "Edit shared block",
+      "empty": "No shared blocks yet.",
+      "name": "Name",
+      "slug": "Link address",
+      "slugHint": "Latin letters, digits and hyphens. Empty = from the name. Cannot be changed while the block is used.",
+      "markdown": "Content",
+      "markdownHint": "Markdown text: headings, lists, links, **bold**. Callout: :::callout info … :::, button: :::button https://… Label :::.",
+      "usedBy": "used on pages: {n}",
+      "unused": "not used",
+      "saved": "Saved",
+      "deleteTitle": "Delete shared block \"{name}\"?",
+      "deleteText": "The block disappears. Only possible when no page uses it.",
+      "inUse": "The block is used on pages. Remove it from them first, then delete.",
+      "needName": "Enter a name",
+      "slugTaken": "A shared block with this address already exists",
+      "howTo": "To add it to a page: in the editor press \"+\" → \"Shared block\" and pick it."
     }
   },
   "plans": {
