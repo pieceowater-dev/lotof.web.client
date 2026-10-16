@@ -28,6 +28,7 @@ const allPages = ref<SitePage[]>([]);
 const categories = ref<SiteCategory[]>([]);
 const globalBlocks = ref<GlobalBlock[]>([]);
 const translations = ref<SitePage[]>([]);
+const tagSuggestions = ref<string[]>([]);
 const editorKey = ref(0);
 usePageTitle('pages', { subject: () => page.value?.title });
 
@@ -39,6 +40,7 @@ async function load() {
     const [s, p, all, cats, gbs, trs] = await Promise.all([pagesApi.site(nsSlug.value, siteId.value), pagesApi.page(nsSlug.value, pageId.value), pagesApi.pages(nsSlug.value, siteId.value), pagesApi.categories(nsSlug.value, siteId.value), pagesApi.globalBlocks(nsSlug.value, siteId.value).catch(() => [] as GlobalBlock[]), pagesApi.pageTranslations(nsSlug.value, pageId.value).catch(() => [] as SitePage[])]);
     if (!s || !p || p.siteId !== s.id) { loadError.value = t('pages.editor.notFound'); return; }
     site.value = s; page.value = p; allPages.value = all; categories.value = cats; globalBlocks.value = gbs; translations.value = trs;
+    pagesApi.pageTags(nsSlug.value, siteId.value).then((tags) => { tagSuggestions.value = tags.map(x => x.name); }).catch(() => {});
   } catch (e) {
     logError('[pages/edit] load', e);
     loadError.value = getErrorMessage(e, t) || t('common.errorRetry');
@@ -109,6 +111,8 @@ const initialPage = computed<Record<string, any>>(() => {
     title: p.title, slug: p.slug, status: (p.status === 'PAGE_READY' ? 'ready' : 'draft') as 'ready' | 'draft', lang: p.lang || '',
     metaTitle: p.seo.title, metaDescription: p.seo.description, canonicalPath: p.seo.canonicalPath,
     ogImage: p.seo.ogImageUrl, noindex: p.seo.noindex,
+    kind: p.meta?.kind || '', tags: p.meta?.tags || [], excerpt: p.meta?.excerpt || '', featuredImage: p.meta?.featuredImage || '',
+    author: p.meta?.author || '', pinned: !!p.meta?.pinned, layout: p.meta?.layout || '', publishAt: p.meta?.publishAtUnix || 0,
   };
 });
 
@@ -131,6 +135,10 @@ async function onSave(payload: { page: any; blocks: { id: string; type: string; 
     seo: {
       title: p.metaTitle, description: p.metaDescription, canonicalPath: p.canonicalPath,
       ogImageUrl: toSiteRelative(host.value, p.ogImage), noindex: p.noindex,
+    },
+    meta: {
+      kind: p.kind || '', tags: p.tags || [], excerpt: p.excerpt || '', featuredImage: p.featuredImage || '', author: p.author || '',
+      pinned: !!p.pinned, layout: p.layout || '', publishAtUnix: p.status === 'ready' ? (p.publishAt || 0) : 0,
     },
     blocks: payload.blocks.map((b) => ({
       id: b.id, type: b.type, content: b.content,
@@ -188,6 +196,8 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :on-translate="onTranslate"
     :on-open-page="onOpenPage"
     :category-ids="page?.categoryIds || []"
+    :tag-suggestions="tagSuggestions"
+    :site-name="site?.name || ''"
     :on-categories="onCategories"
     :published="!!site?.publishedVersion"
     :back-to="backTo"

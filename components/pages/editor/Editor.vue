@@ -70,6 +70,10 @@
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
         @upload-og-image="uploadOgImage"
+        @upload-featured="uploadFeaturedImage"
+        :tag-suggestions="props.tagSuggestions"
+        :site-name="props.siteName"
+        :site-host="props.siteHost"
       />
 
       <PagesEditorMobileSidebar
@@ -97,6 +101,10 @@
         :resolve-image="resolveImage"
         @update:page="onArticlePatch"
         @upload-og-image="uploadOgImage"
+        @upload-featured="uploadFeaturedImage"
+        :tag-suggestions="props.tagSuggestions"
+        :site-name="props.siteName"
+        :site-host="props.siteHost"
         @close="isMobileSidebarOpen = false"
       />
     </div>
@@ -153,6 +161,15 @@ interface PageState {
   canonicalPath: string
   ogImage: string
   noindex: boolean
+  // blog and layout (see the Post tab)
+  kind: string
+  tags: string[]
+  excerpt: string
+  featuredImage: string
+  author: string
+  pinned: boolean
+  layout: string
+  publishAt: number
 }
 
 interface Props {
@@ -175,6 +192,9 @@ interface Props {
   /** Categories of the site and the ones this page is in; applied on their own (not part of the content save). */
   categories?: any[]
   categoryIds?: string[]
+  /** Tags already used on the site, offered as quick picks. */
+  tagSuggestions?: string[]
+  siteName?: string
   onCategories?: (ids: string[]) => Promise<void>
   /** Reusable blocks of the site, offered by the "shared block" block. */
   globalBlocks?: { slug: string; name: string }[]
@@ -207,6 +227,8 @@ const props = withDefaults(defineProps<Props>(), {
   onMove: undefined,
   categories: () => [],
   categoryIds: () => [],
+  tagSuggestions: () => [],
+  siteName: '',
   onCategories: undefined,
   globalBlocks: () => [],
   translations: () => [],
@@ -230,6 +252,14 @@ const article = reactive<PageState>({
   canonicalPath: props.initialPage.canonicalPath || '',
   ogImage: props.initialPage.ogImage || '',
   noindex: !!props.initialPage.noindex,
+  kind: props.initialPage.kind || '',
+  tags: [...(props.initialPage.tags || [])],
+  excerpt: props.initialPage.excerpt || '',
+  featuredImage: props.initialPage.featuredImage || '',
+  author: props.initialPage.author || '',
+  pinned: !!props.initialPage.pinned,
+  layout: props.initialPage.layout || '',
+  publishAt: Number(props.initialPage.publishAt) || 0,
 })
 
 const pathLabel = computed(() => {
@@ -718,6 +748,13 @@ async function uploadOgImage(file: File) {
   const url = await uploadImageFile(file)
   if (!url) return
   article.ogImage = url
+  isDirty.value = true
+}
+
+async function uploadFeaturedImage(file: File) {
+  const url = await uploadImageFile(file)
+  if (!url) return
+  article.featuredImage = url
   isDirty.value = true
 }
 

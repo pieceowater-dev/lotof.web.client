@@ -5137,6 +5137,33 @@
         "zoom_far": "District",
         "zoom_normal": "Street",
         "zoom_near": "Building"
+      },
+      "tabPost": "Post",
+      "snippet": "Google result preview",
+      "snippetHint": "Roughly how the page looks in search results.",
+      "snippetAuto": "No description yet: the search engine will take the start of the page text.",
+      "post": {
+        "kind": "Page type",
+        "kindPage": "Page",
+        "kindPost": "Post",
+        "kindNews": "News",
+        "kindHint": "Posts and news go to the blog feed, archives and RSS and get a date, author and related posts. News also goes to Google News.",
+        "schedule": "Publish at",
+        "scheduleHint": "Not set: the page goes out with the next publish of the site.",
+        "scheduleOn": "The whole site is published at this time, together with everything else that is ready.",
+        "scheduleNeedsReady": "Only a page set to “Ready” can be scheduled.",
+        "layout": "Page layout",
+        "layoutHint": "No header and footer suits landing pages.",
+        "tags": "Tags",
+        "tagPlaceholder": "New tag, then Enter",
+        "tagsHint": "Every tag gets its own page listing its posts.",
+        "excerpt": "Short description",
+        "excerptPlaceholder": "A couple of sentences for the feed and search",
+        "featured": "Post picture",
+        "author": "Author",
+        "authorPlaceholder": "Who signs the post",
+        "pinned": "Pin",
+        "pinnedHint": "Stays first in the feed."
       }
     },
     "team": {

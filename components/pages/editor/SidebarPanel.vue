@@ -106,8 +106,97 @@
         </section>
       </template>
 
+      <!-- POST: blog meta, schedule, layout -->
+      <template v-else-if="tab === 'post'">
+        <section class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.post.kind') }}</label>
+          <div class="at-seg !flex w-full">
+            <button v-for="k in kindOptions" :key="k.value" type="button" class="at-seg__btn flex-1 justify-center !px-2 !py-1.5 !text-xs" :class="(page.kind || '') === k.value ? 'at-seg__btn--on' : ''" @click="$emit('update:page', { kind: k.value })">{{ k.label }}</button>
+          </div>
+          <p class="pe-help">{{ t('pages.editor.post.kindHint') }}</p>
+        </section>
+
+        <section class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.post.schedule') }}</label>
+          <template v-if="page.status === 'ready'">
+            <div class="flex items-center gap-2">
+              <input type="datetime-local" class="pe-field min-w-0 flex-1" :value="publishAtLocal" :min="nowLocal" @change="onPublishAt(($event.target as HTMLInputElement).value)" />
+              <button v-if="page.publishAt" type="button" class="pe-pill flex-shrink-0" @click="$emit('update:page', { publishAt: 0 })">{{ t('pages.editor.remove') }}</button>
+            </div>
+            <p class="pe-help">{{ page.publishAt ? t('pages.editor.post.scheduleOn') : t('pages.editor.post.scheduleHint') }}</p>
+          </template>
+          <p v-else class="pe-help">{{ t('pages.editor.post.scheduleNeedsReady') }}</p>
+        </section>
+
+        <section class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.post.layout') }}</label>
+          <div class="flex flex-wrap gap-1.5">
+            <button v-for="l in layoutOptions" :key="l.value" type="button" class="pe-pill" :class="(page.layout || '') === l.value ? 'pe-pill--on' : ''" @click="$emit('update:page', { layout: l.value })">{{ l.label }}</button>
+          </div>
+          <p class="pe-help">{{ t('pages.editor.post.layoutHint') }}</p>
+        </section>
+
+        <template v-if="page.kind === 'post' || page.kind === 'news'">
+          <section class="pe-group">
+            <label class="pe-label">{{ t('pages.editor.post.tags') }}</label>
+            <div v-if="page.tags.length" class="flex flex-wrap gap-1.5">
+              <button v-for="tg in page.tags" :key="tg" type="button" class="pe-pill pe-pill--on" :title="t('pages.editor.remove')" @click="removeTag(tg)">{{ tg }}<Icon name="lucide:x" class="h-3 w-3" /></button>
+            </div>
+            <input v-model="tagDraft" type="text" class="pe-field" maxlength="40" :placeholder="t('pages.editor.post.tagPlaceholder')" @keydown.enter.prevent="addTag(tagDraft)" @keydown="onTagKey" @blur="addTag(tagDraft)" />
+            <div v-if="tagPicks.length" class="flex flex-wrap gap-1.5">
+              <button v-for="tg in tagPicks" :key="tg" type="button" class="pe-pill" @click="addTag(tg)">+ {{ tg }}</button>
+            </div>
+            <p class="pe-help">{{ t('pages.editor.post.tagsHint') }}</p>
+          </section>
+
+          <section class="pe-group">
+            <div class="flex items-center justify-between">
+              <label class="pe-label">{{ t('pages.editor.post.excerpt') }}</label>
+              <span class="text-[11px] font-semibold text-slate-400">{{ page.excerpt.length }}/300</span>
+            </div>
+            <textarea :value="page.excerpt" rows="3" maxlength="300" class="pe-field !resize-none leading-relaxed" :placeholder="t('pages.editor.post.excerptPlaceholder')" @input="$emit('update:page', { excerpt: ($event.target as HTMLTextAreaElement).value })" />
+          </section>
+
+          <section class="pe-group">
+            <label class="pe-label">{{ t('pages.editor.post.featured') }}</label>
+            <div v-if="page.featuredImage" class="group relative overflow-hidden rounded-3xl">
+              <img :src="resolveImage(page.featuredImage)" alt="" class="h-32 w-full object-cover" />
+              <button type="button" class="pe-pill absolute right-2 top-2 !bg-white/90 opacity-0 backdrop-blur-sm transition-opacity group-hover:opacity-100 dark:!bg-[#262626]/90" @click="$emit('update:page', { featuredImage: '' })">{{ t('pages.editor.remove') }}</button>
+            </div>
+            <label class="pe-pill cursor-pointer self-start !px-3.5 !py-2 !text-sm">
+              <Icon name="lucide:upload" class="h-4 w-4" />
+              <span>{{ page.featuredImage ? t('pages.editor.replaceImage') : t('pages.editor.uploadImage') }}</span>
+              <input type="file" accept="image/*" class="hidden" @change="onFeaturedFile" />
+            </label>
+          </section>
+
+          <section class="pe-group">
+            <label class="pe-label">{{ t('pages.editor.post.author') }}</label>
+            <input :value="page.author" type="text" class="pe-field" maxlength="80" :placeholder="t('pages.editor.post.authorPlaceholder')" @input="$emit('update:page', { author: ($event.target as HTMLInputElement).value })" />
+          </section>
+
+          <section class="pe-row !items-start">
+            <div class="min-w-0">
+              <div class="text-sm font-bold text-slate-800 dark:text-neutral-100">{{ t('pages.editor.post.pinned') }}</div>
+              <p class="mt-0.5 text-xs leading-relaxed text-slate-400 dark:text-neutral-500">{{ t('pages.editor.post.pinnedHint') }}</p>
+            </div>
+            <UToggle :model-value="page.pinned" @update:model-value="$emit('update:page', { pinned: $event })" />
+          </section>
+        </template>
+      </template>
+
       <!-- SEO -->
       <template v-else>
+        <section class="pe-group">
+          <label class="pe-label">{{ t('pages.editor.snippet') }}</label>
+          <div class="rounded-3xl bg-white p-3.5 shadow-[inset_0_0_0_1px_rgba(15,23,42,0.08)] dark:bg-[#1f1f1f] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.09)]">
+            <div class="truncate text-[11px] text-slate-500 dark:text-neutral-400">{{ snippetUrl }}</div>
+            <div class="mt-0.5 line-clamp-2 text-[15px] font-medium leading-snug text-blue-700 dark:text-blue-300">{{ snippetTitle }}</div>
+            <div class="mt-1 line-clamp-3 text-xs leading-relaxed text-slate-600 dark:text-neutral-300">{{ snippetDesc }}</div>
+          </div>
+          <p class="pe-help">{{ t('pages.editor.snippetHint') }}</p>
+        </section>
+
         <section class="pe-group">
           <div class="flex items-center justify-between">
             <label class="pe-label">{{ t('pages.editor.metaTitle') }}</label>
@@ -193,6 +282,7 @@ import { slugifyText } from '@/utils/pagesSite'
 interface PageState {
   title: string; slug: string; status: string; lang: string
   metaTitle: string; metaDescription: string; canonicalPath: string; ogImage: string; noindex: boolean
+  kind: string; tags: string[]; excerpt: string; featuredImage: string; author: string; pinned: boolean; layout: string; publishAt: number
 }
 
 const props = defineProps<{
@@ -213,11 +303,15 @@ const props = defineProps<{
   siteLangs?: string[]
   canTranslate?: boolean
   resolveImage: (src: string) => string
+  tagSuggestions?: string[]
+  siteName?: string
+  siteHost?: string
 }>()
 
 const emit = defineEmits<{
   'update:page': [Partial<PageState>]
   'upload-og-image': [File]
+  'upload-featured': [File]
   move: [string, number]
   categories: [string[]]
   translate: [string]
@@ -262,9 +356,10 @@ function translateTo(lang: string) {
   emit('translate', lang)
   setTimeout(() => { translating.value = '' }, 1500)
 }
-const tab = ref<'page' | 'seo'>('page')
+const tab = ref<'page' | 'post' | 'seo'>('page')
 const tabs = computed(() => [
   { key: 'page' as const, label: t('pages.editor.tabPage') },
+  { key: 'post' as const, label: t('pages.editor.tabPost') },
   { key: 'seo' as const, label: t('pages.editor.tabSeo') },
 ])
 const statusOptions = computed(() => [
@@ -293,6 +388,54 @@ function lenClass(len: number, min: number, max: number) {
 function onSlug(value: string) {
   emit('update:page', { slug: slugifyText(value, 100) })
 }
+
+// ── post tab ──
+const kindOptions = computed(() => [
+  { value: '', label: t('pages.editor.post.kindPage') },
+  { value: 'post', label: t('pages.editor.post.kindPost') },
+  { value: 'news', label: t('pages.editor.post.kindNews') },
+])
+const layoutOptions = computed(() => ['', 'wide', 'narrow', 'sidebar', 'bare'].map(v => ({ value: v, label: t(`pages.blog.layout.${v || 'default'}`) })))
+const tagDraft = ref('')
+function addTag(raw: string) {
+  const tag = raw.replace(/[<>"/\\,]/g, ' ').trim().replace(/\s+/g, ' ').slice(0, 40)
+  tagDraft.value = ''
+  if (!tag || props.page.tags.length >= 20 || props.page.tags.some(x => x.toLowerCase() === tag.toLowerCase())) return
+  emit('update:page', { tags: [...props.page.tags, tag] })
+}
+function onTagKey(e: KeyboardEvent) {
+  if (e.key === ',') { e.preventDefault(); addTag(tagDraft.value) }
+}
+function removeTag(tag: string) { emit('update:page', { tags: props.page.tags.filter(x => x !== tag) }) }
+const tagPicks = computed(() => (props.tagSuggestions || []).filter(x => !props.page.tags.some(y => y.toLowerCase() === x.toLowerCase())).slice(0, 10))
+const pad = (n: number) => String(n).padStart(2, '0')
+const toLocal = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+const publishAtLocal = computed(() => (props.page.publishAt ? toLocal(new Date(props.page.publishAt * 1000)) : ''))
+const nowLocal = computed(() => toLocal(new Date()))
+function onPublishAt(v: string) {
+  const ms = v ? new Date(v).getTime() : 0
+  emit('update:page', { publishAt: ms > Date.now() ? Math.floor(ms / 1000) : 0 })
+}
+function onFeaturedFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (file) emit('upload-featured', file)
+  input.value = ''
+}
+
+// ── how the page looks in a Google result ──
+const snippetUrl = computed(() => {
+  const host = props.siteHost || 'site.example'
+  const path = props.isHome ? '' : `${props.parentPath || ''}/${props.page.slug || ''}`
+  return `${host}${path ? ' › ' + path.replace(/^\//, '').split('/').join(' › ') : ''}`
+})
+const snippetTitle = computed(() => {
+  const own = (props.page.metaTitle || '').trim()
+  if (own) return own
+  const base = (props.page.title || '').trim() || t('pages.editor.metaTitlePlaceholder')
+  return props.isHome || !props.siteName ? base : `${base} — ${props.siteName}`
+})
+const snippetDesc = computed(() => (props.page.metaDescription || '').trim() || (props.page.excerpt || '').trim() || t('pages.editor.snippetAuto'))
 
 function onOgFile(event: Event) {
   const input = event.target as HTMLInputElement
