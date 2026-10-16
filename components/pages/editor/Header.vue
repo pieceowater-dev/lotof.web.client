@@ -11,10 +11,10 @@
     </div>
 
     <div class="ml-auto flex flex-shrink-0 items-center gap-1.5">
-      <span class="pe-chip" :class="page.status === 'ready' ? 'pe-chip--ready' : 'pe-chip--draft'">
+      <span v-if="!simple" class="pe-chip" :class="page.status === 'ready' ? 'pe-chip--ready' : 'pe-chip--draft'">
         {{ page.status === 'ready' ? t('pages.status.ready') : t('pages.status.draft') }}
       </span>
-      <a v-if="liveUrl" :href="liveUrl" target="_blank" rel="noopener noreferrer" class="at-btn hidden no-underline sm:inline-flex">
+      <a v-if="liveUrl && !simple" :href="liveUrl" target="_blank" rel="noopener noreferrer" class="at-btn hidden no-underline sm:inline-flex">
         <Icon name="lucide:external-link" class="h-3.5 w-3.5" />
         <span class="hidden md:inline">{{ t('pages.editor.openLive') }}</span>
       </a>
@@ -47,6 +47,7 @@ const props = defineProps<{
   backTo: string
   liveUrl?: string
   path: string
+  simple?: boolean
 }>()
 
 defineEmits<{ save: []; delete: []; 'toggle-sidebar': [] }>()

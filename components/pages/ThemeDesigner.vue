@@ -172,7 +172,7 @@ const mediaCards = [
           <div class="grid gap-4 sm:grid-cols-2">
             <UFormGroup :label="t('pages.design.float.position')">
               <div class="at-seg !min-w-0 self-start">
-                <button v-for="p in ['right', 'left']" :key="p" type="button" class="at-seg__btn" :class="float.position === p && 'at-seg__btn--on'" @click="float.position = p">{{ t(`pages.design.float.pos.${p}`) }}</button>
+                <button v-for="p in ['left', 'right']" :key="p" type="button" class="at-seg__btn" :class="float.position === p && 'at-seg__btn--on'" @click="float.position = p">{{ t(`pages.design.float.pos.${p}`) }}</button>
               </div>
             </UFormGroup>
             <UFormGroup :label="t('pages.design.float.style')">

@@ -457,6 +457,7 @@ const APP_LABELS: Record<string, string> = {
   'pieceowater.issues': 'Issues',
   'pieceowater.goods': 'Goods',
   'pieceowater.plans': 'Plans',
+  'pieceowater.pages': 'Pages',
 };
 function appLabel(bundle: string): string {
   return APP_LABELS[bundle] || bundle;

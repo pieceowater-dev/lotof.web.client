@@ -5,6 +5,8 @@ import { atModalUi, atCardUi } from '@/utils/atraceUi'
 
 const props = defineProps<{
   open: boolean
+  /** A shared block cannot contain another shared block. */
+  hideGlobal?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -31,7 +33,16 @@ function resolveBlockTypeLabel(label: string): string {
   return label
 }
 
-const blockGroups = [
+const allGroups = [
+  {
+    label: 'sections',
+    types: [
+      { type: 'hero', label: 'hero', icon: 'lucide:panel-top', iconBg: 'bg-rose-100 dark:bg-rose-900/30', iconColor: 'text-rose-600 dark:text-rose-400' },
+      { type: 'columns', label: 'columns', icon: 'lucide:columns-3', iconBg: 'bg-sky-100 dark:bg-sky-900/30', iconColor: 'text-sky-600 dark:text-sky-400' },
+      { type: 'gallery', label: 'gallery', icon: 'lucide:images', iconBg: 'bg-orange-100 dark:bg-orange-900/30', iconColor: 'text-orange-600 dark:text-orange-400' },
+      { type: 'cta', label: 'cta', icon: 'lucide:megaphone', iconBg: 'bg-emerald-100 dark:bg-emerald-900/30', iconColor: 'text-emerald-600 dark:text-emerald-400' }
+    ]
+  },
   {
     label: 'text',
     types: [
@@ -66,6 +77,7 @@ const blockGroups = [
     ]
   }
 ]
+const blockGroups = computed(() => allGroups.map(g => ({ ...g, types: g.types.filter(x => !(props.hideGlobal && x.type === 'global')) })))
 </script>
 
 <template>

@@ -1,8 +1,14 @@
 <template>
   <div class="mb-3 flex flex-shrink-0 items-start justify-between gap-3">
-    <div class="min-w-0" :data-tour="tourTitle">
-      <h1 class="truncate text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl dark:text-white">{{ title }}</h1>
-      <p v-if="subtitle" class="mt-0.5 hidden truncate text-sm text-gray-600 sm:block dark:text-gray-400">{{ subtitle }}</p>
+    <div class="flex min-w-0 items-start gap-2.5">
+      <!-- optional "back" arrow on the title's own line, so a sub-page does not spend a whole row on one button -->
+      <NuxtLink v-if="backTo" :to="backTo" class="at-btn mt-1 !h-9 !w-9 flex-shrink-0 !justify-center !px-0 sm:mt-1.5" :title="backLabel" :aria-label="backLabel">
+        <Icon name="lucide:arrow-left" class="h-4 w-4" />
+      </NuxtLink>
+      <div class="min-w-0" :data-tour="tourTitle">
+        <h1 class="truncate text-2xl font-extrabold tracking-tight text-gray-900 sm:text-3xl dark:text-white">{{ title }}</h1>
+        <p v-if="subtitle" class="mt-0.5 hidden truncate text-sm text-gray-600 sm:block dark:text-gray-400">{{ subtitle }}</p>
+      </div>
     </div>
     <div class="flex flex-shrink-0 items-center gap-1.5 pt-0.5">
       <slot name="primary" />
@@ -33,6 +39,8 @@ defineProps<{
   subtitle?: string;
   tourTitle?: string;
   menu?: MenuItem[][];
+  backTo?: string;
+  backLabel?: string;
 }>();
 const { t } = useI18n();
 const moreLabel = t('tasks.moreActions') || 'More';

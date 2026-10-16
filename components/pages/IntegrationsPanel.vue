@@ -7,7 +7,7 @@ import { getApiBaseUrl } from '@/utils/api-base';
 import { getErrorMessage } from '@/utils/types/errors';
 import { logError } from '@/utils/logger';
 
-const props = defineProps<{ site: PagesSite; nsSlug: string }>();
+const props = defineProps<{ sites: PagesSite[]; nsSlug: string }>();
 
 const { t, locale } = useI18n();
 const toast = useToast();
@@ -37,11 +37,11 @@ const mcpUrl = computed(() => {
 const SCOPES: AccessScope[] = ['read', 'write', 'publish'];
 const open = ref(false);
 const saving = ref(false);
-const form = reactive({ name: '', scopes: ['read', 'write'] as AccessScope[], onlyThisSite: true, days: 90 });
+const form = reactive({ name: '', scopes: ['read', 'write'] as AccessScope[], siteId: '', days: 90 });
 const created = ref<{ secret: string; token: AccessToken } | null>(null);
 
 function openCreate() {
-  Object.assign(form, { name: '', scopes: ['read', 'write'], onlyThisSite: true, days: 90 });
+  Object.assign(form, { name: '', scopes: ['read', 'write'], siteId: '', days: 90 });
   created.value = null;
   open.value = true;
 }
@@ -68,7 +68,7 @@ async function create() {
   try {
     created.value = await pagesApi.createAccessToken(props.nsSlug, {
       name: form.name.trim(), scopes: form.scopes,
-      siteId: form.onlyThisSite ? props.site.id : undefined,
+      siteId: form.siteId || undefined,
       expiresAtUnix: form.days ? Math.floor(Date.now() / 1000) + form.days * 86400 : undefined,
     });
     await load();
@@ -103,7 +103,7 @@ const isExpired = (tok: AccessToken) => tok.expiresAtUnix > 0 && tok.expiresAtUn
 const showRevoked = ref(false);
 const revokedCount = computed(() => tokens.value.filter(x => x.revoked).length);
 const visibleTokens = computed(() => (showRevoked.value ? tokens.value : tokens.value.filter(x => !x.revoked)));
-const siteName = (tok: AccessToken) => (tok.siteId ? (tok.siteId === props.site.id ? props.site.name : tok.siteId.slice(0, 8)) : t('pages.integrations.allSites'));
+const siteName = (tok: AccessToken) => (tok.siteId ? (props.sites.find(x => x.id === tok.siteId)?.name || tok.siteId.slice(0, 8)) : t('pages.integrations.allSites'));
 
 const secretShown = computed(() => created.value?.secret || '<' + t('pages.integrations.createdTitle').toLowerCase() + '>');
 const cliCmd = computed(() => `claude mcp add --transport http lota-pages ${mcpUrl.value} --header "Authorization: Bearer ${secretShown.value}"`);
@@ -186,9 +186,9 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
           <div class="grid gap-3">
             <div>
               <div class="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-200">{{ t('pages.integrations.site') }}</div>
-              <div class="at-seg">
-                <button type="button" class="at-seg__btn" :class="form.onlyThisSite && 'at-seg__btn--on'" @click="form.onlyThisSite = true">{{ t('pages.integrations.thisSite') }}</button>
-                <button type="button" class="at-seg__btn" :class="!form.onlyThisSite && 'at-seg__btn--on'" @click="form.onlyThisSite = false">{{ t('pages.integrations.allSites') }}</button>
+              <div class="flex flex-wrap gap-1.5">
+                <button type="button" class="pill-filter" :class="!form.siteId && 'pill-filter--active'" @click="form.siteId = ''">{{ t('pages.integrations.allSites') }}</button>
+                <button v-for="x in sites" :key="x.id" type="button" class="pill-filter" :class="form.siteId === x.id && 'pill-filter--active'" @click="form.siteId = x.id">{{ x.name }}</button>
               </div>
             </div>
             <div>

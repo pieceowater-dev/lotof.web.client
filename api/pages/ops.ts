@@ -49,11 +49,17 @@ export interface AccessToken {
   expiresAtUnix: number; lastUsedAtUnix: number; createdAtUnix: number; revoked: boolean;
 }
 export interface PagesPlan { planCode: string; planName: string; limitsJson: string; isSubscriptionActive: boolean }
+export interface PagesTariff {
+  id: string; code: string; name: string; description?: string | null; currency: string; interval: 'MONTH' | 'YEAR';
+  amountCents: number; trialDays: number; status: string; metadataJson?: string | null;
+}
+export interface PagesSubscription { id: string; planId: string; planCode: string; status: string; trialEndDate?: string | null }
 export interface PagesUsage { sites: number; pages: number; mediaBytes: number; publishedBytes: number }
 export type PagesRole = 'OWNER' | 'ADMIN' | 'EDITOR' | 'NONE';
 export interface PagesAccess { role: PagesRole; allSites: boolean; siteIds: string[] }
 export interface PagesStaffMember { id: string; userId: string; role: 'ADMIN' | 'EDITOR'; allSites: boolean; siteIds: string[]; createdAtUnix: number }
-export interface GlobalBlock { id: string; siteId: string; slug: string; name: string; markdown: string; usedBy: number; updatedAtUnix: number }
+export interface GlobalBlock { id: string; siteId: string; slug: string; name: string; markdown: string; usedBy: number; updatedAtUnix: number; blocks: PageBlock[] }
+export interface GlobalBlockInput { name: string; slug?: string; markdown?: string; blocks?: { id: string; type: string; content: string; attrsJson?: string }[] }
 export interface SiteMedia { id: string; siteId: string; sha256: string; ext: string; width: number; height: number; bytes: number; alt: string; url: string; createdAtUnix: number }
 
 const SETTINGS_FIELDS = `defaultLang langs faviconUrl ogImageUrl googleSiteVerification robotsTxt headHtml themeId themeVarsJson navJson logoUrl footerText footHtml customCss floatJson`;
@@ -165,6 +171,14 @@ export const pagesApi = {
   usage: (ns: string) =>
     q<{ pagesUsage: PagesUsage }>(ns, `query{ pagesUsage { sites pages mediaBytes publishedBytes } }`).then(r => r.pagesUsage),
 
+  // tariff picker (owner only to switch)
+  tariffs: (ns: string) =>
+    q<{ getPlans: { plans: PagesTariff[] } }>(ns, `query{ getPlans(includeArchived:false){ plans { id code name description currency interval amountCents trialDays status metadataJson } } }`).then(r => r.getPlans.plans),
+  subscription: (ns: string) =>
+    q<{ getActiveSubscription: PagesSubscription | null }>(ns, `query{ getActiveSubscription(appBundle:"pieceowater.pages"){ id planId planCode status trialEndDate } }`).then(r => r.getActiveSubscription),
+  subscribe: (ns: string, planCode: string) =>
+    q<{ subscribePlan: PagesSubscription }>(ns, `mutation($c:String!){ subscribePlan(planCode:$c,appBundle:"pieceowater.pages"){ id planId planCode status trialEndDate } }`, { c: planCode }).then(r => r.subscribePlan),
+
   // team (owner only) and the caller's own access
   myAccess: (ns: string) =>
     q<{ myPagesAccess: PagesAccess }>(ns, `query{ myPagesAccess { role allSites siteIds } }`).then(r => r.myPagesAccess),
@@ -177,11 +191,11 @@ export const pagesApi = {
 
   // global (reusable) blocks
   globalBlocks: (ns: string, siteId: string) =>
-    q<{ globalBlocks: GlobalBlock[] }>(ns, `query($s:ID!){ globalBlocks(siteId:$s){ id siteId slug name markdown usedBy updatedAtUnix } }`, { s: siteId }).then(r => r.globalBlocks),
-  createGlobalBlock: (ns: string, siteId: string, input: { name: string; slug?: string; markdown: string }) =>
-    q<{ createGlobalBlock: GlobalBlock }>(ns, `mutation($s:ID!,$i:GlobalBlockInput!){ createGlobalBlock(siteId:$s,input:$i){ id siteId slug name markdown usedBy updatedAtUnix } }`, { s: siteId, i: input }).then(r => r.createGlobalBlock),
-  updateGlobalBlock: (ns: string, id: string, input: { name: string; slug?: string; markdown: string }) =>
-    q<{ updateGlobalBlock: GlobalBlock }>(ns, `mutation($id:ID!,$i:GlobalBlockInput!){ updateGlobalBlock(id:$id,input:$i){ id siteId slug name markdown usedBy updatedAtUnix } }`, { id, i: input }).then(r => r.updateGlobalBlock),
+    q<{ globalBlocks: GlobalBlock[] }>(ns, `query($s:ID!){ globalBlocks(siteId:$s){ id siteId slug name markdown usedBy updatedAtUnix blocks { id type content attrsJson } } }`, { s: siteId }).then(r => r.globalBlocks),
+  createGlobalBlock: (ns: string, siteId: string, input: GlobalBlockInput) =>
+    q<{ createGlobalBlock: GlobalBlock }>(ns, `mutation($s:ID!,$i:GlobalBlockInput!){ createGlobalBlock(siteId:$s,input:$i){ id siteId slug name markdown usedBy updatedAtUnix blocks { id type content attrsJson } } }`, { s: siteId, i: input }).then(r => r.createGlobalBlock),
+  updateGlobalBlock: (ns: string, id: string, input: GlobalBlockInput) =>
+    q<{ updateGlobalBlock: GlobalBlock }>(ns, `mutation($id:ID!,$i:GlobalBlockInput!){ updateGlobalBlock(id:$id,input:$i){ id siteId slug name markdown usedBy updatedAtUnix blocks { id type content attrsJson } } }`, { id, i: input }).then(r => r.updateGlobalBlock),
   deleteGlobalBlock: (ns: string, id: string) =>
     q<{ deleteGlobalBlock: { success: boolean } }>(ns, `mutation($id:ID!){ deleteGlobalBlock(id:$id){ success } }`, { id }).then(r => r.deleteGlobalBlock.success),
 

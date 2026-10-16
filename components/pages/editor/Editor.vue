@@ -8,6 +8,7 @@
       :can-delete="!!props.onDelete && !props.isHome"
       :back-to="props.backTo"
       :live-url="liveUrl"
+      :simple="props.simple"
       @save="saveDraft"
       @delete="deletePage"
     />
@@ -20,8 +21,10 @@
         :site-host="props.siteHost"
         :path-label="pathLabel"
         :live-url="liveUrl"
+        :simple="props.simple"
         :global-blocks="props.globalBlocks"
         :image-resolver="resolveImage"
+        :upload-image="props.onUploadImage"
         :active-block-id="activeBlockId"
         :drag-state="dragState"
         :selected-block-range="selectedBlockRange"
@@ -43,6 +46,7 @@
       />
 
       <PagesEditorSidebar
+        v-if="!props.simple"
         :page="article"
         :blocks="blocks"
         :is-home="props.isHome"
@@ -69,7 +73,7 @@
       />
 
       <PagesEditorMobileSidebar
-        v-if="isMobileSidebarOpen"
+        v-if="isMobileSidebarOpen && !props.simple"
         :page="article"
         :blocks="blocks"
         :is-home="props.isHome"
@@ -99,12 +103,14 @@
 
     <PagesEditorFloatingButtons
       v-if="!isMobileSidebarOpen"
+      :hide-sidebar="props.simple"
       @add-block="openPicker(blocks.length)"
       @toggle-sidebar="isMobileSidebarOpen = true"
     />
 
     <PagesEditorBlockPicker
       :open="picker.open"
+      :hide-global="props.simple"
       @update:open="picker.open = $event"
       @add="insertBlock(picker.atIndex, $event)"
     />
@@ -178,6 +184,8 @@ interface Props {
   onOpenPage?: (id: string) => void
   /** True once the page has been published at least once, so "open live" can work. */
   published?: boolean
+  /** Shared-block mode: only the content, no page settings, status, address or sidebar. */
+  simple?: boolean
   backTo: string
   onSave: (payload: { page: PageState; blocks: Block[] }) => Promise<void>
   /** Uploads an image to the site's library and returns its site-relative URL. */
@@ -205,6 +213,7 @@ const props = withDefaults(defineProps<Props>(), {
   onTranslate: undefined,
   onOpenPage: undefined,
   published: false,
+  simple: false,
   imageResolver: undefined,
   onDelete: undefined,
 })
@@ -251,6 +260,14 @@ function createBlock(type: string): Block {
         ? { items: [{ q: '', a: '' }] }
       : type === 'global'
         ? { ref: '' }
+      : type === 'hero'
+        ? { title: '', subtitle: '', buttonText: '', buttonHref: '', layout: 'center' }
+      : type === 'columns'
+        ? { cols: '3', items: [{ icon: '', title: '', text: '' }, { icon: '', title: '', text: '' }, { icon: '', title: '', text: '' }] }
+      : type === 'gallery'
+        ? { cols: '3', images: [] }
+      : type === 'cta'
+        ? { title: '', text: '', buttonText: '', buttonHref: '' }
       : {}
 
   const content = type === 'ul'
@@ -716,7 +733,7 @@ function blockTypeLabel(type: string) {
     paragraph: '¶', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5',
     quote: '"', ul: 'UL', ol: 'OL', image: 'IMG',
     callout: 'ℹ', spoiler: 'S', spoiler_open: 'S+', spoiler_close: 'S-', divider: '—', html: '</>',
-    button: 'BTN', faq: 'FAQ',
+    button: 'BTN', faq: 'FAQ', hero: 'HERO', columns: 'COL', gallery: 'IMG+', cta: 'CTA',
   }
   return map[type] ?? type
 }
@@ -772,7 +789,7 @@ function calloutActiveBtnClass(type: string) {
 }
 
 // ─── Actions ─────────────────────────────────────────────────────────────
-const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global']
+const RAW_CONTENT_TYPES = ['divider', 'image', 'html', 'button', 'faq', 'global', 'hero', 'columns', 'gallery', 'cta']
 
 function stripHtml(value: string): string {
   return String(value || '')
@@ -793,6 +810,9 @@ function isMeaningfulBlock(block: Block): boolean {
   if (type === 'html') return stripHtml(String(block?.content || '')).length > 0
   if (type === 'button') return String(block?.attrs?.text || '').trim().length > 0 && String(block?.attrs?.href || '').trim().length > 0
   if (type === 'global') return String(block?.attrs?.ref || '').trim().length > 0
+  if (type === 'hero' || type === 'cta') return ['title', 'subtitle', 'text', 'buttonText'].some(k => String(block?.attrs?.[k] || '').trim())
+  if (type === 'columns') return (block?.attrs?.items || []).some((i: any) => String(i?.title || i?.text || '').trim())
+  if (type === 'gallery') return (block?.attrs?.images || []).length > 0
   if (type === 'faq') {
     const items = Array.isArray(block?.attrs?.items) ? block.attrs.items : []
     return items.some((item: any) => String(item?.q || '').trim() || String(item?.a || '').trim())
@@ -843,7 +863,7 @@ async function saveDraft(): Promise<boolean> {
     toast.add({ title: t('pages.editor.needTitle'), color: 'amber' })
     return false
   }
-  if (!props.isHome && !payload.page.slug) {
+  if (!props.simple && !props.isHome && !payload.page.slug) {
     toast.add({ title: t('pages.editor.needSlug'), color: 'amber' })
     return false
   }

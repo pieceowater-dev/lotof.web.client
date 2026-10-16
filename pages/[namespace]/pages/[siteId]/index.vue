@@ -6,10 +6,8 @@ import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
-import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import CategoriesPanel from '@/components/pages/CategoriesPanel.vue';
 import GlobalBlocksPanel from '@/components/pages/GlobalBlocksPanel.vue';
-import PlanUsage from '@/components/pages/PlanUsage.vue';
 import CategoryChips from '@/components/pages/CategoryChips.vue';
 import PagePicker from '@/components/pages/PagePicker.vue';
 import PageNav from '@/components/ui/PageNav.vue';
@@ -44,7 +42,7 @@ const preflight = ref<PreflightResult | null>(null);
 
 usePageTitle('pages', { subject: () => site.value?.name });
 
-type TabKey = 'pages' | 'categories' | 'blocks' | 'design' | 'domains' | 'publish' | 'redirects' | 'integrations' | 'settings';
+type TabKey = 'pages' | 'categories' | 'blocks' | 'design' | 'domains' | 'publish' | 'settings';
 const { load: loadAccess, canManage } = usePagesAccess(() => nsSlug.value);
 const ALL_TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'pages', label: t('pages.tabs.pages'), icon: 'lucide:files' },
@@ -53,13 +51,13 @@ const ALL_TABS = computed<{ key: TabKey; label: string; icon: string }[]>(() => 
   { key: 'blocks', label: t('pages.tabs.blocks'), icon: 'lucide:blocks' },
   { key: 'design', label: t('pages.tabs.design'), icon: 'lucide:palette' },
   { key: 'domains', label: t('pages.tabs.domains'), icon: 'lucide:link-2' },
-  { key: 'redirects', label: t('pages.tabs.redirects'), icon: 'lucide:arrow-right-left' },
-  { key: 'integrations', label: t('pages.tabs.integrations'), icon: 'lucide:sparkles' },
   { key: 'settings', label: t('pages.tabs.settings'), icon: 'lucide:settings' },
 ]);
 // Editors work with articles only: no publishing, design, domains, redirects, keys or settings.
 const TABS = computed(() => (canManage.value ? ALL_TABS.value : ALL_TABS.value.filter(x => x.key === 'pages' || x.key === 'categories' || x.key === 'blocks')));
-const activeTab = ref<TabKey>((ALL_TABS.value.some(x => x.key === route.query.tab) ? route.query.tab : 'pages') as TabKey);
+// old links with ?tab=redirects land on Settings, where redirects now live
+const requestedTab = route.query.tab === 'redirects' ? 'settings' : route.query.tab;
+const activeTab = ref<TabKey>((ALL_TABS.value.some(x => x.key === requestedTab) ? requestedTab : 'pages') as TabKey);
 watch(canManage, (v) => { if (!v && !['pages', 'categories', 'blocks'].includes(activeTab.value)) activeTab.value = 'pages'; });
 watch(activeTab, (tab) => navigateTo({ query: { ...route.query, tab } }, { replace: true }));
 
@@ -465,10 +463,6 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
 <template>
   <div class="at-scope ct-scope h-full min-h-0 overflow-y-auto p-4 pb-safe-or-4 flex flex-col gap-4 [&>*]:flex-shrink-0">
-    <NuxtLink :to="`/${nsSlug}/pages`" class="at-btn self-start !px-3">
-      <Icon name="lucide:arrow-left" class="h-4 w-4" />{{ t('pages.title') }}
-    </NuxtLink>
-
     <div v-if="booting" class="flex flex-col gap-4" role="status" aria-busy="true">
       <div class="flex items-start justify-between gap-3">
         <div class="flex flex-col gap-2"><span class="sk sk-line sk-line--lg" style="width: 12rem" /><span class="sk sk-line sk-line--sm" style="width: 9rem" /></div>
@@ -479,7 +473,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
     </div>
 
     <template v-else-if="site">
-      <PageHeader :title="site.name" :subtitle="site.host">
+      <PageHeader :title="site.name" :subtitle="site.host" :back-to="`/${nsSlug}/pages?all=1`" :back-label="t('pages.title')">
         <template #primary>
           <button v-if="canManage" type="button" class="at-btn at-btn--primary" :disabled="publishing || !pages.length" @click="publish">
             <UIcon :name="publishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="publishing && 'animate-spin'" />
@@ -667,37 +661,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
       </template>
 
       <!-- ═════════ REDIRECTS ═════════ -->
-      <IntegrationsPanel v-else-if="activeTab === 'integrations'" :site="site" :ns-slug="nsSlug" />
-
-      <template v-else-if="activeTab === 'redirects'">
-        <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
-          <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-            <UInput v-model="redirectForm.from" placeholder="/old-page" @keyup.enter="addRedirect" />
-            <UInput v-model="redirectForm.to" placeholder="/new-page" @keyup.enter="addRedirect" />
-            <button type="button" class="at-btn at-btn--blue justify-center" :disabled="redirectSaving" @click="addRedirect"><Icon name="lucide:plus" class="h-4 w-4" />{{ t('common.add') }}</button>
-          </div>
-          <div class="mt-2 flex items-center justify-between gap-2 text-xs text-gray-400 dark:text-gray-500">
-            <span>{{ t('pages.redirects.hint') }}</span>
-            <button type="button" class="font-medium text-primary-600 dark:text-primary-400" @click="csvOpen = true">{{ t('pages.redirects.import') }}</button>
-          </div>
-        </div>
-        <EmptyState v-if="!redirects.length" icon="lucide:arrow-right-left" :title="t('pages.redirects.empty')" :description="t('pages.redirects.emptyText')" />
-        <div v-else class="flex flex-col gap-2">
-          <div v-for="r in redirects" :key="r.id" class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
-            <div class="min-w-0 flex-1 text-sm">
-              <span class="font-medium text-gray-900 dark:text-white">{{ r.fromPath }}</span>
-              <Icon name="lucide:arrow-right" class="mx-1.5 inline h-3.5 w-3.5 text-gray-400" />
-              <span class="break-all text-gray-600 dark:text-gray-300">{{ r.toPath }}</span>
-            </div>
-            <span class="hidden rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 sm:inline dark:bg-white/10 dark:text-gray-400">{{ t(`pages.redirects.source.${r.source}`) }}</span>
-            <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" @click="removeRedirect(r)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
-          </div>
-        </div>
-      </template>
 
       <!-- ═════════ SETTINGS ═════════ -->
       <template v-else>
-        <PlanUsage :ns-slug="nsSlug" />
         <div class="flex flex-col gap-4 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
           <UFormGroup :label="t('pages.sites.name')" required><UInput v-model="settingsForm.name" /></UFormGroup>
           <UFormGroup :label="t('pages.settings.language')">
@@ -708,6 +674,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
           <UFormGroup :label="t('pages.settings.gsv')" :help="t('pages.settings.gsvHint')"><UInput v-model="settingsForm.googleSiteVerification" placeholder="abc123…" /></UFormGroup>
           <UFormGroup :label="t('pages.settings.robots')" :help="t('pages.settings.robotsHint')">
             <UTextarea v-model="settingsForm.robotsTxt" :rows="4" placeholder="User-agent: *&#10;Allow: /" />
+            <p v-if="site && site.host === site.platformHost" class="mt-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">{{ t('pages.settings.robotsPlatform') }}</p>
           </UFormGroup>
           <div class="flex justify-end">
             <button type="button" class="at-btn at-btn--primary" :disabled="settingsSaving" @click="saveSettings">
@@ -735,6 +702,32 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <button type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="removeSite"><Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('common.delete') }}</button>
           </div>
         </div>
+      <section class="flex flex-col gap-4">
+        <div><h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('pages.tabs.redirects') }}</h3></div>
+        <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+          <div class="grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <UInput v-model="redirectForm.from" placeholder="/old-page" @keyup.enter="addRedirect" />
+            <UInput v-model="redirectForm.to" placeholder="/new-page" @keyup.enter="addRedirect" />
+            <button type="button" class="at-btn at-btn--blue justify-center" :disabled="redirectSaving" @click="addRedirect"><Icon name="lucide:plus" class="h-4 w-4" />{{ t('common.add') }}</button>
+          </div>
+          <div class="mt-2 flex items-center justify-between gap-2 text-xs text-gray-400 dark:text-gray-500">
+            <span>{{ t('pages.redirects.hint') }}</span>
+            <button type="button" class="font-medium text-primary-600 dark:text-primary-400" @click="csvOpen = true">{{ t('pages.redirects.import') }}</button>
+          </div>
+        </div>
+        <EmptyState v-if="!redirects.length" icon="lucide:arrow-right-left" :title="t('pages.redirects.empty')" :description="t('pages.redirects.emptyText')" />
+        <div v-else class="flex flex-col gap-2">
+          <div v-for="r in redirects" :key="r.id" class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+            <div class="min-w-0 flex-1 text-sm">
+              <span class="font-medium text-gray-900 dark:text-white">{{ r.fromPath }}</span>
+              <Icon name="lucide:arrow-right" class="mx-1.5 inline h-3.5 w-3.5 text-gray-400" />
+              <span class="break-all text-gray-600 dark:text-gray-300">{{ r.toPath }}</span>
+            </div>
+            <span class="hidden rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-500 sm:inline dark:bg-white/10 dark:text-gray-400">{{ t(`pages.redirects.source.${r.source}`) }}</span>
+            <button type="button" class="at-btn !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('common.delete')" @click="removeRedirect(r)"><Icon name="lucide:trash-2" class="h-4 w-4" /></button>
+          </div>
+        </div>
+      </section>
       </template>
     </template>
 

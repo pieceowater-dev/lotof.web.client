@@ -2266,7 +2266,8 @@
         "text": "Text",
         "lists": "Lists",
         "media": "Media",
-        "elements": "Elements"
+        "elements": "Elements",
+        "sections": "Sections"
       },
       "blockTypes": {
         "paragraph": "Paragraph",
@@ -2286,7 +2287,11 @@
         "spoilerClose": "Spoiler: close section",
         "divider": "Divider",
         "html": "HTML code",
-        "global": "Shared block"
+        "global": "Shared block",
+        "hero": "Hero",
+        "columns": "Cards",
+        "gallery": "Gallery",
+        "cta": "Call to action"
       }
     },
     "interval": {
@@ -4607,7 +4612,7 @@
     },
     "integrations": {
       "title": "AI connection",
-      "intro": "Claude, ChatGPT and other AI clients can create and edit pages of this site over MCP. Everything the AI does lands in drafts; it goes live only after publishing.",
+      "intro": "Claude, ChatGPT and other AI clients can create and edit your sites over MCP. Everything the AI does lands in drafts; it goes live only after publishing.",
       "urlLabel": "MCP server address",
       "copy": "Copy",
       "copied": "Copied",
@@ -4771,7 +4776,8 @@
       "gsv": "Google Search Console verification",
       "gsvHint": "Value of the google-site-verification meta tag",
       "robots": "robots.txt",
-      "robotsHint": "Leave empty for the standard file"
+      "robotsHint": "Leave empty for the standard file",
+      "robotsPlatform": "While the site is served from the platform address, its robots.txt always blocks search engines: this is deliberate. Your file takes effect once you connect your own domain and make it the primary one."
     },
     "editor": {
       "back": "Back to site",
@@ -4834,7 +4840,48 @@
       "createTranslation": "Create translation",
       "translationsHint": "A translation is a draft copy of the page in another language, linked to the original. After publishing, linked pages get a language switcher and hreflang hints for search engines.",
       "translationCreated": "Translation created: translate the text and include it in publishing",
-      "translationExists": "A translation in that language already exists"
+      "translationExists": "A translation in that language already exists",
+      "sec": {
+        "hero": "Hero",
+        "columns": "Cards row",
+        "gallery": "Gallery",
+        "cta": "Call to action",
+        "title": "Title",
+        "subtitle": "Subtitle",
+        "text": "Text",
+        "button": "Button text",
+        "button2": "Second button text",
+        "link": "Link: https://... or /page",
+        "layout_center": "Centered",
+        "layout_split": "Text and image",
+        "layout_cover": "Background image",
+        "addImage": "Add image",
+        "replaceImage": "Replace image",
+        "remove": "Remove",
+        "cols": "Columns",
+        "card": "Card {n}",
+        "icon": "Emoji",
+        "addCard": "Add card",
+        "alt": "Description",
+        "addImages": "Add images",
+        "style": "Block style",
+        "st_bg": "Background",
+        "st_pad": "Spacing",
+        "st_align": "Alignment",
+        "st_width": "Width",
+        "v_none": "None",
+        "v_soft": "Soft",
+        "v_muted": "Grey",
+        "v_accent": "Accent",
+        "v_dark": "Dark",
+        "v_sm": "Small",
+        "v_lg": "Large",
+        "v_xl": "Huge",
+        "v_center": "Center",
+        "v_right": "Right",
+        "v_narrow": "Narrow",
+        "v_wide": "Wide"
+      }
     },
     "team": {
       "title": "Team",
@@ -4887,6 +4934,28 @@
       "pages": "Pages",
       "disk": "Disk (images and published files)",
       "diskHint": "There is one disk limit for the whole workspace: it covers uploaded images and the files of the published versions of all your sites. Delete unneeded images to free space."
+    },
+    "plan": {
+      "title": "Plan",
+      "subtitle": "What you use and what is left",
+      "configure": "Change plan",
+      "current": "Current plan: {name}",
+      "diskTitle": "Disk",
+      "diskUsed": "used",
+      "diskFree": "free",
+      "diskMedia": "Images and files",
+      "diskPublished": "Published versions",
+      "diskOf": "of {limit}",
+      "chooseTitle": "Choose a plan",
+      "chooseSubtitle": "Limits apply as soon as you switch",
+      "select": "Select",
+      "active": "Active",
+      "free": "Free",
+      "perMonth": "/ mo",
+      "perYear": "/ yr",
+      "contact": "Paid plans are connected via support",
+      "done": "Plan connected",
+      "ownerOnly": "Only the owner can change the plan"
     }
   },
   "plans": {

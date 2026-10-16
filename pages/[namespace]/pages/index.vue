@@ -4,13 +4,14 @@ definePageMeta({ layout: 'workspace' });
 import PageHeader from '@/components/ui/PageHeader.vue';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import IntegrationsPanel from '@/components/pages/IntegrationsPanel.vue';
 import { atModalUi, atCardUiFit } from '@/utils/atraceUi';
 import { useI18n } from '@/composables/useI18n';
 import { usePagesAuth } from '@/composables/usePagesAuth';
 import { usePagesAccess } from '@/composables/usePagesAccess';
 import { usePageTitle } from '@/composables/usePageTitle';
 import { pagesApi, type PagesSite } from '@/api/pages/ops';
-import { siteOrigin, slugifyText } from '@/utils/pagesSite';
+import { siteAssetUrl, siteOrigin, slugifyText } from '@/utils/pagesSite';
 import { getErrorMessage } from '@/utils/types/errors';
 import { logError } from '@/utils/logger';
 
@@ -29,6 +30,11 @@ async function load() {
   try {
     await getToken(nsSlug.value);
     await Promise.all([loadAccess(), pagesApi.sites(nsSlug.value).then((r) => { sites.value = r; })]);
+    // one site: go straight to it; the back arrow on its page returns here with ?all=1
+    if (sites.value.length === 1 && !route.query.all) {
+      await navigateTo(`/${nsSlug.value}/pages/${sites.value[0].id}`, { replace: true });
+      return;
+    }
   } catch (e) {
     logError('[pages] load sites', e);
     toast.add({ title: t('common.error'), description: getErrorMessage(e, t) || t('common.errorRetry'), color: 'red' });
@@ -81,6 +87,16 @@ async function create() {
   }
 }
 
+// Card banner colour: the site's own accent from its theme, the brand gradient otherwise.
+function accent(s: PagesSite): string {
+  try {
+    const v = JSON.parse(s.settings.themeVarsJson || '{}');
+    const c = v.accent || v.primary || v.brand;
+    if (typeof c === 'string' && /^#[0-9a-f]{3,8}$/i.test(c)) return c;
+  } catch { /* default */ }
+  return '';
+}
+
 function statusMeta(s: PagesSite) {
   if (s.status === 'SITE_SUSPENDED') return { label: t('pages.sites.suspended'), cls: 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' };
   if (s.status === 'SITE_PUBLISHED') return { label: t('pages.sites.published'), cls: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' };
@@ -101,6 +117,9 @@ function statusMeta(s: PagesSite) {
       <template #actions>
         <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/team`" class="at-btn !px-2.5 no-underline" :title="t('pages.team.title')" :aria-label="t('pages.team.title')">
           <Icon name="lucide:users" class="h-4 w-4" />
+        </NuxtLink>
+        <NuxtLink v-if="isOwner" :to="`/${nsSlug}/pages/plan`" class="at-btn !px-2.5 no-underline" :title="t('pages.plan.title')" :aria-label="t('pages.plan.title')">
+          <Icon name="lucide:gauge" class="h-4 w-4" />
         </NuxtLink>
       </template>
     </PageHeader>
@@ -124,23 +143,34 @@ function statusMeta(s: PagesSite) {
         v-for="s in sites"
         :key="s.id"
         :to="`/${nsSlug}/pages/${s.id}`"
-        class="at-post !cursor-pointer gap-3 no-underline"
+        class="group flex flex-col overflow-hidden rounded-3xl bg-white no-underline ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-lg dark:bg-[#1f1f1f] dark:ring-white/10"
       >
-        <div class="flex items-start gap-3">
-          <span class="icon-tile !h-10 !w-10 flex-shrink-0"><UIcon name="lucide:globe" class="h-5 w-5" /></span>
-          <div class="min-w-0 flex-1">
-            <div class="truncate font-semibold text-gray-900 dark:text-white">{{ s.name }}</div>
+        <div class="relative h-20" :style="accent(s) ? { background: `linear-gradient(135deg, ${accent(s)}, ${accent(s)}99)` } : { background: 'linear-gradient(135deg,#2563eb,#10b981)' }">
+          <span class="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-gray-800 shadow-sm"><i class="inline-block h-2 w-2 rounded-full" :class="s.status === 'SITE_PUBLISHED' ? 'bg-emerald-500' : s.status === 'SITE_SUSPENDED' ? 'bg-rose-500' : 'bg-amber-500'" />{{ statusMeta(s).label }}</span>
+        </div>
+        <div class="-mt-7 flex flex-col gap-3 px-4 pb-4">
+          <span class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl bg-white shadow ring-1 ring-black/5 dark:bg-[#2a2a2a] dark:ring-white/10">
+            <img v-if="s.settings.logoUrl" :src="siteAssetUrl(s.host, s.settings.logoUrl)" alt="" class="h-full w-full object-contain">
+            <UIcon v-else name="lucide:globe" class="h-6 w-6 text-gray-500" />
+          </span>
+          <div class="min-w-0">
+            <div class="truncate text-base font-semibold text-gray-900 dark:text-white">{{ s.name }}</div>
             <div class="truncate text-xs text-gray-500 dark:text-gray-400">{{ s.host }}</div>
           </div>
-          <span class="flex-shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold" :class="statusMeta(s).cls">{{ statusMeta(s).label }}</span>
-        </div>
-        <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
-          <span>{{ t('pages.sites.pageCount', { n: s.pageCount }) }}</span>
-          <span v-if="s.publishedVersion">{{ t('pages.sites.version') }} {{ s.publishedVersion }}</span>
-          <span v-else>{{ t('pages.sites.notPublished') }}</span>
+          <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+            <span class="inline-flex items-center gap-1"><UIcon name="lucide:file-text" class="h-3.5 w-3.5" />{{ t('pages.sites.pageCount', { n: s.pageCount }) }}</span>
+            <span v-if="s.publishedVersion" class="inline-flex items-center gap-1"><UIcon name="lucide:rocket" class="h-3.5 w-3.5" />{{ t('pages.sites.version') }} {{ s.publishedVersion }}</span>
+            <span v-else class="inline-flex items-center gap-1"><UIcon name="lucide:pencil-line" class="h-3.5 w-3.5" />{{ t('pages.sites.notPublished') }}</span>
+            <span class="inline-flex items-center gap-1"><UIcon name="lucide:languages" class="h-3.5 w-3.5" />{{ (s.settings.langs?.length ? s.settings.langs : [s.settings.defaultLang]).join(' · ') }}</span>
+          </div>
         </div>
       </NuxtLink>
     </div>
+
+    <section v-if="!booting && isOwner" class="flex flex-col gap-3">
+      <h2 class="flex items-center gap-2 text-base font-semibold text-gray-900 dark:text-white"><UIcon name="lucide:sparkles" class="h-4 w-4 text-primary-500" />{{ t('pages.tabs.integrations') }}</h2>
+      <IntegrationsPanel :sites="sites" :ns-slug="nsSlug" />
+    </section>
 
     <UModal v-model="createOpen" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-lg' }">
       <UCard :ui="atCardUiFit">

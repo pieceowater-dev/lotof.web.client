@@ -15,6 +15,7 @@
           />
           <!-- Address preview -->
           <button
+            v-if="!simple"
             type="button"
             class="pe-address mt-4"
             :class="liveUrl ? 'cursor-pointer' : 'cursor-default'"
@@ -372,6 +373,13 @@
                   </div>
                 </div>
 
+                <PagesEditorSectionBlock
+                  v-else-if="['hero', 'columns', 'gallery', 'cta'].includes(block.type)"
+                  :block="block"
+                  :upload="uploadImage"
+                  :resolve="imageResolver"
+                />
+
                 <div v-else-if="block.type === 'html'" class="py-1">
                   <div class="pe-tray">
                     <div class="pe-tray-title"><Icon name="lucide:code-xml" class="h-3.5 w-3.5" />HTML</div>
@@ -386,6 +394,11 @@
                   </div>
                 </div>
               </div>
+              <PagesEditorBlockStyleBar
+                v-if="activeBlockId === block.id && !['spoiler_open', 'spoiler_close'].includes(block.type)"
+                :attrs="block.attrs"
+                @change="(st) => { if (st) block.attrs.style = st; else delete block.attrs.style }"
+              />
             </div>
 
             <!-- Add button after last block -->
@@ -419,11 +432,13 @@ interface Props {
   article: any
   blocks: Block[]
   siteHost?: string
+  simple?: boolean
   pathLabel?: string
   /** Absolute address of the page on the live site, empty until it can be opened. */
   liveUrl?: string
   /** Maps a site-relative image URL (/media/<hash>.png) to one the console can load. */
   imageResolver?: (src: string) => string
+  uploadImage: (file: File) => Promise<{ url: string }>
   activeBlockId: string | null
   dragState: any
   selectedBlockRange?: { start: number; end: number } | null

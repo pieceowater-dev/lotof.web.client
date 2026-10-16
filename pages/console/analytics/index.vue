@@ -756,6 +756,7 @@ const APPS = [
   { key: 'issues', label: 'Issues', applicationCode: 'pieceowater.issues', colorClass: 'bg-indigo-500 dark:bg-indigo-400' },
   { key: 'goods', label: 'Goods', applicationCode: 'pieceowater.goods', colorClass: 'bg-rose-500 dark:bg-rose-400' },
   { key: 'plans', label: 'Запись', applicationCode: 'pieceowater.plans', colorClass: 'bg-violet-500 dark:bg-violet-400' },
+  { key: 'pages', label: 'Сайты', applicationCode: 'pieceowater.pages', colorClass: 'bg-sky-500 dark:bg-sky-400' },
 ] as const;
 
 // ─── Namespace activity (owner/member last hub session, see api lastActiveAt) ─

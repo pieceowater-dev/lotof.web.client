@@ -359,7 +359,9 @@ export default defineNuxtConfig({
             "default-src 'self'; " +
             "script-src 'self' 'unsafe-inline'; " +
             "style-src 'self' 'unsafe-inline'; " +
-            "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; " +
+            // The Pages editor previews pictures served by the published sites (<slug>.pages.<domain> and the
+            // owners' own domains), hence https: (and the local edge in development).
+            `img-src 'self' data: blob: https: https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com${process.env.NODE_ENV === 'production' ? '' : ' http://*.pages.localhost:*'}; ` +
             "font-src 'self' data:; " +
             "media-src 'self' https: blob:; " +
             // Local development talks straight to the gateways on localhost:<port>.

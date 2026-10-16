@@ -30,34 +30,28 @@ const open = ref(false);
 const saving = ref(false);
 const error = ref('');
 const slugTouched = ref(false);
-const form = reactive({ id: '', name: '', slug: '', markdown: '', usedBy: 0 });
+const form = reactive({ name: '', slug: '' });
 
 function openCreate() {
-  Object.assign(form, { id: '', name: '', slug: '', markdown: '', usedBy: 0 });
+  Object.assign(form, { name: '', slug: '' });
   slugTouched.value = false; error.value = ''; open.value = true;
 }
-function openEdit(b: GlobalBlock) {
-  Object.assign(form, { id: b.id, name: b.name, slug: b.slug, markdown: b.markdown, usedBy: b.usedBy });
-  slugTouched.value = true; error.value = ''; open.value = true;
-}
-watch(() => form.name, (v) => { if (!slugTouched.value && !form.id) form.slug = slugifyText(v); });
+const editorPath = (b: GlobalBlock) => `/${props.nsSlug}/pages/${props.site.id}/blocks/${b.id}`;
+function openEdit(b: GlobalBlock) { navigateTo(editorPath(b)); }
+watch(() => form.name, (v) => { if (!slugTouched.value) form.slug = slugifyText(v); });
 
+// A new block is created empty and opened straight in the editor.
 async function save() {
   error.value = '';
   if (!form.name.trim()) { error.value = t('pages.blocks.needName'); return; }
   saving.value = true;
-  const input = { name: form.name.trim(), slug: form.slug.trim() || undefined, markdown: form.markdown };
   try {
-    if (form.id) await pagesApi.updateGlobalBlock(props.nsSlug, form.id, input);
-    else await pagesApi.createGlobalBlock(props.nsSlug, props.site.id, input);
+    const created = await pagesApi.createGlobalBlock(props.nsSlug, props.site.id, { name: form.name.trim(), slug: form.slug.trim() || undefined, markdown: '' });
     open.value = false;
-    await load();
-    toast.add({ title: t('pages.blocks.saved'), color: 'green' });
+    await navigateTo(editorPath(created));
   } catch (e: any) {
     const msg = String(e?.response?.errors?.[0]?.message || '');
-    if (msg.includes('already exists')) error.value = t('pages.blocks.slugTaken');
-    else if (msg.includes('still use')) error.value = t('pages.blocks.inUse');
-    else error.value = msg || getErrorMessage(e, t) || t('common.errorRetry');
+    error.value = msg.includes('already exists') ? t('pages.blocks.slugTaken') : (msg || getErrorMessage(e, t) || t('common.errorRetry'));
   } finally {
     saving.value = false;
   }
@@ -110,14 +104,11 @@ const preview = (b: GlobalBlock) => b.markdown.replace(/[#*>:`_[\]()]/g, ' ').re
 
     <UModal v-model="open" class="at-modal" :ui="{ ...atModalUi, width: 'sm:max-w-2xl' }">
       <UCard :ui="atCardUiFit">
-        <template #header><h3 class="text-base font-semibold">{{ form.id ? t('pages.blocks.edit') : t('pages.blocks.new') }}</h3></template>
+        <template #header><h3 class="text-base font-semibold">{{ t('pages.blocks.new') }}</h3></template>
         <div class="space-y-3.5">
           <UFormGroup :label="t('pages.blocks.name')" required><UInput v-model="form.name" autofocus /></UFormGroup>
           <UFormGroup :label="t('pages.blocks.slug')" :help="t('pages.blocks.slugHint')">
-            <UInput v-model="form.slug" :disabled="form.usedBy > 0" @update:model-value="slugTouched = true" />
-          </UFormGroup>
-          <UFormGroup :label="t('pages.blocks.markdown')" :help="t('pages.blocks.markdownHint')">
-            <UTextarea v-model="form.markdown" :rows="10" class="font-mono text-sm" />
+            <UInput v-model="form.slug" @update:model-value="slugTouched = true" />
           </UFormGroup>
           <p v-if="error" class="text-xs text-red-600 dark:text-red-400">{{ error }}</p>
         </div>
