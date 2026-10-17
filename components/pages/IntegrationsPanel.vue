@@ -113,19 +113,23 @@ const jsonCfg = computed(() => JSON.stringify({ mcpServers: { 'lota-pages': { ty
 <template>
   <div class="flex flex-col gap-4">
     <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-      <div class="flex items-start gap-3">
-        <span class="icon-tile !h-10 !w-10 flex-shrink-0"><UIcon name="lucide:sparkles" class="h-5 w-5" /></span>
-        <div class="min-w-0 flex-1">
-          <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.integrations.title') }}</h3>
-          <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">{{ t('pages.integrations.intro') }}</p>
-        </div>
-      </div>
+      <p class="text-sm text-gray-700 dark:text-gray-200">{{ t('pages.integrations.lead') }}</p>
+      <ol class="mt-3 flex list-decimal flex-col gap-1.5 pl-5 text-sm text-gray-700 marker:font-semibold marker:text-primary-600 dark:text-gray-300 dark:marker:text-primary-300">
+        <li>{{ t('pages.integrations.step1') }}</li>
+        <li>{{ t('pages.integrations.step2') }}</li>
+        <li>{{ t('pages.integrations.step3') }}</li>
+      </ol>
       <div class="mt-4 text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('pages.integrations.urlLabel') }}</div>
       <div class="mt-1 flex items-center gap-2">
         <code class="min-w-0 flex-1 truncate rounded-xl bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800 dark:bg-white/5 dark:text-gray-100">{{ mcpUrl }}</code>
         <button type="button" class="at-btn flex-shrink-0" @click="copy(mcpUrl)"><Icon name="lucide:copy" class="h-4 w-4" />{{ t('pages.integrations.copy') }}</button>
       </div>
-      <p class="mt-3 text-xs text-gray-500 dark:text-gray-400"><span class="font-semibold">{{ t('pages.integrations.tools') }}.</span> {{ t('pages.integrations.toolsText') }}</p>
+      <details class="group mt-3 rounded-xl bg-gray-50 px-3 py-2 ring-1 ring-black/5 dark:bg-white/5 dark:ring-white/10">
+        <summary class="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-gray-800 dark:text-gray-100">
+          <Icon name="lucide:chevron-right" class="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform group-open:rotate-90" />{{ t('pages.integrations.tools') }}
+        </summary>
+        <p class="mt-2 text-xs leading-relaxed text-gray-600 dark:text-gray-400">{{ t('pages.integrations.toolsText') }}</p>
+      </details>
     </div>
 
     <div class="flex items-center justify-between gap-2">

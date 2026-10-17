@@ -18,6 +18,7 @@ const loading = ref(true);
 const hostname = ref('');
 const adding = ref(false);
 const addError = ref('');
+const howOpen = ref(false);
 const busy = reactive<Record<string, boolean>>({});
 
 async function load() {
@@ -179,6 +180,21 @@ const recordTitle = (r: DnsRecord) => t(`pages.domains.purpose.${r.purpose}`);
           </button>
         </div>
         <p v-if="addError" class="mt-2 text-xs text-red-600 dark:text-red-400">{{ addError }}</p>
+
+        <button type="button" class="mt-4 flex w-full items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5 text-left text-sm font-medium text-gray-800 ring-1 ring-black/5 transition hover:bg-gray-100 dark:bg-white/5 dark:text-gray-100 dark:ring-white/10 dark:hover:bg-white/10" :aria-expanded="howOpen" @click="howOpen = !howOpen">
+          <Icon name="lucide:book-open" class="h-4 w-4 flex-shrink-0 text-primary-600 dark:text-primary-300" />
+          <span class="flex-1">{{ t('pages.domains.how.title') }}</span>
+          <Icon name="lucide:chevron-down" class="h-4 w-4 flex-shrink-0 text-gray-400 transition-transform" :class="howOpen && 'rotate-180'" />
+        </button>
+        <ol v-if="howOpen" class="mt-3 flex list-decimal flex-col gap-2.5 pl-5 text-sm text-gray-700 marker:font-semibold marker:text-primary-600 dark:text-gray-300 dark:marker:text-primary-300">
+          <li>{{ t('pages.domains.how.s1') }}</li>
+          <li>{{ t('pages.domains.how.s2') }}</li>
+          <li>{{ t('pages.domains.how.s3') }}</li>
+          <li>{{ t('pages.domains.how.s4', { ip: data.ips[0] || '…', cname: data.cnameTarget || 'sites.lota.tools' }) }}</li>
+          <li>{{ t('pages.domains.how.s5') }}</li>
+          <li>{{ t('pages.domains.how.s6') }}</li>
+        </ol>
+        <p v-if="howOpen" class="mt-3 rounded-xl bg-blue-50 px-3 py-2 text-xs text-blue-900 dark:bg-blue-500/10 dark:text-blue-200">{{ t('pages.domains.how.tip', { cname: data.cnameTarget || 'sites.lota.tools' }) }}</p>
       </div>
 
       <!-- domains -->

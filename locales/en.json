@@ -4670,6 +4670,16 @@
         "tls_error": "The certificate is not issued yet",
         "dns_error": "Could not query DNS, will retry",
         "not_configured": "The platform is not set up to verify domains"
+      },
+      "how": {
+        "title": "Instruction: how to connect a domain",
+        "s1": "Buy a domain from a registrar (for example nic.kz or reg.ru).",
+        "s2": "Enter the domain above and press “Connect”. The records you need to add appear below.",
+        "s3": "Open the DNS settings of the domain at the registrar and add the TXT record: it proves the domain is yours.",
+        "s4": "Add the record that points the domain to the site: for the root of the domain (example.kz) an A record to {ip}, for a www address a CNAME to {cname}.",
+        "s5": "Wait: DNS changes take from a few minutes to a few hours. We check by ourselves every half minute, you do not need to keep the page open.",
+        "s6": "When the records are found we issue a secure certificate automatically (usually a few minutes). The domain becomes “Connected” and the site starts opening on it at once.",
+        "tip": "If your registrar supports an ALIAS or ANAME record for the root of the domain, point it to {cname}: then the server address can change without any action on your side."
       }
     },
     "categories": {
@@ -4750,10 +4760,14 @@
       "connectJson": "Claude Desktop and other clients (JSON config)",
       "connectNote": "ChatGPT: in developer mode add an MCP connector with this address and an Authorization header.",
       "tools": "What the AI can do",
-      "toolsText": "Everything the editor can do except the team and its permissions: build or rebuild sites from scratch, change the design and menu, write pages and categories from Markdown, upload images, redirects, the pre-publish check, publishing, rollback and domains (publishing, domains and deleting a site need the Publish permission).",
+      "toolsText": "Everything the editor can, except the team and member rights: create and rebuild sites from scratch, change the design and menus, manage pages, categories and blog posts, set up the blog and search, upload images, make translations, manage redirects, check and publish the site, restore versions, connect domains. Publishing, deleting a site and domains need the separate “Publish” permission.",
       "hideRevoked": "Hide revoked",
       "showRevoked": "Show revoked ({n})",
-      "teaser": "Let Claude or ChatGPT build and edit your sites for you: connect in a minute"
+      "teaser": "Let Claude or ChatGPT build and edit your sites for you: connect in a minute",
+      "lead": "Connect an AI client over MCP: Claude, ChatGPT and others will be able to create and edit your sites. Everything the AI does lands in drafts and reaches the site only after you publish.",
+      "step1": "Create an access key in the “Access keys” section below.",
+      "step2": "Paste the server address and the key into your AI client's settings (ready-made commands appear once the key is created).",
+      "step3": "Ask the AI to build a site or add a page, then check the drafts and publish."
     },
     "tabs": {
       "categories": "Categories",
