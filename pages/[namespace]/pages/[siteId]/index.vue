@@ -6,6 +6,7 @@ import { useOnboarding } from '@/composables/useOnboarding';
 import { pagesSiteTour } from '@/config/tours';
 import AppSkeleton from '@/components/ui/AppSkeleton.vue';
 import EmptyState from '@/components/ui/EmptyState.vue';
+import LinkReportPanel from '@/components/pages/LinkReportPanel.vue';
 import BlogSettingsPanel from '@/components/pages/BlogSettingsPanel.vue';
 import ThemeDesigner, { type DesignPayload } from '@/components/pages/ThemeDesigner.vue';
 import DomainsPanel from '@/components/pages/DomainsPanel.vue';
@@ -223,6 +224,65 @@ async function createPage() {
   }
 }
 
+// ── selection, bulk actions and the trash ──
+const selected = ref<Set<string>>(new Set());
+const bulkBusy = ref(false);
+const showTrash = ref(false);
+const trash = ref<SitePage[]>([]);
+const trashCount = computed(() => trash.value.length);
+const toggleSel = (id: string) => { const n = new Set(selected.value); n.has(id) ? n.delete(id) : n.add(id); selected.value = n; };
+const allOnPageSelected = computed(() => pagedPages.value.length > 0 && pagedPages.value.every(p => selected.value.has(p.id)));
+function toggleAllOnPage() {
+  const n = new Set(selected.value);
+  if (allOnPageSelected.value) pagedPages.value.forEach(p => n.delete(p.id));
+  else pagedPages.value.forEach(p => n.add(p.id));
+  selected.value = n;
+}
+async function loadTrash() {
+  try { trash.value = await pagesApi.trash(nsSlug.value, siteId.value); } catch { trash.value = []; }
+}
+async function reloadPages() {
+  try { pages.value = await pagesApi.pages(nsSlug.value, siteId.value); } catch (e) { fail(e); }
+}
+function reportBulk(res: { affected: number; failed: string[] }) {
+  if (res.failed.length) toast.add({ title: t('pages.bulk.partial', { n: res.affected, f: res.failed.length }), description: res.failed[0].split(': ').slice(1).join(': '), color: 'amber' });
+  else toast.add({ title: t('pages.bulk.done', { n: res.affected }), color: 'green' });
+}
+async function bulk(action: 'trash' | 'draft' | 'publish') {
+  const ids = [...selected.value];
+  if (!ids.length || bulkBusy.value) return;
+  if (action === 'trash') {
+    const ok = await confirm({ title: t('pages.bulk.trashTitle', { n: ids.length }), message: t('pages.bulk.trashText'), confirmLabel: t('pages.bulk.toTrash'), cancelLabel: t('common.cancel') });
+    if (!ok) return;
+  }
+  bulkBusy.value = true;
+  try {
+    reportBulk(await pagesApi.bulkPages(nsSlug.value, siteId.value, ids, action));
+    selected.value = new Set();
+    await Promise.all([reloadPages(), loadTrash()]);
+  } catch (e) { fail(e); } finally { bulkBusy.value = false; }
+}
+async function restorePage(p: SitePage) {
+  try {
+    const back = await pagesApi.restorePage(nsSlug.value, p.id);
+    toast.add({ title: t('pages.trash.restored', { path: back.path }), color: 'green' });
+    await Promise.all([reloadPages(), loadTrash()]);
+  } catch (e) { fail(e); }
+}
+async function purgePage(p: SitePage) {
+  const ok = await confirm({ title: t('pages.trash.purgeTitle'), message: t('pages.trash.purgeText', { name: p.title }), confirmLabel: t('pages.trash.purge'), cancelLabel: t('common.cancel') });
+  if (!ok) return;
+  try { await pagesApi.purgePage(nsSlug.value, p.id); await loadTrash(); } catch (e) { fail(e); }
+}
+async function emptyTrash() {
+  if (!trash.value.length) return;
+  const ok = await confirm({ title: t('pages.trash.emptyTitle'), message: t('pages.trash.emptyText', { n: trash.value.length }), confirmLabel: t('pages.trash.empty'), cancelLabel: t('common.cancel') });
+  if (!ok) return;
+  try { reportBulk(await pagesApi.bulkPages(nsSlug.value, siteId.value, trash.value.map(x => x.id), 'purge')); await loadTrash(); } catch (e) { fail(e); }
+}
+const daysLeft = (p: SitePage) => Math.max(0, 30 - Math.floor((Date.now() / 1000 - p.trashedAtUnix) / 86400));
+onMounted(loadTrash);
+
 async function deletePage(p: SitePage) {
   const ok = await confirm({
     title: t('pages.pages.deleteTitle'), message: t('pages.pages.deleteText', { name: p.title }),
@@ -232,6 +292,7 @@ async function deletePage(p: SitePage) {
   try {
     await pagesApi.deletePage(nsSlug.value, p.id);
     pages.value = pages.value.filter(x => x.id !== p.id);
+    loadTrash();
     toast.add({ title: t('pages.pages.deleted'), color: 'green' });
   } catch (e: any) {
     const msg = String(e?.response?.errors?.[0]?.message || '');
@@ -586,7 +647,40 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
                 </button>
               </div>
             </div>
-            <UInput v-model="pageQuery" icon="i-lucide-search" :placeholder="t('pages.pages.search')" class="sm:w-72" />
+            <div class="flex items-center gap-2">
+              <button type="button" class="at-btn flex-shrink-0" :class="showTrash && 'at-btn--blue'" @click="showTrash = !showTrash; selected = new Set()">
+                <Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('pages.trash.title') }}<span v-if="trashCount" class="text-xs opacity-70">{{ trashCount }}</span>
+              </button>
+              <UInput v-if="!showTrash" v-model="pageQuery" icon="i-lucide-search" :placeholder="t('pages.pages.search')" class="sm:w-72" />
+            </div>
+          </div>
+
+          <!-- trash: deleted pages are kept 30 days -->
+          <template v-if="showTrash">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="text-sm text-gray-500 dark:text-gray-400">{{ t('pages.trash.hint') }}</p>
+              <button v-if="trash.length" type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="emptyTrash"><Icon name="lucide:flame" class="h-4 w-4" />{{ t('pages.trash.empty') }}</button>
+            </div>
+            <p v-if="!trash.length" class="rounded-2xl bg-gray-50 px-4 py-8 text-center text-sm text-gray-500 dark:bg-white/5 dark:text-gray-400">{{ t('pages.trash.none') }}</p>
+            <div v-for="p in trash" :key="p.id" class="flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
+              <span class="icon-tile !h-9 !w-9 flex-shrink-0 opacity-60"><UIcon name="lucide:file-x" class="h-4 w-4" /></span>
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-medium text-gray-900 dark:text-white">{{ p.title }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.trash.daysLeft', { n: daysLeft(p) }) }}</div>
+              </div>
+              <button type="button" class="at-btn at-btn--blue flex-shrink-0" @click="restorePage(p)"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('pages.trash.restore') }}</button>
+              <button type="button" class="at-btn flex-shrink-0 !px-2.5 hover:!bg-rose-50 hover:!text-rose-600" :aria-label="t('pages.trash.purge')" :title="t('pages.trash.purge')" @click="purgePage(p)"><Icon name="lucide:x" class="h-4 w-4" /></button>
+            </div>
+          </template>
+
+          <template v-else>
+          <!-- bulk actions for the selected pages -->
+          <div v-if="selected.size" class="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-2xl bg-white/95 px-4 py-2.5 shadow-lg ring-1 ring-primary-500/30 backdrop-blur dark:bg-[#1f1f1f]/95">
+            <span class="mr-auto text-sm font-medium text-gray-900 dark:text-white">{{ t('pages.bulk.selected', { n: selected.size }) }}</span>
+            <button type="button" class="at-btn" :disabled="bulkBusy" @click="bulk('publish')"><Icon name="lucide:rocket" class="h-4 w-4" />{{ t('pages.bulk.publish') }}</button>
+            <button type="button" class="at-btn" :disabled="bulkBusy" @click="bulk('draft')"><Icon name="lucide:file-pen-line" class="h-4 w-4" />{{ t('pages.bulk.draft') }}</button>
+            <button type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" :disabled="bulkBusy" @click="bulk('trash')"><Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('pages.bulk.toTrash') }}</button>
+            <button type="button" class="at-btn !px-2.5" :aria-label="t('common.cancel')" @click="selected = new Set()"><Icon name="lucide:x" class="h-4 w-4" /></button>
           </div>
 
           <div v-if="categories.length" class="flex flex-wrap items-center gap-1.5">
@@ -595,6 +689,9 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <button v-for="c in categories" :key="c.id" type="button" class="rounded-full px-3 py-1 text-xs font-semibold ring-1 transition" :class="categoryFilter === c.id ? 'bg-primary-50 text-primary-700 ring-primary-300 dark:bg-blue-500/15 dark:text-primary-300 dark:ring-primary-500/40' : 'bg-white text-gray-600 ring-black/10 hover:bg-gray-50 dark:bg-transparent dark:text-gray-300 dark:ring-white/10'" @click="categoryFilter = categoryFilter === c.id ? '' : c.id">{{ c.title }}<span class="ml-1 opacity-60">{{ c.pageCount }}</span></button>
           </div>
 
+          <label v-if="visiblePages.length" class="flex w-fit cursor-pointer items-center gap-2 px-1 text-xs text-gray-500 dark:text-gray-400">
+            <UCheckbox :model-value="allOnPageSelected" @update:model-value="toggleAllOnPage" />{{ t('pages.bulk.selectPage') }}
+          </label>
           <p v-if="!visiblePages.length" class="py-6 text-center text-sm text-gray-500 dark:text-gray-400">{{ t('pages.pages.noMatches') }}</p>
 
           <div
@@ -602,6 +699,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             class="group flex items-center gap-3 rounded-2xl bg-white p-3 ring-1 ring-black/5 transition hover:ring-primary-400/60 hover:shadow-[0_14px_28px_-20px_rgba(37,99,235,0.5)] dark:bg-[#1f1f1f] dark:ring-white/10 dark:hover:ring-primary-400/50"
             :style="{ marginLeft: `${rowDepth(p) * 1.5}rem` }"
           >
+            <UCheckbox class="flex-shrink-0" :model-value="selected.has(p.id)" :aria-label="t('pages.bulk.select')" @update:model-value="toggleSel(p.id)" />
             <span v-if="rowDepth(p)" class="-mr-1 flex-shrink-0 text-gray-300 dark:text-neutral-600"><Icon name="lucide:corner-down-right" class="h-4 w-4" /></span>
             <span class="icon-tile !h-9 !w-9 flex-shrink-0"><UIcon :name="p.path === '/' ? 'lucide:house' : childCount(p) ? 'lucide:folder-tree' : 'lucide:file-text'" class="h-4 w-4" /></span>
             <NuxtLink :to="`/${nsSlug}/pages/${siteId}/edit/${p.id}`" class="min-w-0 flex-1 no-underline" :title="t('pages.pages.openEditor')">
@@ -646,6 +744,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             </div>
             <PageNav v-model:page="pageNo" v-model:page-size="pageSize" :total="visiblePages.length" :size-options="[10, 25, 50]" />
           </div>
+          </template>
         </div>
       </template>
 
@@ -712,6 +811,7 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
             <button v-if="!v.live" type="button" class="at-btn" @click="rollback(v)"><Icon name="lucide:undo-2" class="h-4 w-4" />{{ t('pages.publish.rollback') }}</button>
           </div>
         </div>
+        <LinkReportPanel :site-id="siteId" :ns-slug="nsSlug" :pages-count="pages.length" />
       </template>
 
       <!-- ═════════ REDIRECTS ═════════ -->
