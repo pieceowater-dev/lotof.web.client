@@ -156,6 +156,24 @@ async function onUploadImage(file: File): Promise<{ url: string }> {
   return { url: media.url };
 }
 
+// "Publish all changes" from the editor: the whole site, same checks as the Publish tab.
+async function onPublish() {
+  const toast = useToast();
+  try {
+    const check = await pagesApi.preflight(nsSlug.value, siteId.value);
+    if (!check.ok) {
+      const first = check.issues.find((i) => i.severity === 'error');
+      toast.add({ title: t('pages.editor.publishBlocked'), description: first ? `${first.pagePath}: ${first.message}` : undefined, color: 'amber' });
+      return;
+    }
+    const v = await pagesApi.publish(nsSlug.value, siteId.value);
+    toast.add({ title: t('pages.publish.done', { v: v.version }), color: 'green' });
+    if (site.value) site.value = { ...site.value, publishedVersion: v.version };
+  } catch (e: any) {
+    toast.add({ title: t('common.error'), description: String(e?.response?.errors?.[0]?.message || '') || getErrorMessage(e, t) || undefined, color: 'red' });
+  }
+}
+
 async function onDelete() {
   await pagesApi.deletePage(nsSlug.value, pageId.value);
   await navigateTo(backTo.value);
@@ -205,5 +223,6 @@ const resolveImage = (src: string) => siteAssetUrl(host.value, src);
     :on-save="onSave"
     :on-upload-image="onUploadImage"
     :on-delete="onDelete"
+    :on-publish="onPublish"
   />
 </template>

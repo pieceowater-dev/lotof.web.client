@@ -9,7 +9,12 @@
       :back-to="props.backTo"
       :live-url="liveUrl"
       :simple="props.simple"
+      :can-preview="!!props.nsSlug && !!props.siteId"
+      :can-publish="!!props.onPublish"
+      :is-publishing="isPublishing"
       @save="saveDraft"
+      @preview="openPreview"
+      @publish="publishAll"
       @delete="deletePage"
     />
 
@@ -214,6 +219,8 @@ interface Props {
   /** Maps a site-relative URL to one the console can load. */
   imageResolver?: (src: string) => string
   onDelete?: () => Promise<void> | void
+  /** Publishes the whole site (every ready page and all other pending changes); throws on failure. */
+  onPublish?: () => Promise<void>
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -898,6 +905,29 @@ function hydrateEditorDomFromState() {
       if (el.innerHTML !== block.content) el.innerHTML = block.content || ''
     }
   })
+}
+
+const isPublishing = ref(false)
+const route = useRoute()
+const router = useRouter()
+
+// The preview opens in one named tab, so a second click reuses it; that tab re-renders the saved draft on focus.
+async function openPreview() {
+  if (isDirty.value && !(await saveDraft())) return
+  const pageId = String(route.params.pageId || '')
+  const href = router.resolve(`/${props.nsSlug}/pages/${props.siteId}/preview/${pageId}`).href
+  window.open(href, `pages-preview-${pageId}`)
+}
+
+async function publishAll() {
+  if (!props.onPublish || isPublishing.value) return
+  if (isDirty.value && !(await saveDraft())) return
+  isPublishing.value = true
+  try {
+    await props.onPublish()
+  } finally {
+    isPublishing.value = false
+  }
 }
 
 async function saveDraft(): Promise<boolean> {

@@ -18,6 +18,10 @@
         <Icon name="lucide:external-link" class="h-3.5 w-3.5" />
         <span class="hidden md:inline">{{ t('pages.editor.openLive') }}</span>
       </a>
+      <button v-if="!simple && canPreview" type="button" class="at-btn" :title="t('pages.editor.previewHint')" @click="$emit('preview')">
+        <Icon name="lucide:eye" class="h-3.5 w-3.5" />
+        <span class="hidden md:inline">{{ t('pages.editor.preview') }}</span>
+      </button>
       <button v-if="canDelete" type="button" class="pe-round pe-round--danger" :aria-label="t('pages.editor.delete')" :title="t('pages.editor.delete')" @click="$emit('delete')">
         <Icon name="lucide:trash-2" class="h-4 w-4" />
       </button>
@@ -30,6 +34,10 @@
       >
         <Icon :name="isSaving ? 'lucide:loader-2' : isDirty ? 'lucide:save' : 'lucide:check'" class="h-4 w-4" :class="isSaving ? 'animate-spin' : ''" />
         <span class="hidden md:inline">{{ isDirty ? t('pages.editor.save') : t('pages.editor.saved') }}</span>
+      </button>
+      <button v-if="!simple && canPublish" type="button" class="at-btn at-btn--blue" :disabled="isPublishing" :title="t('pages.editor.publishAllHint')" @click="$emit('publish')">
+        <Icon :name="isPublishing ? 'lucide:loader-2' : 'lucide:rocket'" class="h-4 w-4" :class="isPublishing ? 'animate-spin' : ''" />
+        <span class="hidden lg:inline">{{ t('pages.editor.publishAll') }}</span>
       </button>
     </div>
   </header>
@@ -48,9 +56,12 @@ const props = defineProps<{
   liveUrl?: string
   path: string
   simple?: boolean
+  canPreview?: boolean
+  canPublish?: boolean
+  isPublishing?: boolean
 }>()
 
-defineEmits<{ save: []; delete: []; 'toggle-sidebar': [] }>()
+defineEmits<{ save: []; preview: []; publish: []; delete: []; 'toggle-sidebar': [] }>()
 
 const { t } = useI18n()
 const subtitle = computed(() => props.path)
