@@ -114,7 +114,9 @@ const colsOpts = ['2', '3', '4']
           <div v-for="(it, i) in items" :key="i" class="relative">
             <img :src="resolve(it.src)" alt="" class="aspect-[4/3] w-full rounded-2xl object-cover" style="aspect-ratio: 4 / 3">
             <button type="button" class="absolute right-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white" :aria-label="t('pages.editor.sec.remove')" @click="items.splice(i, 1)">×</button>
-            <input :value="it.alt || ''" :placeholder="t('pages.editor.sec.alt')" class="pe-field mt-1 !py-1 text-xs" @input="setField(it, 'alt', $event)">
+            <input :value="it.alt || ''" :placeholder="t('pages.editor.sec.alt')" class="pe-field mt-1 !py-1 text-xs" :class="it.alt ? '' : 'pe-field--bad'" @input="setField(it, 'alt', $event)">
+            <input :value="it.title || ''" :placeholder="t('pages.editor.sec.imgTitle')" class="pe-field mt-1 !py-1 text-xs" @input="setField(it, 'title', $event)">
+            <input :value="it.caption || ''" :placeholder="t('pages.editor.sec.imgCaption')" class="pe-field mt-1 !py-1 text-xs" @input="setField(it, 'caption', $event)">
           </div>
         </div>
         <label class="pe-pill pe-pill--on inline-flex cursor-pointer">

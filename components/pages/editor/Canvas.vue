@@ -227,6 +227,19 @@
                         :class="block.attrs.alt ? '' : 'pe-field--bad'"
                           @input="block.attrs.alt = ($event.target as HTMLInputElement).value"
                       />
+                      <details class="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-white/5" :open="!!(block.attrs.title || block.attrs.href || block.attrs.decorative || block.attrs.eager)">
+                        <summary class="cursor-pointer text-xs font-semibold text-slate-600 dark:text-neutral-300">{{ t('pages.editor.ui.imgSettings') }}</summary>
+                        <div class="mt-2 space-y-2">
+                          <input :value="block.attrs.title" :placeholder="t('pages.editor.ui.imgTitle')" class="pe-field w-full text-xs" @input="block.attrs.title = ($event.target as HTMLInputElement).value" />
+                          <input :value="block.attrs.href" :placeholder="t('pages.editor.ui.imgLink')" class="pe-field w-full text-xs" @input="block.attrs.href = ($event.target as HTMLInputElement).value" />
+                          <div class="flex flex-wrap gap-1.5">
+                            <button type="button" class="pe-pill" :class="block.attrs.newTab && 'pe-pill--on'" @click="block.attrs.newTab = !block.attrs.newTab">{{ t('pages.editor.ui.imgNewTab') }}</button>
+                            <button type="button" class="pe-pill" :class="block.attrs.decorative && 'pe-pill--on'" @click="block.attrs.decorative = !block.attrs.decorative">{{ t('pages.editor.ui.imgDecorative') }}</button>
+                            <button type="button" class="pe-pill" :class="block.attrs.eager && 'pe-pill--on'" @click="block.attrs.eager = !block.attrs.eager">{{ t('pages.editor.ui.imgEager') }}</button>
+                          </div>
+                          <p class="text-[11px] leading-snug text-slate-400 dark:text-neutral-500">{{ t('pages.editor.ui.imgSettingsHint') }}</p>
+                        </div>
+                      </details>
                     </div>
                     <button
                       class="absolute top-2.5 right-2.5 opacity-0 group-hover/img:opacity-100 transition-opacity
