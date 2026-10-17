@@ -839,25 +839,6 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
 
         <BlogSettingsPanel :site="site" :saving="blogSaving" @save="saveBlog" />
 
-        <div class="flex flex-col gap-3 rounded-2xl bg-white p-4 ring-1 ring-black/5 sm:p-5 dark:bg-[#1f1f1f] dark:ring-white/10">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.suspendHint') }}</div>
-            </div>
-            <button type="button" class="at-btn at-btn--amber" @click="toggleSuspend">
-              <Icon :name="site.status === 'SITE_SUSPENDED' ? 'lucide:play' : 'lucide:pause'" class="h-4 w-4" />{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}
-            </button>
-          </div>
-          <div class="h-px bg-black/5 dark:bg-white/10" />
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <div class="min-w-0">
-              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.settings.deleteTitle') }}</div>
-              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.deleteHint') }}</div>
-            </div>
-            <button type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="removeSite"><Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('common.delete') }}</button>
-          </div>
-        </div>
       <section class="flex flex-col gap-4">
         <div><h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('pages.tabs.redirects') }}</h3></div>
         <div class="rounded-2xl bg-white p-4 ring-1 ring-black/5 dark:bg-[#1f1f1f] dark:ring-white/10">
@@ -884,6 +865,29 @@ const LANGS = [{ v: 'ru', l: 'Русский' }, { v: 'kk', l: 'Қазақша' 
           </div>
         </div>
       </section>
+        <section class="flex flex-col gap-3 rounded-2xl bg-rose-50/40 p-4 ring-1 ring-rose-200 sm:p-5 dark:bg-rose-500/5 dark:ring-rose-500/30">
+          <div>
+            <h3 class="flex items-center gap-1.5 text-base font-semibold text-rose-700 dark:text-rose-300"><Icon name="lucide:triangle-alert" class="h-4 w-4" />{{ t('pages.settings.dangerZone') }}</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.dangerHint') }}</p>
+          </div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.suspendHint') }}</div>
+            </div>
+            <button type="button" class="at-btn at-btn--amber" @click="toggleSuspend">
+              <Icon :name="site.status === 'SITE_SUSPENDED' ? 'lucide:play' : 'lucide:pause'" class="h-4 w-4" />{{ site.status === 'SITE_SUSPENDED' ? t('pages.settings.resume') : t('pages.settings.suspend') }}
+            </button>
+          </div>
+          <div class="h-px bg-black/5 dark:bg-white/10" />
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('pages.settings.deleteTitle') }}</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">{{ t('pages.settings.deleteHint') }}</div>
+            </div>
+            <button type="button" class="at-btn hover:!bg-rose-50 hover:!text-rose-600" @click="removeSite"><Icon name="lucide:trash-2" class="h-4 w-4" />{{ t('common.delete') }}</button>
+          </div>
+        </section>
       </template>
     </template>
 

@@ -4874,6 +4874,8 @@
       "suspendText": "Visitors will not see the site until you resume it.",
       "suspend": "Suspend",
       "resume": "Resume",
+      "dangerZone": "Danger zone",
+      "dangerHint": "Actions that stop or erase the site. Deleting cannot be undone.",
       "suspendHint": "The site stops opening temporarily, nothing is deleted.",
       "deleteTitle": "Delete site",
       "deleteText": "The site {host} and all its pages will be deleted permanently.",
